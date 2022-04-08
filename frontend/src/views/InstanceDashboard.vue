@@ -55,7 +55,12 @@ import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useUIStateStore, useSubscriptionStore } from "@/store";
+import {
+  useUIStateStore,
+  useSubscriptionStore,
+  useEnvironmentStore,
+  useEnvironmentList,
+} from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -78,15 +83,13 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const state = reactive<LocalState>({
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       showGuide: false,

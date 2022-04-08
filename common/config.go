@@ -4,8 +4,8 @@ package common
 type ReleaseMode string
 
 const (
-	// ReleaseModeRelease is the release mode.
-	ReleaseModeRelease ReleaseMode = "release"
+	// ReleaseModeProd is the prod mode.
+	ReleaseModeProd ReleaseMode = "prod"
 	// ReleaseModeDev is the dev mode.
 	ReleaseModeDev ReleaseMode = "dev"
 )
