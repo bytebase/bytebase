@@ -11,7 +11,7 @@ Let's take an example that our release is at version `1.5` and dev at version `1
 1. Add a new SQL file for the DDL such as `1.6/0001__roofshot.sql`. The prefix numbers should be in consecutively increasing order such as `0001__rootshot.sql` then `0002__moonshot.sql`.
 1. Update `LATEST.sql` and `LATEST_DATA.sql` w.r.t. the DDL changes. (TODO: auto-generate the latest schema)
 1. Update [dev demo data](https://github.com/bytebase/bytebase/tree/main/store/demo/dev) if needed.
-1. Since we use the same code for both dev and release schemas, we should add if-else branching to read storage differently based on schema version. (TODO: add example later)
+1. Since we use the same code for both dev and release schemas, we should add if-else branching to read storage differently based on schema version, such as [this example](https://github.com/bytebase/bytebase/pull/1039).
 
 ## Release
 Releaser should take the following steps for schema update release, at most once a month. A DDL file should only be moved forward to release only if the feature is completed and well tested.
