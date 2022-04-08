@@ -54,7 +54,12 @@ import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { computed, defineComponent } from "vue";
-import { useActuatorStore, useDebugStore, useSubscriptionStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useDebugStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -74,7 +79,7 @@ export default defineComponent({
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,

@@ -42,21 +42,19 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
-	backupRaw, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
+	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find backup: %w", err)
+		return true, nil, fmt.Errorf("Failed to find backup with ID[%d], error[%w]", payload.BackupID, err)
 	}
-	if backupRaw == nil {
+	if backup == nil {
 		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
 	}
 	exec.l.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),
-		zap.String("backup", backupRaw.Name),
+		zap.String("backup", backup.Name),
 	)
 
-	// TODO(dragonly): refactor to get composed Backup
-	backup := backupRaw.ToBackup()
 	backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.dataDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
@@ -65,8 +63,8 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		newBackupStatus = string(api.BackupStatusFailed)
 		comment = backupErr.Error()
 	}
-	if _, err := server.BackupService.PatchBackup(ctx, &api.BackupPatch{
-		ID:        backupRaw.ID,
+	if _, err := server.store.PatchBackup(ctx, &api.BackupPatch{
+		ID:        backup.ID,
 		Status:    newBackupStatus,
 		UpdaterID: api.SystemBotID,
 		Comment:   comment,

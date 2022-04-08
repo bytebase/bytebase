@@ -143,7 +143,7 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
-import { useDeploymentStore, useLabelStore } from "@/store";
+import { pushNotification, useDeploymentStore, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 type LocalState = {
@@ -305,7 +305,7 @@ export default defineComponent({
         projectId: props.project.id,
         deploymentConfigPatch,
       });
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("deployment-config.update-success"),

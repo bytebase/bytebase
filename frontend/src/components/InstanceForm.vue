@@ -293,6 +293,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -454,7 +455,7 @@ const handleCreateDataSource = (type: DataSourceType) => {
     state.instance.engine === "SNOWFLAKE" ||
     state.instance.engine === "POSTGRES"
   ) {
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: t("instance.no-read-only-data-source-support", {
@@ -589,8 +590,7 @@ const doUpdate = () => {
               } as EditDataSource;
             }
           );
-
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("instance.successfully-updated-instance-instance-name", [
@@ -627,13 +627,13 @@ const testConnection = () => {
   };
   store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("instance.successfully-connected-instance"),
       });
     } else {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("instance.failed-to-connect-instance"),

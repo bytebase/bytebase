@@ -21,6 +21,7 @@ import {
   unknown,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { convertBackup } from "@/store";
 
 function convert(
   database: ResourceObject,
@@ -72,7 +73,7 @@ function convert(
       project = rootGetters["project/convert"](item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = rootGetters["backup/convert"](item, includedList);
+      sourceBackup = convertBackup(item, includedList);
     }
   }
 

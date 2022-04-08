@@ -58,16 +58,10 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					Hour:      t.Hour(),
 					DayOfWeek: int(t.Weekday()),
 				}
-				backupSettingRawList, err := s.server.BackupService.FindBackupSettingsMatch(ctx, match)
+				backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
-				}
-				// TODO(dragonly): implement composeBackupSettingRelation
-				var backupSettingList []*api.BackupSetting
-				for _, backupSettingRaw := range backupSettingRawList {
-					backupSetting := backupSettingRaw.ToBackupSetting()
-					backupSettingList = append(backupSettingList, backupSetting)
 				}
 
 				for _, backupSetting := range backupSettingList {
@@ -156,12 +150,12 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}
 
-	// Return early if the backupRawOld already exists.
-	backupRawOld, err := s.server.BackupService.FindBackup(ctx, &api.BackupFind{Name: &backupName})
+	// Return early if the backupOld already exists.
+	backupOld, err := s.server.store.FindBackup(ctx, &api.BackupFind{Name: &backupName})
 	if err != nil {
 		return fmt.Errorf("failed to find backup %q, error %v", backupName, err)
 	}
-	if backupRawOld != nil {
+	if backupOld != nil {
 		return nil
 	}
 
@@ -174,7 +168,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		StorageBackend:          api.BackupStorageBackendLocal,
 		Path:                    path,
 	}
-	backupRawNew, err := s.server.BackupService.CreateBackup(ctx, backupCreate)
+	backupNew, err := s.server.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			// Automatic backup already exists.
@@ -184,7 +178,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupID: backupRawNew.ID,
+		BackupID: backupNew.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
