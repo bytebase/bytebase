@@ -97,9 +97,9 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 }
 
 func TestGhostSimpleNoop(t *testing.T) {
-	const (
+	var (
 		localhost = "127.0.0.1"
-		port      = 13306
+		port      = getTestPort(t.Name())
 		user      = "root"
 		database  = "gh_ost_test_db"
 		table     = "tbl"

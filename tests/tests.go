@@ -118,6 +118,12 @@ func getTestPort(testName string) int {
 		return 1246
 	case "TestTenantDatabaseNameTemplate":
 		return 1249
+	case "TestGhostSimpleNoop":
+		return 1252
+	case "TestBackupRestore":
+		return 1255
+	case "TestPITR":
+		return 1258
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
