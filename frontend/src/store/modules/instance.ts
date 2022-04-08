@@ -26,6 +26,7 @@ import {
   getPrincipalFromIncludedList,
   useEnvironmentStore,
 } from "../pinia-modules";
+import { useAnomalyStore } from "@/store";
 
 function convert(
   instance: ResourceObject,
@@ -98,7 +99,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i] = useAnomalyStore().convert(item);
         anomalyList[i].instance = instancePartial;
       }
     }

@@ -59,10 +59,7 @@ export const useBackupStore = defineStore("backup", {
   }),
 
   actions: {
-    convert: (
-      backup: ResourceObject,
-      includedList: ResourceObject[]
-    ): Backup => {
+    convert(backup: ResourceObject, includedList: ResourceObject[]): Backup {
       return convertBackup(backup, includedList || []);
     },
 
