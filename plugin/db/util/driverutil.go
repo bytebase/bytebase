@@ -194,7 +194,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
-		Version:  &storedVersion,
+		Version:  &m.Version,
 	}); err != nil {
 		return -1, fmt.Errorf("Check duplicate version error: %q", err)
 	} else if len(list) > 0 {
