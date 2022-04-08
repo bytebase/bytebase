@@ -349,13 +349,13 @@ func useEmbeddedDB() bool {
 
 func (m *Main) newDB() (*store.DB, error) {
 	if useEmbeddedDB() {
-		return m.newLocalDB()
+		return m.newEmbeddedDB()
 	}
 	return m.newExternalDB()
 }
 
 func (m *Main) newExternalDB() (*store.DB, error) {
-	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", pgURL))
+	m.l.Info("Establishing external PostgreSQL connection...")
 
 	u, err := url.Parse(pgURL)
 	if err != nil {
@@ -384,26 +384,18 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Database = u.Path[1:]
 	}
 
-	tlsCfg := dbdriver.TLSConfig{}
-
 	q := u.Query()
-	if sslCA := q.Get("sslrootcert"); len(sslCA) > 0 {
-		tlsCfg.SslCA = sslCA
+	connCfg.TLSConfig = dbdriver.TLSConfig{
+		SslCA:   q.Get("sslrootcert"),
+		SslKey:  q.Get("sslkey"),
+		SslCert: q.Get("sslcert"),
 	}
-	if sslKey := q.Get("sslkey"); len(sslKey) > 0 {
-		tlsCfg.SslKey = sslKey
-	}
-	if sslCert := q.Get("sslcert"); len(sslCert) > 0 {
-		tlsCfg.SslCert = sslCert
-	}
-
-	connCfg.TLSConfig = tlsCfg
 
 	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
 	return db, nil
 }
 
-func (m *Main) newLocalDB() (*store.DB, error) {
+func (m *Main) newEmbeddedDB() (*store.DB, error) {
 	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
