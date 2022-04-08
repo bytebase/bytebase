@@ -22,7 +22,7 @@ import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useLabelStore } from "@/store";
+import { useEnvironmentList, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -35,11 +35,10 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const environmentList = computed(() => {
-      return cloneDeep(
-        store.getters["environment/environmentList"]()
-      ).reverse();
-    });
+    const rawEnvironmentList = useEnvironmentList();
+    const environmentList = computed(() =>
+      cloneDeep(rawEnvironmentList.value).reverse()
+    );
 
     const prepareList = () => {
       // It will also be called when user logout
