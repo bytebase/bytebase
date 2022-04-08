@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import { useSettingStore, useUIStateStore } from "@/store";
+import { useEnvironmentStore, useSettingStore, useUIStateStore } from "@/store";
 import { defineComponent } from "vue";
 import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -22,7 +22,7 @@ export default defineComponent({
       // the principal list as well.
       // We also need this to render the proper inbox and activity entry.
       store.dispatch("principal/fetchPrincipalList"),
-      store.dispatch("environment/fetchEnvironmentList"),
+      useEnvironmentStore().fetchEnvironmentList(),
       // The default project hosts databases not explicitly assigned to other users project.
       store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
       useUIStateStore().restoreState(),

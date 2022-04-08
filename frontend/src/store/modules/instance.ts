@@ -22,6 +22,7 @@ import {
   unknown,
 } from "../../types";
 import { InstanceUser } from "../../types/InstanceUser";
+import { useEnvironmentStore } from "../pinia-modules";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
@@ -77,13 +78,14 @@ function convert(
     dataSourceList: [],
   };
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (instance.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = rootGetters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
 
     if (

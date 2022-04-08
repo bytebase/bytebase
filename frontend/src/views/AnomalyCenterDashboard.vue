@@ -141,7 +141,7 @@ import {
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
-import { featureToRef } from "@/store";
+import { featureToRef, useEnvironmentList } from "@/store";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -174,9 +174,7 @@ export default defineComponent({
       searchText: "",
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout
