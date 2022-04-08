@@ -21,7 +21,7 @@ import {
   unknown,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "./principal";
-import { convertBackup } from "@/store";
+import { useBackupStore, useAnomalyStore } from "@/store";
 
 function convert(
   database: ResourceObject,
@@ -73,7 +73,7 @@ function convert(
       project = rootGetters["project/convert"](item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = convertBackup(item, includedList);
+      sourceBackup = useBackupStore().convert(item, includedList);
     }
   }
 
@@ -147,7 +147,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i] = useAnomalyStore().convert(item);
         anomalyList[i].instance = instance;
         anomalyList[i].database = databaseWPartial;
       }

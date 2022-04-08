@@ -15,17 +15,11 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, watchEffect } from "vue";
-import { useStore } from "vuex";
-import {
-  Database,
-  Environment,
-  Label,
-  Project,
-  LabelKeyType,
-} from "../../types";
+import { Database, Label, Project, LabelKeyType } from "../../types";
 import { groupBy } from "lodash-es";
 import DatabaseMatrix from "./DatabaseMatrix.vue";
 import { parseDatabaseNameByTemplate } from "../../utils";
+import { useEnvironmentList, useEnvironmentStore } from "@/store";
 
 type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 
@@ -68,16 +62,12 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
-
     const prepareList = () => {
-      store.dispatch("environment/fetchEnvironmentList");
+      useEnvironmentStore().fetchEnvironmentList();
     };
     watchEffect(prepareList);
 
-    const environmentList = computed(
-      () => store.getters["environment/environmentList"]() as Environment[]
-    );
+    const environmentList = useEnvironmentList();
 
     const databaseListGroupByName = computed((): DatabaseGroupByName[] => {
       if (props.project.dbNameTemplate) {

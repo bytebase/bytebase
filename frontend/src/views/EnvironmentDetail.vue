@@ -21,7 +21,6 @@
 
 <script lang="ts">
 import { defineComponent, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -32,9 +31,11 @@ import {
   PolicyType,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
+  PipelineApporvalPolicyPayload,
+  PolicyBackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
-import { hasFeature } from "@/store";
+import { hasFeature, useEnvironmentStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   environment: Environment;
@@ -60,18 +61,19 @@ export default defineComponent({
   },
   emits: ["archive"],
   setup(props, { emit }) {
-    const store = useStore();
+    const environmentStore = useEnvironmentStore();
+    const policyStore = usePolicyStore();
 
     const state = reactive<LocalState>({
-      environment: store.getters["environment/environmentById"](
+      environment: environmentStore.getEnvironmentById(
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
     });
 
     const preparePolicy = () => {
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.pipeline-approval",
         })
@@ -79,8 +81,8 @@ export default defineComponent({
           state.approvalPolicy = policy;
         });
 
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.backup-plan",
         })
@@ -96,8 +98,8 @@ export default defineComponent({
     };
 
     const doUpdate = (environmentPatch: EnvironmentPatch) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: idFromSlug(props.environmentSlug),
           environmentPatch,
         })
@@ -107,8 +109,8 @@ export default defineComponent({
     };
 
     const doArchive = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "ARCHIVED",
@@ -121,8 +123,8 @@ export default defineComponent({
     };
 
     const doRestore = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "NORMAL",
@@ -140,7 +142,8 @@ export default defineComponent({
     ) => {
       if (
         type === "bb.policy.pipeline-approval" &&
-        policy.payload.value !== DefaultApporvalPolicy &&
+        (policy.payload as PipelineApporvalPolicyPayload).value !==
+          DefaultApporvalPolicy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
@@ -148,14 +151,15 @@ export default defineComponent({
       }
       if (
         type === "bb.policy.backup-plan" &&
-        policy.payload.schedule !== DefaultSchedulePolicy &&
+        (policy.payload as PolicyBackupPlanPolicyPayload).schedule !==
+          DefaultSchedulePolicy &&
         !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
-      store
-        .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+      policyStore
+        .upsertPolicyByEnvironmentAndType({
           environmentId,
           type: type,
           policyUpsert: {
