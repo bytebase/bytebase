@@ -455,46 +455,27 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 		return nil
 	}
 
-	var lastVersion string
 	for _, m := range migrations {
 		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We don't use semantic versioning for dev migrations because they are not versioned yet.
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
-				ReleaseVersion: serverVersion,
-				Version:        m.version,
-				Namespace:      databaseName,
-				Database:       databaseName,
-				Environment:    "", /* unused in execute migration */
-				Source:         dbdriver.LIBRARY,
-				Type:           dbdriver.Migrate,
-				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+				ReleaseVersion:        serverVersion,
+				UseSemanticVersion:    true,
+				Version:               cutoffSchemaVersion.String(),
+				SemanticVersionSuffix: fmt.Sprintf("dev-%s", m.version),
+				Namespace:             databaseName,
+				Database:              databaseName,
+				Environment:           "", /* unused in execute migration */
+				Source:                dbdriver.LIBRARY,
+				Type:                  dbdriver.Migrate,
+				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
 			},
 			m.statement,
 		); err != nil {
 			return fmt.Errorf("failed to migrate schema version %q, error: %v", m.version, err)
 		}
-		lastVersion = m.version
-	}
-	// Establish a baseline to restart the migration with semantic version.
-	if _, _, err := d.ExecuteMigration(
-		ctx,
-		&dbdriver.MigrationInfo{
-			ReleaseVersion:        serverVersion,
-			UseSemanticVersion:    true,
-			Version:               cutoffSchemaVersion.String(),
-			SemanticVersionSuffix: lastVersion,
-			Namespace:             databaseName,
-			Database:              databaseName,
-			Environment:           "", /* unused in execute migration */
-			Source:                dbdriver.LIBRARY,
-			Type:                  dbdriver.Baseline,
-			Description:           fmt.Sprintf("Establish baseline migration %s at server version %s after applying dev migration.", cutoffSchemaVersion.String(), serverVersion),
-		},
-		"",
-	); err != nil {
-		return fmt.Errorf("failed to establish baseline schema version %s, error: %v", cutoffSchemaVersion, err)
 	}
 
 	return nil
