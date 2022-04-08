@@ -9,8 +9,8 @@ import {
 } from "@/types";
 import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "../modules/principal";
-import { store } from "../index";
 import { defineStore } from "pinia";
+import { useEnvironmentStore } from "./environment";
 
 function convert(
   policy: ResourceObject,
@@ -22,13 +22,14 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (policy.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = store.getters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
   }
 
