@@ -8,7 +8,7 @@ import {
   unknown,
 } from "@/types";
 import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
-import { getPrincipalFromIncludedList } from "../modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 import { store } from "../index";
 import { defineStore } from "pinia";
 
