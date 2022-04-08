@@ -163,7 +163,7 @@ import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, DataSourcePatch } from "../types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -258,7 +258,7 @@ export default defineComponent({
           dataSourceId,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("datasource.successfully-deleted-data-source-name", [

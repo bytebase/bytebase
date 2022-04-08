@@ -43,7 +43,7 @@ import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
 import { isOwner } from "../utils";
-import { useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   selectedVCS?: VCS;
@@ -83,7 +83,7 @@ const eventListener = (event: Event) => {
     emit("set-code", payload.code);
     emit("next");
   } else {
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: payload.error,

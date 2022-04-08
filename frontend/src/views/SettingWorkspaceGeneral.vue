@@ -94,11 +94,15 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useStore } from "vuex";
 import { isOwner } from "../utils";
 import { brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
-import { featureToRef, useCurrentUser, useSettingStore } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useSettingStore,
+} from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -120,7 +124,6 @@ const convertFileToBase64 = (file: File) =>
     reader.onerror = (error) => reject(error);
   });
 
-const store = useStore();
 const settingStore = useSettingStore();
 const { t } = useI18n();
 
@@ -181,7 +184,7 @@ const uploadLogo = async () => {
     state.logoFile = null;
     state.logoUrl = setting.value;
 
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("settings.general.workspace.logo-upload-succeed"),

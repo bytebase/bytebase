@@ -122,13 +122,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
 import {
+  pushNotification,
   useActuatorStore,
   useAuthStore,
   useDebugStore,
@@ -141,7 +141,6 @@ export default defineComponent({
   components: { PrincipalAvatar },
   props: {},
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
     const authStore = useAuthStore();
     const debugStore = useDebugStore();
@@ -231,7 +230,7 @@ export default defineComponent({
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,

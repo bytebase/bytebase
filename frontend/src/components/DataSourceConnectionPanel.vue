@@ -108,11 +108,12 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { computed, reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 type Connection = {
   name: string;
@@ -123,7 +124,7 @@ interface LocalState {
   showPassword: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceConnectionPanel",
   components: {},
   props: {
@@ -211,7 +212,7 @@ export default {
 
     const copyText = (connection: Connection) => {
       toClipboard(connection.value).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("datasource.connection-name-string-copied-to-clipboard", [
@@ -227,5 +228,5 @@ export default {
       copyText,
     };
   },
-};
+});
 </script>

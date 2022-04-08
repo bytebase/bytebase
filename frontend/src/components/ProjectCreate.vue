@@ -132,7 +132,7 @@ import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { useUIStateStore, hasFeature } from "@/store";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -211,7 +211,7 @@ export default defineComponent({
             newState: true,
           });
 
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.create-modal.success-prompt", {

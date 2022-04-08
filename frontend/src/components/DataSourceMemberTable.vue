@@ -112,7 +112,7 @@ import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -165,7 +165,7 @@ export default defineComponent({
           memberId: member.principal.id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "INFO",
             title: t(

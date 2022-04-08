@@ -42,32 +42,7 @@
       "
       :positive-text="$t('common.confirm')"
       :negative-text="$t('common.cancel')"
-      @positive-click="
-        () => {
-          state.showModal = false;
-          // the current role provider is BYTEBASE, meaning switching role provider to VCS
-          if (project.roleProvider === 'BYTEBASE') {
-            patchProjectRoleProvider('GITLAB_SELF_HOST')
-              .then(() => {
-                syncMemberFromVCS();
-              })
-              .catch(() => {}); // mute error at browser
-          } else if (project.roleProvider === 'GITLAB_SELF_HOST') {
-            // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
-            patchProjectRoleProvider('BYTEBASE').then(() => {
-              $store
-                .dispatch('notification/pushNotification', {
-                  module: 'bytebase',
-                  style: 'SUCCESS',
-                  title: $t(
-                    'project.settings.switch-role-provider-to-bytebase-success-prompt'
-                  ),
-                })
-                .catch(() => {}); // mute error at browser
-            });
-          }
-        }
-      "
+      @positive-click="onConfirmToggleRoleProvider"
       @negative-click="
         () => {
           state.showModal = false;
@@ -198,7 +173,12 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useMemberStore,
+} from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -312,7 +292,7 @@ export default defineComponent({
           projectMember,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-added-prompt", {
@@ -348,7 +328,7 @@ export default defineComponent({
           projectId: props.project.id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-sync-prompt"),
@@ -387,6 +367,37 @@ export default defineComponent({
       }
     };
 
+    const onConfirmToggleRoleProvider = () => {
+      () => {
+        state.showModal = false;
+        // the current role provider is BYTEBASE, meaning switching role provider to VCS
+        if (props.project.roleProvider === "BYTEBASE") {
+          patchProjectRoleProvider("GITLAB_SELF_HOST")
+            .then(() => {
+              syncMemberFromVCS();
+            })
+            .catch(() => {
+              // nothing todo
+            }); // mute error at browser
+        } else if (props.project.roleProvider === "GITLAB_SELF_HOST") {
+          // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
+          patchProjectRoleProvider("BYTEBASE")
+            .then(() => {
+              pushNotification({
+                module: "bytebase",
+                style: "SUCCESS",
+                title: t(
+                  "project.settings.switch-role-provider-to-bytebase-success-prompt"
+                ),
+              });
+            })
+            .catch(() => {
+              // nothing todo
+            }); // mute error at browser;
+        }
+      };
+    };
+
     return {
       state,
       hasRBACFeature,
@@ -402,6 +413,7 @@ export default defineComponent({
       has3rdPartyAuthFeature,
       onRefreshSync,
       onToggleRoleProvider,
+      onConfirmToggleRoleProvider,
     };
   },
 });

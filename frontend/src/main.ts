@@ -18,9 +18,10 @@ import { router } from "./router";
 import {
   store,
   pinia,
+  pushNotification,
   useActuatorStore,
-  useSubscriptionStore,
   useAuthStore,
+  useSubscriptionStore,
 } from "./store";
 import {
   databaseSlug,
@@ -87,7 +88,7 @@ axios.interceptors.response.use(
       }
 
       if (error.response.data.message) {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: error.response.data.message,
@@ -98,7 +99,7 @@ axios.interceptors.response.use(
         });
       }
     } else if (error.code == "ECONNABORTED") {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: "Connecting server timeout. Make sure the server is running.",
