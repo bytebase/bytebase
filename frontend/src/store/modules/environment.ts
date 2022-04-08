@@ -11,7 +11,7 @@ import {
   RowStatus,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+import { getPrincipalFromIncludedList, usePolicyStore } from "../pinia-modules";
 
 function convert(
   environment: ResourceObject,
@@ -91,17 +91,12 @@ const actions = {
 
     commit("upsertEnvironmentList", environmentList);
 
+    const policyStore = usePolicyStore();
     for (const environment of environmentList) {
-      await dispatch(
-        "policy/fetchPolicyByEnvironmentAndType",
-        {
-          environmentId: environment.id,
-          type: "bb.policy.pipeline-approval",
-        },
-        {
-          root: true,
-        }
-      );
+      await policyStore.fetchPolicyByEnvironmentAndType({
+        environmentId: environment.id,
+        type: "bb.policy.pipeline-approval",
+      });
     }
 
     return environmentList;
@@ -123,16 +118,10 @@ const actions = {
 
     commit("upsertEnvironmentList", [createdEnvironment]);
 
-    await dispatch(
-      "policy/fetchPolicyByEnvironmentAndType",
-      {
-        environmentId: createdEnvironment.id,
-        type: "bb.policy.pipeline-approval",
-      },
-      {
-        root: true,
-      }
-    );
+    await usePolicyStore().fetchPolicyByEnvironmentAndType({
+      environmentId: createdEnvironment.id,
+      type: "bb.policy.pipeline-approval",
+    });
 
     return createdEnvironment;
   },

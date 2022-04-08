@@ -354,7 +354,11 @@ import {
 import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
-import { useCurrentUser, useUIStateStore } from "@/store";
+import {
+  useCurrentUser,
+  useUIStateStore,
+  useIssueSubscriberStore,
+} from "@/store";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -472,9 +476,7 @@ export default defineComponent({
     });
 
     const subscriberList = computed((): IssueSubscriber[] => {
-      return store.getters["issueSubscriber/subscriberListByIssue"](
-        props.issue.id
-      );
+      return useIssueSubscriberStore().subscriberListByIssue(props.issue.id);
     });
 
     const cancelEditComment = () => {

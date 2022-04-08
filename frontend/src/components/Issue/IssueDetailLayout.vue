@@ -274,7 +274,7 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { featureToRef, useCurrentUser } from "@/store";
+import { featureToRef, useCurrentUser, useIssueSubscriberStore } from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -309,6 +309,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
+    const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
 
@@ -444,14 +445,14 @@ export default defineComponent({
     };
 
     const addSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/createSubscriber", {
+      issueSubscriberStore.createSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
     };
 
     const removeSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/deleteSubscriber", {
+      issueSubscriberStore.deleteSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
