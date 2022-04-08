@@ -138,7 +138,7 @@ func init() {
 
 // Profile is the configuration to start main server.
 type Profile struct {
-	// mode can be "release" or "dev"
+	// mode can be "prod" or "dev"
 	mode common.ReleaseMode
 	// port is the binding port for server.
 	port int
