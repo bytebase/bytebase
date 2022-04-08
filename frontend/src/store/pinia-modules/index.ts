@@ -8,6 +8,7 @@ export * from "./issueSubscriber";
 export * from "./label";
 export * from "./notification";
 export * from "./oauth";
+export * from "./policy";
 export * from "./router";
 export * from "./setting";
 export * from "./subscription";

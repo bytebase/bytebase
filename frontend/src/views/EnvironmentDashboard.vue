@@ -89,9 +89,16 @@ import {
   PolicyUpsert,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
+  PipelineApporvalPolicyPayload,
+  PolicyBackupPlanPolicyPayload,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
-import { useRegisterCommand, useUIStateStore, hasFeature } from "@/store";
+import {
+  useRegisterCommand,
+  useUIStateStore,
+  hasFeature,
+  usePolicyStore,
+} from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
   name: "New Env",
@@ -132,6 +139,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const uiStateStore = useUIStateStore();
+    const policyStore = usePolicyStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -228,14 +236,16 @@ export default defineComponent({
       backupPolicy: Policy
     ) => {
       if (
-        approvalPolicy.payload.value !== DefaultApporvalPolicy &&
+        (approvalPolicy.payload as PipelineApporvalPolicyPayload).value !==
+          DefaultApporvalPolicy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
       if (
-        backupPolicy.payload.schedule !== DefaultSchedulePolicy &&
+        (backupPolicy.payload as PolicyBackupPlanPolicyPayload).schedule !==
+          DefaultSchedulePolicy &&
         !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
@@ -246,12 +256,12 @@ export default defineComponent({
         .dispatch("environment/createEnvironment", newEnvironment)
         .then((environment: Environment) => {
           Promise.all([
-            store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
+            policyStore.upsertPolicyByEnvironmentAndType({
               environmentId: environment.id,
               type: "bb.policy.pipeline-approval",
               policyUpsert: { payload: approvalPolicy.payload },
             }),
-            store.dispatch("policy/upsertPolicyByEnvironmentAndType", {
+            policyStore.upsertPolicyByEnvironmentAndType({
               environmentId: environment.id,
               type: "bb.policy.backup-plan",
               policyUpsert: { payload: backupPolicy.payload },
