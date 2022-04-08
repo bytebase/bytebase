@@ -334,7 +334,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			return err
 		}
 
-		minorVersions, messages, err := getMinorMigrationVersions(names, cutoffSchemaVersion, *curVer)
+		minorVersions, messages, err := getMinorMigrationVersions(names, *curVer)
 		if err != nil {
 			return err
 		}
@@ -348,7 +348,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			if err != nil {
 				return err
 			}
-			patchVersions, err := getPatchVersions(minorVersion, cutoffSchemaVersion, *curVer, names)
+			patchVersions, err := getPatchVersions(minorVersion, *curVer, names)
 			if err != nil {
 				return err
 			}
@@ -404,53 +404,35 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 	return nil
 }
 
-func migrationExists(statement string, histories []*dbdriver.MigrationHistory) bool {
-	for _, history := range histories {
-		if history.Statement == statement {
-			return true
-		}
-	}
-	return false
-}
-
-type devMigration struct {
-	filename  string
-	version   string
-	statement string
-}
-
-func getDevMigrations() ([]devMigration, error) {
-	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
+func getReleaseCutoffVersion() (semver.Version, error) {
+	minorPathPrefix := fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease)
+	names, err := fs.Glob(migrationFS, minorPathPrefix)
 	if err != nil {
-		return nil, err
+		return semver.Version{}, err
 	}
 
-	var devMigrations []devMigration
-	for _, name := range names {
-		baseName := filepath.Base(name)
-		if baseName == latestSchemaFile || baseName == latestDataFile {
-			continue
-		}
-
-		parts := strings.Split(filepath.Base(name), "__")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid migration file name %q", name)
-		}
-		buf, err := fs.ReadFile(migrationFS, name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read dev migration file %q, error %w", name, err)
-		}
-
-		devMigrations = append(devMigrations, devMigration{
-			filename:  name,
-			version:   parts[0],
-			statement: string(buf),
-		})
+	versions, err := getMinorVersions(names)
+	if err != nil {
+		return semver.Version{}, err
 	}
-	sort.Slice(devMigrations, func(i, j int) bool {
-		return devMigrations[i].version < devMigrations[j].version
-	})
-	return devMigrations, nil
+	if len(versions) == 0 {
+		return semver.Version{}, fmt.Errorf("Migration path %s has no minor version", minorPathPrefix)
+	}
+	minorVersion := versions[len(versions)-1]
+
+	patchPathPrefix := fmt.Sprintf("migration/%s/%d.%d", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor)
+	names, err = fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", patchPathPrefix))
+	if err != nil {
+		return semver.Version{}, err
+	}
+	patchVersions, err := getPatchVersions(minorVersion, semver.Version{} /* currentVersion */, names)
+	if err != nil {
+		return semver.Version{}, err
+	}
+	if len(patchVersions) == 0 {
+		return semver.Version{}, fmt.Errorf("Migration path %s has no patch version", patchPathPrefix)
+	}
+	return patchVersions[len(patchVersions)-1].version, nil
 }
 
 func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory, l *zap.Logger) error {
@@ -473,6 +455,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 		return nil
 	}
 
+	var lastVersion string
 	for _, m := range migrations {
 		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We don't use semantic versioning for dev migrations because they are not versioned yet.
@@ -492,6 +475,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 		); err != nil {
 			return fmt.Errorf("failed to migrate schema version %q, error: %v", m.version, err)
 		}
+		lastVersion = m.version
 	}
 	// Establish a baseline to restart the migration with semantic version.
 	if _, _, err := d.ExecuteMigration(
@@ -500,7 +484,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 			ReleaseVersion:        serverVersion,
 			UseSemanticVersion:    true,
 			Version:               cutoffSchemaVersion.String(),
-			SemanticVersionSuffix: time.Now().Format("20060102150405"),
+			SemanticVersionSuffix: lastVersion,
 			Namespace:             databaseName,
 			Database:              databaseName,
 			Environment:           "", /* unused in execute migration */
@@ -516,37 +500,53 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 	return nil
 }
 
-func getReleaseCutoffVersion() (semver.Version, error) {
-	minorPathPrefix := fmt.Sprintf("migration/%s/*", common.ReleaseModeRelease)
-	names, err := fs.Glob(migrationFS, minorPathPrefix)
+type devMigration struct {
+	filename  string
+	version   string
+	statement string
+}
+
+func getDevMigrations() ([]devMigration, error) {
+	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeDev))
 	if err != nil {
-		return semver.Version{}, err
+		return nil, err
 	}
 
-	versions, err := getMinorVersions(names)
-	if err != nil {
-		return semver.Version{}, err
-	}
-	if len(versions) == 0 {
-		return semver.Version{}, fmt.Errorf("Migration path %s has no minor version", minorPathPrefix)
-	}
-	minorVersion := versions[len(versions)-1]
-	upperMinorVersion := minorVersion
-	upperMinorVersion.Minor = upperMinorVersion.Minor + 1
+	var devMigrations []devMigration
+	for _, name := range names {
+		baseName := filepath.Base(name)
+		if baseName == latestSchemaFile || baseName == latestDataFile {
+			continue
+		}
 
-	patchPathPrefix := fmt.Sprintf("migration/%s/%d.%d", common.ReleaseModeRelease, minorVersion.Major, minorVersion.Minor)
-	names, err = fs.Glob(migrationFS, fmt.Sprintf("%s/*.sql", patchPathPrefix))
-	if err != nil {
-		return semver.Version{}, err
+		parts := strings.Split(baseName, "__")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid migration file name %q", name)
+		}
+		buf, err := fs.ReadFile(migrationFS, name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read dev migration file %q, error %w", name, err)
+		}
+
+		devMigrations = append(devMigrations, devMigration{
+			filename:  name,
+			version:   parts[0],
+			statement: string(buf),
+		})
 	}
-	patchVersions, err := getPatchVersions(minorVersion, upperMinorVersion, semver.Version{} /* currentVersion */, names)
-	if err != nil {
-		return semver.Version{}, err
+	sort.Slice(devMigrations, func(i, j int) bool {
+		return devMigrations[i].version < devMigrations[j].version
+	})
+	return devMigrations, nil
+}
+
+func migrationExists(statement string, histories []*dbdriver.MigrationHistory) bool {
+	for _, history := range histories {
+		if history.Statement == statement {
+			return true
+		}
 	}
-	if len(patchVersions) == 0 {
-		return semver.Version{}, fmt.Errorf("Migration path %s has no patch version", patchPathPrefix)
-	}
-	return patchVersions[len(patchVersions)-1].version, nil
+	return false
 }
 
 type patchVersion struct {
@@ -555,19 +555,20 @@ type patchVersion struct {
 }
 
 // getPatchVersions gets the patch versions above the current version in a minor version directory.
-func getPatchVersions(minorVersion semver.Version, releaseCutSchemaVersion, currentVersion semver.Version, names []string) ([]patchVersion, error) {
+func getPatchVersions(minorVersion semver.Version, currentVersion semver.Version, names []string) ([]patchVersion, error) {
 	var patchVersions []patchVersion
 	for _, name := range names {
 		baseName := filepath.Base(name)
-		patch, err := getPatchVersion(baseName)
+		parts := strings.Split(baseName, "__")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("migration filename %q should include '__'", name)
+		}
+		patch, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "migration filename prefix %q should be four digits integer such as '0000'", parts[0])
 		}
 		version := minorVersion
 		version.Patch = uint64(patch)
-		if version.GT(releaseCutSchemaVersion) {
-			continue
-		}
 		if version.LE(currentVersion) {
 			continue
 		}
@@ -589,20 +590,8 @@ func getPatchVersions(minorVersion semver.Version, releaseCutSchemaVersion, curr
 	return patchVersions, nil
 }
 
-func getPatchVersion(name string) (int64, error) {
-	parts := strings.Split(name, "__")
-	if len(parts) != 2 {
-		return 0, fmt.Errorf("migration filename %q should include '__'", name)
-	}
-	patch, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return 0, errors.Wrapf(err, "migration filename prefix %q should be four digits integer such as '0000'", parts[0])
-	}
-	return patch, nil
-}
-
-// getMinorMigrationVersions gets all the versions between currentVersion (included) and releaseCutVersion(included).
-func getMinorMigrationVersions(names []string, releaseCutSchemaVersion, currentVersion semver.Version) ([]semver.Version, []string, error) {
+// getMinorMigrationVersions gets all the released minor versions since currentVersion (included).
+func getMinorMigrationVersions(names []string, currentVersion semver.Version) ([]semver.Version, []string, error) {
 	versions, err := getMinorVersions(names)
 	if err != nil {
 		return nil, nil, err
@@ -614,11 +603,6 @@ func getMinorMigrationVersions(names []string, releaseCutSchemaVersion, currentV
 	var migrateVersions []semver.Version
 	var messages []string
 	for _, version := range versions {
-		// If the migration version is greater than the schema version this build expects, we will skip the migration.
-		if version.GT(releaseCutSchemaVersion) {
-			messages = append(messages, fmt.Sprintf("Skip migration %s; the corresponding migration version %s is bigger than maximum schema version %s.", version, version, releaseCutSchemaVersion))
-			continue
-		}
 		// If the migration version is less than to the current version, we will skip the migration since it's already applied.
 		// We should still double check the current version in case there's any patch needed.
 		if version.LT(currentVersion) {

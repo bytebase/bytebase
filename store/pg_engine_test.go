@@ -19,39 +19,34 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 	names := []string{latestDataFile, latestSchemaFile, "1.0", "1.1", "1.2", "1.3", "1.4"}
 
 	tests := []struct {
-		names                   []string
-		releaseCutSchemaVersion semver.Version
-		currentVersion          semver.Version
-		want                    []semver.Version
+		names          []string
+		currentVersion semver.Version
+		want           []semver.Version
 	}{
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.0.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []semver.Version{semver.MustParse("1.0.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.3"),
-			currentVersion:          semver.MustParse("1.3.0"),
-			want:                    []semver.Version{semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.3.0"),
+			want:           []semver.Version{semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.3"),
-			want:                    []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.0.3"),
+			want:           []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.2.2"),
-			want:                    []semver.Version{semver.MustParse("1.2.0"), semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.2.2"),
+			want:           []semver.Version{semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 	}
 
 	for _, test := range tests {
-		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.releaseCutSchemaVersion, test.currentVersion)
+		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.currentVersion)
 		require.Equal(t, test.want, migrateVersions)
 	}
 }
@@ -79,73 +74,58 @@ func TestGetMinorVersions(t *testing.T) {
 
 func TestGetPatchVersions(t *testing.T) {
 	tests := []struct {
-		names                   []string
-		minorVersion            semver.Version
-		releaseCutSchemaVersion semver.Version
-		currentVersion          semver.Version
-		want                    []patchVersion
-		errPart                 string
+		names          []string
+		minorVersion   semver.Version
+		currentVersion semver.Version
+		want           []patchVersion
+		errPart        string
 	}{
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.2.3"),
-			want:                    nil,
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.2.3"),
+			want:           nil,
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}},
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.1.0"),
+			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.1.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
-			errPart:                 "",
+			names:          []string{},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "",
 		},
 		{
-			names:                   []string{},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "",
+			names:          []string{"0000_hello.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "should include '__'",
 		},
 		{
-			names:                   []string{"0000_hello.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "should include '__'",
-		},
-		{
-			names:                   []string{"00a0__hello.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "should be four digits integer",
+			names:          []string{"00a0__hello.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "should be four digits integer",
 		},
 	}
 
 	for _, test := range tests {
-		got, err := getPatchVersions(test.minorVersion, test.releaseCutSchemaVersion, test.currentVersion, test.names)
+		got, err := getPatchVersions(test.minorVersion, test.currentVersion, test.names)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
