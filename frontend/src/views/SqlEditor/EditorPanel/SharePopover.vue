@@ -78,7 +78,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import {
   useNamespacedGetters,
@@ -87,7 +86,7 @@ import {
 } from "vuex-composition-helpers";
 import slug from "slug";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import {
   SqlEditorState,
   SheetGetters,
@@ -99,7 +98,6 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const store = useStore();
 const { t } = useI18n();
 const tabStore = useTabStore();
 
@@ -188,7 +186,7 @@ const { copy, copied } = useClipboard({
 
 const handleCopy = async () => {
   await copy();
-  store.dispatch("notification/pushNotification", {
+  pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-editor.notify.copy-share-link"),

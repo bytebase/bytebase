@@ -128,7 +128,12 @@ import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
-import { useActuatorStore, useDebugStore, useUIStateStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useDebugStore,
+  useUIStateStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -222,7 +227,7 @@ export default defineComponent({
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,
