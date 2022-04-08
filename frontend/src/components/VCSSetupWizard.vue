@@ -47,13 +47,11 @@ import {
   VCS,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthConfig,
-  redirectUrl,
   OAuthToken,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useOAuthStore } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -106,15 +104,12 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `${state.config.instanceUrl}/oauth/token`,
-            applicationId: state.config.applicationId,
-            secret: state.config.secret,
-            redirectUrl: redirectUrl(),
-          };
-          store
-            .dispatch("gitlab/exchangeToken", {
-              oAuthConfig,
+          useOAuthStore()
+            .exchangeVCSToken({
+              vcsType: state.config.type,
+              instanceUrl: state.config.instanceUrl,
+              clientId: state.config.applicationId,
+              clientSecret: state.config.secret,
               code: payload.code,
             })
             .then((token: OAuthToken) => {
