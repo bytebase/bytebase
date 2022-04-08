@@ -12,7 +12,7 @@ import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
-import { store, useRouterStore } from "../store";
+import { store } from "../store";
 import { Database, QuickActionType, Sheet } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
@@ -20,7 +20,12 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore, hasFeature } from "@/store";
+import {
+  useTabStore,
+  hasFeature,
+  useRouterStore,
+  useProjectWebhookStore,
+} from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -29,6 +34,8 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
+
+// console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -523,7 +530,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     return `${t("common.webhook")} - ${
-                      store.getters["projectWebhook/projectWebhookById"](
+                      useProjectWebhookStore().projectWebhookById(
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
@@ -797,6 +804,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
+  const projectWebhookStore = useProjectWebhookStore();
 
   const isLoggedIn = store.getters["auth/isLoggedIn"]();
 
@@ -967,8 +975,8 @@ router.beforeEach((to, from, next) => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          store
-            .dispatch("projectWebhook/fetchProjectWebhookById", {
+          projectWebhookStore
+            .fetchProjectWebhookById({
               projectId: idFromSlug(projectSlug),
               projectWebhookId: idFromSlug(projectWebhookSlug),
             })
