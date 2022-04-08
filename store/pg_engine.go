@@ -177,6 +177,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
+// We expect our own migration history to use semantic versions.
 // If there's no migration history, version will be nil.
 func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (*semver.Version, error) {
 	limit := 1
@@ -457,14 +458,14 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 
 	for _, m := range migrations {
 		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
-		// We don't use semantic versioning for dev migrations because they are not versioned yet.
+		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
 				Version:               cutoffSchemaVersion.String(),
-				SemanticVersionSuffix: fmt.Sprintf("dev-%s", m.version),
+				SemanticVersionSuffix: fmt.Sprintf("dev%s", m.version),
 				Namespace:             databaseName,
 				Database:              databaseName,
 				Environment:           "", /* unused in execute migration */
