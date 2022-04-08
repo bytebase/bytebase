@@ -236,7 +236,6 @@ import {
   Project,
   DatabaseLabel,
   CreateDatabaseContext,
-  Environment,
   UNKNOWN_ID,
 } from "../types";
 import {
@@ -245,7 +244,7 @@ import {
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature } from "@/store";
+import { hasFeature, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -500,9 +499,7 @@ export default defineComponent({
       const key = "bb.environment";
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
-        const env = store.getters["environment/environmentById"](
-          state.environmentId
-        ) as Environment;
+        const env = useEnvironmentStore().getEnvironmentById(envId);
         if (index >= 0) labelList[index].value = env.name;
         else labelList.unshift({ key, value: env.name });
       } else {

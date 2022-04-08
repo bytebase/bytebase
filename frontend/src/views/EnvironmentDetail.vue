@@ -21,7 +21,6 @@
 
 <script lang="ts">
 import { defineComponent, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -36,7 +35,7 @@ import {
   PolicyBackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
-import { hasFeature, usePolicyStore } from "@/store";
+import { hasFeature, useEnvironmentStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   environment: Environment;
@@ -62,11 +61,11 @@ export default defineComponent({
   },
   emits: ["archive"],
   setup(props, { emit }) {
-    const store = useStore();
+    const environmentStore = useEnvironmentStore();
     const policyStore = usePolicyStore();
 
     const state = reactive<LocalState>({
-      environment: store.getters["environment/environmentById"](
+      environment: environmentStore.getEnvironmentById(
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
@@ -99,8 +98,8 @@ export default defineComponent({
     };
 
     const doUpdate = (environmentPatch: EnvironmentPatch) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: idFromSlug(props.environmentSlug),
           environmentPatch,
         })
@@ -110,8 +109,8 @@ export default defineComponent({
     };
 
     const doArchive = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "ARCHIVED",
@@ -124,8 +123,8 @@ export default defineComponent({
     };
 
     const doRestore = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "NORMAL",
