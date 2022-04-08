@@ -355,12 +355,12 @@ func (m *Main) newDB() (*store.DB, error) {
 }
 
 func (m *Main) newExternalDB() (*store.DB, error) {
-	m.l.Info("Establishing external PostgreSQL connection...")
-
 	u, err := url.Parse(pgURL)
 	if err != nil {
 		return nil, err
 	}
+
+	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
