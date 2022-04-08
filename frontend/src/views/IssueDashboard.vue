@@ -46,10 +46,18 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { Environment, Issue, PrincipalId, ProjectId } from "../types";
-import { reactive, ref, computed, onMounted, watchEffect } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  onMounted,
+  watchEffect,
+  defineComponent,
+} from "vue";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { useEnvironmentStore } from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -62,7 +70,7 @@ interface LocalState {
   selectedProjectId?: ProjectId;
 }
 
-export default {
+export default defineComponent({
   name: "IssueDashboard",
   components: { EnvironmentTabFilter, IssueTable, MemberSelect },
   setup() {
@@ -96,8 +104,8 @@ export default {
       searchText: "",
       selectedPrincipalId: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       selectedProjectId: router.currentRoute.value.query.project
@@ -241,5 +249,5 @@ export default {
       goProject,
     };
   },
-};
+});
 </script>

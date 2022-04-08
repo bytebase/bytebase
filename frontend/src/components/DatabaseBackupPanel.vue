@@ -141,7 +141,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import {
   Backup,
   BackupCreate,
@@ -158,7 +157,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useBackupStore } from "@/store";
+import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -191,9 +190,9 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
-    const { t } = useI18n();
     const backupStore = useBackupStore();
+    const policyStore = usePolicyStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       showCreateBackupModal: false,
@@ -217,7 +216,7 @@ export default defineComponent({
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
-      store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore.fetchPolicyByEnvironmentAndType({
         environmentId: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
@@ -296,11 +295,12 @@ export default defineComponent({
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
+      const policy = policyStore.getPolicyByEnvironmentIdAndType(
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
-      return (policy.payload as PolicyBackupPlanPolicyPayload).schedule;
+      const payload = policy?.payload;
+      return (payload as PolicyBackupPlanPolicyPayload | undefined)?.schedule;
     });
 
     const allowDisableAutoBackup = computed(() => {

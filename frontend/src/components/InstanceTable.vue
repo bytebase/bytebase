@@ -39,21 +39,21 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
-import { useStore } from "vuex";
+import { reactive, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { urlfy, instanceSlug, environmentName } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 import { useI18n } from "vue-i18n";
+import { useEnvironmentStore } from "@/store";
 
 interface LocalState {
   columnList: BBTableColumn[];
   dataSource: any[];
 }
 
-export default {
+export default defineComponent({
   name: "InstanceTable",
   components: { InstanceEngineIcon },
   props: {
@@ -63,7 +63,6 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -98,7 +97,8 @@ export default {
     };
 
     const environmentNameFromId = function (id: EnvironmentId) {
-      return environmentName(store.getters["environment/environmentById"](id));
+      const env = useEnvironmentStore().getEnvironmentById(id);
+      return environmentName(env);
     };
 
     const instanceLink = (instance: Instance): string => {
@@ -120,5 +120,5 @@ export default {
       instanceLink,
     };
   },
-};
+});
 </script>

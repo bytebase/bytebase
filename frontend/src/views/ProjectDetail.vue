@@ -59,6 +59,7 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
+import { useEnvironmentList } from "@/store";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -97,9 +98,7 @@ export default defineComponent({
       );
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
       store.dispatch("database/fetchDatabaseListByProjectId", project.value.id);

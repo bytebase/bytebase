@@ -13,10 +13,10 @@ import (
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
 	demoDataDir := ""
 	if isDemo {
-		demoDataDir = fmt.Sprintf("demo/%s", common.ReleaseModeRelease)
+		demoDataDir = fmt.Sprintf("demo/%s", common.ReleaseModeProd)
 	}
 	return Profile{
-		mode:                 common.ReleaseModeRelease,
+		mode:                 common.ReleaseModeProd,
 		port:                 port,
 		datastorePort:        datastorePort,
 		pgUser:               "bb",
