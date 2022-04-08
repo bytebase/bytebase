@@ -186,7 +186,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
 func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
 	// Convert verion to stored version.
-	storedVersion, err := toStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
+	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
 	}
@@ -194,8 +194,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
-		Source:   &m.Source,
-		Version:  &m.Version,
+		Version:  &storedVersion,
 	}); err != nil {
 		return -1, fmt.Errorf("Check duplicate version error: %q", err)
 	} else if len(list) > 0 {
@@ -460,10 +459,10 @@ func formatError(err error) error {
 // NonSemanticPrefix is the prefix for non-semantic version
 const NonSemanticPrefix = "0000.0000.0000-"
 
-// toStoredVersion converts semantic or non-semantic version to stored version format.
+// ToStoredVersion converts semantic or non-semantic version to stored version format.
 // Non-semantic version will have additional "0000.0000.0000-" prefix.
 // Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
-func toStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
+func ToStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
 	if !useSemanticVersion {
 		return fmt.Sprintf("%s%s", NonSemanticPrefix, version), nil
 	}
