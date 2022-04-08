@@ -362,7 +362,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				// For example,
 				//   before - release: 1.2; dev: 123.sql, something else.
 				//   after - release 1.3 with 123.sql; dev: something else.
-				// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-apply and most likely to fail.
+				// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-applied and most likely to fail.
 				if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
 					l.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
 					continue
