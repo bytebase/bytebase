@@ -289,23 +289,19 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
+	var pgInstance *postgres.Instance
 	if useEmbeddedDB() {
 		logger.Info("Preparing embedded PostgreSQL instance...")
-		pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
+		var err error
+		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
 			return nil, err
 		}
-
-		return &Main{
-			profile: &activeProfile,
-			l:       logger,
-			pg:      pgInstance,
-		}, nil
 	}
-
 	return &Main{
 		profile: &activeProfile,
 		l:       logger,
+		pg:      pgInstance,
 	}, nil
 }
 
