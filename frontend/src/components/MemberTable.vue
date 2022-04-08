@@ -111,7 +111,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
@@ -149,7 +148,6 @@ export default defineComponent({
   },
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
     const memberStore = useMemberStore();
 
     const currentUser = useCurrentUser();

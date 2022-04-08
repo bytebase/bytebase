@@ -173,7 +173,6 @@ import {
   ref,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
@@ -200,7 +199,6 @@ export default defineComponent({
   setup(props) {
     const editNameTextField = ref();
 
-    const store = useStore();
     const principalStore = usePrincipalStore();
 
     const state = reactive<LocalState>({
