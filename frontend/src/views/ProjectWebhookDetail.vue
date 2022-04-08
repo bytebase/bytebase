@@ -49,14 +49,15 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, defineComponent } from "vue";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookDetail",
   components: { ProjectWebhookForm },
   props: {
@@ -98,7 +99,7 @@ export default {
         })
         .then((testResult: ProjectWebhookTestResult) => {
           if (testResult.error) {
-            store.dispatch("notification/pushNotification", {
+            pushNotification({
               module: "bytebase",
               style: "CRITICAL",
               title: t("project.webhook.fail-tested-title"),
@@ -106,7 +107,7 @@ export default {
               manualHide: true,
             });
           } else {
-            store.dispatch("notification/pushNotification", {
+            pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: t("project.webhook.success-tested-prompt"),
@@ -121,5 +122,5 @@ export default {
       testWebhook,
     };
   },
-};
+});
 </script>

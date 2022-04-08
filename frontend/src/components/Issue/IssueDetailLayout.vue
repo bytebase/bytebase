@@ -274,7 +274,7 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { isEmpty } from "lodash-es";
+import { featureToRef, useIssueSubscriberStore } from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -309,6 +309,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
+    const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
@@ -444,14 +445,14 @@ export default defineComponent({
     };
 
     const addSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/createSubscriber", {
+      issueSubscriberStore.createSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
     };
 
     const removeSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/deleteSubscriber", {
+      issueSubscriberStore.deleteSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
@@ -938,11 +939,9 @@ export default defineComponent({
       document.getElementById("issue-detail-top")!.scrollIntoView();
     });
 
-    const hasBackwardCompatibilityFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.backward-compatibility"
-      );
-    });
+    const hasBackwardCompatibilityFeature = featureToRef(
+      "bb.feature.backward-compatibility"
+    );
 
     const supportBackwardCompatibilityFeature = computed((): boolean => {
       const engine = database.value?.instance.engine;

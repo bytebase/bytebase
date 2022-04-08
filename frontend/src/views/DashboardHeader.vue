@@ -196,9 +196,11 @@ import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { InboxSummary, UNKNOWN_ID } from "../types";
-import { Setting, brandingLogoSettingName } from "../types/setting";
+import { brandingLogoSettingName } from "../types/setting";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
+import { useSettingStore, useSubscriptionStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -210,6 +212,8 @@ export default defineComponent({
   setup() {
     const { t, availableLocales } = useI18n();
     const store = useStore();
+    const settingStore = useSettingStore();
+    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
     const { setLocale, toggleLocales } = useLanguage();
 
@@ -219,9 +223,7 @@ export default defineComponent({
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const currentPlan = computed(() =>
-      store.getters["subscription/currentPlan"]()
-    );
+    const { currentPlan } = storeToRefs(subscriptionStore);
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -232,13 +234,15 @@ export default defineComponent({
     });
 
     const prepareBranding = () => {
-      store.dispatch("setting/fetchSetting");
+      settingStore.fetchSetting();
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting: Setting = store.getters["setting/settingByName"](brandingLogoSettingName);
+      const brandingLogoSetting = settingStore.getSettingByName(
+        brandingLogoSettingName
+      );
       return brandingLogoSetting?.value;
-    })
+    });
 
     watchEffect(prepareBranding);
 
@@ -286,14 +290,11 @@ export default defineComponent({
     };
 
     const switchToFree = () => {
-      store.dispatch("subscription/patchSubscription", "");
+      subscriptionStore.patchSubscription("");
     };
 
     const switchToTeam = () => {
-      store.dispatch(
-        "subscription/patchSubscription",
-        import.meta.env.BB_DEV_LICENSE
-      );
+      subscriptionStore.patchSubscription(import.meta.env.BB_DEV_LICENSE);
     };
 
     const kbarActions = computed(() => [

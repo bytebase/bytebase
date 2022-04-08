@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
@@ -148,8 +147,6 @@ type Profile struct {
 	demoDataDir string
 	// backupRunnerInterval is the interval for backup runner.
 	backupRunnerInterval time.Duration
-	// schemaVersion is the version of schema applied to.
-	schemaVersion semver.Version
 }
 
 // retrieved via the SettingService upon startup
@@ -347,7 +344,7 @@ func (m *Main) Run(ctx context.Context) error {
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.schemaVersion, m.profile.mode)
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -373,8 +370,9 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
 	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
 	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.BackupService = store.NewBackupService(m.l, db, storeInstance)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance, s.BackupService)
+	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
+	// TODO(dragonly): remove this hack
+	storeInstance.DatabaseService = s.DatabaseService
 	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)

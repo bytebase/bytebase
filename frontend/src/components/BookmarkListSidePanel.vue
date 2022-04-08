@@ -14,40 +14,39 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed, watchEffect, defineComponent } from "vue";
 import { useStore } from "vuex";
 import { UNKNOWN_ID } from "../types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useBookmarkStore } from "@/store";
 
-export default {
+export default defineComponent({
   name: "BookmarkListSidePanel",
   setup() {
     const { t } = useI18n();
     const store = useStore();
     const router = useRouter();
+    const bookmarkStore = useBookmarkStore();
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
     const prepareBookmarkList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch(
-          "bookmark/fetchBookmarkListByUser",
-          currentUser.value.id
-        );
+        bookmarkStore.fetchBookmarkListByUser(currentUser.value.id);
       }
     };
 
     watchEffect(prepareBookmarkList);
 
     const bookmarkList = computed(() =>
-      store.getters["bookmark/bookmarkListByUser"](currentUser.value.id)
+      bookmarkStore.bookmarkListByUser(currentUser.value.id)
     );
 
     const deleteIndex = (index: number) => {
-      store.dispatch("bookmark/deleteBookmark", bookmarkList.value[index]);
+      bookmarkStore.deleteBookmark(bookmarkList.value[index]);
     };
 
     const kbarActions = computed((): Action[] => {
@@ -72,5 +71,5 @@ export default {
       deleteIndex,
     };
   },
-};
+});
 </script>

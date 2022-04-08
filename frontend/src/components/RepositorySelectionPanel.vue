@@ -47,6 +47,7 @@ import {
   OAuthToken,
   ProjectRepositoryConfig,
 } from "../types";
+import { useOAuthStore } from "@/store";
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
@@ -73,8 +74,8 @@ onMounted(() => {
 
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    store
-      .dispatch("oauth/exchangeVCSToken", {
+    useOAuthStore()
+      .exchangeVCSToken({
         vcsId: props.config.vcs.id,
         code: props.config.code,
       })

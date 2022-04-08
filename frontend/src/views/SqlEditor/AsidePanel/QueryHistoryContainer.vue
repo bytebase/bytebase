@@ -64,14 +64,13 @@ import { escape } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
-import { useStore } from "vuex";
 import {
   useNamespacedActions,
   useNamespacedState,
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store";
+import { pushNotification, useTabStore } from "@/store";
 import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
@@ -81,7 +80,6 @@ interface State {
 }
 
 const { t } = useI18n();
-const store = useStore();
 const dialog = useDialog();
 const tabStore = useTabStore();
 
@@ -186,7 +184,7 @@ const handleActionBtnClick = (key: string, history: QueryHistory) => {
     });
   } else if (key === "copy") {
     copyTextToClipboard(history.statement);
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("sql-editor.notify.copy-code-succeed"),

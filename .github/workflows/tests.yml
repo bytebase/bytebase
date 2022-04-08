@@ -17,7 +17,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.44
+          version: v1.45.2
   go-tidy:
     runs-on: ubuntu-latest
     steps:

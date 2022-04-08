@@ -119,7 +119,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useStore } from "vuex";
 import ProjectRoleSelect from "../components/ProjectRoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
@@ -134,11 +134,12 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
+import { featureToRef, pushNotification } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "ProjectMemberTable",
   components: { ProjectRoleSelect, PrincipalAvatar },
   props: {
@@ -158,9 +159,7 @@ export default {
 
     const currentUser = computed(() => store.getters["auth/currentUser"]());
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({});
 
@@ -297,7 +296,7 @@ export default {
 
     const deleteRole = (member: ProjectMember) => {
       store.dispatch("project/deleteMember", member).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("project.settings.success-member-deleted-prompt", {
@@ -319,5 +318,5 @@ export default {
       deleteRole,
     };
   },
-};
+});
 </script>

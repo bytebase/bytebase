@@ -132,7 +132,7 @@ import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
-import { useUIStateStore } from "@/store";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -197,7 +197,7 @@ export default defineComponent({
       }
       if (
         state.project.tenantMode == "TENANT" &&
-        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+        !hasFeature("bb.feature.multi-tenancy")
       ) {
         state.showFeatureModal = true;
         return;
@@ -211,7 +211,7 @@ export default defineComponent({
             newState: true,
           });
 
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.create-modal.success-prompt", {

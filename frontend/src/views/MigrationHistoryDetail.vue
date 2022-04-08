@@ -221,6 +221,7 @@ import {
   VCSPushEvent,
 } from "../types";
 import { BBSelect } from "../bbkit";
+import { pushNotification } from "@/store";
 
 type LeftSchemaSelected =
   | "previousHistorySchema" // schema after last migration
@@ -328,7 +329,7 @@ export default defineComponent({
 
     const copyStatement = () => {
       toClipboard(migrationHistory.value.statement).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `Statement copied to clipboard.`,
@@ -338,7 +339,7 @@ export default defineComponent({
 
     const copySchema = () => {
       toClipboard(migrationHistory.value.schema).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `Schema copied to clipboard.`,

@@ -63,7 +63,7 @@ import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { useUIStateStore } from "@/store";
+import { hasFeature, pushNotification, useUIStateStore } from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -121,9 +121,7 @@ export default defineComponent({
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
-        allowDeveloper: !store.getters["subscription/feature"](
-          "bb.feature.dba-workflow"
-        ),
+        allowDeveloper: !hasFeature("bb.feature.dba-workflow"),
         done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
       },
       {
@@ -184,11 +182,11 @@ export default defineComponent({
           newState: true,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "INFO",
-            title: computed(() => t("quick-start.notice.title")),
-            description: computed(() => t("quick-start.notice.desc")),
+            title: t("quick-start.notice.title"),
+            description: t("quick-start.notice.desc"),
             manualHide: true,
           });
         });

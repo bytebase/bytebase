@@ -156,7 +156,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { Subscription } from "../types";
+import { featureToRef, pushNotification, useSubscriptionStore } from "@/store";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -179,6 +179,7 @@ const props = defineProps({
 });
 
 const store = useStore();
+const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = computed(() => store.getters["auth/currentUser"]());
@@ -254,9 +255,7 @@ const attentionActionText = computed((): string => {
   return "";
 });
 
-const hasDataSourceFeature = computed(() =>
-  store.getters["subscription/feature"]("bb.feature.data-source")
-);
+const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
 const databaseList = computed<Database[]>(() => {
   const list: Database[] = store.getters["database/databaseListByInstanceId"](
@@ -319,7 +318,7 @@ const doArchive = () => {
       },
     })
     .then((updatedInstance) => {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -331,8 +330,7 @@ const doArchive = () => {
 };
 
 const doRestore = () => {
-  const subscription: Subscription | undefined =
-    store.getters["subscription/subscription"]();
+  const { subscription } = subscriptionStore;
   const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
   if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
     state.showFeatureModal = true;
@@ -346,7 +344,7 @@ const doRestore = () => {
       },
     })
     .then((updatedInstance) => {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -364,7 +362,7 @@ const doCreateMigrationSchema = () => {
     .then((resultSet: SqlResultSet) => {
       state.creatingMigrationSchema = false;
       if (resultSet.error) {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t(
@@ -375,7 +373,7 @@ const doCreateMigrationSchema = () => {
         });
       } else {
         checkMigrationSetup();
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t(
@@ -395,7 +393,7 @@ const syncSchema = () => {
     .then((resultSet: SqlResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t(
@@ -405,7 +403,7 @@ const syncSchema = () => {
           description: resultSet.error,
         });
       } else {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t(

@@ -37,16 +37,17 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watchEffect } from "vue";
+import { reactive, computed, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "../components/VCSCard.vue";
 import VCSSetupWizard from "../components/VCSSetupWizard.vue";
 import { useStore } from "vuex";
+import { featureToRef } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceVCS",
   components: {
     VCSCard,
@@ -73,9 +74,7 @@ export default {
       });
     };
 
-    const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
-    });
+    const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
       state,
@@ -84,5 +83,5 @@ export default {
       has3rdPartyLoginFeature,
     };
   },
-};
+});
 </script>
