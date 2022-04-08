@@ -128,7 +128,6 @@ import {
 import { useStore } from "vuex";
 import {
   Project,
-  Environment,
   Database,
   AvailableLabel,
   DeploymentConfig,
@@ -143,7 +142,13 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
-import { pushNotification, useDeploymentStore, useLabelStore } from "@/store";
+import {
+  pushNotification,
+  useDeploymentStore,
+  useEnvironmentList,
+  useEnvironmentStore,
+  useLabelStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 type LocalState = {
@@ -191,14 +196,12 @@ export default defineComponent({
     });
 
     const prepareList = () => {
-      store.dispatch("environment/fetchEnvironmentList");
+      useEnvironmentStore().fetchEnvironmentList();
       labelStore.fetchLabelList();
       store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
     };
 
-    const environmentList = computed(
-      () => store.getters["environment/environmentList"]() as Environment[]
-    );
+    const environmentList = useEnvironmentList();
 
     const { labelList } = storeToRefs(labelStore);
 
