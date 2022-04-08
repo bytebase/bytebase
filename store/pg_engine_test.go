@@ -206,13 +206,8 @@ func TestMigrationCompatibility(t *testing.T) {
 		Database: &databaseName,
 	})
 	require.NoError(t, err)
-	var wantLen int
-	if len(devMigrations) > 0 {
-		wantLen = len(devMigrations) + 2 // one for initial migration, the other for baseline.
-	} else {
-		wantLen = 1
-	}
-	require.Len(t, histories, wantLen)
+	// The extra one is for the initial schema setup.
+	require.Len(t, histories, len(devMigrations)+1)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
