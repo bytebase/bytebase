@@ -48,7 +48,11 @@ import { Environment, Instance, Project, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  useEnvironmentStore,
+} from "@/store";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -86,7 +90,7 @@ export default defineComponent({
       if (isDBAOrOwner(currentUser.value.role)) {
         store.dispatch("instance/fetchInstanceList", ["ARCHIVED"]);
 
-        store.dispatch("environment/fetchEnvironmentList", ["ARCHIVED"]);
+        useEnvironmentStore().fetchEnvironmentList(["ARCHIVED"]);
       }
     };
 
@@ -102,9 +106,7 @@ export default defineComponent({
       return store.getters["instance/instanceList"](["ARCHIVED"]);
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["ARCHIVED"]);
-    });
+    const environmentList = useEnvironmentList(["ARCHIVED"]);
 
     const tabItemList = computed((): BBTabFilterItem[] => {
       return isDBAOrOwner(currentUser.value.role)

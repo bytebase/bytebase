@@ -77,7 +77,6 @@
 
 <script lang="ts">
 import { onMounted, computed, reactive, watch, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
@@ -98,6 +97,8 @@ import {
   useUIStateStore,
   hasFeature,
   usePolicyStore,
+  useEnvironmentStore,
+  useEnvironmentList,
 } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -137,7 +138,7 @@ export default defineComponent({
   },
   props: {},
   setup() {
-    const store = useStore();
+    const environmentStore = useEnvironmentStore();
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
     const router = useRouter();
@@ -155,8 +156,8 @@ export default defineComponent({
         if (router.currentRoute.value.hash) {
           for (let i = 0; i < environmentList.value.length; i++) {
             if (
-              environmentList.value[i].id ==
-              router.currentRoute.value.hash.slice(1)
+              environmentList.value[i].id ===
+              parseInt(router.currentRoute.value.hash.slice(1), 10)
             ) {
               selectEnvironment(i);
               break;
@@ -206,20 +207,17 @@ export default defineComponent({
       }
     );
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
-    });
+    const environmentList = useEnvironmentList();
 
     const tabItemList = computed((): BBTabItem[] => {
       if (environmentList.value) {
         const list = state.reorder
           ? state.reorderedEnvironmentList
           : environmentList.value;
-        return list.map((item: Environment, index: number) => {
-          return {
-            title: (index + 1).toString() + ". " + item.name,
-            id: item.id,
-          };
+        return list.map((item: Environment, index: number): BBTabItem => {
+          const title = `${index + 1}. ${item.name}`;
+          const id = item.id.toString();
+          return { title, id };
         });
       }
       return [];
@@ -252,8 +250,8 @@ export default defineComponent({
         return;
       }
 
-      store
-        .dispatch("environment/createEnvironment", newEnvironment)
+      environmentStore
+        .createEnvironment(newEnvironment)
         .then((environment: Environment) => {
           Promise.all([
             policyStore.upsertPolicyByEnvironmentAndType({
@@ -312,11 +310,8 @@ export default defineComponent({
     };
 
     const doReorder = () => {
-      store
-        .dispatch(
-          "environment/reorderEnvironmentList",
-          state.reorderedEnvironmentList
-        )
+      environmentStore
+        .reorderEnvironmentList(state.reorderedEnvironmentList)
         .then(() => {
           stopReorder();
         });

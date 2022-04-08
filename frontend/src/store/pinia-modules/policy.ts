@@ -9,7 +9,7 @@ import {
 } from "@/types";
 import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
-import { store } from "../index";
+import { useEnvironmentStore } from "./environment";
 import { defineStore } from "pinia";
 
 function convert(
@@ -22,13 +22,14 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (policy.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = store.getters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
   }
 

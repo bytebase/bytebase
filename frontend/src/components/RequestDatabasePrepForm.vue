@@ -143,7 +143,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   environmentId: EnvironmentId;
@@ -222,7 +222,7 @@ export default defineComponent({
     const request = () => {
       emit("dismiss");
 
-      const environment = store.getters["environment/environmentById"](
+      const environment = useEnvironmentStore().getEnvironmentById(
         state.environmentId
       );
       if (state.create == "ON") {

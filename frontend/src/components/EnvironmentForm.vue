@@ -213,7 +213,7 @@ import {
   Policy,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useEnvironmentList } from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -273,9 +273,7 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
-    });
+    const environmentList = useEnvironmentList();
 
     const allowArchive = computed(() => {
       return allowEdit.value && environmentList.value.length > 1;

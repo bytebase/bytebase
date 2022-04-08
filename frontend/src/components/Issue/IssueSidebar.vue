@@ -314,7 +314,12 @@ import {
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { hasFeature, useCurrentUser, useLabelStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useEnvironmentStore,
+  useLabelStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
 
@@ -433,9 +438,7 @@ export default defineComponent({
     const environment = computed((): Environment => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
-        return store.getters["environment/environmentById"](
-          stage.environmentId
-        );
+        return useEnvironmentStore().getEnvironmentById(stage.environmentId);
       }
       const stage = props.selectedStage as Stage;
       return stage.environment;

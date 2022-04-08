@@ -57,7 +57,7 @@ import {
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -104,8 +104,8 @@ export default defineComponent({
       searchText: "",
       selectedPrincipalId: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       selectedProjectId: router.currentRoute.value.query.project

@@ -111,7 +111,7 @@ import {
   DatabaseLabel,
 } from "../types";
 import { sortDatabaseList } from "../utils";
-import { pushNotification, useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser, useEnvironmentList } from "@/store";
 
 type TransferSource = "DEFAULT" | "OTHER";
 
@@ -152,9 +152,7 @@ export default defineComponent({
 
     watchEffect(prepareDatabaseListForDefaultProject);
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const databaseList = computed(() => {
       var list;

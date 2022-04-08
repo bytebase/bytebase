@@ -55,7 +55,7 @@ import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import { activeEnvironment, activeTask } from "../utils";
 import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
 
 // Show at most 10 recently closed issues
 const MAX_CLOSED_ISSUE_COUNT = 10;
@@ -88,8 +88,8 @@ export default defineComponent({
       closedList: [],
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
     });
@@ -122,7 +122,7 @@ export default defineComponent({
                 issue.subscriberList &&
                 issue.subscriberList
                   .map((subscriber) => subscriber.id)
-                  .includes(currentUser.value)
+                  .includes(currentUser.value.id)
               ) {
                 state.subscribeList.push(issue);
               }

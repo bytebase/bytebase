@@ -15,10 +15,11 @@ import { t } from "../plugins/i18n";
 import {
   store,
   useAuthStore,
+  useEnvironmentStore,
   usePrincipalStore,
   useRouterStore,
 } from "../store";
-import { Database, QuickActionType, Sheet } from "../types";
+import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -402,7 +403,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return store.getters["environment/environmentById"](
+                return useEnvironmentStore().getEnvironmentById(
                   idFromSlug(slug)
                 ).name;
               },
@@ -803,6 +804,7 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const authStore = useAuthStore();
+  const environmentStore = useEnvironmentStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
 
@@ -956,9 +958,12 @@ router.beforeEach((to, from, next) => {
   }
 
   if (environmentSlug) {
-    if (
-      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
-    ) {
+    const env = environmentStore.getEnvironmentById(
+      idFromSlug(environmentSlug)
+    );
+    // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
+    // so we need to check the id here
+    if (env && env.id !== UNKNOWN_ID) {
       next();
       return;
     }

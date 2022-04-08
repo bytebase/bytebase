@@ -14,6 +14,7 @@ import {
 import { getIntCookie } from "@/utils";
 import { defineStore, storeToRefs } from "pinia";
 import { usePrincipalStore } from "./principal";
+import { Ref } from "vue";
 
 function convert(user: ResourceObject): Principal {
   return usePrincipalStore().principalById(parseInt(user.id, 10));
@@ -127,6 +128,6 @@ export const useAuthStore = defineStore("auth", {
   },
 });
 
-export const useCurrentUser = () => {
+export const useCurrentUser = (): Ref<Principal> => {
   return storeToRefs(useAuthStore()).currentUser;
 };
