@@ -51,7 +51,7 @@ func NewConfig(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*Config,
 	l.Info("load public pem", zap.String("file", filename))
 
 	storefile := "license"
-	if mode != "release" {
+	if mode != common.ReleaseModeProd {
 		storefile = fmt.Sprintf("license_%s", mode)
 	}
 
