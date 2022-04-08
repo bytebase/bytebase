@@ -18,7 +18,7 @@ Dev
 
 Demo Data
 
-- When the binary starts in Demo mode, we will seed demo data to provide an overview of the product.
+- When the binary starts in Demo mode, we will seed demo data to provide a better onboarding experience.
 - [Dev demo data](https://github.com/bytebase/bytebase/tree/main/store/demo/dev).
 - [Prod demo data](https://github.com/bytebase/bytebase/tree/main/store/demo/prod).
 
