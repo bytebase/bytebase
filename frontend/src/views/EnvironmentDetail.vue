@@ -32,9 +32,11 @@ import {
   PolicyType,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
+  PipelineApporvalPolicyPayload,
+  PolicyBackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
-import { hasFeature } from "@/store";
+import { hasFeature, usePolicyStore } from "@/store";
 
 interface LocalState {
   environment: Environment;
@@ -61,6 +63,7 @@ export default defineComponent({
   emits: ["archive"],
   setup(props, { emit }) {
     const store = useStore();
+    const policyStore = usePolicyStore();
 
     const state = reactive<LocalState>({
       environment: store.getters["environment/environmentById"](
@@ -70,8 +73,8 @@ export default defineComponent({
     });
 
     const preparePolicy = () => {
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.pipeline-approval",
         })
@@ -79,8 +82,8 @@ export default defineComponent({
           state.approvalPolicy = policy;
         });
 
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.backup-plan",
         })
@@ -140,7 +143,8 @@ export default defineComponent({
     ) => {
       if (
         type === "bb.policy.pipeline-approval" &&
-        policy.payload.value !== DefaultApporvalPolicy &&
+        (policy.payload as PipelineApporvalPolicyPayload).value !==
+          DefaultApporvalPolicy &&
         !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
@@ -148,14 +152,15 @@ export default defineComponent({
       }
       if (
         type === "bb.policy.backup-plan" &&
-        policy.payload.schedule !== DefaultSchedulePolicy &&
+        (policy.payload as PolicyBackupPlanPolicyPayload).schedule !==
+          DefaultSchedulePolicy &&
         !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
-      store
-        .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+      policyStore
+        .upsertPolicyByEnvironmentAndType({
           environmentId,
           type: type,
           policyUpsert: {
