@@ -290,7 +290,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Println("-----Config END-------")
 
 	if useEmbeddedDB() {
-		logger.Info("Detecting and initializing local PostgreSQL instance...")
+		logger.Info("Preparing embedded PostgreSQL instance...")
 		pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
 			return nil, err
@@ -355,7 +355,7 @@ func (m *Main) newDB() (*store.DB, error) {
 }
 
 func (m *Main) newExternalDB() (*store.DB, error) {
-	m.l.Info("Initializing external PostgreSQL connection...", zap.String("pgURL", pgURL))
+	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", pgURL))
 
 	u, err := url.Parse(pgURL)
 	if err != nil {
