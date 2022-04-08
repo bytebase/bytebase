@@ -34,7 +34,7 @@ type OAuthToken struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"`
 	CreatedAt    int64  `json:"created_at"`
-	// ExpiresTs is a derivative from ExpresIn and CreatedAt.
+	// ExpiresTs is a derivative from ExpiresIn and CreatedAt.
 	// ExpiresTs = ExpiresIn == 0 ? 0 : CreatedAt + ExpiresIn
 	ExpiresTs int64 `json:"expires_ts"`
 }

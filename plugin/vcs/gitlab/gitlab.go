@@ -234,7 +234,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange Oauth Token, code %v, error: %v", resp.StatusCode, err)
+		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v", err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
