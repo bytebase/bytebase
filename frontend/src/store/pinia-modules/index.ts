@@ -1,4 +1,5 @@
 export * from "./actuator";
+export * from "./anomaly";
 export * from "./backup";
 export * from "./bookmark";
 export * from "./command";
