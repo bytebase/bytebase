@@ -19,39 +19,34 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 	names := []string{latestDataFile, latestSchemaFile, "1.0", "1.1", "1.2", "1.3", "1.4"}
 
 	tests := []struct {
-		names                   []string
-		releaseCutSchemaVersion semver.Version
-		currentVersion          semver.Version
-		want                    []semver.Version
+		names          []string
+		currentVersion semver.Version
+		want           []semver.Version
 	}{
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.0.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []semver.Version{semver.MustParse("1.0.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.3"),
-			currentVersion:          semver.MustParse("1.3.0"),
-			want:                    []semver.Version{semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.3.0"),
+			want:           []semver.Version{semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.3"),
-			want:                    []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.0.3"),
+			want:           []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
-			names:                   names,
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.2.2"),
-			want:                    []semver.Version{semver.MustParse("1.2.0"), semver.MustParse("1.3.0")},
+			names:          names,
+			currentVersion: semver.MustParse("1.2.2"),
+			want:           []semver.Version{semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 	}
 
 	for _, test := range tests {
-		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.releaseCutSchemaVersion, test.currentVersion)
+		migrateVersions, _, _ := getMinorMigrationVersions(test.names, test.currentVersion)
 		require.Equal(t, test.want, migrateVersions)
 	}
 }
@@ -79,73 +74,58 @@ func TestGetMinorVersions(t *testing.T) {
 
 func TestGetPatchVersions(t *testing.T) {
 	tests := []struct {
-		names                   []string
-		minorVersion            semver.Version
-		releaseCutSchemaVersion semver.Version
-		currentVersion          semver.Version
-		want                    []patchVersion
-		errPart                 string
+		names          []string
+		minorVersion   semver.Version
+		currentVersion semver.Version
+		want           []patchVersion
+		errPart        string
 	}{
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.2.3"),
-			want:                    nil,
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.2.3"),
+			want:           nil,
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}, {semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.0"), "0000__hello.sql"}},
-			errPart:                 "",
+			names:          []string{"0000__hello.sql", "0001__world.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.1.0"),
+			want:           []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
+			errPart:        "",
 		},
 		{
-			names:                   []string{"0000__hello.sql", "0001__world.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.1.0"),
-			want:                    []patchVersion{{semver.MustParse("1.1.1"), "0001__world.sql"}},
-			errPart:                 "",
+			names:          []string{},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "",
 		},
 		{
-			names:                   []string{},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.3.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "",
+			names:          []string{"0000_hello.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "should include '__'",
 		},
 		{
-			names:                   []string{"0000_hello.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "should include '__'",
-		},
-		{
-			names:                   []string{"00a0__hello.sql"},
-			minorVersion:            semver.MustParse("1.1.0"),
-			releaseCutSchemaVersion: semver.MustParse("1.1.0"),
-			currentVersion:          semver.MustParse("1.0.0"),
-			want:                    nil,
-			errPart:                 "should be four digits integer",
+			names:          []string{"00a0__hello.sql"},
+			minorVersion:   semver.MustParse("1.1.0"),
+			currentVersion: semver.MustParse("1.0.0"),
+			want:           nil,
+			errPart:        "should be four digits integer",
 		},
 	}
 
 	for _, test := range tests {
-		got, err := getPatchVersions(test.minorVersion, test.releaseCutSchemaVersion, test.currentVersion, test.names)
+		got, err := getPatchVersions(test.minorVersion, test.currentVersion, test.names)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
@@ -189,37 +169,49 @@ func TestMigrationCompatibility(t *testing.T) {
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
 
-	// Create a database with dev latest schema.
-	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
+	releaseVersion, err := getReleaseCutoffVersion()
 	require.NoError(t, err)
 
-	devDatabaseName := "dev"
+	// Create a database with release latest schema.
+	databaseName := "hidb"
 	// Passing curVers = nil will create the database.
-	ver, err := migrate(ctx, d, nil, common.ReleaseModeDev, serverVersion, devDatabaseName, l)
+	err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	require.Equal(t, devVersion, ver)
+	// Check migration history.
+	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
+	require.NoError(t, err)
+	require.Len(t, histories, 1)
+	require.Equal(t, histories[0].Version, releaseVersion.String())
 
-	// Create a database with release latest schema, and apply migration to dev latest.
-	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
+	// Check no migration after passing current version as the release cutoff version.
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeRelease, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	releaseDatabaseName := "release"
-	// Passing curVers = nil will create the database.
-	ver, err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, releaseDatabaseName, l)
+	// Check migration history.
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
 	require.NoError(t, err)
-	require.Equal(t, releaseVersion, ver)
+	require.Len(t, histories, 1)
+
 	// Apply migration to dev latest if there are patches.
-	ver, err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, serverVersion, releaseDatabaseName, l)
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, serverVersion, databaseName, l)
 	require.NoError(t, err)
-	require.Equal(t, devVersion, ver)
+
+	// Check migration history.
+	devMigrations, err := getDevMigrations()
+	require.NoError(t, err)
+	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
+		Database: &databaseName,
+	})
+	require.NoError(t, err)
+	// The extra one is for the initial schema setup.
+	require.Len(t, histories, len(devMigrations)+1)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
-	// The wanted devVersion and releaseVersion will change if there are any development or release changes in the migration directory.
-	devVersion, err := getCutoffVersion(common.ReleaseModeDev)
-	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("1.1.2"), devVersion)
-
-	releaseVersion, err := getCutoffVersion(common.ReleaseModeRelease)
+	releaseVersion, err := getReleaseCutoffVersion()
 	require.NoError(t, err)
 	require.Equal(t, semver.MustParse("1.0.1"), releaseVersion)
 }
