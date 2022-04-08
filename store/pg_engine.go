@@ -442,7 +442,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 	}
 
 	var migrations []devMigration
-	// Skip migrations that are already applied, otherwise the migration reattempt will most likely to fail wil already exists error.
+	// Skip migrations that are already applied, otherwise the migration reattempt will most likely to fail with already exists error.
 	for _, m := range devMigrations {
 		if migrationExists(m.statement, histories) {
 			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
