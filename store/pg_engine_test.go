@@ -175,7 +175,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	// Create a database with release latest schema.
 	databaseName := "hidb"
 	// Passing curVers = nil will create the database.
-	err = migrate(ctx, d, nil, common.ReleaseModeRelease, serverVersion, databaseName, l)
+	err = migrate(ctx, d, nil, common.ReleaseModeProd, serverVersion, databaseName, l)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
@@ -186,7 +186,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeRelease, serverVersion, databaseName, l)
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeProd, serverVersion, databaseName, l)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
