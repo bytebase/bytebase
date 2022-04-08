@@ -458,6 +458,16 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 		taskCheckRun.Updater = updater
 	}
 
+	blockedBy := []int{}
+	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: raw.ID})
+	if err != nil {
+		return nil, err
+	}
+	for _, taskDAG := range taskDAGList {
+		blockedBy = append(blockedBy, taskDAG.ToTaskID)
+	}
+	task.BlockedBy = blockedBy
+
 	instance, err := s.composeInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, err
