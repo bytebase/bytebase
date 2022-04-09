@@ -236,9 +236,9 @@ type MigrationInfo struct {
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
-	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405".
+	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405010203.uuid" (common.DefaultMigrationVersion).
 	UseSemanticVersion bool
-	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
+	// SemanticVersionSuffix should be set to timestamp format of "20060102150405010203.uuid" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
 }

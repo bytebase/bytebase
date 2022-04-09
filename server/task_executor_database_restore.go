@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -176,7 +177,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(),
+		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,
