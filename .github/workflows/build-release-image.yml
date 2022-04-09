@@ -30,6 +30,7 @@ jobs:
         id: bytebase_build
         uses: docker/build-push-action@v2
         with:
+          file: Dockerfile
           push: true
           tags: bytebase/bytebase:${{ env.BB_VERSION }}
           build-args: |
