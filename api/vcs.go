@@ -87,3 +87,13 @@ type ExternalRepository struct {
 	FullPath string `jsonapi:"attr,fullPath"`
 	WebURL   string `jsonapi:"attr,webUrl"`
 }
+
+// VCSExchangeToken is the API message of exchanging token for a VCS.
+type VCSExchangeToken struct {
+	Code         string   `jsonapi:"attr,code"`
+	ID           int      `jsonapi:"attr,vcsId"`
+	Type         vcs.Type `jsonapi:"attr,vcsType"`
+	InstanceURL  string   `jsonapi:"attr,instanceUrl"`
+	ClientID     string   `jsonapi:"attr,clientId"`
+	ClientSecret string   `jsonapi:"attr,clientSecret"`
+}
