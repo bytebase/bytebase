@@ -129,7 +129,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5433/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -371,6 +371,10 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Password, _ = u.User.Password()
 	}
 
+	if connCfg.Username == "" {
+		return nil, fmt.Errorf("missing user in the --pg connection string")
+	}
+
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
@@ -378,6 +382,8 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Port = port
 	}
 
+	// By default, follow the PG convention to use user name as the database name
+	connCfg.Database = connCfg.Username
 	if u.Path != "" {
 		connCfg.Database = u.Path[1:]
 	}
@@ -403,6 +409,8 @@ func (m *Main) newEmbeddedDB() (*store.DB, error) {
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
+		// Follow the PG convention that we use the pg user's name as the database name.
+		Database: m.profile.pgUser,
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
