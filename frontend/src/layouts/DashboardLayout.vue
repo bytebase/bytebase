@@ -101,17 +101,6 @@ export default defineComponent({
       return isDebug.value && isDBAOrOwner(currentUser.value.role);
     });
 
-    const { isDebug } = storeToRefs(debugStore);
-
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
-    // For now, debug mode is a global setting and will affect all users.
-    // So we only allow DBA and Owner to toggle it and thus show a banner
-    // reminding them to turn off
-    const showDebugBanner = computed(() => {
-      return isDebug.value && isDBAOrOwner(currentUser.value.role);
-    });
-
     return {
       ping,
       isDemo,
