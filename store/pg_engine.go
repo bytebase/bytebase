@@ -305,8 +305,8 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		if err != nil {
 			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
 		}
-		// We will create the database together with initial schema and data migration.
-		stmt := fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
+		// We create the initial schema and data migration.
+		stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
@@ -320,7 +320,6 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
-				CreateDatabase:        true,
 			},
 			stmt,
 		); err != nil {

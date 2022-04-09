@@ -211,6 +211,25 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
 	}
 
+	database := pgUser
+	if database != "postgres" {
+		createDBArgs := []string {
+			database,
+			"-U", pgUser,
+			"-h", common.GetPostgresSocketDir(),
+			"-p", "8081",
+			"-l", "en_US.UTF-8",
+		}
+		createDBBinary := filepath.Join(pgBinDir, "bin", "createdb")
+		createDBCmd := exec.Command(createDBBinary, createDBArgs...)
+		createDBCmd.Stderr = os.Stderr
+		createDBCmd.Stdout = os.Stdout
+		if err := createDBCmd.Run(); err != nil {
+			return fmt.Errorf("failed to create database %q, error %v", database, err)
+		}
+		fmt.Printf("created database %s\n***", database)
+	}
+
 	return nil
 }
 
