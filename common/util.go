@@ -1,14 +1,11 @@
 package common
 
 import (
-	"fmt"
 	"math/rand"
 	"path"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // FindString returns the search index of sorted strings.
@@ -54,8 +51,8 @@ func GetPostgresSocketDir() string {
 }
 
 // DefaultMigrationVersion returns the default migration version string.
-// Use the concatenation of current time in second and uuid to guarantee uniqueness in a monotonic increasing way.
+// Use the concatenation of current time in second to guarantee uniqueness in a monotonic increasing way.
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
 func DefaultMigrationVersion() string {
-	return fmt.Sprintf("%s.%s", time.Now().Format("20060102150405"), uuid.New())
+	return time.Now().Format("20060102150405")
 }
