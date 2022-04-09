@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/user"
 	"strings"
-	"time"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 
 	// install mysql driver.
@@ -126,7 +126,7 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 	// TODO(d): support semantic versioning.
 	if _, _, err := driver.ExecuteMigration(ctx, &db.MigrationInfo{
 		ReleaseVersion: version,
-		Version:        defaultMigrationVersion(),
+		Version:        common.DefaultMigrationVersion(),
 		Database:       database,
 		Source:         db.LIBRARY,
 		Type:           db.Migrate,
@@ -138,8 +138,4 @@ func migrateDatabase(ctx context.Context, databaseType, username, password, host
 		return fmt.Errorf("failed to migrate database, got error: %w", err)
 	}
 	return nil
-}
-
-func defaultMigrationVersion() string {
-	return time.Now().Format("20060102150405")
 }
