@@ -117,6 +117,9 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return nil
 	}
 
+	// We are also using our own migration core to manage our own schema's migration history.
+	// So here we will create a "bytebase" database to store the migration history if the target
+	// db instance does not have one yet.
 	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
 		return err
 	}

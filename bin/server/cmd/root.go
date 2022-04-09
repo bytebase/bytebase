@@ -293,6 +293,8 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	if useEmbeddedDB() {
 		logger.Info("Preparing embedded PostgreSQL instance...")
 		var err error
+		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+		// to store Bytebase's own metadata.
 		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
 			return nil, err
