@@ -5,6 +5,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 )
 
 // FindString returns the search index of sorted strings.
@@ -47,4 +48,11 @@ func GetPostgresDataDir(dataDir string) string {
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
 func GetPostgresSocketDir() string {
 	return "/tmp"
+}
+
+// DefaultMigrationVersion returns the default migration version string.
+// Use the concatenation of current time in second to guarantee uniqueness in a monotonic increasing way.
+// We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
+func DefaultMigrationVersion() string {
+	return time.Now().Format("20060102150405")
 }
