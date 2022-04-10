@@ -135,23 +135,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate)).SetInternal(err)
 			}
 
-			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileMeta(ctx,
-				common.OauthContext{
-					ClientID:     vcs.ApplicationID,
-					ClientSecret: vcs.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
-				},
-				vcs.InstanceURL,
-				repo.ExternalID,
-				file.Path,
-				repo.BranchFilter,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
-			}
-
 			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileContent(ctx,
 				common.OauthContext{
 					ClientID:     vcs.ApplicationID,
@@ -167,6 +150,23 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
+			}
+
+			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileMeta(ctx,
+				common.OauthContext{
+					ClientID:     vcs.ApplicationID,
+					ClientSecret: vcs.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				vcs.InstanceURL,
+				repo.ExternalID,
+				file.Path,
+				repo.BranchFilter,
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
 			}
 
 			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchCommitByID(ctx,
@@ -198,8 +198,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheetVCSPayload").SetInternal(err)
 			}
 
-			payloadString := string(payload)
-
 			var sheetSource api.SheetSource
 			switch vcs.Type {
 			case vcsPlugin.GitLabSelfHost:
@@ -219,7 +217,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 
 			var databaseID *int
-			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME.
+			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
+			// and ENV_NAME and DB_NAME is either both present or neither present.
 			if project.TenantMode != api.TenantModeDisabled {
 				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
 					databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
@@ -248,7 +247,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					Visibility: api.ProjectSheet,
 					Source:     sheetSource,
 					Type:       api.SheetForSQL,
-					Payload:    payloadString,
+					Payload:    string(payload),
 				}
 				if databaseID != nil {
 					sheetCreate.DatabaseID = databaseID
@@ -258,6 +257,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
 				}
 			} else {
+				payloadString := string(payload)
 				sheetPatch := api.SheetPatch{
 					ID:        sheet.ID,
 					UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
