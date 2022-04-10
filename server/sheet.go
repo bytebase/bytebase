@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -106,7 +107,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found by ID: %d", repo.VCSID))
 		}
 
-		basePath := parseBasePathFromTemplate(repo.SheetPathTemplate)
+		basePath := filepath.Dir(repo.SheetPathTemplate)
 		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
 		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryFileList(ctx,
 			common.OauthContext{
@@ -129,6 +130,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetInfo, err := parseSheetInfo(file.Path, repo.SheetPathTemplate)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to parse sheet info from template").SetInternal(err)
+			}
+			if sheetInfo.SheetName == "" {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate)).SetInternal(err)
 			}
 
 			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileMeta(ctx,
@@ -214,6 +218,27 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
 			}
 
+			var databaseID *int
+			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME.
+			if project.TenantMode != api.TenantModeDisabled {
+				if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
+					databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
+						Name:      &sheetInfo.DatabaseName,
+						ProjectID: &projectID,
+					})
+					if err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
+					}
+
+					for _, database := range databaseList {
+						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
+							databaseID = &database.ID
+							break
+						}
+					}
+				}
+			}
+
 			if sheet == nil {
 				sheetCreate := api.SheetCreate{
 					ProjectID:  projectID,
@@ -225,29 +250,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					Type:       api.SheetForSQL,
 					Payload:    payloadString,
 				}
-
-				// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME.
-				if project.TenantMode != api.TenantModeDisabled {
-					if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
-						databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
-							Name:      &sheetInfo.DatabaseName,
-							ProjectID: &projectID,
-						})
-						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
-						}
-
-						for _, database := range databaseList {
-							if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
-								sheetCreate.DatabaseID = &database.ID
-								break
-							}
-						}
-					}
+				if databaseID != nil {
+					sheetCreate.DatabaseID = databaseID
 				}
 
-				_, err := s.SheetService.CreateSheet(ctx, &sheetCreate)
-				if err != nil {
+				if _, err := s.SheetService.CreateSheet(ctx, &sheetCreate); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
 				}
 			} else {
@@ -257,28 +264,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					Statement: &fileContent,
 					Payload:   &payloadString,
 				}
-
-				if project.TenantMode != api.TenantModeDisabled {
-					if sheetInfo.EnvironmentName != "" && sheetInfo.DatabaseName != "" {
-						databaseList, err := s.composeDatabaseListByFind(ctx, &api.DatabaseFind{
-							Name:      &sheetInfo.DatabaseName,
-							ProjectID: &projectID,
-						})
-						if err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database list with name: %s, project ID: %d", sheetInfo.DatabaseName, projectID)).SetInternal(err)
-						}
-
-						for _, database := range databaseList {
-							if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
-								sheetPatch.DatabaseID = &database.ID
-								break
-							}
-						}
-					}
+				if databaseID != nil {
+					sheetPatch.DatabaseID = databaseID
 				}
 
-				_, err := s.SheetService.PatchSheet(ctx, &sheetPatch)
-				if err != nil {
+				if _, err := s.SheetService.PatchSheet(ctx, &sheetPatch); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet from VCS").SetInternal(err)
 				}
 			}
@@ -480,18 +470,18 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 	for _, placeholder := range placeholderList {
 		sheetPathRegex = strings.ReplaceAll(sheetPathRegex, fmt.Sprintf("{{%s}}", placeholder), fmt.Sprintf("(?P<%s>[a-zA-Z0-9\\+\\-\\=\\_\\#\\!\\$\\. ]+)", placeholder))
 	}
-	myRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
+	sheetRegex, err := regexp.Compile(fmt.Sprintf("^%s$", sheetPathRegex))
 	if err != nil {
-		return nil, fmt.Errorf("invalid sheet path template: %q", sheetPathTemplate)
+		return nil, fmt.Errorf("invalid sheet path template: %q, err: %v", sheetPathTemplate, err)
 	}
-	if !myRegex.MatchString(sheetPath) {
+	if !sheetRegex.MatchString(sheetPath) {
 		return nil, fmt.Errorf("sheet path %q does not match sheet path template %q", sheetPath, sheetPathTemplate)
 	}
 
+	matchList := sheetRegex.FindStringSubmatch(sheetPath)
 	sheetInfo := &SheetInfo{}
-	matchList := myRegex.FindStringSubmatch(sheetPath)
 	for _, placeholder := range placeholderList {
-		index := myRegex.SubexpIndex(placeholder)
+		index := sheetRegex.SubexpIndex(placeholder)
 		if index >= 0 {
 			switch placeholder {
 			case "ENV_NAME":
@@ -504,38 +494,5 @@ func parseSheetInfo(sheetPath string, sheetPathTemplate string) (*SheetInfo, err
 		}
 	}
 
-	if sheetInfo.SheetName == "" {
-		return nil, fmt.Errorf("sheet name cannot be empty from sheet path %q and template %q", sheetPath, sheetPathTemplate)
-	}
-
 	return sheetInfo, nil
-}
-
-// parseBasePathFromTemplate gets the base path from template.
-func parseBasePathFromTemplate(sheetPathTemplate string) string {
-	pathList := strings.Split(sheetPathTemplate, "/")
-	placeholderList := []string{
-		"ENV_NAME",
-		"DB_NAME",
-		"NAME",
-	}
-	basePath := ""
-	for _, subpath := range pathList {
-		hasPlaceholder := false
-		for _, placeholder := range placeholderList {
-			if strings.Contains(subpath, fmt.Sprintf("{{%s}}", placeholder)) {
-				hasPlaceholder = true
-				break
-			}
-		}
-		if hasPlaceholder {
-			break
-		}
-
-		if subpath != "" {
-			basePath += subpath + "/"
-		}
-	}
-
-	return basePath
 }

@@ -55,16 +55,20 @@ func TestParseSheetInfo(t *testing.T) {
 			err: nil,
 		},
 		{
+			filePath:          "sheet/db-name.sql",
+			sheetPathTemplate: "sheet/{{DB_NAME}}.sql",
+			want: &SheetInfo{
+				EnvironmentName: "",
+				DatabaseName:    "db-name",
+				SheetName:       "",
+			},
+			err: nil,
+		},
+		{
 			filePath:          "sheet/db/test.sql",
 			sheetPathTemplate: "sheet/{{NAME}}.sql",
 			want:              nil,
 			err:               fmt.Errorf("sheet path \"sheet/db/test.sql\" does not match sheet path template \"sheet/{{NAME}}.sql\""),
-		},
-		{
-			filePath:          "sheet/db-name.sql",
-			sheetPathTemplate: "sheet/{{DB_NAME}}.sql",
-			want:              nil,
-			err:               fmt.Errorf("sheet name cannot be empty from sheet path \"sheet/db-name.sql\" and template \"sheet/{{DB_NAME}}.sql\""),
 		},
 		{
 			filePath:          "my-sheet/test.sql",
@@ -77,42 +81,13 @@ func TestParseSheetInfo(t *testing.T) {
 	for _, test := range tests {
 		result, err := parseSheetInfo(test.filePath, test.sheetPathTemplate)
 		if err != nil {
-			require.Equal(t, test.err.Error(), err.Error())
+			if test.err != nil {
+				require.Equal(t, test.err.Error(), err.Error())
+			} else {
+				t.Error(err)
+			}
 		} else {
 			require.Equal(t, test.want, result)
 		}
-	}
-}
-
-func TestParseBasePathFromTemplate(t *testing.T) {
-	tests := []struct {
-		sheetPathTemplate string
-		want              string
-	}{
-		{
-			sheetPathTemplate: "sheet/{{NAME}}.sql",
-			want:              "sheet/",
-		},
-		{
-			sheetPathTemplate: "sheet/dir/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql",
-			want:              "sheet/dir/",
-		},
-		{
-			sheetPathTemplate: "sheet/dir__{{NAME}}.sql",
-			want:              "sheet/",
-		},
-		{
-			sheetPathTemplate: "{{NAME}}.sql",
-			want:              "",
-		},
-		{
-			sheetPathTemplate: "sheet/dir/",
-			want:              "sheet/dir/",
-		},
-	}
-
-	for _, test := range tests {
-		result := parseBasePathFromTemplate(test.sheetPathTemplate)
-		require.Equal(t, test.want, result)
 	}
 }
