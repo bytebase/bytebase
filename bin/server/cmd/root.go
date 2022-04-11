@@ -401,6 +401,7 @@ func (m *Main) newEmbeddedDB() (*store.DB, error) {
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
+		Database: m.profile.pgUser,
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
