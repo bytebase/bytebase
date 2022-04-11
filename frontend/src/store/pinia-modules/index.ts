@@ -19,3 +19,4 @@ export * from "./setting";
 export * from "./subscription";
 export * from "./tab";
 export * from "./uistate";
+export * from "./vcs";
