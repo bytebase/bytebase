@@ -202,7 +202,7 @@ export default defineComponent({
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
           useOAuthStore()
-            .exchangeVCSToken({
+            .exchangeVCSTokenWithID({
               vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })

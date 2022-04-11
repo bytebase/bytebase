@@ -612,7 +612,12 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		paramNames, params = append(paramNames, "namespace"), append(params, *v)
 	}
 	if v := find.Version; v != nil {
-		paramNames, params = append(paramNames, "version"), append(params, *v)
+		// TODO(d): support semantic versioning.
+		storedVersion, err := util.ToStoredVersion(false, *v, "")
+		if err != nil {
+			return nil, err
+		}
+		paramNames, params = append(paramNames, "version"), append(params, storedVersion)
 	}
 	if v := find.Source; v != nil {
 		paramNames, params = append(paramNames, "source"), append(params, *v)

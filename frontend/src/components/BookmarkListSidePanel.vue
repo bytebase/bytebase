@@ -14,23 +14,21 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, defineComponent } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, watchEffect } from "vue";
 import { UNKNOWN_ID } from "../types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useBookmarkStore } from "@/store";
+import { useBookmarkStore, useCurrentUser } from "@/store";
 
 export default defineComponent({
   name: "BookmarkListSidePanel",
   setup() {
     const { t } = useI18n();
-    const store = useStore();
     const router = useRouter();
     const bookmarkStore = useBookmarkStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareBookmarkList = () => {
       // It will also be called when user logout

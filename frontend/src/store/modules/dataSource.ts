@@ -11,7 +11,7 @@ import {
   EMPTY_ID,
   empty,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   dataSource: ResourceObject,
@@ -94,12 +94,15 @@ const actions = {
     newDataSource: DataSourceCreate
   ) {
     const data = (
-      await axios.post(`/api/database/${newDataSource.databaseId}/data-source`, {
-        data: {
-          type: "DataSourceCreate",
-          attributes: newDataSource,
-        },
-      })
+      await axios.post(
+        `/api/database/${newDataSource.databaseId}/data-source`,
+        {
+          data: {
+            type: "DataSourceCreate",
+            attributes: newDataSource,
+          },
+        }
+      )
     ).data;
     const createdDataSource = convert(data.data, data.included, rootGetters);
 

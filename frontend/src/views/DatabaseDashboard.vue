@@ -48,7 +48,12 @@ import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
-import { useUIStateStore } from "@/store";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  useEnvironmentStore,
+  useUIStateStore,
+} from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -74,18 +79,16 @@ export default defineComponent({
       searchText: "",
       databaseList: [],
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     onMounted(() => {
       // Focus on the internal search field when mounted

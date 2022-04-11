@@ -248,8 +248,6 @@ const columnListMap = computed(() => {
   ]);
 });
 
-// const currentUser = computed(() => store.getters["auth/currentUser"]());
-
 const showInstanceColumn = computed(() => {
   return props.mode != "INSTANCE";
 });

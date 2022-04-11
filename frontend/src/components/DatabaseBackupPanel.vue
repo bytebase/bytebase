@@ -141,7 +141,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import {
   Backup,
   BackupCreate,
@@ -158,7 +157,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -191,7 +190,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
+    const backupStore = useBackupStore();
+    const policyStore = usePolicyStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -210,13 +210,13 @@ export default defineComponent({
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
+      backupStore.fetchBackupListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
-      store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore.fetchPolicyByEnvironmentAndType({
         environmentId: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
@@ -235,7 +235,7 @@ export default defineComponent({
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseId"](props.database.id)
+        backupStore.backupListByDatabaseId(props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -295,11 +295,12 @@ export default defineComponent({
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
+      const policy = policyStore.getPolicyByEnvironmentIdAndType(
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
-      return (policy.payload as PolicyBackupPlanPolicyPayload).schedule;
+      const payload = policy?.payload;
+      return (payload as PolicyBackupPlanPolicyPayload | undefined)?.schedule;
     });
 
     const allowDisableAutoBackup = computed(() => {
@@ -318,7 +319,7 @@ export default defineComponent({
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
-      store.dispatch("backup/createBackup", {
+      backupStore.createBackup({
         databaseId: props.database.id,
         newBackup: newBackup,
       });
@@ -331,8 +332,8 @@ export default defineComponent({
         clearInterval(state.pollBackupsTimer);
       }
       state.pollBackupsTimer = setTimeout(() => {
-        store
-          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
+        backupStore
+          .fetchBackupListByDatabaseId(props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -349,8 +350,8 @@ export default defineComponent({
     };
 
     const prepareBackupSetting = () => {
-      store
-        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+      backupStore
+        .fetchBackupSettingByDatabaseId(props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -382,8 +383,8 @@ export default defineComponent({
           : state.autoBackupDayOfWeek,
         hookUrl: "",
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
@@ -408,8 +409,8 @@ export default defineComponent({
         dayOfWeek: state.autoBackupDayOfWeek,
         hookUrl: state.autoBackupUpdatedHookUrl,
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {

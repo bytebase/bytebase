@@ -12,8 +12,14 @@ import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
-import { store, useRouterStore } from "../store";
-import { Database, QuickActionType, Sheet } from "../types";
+import {
+  store,
+  useAuthStore,
+  useEnvironmentStore,
+  usePrincipalStore,
+  useRouterStore,
+} from "../store";
+import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -234,9 +240,11 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalId = route.params.principalId as string;
-                return store.getters["principal/principalById"](principalId)
-                  .name;
+                const principalId = parseInt(
+                  route.params.principalId as string,
+                  10
+                );
+                return usePrincipalStore().principalById(principalId).name;
               },
             },
             components: {
@@ -395,7 +403,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return store.getters["environment/environmentById"](
+                return useEnvironmentStore().getEnvironmentById(
                   idFromSlug(slug)
                 ).name;
               },
@@ -458,7 +466,7 @@ const routes: Array<RouteRecordRaw> = [
                 );
 
                 if (project.rowStatus == "NORMAL") {
-                  const currentUser = store.getters["auth/currentUser"]();
+                  const currentUser = useAuthStore().currentUser;
                   let allowEditProject = false;
                   if (isDBAOrOwner(currentUser.role)) {
                     allowEditProject = true;
@@ -795,10 +803,12 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
+  const authStore = useAuthStore();
+  const environmentStore = useEnvironmentStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
 
-  const isLoggedIn = store.getters["auth/isLoggedIn"]();
+  const isLoggedIn = authStore.isLoggedIn();
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -848,7 +858,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  const currentUser = store.getters["auth/currentUser"]();
+  const currentUser = authStore.currentUser;
 
   if (to.name?.toString().startsWith("setting.workspace.version-control")) {
     // Returns 403 immediately if not Owner. Otherwise, we may need to fetch the VCS detail
@@ -932,8 +942,8 @@ router.beforeEach((to, from, next) => {
   const sheetSlug = routerSlug.sheetSlug;
 
   if (principalId) {
-    store
-      .dispatch("principal/fetchPrincipalById", principalId)
+    usePrincipalStore()
+      .fetchPrincipalById(principalId)
       .then(() => {
         next();
       })
@@ -948,9 +958,12 @@ router.beforeEach((to, from, next) => {
   }
 
   if (environmentSlug) {
-    if (
-      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
-    ) {
+    const env = environmentStore.getEnvironmentById(
+      idFromSlug(environmentSlug)
+    );
+    // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
+    // so we need to check the id here
+    if (env && env.id !== UNKNOWN_ID) {
       next();
       return;
     }

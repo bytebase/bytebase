@@ -16,11 +16,11 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
-import { useStore } from "vuex";
-import cloneDeep from "lodash-es/cloneDeep";
+import { cloneDeep } from "lodash-es";
 import { Environment } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { useEnvironmentList } from "@/store";
 
 interface LocalState {
   selectedIndex: number;
@@ -38,15 +38,13 @@ export default defineComponent({
   emits: ["select-environment"],
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
 
-    const environmentList = computed(() => {
-      // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
-      // thus we reverse the order to put more important ones first.
-      return cloneDeep(
-        store.getters["environment/environmentList"]()
-      ).reverse();
-    });
+    // Usually env is ordered by ascending importance (dev -> test -> staging -> prod),
+    // thus we reverse the order to put more important ones first.
+    const rawEnvironmentList = useEnvironmentList();
+    const environmentList = computed(() =>
+      cloneDeep(rawEnvironmentList.value).reverse()
+    );
 
     const state = reactive<LocalState>({
       selectedIndex: props.selectedId

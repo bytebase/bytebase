@@ -105,7 +105,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				payload.Statement = *taskPatch.Statement
 				// We should update the schema version if we've updated the SQL, otherwise we will
 				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = defaultMigrationVersionFromTaskID()
+				payload.SchemaVersion = common.DefaultMigrationVersion()
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
@@ -121,7 +121,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				payload.Statement = *taskPatch.Statement
 				// We should update the schema version if we've updated the SQL, otherwise we will
 				// get migration history version conflict if the previous task has been attempted.
-				payload.SchemaVersion = defaultMigrationVersionFromTaskID()
+				payload.SchemaVersion = common.DefaultMigrationVersion()
 				bytes, err := json.Marshal(payload)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)

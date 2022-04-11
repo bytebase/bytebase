@@ -71,6 +71,7 @@ import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
+import { useCurrentUser } from "@/store";
 
 export default defineComponent({
   name: "InboxList",
@@ -86,7 +87,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const actionLink = (activity: Activity): string => {
       if (activity.type.startsWith("bb.issue.")) {

@@ -73,10 +73,9 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { defineComponent, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { CodeDiff } from "v-code-diff";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
@@ -90,6 +89,7 @@ import {
   AnomalyType,
 } from "../types";
 import { databaseSlug, humanizeTs, instanceSlug } from "../utils";
+import { useEnvironmentStore } from "@/store";
 
 type Action = {
   onClick: () => void;
@@ -101,7 +101,7 @@ interface LocalState {
   selectedAnomaly?: Anomaly;
 }
 
-export default {
+export default defineComponent({
   name: "AnomalyTable",
   components: { CodeDiff },
   props: {
@@ -115,7 +115,6 @@ export default {
     },
   },
   setup() {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -167,7 +166,7 @@ export default {
         case "bb.anomaly.instance.migration-schema":
           return "Please create migration schema on the instance first.";
         case "bb.anomaly.database.backup.policy-violation": {
-          const environment = store.getters["environment/environmentById"](
+          const environment = useEnvironmentStore().getEnvironmentById(
             anomaly.instance.environment.id
           );
           const payload =
@@ -288,5 +287,5 @@ export default {
       dismissModal,
     };
   },
-};
+});
 </script>

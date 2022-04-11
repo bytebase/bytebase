@@ -94,7 +94,7 @@ export interface IssueState {
 }
 
 export interface IssueSubscriberState {
-  subscriberListByIssue: Map<IssueId, IssueSubscriber[]>;
+  subscriberList: Map<IssueId, IssueSubscriber[]>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -157,11 +157,11 @@ export interface ViewState {
 }
 
 export interface BackupState {
-  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
+  backupList: Map<DatabaseId, Backup[]>;
 }
 
 export interface BackupSettingState {
-  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
+  backupSetting: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
