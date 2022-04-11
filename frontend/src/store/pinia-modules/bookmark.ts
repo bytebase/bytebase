@@ -8,7 +8,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   bookmark: ResourceObject,

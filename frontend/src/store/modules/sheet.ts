@@ -17,7 +17,8 @@ import type {
   ProjectMember,
 } from "@/types";
 import { unknown, UNKNOWN_ID } from "@/types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
+import { useAuthStore } from "../pinia-modules";
 
 function convertSheet(
   sheet: ResourceObject,
@@ -75,7 +76,7 @@ const getters = {
   isCreator:
     (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
     (currentTab: TabInfo): boolean => {
-      const currentUser = rootGetters["auth/currentUser"]();
+      const { currentUser } = useAuthStore();
       const currentSheet = getters.currentSheet(currentTab);
 
       if (!currentSheet) return false;
@@ -93,7 +94,7 @@ const getters = {
   isReadOnly:
     (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
     (currentTab: TabInfo): boolean => {
-      const currentUser = rootGetters["auth/currentUser"]();
+      const { currentUser } = useAuthStore();
       const sharedSheet = rootState.sqlEditor.sharedSheet;
       const currentSheet = getters.currentSheet(currentTab);
       const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;

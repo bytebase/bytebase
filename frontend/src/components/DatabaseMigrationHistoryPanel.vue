@@ -89,6 +89,7 @@ import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { instanceSlug, isDBAOrOwner } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useCurrentUser } from "@/store";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -121,7 +122,7 @@ export default defineComponent({
       loading: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareMigrationHistoryList = () => {
       state.loading = true;

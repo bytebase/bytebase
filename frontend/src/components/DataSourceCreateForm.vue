@@ -130,7 +130,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import { DataSourceCreate, Database, UNKNOWN_ID } from "../types";
 import { useI18n } from "vue-i18n";
@@ -140,7 +140,7 @@ interface LocalState {
   showPassword: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceCreateForm",
   components: { DatabaseSelect },
   props: {
@@ -155,11 +155,6 @@ export default {
   },
   emits: ["create", "cancel"],
   setup(props) {
-    // const store = useStore();
-
-    // const currentUser: ComputedRef<Principal> = computed(() =>
-    //   store.getters["auth/currentUser"]()
-    // );
     const { t } = useI18n();
     const state = reactive<LocalState>({
       dataSource: {
@@ -185,5 +180,5 @@ export default {
       updateDataSource,
     };
   },
-};
+});
 </script>

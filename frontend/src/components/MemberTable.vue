@@ -111,14 +111,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -149,9 +148,9 @@ export default defineComponent({
   },
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
+    const memberStore = useMemberStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -239,7 +238,7 @@ export default defineComponent({
       const memberPatch: MemberPatch = {
         role,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });
@@ -249,7 +248,7 @@ export default defineComponent({
       const memberPatch: MemberPatch = {
         rowStatus,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });

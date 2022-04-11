@@ -151,12 +151,11 @@
 
 <script lang="ts">
 import { computed, defineComponent, onUnmounted, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { SignupInfo, TEXT_VALIDATION_DELAY } from "../../types";
 import { isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
-import { useActuatorStore } from "@/store";
+import { useActuatorStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -173,7 +172,6 @@ export default defineComponent({
   name: "SignupPage",
   components: { AuthFooter },
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
     const router = useRouter();
 
@@ -274,14 +272,16 @@ export default defineComponent({
           password: state.password,
           name: state.name,
         };
-        store.dispatch("auth/signup", signupInfo).then(async () => {
-          // we need to update the server info after setting up the first admin account so that the splash screen
-          // won't display the UI for registering the first admin account again.
-          if (needAdminSetup.value) {
-            await actuatorStore.fetchInfo();
-          }
-          router.push("/");
-        });
+        useAuthStore()
+          .signup(signupInfo)
+          .then(async () => {
+            // we need to update the server info after setting up the first admin account so that the splash screen
+            // won't display the UI for registering the first admin account again.
+            if (needAdminSetup.value) {
+              await actuatorStore.fetchInfo();
+            }
+            router.push("/");
+          });
       }
     };
 
