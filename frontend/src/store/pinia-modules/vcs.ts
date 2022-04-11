@@ -11,7 +11,7 @@ import {
   empty,
   EMPTY_ID,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
   return {
