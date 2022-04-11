@@ -94,7 +94,7 @@ p, OWNER, /label/{id}, PATCH
 p, OWNER, /subscription, GET
 p, OWNER, /subscription, PATCH
 p, OWNER, /sheet, POST
-p, OWNER, /project/:projectID/sync-sheet, POST
+p, OWNER, /sheet/project/:projectID/sync, POST
 p, OWNER, /sheet, GET
 p, OWNER, /sheet/{id}, GET
 p, OWNER, /sheet/{id}, PATCH

@@ -73,7 +73,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/project/:projectID/sync-sheet", func(c echo.Context) error {
+	g.POST("/sheet/project/:projectID/sync", func(c echo.Context) error {
 		ctx := context.Background()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {

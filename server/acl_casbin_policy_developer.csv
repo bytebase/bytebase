@@ -77,7 +77,7 @@ p, DEVELOPER, /setting, GET
 p, DEVELOPER, /label, GET
 p, DEVELOPER, /subscription, GET
 p, DEVELOPER, /sheet, POST
-p, DEVELOPER, /project/:projectID/sync-sheet, POST
+p, DEVELOPER, /sheet/project/:projectID/sync, POST
 p, DEVELOPER, /sheet, GET
 p, DEVELOPER, /sheet/{id}, GET
 p, DEVELOPER, /sheet/{id}, PATCH
