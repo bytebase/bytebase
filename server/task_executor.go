@@ -57,8 +57,6 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 		// TODO(d): support semantic versioning.
 		mi.Version = schemaVersion
-		mi.Database = databaseName
-		mi.Namespace = databaseName
 		mi.Description = task.Name
 	} else {
 		repoFind := &api.RepositoryFind{
@@ -92,6 +90,9 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 		mi.Payload = string(bytes)
 	}
+
+	mi.Database = databaseName
+	mi.Namespace = databaseName
 
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,

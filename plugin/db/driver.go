@@ -279,9 +279,6 @@ func ParseMigrationInfo(filePath string, filePathTemplate string) (*MigrationInf
 				mi.Environment = matchList[index]
 			case "VERSION":
 				mi.Version = matchList[index]
-			case "DB_NAME":
-				mi.Namespace = matchList[index]
-				mi.Database = matchList[index]
 			case "TYPE":
 				switch matchList[index] {
 				case "baseline":
