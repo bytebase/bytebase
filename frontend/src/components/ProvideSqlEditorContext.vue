@@ -3,7 +3,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, onMounted } from "vue";
+import { useCurrentUser } from "@/store";
+import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
   Instance,
@@ -28,7 +29,7 @@ const state = reactive<{
   databaseIdList: new Map(),
 });
 
-const currentUser = computed(() => store.getters["auth/currentUser"]());
+const currentUser = useCurrentUser();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout

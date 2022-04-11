@@ -122,7 +122,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { ServerInfo } from "../types";
@@ -131,6 +130,7 @@ import { useLanguage } from "../composables/useLanguage";
 import {
   pushNotification,
   useActuatorStore,
+  useAuthStore,
   useDebugStore,
   useUIStateStore,
 } from "@/store";
@@ -141,15 +141,15 @@ export default defineComponent({
   components: { PrincipalAvatar },
   props: {},
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
+    const authStore = useAuthStore();
     const debugStore = useDebugStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { setLocale, locale } = useLanguage();
     const languageMenu = ref();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const { currentUser } = storeToRefs(authStore);
 
     // For now, debug mode is a global setting and will affect all users.
     // So we only allow DBA and Owner to toggle it.
@@ -160,7 +160,7 @@ export default defineComponent({
     const showQuickstart = computed(() => !actuatorStore.isDemo);
 
     const logout = () => {
-      store.dispatch("auth/logout").then(() => {
+      authStore.logout().then(() => {
         router.push({ name: "auth.signin" });
       });
     };
@@ -191,7 +191,8 @@ export default defineComponent({
     };
 
     const switchToOwner = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
+        authProvider: "BYTEBASE",
         payload: {
           email: "demo@example.com",
           password: "1024",
@@ -200,7 +201,8 @@ export default defineComponent({
     };
 
     const switchToDBA = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
+        authProvider: "BYTEBASE",
         payload: {
           email: "jerry@example.com",
           password: "aaa",
@@ -209,7 +211,8 @@ export default defineComponent({
     };
 
     const switchToDeveloper = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
+        authProvider: "BYTEBASE",
         payload: {
           email: "tom@example.com",
           password: "aaa",

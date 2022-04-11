@@ -139,7 +139,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import IntroBanner from "../components/IntroBanner.vue";
@@ -150,6 +149,7 @@ import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "../types";
 import {
   useActuatorStore,
+  useCurrentUser,
   useSubscriptionStore,
   useUIStateStore,
 } from "@/store";
@@ -167,7 +167,6 @@ export default defineComponent({
     QuickActionPanel,
   },
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
@@ -177,7 +176,7 @@ export default defineComponent({
       showMobileOverlay: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const quickActionList = computed(() => {
       const role = currentUser.value.role;

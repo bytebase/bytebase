@@ -244,7 +244,7 @@ import {
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature, useEnvironmentStore } from "@/store";
+import { hasFeature, useCurrentUser, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -293,7 +293,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {

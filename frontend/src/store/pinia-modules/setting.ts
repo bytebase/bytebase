@@ -2,7 +2,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { ResourceObject, SettingState } from "@/types";
 import { Setting, SettingName } from "@/types/setting";
-import { getPrincipalFromIncludedList } from "../modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   setting: ResourceObject,

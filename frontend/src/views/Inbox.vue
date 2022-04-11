@@ -34,11 +34,12 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
+import { reactive, watchEffect } from "vue";
 import { useStore } from "vuex";
 import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
 import { useRouter } from "vue-router";
+import { useCurrentUser } from "@/store";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
 // And each time clicking "View older" will extend 7 days further.
@@ -65,7 +66,7 @@ export default {
         Math.ceil(Date.now() / 1000) - READ_INBOX_DURATION_STEP,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareInboxList = () => {
       // It will also be called when user logout

@@ -274,7 +274,7 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { featureToRef, useIssueSubscriberStore } from "@/store";
+import { featureToRef, useCurrentUser, useIssueSubscriberStore } from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -311,7 +311,7 @@ export default defineComponent({
     const route = useRoute();
     const issueSubscriberStore = useIssueSubscriberStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     watchEffect(function prepare() {
       if (props.create) {

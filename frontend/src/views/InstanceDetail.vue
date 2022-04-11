@@ -156,7 +156,12 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useSubscriptionStore } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useSubscriptionStore,
+} from "@/store";
 
 const DATABASE_TAB = 0;
 const USER_TAB = 1;
@@ -182,7 +187,7 @@ const store = useStore();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
-const currentUser = computed(() => store.getters["auth/currentUser"]());
+const currentUser = useCurrentUser();
 
 const state = reactive<LocalState>({
   selectedIndex: DATABASE_TAB,
