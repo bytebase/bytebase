@@ -129,7 +129,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5433/dbname?sslrootcert=cert")
+	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
+	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
+	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
+	// rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -293,6 +296,8 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	if useEmbeddedDB() {
 		logger.Info("Preparing embedded PostgreSQL instance...")
 		var err error
+		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+		// to store Bytebase's own metadata.
 		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
 			return nil, err
@@ -369,6 +374,10 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Password, _ = u.User.Password()
 	}
 
+	if connCfg.Username == "" {
+		return nil, fmt.Errorf("missing user in the --pg connection string")
+	}
+
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
@@ -376,6 +385,8 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Port = port
 	}
 
+	// By default, follow the PG convention to use user name as the database name
+	connCfg.Database = connCfg.Username
 	if u.Path != "" {
 		connCfg.Database = u.Path[1:]
 	}
