@@ -977,7 +977,7 @@ func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.W
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.RestoreConfig) (err error) {
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return nil
 	}

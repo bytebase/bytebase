@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
+	dbPlugin "github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -139,7 +139,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 
-	if err := driver.Restore(ctx, sc); err != nil {
+	if err := driver.Restore(ctx, sc, dbPlugin.RestoreConfig{}); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil
@@ -174,14 +174,14 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		description = fmt.Sprintf("Restored from backup %q of database %q in instance %q.", backup.Name, sourceDatabase.Name, sourceDatabase.Instance.Name)
 	}
 	// TODO(d): support semantic versioning.
-	m := &db.MigrationInfo{
+	m := &dbPlugin.MigrationInfo{
 		ReleaseVersion: server.version,
 		Version:        defaultMigrationVersionFromTaskID(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,
-		Source:         db.MigrationSource(targetDatabase.Project.WorkflowType),
-		Type:           db.Branch,
+		Source:         dbPlugin.MigrationSource(targetDatabase.Project.WorkflowType),
+		Type:           dbPlugin.Branch,
 		Description:    description,
 		Creator:        task.Creator.Name,
 		IssueID:        issueID,

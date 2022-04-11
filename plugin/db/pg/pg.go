@@ -801,7 +801,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.RestoreConfig) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

@@ -382,6 +382,11 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// RestoreConfig contains configurations for database restore
+type RestoreConfig struct {
+	IsGhostTable bool
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
@@ -416,7 +421,7 @@ type Driver interface {
 	// Dump the database, if dbName is empty, then dump all databases.
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
 	// Restore the database from sc.
-	Restore(ctx context.Context, sc *bufio.Scanner) error
+	Restore(ctx context.Context, sc *bufio.Scanner, config RestoreConfig) error
 }
 
 // Register makes a database driver available by the provided type.

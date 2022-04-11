@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	dbPlugin "github.com/bytebase/bytebase/plugin/db"
 	"github.com/spf13/cobra"
 )
 
@@ -69,23 +70,23 @@ func restoreDatabase(ctx context.Context, databaseType, username, password, host
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 
-	var dbType db.Type
+	var dbType dbPlugin.Type
 	switch databaseType {
 	case "mysql":
-		dbType = db.MySQL
+		dbType = dbPlugin.MySQL
 		if username == "" {
 			username = "root"
 		}
 	case "pg":
-		dbType = db.Postgres
+		dbType = dbPlugin.Postgres
 	default:
 		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
 	}
-	db, err := db.Open(
+	driver, err := dbPlugin.Open(
 		ctx,
 		dbType,
-		db.DriverConfig{Logger: logger},
-		db.ConnectionConfig{
+		dbPlugin.DriverConfig{Logger: logger},
+		dbPlugin.ConnectionConfig{
 			Host:      hostname,
 			Port:      port,
 			Username:  username,
@@ -93,14 +94,14 @@ func restoreDatabase(ctx context.Context, databaseType, username, password, host
 			Database:  database,
 			TLSConfig: tlsCfg,
 		},
-		db.ConnectionContext{},
+		dbPlugin.ConnectionContext{},
 	)
 	if err != nil {
 		return err
 	}
-	defer db.Close(ctx)
+	defer driver.Close(ctx)
 
-	if err := db.Restore(ctx, sc); err != nil {
+	if err := driver.Restore(ctx, sc, dbPlugin.RestoreConfig{}); err != nil {
 		return fmt.Errorf("failed to restore from database dump %s got error: %w", file, err)
 	}
 	return nil

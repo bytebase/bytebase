@@ -90,7 +90,7 @@ func TestBackupRestore(t *testing.T) {
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(context.TODO(), bufio.NewScanner(&buf))
+	err = driver.Restore(context.TODO(), bufio.NewScanner(&buf), dbPlugin.RestoreConfig{})
 	a.NoError(err)
 
 	// validate data
@@ -161,7 +161,8 @@ func TestPITR(t *testing.T) {
 	_, err = db.Exec(`
 	CREATE Table t00 (
 		id INT,
-		PRIMARY KEY (id)
+		PRIMARY KEY (id),
+		CHECK (id > -1)
 	);
 	`)
 	a.NoError(err)
@@ -170,8 +171,8 @@ func TestPITR(t *testing.T) {
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
-		UNIQUE INDEX idx_pid_10 (pid),
-		CONSTRAINT fk_pid_10 FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
+		UNIQUE INDEX (pid),
+		CONSTRAINT FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
 	);
 	`)
 	a.NoError(err)
@@ -180,14 +181,14 @@ func TestPITR(t *testing.T) {
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
-		UNIQUE INDEX idx_pid_11 (pid),
-		CONSTRAINT fk_pid_11 FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
+		UNIQUE INDEX (pid),
+		CONSTRAINT FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
 	);
 	`)
 	a.NoError(err)
 
 	// insert data to make time point t0
-	insertData(db, a, 0, 100)
+	insertData(db, a, 0, 10)
 
 	// make a full backup of t0
 	logger, err := zap.NewDevelopment()
@@ -211,6 +212,7 @@ func TestPITR(t *testing.T) {
 	var buf bytes.Buffer
 	err = driver.Dump(context.TODO(), database, &buf, false)
 	a.NoError(err)
+	t.Log(buf.String())
 
 	// insert more data to make time point t1
 	insertData(db, a, 100, 200)
@@ -245,8 +247,10 @@ func TestPITR(t *testing.T) {
 	_, err = db.Exec("SET foreign_key_checks=OFF")
 	a.NoError(err)
 
-	// TODO(Dragonly): restore to ghost tables
-	// need to refactor driver.Restore() to intercept SQL and change table names
+	err = driver.Restore(context.TODO(), bufio.NewScanner(&buf), dbPlugin.RestoreConfig{IsGhostTable: true})
+	a.NoError(err)
+
+	// TODO(dragonly): validate ghost table data and schema
 
 	// TODO(dragonly): apply binlog from full backup to
 	// need to use binlog package from gh-ost or go-mysql
