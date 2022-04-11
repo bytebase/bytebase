@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -249,49 +248,6 @@ type ActivitySQLEditorQueryPayload struct {
 	Error        string `json:"error"`
 }
 
-// ActivityRaw is the store model for an Activity.
-// Fields have exactly the same meanings as Activity.
-type ActivityRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	// The object where this activity belongs
-	// e.g if Type is "bb.issue.xxx", then this field refers to the corresponding issue's id.
-	ContainerID int
-
-	// Domain specific fields
-	Type    ActivityType
-	Level   ActivityLevel
-	Comment string
-	Payload string
-}
-
-// ToActivity creates an instance of Activity based on the ActivityRaw.
-// This is intended to be called when we need to compose an Activity relationship.
-func (raw *ActivityRaw) ToActivity() *Activity {
-	return &Activity{
-		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		ContainerID: raw.ContainerID,
-
-		Type:    raw.Type,
-		Level:   raw.Level,
-		Comment: raw.Comment,
-		Payload: raw.Payload,
-	}
-}
-
 // Activity is the API message for an activity.
 type Activity struct {
 	ID int `jsonapi:"primary,activity"`
@@ -369,13 +325,4 @@ type ActivityDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
-}
-
-// ActivityService is the service for activities.
-type ActivityService interface {
-	CreateActivity(ctx context.Context, create *ActivityCreate) (*ActivityRaw, error)
-	FindActivityList(ctx context.Context, find *ActivityFind) ([]*ActivityRaw, error)
-	FindActivity(ctx context.Context, find *ActivityFind) (*ActivityRaw, error)
-	PatchActivity(ctx context.Context, patch *ActivityPatch) (*ActivityRaw, error)
-	DeleteActivity(ctx context.Context, delete *ActivityDelete) error
 }

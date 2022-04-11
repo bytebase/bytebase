@@ -32,18 +32,9 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			}
 			inboxFind.ReadCreatedAfterTs = &createdTs
 		}
-		inboxRawList, err := s.InboxService.FindInboxList(ctx, inboxFind)
+		inboxList, err := s.store.FindInbox(ctx, inboxFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch inbox list").SetInternal(err)
-		}
-		var inboxList []*api.Inbox
-		for _, inboxRaw := range inboxRawList {
-			inbox := inboxRaw.ToInbox()
-			activity, err := s.composeActivityRelationship(ctx, inboxRaw.ActivityRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox activity relationship: %v", inbox.Activity.ID)).SetInternal(err)
-			}
-			inbox.Activity = activity
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -60,7 +51,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
 		}
 
-		summary, err := s.InboxService.FindInboxSummary(ctx, userID)
+		summary, err := s.store.FindInboxSummary(ctx, userID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch inbox summary for user ID: %d", userID)).SetInternal(err)
 		}
@@ -82,20 +73,13 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch inbox request").SetInternal(err)
 		}
 
-		inboxRaw, err := s.InboxService.PatchInbox(ctx, inboxPatch)
+		inbox, err := s.store.PatchInbox(ctx, inboxPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Inbox ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch inbox ID: %v", id)).SetInternal(err)
 		}
-
-		inbox := inboxRaw.ToInbox()
-		activity, err := s.composeActivityRelationship(ctx, inboxRaw.ActivityRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated inbox activity relationship: %v", inbox.ID)).SetInternal(err)
-		}
-		inbox.Activity = activity
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, inbox); err != nil {
