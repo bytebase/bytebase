@@ -73,7 +73,7 @@ onUnmounted(() => {
 });
 
 const vcsList = computed(() => {
-  return vcsStore.getVcsList();
+  return vcsStore.getVCSList();
 });
 
 const eventListener = (event: Event) => {

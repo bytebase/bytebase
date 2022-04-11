@@ -39,7 +39,7 @@ export const useVcsStore = defineStore("vcs", {
       return convert(vcs, includedList);
     },
 
-    getVcsList(): VCS[] {
+    getVCSList(): VCS[] {
       const list = [];
       for (const [_, vcs] of this.vcsById) {
         list.push(vcs);
@@ -47,7 +47,7 @@ export const useVcsStore = defineStore("vcs", {
       return list;
     },
 
-    getVcsById(vcsId: VCSId): VCS {
+    getVCSById(vcsId: VCSId): VCS {
       if (vcsId == EMPTY_ID) {
         return empty("VCS") as VCS;
       }

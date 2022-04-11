@@ -181,7 +181,7 @@ export default defineComponent({
     const router = useRouter();
 
     const vcs = computed((): VCS => {
-      return vcsStore.getVcsById(idFromSlug(props.vcsSlug));
+      return vcsStore.getVCSById(idFromSlug(props.vcsSlug));
     });
 
     const state = reactive<LocalState>({

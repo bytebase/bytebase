@@ -323,7 +323,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return useVcsStore().getVcsById(idFromSlug(slug)).name;
+                    return useVcsStore().getVCSById(idFromSlug(slug)).name;
                   },
                 },
                 component: () =>

@@ -64,7 +64,7 @@ export default defineComponent({
     watchEffect(prepareVCSList);
 
     const vcsList = computed(() => {
-      return vcsStore.getVcsList();
+      return vcsStore.getVCSList();
     });
 
     const addVCSProvider = () => {
