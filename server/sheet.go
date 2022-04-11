@@ -198,24 +198,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheetVCSPayload").SetInternal(err)
 			}
 
-			var sheetSource api.SheetSource
-			switch vcs.Type {
-			case vcsPlugin.GitLabSelfHost:
-				sheetSource = api.SheetFromGitLabSelfHost
-			case vcsPlugin.GitHubCom:
-				sheetSource = api.SheetFromGitHubCom
-			}
-			vscSheetType := api.SheetForSQL
-			sheet, err := s.SheetService.FindSheet(ctx, &api.SheetFind{
-				Name:      &sheetInfo.SheetName,
-				ProjectID: &project.ID,
-				Source:    &sheetSource,
-				Type:      &vscSheetType,
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
-			}
-
 			var databaseID *int
 			// In non-tenant mode, we can set a databaseId for sheet with ENV_NAME and DB_NAME,
 			// and ENV_NAME and DB_NAME is either both present or neither present.
@@ -238,6 +220,23 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				}
 			}
 
+			var sheetSource api.SheetSource
+			switch vcs.Type {
+			case vcsPlugin.GitLabSelfHost:
+				sheetSource = api.SheetFromGitLabSelfHost
+			case vcsPlugin.GitHubCom:
+				sheetSource = api.SheetFromGitHubCom
+			}
+			vscSheetType := api.SheetForSQL
+			sheet, err := s.SheetService.FindSheet(ctx, &api.SheetFind{
+				Name:      &sheetInfo.SheetName,
+				ProjectID: &project.ID,
+				Source:    &sheetSource,
+				Type:      &vscSheetType,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
+			}
 			if sheet == nil {
 				sheetCreate := api.SheetCreate{
 					ProjectID:  projectID,
