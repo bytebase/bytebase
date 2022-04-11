@@ -12,7 +12,7 @@ import {
   EMPTY_ID,
   empty,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   dataSource: ResourceObject,
