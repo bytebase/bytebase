@@ -74,7 +74,7 @@ func (v SheetType) String() string {
 // SheetVCSPayload is the additional data payload of the VCS sheet.
 type SheetVCSPayload struct {
 	FileName     string `json:"fileName"`
-	Path         string `json:"path"`
+	FilePath     string `json:"filePath"`
 	Size         int64  `json:"size"`
 	Author       string `json:"author"`
 	LastCommitID string `json:"lastCommitId"`
@@ -196,7 +196,6 @@ type SheetPatch struct {
 	UpdaterID int
 
 	// Related fields
-	ProjectID  int  `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
@@ -220,6 +219,7 @@ type SheetFind struct {
 	DatabaseID *int
 
 	// Domain fields
+	Name       *string
 	Visibility *SheetVisibility
 	Source     *SheetSource
 	Type       *SheetType
