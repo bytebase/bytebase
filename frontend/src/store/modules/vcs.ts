@@ -10,7 +10,7 @@ import {
   empty,
   EMPTY_ID,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
   return {

@@ -28,15 +28,8 @@
 </template>
 
 <script lang="ts">
-import { useUIStateStore } from "@/store";
-import {
-  watchEffect,
-  computed,
-  onMounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
+import { useCurrentUser, useUIStateStore } from "@/store";
+import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import { useStore } from "vuex";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Project, UNKNOWN_ID } from "../types";
@@ -64,7 +57,7 @@ export default defineComponent({
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     onMounted(() => {
       // Focus on the internal search field when mounted

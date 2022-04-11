@@ -202,10 +202,7 @@
 
 <script lang="ts">
 import { computed, reactive, PropType, watch, defineComponent } from "vue";
-import { useStore } from "vuex";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
-import isEmpty from "lodash-es/isEmpty";
+import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import {
   Environment,
   EnvironmentCreate,
@@ -213,7 +210,7 @@ import {
   Policy,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
-import { useEnvironmentList } from "@/store";
+import { useCurrentUser, useEnvironmentList } from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -243,7 +240,6 @@ export default defineComponent({
   },
   emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   setup(props, { emit }) {
-    const store = useStore();
     const state = reactive<LocalState>({
       environment: cloneDeep(props.environment),
       approvalPolicy: cloneDeep(props.approvalPolicy),
@@ -271,7 +267,7 @@ export default defineComponent({
       }
     );
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentList = useEnvironmentList();
 

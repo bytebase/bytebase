@@ -10,9 +10,9 @@ import {
   ResourceObject,
   RowStatus,
   unknown,
-} from "../../types";
+} from "@/types";
 import { usePolicyStore } from "./policy";
-import { getPrincipalFromIncludedList } from "../modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 import { defineStore } from "pinia";
 import { computed } from "vue";
 
