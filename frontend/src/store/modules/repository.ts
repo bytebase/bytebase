@@ -13,7 +13,7 @@ import {
   VCSId,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useVcsStore } from "@/store";
+import { useVCSStore } from "@/store";
 
 function convert(
   repository: ResourceObject,
@@ -32,7 +32,7 @@ function convert(
 
   for (const item of includedList || []) {
     if (item.type == "vcs" && item.id == vcsId) {
-      vcs = useVcsStore().convert(item, includedList || []);
+      vcs = useVCSStore().convert(item, includedList || []);
     }
     if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item, includedList);

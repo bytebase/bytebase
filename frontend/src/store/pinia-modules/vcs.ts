@@ -28,7 +28,7 @@ function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {
   };
 }
 
-export const useVcsStore = defineStore("vcs", {
+export const useVCSStore = defineStore("vcs", {
   state: (): VCSState => ({
     vcsById: new Map(),
     // repositoryListByVCSId: new Map(),

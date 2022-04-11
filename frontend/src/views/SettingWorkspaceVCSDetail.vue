@@ -157,7 +157,7 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
-import { pushNotification, useOAuthStore, useVcsStore } from "@/store";
+import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -177,7 +177,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
-    const vcsStore = useVcsStore();
+    const vcsStore = useVCSStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {

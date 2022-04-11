@@ -50,7 +50,7 @@ import {
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useOAuthStore, useVcsStore } from "@/store";
+import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -72,7 +72,7 @@ export default defineComponent({
   setup() {
     const { t } = useI18n();
     const router = useRouter();
-    const vcsStore = useVcsStore();
+    const vcsStore = useVCSStore();
 
     const stepList: BBStepTabItem[] = [
       { title: t("version-control.setting.add-git-provider.basic-info.self") },

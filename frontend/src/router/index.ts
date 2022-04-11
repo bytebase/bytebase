@@ -26,7 +26,7 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore, hasFeature, useVcsStore } from "@/store";
+import { useTabStore, hasFeature, useVCSStore } from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -323,7 +323,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return useVcsStore().getVCSById(idFromSlug(slug)).name;
+                    return useVCSStore().getVCSById(idFromSlug(slug)).name;
                   },
                 },
                 component: () =>
@@ -1122,7 +1122,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (vcsSlug) {
-    useVcsStore()
+    useVCSStore()
       .fetchVCSById(idFromSlug(vcsSlug))
       .then(() => {
         next();

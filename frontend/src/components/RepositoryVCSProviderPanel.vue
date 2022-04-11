@@ -42,7 +42,7 @@ import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { OAuthWindowEventPayload, openWindowForOAuth, VCS } from "../types";
 import { isOwner } from "../utils";
-import { pushNotification, useCurrentUser, useVcsStore } from "@/store";
+import { pushNotification, useCurrentUser, useVCSStore } from "@/store";
 
 interface LocalState {
   selectedVCS?: VCS;
@@ -54,7 +54,7 @@ const emit = defineEmits<{
   (event: "set-code", payload: string): void;
 }>();
 
-const vcsStore = useVcsStore();
+const vcsStore = useVCSStore();
 const state = reactive<LocalState>({});
 
 const currentUser = useCurrentUser();
