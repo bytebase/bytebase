@@ -59,11 +59,15 @@
 
 <script lang="ts">
 import { computed, reactive, defineComponent, Ref } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { hasFeature, pushNotification, useUIStateStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUser,
+  useUIStateStore,
+} from "@/store";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -77,12 +81,11 @@ type IntroItem = {
 export default defineComponent({
   name: "QuickStart",
   setup() {
-    const store = useStore();
     const uiStateStore = useUIStateStore();
     const { t } = useI18n();
     const kbarHandler = useKBarHandler();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const introList = reactive<IntroItem[]>([
       {

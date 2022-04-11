@@ -57,7 +57,7 @@ import {
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { useEnvironmentStore } from "@/store";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -80,7 +80,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const statusList: string[] = router.currentRoute.value.query.status
       ? (router.currentRoute.value.query.status as string).split(",")

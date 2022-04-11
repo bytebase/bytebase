@@ -53,7 +53,6 @@
 <script lang="ts">
 import {
   computed,
-  ComputedRef,
   defineComponent,
   PropType,
   reactive,
@@ -62,14 +61,13 @@ import {
 } from "vue";
 import { useStore } from "vuex";
 import {
-  Principal,
   Project,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   ProjectRoleType,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 interface LocalState {
   selectedId: number;
@@ -111,9 +109,7 @@ export default defineComponent({
       selectedId: props.selectedId,
     });
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
     const prepareProjectList = () => {
       store.dispatch("project/fetchProjectListByUser", {

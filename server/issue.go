@@ -648,7 +648,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			schemaVersion, schema = sv, s
 		}
 		if schemaVersion == "" {
-			schemaVersion = defaultMigrationVersionFromTaskID()
+			schemaVersion = common.DefaultMigrationVersion()
 		}
 
 		payload := api.TaskDatabaseCreatePayload{}
@@ -771,7 +771,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 		}
 
-		schemaVersion := defaultMigrationVersionFromTaskID()
+		schemaVersion := common.DefaultMigrationVersion()
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
 			if !s.feature(api.FeatureMultiTenancy) {

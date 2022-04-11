@@ -143,7 +143,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
-import { useEnvironmentStore } from "@/store";
+import { useCurrentUser, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   environmentId: EnvironmentId;
@@ -164,7 +164,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {

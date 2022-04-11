@@ -29,13 +29,13 @@ import {
   defineAction,
 } from "@bytebase/vue-kbar";
 import { compareAction as compare } from "./utils";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RenderResults from "./RenderResults.vue";
 import KBarHelper from "./KBarHelper.vue";
 import KBarFooter from "./KBarFooter.vue";
 import { useI18n } from "vue-i18n";
 import { useModalStackStatus } from "../../bbkit/BBModalStack.vue";
+import { useAuthStore } from "@/store";
 
 export default defineComponent({
   name: "KBarWrapper",
@@ -51,7 +51,6 @@ export default defineComponent({
   },
   setup() {
     const { t } = useI18n();
-    const store = useStore();
     const router = useRouter();
     const modalStack = useModalStackStatus();
 
@@ -66,7 +65,7 @@ export default defineComponent({
         return true;
       }
 
-      const currentUser = store.getters["auth/currentUser"]();
+      const currentUser = useAuthStore().currentUser;
       // totally disable kbar when not logged in
       // since there is no point to show it on signin/signup pages
       return !currentUser || currentUser.id < 0;
