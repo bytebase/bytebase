@@ -237,6 +237,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheet with name: %s, project ID: %d", sheetInfo.SheetName, projectID)).SetInternal(err)
 			}
+
 			if sheet == nil {
 				sheetCreate := api.SheetCreate{
 					ProjectID:  projectID,
