@@ -157,7 +157,7 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
-import { pushNotification, useOAuthStore } from "@/store";
+import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -177,10 +177,11 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const vcsStore = useVCSStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
-      return store.getters["vcs/vcsById"](idFromSlug(props.vcsSlug));
+      return vcsStore.getVCSById(idFromSlug(props.vcsSlug));
     });
 
     const state = reactive<LocalState>({
@@ -266,8 +267,8 @@ export default defineComponent({
               if (!isEmpty(state.secret)) {
                 vcsPatch.secret = state.secret;
               }
-              store
-                .dispatch("vcs/patchVCS", {
+              vcsStore
+                .patchVCS({
                   vcsId: vcs.value.id,
                   vcsPatch,
                 })
@@ -300,8 +301,8 @@ export default defineComponent({
         const vcsPatch: VCSPatch = {
           name: state.name,
         };
-        store
-          .dispatch("vcs/patchVCS", {
+        vcsStore
+          .patchVCS({
             vcsId: vcs.value.id,
             vcsPatch,
           })
@@ -323,7 +324,7 @@ export default defineComponent({
 
     const deleteVCS = () => {
       const name = vcs.value.name;
-      store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
+      vcsStore.deleteVCSById(vcs.value.id).then(() => {
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
