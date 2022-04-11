@@ -274,7 +274,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, ComputedRef } from "vue";
+import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -282,7 +282,6 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { isDBAOrOwner } from "../utils";
 import {
-  Principal,
   InstancePatch,
   DataSourceType,
   Instance,
@@ -293,7 +292,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useDataSourceStore } from "@/store";
+import { pushNotification, useCurrentUser, useDataSourceStore } from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -319,9 +318,7 @@ const store = useStore();
 const { t } = useI18n();
 const dataSourceStore = useDataSourceStore();
 
-const currentUser: ComputedRef<Principal> = computed(() =>
-  store.getters["auth/currentUser"]()
-);
+const currentUser = useCurrentUser();
 
 const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
   return {

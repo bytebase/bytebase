@@ -11,7 +11,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 export function convertBackup(
   backup: ResourceObject,
