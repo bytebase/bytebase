@@ -82,4 +82,5 @@ p, DEVELOPER, /sheet/{id}, GET
 p, DEVELOPER, /sheet/{id}, PATCH
 p, DEVELOPER, /sheet/{id}, PATCH_SELF
 p, DEVELOPER, /sheet/{id}, DELETE_SELF
+p, DEVELOPER, /sheet/project/:projectID/sync, POST
 p, DEVELOPER, /debug, GET
