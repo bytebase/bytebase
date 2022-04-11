@@ -163,7 +163,7 @@ import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import { DataSource, DataSourcePatch, Principal } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useDataSourceStore } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -189,8 +189,8 @@ export default defineComponent({
 
     const store = useStore();
     const router = useRouter();
-
     const { t } = useI18n();
+    const dataSourceStore = useDataSourceStore();
 
     const dataSourceId = idFromSlug(props.dataSourceSlug);
 
@@ -204,7 +204,7 @@ export default defineComponent({
     );
 
     const dataSource = computed((): DataSource => {
-      return store.getters["dataSource/dataSourceById"](dataSourceId);
+      return dataSourceStore.getDataSourceById(dataSourceId);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -240,8 +240,8 @@ export default defineComponent({
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,
       };
-      store
-        .dispatch("dataSource/patchDataSource", {
+      dataSourceStore
+        .patchDataSource({
           databaseId: dataSource.value.databaseId,
           dataSourceid: dataSource.value.id,
           dataSource: dataSourcePatch,
@@ -254,8 +254,8 @@ export default defineComponent({
 
     const doDelete = () => {
       const name = dataSource.value.name;
-      store
-        .dispatch("dataSource/deleteDataSourceById", {
+      dataSourceStore
+        .deleteDataSourceById({
           databaseId: dataSource.value.databaseId,
           dataSourceId,
         })

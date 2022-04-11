@@ -158,6 +158,7 @@ export default defineComponent({
     ];
 
     const deleteMember = (member: DataSourceMember) => {
+      // TODO (yw): there is no action named deleteDataSourceMemberByMemberId
       store
         .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
           databaseId: props.dataSource.database.id,
