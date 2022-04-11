@@ -105,7 +105,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	databaseName := db.connCfg.Database
+	databaseName := db.connCfg.Username
 
 	if db.readonly {
 		db.l.Info("Database is opened in readonly mode. Skip migration and demo data setup.")

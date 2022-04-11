@@ -409,8 +409,6 @@ func (m *Main) newEmbeddedDB() (*store.DB, error) {
 	connCfg := dbdriver.ConnectionConfig{
 		Username: m.profile.pgUser,
 		Password: "",
-		// Follow the PG convention that we use the pg user's name as the database name.
-		Database: m.profile.pgUser,
 		Host:     common.GetPostgresSocketDir(),
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
