@@ -458,15 +458,13 @@ func (m *Main) Run(ctx context.Context) error {
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
 	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.ActivityService = store.NewActivityService(m.l, db)
-	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
 	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 
-	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
 	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
 	if err != nil {
