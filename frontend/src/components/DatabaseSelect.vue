@@ -32,12 +32,19 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch, watchEffect, PropType } from "vue";
+import { useCurrentUser } from "@/store";
+import {
+  computed,
+  reactive,
+  watch,
+  watchEffect,
+  PropType,
+  defineComponent,
+} from "vue";
 import { useStore } from "vuex";
 import {
   UNKNOWN_ID,
   Database,
-  Principal,
   ProjectId,
   InstanceId,
   EnvironmentId,
@@ -47,7 +54,7 @@ interface LocalState {
   selectedId?: number;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseSelect",
   props: {
     selectedId: {
@@ -82,9 +89,7 @@ export default {
       selectedId: props.selectedId,
     });
 
-    const currentUser = computed(
-      (): Principal => store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
@@ -172,5 +177,5 @@ export default {
       databaseList,
     };
   },
-};
+});
 </script>

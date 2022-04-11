@@ -314,7 +314,12 @@ import {
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { hasFeature, useEnvironmentStore, useLabelStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useEnvironmentStore,
+  useLabelStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
 
@@ -403,7 +408,7 @@ export default defineComponent({
       }
     );
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const fieldValue = (field: InputField): string => {
       return props.issue.payload[field.id];

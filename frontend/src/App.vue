@@ -24,7 +24,6 @@
 
 <script lang="ts" setup>
 import { reactive, watchEffect, onErrorCaptured } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 import { isDev } from "./utils";
@@ -35,7 +34,7 @@ import BBModalStack from "./bbkit/BBModalStack.vue";
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { t } from "./plugins/i18n";
-import { useNotificationStore } from "./store";
+import { useAuthStore, useNotificationStore } from "./store";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -50,21 +49,21 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
-const store = useStore();
+const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const router = useRouter();
 
 const state = reactive<LocalState>({
   notificationList: [],
-  prevLoggedIn: store.getters["auth/isLoggedIn"](),
+  prevLoggedIn: authStore.isLoggedIn(),
 });
 
 setInterval(() => {
-  const loggedIn = store.getters["auth/isLoggedIn"]();
+  const loggedIn = authStore.isLoggedIn();
   if (state.prevLoggedIn != loggedIn) {
     state.prevLoggedIn = loggedIn;
     if (!loggedIn) {
-      store.dispatch("auth/logout").then(() => {
+      authStore.logout().then(() => {
         router.push({ name: "auth.signin" });
       });
     }

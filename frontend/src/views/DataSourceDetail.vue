@@ -161,9 +161,9 @@ import isEqual from "lodash-es/isEqual";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import DataSourceMemberTable from "../components/DataSourceMemberTable.vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
-import { DataSource, DataSourcePatch, Principal } from "../types";
+import { DataSource, DataSourcePatch } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -199,9 +199,7 @@ export default defineComponent({
       showPassword: false,
     });
 
-    const currentUser = computed(
-      (): Principal => store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
     const dataSource = computed((): DataSource => {
       return store.getters["dataSource/dataSourceById"](dataSourceId);

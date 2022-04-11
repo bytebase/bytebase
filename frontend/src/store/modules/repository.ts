@@ -12,7 +12,7 @@ import {
   VCS,
   VCSId,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   repository: ResourceObject,
