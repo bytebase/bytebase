@@ -8,9 +8,9 @@ import {
   unknown,
 } from "@/types";
 import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
-import { getPrincipalFromIncludedList } from "../modules/principal";
-import { defineStore } from "pinia";
+import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
+import { defineStore } from "pinia";
 
 function convert(
   policy: ResourceObject,

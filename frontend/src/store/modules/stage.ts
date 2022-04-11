@@ -9,8 +9,10 @@ import {
   Pipeline,
   Environment,
 } from "../../types";
-import { useEnvironmentStore } from "../pinia-modules";
-import { getPrincipalFromIncludedList } from "./principal";
+import {
+  getPrincipalFromIncludedList,
+  useEnvironmentStore,
+} from "../pinia-modules";
 
 const state: () => StageState = () => ({});
 

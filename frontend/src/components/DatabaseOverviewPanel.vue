@@ -128,7 +128,9 @@
                 </div>
                 <div class="relative flex justify-start">
                   <router-link
-                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(ds)}`"
+                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(
+                      ds
+                    )}`"
                     class="pr-3 bg-white font-medium normal-link"
                     >{{ ds.name }}</router-link
                   >
@@ -206,7 +208,7 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser } from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -233,7 +235,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({});
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareTableList = () => {
       store.dispatch("table/fetchTableListByDatabaseId", props.database.id);

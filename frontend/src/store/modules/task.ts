@@ -18,7 +18,7 @@ import {
   TaskStatusPatch,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 const state: () => TaskState = () => ({});
 

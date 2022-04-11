@@ -173,7 +173,12 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useMemberStore,
+} from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -198,7 +203,7 @@ export default defineComponent({
     const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       principalId: UNKNOWN_ID,
@@ -280,9 +285,7 @@ export default defineComponent({
         role: hasRBACFeature.value ? state.role : "OWNER",
         roleProvider: "BYTEBASE",
       };
-      const member = store.getters["member/memberByPrincipalId"](
-        state.principalId
-      );
+      const member = useMemberStore().memberByPrincipalId(state.principalId);
       store
         .dispatch("project/createdMember", {
           projectId: props.project.id,

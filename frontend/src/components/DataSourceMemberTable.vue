@@ -106,13 +106,13 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, defineComponent } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -142,7 +142,7 @@ export default defineComponent({
 
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const columnList = [
       {
