@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/webhook"
+	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -16,8 +17,8 @@ import (
 
 // ActivityManager is the activity manager.
 type ActivityManager struct {
-	s               *Server
-	activityService api.ActivityService
+	s     *Server
+	store *store.Store
 }
 
 // ActivityMeta is the activity metadata.
@@ -26,21 +27,16 @@ type ActivityMeta struct {
 }
 
 // NewActivityManager creates an activity manager.
-func NewActivityManager(server *Server, activityService api.ActivityService) *ActivityManager {
+func NewActivityManager(server *Server, store *store.Store) *ActivityManager {
 	return &ActivityManager{
-		s:               server,
-		activityService: activityService,
+		s:     server,
+		store: store,
 	}
 }
 
 // CreateActivity creates an activity.
 func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.ActivityCreate, meta *ActivityMeta) (*api.Activity, error) {
-	activityRaw, err := m.activityService.CreateActivity(ctx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	activity, err := m.s.composeActivityRelationship(ctx, activityRaw)
+	activity, err := m.store.CreateActivity(ctx, create)
 	if err != nil {
 		return nil, err
 	}
