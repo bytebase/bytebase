@@ -8,107 +8,92 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.InboxService = (*InboxService)(nil)
-)
+// inboxRaw is the store model for an Inbox.
+// Fields have exactly the same meanings as Inbox.
+type inboxRaw struct {
+	ID int
 
-// InboxService represents a service for managing inbox.
-type InboxService struct {
-	l  *zap.Logger
-	db *DB
-
-	activityService api.ActivityService
+	// Domain specific fields
+	ReceiverID  int
+	ActivityRaw *activityRaw
+	Status      api.InboxStatus
 }
 
-// NewInboxService returns a new instance of InboxService.
-func NewInboxService(logger *zap.Logger, db *DB, activityService api.ActivityService) *InboxService {
-	return &InboxService{l: logger, db: db, activityService: activityService}
+// toInbox creates an instance of Inbox based on the inboxRaw.
+// This is intended to be called when we need to compose an Inbox relationship.
+func (raw *inboxRaw) toInbox() *api.Inbox {
+	return &api.Inbox{
+		ID: raw.ID,
+
+		ReceiverID: raw.ReceiverID,
+		Status:     raw.Status,
+	}
 }
 
-// CreateInbox creates a new inbox.
-func (s *InboxService) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.InboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// CreateInbox creates an instance of Inbox
+func (s *Store) CreateInbox(ctx context.Context, create *api.InboxCreate) (*api.Inbox, error) {
+	inboxRaw, err := s.createInboxRaw(ctx, create)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("Failed to create Inbox with InboxCreate[%+v], error[%w]", create, err)
 	}
-	defer tx.PTx.Rollback()
-
-	inbox, err := s.createInbox(ctx, tx.PTx, create)
+	inbox, err := s.composeInbox(ctx, inboxRaw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to compose Inbox with inboxRaw[%+v], error[%w]", inboxRaw, err)
 	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
 	return inbox, nil
 }
 
-// FindInboxList retrieves a list of inboxes based on find.
-func (s *InboxService) FindInboxList(ctx context.Context, find *api.InboxFind) ([]*api.InboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// GetInboxByID gets an instance of Inbox
+func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
+	find := &api.InboxFind{ID: &id}
+	inboxRaw, err := s.getInboxRawByID(ctx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("Failed to get Inbox with ID[%d], error[%w]", id, err)
 	}
-	defer tx.PTx.Rollback()
-
-	list, err := findInboxList(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// FindInbox retrieves a single inbox based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *InboxService) FindInbox(ctx context.Context, find *api.InboxFind) (*api.InboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	list, err := findInboxList(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
+	if inboxRaw == nil {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d inboxes with filter %+v, expect 1", len(list), find)}
 	}
-	return list[0], nil
+	inbox, err := s.composeInbox(ctx, inboxRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Inbox with inboxRaw[%+v], error[%w]", inboxRaw, err)
+	}
+	return inbox, nil
 }
 
-// PatchInbox updates an existing inbox by ID.
-// Returns ENOTFOUND if inbox does not exist.
-func (s *InboxService) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.InboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// FindInbox finds a list of Inbox instances
+func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
+	inboxRawList, err := s.findInboxRaw(ctx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("Failed to find Inbox list, error[%w]", err)
 	}
-	defer tx.PTx.Rollback()
+	var inboxList []*api.Inbox
+	for _, raw := range inboxRawList {
+		inbox, err := s.composeInbox(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose Inbox with inboxRaw[%+v], error[%w]", raw, err)
+		}
+		inboxList = append(inboxList, inbox)
+	}
+	return inboxList, nil
+}
 
-	inbox, err := s.patchInbox(ctx, tx.PTx, patch)
+// PatchInbox patches an instance of Inbox
+func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inbox, error) {
+	inboxRaw, err := s.patchInboxRaw(ctx, patch)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("Failed to patch Inbox with InboxPatch[%+v], error[%w]", patch, err)
 	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
+	inbox, err := s.composeInbox(ctx, inboxRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Inbox with inboxRaw[%+v], error[%w]", inboxRaw, err)
 	}
-
 	return inbox, nil
 }
 
 // FindInboxSummary returns the inbox summary for a particular principal
-func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
+func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -160,8 +145,100 @@ func (s *InboxService) FindInboxSummary(ctx context.Context, principalID int) (*
 	return &inboxSummary, nil
 }
 
-// createInbox creates a new inbox.
-func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*api.InboxRaw, error) {
+// composeInbox composes an instance of Inbox by inboxRaw
+func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, error) {
+	inbox := raw.toInbox()
+
+	activity, err := s.composeActivity(ctx, raw.ActivityRaw)
+	if err != nil {
+		return nil, err
+	}
+	inbox.Activity = activity
+
+	return inbox, nil
+}
+
+// createInboxRaw creates a new inbox.
+func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*inboxRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	inbox, err := s.createInboxImpl(ctx, tx.PTx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return inbox, nil
+}
+
+// findInboxRaw retrieves a list of inboxes based on find.
+func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inboxRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findInboxImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// getInboxRawByID retrieves a single inbox based on find.
+// Returns ECONFLICT if finding more than 1 matching records.
+func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inboxRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findInboxImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) == 0 {
+		return nil, nil
+	} else if len(list) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d inboxes with filter %+v, expect 1", len(list), find)}
+	}
+	return list[0], nil
+}
+
+// patchInboxRaw updates an existing inbox by ID.
+// Returns ENOTFOUND if inbox does not exist.
+func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inboxRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	inbox, err := s.patchInboxImpl(ctx, tx.PTx, patch)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return inbox, nil
+}
+
+// createInboxImpl creates a new inbox.
+func (s *Store) createInboxImpl(ctx context.Context, tx *sql.Tx, create *api.InboxCreate) (*inboxRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO inbox (
@@ -182,7 +259,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var inboxRaw api.InboxRaw
+	var inboxRaw inboxRaw
 	var activityID int
 	if err := row.Scan(
 		&inboxRaw.ID,
@@ -193,10 +270,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 		return nil, FormatError(err)
 	}
 
-	activityFind := &api.ActivityFind{
-		ID: &activityID,
-	}
-	activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
+	activityRaw, err := s.getActivityRawByID(ctx, activityID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -205,7 +279,7 @@ func (s *InboxService) createInbox(ctx context.Context, tx *sql.Tx, create *api.
 	return &inboxRaw, nil
 }
 
-func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api.InboxRaw, error) {
+func findInboxImpl(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*inboxRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where = append(where, "inbox.activity_id = activity.id")
@@ -245,10 +319,10 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into inboxRawList.
-	var inboxRawList []*api.InboxRaw
+	var inboxRawList []*inboxRaw
 	for rows.Next() {
-		var inboxRaw api.InboxRaw
-		inboxRaw.ActivityRaw = &api.ActivityRaw{}
+		var inboxRaw inboxRaw
+		inboxRaw.ActivityRaw = &activityRaw{}
 		if err := rows.Scan(
 			&inboxRaw.ID,
 			&inboxRaw.ReceiverID,
@@ -276,8 +350,8 @@ func findInboxList(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*api
 	return inboxRawList, nil
 }
 
-// patchInbox updates a inbox by ID. Returns the new state of the inbox after update.
-func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*api.InboxRaw, error) {
+// patchInboxImpl updates a inbox by ID. Returns the new state of the inbox after update.
+func (s *Store) patchInboxImpl(ctx context.Context, tx *sql.Tx, patch *api.InboxPatch) (*inboxRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"status = $1"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)
@@ -297,7 +371,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 	defer row.Close()
 
 	if row.Next() {
-		var inboxRaw api.InboxRaw
+		var inboxRaw inboxRaw
 		var activityID int
 		if err := row.Scan(
 			&inboxRaw.ID,
@@ -308,10 +382,7 @@ func (s *InboxService) patchInbox(ctx context.Context, tx *sql.Tx, patch *api.In
 			return nil, FormatError(err)
 		}
 
-		activityFind := &api.ActivityFind{
-			ID: &activityID,
-		}
-		activityRaw, err := s.activityService.FindActivity(ctx, activityFind)
+		activityRaw, err := s.getActivityRawByID(ctx, activityID)
 		if err != nil {
 			return nil, FormatError(err)
 		}
