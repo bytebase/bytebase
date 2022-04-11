@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed, defineComponent, watchEffect } from "vue";
 import { useStore } from "vuex";
 
 import { Project, UNKNOWN_ID } from "../types";
@@ -17,8 +17,9 @@ import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useCurrentUser } from "@/store";
 
-export default {
+export default defineComponent({
   name: "ProjectListSidePanel",
   props: {},
   setup() {
@@ -26,7 +27,7 @@ export default {
     const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareProjectList = () => {
       // It will also be called when user logout
@@ -78,5 +79,5 @@ export default {
       outlineItemList,
     };
   },
-};
+});
 </script>

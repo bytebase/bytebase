@@ -89,10 +89,9 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isOwner, isDev } from "../utils";
-import { useRouterStore } from "@/store";
+import { useCurrentUser, useRouterStore } from "@/store";
 
 interface LocalState {
   collapseState: boolean;
@@ -107,7 +106,6 @@ export default defineComponent({
     },
   },
   setup() {
-    const store = useStore();
     const routerStore = useRouterStore();
     const router = useRouter();
 
@@ -115,7 +113,7 @@ export default defineComponent({
       collapseState: true,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const showOwnerItem = computed((): boolean => {
       return isOwner(currentUser.value.role);

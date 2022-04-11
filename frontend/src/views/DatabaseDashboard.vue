@@ -49,6 +49,7 @@ import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
+  useCurrentUser,
   useEnvironmentList,
   useEnvironmentStore,
   useUIStateStore,
@@ -85,7 +86,7 @@ export default defineComponent({
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentList = useEnvironmentList(["NORMAL"]);
 

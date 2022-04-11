@@ -11,7 +11,7 @@ import {
   UNKNOWN_ID,
   DeploymentConfigPatch,
 } from "@/types";
-import { getPrincipalFromIncludedList } from "../modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   deployment: ResourceObject,

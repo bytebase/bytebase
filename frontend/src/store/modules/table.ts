@@ -8,7 +8,7 @@ import {
   TableState,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 function convert(
   table: ResourceObject,

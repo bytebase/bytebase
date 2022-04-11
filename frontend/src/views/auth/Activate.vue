@@ -87,10 +87,10 @@
 </template>
 
 <script lang="ts">
-import { reactive } from "vue";
-import { useStore } from "vuex";
+import { defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { ActivateInfo, RoleType } from "../../types";
+import { useAuthStore } from "@/store";
 
 interface LocalState {
   email: string;
@@ -99,10 +99,9 @@ interface LocalState {
   role: RoleType;
 }
 
-export default {
+export default defineComponent({
   name: "Activate",
   setup() {
-    const store = useStore();
     const router = useRouter();
     const token = router.currentRoute.value.query.token as string;
 
@@ -121,9 +120,11 @@ export default {
         name: state.name,
         token: token,
       };
-      store.dispatch("auth/activate", activateInfo).then(() => {
-        router.push("/");
-      });
+      useAuthStore()
+        .activate(activateInfo)
+        .then(() => {
+          router.push("/");
+        });
     };
 
     return {
@@ -131,5 +132,5 @@ export default {
       tryActivate,
     };
   },
-};
+});
 </script>

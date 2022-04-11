@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { Anomaly, ResourceObject } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { Anomaly, ResourceObject } from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   anomaly: ResourceObject,

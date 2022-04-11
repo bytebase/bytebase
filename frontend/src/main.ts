@@ -20,6 +20,7 @@ import {
   pinia,
   pushNotification,
   useActuatorStore,
+  useAuthStore,
   useSubscriptionStore,
 } from "./store";
 import {
@@ -80,7 +81,7 @@ axios.interceptors.response.use(
         const host = useActuatorStore().info?.host;
         if (host && error.response.request.responseURL.startsWith(host))
           try {
-            await store.dispatch("auth/logout");
+            await useAuthStore().logout();
           } finally {
             router.push({ name: "auth.signin" });
           }
@@ -153,10 +154,10 @@ const initSubscription = () => {
   const subscriptionStore = useSubscriptionStore();
   return subscriptionStore.fetchSubscription();
 };
-Promise.all([
-  initActuator(),
-  initSubscription(),
-  store.dispatch("auth/restoreUser"),
-]).finally(() => {
+const restoreUser = () => {
+  const authStore = useAuthStore();
+  return authStore.restoreUser();
+};
+Promise.all([initActuator(), initSubscription(), restoreUser()]).finally(() => {
   app.mount("#app");
 });
