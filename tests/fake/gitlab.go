@@ -276,7 +276,6 @@ func (gl *GitLab) GetFiles(gitlabProjectID string, filePaths ...string) (map[str
 	// Get files
 	files := make(map[string]string, len(filePaths))
 	for _, path := range filePaths {
-
 		if content, ok := pd.files[path]; ok {
 			files[path] = content
 		}
