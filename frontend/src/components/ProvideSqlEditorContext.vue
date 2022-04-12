@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useInstanceStore } from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -55,7 +55,7 @@ const prepareAccessibleConnectionByProject = async () => {
   await Promise.all(promises);
 };
 
-const prepareSqlEdtiorContext = async () => {
+const prepareSqlEditorContext = async () => {
   store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: true });
   let connectionTree = [];
 
@@ -73,7 +73,7 @@ const prepareSqlEdtiorContext = async () => {
       return connectionAtom;
     };
 
-  const instanceList = await store.dispatch("instance/fetchInstanceList");
+  const instanceList = await useInstanceStore().fetchInstanceList();
   const filteredInstanceList = instanceList.filter((instance: Instance) =>
     state.instanceIdList.has(instance.id)
   );
@@ -87,7 +87,7 @@ const prepareSqlEdtiorContext = async () => {
 
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
-    );
+    )!;
     const filteredDatabaseList = databaseList.filter((database: Database) =>
       state.databaseIdList.has(database.id)
     );
@@ -102,9 +102,9 @@ const prepareSqlEdtiorContext = async () => {
         db.id
       );
 
-      const databaseItem = instanceItem.children.find(
+      const databaseItem = instanceItem.children!.find(
         (item: ConnectionAtom) => item.id === db.id
-      );
+      )!;
 
       databaseItem.children = tableList.map(mapConnectionAtom("table", db.id));
     }
@@ -118,6 +118,6 @@ const prepareSqlEdtiorContext = async () => {
 
 onMounted(async () => {
   await prepareAccessibleConnectionByProject();
-  await prepareSqlEdtiorContext();
+  await prepareSqlEditorContext();
 });
 </script>

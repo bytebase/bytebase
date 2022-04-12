@@ -123,14 +123,14 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { Backup, Database, MigrationHistory } from "../types";
 import { bytesToString, databaseSlug, migrationHistorySlug } from "../utils";
-import { useStore } from "vuex";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useInstanceStore } from "@/store";
 
 interface LocalState {
   showRestoreBackupModal: boolean;
@@ -138,7 +138,7 @@ interface LocalState {
   loadingMigrationHistory: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "BackupTable",
   components: { CreateDatabasePrepForm },
   props: {
@@ -157,7 +157,6 @@ export default {
   },
   setup(props) {
     const router = useRouter();
-    const store = useStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -255,8 +254,8 @@ export default {
 
     const gotoMigrationHistory = (backup: Backup) => {
       state.loadingMigrationHistory = true;
-      store
-        .dispatch("instance/fetchMigrationHistoryByVersion", {
+      useInstanceStore()
+        .fetchMigrationHistoryByVersion({
           instanceId: props.database.instance.id,
           databaseName: props.database.name,
           version: backup.migrationHistoryVersion,
@@ -296,5 +295,5 @@ export default {
       statusIconClass,
     };
   },
-};
+});
 </script>

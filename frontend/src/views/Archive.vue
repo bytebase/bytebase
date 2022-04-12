@@ -52,6 +52,7 @@ import {
   useCurrentUser,
   useEnvironmentList,
   useEnvironmentStore,
+  useInstanceStore,
 } from "@/store";
 
 const PROJECT_TAB = 0;
@@ -68,6 +69,7 @@ export default defineComponent({
   components: { EnvironmentTable, InstanceTable, ProjectTable },
   setup() {
     const { t } = useI18n();
+    const instanceStore = useInstanceStore();
 
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
@@ -88,7 +90,7 @@ export default defineComponent({
       }
 
       if (isDBAOrOwner(currentUser.value.role)) {
-        store.dispatch("instance/fetchInstanceList", ["ARCHIVED"]);
+        instanceStore.fetchInstanceList(["ARCHIVED"]);
 
         useEnvironmentStore().fetchEnvironmentList(["ARCHIVED"]);
       }
@@ -103,7 +105,7 @@ export default defineComponent({
     });
 
     const instanceList = computed((): Instance[] => {
-      return store.getters["instance/instanceList"](["ARCHIVED"]);
+      return instanceStore.getInstanceList(["ARCHIVED"]);
     });
 
     const environmentList = useEnvironmentList(["ARCHIVED"]);

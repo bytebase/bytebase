@@ -18,7 +18,11 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList, useActivityStore } from "../pinia";
+import {
+  getPrincipalFromIncludedList,
+  useActivityStore,
+  useInstanceStore,
+} from "../pinia-modules";
 
 function convert(
   issue: ResourceObject,
@@ -157,14 +161,10 @@ const actions = {
     // since other UIs are getting instance/database by id from the store.
     for (const stage of issue.pipeline.stageList) {
       for (const task of stage.taskList) {
-        commit(
-          "instance/setInstanceById",
-          {
-            instanceId: task.instance.id,
-            instance: task.instance,
-          },
-          { root: true }
-        );
+        useInstanceStore().setInstanceById({
+          instanceId: task.instance.id,
+          instance: task.instance,
+        });
 
         if (task.database) {
           commit(
