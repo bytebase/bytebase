@@ -11,6 +11,7 @@ export * from "./deployment";
 export * from "./environment";
 export * from "./gitlab";
 export * from "./issueSubscriber";
+export * from "./inbox";
 export * from "./instance";
 export * from "./label";
 export * from "./member";
