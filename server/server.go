@@ -48,7 +48,6 @@ type Server struct {
 	ViewService             api.ViewService
 	IndexService            api.IndexService
 	IssueService            api.IssueService
-	IssueSubscriberService  api.IssueSubscriberService
 	PipelineService         api.PipelineService
 	StageService            api.StageService
 	TaskService             api.TaskService
