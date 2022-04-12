@@ -135,18 +135,15 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Activity ID is not a number: %s"+activityIDStr)).SetInternal(err)
 			}
 
-			activityFind := &api.ActivityFind{
-				ID: &activityID,
-			}
-			activityRaw, err := s.ActivityService.FindActivity(ctx, activityFind)
+			activity, err := s.store.GetActivityByID(ctx, activityID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
-			if activityRaw == nil {
+			if activity == nil {
 				return false, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", activityID))
 			}
 
-			return activityRaw.CreatorID == curPrincipalID, nil
+			return activity.CreatorID == curPrincipalID, nil
 		}
 	} else if strings.HasPrefix(c.Path(), "/api/bookmark") {
 		if bookmarkIDStr := c.Param("bookmarkID"); bookmarkIDStr != "" {
@@ -175,10 +172,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Inbox ID is not a number: %s", inboxIDStr)).SetInternal(err)
 			}
 
-			inboxFind := &api.InboxFind{
-				ID: &inboxID,
-			}
-			inbox, err := s.InboxService.FindInbox(ctx, inboxFind)
+			inbox, err := s.store.GetInboxByID(ctx, inboxID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
