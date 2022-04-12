@@ -26,6 +26,7 @@ import {
   useAnomalyStore,
   useDataSourceStore,
   useInstanceStore,
+  useProjectStore,
 } from "../pinia-modules";
 
 function convert(
@@ -75,7 +76,7 @@ function convert(
       instance = useInstanceStore().convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = useProjectStore().convert(item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
       sourceBackup = useBackupStore().convert(item, includedList);

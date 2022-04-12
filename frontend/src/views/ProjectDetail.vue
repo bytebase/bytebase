@@ -59,7 +59,7 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
-import { useEnvironmentList } from "@/store";
+import { useEnvironmentList, useProjectStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -89,13 +89,12 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const route = useRoute();
+    const projectStore = useProjectStore();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     const environmentList = useEnvironmentList(["NORMAL"]);
