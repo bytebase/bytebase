@@ -77,7 +77,6 @@ import {
   reactive,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
   Database,
@@ -89,7 +88,7 @@ import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { instanceSlug, isDBAOrOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useInstanceStore } from "@/store";
 
 interface LocalState {
   migrationSetupStatus: MigrationSchemaStatus;
@@ -113,7 +112,7 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
 
-    const store = useStore();
+    const instanceStore = useInstanceStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -126,13 +125,13 @@ export default defineComponent({
 
     const prepareMigrationHistoryList = () => {
       state.loading = true;
-      store
-        .dispatch("instance/checkMigrationSetup", props.database.instance.id)
+      instanceStore
+        .checkMigrationSetup(props.database.instance.id)
         .then((migration: InstanceMigration) => {
           state.migrationSetupStatus = migration.status;
           if (state.migrationSetupStatus == "OK") {
-            store
-              .dispatch("instance/fetchMigrationHistory", {
+            instanceStore
+              .fetchMigrationHistory({
                 instanceId: props.database.instance.id,
                 databaseName: props.database.name,
               })
@@ -201,9 +200,10 @@ export default defineComponent({
         return [
           {
             title: "",
-            list: store.getters[
-              "instance/migrationHistoryListByInstanceIdAndDatabaseName"
-            ](props.database.instance.id, props.database.name),
+            list: instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+              props.database.instance.id,
+              props.database.name
+            ),
           },
         ];
       }

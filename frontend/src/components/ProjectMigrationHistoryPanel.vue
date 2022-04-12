@@ -26,8 +26,7 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive, ref, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { defineComponent, PropType, reactive, ref, watchEffect } from "vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
   Database,
@@ -37,6 +36,7 @@ import {
 } from "../types";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { fullDatabasePath } from "../utils";
+import { useInstanceStore } from "@/store";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;
@@ -46,7 +46,7 @@ interface LocalState {
   migrationHistorySectionList: BBTableSectionDataSource<MigrationHistory>[];
 }
 
-export default {
+export default defineComponent({
   name: "ProjectMigrationHistoryPanel",
   components: { MigrationHistoryTable },
   props: {
@@ -62,7 +62,7 @@ export default {
   setup(props) {
     const searchField = ref();
 
-    const store = useStore();
+    const instanceStore = useInstanceStore();
 
     const state = reactive<LocalState>({
       databaseSectionList: [],
@@ -73,12 +73,12 @@ export default {
       state.databaseSectionList = [];
       state.migrationHistorySectionList = [];
       for (const database of databaseList) {
-        store
-          .dispatch("instance/checkMigrationSetup", database.instance.id)
+        instanceStore
+          .checkMigrationSetup(database.instance.id)
           .then((migration: InstanceMigration) => {
             if (migration.status == "OK") {
-              store
-                .dispatch("instance/fetchMigrationHistory", {
+              instanceStore
+                .fetchMigrationHistory({
                   instanceId: database.instance.id,
                   databaseName: database.name,
                   limit: MAX_MIGRATION_HISTORY_COUNT,
@@ -120,5 +120,5 @@ export default {
       state,
     };
   },
-};
+});
 </script>
