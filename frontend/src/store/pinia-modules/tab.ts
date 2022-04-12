@@ -30,7 +30,7 @@ export const useTabStore = defineStore("tab", {
     setTabState(payload: Partial<TabState>) {
       Object.assign(this, payload);
     },
-    addTab(payload: AnyTabInfo) {
+    addTab(payload?: AnyTabInfo) {
       const defaultTab = getDefaultTab();
 
       const newTab = {

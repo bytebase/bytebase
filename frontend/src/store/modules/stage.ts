@@ -9,7 +9,10 @@ import {
   Pipeline,
   Environment,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import {
+  getPrincipalFromIncludedList,
+  useEnvironmentStore,
+} from "../pinia-modules";
 
 const state: () => StageState = () => ({});
 
@@ -43,13 +46,14 @@ function convertPartial(
     }
   }
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (stage.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = rootGetters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
   }
 

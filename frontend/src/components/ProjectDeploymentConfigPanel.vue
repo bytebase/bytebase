@@ -128,7 +128,6 @@ import {
 import { useStore } from "vuex";
 import {
   Project,
-  Environment,
   Database,
   AvailableLabel,
   DeploymentConfig,
@@ -143,7 +142,13 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
-import { useLabelStore } from "@/store";
+import {
+  pushNotification,
+  useDeploymentStore,
+  useEnvironmentList,
+  useEnvironmentStore,
+  useLabelStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 type LocalState = {
@@ -168,6 +173,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const deploymentStore = useDeploymentStore();
     const labelStore = useLabelStore();
     const { t } = useI18n();
     const dialog = useDialog();
@@ -190,14 +196,12 @@ export default defineComponent({
     });
 
     const prepareList = () => {
-      store.dispatch("environment/fetchEnvironmentList");
+      useEnvironmentStore().fetchEnvironmentList();
       labelStore.fetchLabelList();
       store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
     };
 
-    const environmentList = computed(
-      () => store.getters["environment/environmentList"]() as Environment[]
-    );
+    const environmentList = useEnvironmentList();
 
     const { labelList } = storeToRefs(labelStore);
 
@@ -222,10 +226,9 @@ export default defineComponent({
     };
 
     watchEffect(async () => {
-      const dep = (await store.dispatch(
-        "deployment/fetchDeploymentConfigByProjectId",
+      const dep = await deploymentStore.fetchDeploymentConfigByProjectId(
         props.project.id
-      )) as DeploymentConfig;
+      );
 
       if (dep.id === UNKNOWN_ID) {
         // if the project has no related deployment-config
@@ -301,11 +304,11 @@ export default defineComponent({
       const deploymentConfigPatch: DeploymentConfigPatch = {
         payload: JSON.stringify(state.deployment.schedule),
       };
-      await store.dispatch("deployment/patchDeploymentConfigByProjectId", {
+      await deploymentStore.patchDeploymentConfigByProjectId({
         projectId: props.project.id,
         deploymentConfigPatch,
       });
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("deployment-config.update-success"),

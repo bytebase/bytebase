@@ -139,6 +139,7 @@ import { IssueTemplate } from "../../plugins";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import { BBContextMenu } from "../../bbkit";
+import { useCurrentUser } from "@/store";
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
@@ -191,7 +192,7 @@ export default defineComponent({
       title: "",
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const issueContext = computed((): IssueContext => {
       return {

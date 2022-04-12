@@ -305,6 +305,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useCurrentUser } from "@/store";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
@@ -357,7 +358,7 @@ export default defineComponent({
       selectedIndex: OVERVIEW_TAB,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const database = computed((): Database => {
       return store.getters["database/databaseById"](
@@ -541,7 +542,7 @@ export default defineComponent({
           labels,
         })
         .then((updatedDatabase) => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(

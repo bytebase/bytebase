@@ -47,16 +47,12 @@ type Server struct {
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
 	IndexService            api.IndexService
-	BackupService           api.BackupService
 	IssueService            api.IssueService
 	IssueSubscriberService  api.IssueSubscriberService
 	PipelineService         api.PipelineService
 	StageService            api.StageService
 	TaskService             api.TaskService
 	TaskCheckRunService     api.TaskCheckRunService
-	ActivityService         api.ActivityService
-	InboxService            api.InboxService
-	BookmarkService         api.BookmarkService
 	RepositoryService       api.RepositoryService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
@@ -182,7 +178,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	}
 
 	// Middleware
-	if mode == "dev" || debug {
+	if mode == common.ReleaseModeDev || debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")

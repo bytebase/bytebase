@@ -22,7 +22,11 @@ import {
   unknown,
 } from "../../types";
 import { InstanceUser } from "../../types/InstanceUser";
-import { getPrincipalFromIncludedList } from "./principal";
+import {
+  getPrincipalFromIncludedList,
+  useEnvironmentStore,
+} from "../pinia-modules";
+import { useAnomalyStore, useDataSourceStore } from "@/store";
 
 function convert(
   instance: ResourceObject,
@@ -77,13 +81,14 @@ function convert(
     dataSourceList: [],
   };
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (instance.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = rootGetters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
 
     if (
@@ -94,7 +99,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i] = useAnomalyStore().convert(item);
         anomalyList[i].instance = instancePartial;
       }
     }
@@ -107,7 +112,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
       }
     }
   }

@@ -141,7 +141,7 @@ import {
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser, useEnvironmentList } from "@/store";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -165,7 +165,7 @@ export default defineComponent({
     const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       selectedIndex: isDBAOrOwner(currentUser.value.role)
@@ -174,9 +174,7 @@ export default defineComponent({
       searchText: "",
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout

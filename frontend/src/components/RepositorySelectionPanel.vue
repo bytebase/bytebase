@@ -40,14 +40,13 @@ export default { name: "RepositorySelectionPanel" };
 </script>
 
 <script setup lang="ts">
-import { useStore } from "vuex";
 import { reactive, computed, onMounted } from "vue";
 import {
   ExternalRepositoryInfo,
   OAuthToken,
   ProjectRepositoryConfig,
 } from "../types";
-import { useGitlabStore } from "@/store";
+import { useOAuthStore, useGitlabStore } from "@/store";
 
 interface LocalState {
   repositoryList: ExternalRepositoryInfo[];
@@ -62,7 +61,6 @@ const emit = defineEmits<{
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
-const store = useStore();
 const gitlabStore = useGitlabStore();
 const state = reactive<LocalState>({
   repositoryList: [],
@@ -75,8 +73,8 @@ onMounted(() => {
 
 const prepareRepositoryList = () => {
   if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    store
-      .dispatch("oauth/exchangeVCSToken", {
+    useOAuthStore()
+      .exchangeVCSTokenWithID({
         vcsId: props.config.vcs.id,
         code: props.config.code,
       })

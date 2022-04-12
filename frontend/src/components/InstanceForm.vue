@@ -274,7 +274,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, PropType, ComputedRef } from "vue";
+import { computed, reactive, PropType } from "vue";
 import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -282,7 +282,6 @@ import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { isDBAOrOwner } from "../utils";
 import {
-  Principal,
   InstancePatch,
   DataSourceType,
   Instance,
@@ -293,6 +292,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useCurrentUser, useDataSourceStore } from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -316,10 +316,9 @@ const props = defineProps({
 
 const store = useStore();
 const { t } = useI18n();
+const dataSourceStore = useDataSourceStore();
 
-const currentUser: ComputedRef<Principal> = computed(() =>
-  store.getters["auth/currentUser"]()
-);
+const currentUser = useCurrentUser();
 
 const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
   return {
@@ -454,7 +453,7 @@ const handleCreateDataSource = (type: DataSourceType) => {
     state.instance.engine === "SNOWFLAKE" ||
     state.instance.engine === "POSTGRES"
   ) {
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "WARN",
       title: t("instance.no-read-only-data-source-support", {
@@ -540,7 +539,7 @@ const doUpdate = () => {
           // Only used to create ReadOnly data source right now.
           if (dataSource.type === "RO") {
             requests.push(
-              store.dispatch("dataSource/createDataSource", {
+              dataSourceStore.createDataSource({
                 databaseId: dataSource.databaseId,
                 instanceId: state.instance.id,
                 name: dataSource.name,
@@ -554,7 +553,7 @@ const doUpdate = () => {
           !isEqual(dataSource, state.originalInstance.dataSourceList[i])
         ) {
           requests.push(
-            store.dispatch("dataSource/patchDataSource", {
+            dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
               dataSource: dataSource,
@@ -589,8 +588,7 @@ const doUpdate = () => {
               } as EditDataSource;
             }
           );
-
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("instance.successfully-updated-instance-instance-name", [
@@ -627,13 +625,13 @@ const testConnection = () => {
   };
   store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("instance.successfully-connected-instance"),
       });
     } else {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("instance.failed-to-connect-instance"),

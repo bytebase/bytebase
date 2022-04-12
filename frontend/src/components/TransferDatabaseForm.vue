@@ -111,6 +111,7 @@ import {
   DatabaseLabel,
 } from "../types";
 import { sortDatabaseList } from "../utils";
+import { pushNotification, useCurrentUser, useEnvironmentList } from "@/store";
 
 type TransferSource = "DEFAULT" | "OTHER";
 
@@ -140,7 +141,7 @@ export default defineComponent({
         props.projectId == DEFAULT_PROJECT_ID ? "OTHER" : "DEFAULT",
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareDatabaseListForDefaultProject = () => {
       store.dispatch(
@@ -151,9 +152,7 @@ export default defineComponent({
 
     watchEffect(prepareDatabaseListForDefaultProject);
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const databaseList = computed(() => {
       var list;
@@ -188,7 +187,7 @@ export default defineComponent({
           labels,
         })
         .then((updatedDatabase) => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: `Successfully transferred '${updatedDatabase.name}' to project '${updatedDatabase.project.name}'.`,

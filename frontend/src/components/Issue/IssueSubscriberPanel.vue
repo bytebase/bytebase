@@ -56,7 +56,7 @@ import {
 } from "vue";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import { Issue, IssueSubscriber } from "../../types";
-import { useStore } from "vuex";
+import { useCurrentUser, useIssueSubscriberStore } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -72,24 +72,19 @@ export default defineComponent({
   },
   emits: ["add-subscriber-id", "remove-subscriber-id"],
   setup(props, { emit }) {
-    const store = useStore();
     const state = reactive<LocalState>({});
+    const issueSubscriberStore = useIssueSubscriberStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareSubscriberList = () => {
-      store.dispatch(
-        "issueSubscriber/fetchSubscriberListByIssue",
-        props.issue.id
-      );
+      issueSubscriberStore.fetchSubscriberListByIssue(props.issue.id);
     };
 
     watchEffect(prepareSubscriberList);
 
     const subscriberList = computed((): IssueSubscriber[] => {
-      return store.getters["issueSubscriber/subscriberListByIssue"](
-        props.issue.id
-      );
+      return issueSubscriberStore.subscriberListByIssue(props.issue.id);
     });
 
     const isCurrentUserSubscribed = computed((): boolean => {

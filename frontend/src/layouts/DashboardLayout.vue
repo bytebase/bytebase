@@ -45,7 +45,6 @@
 </template>
 
 <script lang="ts">
-import { useStore } from "vuex";
 import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
@@ -54,7 +53,13 @@ import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { computed, defineComponent } from "vue";
-import { useActuatorStore, useDebugStore, useSubscriptionStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorStore,
+  useCurrentUser,
+  useDebugStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -67,14 +72,13 @@ export default defineComponent({
     BannerDebug,
   },
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
     const subscriptionStore = useSubscriptionStore();
     const debugStore = useDebugStore();
 
     const ping = () => {
       actuatorStore.fetchInfo().then((info: ServerInfo) => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: info,
@@ -87,7 +91,7 @@ export default defineComponent({
 
     const { isDebug } = storeToRefs(debugStore);
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     // For now, debug mode is a global setting and will affect all users.
     // So we only allow DBA and Owner to toggle it and thus show a banner

@@ -8,33 +8,120 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.BookmarkService = (*BookmarkService)(nil)
-)
+// bookmarkRaw is the store model for an Bookmark.
+// Fields have exactly the same meanings as Bookmark.
+type bookmarkRaw struct {
+	ID int
 
-// BookmarkService represents a service for managing bookmark.
-type BookmarkService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Domain specific fields
+	Name string
+	Link string
 }
 
-// NewBookmarkService returns a new instance of BookmarkService.
-func NewBookmarkService(logger *zap.Logger, db *DB) *BookmarkService {
-	return &BookmarkService{l: logger, db: db}
+// toBookmark creates an instance of Bookmark based on the bookmarkRaw.
+// This is intended to be called when we need to compose an Bookmark relationship.
+func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
+	return &api.Bookmark{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		Name: raw.Name,
+		Link: raw.Link,
+	}
 }
 
-// CreateBookmark creates a new bookmark.
-func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.BookmarkRaw, error) {
+// CreateBookmark creates an instance of Bookmark
+func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
+	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Bookmark with BookmarkCreate[%+v], error[%w]", create, err)
+	}
+	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+	}
+	return bookmark, nil
+}
+
+// GetBookmarkByID gets an instance of Bookmark
+func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, error) {
+	find := &api.BookmarkFind{ID: &id}
+	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Bookmark with ID[%d], error[%w]", id, err)
+	}
+	if bookmarkRaw == nil {
+		return nil, nil
+	}
+	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+	}
+	return bookmark, nil
+}
+
+// FindBookmark finds a list of Bookmark instances
+func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
+	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find Bookmark list, error[%w]", err)
+	}
+	var bookmarkList []*api.Bookmark
+	for _, raw := range bookmarkRawList {
+		bookmark, err := s.composeBookmark(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", raw, err)
+		}
+		bookmarkList = append(bookmarkList, bookmark)
+	}
+	return bookmarkList, nil
+}
+
+//
+// private function
+//
+
+func (s *Store) composeBookmark(ctx context.Context, raw *bookmarkRaw) (*api.Bookmark, error) {
+	bookmark := raw.toBookmark()
+
+	creator, err := s.GetPrincipalByID(ctx, bookmark.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	bookmark.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, bookmark.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	bookmark.Updater = updater
+
+	return bookmark, nil
+}
+
+// createBookmarkRaw creates a new bookmark.
+func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreate) (*bookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	bookmark, err := createBookmark(ctx, tx.PTx, create)
+	bookmark, err := createBookmarkImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +133,15 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, create *api.Bookma
 	return bookmark, nil
 }
 
-// FindBookmarkList retrieves a list of bookmarks based on find.
-func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.BookmarkFind) ([]*api.BookmarkRaw, error) {
+// findBookmarkRaw retrieves a list of bookmarks based on find.
+func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findBookmarkList(ctx, tx.PTx, find)
+	list, err := findBookmarkImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,16 +149,16 @@ func (s *BookmarkService) FindBookmarkList(ctx context.Context, find *api.Bookma
 	return list, nil
 }
 
-// FindBookmark retrieves a single bookmark based on find.
+// getBookmarkRaw retrieves a single bookmark based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFind) (*api.BookmarkRaw, error) {
+func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bookmarkRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	bookmarkRawList, err := findBookmarkList(ctx, tx.PTx, find)
+	bookmarkRawList, err := findBookmarkImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -86,14 +173,14 @@ func (s *BookmarkService) FindBookmark(ctx context.Context, find *api.BookmarkFi
 
 // DeleteBookmark deletes an existing bookmark by ID.
 // Returns ENOTFOUND if bookmark does not exist.
-func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) error {
+func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteBookmark(ctx, tx.PTx, delete); err != nil {
+	if err := deleteBookmarkImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -104,8 +191,8 @@ func (s *BookmarkService) DeleteBookmark(ctx context.Context, delete *api.Bookma
 	return nil
 }
 
-// createBookmark creates a new bookmark.
-func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*api.BookmarkRaw, error) {
+// createBookmarkImpl creates a new bookmark.
+func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO bookmark (
@@ -129,7 +216,7 @@ func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate)
 	defer row.Close()
 
 	row.Next()
-	var bookmarkRaw api.BookmarkRaw
+	var bookmarkRaw bookmarkRaw
 	if err := row.Scan(
 		&bookmarkRaw.ID,
 		&bookmarkRaw.CreatorID,
@@ -145,7 +232,7 @@ func createBookmark(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate)
 	return &bookmarkRaw, nil
 }
 
-func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*api.BookmarkRaw, error) {
+func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -174,9 +261,9 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into bookmarkRawList.
-	var bookmarkRawList []*api.BookmarkRaw
+	var bookmarkRawList []*bookmarkRaw
 	for rows.Next() {
-		var bookmark api.BookmarkRaw
+		var bookmark bookmarkRaw
 		if err := rows.Scan(
 			&bookmark.ID,
 			&bookmark.CreatorID,
@@ -198,8 +285,8 @@ func findBookmarkList(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) (
 	return bookmarkRawList, nil
 }
 
-// deleteBookmark permanently deletes a bookmark by ID.
-func deleteBookmark(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
+// deleteBookmarkImpl permanently deletes a bookmark by ID.
+func deleteBookmarkImpl(ctx context.Context, tx *sql.Tx, delete *api.BookmarkDelete) error {
 	// Remove row from database.
 	result, err := tx.ExecContext(ctx, `DELETE FROM bookmark WHERE id = $1`, delete.ID)
 	if err != nil {

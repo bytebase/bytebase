@@ -24,11 +24,9 @@
 
 <script lang="ts" setup>
 import { reactive, watchEffect, onErrorCaptured } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 import { isDev } from "./utils";
-import { Notification } from "./types";
 import { BBNotificationItem } from "./bbkit/types";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import BBModalStack from "./bbkit/BBModalStack.vue";
@@ -36,6 +34,7 @@ import BBModalStack from "./bbkit/BBModalStack.vue";
 import { NConfigProvider, NDialogProvider } from "naive-ui";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { t } from "./plugins/i18n";
+import { useAuthStore, useNotificationStore } from "./store";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
@@ -50,20 +49,21 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
-const store = useStore();
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 
 const state = reactive<LocalState>({
   notificationList: [],
-  prevLoggedIn: store.getters["auth/isLoggedIn"](),
+  prevLoggedIn: authStore.isLoggedIn(),
 });
 
 setInterval(() => {
-  const loggedIn = store.getters["auth/isLoggedIn"]();
+  const loggedIn = authStore.isLoggedIn();
   if (state.prevLoggedIn != loggedIn) {
     state.prevLoggedIn = loggedIn;
     if (!loggedIn) {
-      store.dispatch("auth/logout").then(() => {
+      authStore.logout().then(() => {
         router.push({ name: "auth.signin" });
       });
     }
@@ -79,36 +79,33 @@ const removeNotification = (item: BBNotificationItem | undefined) => {
 };
 
 const watchNotification = () => {
-  store
-    .dispatch("notification/tryPopNotification", {
-      module: "bytebase",
-    })
-    .then((notification: Notification | undefined) => {
-      if (notification) {
-        if (state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT) {
-          state.notificationList.pop();
-        }
+  const notification = notificationStore.tryPopNotification({
+    module: "bytebase",
+  });
+  if (notification) {
+    if (state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT) {
+      state.notificationList.pop();
+    }
 
-        const item: BBNotificationItem = {
-          style: notification.style,
-          title: notification.title,
-          description: notification.description || "",
-          link: notification.link || "",
-          linkTitle: notification.linkTitle || "",
-        };
-        state.notificationList.unshift(item);
-        if (!notification.manualHide) {
-          setTimeout(
-            () => {
-              removeNotification(item);
-            },
-            notification.style == "CRITICAL"
-              ? CRITICAL_NOTIFICATION_DURATION
-              : NOTIFICATION_DURATION
-          );
-        }
-      }
-    });
+    const item: BBNotificationItem = {
+      style: notification.style,
+      title: notification.title,
+      description: notification.description || "",
+      link: notification.link || "",
+      linkTitle: notification.linkTitle || "",
+    };
+    state.notificationList.unshift(item);
+    if (!notification.manualHide) {
+      setTimeout(
+        () => {
+          removeNotification(item);
+        },
+        notification.style == "CRITICAL"
+          ? CRITICAL_NOTIFICATION_DURATION
+          : NOTIFICATION_DURATION
+      );
+    }
+  }
 };
 
 watchEffect(watchNotification);
@@ -117,7 +114,7 @@ onErrorCaptured((e: any /* , _, info */) => {
   // If e has response, then we assume it's an http error and has already been
   // handled by the axios global handler.
   if (!e.response) {
-    store.dispatch("notification/pushNotification", {
+    notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: `Internal error occurred`,
@@ -132,7 +129,7 @@ onErrorCaptured((e: any /* , _, info */) => {
 // Add it here so the notification is displayed on the main window. The OAuth callback window is short lived
 // and would close before the notification has a chance to be displayed.
 window.addEventListener("bb.oauth.unknown", (event) => {
-  store.dispatch("notification/pushNotification", {
+  notificationStore.pushNotification({
     module: "bytebase",
     style: "CRITICAL",
     title: t("oauth.unknown-event"),

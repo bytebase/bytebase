@@ -93,6 +93,7 @@ import {
 } from "../types";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -167,7 +168,7 @@ export default defineComponent({
       store
         .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("repository.restore-ui-workflow-success"),
@@ -207,7 +208,7 @@ export default defineComponent({
           repositoryPatch,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("repository.update-version-control-config-success"),

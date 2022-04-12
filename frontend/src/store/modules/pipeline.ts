@@ -5,7 +5,7 @@ import {
   PipelineState,
   Stage,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia";
 
 const state: () => PipelineState = () => ({});
 

@@ -41,6 +41,7 @@ import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project } from "../types";
+import { useCurrentUser } from "@/store";
 
 type ProjectTabItem = {
   name: string;
@@ -71,7 +72,7 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const project = computed((): Project => {
       return store.getters["project/projectById"](

@@ -106,19 +106,20 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useCurrentUser } from "@/store";
 
 interface LocalState {
   searchText: string;
   showCreateModal: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceMemberTable",
   components: { DataSourceMemberForm, PrincipalAvatar },
   props: {
@@ -141,7 +142,7 @@ export default {
 
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const columnList = [
       {
@@ -157,6 +158,7 @@ export default {
     ];
 
     const deleteMember = (member: DataSourceMember) => {
+      // TODO (yw): there is no action named deleteDataSourceMemberByMemberId
       store
         .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
           databaseId: props.dataSource.database.id,
@@ -164,7 +166,7 @@ export default {
           memberId: member.principal.id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "INFO",
             title: t(
@@ -187,5 +189,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

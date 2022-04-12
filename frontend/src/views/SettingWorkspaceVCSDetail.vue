@@ -157,6 +157,7 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
+import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -176,10 +177,11 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const vcsStore = useVCSStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
-      return store.getters["vcs/vcsById"](idFromSlug(props.vcsSlug));
+      return vcsStore.getVCSById(idFromSlug(props.vcsSlug));
     });
 
     const state = reactive<LocalState>({
@@ -200,8 +202,8 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (vcs.value.type == "GITLAB_SELF_HOST") {
-          store
-            .dispatch("oauth/exchangeVCSToken", {
+          useOAuthStore()
+            .exchangeVCSTokenWithID({
               vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
             })
@@ -265,13 +267,13 @@ export default defineComponent({
               if (!isEmpty(state.secret)) {
                 vcsPatch.secret = state.secret;
               }
-              store
-                .dispatch("vcs/patchVCS", {
+              vcsStore
+                .patchVCS({
                   vcsId: vcs.value.id,
                   vcsPatch,
                 })
                 .then((vcs: VCS) => {
-                  store.dispatch("notification/pushNotification", {
+                  pushNotification({
                     module: "bytebase",
                     style: "SUCCESS",
                     title: `Successfully updated '${vcs.name}'`,
@@ -286,7 +288,7 @@ export default defineComponent({
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
               }
-              store.dispatch("notification/pushNotification", {
+              pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: `Failed to update '${vcs.value.name}'`,
@@ -299,13 +301,13 @@ export default defineComponent({
         const vcsPatch: VCSPatch = {
           name: state.name,
         };
-        store
-          .dispatch("vcs/patchVCS", {
+        vcsStore
+          .patchVCS({
             vcsId: vcs.value.id,
             vcsPatch,
           })
           .then((updatedVCS: VCS) => {
-            store.dispatch("notification/pushNotification", {
+            pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: `Successfully updated '${updatedVCS.name}'`,
@@ -322,8 +324,8 @@ export default defineComponent({
 
     const deleteVCS = () => {
       const name = vcs.value.name;
-      store.dispatch("vcs/deleteVCSById", vcs.value.id).then(() => {
-        store.dispatch("notification/pushNotification", {
+      vcsStore.deleteVCSById(vcs.value.id).then(() => {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: `Successfully deleted '${name}'`,

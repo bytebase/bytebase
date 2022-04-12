@@ -94,11 +94,15 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useStore } from "vuex";
 import { isOwner } from "../utils";
-import { Setting, brandingLogoSettingName } from "../types/setting";
+import { brandingLogoSettingName } from "../types/setting";
 import { useI18n } from "vue-i18n";
-import { featureToRef } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useSettingStore,
+} from "@/store";
 
 interface LocalState {
   displayName?: string;
@@ -113,14 +117,14 @@ const supportImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
 
 // convertFileToBase64 will convert a file into base64 string.
 const convertFileToBase64 = (file: File) =>
-  new Promise((resolve, reject) => {
+  new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
 
-const store = useStore();
+const settingStore = useSettingStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -131,14 +135,14 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-store.dispatch("setting/fetchSetting").then(() => {
-  const brandingLogoSetting: Setting = store.getters["setting/settingByName"](
+settingStore.fetchSetting().then(() => {
+  const brandingLogoSetting = settingStore.getSettingByName(
     brandingLogoSettingName
-  );
+  )!;
   state.logoUrl = brandingLogoSetting.value;
 });
 
-const currentUser = computed(() => store.getters["auth/currentUser"]());
+const currentUser = useCurrentUser();
 
 const allowEdit = computed((): boolean => {
   return isOwner(currentUser.value.role);
@@ -172,18 +176,15 @@ const uploadLogo = async () => {
 
   try {
     const fileInBase64 = await convertFileToBase64(state.logoFile);
-    const setting: Setting = await store.dispatch(
-      "setting/updateSettingByName",
-      {
-        name: brandingLogoSettingName,
-        value: fileInBase64,
-      }
-    );
+    const setting = await useSettingStore().updateSettingByName({
+      name: brandingLogoSettingName,
+      value: fileInBase64,
+    });
 
     state.logoFile = null;
     state.logoUrl = setting.value;
 
-    store.dispatch("notification/pushNotification", {
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("settings.general.workspace.logo-upload-succeed"),

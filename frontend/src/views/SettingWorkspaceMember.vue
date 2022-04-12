@@ -31,37 +31,31 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent } from "vue";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { isOwner } from "../utils";
 import { Member } from "../types";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUser, useMemberList } from "@/store";
 
 export default defineComponent({
   name: "SettingWorkspaceMember",
   components: { MemberAddOrInvite, MemberTable },
   setup() {
-    const store = useStore();
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
-    const prepareMemberList = () => {
-      store.dispatch("member/fetchMemberList");
-    };
-
-    watchEffect(prepareMemberList);
+    const memberList = useMemberList();
 
     const activeMemberList = computed(() => {
-      return store.getters["member/memberList"]().filter(
+      return memberList.value.filter(
         (member: Member) => member.rowStatus == "NORMAL"
       );
     });
 
     const inactiveMemberList = computed(() => {
-      return store.getters["member/memberList"]().filter(
+      return memberList.value.filter(
         (member: Member) => member.rowStatus == "ARCHIVED"
       );
     });

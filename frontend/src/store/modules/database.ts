@@ -20,7 +20,8 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "./principal";
+import { getPrincipalFromIncludedList } from "../pinia-modules/principal";
+import { useBackupStore, useAnomalyStore, useDataSourceStore } from "@/store";
 
 function convert(
   database: ResourceObject,
@@ -72,7 +73,7 @@ function convert(
       project = rootGetters["project/convert"](item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = rootGetters["backup/convert"](item, includedList);
+      sourceBackup = useBackupStore().convert(item, includedList);
     }
   }
 
@@ -135,7 +136,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
         dataSourceList[i].instanceId = instance.id;
         dataSourceList[i].databaseId = databaseWPartial.id;
       }
@@ -146,7 +147,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = rootGetters["anomaly/convert"](item);
+        anomalyList[i] = useAnomalyStore().convert(item);
         anomalyList[i].instance = instance;
         anomalyList[i].database = databaseWPartial;
       }

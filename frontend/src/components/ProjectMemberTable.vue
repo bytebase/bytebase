@@ -134,7 +134,7 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef } from "@/store";
+import { featureToRef, pushNotification, useCurrentUser } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -157,7 +157,7 @@ export default defineComponent({
     const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -296,7 +296,7 @@ export default defineComponent({
 
     const deleteRole = (member: ProjectMember) => {
       store.dispatch("project/deleteMember", member).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("project.settings.success-member-deleted-prompt", {
