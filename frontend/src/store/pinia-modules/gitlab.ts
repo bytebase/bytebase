@@ -17,7 +17,7 @@ function convertGitLabProject(project: any): ExternalRepositoryInfo {
   };
 }
 
-export const useGitlabStore = defineStore("sheet", {
+export const useGitlabStore = defineStore("gitlab", {
   actions: {
     // this actions is for initiating vcs ONLY
     // after creation, the frontend should in no case access the secret.
