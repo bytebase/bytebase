@@ -39,18 +39,10 @@
 </template>
 
 <script lang="ts">
-import {
-  computed,
-  watchEffect,
-  onMounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
+import { computed, onMounted, reactive, ref, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { useStore } from "vuex";
 import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
@@ -60,6 +52,8 @@ import {
   useSubscriptionStore,
   useEnvironmentStore,
   useEnvironmentList,
+  useInstanceList,
+  useInstanceStore,
 } from "@/store";
 
 interface LocalState {
@@ -77,7 +71,7 @@ export default defineComponent({
   setup() {
     const searchField = ref();
 
-    const store = useStore();
+    const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
@@ -110,12 +104,6 @@ export default defineComponent({
       }
     });
 
-    const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
-    };
-
-    watchEffect(prepareInstanceList);
-
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
       if (environment) {
@@ -140,9 +128,13 @@ export default defineComponent({
       state.showGuide = false;
     };
 
+    const rawInstanceList = useInstanceList();
+
     const instanceList = computed(() => {
-      const list = store.getters["instance/instanceList"]();
-      return sortInstanceList(cloneDeep(list), environmentList.value);
+      return sortInstanceList(
+        cloneDeep(rawInstanceList.value),
+        environmentList.value
+      );
     });
 
     const filteredList = (list: Instance[]) => {
@@ -168,7 +160,7 @@ export default defineComponent({
     });
 
     const remainingInstanceCount = computed((): number => {
-      const instanceList: Instance[] = store.getters["instance/instanceList"]([
+      const instanceList: Instance[] = instanceStore.getInstanceList([
         "NORMAL",
       ]);
       return Math.max(0, instanceQuota.value - instanceList.length);

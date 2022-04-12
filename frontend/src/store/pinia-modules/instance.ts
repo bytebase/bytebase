@@ -27,6 +27,7 @@ import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
 import { store } from "../index";
 import { defineStore } from "pinia";
+import { computed } from "vue";
 
 function convert(
   instance: ResourceObject,
@@ -203,6 +204,15 @@ export const useInstanceStore = defineStore("instance", {
     },
     getInstanceUserListById(instanceId: InstanceId): InstanceUser[] {
       return this.instanceUserListById.get(instanceId) || [];
+    },
+    formatEngine(instance: Instance): string {
+      switch (instance.engine) {
+        case "POSTGRES":
+          return "PostgreSQL";
+        // Use MySQL as default engine.
+        default:
+          return "MySQL";
+      }
     },
     getMigrationHistoryById(
       migrationHistoryId: MigrationHistoryId
@@ -475,13 +485,7 @@ export const useInstanceStore = defineStore("instance", {
   },
 });
 
-// Get the formatted engine string from instance for SQL transformer.
-export const instanceFormattedEngine = (instance: Instance): string => {
-  switch (instance.engine) {
-    case "POSTGRES":
-      return "PostgreSQL";
-    // Use MySQL as default engine.
-    default:
-      return "MySQL";
-  }
+export const useInstanceList = (rowStatusList?: RowStatus[]) => {
+  const store = useInstanceStore();
+  return computed(() => store.getInstanceList(rowStatusList));
 };

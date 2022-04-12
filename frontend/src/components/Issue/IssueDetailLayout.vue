@@ -274,7 +274,12 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { featureToRef, useCurrentUser, useIssueSubscriberStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useInstanceStore,
+  useIssueSubscriberStore,
+} from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -914,7 +919,7 @@ export default defineComponent({
         if (database.value) {
           return database.value.instance;
         }
-        return store.getters["instance/instanceById"](
+        return useInstanceStore().getInstanceById(
           (selectedTask.value as TaskCreate).instanceId
         );
       }

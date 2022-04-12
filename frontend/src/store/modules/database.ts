@@ -22,6 +22,7 @@ import {
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia-modules/principal";
 import { useBackupStore, useAnomalyStore } from "@/store";
+import { useInstanceStore } from "../pinia-modules";
 
 function convert(
   database: ResourceObject,
@@ -67,7 +68,7 @@ function convert(
 
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
-      instance = rootGetters["instance/convert"](item, includedList);
+      instance = useInstanceStore().convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
       project = rootGetters["project/convert"](item, includedList);

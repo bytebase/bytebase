@@ -69,10 +69,11 @@ import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
-import { useTabStore } from "@/store";
+import { useInstanceStore, useTabStore } from "@/store";
 
 const store = useStore();
 const router = useRouter();
+const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 
 const { findProjectIdByDatabaseId, connectionInfo } =
@@ -134,7 +135,7 @@ const treeData = computed(() => {
 
   // mapping the prefix icons
   return tree.map((instanceItem) => {
-    const instance = store.getters["instance/instanceById"](instanceItem.id);
+    const instance = instanceStore.getInstanceById(instanceItem.id);
 
     return {
       ...instanceItem,
@@ -219,9 +220,7 @@ const setSheetContext = (option: any) => {
       return instance ? instance.label : "";
     };
     const getInstanceEngineByInstanceId = (id: number) => {
-      const selectedInstance = store.getters["instance/instanceById"](
-        id
-      ) as Instance;
+      const selectedInstance = instanceStore.getInstanceById(id) as Instance;
       return selectedInstance ? selectedInstance.engine : "MYSQL";
     };
 

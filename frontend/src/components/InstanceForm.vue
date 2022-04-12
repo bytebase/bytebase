@@ -292,7 +292,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser, useInstanceStore } from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -315,6 +315,7 @@ const props = defineProps({
 });
 
 const store = useStore();
+const instanceStore = useInstanceStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
@@ -529,7 +530,7 @@ const doUpdate = () => {
 
   if (instanceInfoChanged || dataSourceListChanged) {
     state.isUpdating = true;
-    const requests = [];
+    const requests: Promise<any>[] = [];
 
     if (dataSourceListChanged) {
       for (let i = 0; i < state.instance.dataSourceList.length; i++) {
@@ -564,7 +565,7 @@ const doUpdate = () => {
 
     if (instanceInfoChanged) {
       requests.push(
-        store.dispatch("instance/patchInstance", {
+        instanceStore.patchInstance({
           instanceId: state.instance.id,
           instancePatch: patchedInstance,
         })
@@ -572,8 +573,8 @@ const doUpdate = () => {
     }
 
     Promise.all(requests).then(() => {
-      store
-        .dispatch("instance/fetchInstanceById", state.instance.id)
+      instanceStore
+        .fetchInstanceById(state.instance.id)
         .then((instance) => {
           state.isUpdating = false;
           state.originalInstance = instance;
