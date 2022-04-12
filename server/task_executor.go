@@ -156,8 +156,9 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
+	var project *api.Project
 	if writeBack && issue != nil {
-		project, err := server.composeProjectByID(ctx, task.Database.ProjectID)
+		project, err = server.composeProjectByID(ctx, task.Database.ProjectID)
 		if err != nil {
 			return true, nil, err
 		}
@@ -178,9 +179,13 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	if writeBack {
+		dbName, err := api.GetBaseDatabaseName(mi.Database, project.DBNameTemplate, task.Database.Labels)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
+		}
 		latestSchemaFile := filepath.Join(repoRawOutter.BaseDirectory, repoRawOutter.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
-		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", mi.Database)
+		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
 
 		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
 		repo := repoRawOutter.ToRepository()
@@ -239,7 +244,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 				Level:       api.ActivityInfo,
 				Comment: fmt.Sprintf("Committed the latest schema after applying migration version %s to %q.",
 					mi.Version,
-					mi.Database,
+					dbName,
 				),
 				Payload: string(payload),
 			}
