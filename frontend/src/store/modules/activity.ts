@@ -77,7 +77,8 @@ const actions = {
     { commit, rootGetters }: any,
     issueId: IssueId
   ) {
-    const data = (await axios.get(`/api/activity?container=${issueId}`)).data;
+    const queryList = ["typePrefix=bb.issue.", `container=${issueId}`];
+    const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
     const activityList = data.data.map((activity: ResourceObject) => {
       return convert(activity, data.included, rootGetters);
     });
@@ -97,7 +98,7 @@ const actions = {
       limit?: number;
     }
   ) {
-    const queryList = [`container=${projectId}`];
+    const queryList = ["typePrefix=bb.project.", `container=${projectId}`];
     if (limit) {
       queryList.push(`limit=${limit}`);
     }
@@ -119,7 +120,7 @@ const actions = {
   ) {
     const { currentUser } = useAuthStore();
     const queryList = [
-      "type=bb.sql-editor.query",
+      "typePrefix=bb.sql-editor.query",
       `user=${currentUser.id}`,
       `limit=${limit}`,
       // only fetch the successful query history
