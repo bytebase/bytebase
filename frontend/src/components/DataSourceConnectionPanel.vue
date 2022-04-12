@@ -137,6 +137,8 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const databaseStore = useDatabaseStore();
+
     const state = reactive<LocalState>({
       showPassword: false,
     });
@@ -144,7 +146,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const database = computed(() => {
-      return useDatabaseStore().getDatabaseById(
+      return databaseStore.getDatabaseById(
         props.dataSource.databaseId,
         props.dataSource.instanceId
       );
