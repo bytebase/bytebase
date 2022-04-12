@@ -22,7 +22,7 @@
       v-if="state.showCreateUserExample"
       class="mt-2 text-sm text-main w-208"
     >
-      <template·
+      <template
         v-if="props.engineType == 'MYSQL' || props.engineType == 'TIDB'"
       >
         <i18n-t
@@ -45,7 +45,7 @@
         >
           {{ $t("common.detailed-guide") }}
         </a>
-      </template·>
+      </template>
       <template v-else-if="props.engineType == 'CLICKHOUSE'">
         <i18n-t
           tag="p"
