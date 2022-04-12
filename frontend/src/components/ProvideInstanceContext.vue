@@ -3,11 +3,12 @@
 </template>
 
 <script lang="ts">
-import { watchEffect } from "vue";
+import { useInstanceStore } from "@/store";
+import { defineComponent, watchEffect } from "vue";
 import { useStore } from "vuex";
 import { idFromSlug } from "../utils";
 
-export default {
+export default defineComponent({
   name: "ProvideInstanceContext",
   props: {
     instanceSlug: {
@@ -24,8 +25,7 @@ export default {
           "database/fetchDatabaseListByInstanceId",
           idFromSlug(props.instanceSlug)
         ),
-        store.dispatch(
-          "instance/fetchInstanceUserListById",
+        useInstanceStore().fetchInstanceUserListById(
           idFromSlug(props.instanceSlug)
         ),
       ]);
@@ -33,5 +33,5 @@ export default {
 
     watchEffect(prepareInstanceContext);
   },
-};
+});
 </script>

@@ -141,7 +141,12 @@ import {
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
-import { featureToRef, useCurrentUser, useEnvironmentList } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useEnvironmentList,
+  useInstanceList,
+} from "@/store";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -189,15 +194,7 @@ export default defineComponent({
       );
     });
 
-    const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
-    };
-
-    watchEffect(prepareInstanceList);
-
-    const instanceList = computed(() => {
-      return store.getters["instance/instanceList"]();
-    });
+    const instanceList = useInstanceList();
 
     const databaseAnomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
