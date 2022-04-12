@@ -6,7 +6,6 @@ import {
   ConnectionAtom,
   QueryInfo,
   ConnectionContext,
-  Instance,
   Database,
   DatabaseId,
   ProjectId,
@@ -18,6 +17,7 @@ import {
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import { unknown } from "@/types";
+import { useInstanceStore } from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -220,11 +220,12 @@ const actions = {
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
     { commit, dispatch }: any,
-    { instanceId, databaseId }: Partial<SqlEditorState["connectionContext"]>
+    {
+      instanceId,
+      databaseId,
+    }: Pick<SqlEditorState["connectionContext"], "instanceId" | "databaseId">
   ) {
-    const instance = (await dispatch("instance/fetchInstanceById", instanceId, {
-      root: true,
-    })) as Instance;
+    const instance = await useInstanceStore().fetchInstanceById(instanceId);
     const database = (await dispatch(
       "database/fetchDatabaseById",
       { databaseId },

@@ -16,6 +16,7 @@ import {
   store,
   useAuthStore,
   useEnvironmentStore,
+  useInstanceStore,
   usePrincipalStore,
   useRouterStore,
 } from "../store";
@@ -703,9 +704,9 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return store.getters["instance/migrationHistoryById"](
+                    return useInstanceStore().getMigrationHistoryById(
                       idFromSlug(slug)
-                    ).version;
+                    )?.version;
                   },
                   allowBookmark: true,
                 },
@@ -731,9 +732,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["instance/instanceById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useInstanceStore().getInstanceById(idFromSlug(slug))
+                      .name;
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
@@ -812,6 +812,7 @@ router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const authStore = useAuthStore();
   const environmentStore = useEnvironmentStore();
+  const instanceStore = useInstanceStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
@@ -1086,8 +1087,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (migrationHistorySlug) {
-          store
-            .dispatch("instance/fetchMigrationHistoryById", {
+          instanceStore
+            .fetchMigrationHistoryById({
               instanceId: database.instance.id,
               migrationHistoryId: idFromSlug(migrationHistorySlug),
             })
@@ -1114,8 +1115,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    store
-      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
+    instanceStore
+      .fetchInstanceById(idFromSlug(instanceSlug))
       .then(() => {
         next();
       })
