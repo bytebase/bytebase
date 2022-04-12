@@ -72,7 +72,6 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
-			fmt.Printf("spec %d: %+v\n\n", spec.Tp, spec)
 			// RENAME COLUMN
 			if spec.Tp == ast.AlterTableRenameColumn {
 				code = common.CompatibilityRenameColumn

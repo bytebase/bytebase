@@ -254,7 +254,6 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Sync schema
 		userList, schemaList, err := driver.SyncSchema(ctx)
 		if err != nil {
-			fmt.Printf("sync schema error: %v\n", err)
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {

@@ -244,7 +244,6 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		ORDER BY "order" DESC
 		LIMIT 1
 	`)
-	fmt.Printf("Yang1: %v\n", err1)
 	if err1 != nil {
 		return nil, FormatError(err1)
 	}
@@ -254,7 +253,6 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	if err1 := row1.Scan(
 		&order,
 	); err1 != nil {
-		fmt.Printf("Yang2: %v\n", err1)
 		return nil, FormatError(err1)
 	}
 	if err := row1.Close(); err != nil {
@@ -278,7 +276,6 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		order+1,
 	)
 
-	fmt.Printf("Yang3: %v\n", err2)
 	if err2 != nil {
 		return nil, FormatError(err2)
 	}
@@ -296,7 +293,6 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		&envRaw.Name,
 		&envRaw.Order,
 	); err != nil {
-		fmt.Printf("Yang4: %v\n", err)
 		return nil, FormatError(err)
 	}
 
