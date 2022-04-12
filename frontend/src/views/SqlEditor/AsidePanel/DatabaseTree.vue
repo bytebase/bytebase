@@ -220,7 +220,7 @@ const setSheetContext = (option: any) => {
       return instance ? instance.label : "";
     };
     const getInstanceEngineByInstanceId = (id: number) => {
-      const selectedInstance = instanceStore.getInstanceById(id) as Instance;
+      const selectedInstance = instanceStore.getInstanceById(id);
       return selectedInstance ? selectedInstance.engine : "MYSQL";
     };
 

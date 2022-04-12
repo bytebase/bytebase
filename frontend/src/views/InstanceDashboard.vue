@@ -160,9 +160,7 @@ export default defineComponent({
     });
 
     const remainingInstanceCount = computed((): number => {
-      const instanceList: Instance[] = instanceStore.getInstanceList([
-        "NORMAL",
-      ]);
+      const instanceList = instanceStore.getInstanceList(["NORMAL"]);
       return Math.max(0, instanceQuota.value - instanceList.length);
     });
 
