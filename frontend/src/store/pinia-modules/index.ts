@@ -8,6 +8,7 @@ export * from "./debug";
 export * from "./deployment";
 export * from "./environment";
 export * from "./issueSubscriber";
+export * from "./instance";
 export * from "./label";
 export * from "./member";
 export * from "./notification";
