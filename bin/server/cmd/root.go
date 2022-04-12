@@ -464,7 +464,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
 	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
