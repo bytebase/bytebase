@@ -18,7 +18,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+import { getPrincipalFromIncludedList, useActivityStore } from "../pinia";
 
 function convert(
   issue: ResourceObject,
@@ -248,7 +248,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },
@@ -278,7 +278,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },

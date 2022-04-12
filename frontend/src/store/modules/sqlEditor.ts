@@ -18,6 +18,7 @@ import {
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import { unknown } from "@/types";
+import { useActivityStore } from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -242,15 +243,10 @@ const actions = {
   },
   async fetchQueryHistoryList({ commit, dispatch }: any) {
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, true);
-    const activityList = await dispatch(
-      "activity/fetchActivityListForQueryHistory",
-      {
+    const activityList =
+      await useActivityStore().fetchActivityListForQueryHistory({
         limit: 50,
-      },
-      {
-        root: true,
-      }
-    );
+      });
     const queryHistoryList: QueryHistory[] = activityList.map(
       (history: any) => {
         return {
@@ -277,9 +273,7 @@ const actions = {
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, false);
   },
   async deleteQueryHistory({ commit, dispatch, state }: any, id: number) {
-    await dispatch("activity/deleteActivityById", id, {
-      root: true,
-    });
+    await useActivityStore().deleteActivityById(id);
 
     commit(
       types.SET_QUERY_HISTORY_LIST,
