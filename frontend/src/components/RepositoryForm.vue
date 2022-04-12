@@ -131,7 +131,7 @@
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
         <a
-          href="https://bytebase.com/docs/use-bytebase/vcs-integration/organize-repository-files#schema-path-template"
+          href="https://bytebase.com/docs/use-bytebase/vcs-integration/name-and-organize-schema-files#schema-path-template"
           target="__blank"
           class="font-normal normal-link"
         >
