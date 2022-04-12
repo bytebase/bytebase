@@ -27,7 +27,7 @@ import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
 import { store } from "../index";
 import { defineStore } from "pinia";
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 
 function convert(
   instance: ResourceObject,
@@ -487,5 +487,6 @@ export const useInstanceStore = defineStore("instance", {
 
 export const useInstanceList = (rowStatusList?: RowStatus[]) => {
   const store = useInstanceStore();
+  watchEffect(() => store.fetchInstanceList(rowStatusList));
   return computed(() => store.getInstanceList(rowStatusList));
 };
