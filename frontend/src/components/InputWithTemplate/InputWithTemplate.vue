@@ -44,7 +44,15 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch, watchEffect, ref, PropType } from "vue";
+import {
+  reactive,
+  watch,
+  watchEffect,
+  ref,
+  PropType,
+  onUnmounted,
+  onMounted,
+} from "vue";
 import { Template, TemplateInput, InputType } from "./types";
 import { getTemplateInputs, templateInputsToString } from "./utils";
 
@@ -219,7 +227,13 @@ const onTemplateRemove = (i: number) => {
   }
 };
 
-window.addEventListener("resize", onWindowResize);
+onMounted(() => {
+  window.addEventListener("resize", onWindowResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", onWindowResize);
+});
 </script>
 
 <style scoped>
