@@ -41,7 +41,7 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		}, nil
 	}
 
-	instance, err := server.composeInstanceByID(ctx, task.InstanceID)
+	instance, err := server.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
