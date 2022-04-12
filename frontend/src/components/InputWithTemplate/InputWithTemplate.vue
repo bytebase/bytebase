@@ -322,16 +322,4 @@ window.addEventListener("resize", onWindowResize);
 .cleared-input:focus {
   @apply shadow-none ring-0 border-0 border-none;
 }
-
-.tooltip-wrapper {
-  @apply relative;
-}
-
-.tooltip {
-  @apply invisible absolute -mt-8 ml-2 px-2 py-1 rounded bg-black bg-opacity-75 text-white;
-}
-
-.tooltip-wrapper:hover .tooltip {
-  @apply visible z-50;
-}
 </style>
