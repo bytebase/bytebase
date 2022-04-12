@@ -457,7 +457,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
 	// TODO(dragonly): remove this hack
 	storeInstance.DatabaseService = s.DatabaseService
-	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
