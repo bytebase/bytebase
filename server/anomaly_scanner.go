@@ -80,22 +80,16 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceRawList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
+				instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
-				for _, instanceRaw := range instanceRawList {
-					instance, err := s.server.composeInstanceRelationship(ctx, instanceRaw)
-					if err != nil {
-						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instanceRaw.ID, instanceRaw.Name), zap.Error(err))
-						continue
-					}
-
+				for _, instance := range instanceList {
 					foundEnv := false
 					for _, env := range envList {
-						if env.ID == instanceRaw.EnvironmentID {
+						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
@@ -109,11 +103,11 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					mu.Lock()
-					if _, ok := runningTasks[instanceRaw.ID]; ok {
+					if _, ok := runningTasks[instance.ID]; ok {
 						mu.Unlock()
 						continue
 					}
-					runningTasks[instanceRaw.ID] = true
+					runningTasks[instance.ID] = true
 					mu.Unlock()
 
 					// Do NOT use go-routine otherwise would cause "database locked" in underlying SQLite
