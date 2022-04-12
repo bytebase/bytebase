@@ -186,7 +186,7 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useDataSourceStore } from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -221,6 +221,7 @@ export default defineComponent({
   emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
+    const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({
       environmentId: props.dataSource
@@ -345,6 +346,7 @@ export default defineComponent({
         principalId: state.granteeId!,
         issueId: linkedIssue?.id,
       };
+      // TODO (yw): there is no action named createDataSourceMember
       store
         .dispatch("dataSource/createDataSourceMember", {
           dataSourceId: state.dataSourceId,
