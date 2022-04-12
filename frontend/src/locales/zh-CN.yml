@@ -1128,7 +1128,7 @@ subscription:
       desc: 「备份策略」可以根据指定的周期自动备份数据库
     bb-feature-backward-compatibility:
       title: 向后兼容
-      desc: MySQL 和 TiDB 支持向后兼容的 schema 迁移，可以通过@:{'subscription.upgrade'}来开启该功能。
+      desc: MySQL 和 TiDB 支持检测 schema 变更是否向后兼容，可以通过@:{'subscription.upgrade'}来开启该功能。
     bb-feature-rbac:
       title: 角色管理
       desc: 「角色管理」可以赋予成员诸如 DBA 这样的特定角色，可以通过@:{'subscription.upgrade'}来开启该功能。
