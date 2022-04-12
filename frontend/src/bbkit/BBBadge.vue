@@ -10,7 +10,7 @@
       v-if="canRemove"
       type="button"
       :class="[
-        'flex-shrink-0 ml-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center focus:outline-none focus:text-white',
+        'flex-shrink-0 ml-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center focus:outline-none',
         `text-${theme}-400 hover:bg-${theme}-200 hover:text-${theme}-500 focus:bg-${theme}-500`,
       ]"
       @click="$emit('remove')"

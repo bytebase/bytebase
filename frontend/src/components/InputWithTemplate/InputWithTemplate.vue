@@ -16,7 +16,7 @@
     <div class="p-2 border-t border-gray-300">
       <div ref="containerRef" class="flex flex-wrap items-center gap-1">
         <div v-for="(data, i) in state.templateInputs" :key="i">
-          <Badge
+          <BBBadge
             v-if="data.type === 'template'"
             :text="data.value"
             @remove="() => onTemplateRemove(i)"
