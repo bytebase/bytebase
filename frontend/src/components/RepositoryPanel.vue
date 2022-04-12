@@ -126,6 +126,7 @@ export default defineComponent({
         branchFilter: props.repository.branchFilter,
         filePathTemplate: props.repository.filePathTemplate,
         schemaPathTemplate: props.repository.schemaPathTemplate,
+        sheetPathTemplate: props.repository.sheetPathTemplate,
       },
     });
 
@@ -137,6 +138,7 @@ export default defineComponent({
           branchFilter: cur.branchFilter,
           filePathTemplate: cur.filePathTemplate,
           schemaPathTemplate: cur.schemaPathTemplate,
+          sheetPathTemplate: cur.sheetPathTemplate,
         };
       }
     );
@@ -160,7 +162,9 @@ export default defineComponent({
           props.repository.filePathTemplate !=
             state.repositoryConfig.filePathTemplate ||
           props.repository.schemaPathTemplate !=
-            state.repositoryConfig.schemaPathTemplate)
+            state.repositoryConfig.schemaPathTemplate ||
+          props.repository.sheetPathTemplate !=
+            state.repositoryConfig.sheetPathTemplate)
       );
     });
 
@@ -201,6 +205,13 @@ export default defineComponent({
       ) {
         repositoryPatch.schemaPathTemplate =
           state.repositoryConfig.schemaPathTemplate;
+      }
+      if (
+        props.repository.sheetPathTemplate !=
+        state.repositoryConfig.sheetPathTemplate
+      ) {
+        repositoryPatch.sheetPathTemplate =
+          state.repositoryConfig.sheetPathTemplate;
       }
       store
         .dispatch("repository/updateRepositoryByProjectId", {

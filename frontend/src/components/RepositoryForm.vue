@@ -174,6 +174,28 @@
         }}
       </div>
     </div>
+    <div>
+      <div class="textlabel">{{ $t("repository.sheet-path-template") }}</div>
+      <div class="mt-1 textinfolabel">
+        {{ $t("repository.sheet-path-template-description") }}
+      </div>
+      <input
+        id="sheetpathtemplate"
+        v-model="repositoryConfig.sheetPathTemplate"
+        name="sheetpathtemplate"
+        type="text"
+        class="textfield mt-2 w-full"
+        :disabled="!allowEdit"
+      />
+      <div class="mt-2 textinfolabel capitalize">
+        <span class="text-red-600">*</span>
+        {{ $t("common.required-placeholder") }}: {{ "\{\{NAME\}\}" }};
+        <template v-if="schemaOptionalTagPlaceholder.length > 0">
+          {{ $t("common.optional-placeholder") }}: {{ "\{\{ENV_NAME\}\}" }},
+          {{ "\{\{DB_NAME\}\}" }}
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 

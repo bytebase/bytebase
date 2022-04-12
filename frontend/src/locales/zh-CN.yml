@@ -731,6 +731,8 @@ repository:
   schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
+  sheet-path-template: 工作表路径模板
+  sheet-path-template-description: Bytebase 仅会跟踪那些文件路径匹配模版 (相对于指定根目录）的文件，用于从 VCS 中同步工作表。以此更好地来管理 SQL 编辑器中的工作表数据。
   git-provider: Git 提供方
   version-control-status: "@.capitalize:common.version-control 已{status}"
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。

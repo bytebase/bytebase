@@ -813,6 +813,10 @@ repository:
     to push to that protected branch.
   if-specified: If specified
   schema-path-example: Schema path example
+  sheet-path-template: Sheet path template
+  sheet-path-template-description: >-
+    Bytebase only observes file pathnames matching the template pattern, relative to the base directory, to synchronize sheet from VCS.
+    The benefit of this integration is that it gives you more control over the sheet data in SQL Editor.
   git-provider: Git provider
   version-control-status: "@.capitalize:common.version-control is {status}"
   version-control-description-file-path: >-

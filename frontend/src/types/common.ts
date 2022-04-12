@@ -433,6 +433,7 @@ export const unknown = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -827,6 +828,7 @@ export const empty = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: EMPTY_ID.toString(),
   };
 
