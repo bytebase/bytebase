@@ -298,8 +298,8 @@ func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	if v := find.TypePrefix; v != nil {
+		where, args = append(where, fmt.Sprintf("type LIKE $%d", len(args)+1)), append(args, fmt.Sprintf("%s%%", *v))
 	}
 	if v := find.Level; v != nil {
 		where, args = append(where, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
