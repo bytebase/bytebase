@@ -7,7 +7,7 @@ import {
   ResourceObject,
   SqlResultSet,
 } from "../../types";
-import { useInstanceStore } from "../pinia-modules";
+import { useDatabaseStore, useInstanceStore } from "../pinia-modules";
 
 function convert(resultSet: ResourceObject): SqlResultSet {
   return {
@@ -58,10 +58,7 @@ const actions = {
     const resultSet = convert(data);
     if (!resultSet.error) {
       // Refresh the corresponding list.
-      dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
-        root: true,
-      });
-
+      useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
       useInstanceStore().fetchInstanceUserListById(instanceId);
     }
 

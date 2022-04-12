@@ -257,7 +257,6 @@
 <script lang="ts">
 import { defineComponent, reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
