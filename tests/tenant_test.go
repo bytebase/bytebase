@@ -20,6 +20,8 @@ var (
 	prodInstanceName    = "testInstanceProd"
 )
 
+const baseDirectory = "bbtest"
+
 func TestTenant(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -246,7 +248,7 @@ func TestTenantVCS(t *testing.T) {
 		FullPath:           repositoryPath,
 		WebURL:             fmt.Sprintf("%s/%s", ctl.gitURL, repositoryPath),
 		BranchFilter:       "feature/foo",
-		BaseDirectory:      "bbtest",
+		BaseDirectory:      baseDirectory,
 		FilePathTemplate:   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql",
 		SchemaPathTemplate: ".{{DB_NAME}}__LATEST.sql",
 		ExternalID:         gitlabProjectIDStr,
@@ -812,4 +814,10 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 
 	require.Equal(t, len(hm1), 1)
 	require.Equal(t, len(hm2), 1)
+
+	// Check latestSchemaFile
+	files, err := ctl.gitlab.GetFiles(gitlabProjectIDStr, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
+	require.NoError(t, err)
+	require.Equal(t, len(files), 1)
+
 }

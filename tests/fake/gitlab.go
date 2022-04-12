@@ -265,3 +265,21 @@ func (gl *GitLab) AddFiles(gitlabProjectID string, files map[string]string) erro
 	}
 	return nil
 }
+
+// GetFiles get files from repository.
+func (gl *GitLab) GetFiles(gitlabProjectID string, filePaths ...string) (map[string]string, error) {
+	pd, ok := gl.projects[gitlabProjectID]
+	if !ok {
+		return nil, fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
+	}
+
+	// Get files
+	files := make(map[string]string, len(filePaths))
+	for _, path := range filePaths {
+
+		if content, ok := pd.files[path]; ok {
+			files[path] = content
+		}
+	}
+	return files, nil
+}
