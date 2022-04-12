@@ -18,7 +18,7 @@ import type {
 } from "@/types";
 import { unknown, UNKNOWN_ID } from "@/types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useAuthStore } from "../pinia-modules";
+import { useAuthStore, useProjectStore } from "../pinia-modules";
 
 function convertSheet(
   sheet: ResourceObject,
@@ -33,7 +33,7 @@ function convertSheet(
 
   for (const item of includedList || []) {
     if (item.type == "project" && Number(item.id) === Number(projectId)) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = useProjectStore().convert(item, includedList);
     }
     if (item.type == "database" && Number(item.id) == Number(databaseId)) {
       database = rootGetters["database/convert"](item, includedList);

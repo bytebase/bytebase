@@ -54,11 +54,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
@@ -78,8 +77,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       name: props.project.name,
@@ -108,8 +107,8 @@ export default defineComponent({
       } else if (state.key != props.project.key) {
         subject = "project key";
       }
-      store
-        .dispatch("project/patchProject", {
+      projectStore
+        .patchProject({
           projectId: props.project.id,
           projectPatch,
         })
