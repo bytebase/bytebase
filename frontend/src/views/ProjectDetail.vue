@@ -48,7 +48,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { idFromSlug, sortDatabaseList } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
@@ -59,7 +58,7 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
-import { useEnvironmentList, useProjectStore } from "@/store";
+import { useDatabaseStore, useEnvironmentList, useProjectStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -87,8 +86,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const route = useRoute();
+    const databaseStore = useDatabaseStore();
     const projectStore = useProjectStore();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));
@@ -100,14 +99,14 @@ export default defineComponent({
     const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
-      store.dispatch("database/fetchDatabaseListByProjectId", project.value.id);
+      databaseStore.fetchDatabaseListByProjectId(project.value.id);
     };
 
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
       const list = cloneDeep(
-        store.getters["database/databaseListByProjectId"](project.value.id)
+        databaseStore.getDatabaseListByProjectId(project.value.id)
       );
       return sortDatabaseList(list, environmentList.value);
     });

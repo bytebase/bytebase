@@ -12,14 +12,11 @@ import {
   useProjectStore,
 } from "@/store";
 import { defineComponent } from "vue";
-import { useStore } from "vuex";
 import { DEFAULT_PROJECT_ID } from "../types";
 
 export default defineComponent({
   name: "ProvideDashboardContext",
   async setup() {
-    const store = useStore();
-
     await Promise.all([
       useSettingStore().fetchSetting(),
       // Fetch so MemberSelect can have the data.

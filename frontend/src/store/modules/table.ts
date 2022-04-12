@@ -10,7 +10,10 @@ import {
   TableState,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+import {
+  getPrincipalFromIncludedList,
+  useDatabaseStore,
+} from "../pinia-modules";
 
 function convert(
   table: ResourceObject,
@@ -21,9 +24,10 @@ function convert(
     .id;
 
   let database: Database = unknown("DATABASE") as Database;
+  const databaseStore = useDatabaseStore();
   for (const item of includedList || []) {
     if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item, includedList);
+      database = databaseStore.convert(item, includedList);
       break;
     }
   }
