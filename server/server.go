@@ -53,7 +53,6 @@ type Server struct {
 	StageService            api.StageService
 	TaskService             api.TaskService
 	TaskCheckRunService     api.TaskCheckRunService
-	BookmarkService         api.BookmarkService
 	RepositoryService       api.RepositoryService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
