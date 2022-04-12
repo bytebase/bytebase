@@ -152,10 +152,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 				return false, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bookmark ID is not a number: %s"+bookmarkIDStr)).SetInternal(err)
 			}
 
-			bookmarkFind := &api.BookmarkFind{
-				ID: &bookmarkID,
-			}
-			bookmark, err := s.BookmarkService.FindBookmark(ctx, bookmarkFind)
+			bookmark, err := s.store.GetBookmarkByID(ctx, bookmarkID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
