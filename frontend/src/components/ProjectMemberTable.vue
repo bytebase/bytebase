@@ -120,7 +120,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import ProjectRoleSelect from "../components/ProjectRoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
@@ -134,7 +133,12 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useCurrentUser } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useProjectStore,
+} from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -154,10 +158,10 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -287,7 +291,7 @@ export default defineComponent({
         role,
         roleProvider: "BYTEBASE",
       };
-      store.dispatch("project/patchMember", {
+      projectStore.patchMember({
         projectId: props.project.id,
         memberId: id,
         projectMemberPatch,
@@ -295,7 +299,7 @@ export default defineComponent({
     };
 
     const deleteRole = (member: ProjectMember) => {
-      store.dispatch("project/deleteMember", member).then(() => {
+      projectStore.deleteMember(member).then(() => {
         pushNotification({
           module: "bytebase",
           style: "INFO",

@@ -295,6 +295,7 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useCurrentUser,
+  useDatabaseStore,
   useDataSourceStore,
   useInstanceStore,
 } from "@/store";
@@ -604,10 +605,7 @@ const doUpdate = () => {
 
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
           if (connectionInfoChanged) {
-            store.dispatch(
-              "database/fetchDatabaseListByInstanceId",
-              state.instance.id
-            );
+            useDatabaseStore().fetchDatabaseListByInstanceId(state.instance.id);
           }
         })
         .finally(() => {

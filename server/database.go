@@ -25,15 +25,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		databaseCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
-		instanceRaw, err := s.InstanceService.FindInstance(ctx, &api.InstanceFind{ID: &databaseCreate.InstanceID})
+		instance, err := s.store.GetInstanceByID(ctx, databaseCreate.InstanceID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
-		if instanceRaw == nil {
+		if instance == nil {
 			err := fmt.Errorf("Instance ID not found %v", databaseCreate.InstanceID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
-		databaseCreate.EnvironmentID = instanceRaw.EnvironmentID
+		databaseCreate.EnvironmentID = instance.EnvironmentID
 		project, err := s.composeProjectByID(ctx, databaseCreate.ProjectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
@@ -48,7 +48,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			// TODO(dragonly): compose Instance
-			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instanceRaw.ToInstance()} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
+			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
 				return err
 			}
 		}
@@ -989,7 +989,7 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	}
 	db.Project = project
 
-	instance, err := s.composeInstanceByID(ctx, db.InstanceID)
+	instance, err := s.store.GetInstanceByID(ctx, db.InstanceID)
 	if err != nil {
 		return nil, err
 	}

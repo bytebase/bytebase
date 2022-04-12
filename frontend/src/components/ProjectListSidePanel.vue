@@ -9,30 +9,29 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
 
-import { Project, UNKNOWN_ID } from "../types";
+import { Project, UNKNOWN_ID, RowStatus } from "../types";
 import { projectName, projectSlug } from "../utils";
 import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectListSidePanel",
   props: {},
   setup() {
     const { t } = useI18n();
-    const store = useStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const prepareProjectList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("project/fetchProjectListByUser", {
+        projectStore.fetchProjectListByUser({
           userId: currentUser.value.id,
         });
       }
@@ -41,9 +40,9 @@ export default defineComponent({
     watchEffect(prepareProjectList);
 
     const outlineItemList = computed((): BBOutlineItem[] => {
-      const projectList = store.getters["project/projectListByUser"](
+      const projectList = projectStore.getProjectListByUser(
         currentUser.value.id,
-        "NORMAL"
+        ["NORMAL"] as RowStatus[]
       );
       return projectList
         .map((item: Project): BBOutlineItem => {

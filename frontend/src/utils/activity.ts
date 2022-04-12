@@ -1,17 +1,10 @@
 import { usePrincipalStore } from "@/store";
-import { Store } from "vuex";
 import { IssueBuiltinFieldId } from "../plugins";
 import {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
 } from "../types";
-
-let store: Store<any>;
-
-export function registerStoreWithActivityUtil(theStore: Store<any>) {
-  store = theStore;
-}
 
 export function issueActivityActionSentence(
   activity: Activity

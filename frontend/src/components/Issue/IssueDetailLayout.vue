@@ -277,8 +277,10 @@ import {
 import {
   featureToRef,
   useCurrentUser,
+  useDatabaseStore,
   useInstanceStore,
   useIssueSubscriberStore,
+  useProjectStore,
 } from "@/store";
 
 export default defineComponent({
@@ -317,13 +319,11 @@ export default defineComponent({
     const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     watchEffect(function prepare() {
       if (props.create) {
-        store.dispatch(
-          "project/fetchProjectById",
-          (props.issue as IssueCreate).projectId
-        );
+        projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
       }
     });
 
@@ -333,7 +333,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
+        return projectStore.getProjectById(
           (props.issue as IssueCreate).projectId
         );
       }
@@ -906,7 +906,7 @@ export default defineComponent({
       if (props.create) {
         const databaseId = (selectedTask.value as TaskCreate).databaseId;
         if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
+          return useDatabaseStore().getDatabaseById(databaseId);
         }
         return undefined;
       }

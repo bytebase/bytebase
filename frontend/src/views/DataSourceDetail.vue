@@ -154,7 +154,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, nextTick, reactive, ref } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -187,7 +186,6 @@ export default defineComponent({
   setup(props) {
     const editNameTextField = ref();
 
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
     const dataSourceStore = useDataSourceStore();
