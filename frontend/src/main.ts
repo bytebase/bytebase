@@ -36,12 +36,9 @@ import {
   isRelease,
   projectName,
   projectSlug,
-  registerStoreWithActivityUtil,
   sizeToFit,
   urlfy,
 } from "./utils";
-
-registerStoreWithActivityUtil(store);
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());

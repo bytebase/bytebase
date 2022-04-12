@@ -17,8 +17,8 @@ import {
   ResourceObject,
   RowStatus,
   unknown,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   project: ResourceObject,

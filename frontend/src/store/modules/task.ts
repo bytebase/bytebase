@@ -19,7 +19,7 @@ import {
   unknown,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useInstanceStore } from "../pinia-modules";
+import { useDatabaseStore, useInstanceStore } from "../pinia-modules";
 
 const state: () => TaskState = () => ({});
 
@@ -141,6 +141,7 @@ function convertPartial(
   }
 
   let database = undefined;
+  const databaseStore = useDatabaseStore();
   for (const item of includedList || []) {
     if (
       item.type == "instance" &&
@@ -153,7 +154,7 @@ function convertPartial(
       // Tasks like creating database may not have database.
       (task.relationships!.database.data as ResourceIdentifier)?.id == item.id
     ) {
-      database = rootGetters["database/convert"](item, includedList);
+      database = databaseStore.convert(item, includedList);
     }
   }
 
