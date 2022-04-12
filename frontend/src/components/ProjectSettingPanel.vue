@@ -39,7 +39,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType } from "vue";
-import { useStore } from "vuex";
 import { isProjectOwner } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
@@ -63,8 +62,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
-
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 

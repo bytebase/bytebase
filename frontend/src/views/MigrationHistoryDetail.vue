@@ -209,19 +209,17 @@
 
 <script lang="ts">
 import { computed, reactive, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
 import { idFromSlug, nanosecondsToString } from "../utils";
 import {
-  Database,
   MigrationHistory,
   MigrationHistoryPayload,
   VCSPushEvent,
 } from "../types";
 import { BBSelect } from "../bbkit";
-import { pushNotification, useInstanceStore } from "@/store";
+import { pushNotification, useDatabaseStore, useInstanceStore } from "@/store";
 
 type LeftSchemaSelected =
   | "previousHistorySchema" // schema after last migration
@@ -251,13 +249,10 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const instanceStore = useInstanceStore();
 
-    const database = computed((): Database => {
-      return store.getters["database/databaseById"](
-        idFromSlug(props.databaseSlug)
-      );
+    const database = computed(() => {
+      return useDatabaseStore().getDatabaseById(idFromSlug(props.databaseSlug));
     });
 
     const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
