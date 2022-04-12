@@ -3,8 +3,12 @@ import { Template, TemplateInput, InputType } from "./types";
 const TEMPLATE_BRACKET_LEFT = "{{";
 const TEMPLATE_BRACKET_RIGHT = "}}";
 
-// getTemplateInputs will convert the string value like "abc{{template}}"
-// into TemplateInput array: [{value: "abc", type: "string"}, {value: "template", type: "template"}]
+// getTemplateInputs will convert the string value into TemplateInput array.
+// For example:
+// "abc{{template}}" -> [{value: "abc", type: "string"}, {value: "template", type: "template"}]
+// "abc{{not_template}}{{template}}" -> [{value: "abc{{not_template}}", type: "string"}, {value: "template", type: "template"}]
+// "abc{{not_template}}{{template}}}}" -> [{value: "abc{{not_template}}", type: "string"}, {value: "template", type: "template"}, {value: "}}", type: "string"}]
+// "{{abc{{}}{{template}}}}" -> [{value: "{{abc{{}}", type: "string"}, {value: "template", type: "template"}, {value: "}}", type: "string"}]
 export const getTemplateInputs = (
   value: string,
   templates: Template[]
@@ -82,6 +86,8 @@ export const getTemplateInputs = (
 };
 
 // templateInputsToString will convert TemplateInput array into string
+// For example:
+// [{value: "abc", type: "string"}, {value: "template", type: "template"}] -> "abc{{template}}"
 export const templateInputsToString = (inputs: TemplateInput[]): string => {
   return inputs
     .map((input) =>
