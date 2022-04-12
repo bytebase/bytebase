@@ -1,3 +1,4 @@
+export * from "./activity";
 export * from "./actuator";
 export * from "./anomaly";
 export * from "./auth";
