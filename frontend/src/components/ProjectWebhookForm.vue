@@ -257,9 +257,8 @@ import {
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useProjectWebhookStore } from "@/store";
 
 interface LocalState {
   webhook: ProjectWebhook | ProjectWebhookCreate;
@@ -287,9 +286,9 @@ export default defineComponent({
   },
   emits: ["change-repository"],
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
+    const projectWebhookStore = useProjectWebhookStore();
 
     const state = reactive<LocalState>({
       webhook: cloneDeep(props.webhook),
@@ -390,8 +389,8 @@ export default defineComponent({
     };
 
     const createWebhook = () => {
-      store
-        .dispatch("projectWebhook/createProjectWebhook", {
+      projectWebhookStore
+        .createProjectWebhook({
           projectId: props.project.id,
           projectWebhookCreate: state.webhook,
         })
@@ -423,8 +422,8 @@ export default defineComponent({
       if (props.webhook.activityList != state.webhook.activityList) {
         projectWebhookPatch.activityList = state.webhook.activityList.join(",");
       }
-      store
-        .dispatch("projectWebhook/updateProjectWebhookById", {
+      projectWebhookStore
+        .updateProjectWebhookById({
           projectId: props.project.id,
           projectWebhookId: (state.webhook as ProjectWebhook).id,
           projectWebhookPatch,
@@ -442,8 +441,8 @@ export default defineComponent({
 
     const deleteWebhook = () => {
       const name = state.webhook.name;
-      store
-        .dispatch("projectWebhook/deleteProjectWebhookById", {
+      projectWebhookStore
+        .deleteProjectWebhookById({
           projectId: props.project.id,
           projectWebhookId: (state.webhook as ProjectWebhook).id,
         })
