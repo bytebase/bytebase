@@ -1,10 +1,12 @@
 import axios from "axios";
 import {
+  Column,
   Database,
   DatabaseId,
   ResourceIdentifier,
   ResourceObject,
   Table,
+  TableIndex,
   TableState,
   unknown,
 } from "../../types";
@@ -26,10 +28,13 @@ function convert(
     }
   }
 
+  const columnList = (table.attributes.columnList as Column[]) || [];
+  const indexList = (table.attributes.indexList as TableIndex[]) || [];
+
   return {
     ...(table.attributes as Omit<
       Table,
-      "id" | "database" | "creator" | "updater"
+      "id" | "database" | "creator" | "updater" | "columnList" | "indexList"
     >),
     id: parseInt(table.id),
     creator: getPrincipalFromIncludedList(
@@ -40,6 +45,8 @@ function convert(
       table.relationships!.updater.data,
       includedList
     ),
+    columnList,
+    indexList,
     database,
   };
 }

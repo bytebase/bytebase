@@ -2,6 +2,7 @@ import { Column } from "./column";
 import { Database } from "./database";
 import { TableId } from "./id";
 import { Principal } from "./principal";
+import { TableIndex } from "./tableIndex";
 
 export type TableType = "BASE TABLE" | "VIEW";
 export type TableEngineType = "InnoDB";
@@ -26,6 +27,7 @@ export type Table = {
   collation: string;
   rowCount: number;
   dataSize: number;
+  indexList: TableIndex[];
   indexSize: number;
   dataFree: number;
   createOptions: string;
