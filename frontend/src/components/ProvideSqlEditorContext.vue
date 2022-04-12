@@ -3,7 +3,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useCurrentUser, useDatabaseStore, useInstanceStore } from "@/store";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useInstanceStore,
+  useProjectStore,
+} from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -31,11 +36,12 @@ const state = reactive<{
 });
 
 const currentUser = useCurrentUser();
+const projectStore = useProjectStore();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
   if (currentUser.value.id != UNKNOWN_ID) {
-    state.projectList = await store.dispatch("project/fetchProjectListByUser", {
+    state.projectList = await projectStore.fetchProjectListByUser({
       userId: currentUser.value.id,
     });
   }

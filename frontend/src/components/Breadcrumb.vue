@@ -49,7 +49,6 @@
 
 <script lang="ts">
 import { computed, ComputedRef, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
@@ -60,6 +59,7 @@ import {
   useUIStateStore,
   useBookmarkStore,
   useDatabaseStore,
+  useProjectStore,
 } from "@/store";
 
 interface BreadcrumbItem {
@@ -71,13 +71,13 @@ export default defineComponent({
   name: "Breadcrumb",
   components: {},
   setup() {
-    const store = useStore();
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
     const bookmarkStore = useBookmarkStore();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(
@@ -117,9 +117,7 @@ export default defineComponent({
         });
 
         if (projectWebhookSlug) {
-          const project = store.getters["project/projectById"](
-            idFromSlug(projectSlug)
-          );
+          const project = projectStore.getProjectById(idFromSlug(projectSlug));
           list.push({
             name: `${project.name}`,
             path: `/project/${projectSlug}`,

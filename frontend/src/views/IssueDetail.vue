@@ -60,6 +60,7 @@ import {
   useActuatorStore,
   useCurrentUser,
   useDatabaseStore,
+  useProjectStore,
 } from "@/store";
 
 interface LocalState {
@@ -96,6 +97,7 @@ export default defineComponent({
     const route = useRoute();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     let newIssueTemplate = ref<IssueTemplate>(defaultTemplate());
 
@@ -149,7 +151,7 @@ export default defineComponent({
         : UNKNOWN_ID;
       let project = unknown("PROJECT") as Project;
       if (projectId !== UNKNOWN_ID) {
-        project = await store.dispatch("project/fetchProjectById", projectId);
+        project = await projectStore.fetchProjectById(projectId);
       }
 
       return project;

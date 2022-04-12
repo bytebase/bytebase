@@ -18,7 +18,11 @@ import type {
 } from "@/types";
 import { unknown, UNKNOWN_ID } from "@/types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useAuthStore, useDatabaseStore } from "../pinia-modules";
+import {
+  useAuthStore,
+  useDatabaseStore,
+  useProjectStore,
+} from "../pinia-modules";
 
 function convertSheet(
   sheet: ResourceObject,
@@ -32,9 +36,10 @@ function convertSheet(
   const databaseId = sheet.attributes.databaseId || UNKNOWN_ID;
 
   const databaseStore = useDatabaseStore();
+  const projectStore = useProjectStore();
   for (const item of includedList || []) {
     if (item.type == "project" && Number(item.id) === Number(projectId)) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = projectStore.convert(item, includedList);
     }
     if (item.type == "database" && Number(item.id) == Number(databaseId)) {
       database = databaseStore.convert(item, includedList);

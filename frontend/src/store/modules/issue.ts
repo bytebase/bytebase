@@ -23,6 +23,7 @@ import {
   useActivityStore,
   useDatabaseStore,
   useInstanceStore,
+  useProjectStore,
 } from "../pinia-modules";
 
 function convert(
@@ -45,7 +46,7 @@ function convert(
       item.type == "project" &&
       (issue.relationships!.project.data as ResourceIdentifier).id == item.id
     ) {
-      project = rootGetters["project/convert"](item);
+      project = useProjectStore().convert(item, includedList || []);
     }
 
     if (

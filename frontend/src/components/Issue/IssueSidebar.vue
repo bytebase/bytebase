@@ -320,6 +320,7 @@ import {
   useDatabaseStore,
   useEnvironmentStore,
   useLabelStore,
+  useProjectStore,
 } from "@/store";
 import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
@@ -394,6 +395,7 @@ export default defineComponent({
     const store = useStore();
     const labelStore = useLabelStore();
     const router = useRouter();
+    const projectStore = useProjectStore();
 
     const now = new Date();
     const state = reactive<LocalState>({
@@ -447,7 +449,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
+        return projectStore.getProjectById(
           (props.issue as IssueCreate).projectId
         );
       }

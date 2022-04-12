@@ -44,7 +44,7 @@ import { isProjectOwner } from "../utils";
 import ProjectGeneralSettingPanel from "../components/ProjectGeneralSettingPanel.vue";
 import ProjectMemberPanel from "../components/ProjectMemberPanel.vue";
 import { ProjectPatch, Project } from "../types";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectSettingPanel",
@@ -66,6 +66,7 @@ export default defineComponent({
     const store = useStore();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     // Only the project owner can archive/restore the project info.
     // This means even the workspace owner won't be able to edit it.
@@ -85,7 +86,7 @@ export default defineComponent({
       const projectPatch: ProjectPatch = {
         rowStatus: archive ? "ARCHIVED" : "NORMAL",
       };
-      store.dispatch("project/patchProject", {
+      projectStore.patchProject({
         projectId: props.project.id,
         projectPatch,
       });

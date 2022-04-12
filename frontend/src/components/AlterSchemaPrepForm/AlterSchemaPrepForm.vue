@@ -120,6 +120,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentList,
+  useProjectStore,
 } from "@/store";
 
 type LocalState = ProjectStandardState &
@@ -159,6 +160,7 @@ export default defineComponent({
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     useEventListener(window, "keydown", (e) => {
       if (e.code === "Escape") {
@@ -168,7 +170,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       project: props.projectId
-        ? store.getters["project/projectById"](props.projectId)
+        ? projectStore.getProjectById(props.projectId)
         : undefined,
       tab: "standard",
       alterType: "SINGLE_DB",
@@ -268,9 +270,7 @@ export default defineComponent({
       const projectId = props.projectId || state.tenantProjectId;
       if (!projectId) return;
 
-      const project = store.getters["project/projectById"](
-        projectId
-      ) as Project;
+      const project = projectStore.getProjectById(projectId) as Project;
 
       if (project.id === UNKNOWN_ID) return;
 
