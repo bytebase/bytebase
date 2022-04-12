@@ -59,6 +59,7 @@ import {
   useRouterStore,
   useUIStateStore,
   useBookmarkStore,
+  useDatabaseStore,
 } from "@/store";
 
 interface BreadcrumbItem {
@@ -136,7 +137,7 @@ export default defineComponent({
         });
 
         if (tableName || dataSourceSlug || migrationHistory) {
-          const database = store.getters["database/databaseById"](
+          const database = useDatabaseStore().getDatabaseById(
             idFromSlug(databaseSlug)
           );
           list.push({

@@ -59,7 +59,7 @@ import ProjectSettingPanel from "../components/ProjectSettingPanel.vue";
 import ProjectDeploymentConfigPanel from "../components/ProjectDeploymentConfigPanel.vue";
 import { cloneDeep } from "lodash-es";
 import { useRoute } from "vue-router";
-import { useEnvironmentList } from "@/store";
+import { useDatabaseStore, useEnvironmentList } from "@/store";
 
 export default defineComponent({
   name: "ProjectDetail",
@@ -88,6 +88,7 @@ export default defineComponent({
   },
   setup(props) {
     const store = useStore();
+    const databaseStore = useDatabaseStore();
     const route = useRoute();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));
@@ -101,14 +102,14 @@ export default defineComponent({
     const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
-      store.dispatch("database/fetchDatabaseListByProjectId", project.value.id);
+      databaseStore.fetchDatabaseListByProjectId(project.value.id);
     };
 
     watchEffect(prepareDatabaseList);
 
     const databaseList = computed(() => {
       const list = cloneDeep(
-        store.getters["database/databaseListByProjectId"](project.value.id)
+        databaseStore.getDatabaseListByProjectId(project.value.id)
       );
       return sortDatabaseList(list, environmentList.value);
     });

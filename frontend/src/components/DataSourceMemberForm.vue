@@ -186,7 +186,11 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useDataSourceStore } from "@/store";
+import {
+  pushNotification,
+  useDatabaseStore,
+  useDataSourceStore,
+} from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -221,6 +225,7 @@ export default defineComponent({
   emits: ["submit", "cancel"],
   setup(props, { emit }) {
     const store = useStore();
+    const databaseStore = useDatabaseStore();
     const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({
@@ -239,7 +244,7 @@ export default defineComponent({
 
     const database = computed(() => {
       return state.databaseId
-        ? store.getters["database/databaseById"](state.databaseId)
+        ? databaseStore.getDatabaseById(state.databaseId)
         : undefined;
     });
 
@@ -250,9 +255,7 @@ export default defineComponent({
 
       if (state.dataSourceId) {
         if (state.databaseId) {
-          const database = store.getters["database/databaseById"](
-            state.databaseId
-          );
+          const database = databaseStore.getDatabaseById(state.databaseId);
           if (database) {
             return database.dataSourceList.find(
               (item: DataSource) => item.id == state.dataSourceId

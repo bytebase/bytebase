@@ -15,6 +15,7 @@ import { t } from "../plugins/i18n";
 import {
   store,
   useAuthStore,
+  useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
   usePrincipalStore,
@@ -658,9 +659,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["database/databaseById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useDatabaseStore().getDatabaseById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -811,6 +811,7 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const authStore = useAuthStore();
+  const databaseStore = useDatabaseStore();
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
   const tabStore = useTabStore();
@@ -1019,12 +1020,25 @@ router.beforeEach((to, from, next) => {
   if (issueSlug) {
     if (issueSlug.toLowerCase() == "new") {
       // For preparing the database if user visits creating issue url directly.
+      const requests: Promise<any>[] = [];
       if (to.query.databaseList) {
         for (const databaseId of (to.query.databaseList as string).split(",")) {
-          store.dispatch("database/fetchDatabaseById", { databaseId });
+          requests.push(
+            databaseStore.fetchDatabaseById(parseInt(databaseId, 10))
+          );
         }
       }
-      next();
+      Promise.all(requests)
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
       return;
     }
     store
@@ -1047,10 +1061,8 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    store
-      .dispatch("database/fetchDatabaseById", {
-        databaseId: idFromSlug(databaseSlug),
-      })
+    databaseStore
+      .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
         if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();

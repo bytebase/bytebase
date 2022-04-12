@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useCurrentUser, useInstanceStore } from "@/store";
+import { useCurrentUser, useDatabaseStore, useInstanceStore } from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -19,6 +19,7 @@ import {
 } from "../types";
 
 const store = useStore();
+const databaseStore = useDatabaseStore();
 const state = reactive<{
   projectList: Project[];
   instanceIdList: Map<InstanceId, Instance["name"]>;
@@ -40,8 +41,7 @@ const prepareAccessibleConnectionByProject = async () => {
   }
 
   const promises = state.projectList.map(async (project) => {
-    const databaseList = await store.dispatch(
-      "database/fetchDatabaseListByProjectId",
+    const databaseList = await databaseStore.fetchDatabaseListByProjectId(
       project.id
     );
     if (databaseList.length >= 0) {
@@ -80,8 +80,7 @@ const prepareSqlEditorContext = async () => {
   connectionTree = filteredInstanceList.map(mapConnectionAtom("instance", 0));
 
   for (const instance of filteredInstanceList) {
-    const databaseList = await store.dispatch(
-      "database/fetchDatabaseListByInstanceId",
+    const databaseList = await databaseStore.fetchDatabaseListByInstanceId(
       instance.id
     );
 

@@ -17,7 +17,7 @@ import {
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import { unknown } from "@/types";
-import { useInstanceStore } from "../pinia-modules";
+import { useDatabaseStore, useInstanceStore } from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -77,12 +77,12 @@ const getters = {
     rootGetters: any
   ) {
     let instance = {} as any;
-    let databaseList = [];
+    let databaseList: Database[] = [];
     let tableList = [];
 
     if (!isEmpty(getter.connectionTreeByInstanceId)) {
       instance = getter.connectionTreeByInstanceId;
-      databaseList = rootGetters["database/databaseListByInstanceId"](
+      databaseList = useDatabaseStore().getDatabaseListByInstanceId(
         instance.id
       );
 
@@ -226,11 +226,7 @@ const actions = {
     }: Pick<SqlEditorState["connectionContext"], "instanceId" | "databaseId">
   ) {
     const instance = await useInstanceStore().fetchInstanceById(instanceId);
-    const database = (await dispatch(
-      "database/fetchDatabaseById",
-      { databaseId },
-      { root: true }
-    )) as Database;
+    const database = await useDatabaseStore().fetchDatabaseById(databaseId);
 
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,

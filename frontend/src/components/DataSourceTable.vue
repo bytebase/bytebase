@@ -100,7 +100,11 @@ import { BBTableColumn } from "../bbkit/types";
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useDataSourceStore } from "@/store";
+import {
+  pushNotification,
+  useDatabaseStore,
+  useDataSourceStore,
+} from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -157,7 +161,7 @@ export default defineComponent({
     const dataSourceSectionList = computed(() => {
       const databaseList = props.database
         ? [props.database]
-        : store.getters["database/databaseListByInstanceId"](props.instance.id);
+        : useDatabaseStore().getDatabaseListByInstanceId(props.instance.id);
       const dataSourceListByDatabase: Map<string, DataSource[]> = new Map();
       databaseList.forEach((database: Database) => {
         for (const dataSource of database.dataSourceList) {

@@ -143,7 +143,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
-import { useCurrentUser, useEnvironmentStore } from "@/store";
+import { useCurrentUser, useDatabaseStore, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   environmentId: EnvironmentId;
@@ -162,6 +162,7 @@ export default defineComponent({
   emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
+    const databaseStore = useDatabaseStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
@@ -198,8 +199,9 @@ export default defineComponent({
         return false;
       }
 
+      const database = databaseStore.getDatabaseById(state.databaseId);
       return allowDatabaseAccess(
-        store.getters["database/databaseById"](state.databaseId),
+        database,
         currentUser.value,
         state.readonly ? "RO" : "RW"
       );
@@ -240,9 +242,7 @@ export default defineComponent({
           },
         });
       } else {
-        const database = store.getters["database/databaseById"](
-          state.databaseId
-        );
+        const database = databaseStore.getDatabaseById(state.databaseId);
         router.push({
           name: "workspace.issue.detail",
           params: {

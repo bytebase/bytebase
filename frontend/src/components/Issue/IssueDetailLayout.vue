@@ -277,6 +277,7 @@ import {
 import {
   featureToRef,
   useCurrentUser,
+  useDatabaseStore,
   useInstanceStore,
   useIssueSubscriberStore,
 } from "@/store";
@@ -906,7 +907,7 @@ export default defineComponent({
       if (props.create) {
         const databaseId = (selectedTask.value as TaskCreate).databaseId;
         if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
+          return useDatabaseStore().getDatabaseById(databaseId);
         }
         return undefined;
       }

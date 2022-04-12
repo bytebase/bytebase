@@ -115,7 +115,12 @@ import CommonTenantView, {
 } from "./CommonTenantView.vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature, useCurrentUser, useEnvironmentList } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+} from "@/store";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -186,15 +191,12 @@ export default defineComponent({
     const environmentList = useEnvironmentList(["NORMAL"]);
 
     const databaseList = computed(() => {
+      const databaseStore = useDatabaseStore();
       var list;
       if (props.projectId) {
-        list = store.getters["database/databaseListByProjectId"](
-          props.projectId
-        );
+        list = databaseStore.getDatabaseListByProjectId(props.projectId);
       } else {
-        list = store.getters["database/databaseListByPrincipalId"](
-          currentUser.value.id
-        );
+        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
       }
 
       return sortDatabaseList(cloneDeep(list), environmentList.value);

@@ -69,7 +69,7 @@ import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
-import { useInstanceStore, useTabStore } from "@/store";
+import { useDatabaseStore, useInstanceStore, useTabStore } from "@/store";
 
 const store = useStore();
 const router = useRouter();
@@ -266,7 +266,7 @@ const setSheetContext = (option: any) => {
     setConnectionContext(ctx);
 
     if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
-      const database = store.getters["database/databaseById"](
+      const database = useDatabaseStore().getDatabaseById(
         ctx.databaseId,
         ctx.instanceId
       );

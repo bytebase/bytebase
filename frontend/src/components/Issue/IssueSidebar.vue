@@ -317,6 +317,7 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import {
   hasFeature,
   useCurrentUser,
+  useDatabaseStore,
   useEnvironmentStore,
   useLabelStore,
 } from "@/store";
@@ -555,10 +556,10 @@ export default defineComponent({
           },
         });
       } else {
-        store
-          .dispatch("database/fetchDatabaseByInstanceIdAndName", {
+        useDatabaseStore()
+          .fetchDatabaseByInstanceIdAndName({
             instanceId: props.instance.id,
-            name: databaseName.value,
+            name: databaseName.value!, // guarded in template to ensure databaseName is not empty
           })
           .then((database: Database) => {
             router.push({

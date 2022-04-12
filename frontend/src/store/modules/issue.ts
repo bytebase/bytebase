@@ -20,6 +20,7 @@ import {
 } from "../../types";
 import {
   getPrincipalFromIncludedList,
+  useDatabaseStore,
   useInstanceStore,
 } from "../pinia-modules";
 
@@ -158,21 +159,19 @@ const actions = {
     // so that we should also update instance/database store, otherwise, we may get
     // unknown instance/database when navigating to other UI from the issue detail page
     // since other UIs are getting instance/database by id from the store.
+    const instanceStore = useInstanceStore();
+    const databaseStore = useDatabaseStore();
     for (const stage of issue.pipeline.stageList) {
       for (const task of stage.taskList) {
-        useInstanceStore().setInstanceById({
+        instanceStore.setInstanceById({
           instanceId: task.instance.id,
           instance: task.instance,
         });
 
         if (task.database) {
-          commit(
-            "database/upsertDatabaseList",
-            {
-              databaseList: [task.database],
-            },
-            { root: true }
-          );
+          databaseStore.upsertDatabaseList({
+            databaseList: [task.database],
+          });
         }
       }
     }
