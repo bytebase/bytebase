@@ -17,7 +17,7 @@
       <div ref="containerRef" class="flex flex-wrap items-center gap-1">
         <div v-for="(data, i) in state.templateInputs" :key="i">
           <BBBadge
-            v-if="data.type === 'template'"
+            v-if="data.type == 'template'"
             :text="data.value"
             @remove="() => onTemplateRemove(i)"
           />
@@ -45,103 +45,14 @@
 
 <script lang="ts" setup>
 import { reactive, watch, watchEffect, ref, PropType } from "vue";
-import { Template } from "./types";
-
-interface TemplateInput {
-  value: string;
-  type: "string" | "template";
-}
+import { Template, TemplateInput, InputType } from "./types";
+import { getTemplateInputs, templateInputsToString } from "./utils";
 
 interface LocalState {
   inputData: string;
   inputMaxWidth: number;
   templateInputs: TemplateInput[];
 }
-
-// getTemplateInputs will convert the string value like "abc{{template}}"
-// into TemplateInput array: [{value: "abc", type: "string"}, {value: "template", type: "template"}]
-const getTemplateInputs = (
-  value: string,
-  templates: Template[]
-): TemplateInput[] => {
-  let start = 0;
-  let end = 0;
-  const res: TemplateInput[] = [];
-  const templateSet = new Set<string>(templates.map((t) => t.id));
-
-  while (end <= value.length - 1) {
-    if (
-      value.slice(end, end + 2) === "}}" &&
-      value.slice(start, start + 2) === "{{"
-    ) {
-      // When the end pointer meet the "}}" and the start pointer is "{{"
-      // we can extract the string slice as template or normal string.
-      const str = value.slice(start + 2, end);
-      if (templateSet.has(str)) {
-        res.push({
-          value: str,
-          type: "template",
-        });
-      } else {
-        res.push({
-          value: `{{${str}}}`,
-          type: "string",
-        });
-      }
-      end += 2;
-      start = end;
-    } else if (value.slice(end, end + 2) === "{{") {
-      // When the end pointer meet the "{{"
-      // we should reset the position of the start pointer.
-      res.push({
-        value: value.slice(start, end),
-        type: "string",
-      });
-      start = end;
-      end += 2;
-    } else {
-      end += 1;
-    }
-  }
-
-  if (start < end) {
-    res.push({
-      value: value.slice(start, end),
-      type: "string",
-    });
-  }
-
-  // Join the adjacent string value
-  return res.reduce((result, data) => {
-    if (data.type === "template") {
-      return [...result, data];
-    }
-
-    let str = data.value;
-
-    if (result.length > 0 && result[result.length - 1].type === "string") {
-      const last = result.pop();
-      str = `${last ? last.value : ""}${str}`;
-    }
-
-    return [
-      ...result,
-      {
-        value: str,
-        type: "string",
-      },
-    ];
-  }, [] as TemplateInput[]);
-};
-
-// templateInputsToString will convert TemplateInput array into string
-const templateInputsToString = (inputs: TemplateInput[]): string => {
-  return inputs
-    .map((input) =>
-      input.type === "string" ? input.value : `{{${input.value}}}`
-    )
-    .join("");
-};
 
 const props = defineProps({
   value: {
@@ -162,12 +73,9 @@ let inputData = "";
 
 if (
   templateInputs.length > 0 &&
-  templateInputs[templateInputs.length - 1].type === "string"
+  templateInputs[templateInputs.length - 1].type === InputType.String
 ) {
-  const last = templateInputs.pop();
-  if (last) {
-    inputData = last.value;
-  }
+  inputData = templateInputs.pop()?.value ?? inputData;
 }
 
 const state = reactive<LocalState>({
@@ -209,7 +117,7 @@ const onWindowResize = () => {
 const onInputDataDeleteEnter = (e: KeyboardEvent) => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
-    if (last.type === "template") {
+    if (last.type === InputType.Template) {
       state.templateInputs.pop();
     }
   }
@@ -218,11 +126,8 @@ const onInputDataDeleteEnter = (e: KeyboardEvent) => {
 const onInputDataDeleteLeave = (e: KeyboardEvent) => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
-    if (last && last.type === "string") {
-      const target = state.templateInputs.pop();
-      if (target) {
-        state.inputData = target.value;
-      }
+    if (last && last.type === InputType.String) {
+      state.inputData = state.templateInputs.pop()?.value ?? state.inputData;
     }
   }
 };
@@ -261,13 +166,13 @@ const onTemplateAdd = (template: Template) => {
     // If the last input contains user's input, we also need to add it
     state.templateInputs.push({
       value: state.inputData,
-      type: "string",
+      type: InputType.String,
     });
   }
 
   state.templateInputs.push({
     value: template.id,
-    type: "template",
+    type: InputType.Template,
   });
 
   state.inputData = "";
@@ -292,22 +197,22 @@ const onTemplateRemove = (i: number) => {
   }
 
   const template = state.templateInputs[index];
-  if (template.type !== "string") {
+  if (template.type !== InputType.String) {
     return;
   }
 
   if (i === state.templateInputs.length) {
     // If the last value is string, we need to extract it into the last input.
-    const last = state.templateInputs.pop();
-
-    state.inputData = `${last ? last.value : ""}${state.inputData}`;
-  } else if (state.templateInputs[i].type === "string") {
+    state.inputData = `${state.templateInputs.pop()?.value ?? ""}${
+      state.inputData
+    }`;
+  } else if (state.templateInputs[i].type === InputType.String) {
     // Join the adjacent string value
     state.templateInputs = [
       ...state.templateInputs.slice(0, index),
       {
         value: `${template.value}${state.templateInputs[i].value}`,
-        type: "string",
+        type: InputType.String,
       },
       ...state.templateInputs.slice(i + 1),
     ];
