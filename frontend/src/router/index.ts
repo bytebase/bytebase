@@ -33,6 +33,7 @@ import {
   useVCSStore,
   useProjectWebhookStore,
   useDataSourceStore,
+  useProjectStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -470,7 +471,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = store.getters["project/projectById"](
+                const project = useProjectStore().getProjectById(
                   idFromSlug(slug)
                 );
 
@@ -513,9 +514,8 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
-                    return store.getters["project/projectById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useProjectStore().getProjectById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -816,6 +816,7 @@ router.beforeEach((to, from, next) => {
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
+  const projectStore = useProjectStore();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -983,8 +984,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (projectSlug) {
-    store
-      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
+    projectStore
+      .fetchProjectById(idFromSlug(projectSlug))
       .then(() => {
         if (!projectWebhookSlug) {
           next();

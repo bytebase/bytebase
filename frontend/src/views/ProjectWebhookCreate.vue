@@ -14,10 +14,10 @@
 
 <script lang="ts">
 import { computed } from "vue";
-import { useStore } from "vuex";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { ProjectWebhookCreate } from "../types";
+import { useProjectStore } from "@/store";
 
 const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
   type: "bb.plugin.webhook.slack",
@@ -36,12 +36,10 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
+    const projectStore = useProjectStore();
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     return {
