@@ -243,7 +243,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useInstanceStore } from "@/store";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -410,8 +410,8 @@ const tryCreate = () => {
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = () => {
   state.isCreatingInstance = true;
-  store
-    .dispatch("instance/createInstance", state.instance)
+  useInstanceStore()
+    .createInstance(state.instance)
     .then((createdInstance) => {
       state.isCreatingInstance = false;
       emit("dismiss");

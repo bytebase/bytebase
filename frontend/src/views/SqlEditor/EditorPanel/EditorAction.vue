@@ -126,9 +126,8 @@ import {
   useNamespacedGetters,
   useNamespacedActions,
 } from "vuex-composition-helpers";
-import { useStore } from "vuex";
 
-import { useTabStore } from "@/store";
+import { useInstanceStore, useTabStore } from "@/store";
 import {
   SqlEditorState,
   SqlEditorGetters,
@@ -145,8 +144,8 @@ const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
 }>();
 
-const store = useStore();
 const router = useRouter();
+const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
 
 const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
@@ -168,12 +167,10 @@ const isEmptyStatement = computed(
 );
 const selectedInstance = computed<Instance>(() => {
   const ctx = connectionContext.value;
-  return store.getters["instance/instanceById"](ctx.instanceId);
+  return instanceStore.getInstanceById(ctx.instanceId);
 });
 const selectedInstanceEngine = computed(() => {
-  return store.getters["instance/instanceFormatedEngine"](
-    selectedInstance.value
-  ) as string;
+  return instanceStore.formatEngine(selectedInstance.value);
 });
 
 const hasReadonlyDataSource = computed(() => {

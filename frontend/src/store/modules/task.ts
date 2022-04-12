@@ -19,6 +19,7 @@ import {
   unknown,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia";
+import { useInstanceStore } from "../pinia-modules";
 
 const state: () => TaskState = () => ({});
 
@@ -145,7 +146,7 @@ function convertPartial(
       item.type == "instance" &&
       (task.relationships!.instance.data as ResourceIdentifier).id == item.id
     ) {
-      instance = rootGetters["instance/convert"](item, includedList);
+      instance = useInstanceStore().convert(item, includedList);
     }
     if (
       item.type == "database" &&
