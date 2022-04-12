@@ -815,7 +815,7 @@ repository:
   schema-path-example: Schema path example
   sheet-path-template: Sheet path template
   sheet-path-template-description: >-
-    Bytebase only observes file pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL editor to be used there.
+    Bytebase only observes file pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor to be used there.
   git-provider: Git provider
   version-control-status: "@.capitalize:common.version-control is {status}"
   version-control-description-file-path: >-
