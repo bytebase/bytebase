@@ -13,7 +13,7 @@ import {
   VCSId,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useVCSStore } from "@/store";
+import { useVCSStore, useProjectStore } from "@/store";
 
 function convert(
   repository: ResourceObject,
@@ -23,6 +23,8 @@ function convert(
   const vcsId = (repository.relationships!.vcs.data as ResourceIdentifier).id;
   let vcs: VCS = unknown("VCS") as VCS;
   vcs.id = parseInt(vcsId);
+  const vcsStore = useVCSStore();
+  const projectStore = useProjectStore();
 
   const projectId = (
     repository.relationships!.project.data as ResourceIdentifier
@@ -32,10 +34,10 @@ function convert(
 
   for (const item of includedList || []) {
     if (item.type == "vcs" && item.id == vcsId) {
-      vcs = useVCSStore().convert(item, includedList || []);
+      vcs = vcsStore.convert(item, includedList || []);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = projectStore.convert(item, includedList);
     }
   }
 
@@ -104,9 +106,7 @@ const actions = {
     });
 
     // Refetch the project as the project workflow type has been updated to "VCS"
-    dispatch("project/fetchProjectById", projectId, {
-      root: true,
-    });
+    useProjectStore().fetchProjectById(projectId);
 
     return createdRepository;
   },
@@ -182,9 +182,7 @@ const actions = {
     commit("deleteRepositoryByProjectId", projectId);
 
     // Refetch the project as the project workflow type has been updated to "UI"
-    dispatch("project/fetchProjectById", projectId, {
-      root: true,
-    });
+    useProjectStore().fetchProjectById(projectId);
   },
 };
 

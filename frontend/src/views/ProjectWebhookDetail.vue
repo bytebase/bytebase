@@ -52,10 +52,13 @@
 import { computed, defineComponent } from "vue";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useProjectWebhookStore } from "@/store";
+import {
+  pushNotification,
+  useProjectWebhookStore,
+  useProjectStore,
+} from "@/store";
 
 export default defineComponent({
   name: "ProjectWebhookDetail",
@@ -75,14 +78,12 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
     const projectWebhookStore = useProjectWebhookStore();
+    const projectStore = useProjectStore();
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     const projectWebhook = computed(() => {
