@@ -51,7 +51,6 @@ import {
 } from "vuex-composition-helpers";
 import { cloneDeep, omit, escape } from "lodash-es";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import { TreeOption, DropdownOption } from "naive-ui";
 
 import {
@@ -62,7 +61,6 @@ import {
   ConnectionContext,
   Database,
   UNKNOWN_ID,
-  Instance,
 } from "@/types";
 import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
 import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
@@ -71,7 +69,6 @@ import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
 import { useDatabaseStore, useInstanceStore, useTabStore } from "@/store";
 
-const store = useStore();
 const router = useRouter();
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();

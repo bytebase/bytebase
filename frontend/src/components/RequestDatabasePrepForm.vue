@@ -135,7 +135,6 @@ import {
   onUnmounted,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
@@ -161,7 +160,6 @@ export default defineComponent({
   props: {},
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
     const databaseStore = useDatabaseStore();
     const router = useRouter();
 

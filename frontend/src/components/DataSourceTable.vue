@@ -92,7 +92,6 @@
 
 <script lang="ts">
 import { computed, reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceCreateForm from "../components/DataSourceCreateForm.vue";
 import { BBTableColumn } from "../bbkit/types";
@@ -126,7 +125,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
     const dataSourceStore = useDataSourceStore();

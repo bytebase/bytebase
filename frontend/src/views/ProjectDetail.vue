@@ -48,7 +48,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { idFromSlug, sortDatabaseList } from "../utils";
 import ProjectActivityPanel from "../components/ProjectActivityPanel.vue";
 import ProjectMigrationHistoryPanel from "../components/ProjectMigrationHistoryPanel.vue";
@@ -87,9 +86,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
-    const databaseStore = useDatabaseStore();
     const route = useRoute();
+    const databaseStore = useDatabaseStore();
     const projectStore = useProjectStore();
 
     const hash = computed(() => route.hash.replace(/^#?/, ""));

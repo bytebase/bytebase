@@ -275,7 +275,6 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
@@ -392,9 +391,8 @@ export default defineComponent({
     "select-task-id",
   ],
   setup(props, { emit }) {
-    const store = useStore();
-    const labelStore = useLabelStore();
     const router = useRouter();
+    const labelStore = useLabelStore();
     const projectStore = useProjectStore();
 
     const now = new Date();

@@ -186,11 +186,7 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import {
-  pushNotification,
-  useDatabaseStore,
-  useDataSourceStore,
-} from "@/store";
+import { pushNotification, useDatabaseStore } from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -226,7 +222,6 @@ export default defineComponent({
   setup(props, { emit }) {
     const store = useStore();
     const databaseStore = useDatabaseStore();
-    const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({
       environmentId: props.dataSource
