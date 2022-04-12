@@ -59,6 +59,7 @@ import {
   useRouterStore,
   useUIStateStore,
   useBookmarkStore,
+  useProjectStore,
 } from "@/store";
 
 interface BreadcrumbItem {
@@ -77,6 +78,7 @@ export default defineComponent({
     const bookmarkStore = useBookmarkStore();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(
@@ -116,9 +118,7 @@ export default defineComponent({
         });
 
         if (projectWebhookSlug) {
-          const project = store.getters["project/projectById"](
-            idFromSlug(projectSlug)
-          );
+          const project = projectStore.getProjectById(idFromSlug(projectSlug));
           list.push({
             name: `${project.name}`,
             path: `/project/${projectSlug}`,

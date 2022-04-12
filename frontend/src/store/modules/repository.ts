@@ -13,7 +13,7 @@ import {
   VCSId,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia";
-import { useVCSStore } from "@/store";
+import { useVCSStore, useProjectStore } from "@/store";
 
 function convert(
   repository: ResourceObject,
@@ -35,7 +35,7 @@ function convert(
       vcs = useVCSStore().convert(item, includedList || []);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = useProjectStore().convert(item, includedList);
     }
   }
 
@@ -104,9 +104,7 @@ const actions = {
     });
 
     // Refetch the project as the project workflow type has been updated to "VCS"
-    dispatch("project/fetchProjectById", projectId, {
-      root: true,
-    });
+    useProjectStore().fetchProjectById(projectId);
 
     return createdRepository;
   },
@@ -182,9 +180,7 @@ const actions = {
     commit("deleteRepositoryByProjectId", projectId);
 
     // Refetch the project as the project workflow type has been updated to "UI"
-    dispatch("project/fetchProjectById", projectId, {
-      root: true,
-    });
+    useProjectStore().fetchProjectById(projectId);
   },
 };
 

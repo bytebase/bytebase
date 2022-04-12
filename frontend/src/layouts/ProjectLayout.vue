@@ -34,14 +34,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { Project } from "../types";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 type ProjectTabItem = {
   name: string;
@@ -68,16 +67,14 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const project = computed((): Project => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     const isTenantProject = computed((): boolean => {
