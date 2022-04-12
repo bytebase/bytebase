@@ -18,8 +18,10 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
-import { useInstanceStore } from "../pinia-modules";
+import {
+  getPrincipalFromIncludedList,
+  useInstanceStore,
+} from "../pinia-modules";
 
 function convert(
   issue: ResourceObject,
