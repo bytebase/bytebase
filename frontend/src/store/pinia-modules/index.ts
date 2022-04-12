@@ -8,6 +8,7 @@ export * from "./dataSource";
 export * from "./debug";
 export * from "./deployment";
 export * from "./environment";
+export * from "./gitlab";
 export * from "./issueSubscriber";
 export * from "./instance";
 export * from "./label";
