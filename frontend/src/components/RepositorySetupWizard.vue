@@ -135,8 +135,8 @@ export default defineComponent({
           webUrl: "",
         },
         repositoryConfig: {
-          baseDirectory: "",
-          branchFilter: "",
+          baseDirectory: "bytebase",
+          branchFilter: "main",
           filePathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
             : DEFAULT_FILE_PATH_TEMPLATE,
