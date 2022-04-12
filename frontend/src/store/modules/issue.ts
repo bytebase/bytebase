@@ -20,6 +20,7 @@ import {
 } from "../../types";
 import {
   getPrincipalFromIncludedList,
+  useActivityStore,
   useInstanceStore,
 } from "../pinia-modules";
 
@@ -247,7 +248,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },
@@ -277,7 +278,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },

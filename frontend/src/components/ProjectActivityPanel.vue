@@ -10,16 +10,16 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { defineComponent, PropType, reactive, watchEffect } from "vue";
 import { Activity, Project } from "../types";
 import ActivityTable from "../components/ActivityTable.vue";
+import { useActivityStore } from "@/store";
 
 interface LocalState {
   activityList: Activity[];
 }
 
-export default {
+export default defineComponent({
   name: "ProjectActivityPanel",
   components: { ActivityTable },
   props: {
@@ -29,15 +29,13 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
-
     const state = reactive<LocalState>({
       activityList: [],
     });
 
     const prepareActivityList = () => {
-      store
-        .dispatch("activity/fetchActivityListForProject", {
+      useActivityStore()
+        .fetchActivityListForProject({
           projectId: props.project.id,
         })
         .then((list) => {
@@ -51,5 +49,5 @@ export default {
       state,
     };
   },
-};
+});
 </script>
