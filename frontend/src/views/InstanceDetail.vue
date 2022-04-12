@@ -160,6 +160,7 @@ import {
   featureToRef,
   pushNotification,
   useCurrentUser,
+  useDatabaseStore,
   useInstanceStore,
   useSubscriptionStore,
 } from "@/store";
@@ -264,8 +265,8 @@ const attentionActionText = computed((): string => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const databaseList = computed<Database[]>(() => {
-  const list: Database[] = store.getters["database/databaseListByInstanceId"](
+const databaseList = computed(() => {
+  const list = useDatabaseStore().getDatabaseListByInstanceId(
     instance.value.id
   );
 
