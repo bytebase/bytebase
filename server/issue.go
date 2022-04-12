@@ -308,16 +308,12 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriberRaw := range issueSubscriberRawList {
-		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
-		}
-		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	for _, issueSub := range issueSubscriberList {
+		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
 	project, err := s.composeProjectByID(ctx, issue.ProjectID)
@@ -357,22 +353,19 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriberRaw := range issueSubscriberRawList {
-		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
-		}
-		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	for _, issueSub := range issueSubscriberList {
+		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
-	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
+	project, err := s.composeProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
+	issue.Project = project
 
 	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
 		return err
@@ -454,7 +447,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				IssueID:      issue.ID,
 				SubscriberID: subscriberID,
 			}
-			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
+			_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 			}
