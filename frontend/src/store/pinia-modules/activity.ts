@@ -84,7 +84,9 @@ export const useActivityStore = defineStore("activity", {
       return activityList;
     },
     async fetchActivityListForIssue(issueId: IssueId) {
-      const data = (await axios.get(`/api/activity?container=${issueId}`)).data;
+      const queryList = ["typePrefix=bb.issue.", `container=${issueId}`];
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
       const activityList: Activity[] = data.data.map(
         (activity: ResourceObject) => {
           return convert(activity, data.included);
@@ -102,7 +104,7 @@ export const useActivityStore = defineStore("activity", {
       projectId: ProjectId;
       limit?: number;
     }) {
-      const queryList = [`container=${projectId}`];
+      const queryList = ["typePrefix=bb.project.", `container=${projectId}`];
       if (limit) {
         queryList.push(`limit=${limit}`);
       }
@@ -119,7 +121,7 @@ export const useActivityStore = defineStore("activity", {
     async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
       const { currentUser } = useAuthStore();
       const queryList = [
-        "type=bb.sql-editor.query",
+        "typePrefix=bb.sql-editor.query",
         `user=${currentUser.id}`,
         `limit=${limit}`,
         // only fetch the successful query history
