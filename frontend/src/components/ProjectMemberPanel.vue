@@ -178,6 +178,7 @@ import {
   pushNotification,
   useCurrentUser,
   useMemberStore,
+  useProjectStore,
 } from "@/store";
 
 interface LocalState {
@@ -204,6 +205,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       principalId: UNKNOWN_ID,
@@ -286,8 +288,8 @@ export default defineComponent({
         roleProvider: "BYTEBASE",
       };
       const member = useMemberStore().memberByPrincipalId(state.principalId);
-      store
-        .dispatch("project/createdMember", {
+      projectStore
+        .createdMember({
           projectId: props.project.id,
           projectMember,
         })
@@ -312,8 +314,8 @@ export default defineComponent({
     ): Promise<boolean> =>
       new Promise((resolve, reject) => {
         const projectPatch: ProjectPatch = { roleProvider: roleProvider };
-        store
-          .dispatch("project/patchProject", {
+        projectStore
+          .patchProject({
             projectId: props.project.id,
             projectPatch,
           })
@@ -323,8 +325,8 @@ export default defineComponent({
       });
 
     const syncMemberFromVCS = () => {
-      store
-        .dispatch("project/syncMemberRoleFromVCS", {
+      projectStore
+        .syncMemberRoleFromVCS({
           projectId: props.project.id,
         })
         .then(() => {

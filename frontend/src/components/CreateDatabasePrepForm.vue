@@ -250,6 +250,7 @@ import {
   useCurrentUser,
   useEnvironmentStore,
   useInstanceStore,
+  useProjectStore,
 } from "@/store";
 
 interface LocalState {
@@ -301,6 +302,7 @@ export default defineComponent({
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -333,7 +335,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (!state.projectId) return unknown("PROJECT") as Project;
-      return store.getters["project/projectById"](state.projectId) as Project;
+      return projectStore.getProjectById(state.projectId) as Project;
     });
 
     const isReservedName = computed(() => {

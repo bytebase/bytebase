@@ -19,6 +19,7 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./policy";
 export * from "./principal";
+export * from "./project";
 export * from "./projectWebhook";
 export * from "./router";
 export * from "./setting";

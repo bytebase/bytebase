@@ -9,6 +9,7 @@ import {
   usePrincipalStore,
   useSettingStore,
   useUIStateStore,
+  useProjectStore,
 } from "@/store";
 import { defineComponent } from "vue";
 import { useStore } from "vuex";
@@ -30,7 +31,7 @@ export default defineComponent({
       usePrincipalStore().fetchPrincipalList(),
       useEnvironmentStore().fetchEnvironmentList(),
       // The default project hosts databases not explicitly assigned to other users project.
-      store.dispatch("project/fetchProjectById", DEFAULT_PROJECT_ID),
+      useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
       useUIStateStore().restoreState(),
     ]);
   },
