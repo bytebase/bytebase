@@ -55,7 +55,7 @@ import { idFromSlug } from "../utils";
 import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useProjectWebhookStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectWebhookDetail",
@@ -77,6 +77,7 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const { t } = useI18n();
+    const projectWebhookStore = useProjectWebhookStore();
 
     const project = computed(() => {
       return store.getters["project/projectById"](
@@ -85,15 +86,15 @@ export default defineComponent({
     });
 
     const projectWebhook = computed(() => {
-      return store.getters["projectWebhook/projectWebhookById"](
+      return projectWebhookStore.projectWebhookById(
         idFromSlug(props.projectSlug),
         idFromSlug(props.projectWebhookSlug)
       );
     });
 
     const testWebhook = () => {
-      store
-        .dispatch("projectWebhook/testProjectWebhookById", {
+      projectWebhookStore
+        .testProjectWebhookById({
           projectId: idFromSlug(props.projectSlug),
           projectWebhookId: idFromSlug(props.projectWebhookSlug),
         })

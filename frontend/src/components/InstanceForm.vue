@@ -292,7 +292,12 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUser, useInstanceStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useDataSourceStore,
+  useInstanceStore,
+} from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -317,6 +322,7 @@ const props = defineProps({
 const store = useStore();
 const instanceStore = useInstanceStore();
 const { t } = useI18n();
+const dataSourceStore = useDataSourceStore();
 
 const currentUser = useCurrentUser();
 
@@ -539,7 +545,7 @@ const doUpdate = () => {
           // Only used to create ReadOnly data source right now.
           if (dataSource.type === "RO") {
             requests.push(
-              store.dispatch("dataSource/createDataSource", {
+              dataSourceStore.createDataSource({
                 databaseId: dataSource.databaseId,
                 instanceId: state.instance.id,
                 name: dataSource.name,
@@ -553,7 +559,7 @@ const doUpdate = () => {
           !isEqual(dataSource, state.originalInstance.dataSourceList[i])
         ) {
           requests.push(
-            store.dispatch("dataSource/patchDataSource", {
+            dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
               dataSource: dataSource,

@@ -27,7 +27,13 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore, hasFeature, useVCSStore } from "@/store";
+import {
+  useTabStore,
+  hasFeature,
+  useVCSStore,
+  useProjectWebhookStore,
+  useDataSourceStore,
+} from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -36,6 +42,8 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
+
+// console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -532,7 +540,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     return `${t("common.webhook")} - ${
-                      store.getters["projectWebhook/projectWebhookById"](
+                      useProjectWebhookStore().projectWebhookById(
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
@@ -681,9 +689,8 @@ const routes: Array<RouteRecordRaw> = [
                       return t("common.new");
                     }
                     return `${t("common.data-source")} - ${
-                      store.getters["dataSource/dataSourceById"](
-                        idFromSlug(slug)
-                      ).name
+                      useDataSourceStore().getDataSourceById(idFromSlug(slug))
+                        .name
                     }`;
                   },
                   allowBookmark: true,
@@ -808,6 +815,7 @@ router.beforeEach((to, from, next) => {
   const instanceStore = useInstanceStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
+  const projectWebhookStore = useProjectWebhookStore();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -981,8 +989,8 @@ router.beforeEach((to, from, next) => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          store
-            .dispatch("projectWebhook/fetchProjectWebhookById", {
+          projectWebhookStore
+            .fetchProjectWebhookById({
               projectId: idFromSlug(projectSlug),
               projectWebhookId: idFromSlug(projectWebhookSlug),
             })
@@ -1063,8 +1071,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (dataSourceSlug) {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
+          useDataSourceStore()
+            .fetchDataSourceById({
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
             })
