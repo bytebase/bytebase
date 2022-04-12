@@ -272,7 +272,7 @@ export default defineComponent({
       const projectId = props.projectId || state.tenantProjectId;
       if (!projectId) return;
 
-      const project = useProjectStore().getProjectById(projectId) as Project;
+      const project = projectStore.getProjectById(projectId) as Project;
 
       if (project.id === UNKNOWN_ID) return;
 

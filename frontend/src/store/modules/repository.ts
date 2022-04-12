@@ -23,6 +23,8 @@ function convert(
   const vcsId = (repository.relationships!.vcs.data as ResourceIdentifier).id;
   let vcs: VCS = unknown("VCS") as VCS;
   vcs.id = parseInt(vcsId);
+  const vcsStore = useVCSStore();
+  const projectStore = useProjectStore();
 
   const projectId = (
     repository.relationships!.project.data as ResourceIdentifier
@@ -32,10 +34,10 @@ function convert(
 
   for (const item of includedList || []) {
     if (item.type == "vcs" && item.id == vcsId) {
-      vcs = useVCSStore().convert(item, includedList || []);
+      vcs = vcsStore.convert(item, includedList || []);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = useProjectStore().convert(item, includedList);
+      project = projectStore.convert(item, includedList);
     }
   }
 
