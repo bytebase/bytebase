@@ -22,17 +22,12 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 
 		bookmarkCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		bookmarkRaw, err := s.BookmarkService.CreateBookmark(ctx, bookmarkCreate)
+		bookmark, err := s.store.CreateBookmark(ctx, bookmarkCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Bookmark already exists: %s", bookmarkCreate.Link))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create bookmark").SetInternal(err)
-		}
-
-		bookmark, err := s.composeBookmarkRelationship(ctx, bookmarkRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created bookmark relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -52,18 +47,9 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		bookmarkFind := &api.BookmarkFind{
 			CreatorID: &userID,
 		}
-		bookmarkRawList, err := s.BookmarkService.FindBookmarkList(ctx, bookmarkFind)
+		bookmarkList, err := s.store.FindBookmark(ctx, bookmarkFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch bookmark list").SetInternal(err)
-		}
-
-		var bookmarkList []*api.Bookmark
-		for _, bookmarkRaw := range bookmarkRawList {
-			bookmark, err := s.composeBookmarkRelationship(ctx, bookmarkRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch bookmark relationship: %v", bookmark.Name)).SetInternal(err)
-			}
-			bookmarkList = append(bookmarkList, bookmark)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -84,7 +70,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		err = s.BookmarkService.DeleteBookmark(ctx, bookmarkDelete)
+		err = s.store.DeleteBookmark(ctx, bookmarkDelete)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Bookmark ID not found: %d", id))
@@ -96,22 +82,4 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-func (s *Server) composeBookmarkRelationship(ctx context.Context, raw *api.BookmarkRaw) (*api.Bookmark, error) {
-	bookmark := raw.ToBookmark()
-
-	creator, err := s.store.GetPrincipalByID(ctx, bookmark.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	bookmark.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, bookmark.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	bookmark.Updater = updater
-
-	return bookmark, nil
 }

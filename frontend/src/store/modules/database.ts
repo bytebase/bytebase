@@ -21,7 +21,7 @@ import {
   unknown,
 } from "../../types";
 import { getPrincipalFromIncludedList } from "../pinia-modules/principal";
-import { useBackupStore, useAnomalyStore } from "@/store";
+import { useBackupStore, useAnomalyStore, useDataSourceStore } from "@/store";
 
 function convert(
   database: ResourceObject,
@@ -136,7 +136,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
         dataSourceList[i].instanceId = instance.id;
         dataSourceList[i].databaseId = databaseWPartial.id;
       }
