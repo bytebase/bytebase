@@ -134,7 +134,7 @@ import {
 } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import { NSpin } from "naive-ui";
-import { useLabelStore } from "@/store";
+import { useActivityStore, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 // Show at most 5 activity
@@ -183,8 +183,8 @@ export default defineComponent({
     });
 
     const prepareActivityList = () => {
-      store
-        .dispatch("activity/fetchActivityListForProject", {
+      useActivityStore()
+        .fetchActivityListForProject({
           projectId: props.project.id,
           limit: ACTIVITY_LIMIT,
         })
