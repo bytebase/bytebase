@@ -25,6 +25,7 @@ import { InstanceUser } from "@/types/InstanceUser";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
+import { useDataSourceStore } from "./dataSource";
 import { store } from "../index";
 import { defineStore } from "pinia";
 import { computed, watchEffect } from "vue";
@@ -112,7 +113,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = store.getters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
       }
     }
   }
