@@ -26,7 +26,12 @@ import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore, hasFeature, useVCSStore } from "@/store";
+import {
+  useTabStore,
+  hasFeature,
+  useVCSStore,
+  useDataSourceStore,
+} from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -680,9 +685,8 @@ const routes: Array<RouteRecordRaw> = [
                       return t("common.new");
                     }
                     return `${t("common.data-source")} - ${
-                      store.getters["dataSource/dataSourceById"](
-                        idFromSlug(slug)
-                      ).name
+                      useDataSourceStore().getDataSourceById(idFromSlug(slug))
+                        .name
                     }`;
                   },
                   allowBookmark: true,
@@ -1062,8 +1066,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (dataSourceSlug) {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
+          useDataSourceStore()
+            .fetchDataSourceById({
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
             })

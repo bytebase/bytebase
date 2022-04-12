@@ -26,7 +26,7 @@ import {
   getPrincipalFromIncludedList,
   useEnvironmentStore,
 } from "../pinia-modules";
-import { useAnomalyStore } from "@/store";
+import { useAnomalyStore, useDataSourceStore } from "@/store";
 
 function convert(
   instance: ResourceObject,
@@ -112,7 +112,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
       }
     }
   }
