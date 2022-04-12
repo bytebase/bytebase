@@ -127,7 +127,8 @@
         }}
       </div>
     </div>
-    <div>
+    <!-- TODO(Steven): remove the isDev flag when release v1.1.0 -->
+    <div v-if="isDev()">
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
         <a
@@ -206,7 +207,8 @@ import {
   Project,
   RepositoryConfig,
   VCSType,
-} from "../types";
+} from "@/types";
+import { isDev } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -342,6 +344,7 @@ export default defineComponent({
       state,
       sampleFilePath,
       sampleSchemaPath,
+      isDev,
     };
   },
 });
