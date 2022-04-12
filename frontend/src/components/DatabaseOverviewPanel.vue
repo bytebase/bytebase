@@ -208,7 +208,7 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { featureToRef, useCurrentUser } from "@/store";
+import { featureToRef, useCurrentUser, useDataSourceStore } from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -232,6 +232,7 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({});
 
@@ -342,10 +343,10 @@ export default defineComponent({
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,
       };
-      store
-        .dispatch("dataSource/patchDataSource", {
-          databaseId: state.editingDataSource?.databaseId,
-          dataSourceId: state.editingDataSource?.id,
+      dataSourceStore
+        .patchDataSource({
+          databaseId: state.editingDataSource?.databaseId as number,
+          dataSourceId: state.editingDataSource?.id as number,
           dataSource: dataSourcePatch,
         })
         .then(() => {

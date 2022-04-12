@@ -100,7 +100,7 @@ import { BBTableColumn } from "../bbkit/types";
 import { databaseSlug, dataSourceSlug } from "../utils";
 import { Instance, Database, DataSource, DataSourceCreate } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useDataSourceStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -125,6 +125,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
+    const dataSourceStore = useDataSourceStore();
 
     const columnList: BBTableColumn[] = [
       {
@@ -207,23 +208,21 @@ export default defineComponent({
     });
 
     const doCreate = (newDataSource: DataSourceCreate) => {
-      store
-        .dispatch("dataSource/createDataSource", newDataSource)
-        .then((dataSource) => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "datasource.successfully-created-data-source-datasource-name",
-              [dataSource.name]
-            ),
-          });
-          router.push(
-            `/db/${databaseSlug(
-              dataSource.database
-            )}/data-source/${dataSourceSlug(dataSource)}`
-          );
+      dataSourceStore.createDataSource(newDataSource).then((dataSource) => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t(
+            "datasource.successfully-created-data-source-datasource-name",
+            [dataSource.name]
+          ),
         });
+        router.push(
+          `/db/${databaseSlug(
+            dataSource.database
+          )}/data-source/${dataSourceSlug(dataSource)}`
+        );
+      });
     };
 
     const clickDataSource = function (section: number, row: number) {
