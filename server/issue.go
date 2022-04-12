@@ -555,7 +555,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 
 		// Find instance.
-		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, m.InstanceID)
 		if err != nil {
 			return nil, err
 		}
