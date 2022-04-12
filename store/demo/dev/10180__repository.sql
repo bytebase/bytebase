@@ -37,7 +37,7 @@ VALUES
         'bytebase',
         '{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql',
         '{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql',
-        'sheet/{{NAME}}.sql',
+        'script/{{NAME}}.sql',
         -- Refers to the bytebase-demo/blog
         '13',
         -- Refers to the webhook in bytebase-demo/blog
@@ -88,7 +88,7 @@ VALUES
         'bytebase',
         '{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql',
         '{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql',
-        'sheet/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql',
+        'script/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql',
         -- Refers to the bytebase-demo/shop
         '14',
         -- Refers to the webhook in bytebase-demo/shop

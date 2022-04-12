@@ -69,14 +69,15 @@ const DEFAULT_FILE_PATH_TEMPLATE =
   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
+// Default sheet path tempalte is to organize script files for SQL Editor.
 const DEFAULT_SHEET_PATH_TEMPLATE =
-  "sheet/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql";
+  "script/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql";
 
 // For tenant mode projects, {{ENV_NAME}} is not supported.
 const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
 const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}__LATEST.sql";
-const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "sheet/{{NAME}}.sql";
+const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "script/{{NAME}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;
