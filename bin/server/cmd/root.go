@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -91,6 +93,9 @@ var (
 	readonly bool
 	demo     bool
 	debug    bool
+	// pgURL must follow PostgreSQL connection URIs pattern.
+	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+	pgURL string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
@@ -124,6 +129,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
+	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
+	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
+	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
+	// rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -132,7 +141,7 @@ func init() {
 
 // Profile is the configuration to start main server.
 type Profile struct {
-	// mode can be "release" or "dev"
+	// mode can be "prod" or "dev"
 	mode common.ReleaseMode
 	// port is the binding port for server.
 	port int
@@ -273,19 +282,27 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgDataDir)
+	if useEmbeddedDB() {
+		fmt.Printf("resourceDir=%s\n", resourceDir)
+		fmt.Printf("pgdataDir=%s\n", pgDataDir)
+	}
 	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
-	if err != nil {
-		return nil, err
+	var pgInstance *postgres.Instance
+	if useEmbeddedDB() {
+		logger.Info("Preparing embedded PostgreSQL instance...")
+		var err error
+		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+		// to store Bytebase's own metadata.
+		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	return &Main{
 		profile: &activeProfile,
 		l:       logger,
@@ -327,13 +344,67 @@ func initBranding(ctx context.Context, settingService api.SettingService) error 
 	return nil
 }
 
-// Run will run the main server.
-func (m *Main) Run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	m.serverCancel = cancel
+func useEmbeddedDB() bool {
+	return len(pgURL) == 0
+}
 
+func (m *Main) newDB() (*store.DB, error) {
+	if useEmbeddedDB() {
+		return m.newEmbeddedDB()
+	}
+	return m.newExternalDB()
+}
+
+func (m *Main) newExternalDB() (*store.DB, error) {
+	u, err := url.Parse(pgURL)
+	if err != nil {
+		return nil, err
+	}
+
+	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
+
+	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
+	}
+
+	connCfg := dbdriver.ConnectionConfig{}
+
+	if u.User != nil {
+		connCfg.Username = u.User.Username()
+		connCfg.Password, _ = u.User.Password()
+	}
+
+	if connCfg.Username == "" {
+		return nil, fmt.Errorf("missing user in the --pg connection string")
+	}
+
+	if host, port, err := net.SplitHostPort(u.Host); err != nil {
+		connCfg.Host = u.Host
+	} else {
+		connCfg.Host = host
+		connCfg.Port = port
+	}
+
+	// By default, follow the PG convention to use user name as the database name
+	connCfg.Database = connCfg.Username
+	if u.Path != "" {
+		connCfg.Database = u.Path[1:]
+	}
+
+	q := u.Query()
+	connCfg.TLSConfig = dbdriver.TLSConfig{
+		SslCA:   q.Get("sslrootcert"),
+		SslKey:  q.Get("sslkey"),
+		SslCert: q.Get("sslcert"),
+	}
+
+	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	return db, nil
+}
+
+func (m *Main) newEmbeddedDB() (*store.DB, error) {
 	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
-		return err
+		return nil, err
 	}
 	m.pgStarted = true
 
@@ -345,6 +416,19 @@ func (m *Main) Run(ctx context.Context) error {
 		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
 	}
 	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	return db, nil
+}
+
+// Run will run the main server.
+func (m *Main) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.serverCancel = cancel
+
+	db, err := m.newDB()
+	if err != nil {
+		return fmt.Errorf("cannot new db: %w", err)
+	}
+
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
@@ -385,15 +469,13 @@ func (m *Main) Run(ctx context.Context) error {
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
 	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.ActivityService = store.NewActivityService(m.l, db)
-	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
 	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 
-	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
 	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
 	if err != nil {

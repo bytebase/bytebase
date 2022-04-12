@@ -24,7 +24,7 @@ func TestToStoredVersion(t *testing.T) {
 		{true, "2021.1.13", "world", "2021.0001.0013-world", ""},
 	}
 	for _, tc := range tests {
-		got, err := toStoredVersion(tc.useSemanticVersion, tc.version, tc.semanticVersionSuffix)
+		got, err := ToStoredVersion(tc.useSemanticVersion, tc.version, tc.semanticVersionSuffix)
 		if tc.wantErr != "" {
 			require.Contains(t, err.Error(), tc.wantErr)
 			continue

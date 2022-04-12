@@ -102,7 +102,7 @@ import { useStore } from "vuex";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { InboxSummary, UNKNOWN_ID } from "@/types";
 import { isDBAOrOwner, isDev } from "@/utils";
-import { hasFeature, useSubscriptionStore } from "@/store";
+import { hasFeature, useCurrentUser, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -122,7 +122,7 @@ export default defineComponent({
       showMobileMenu: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const { currentPlan } = storeToRefs(subscriptionStore);
 

@@ -648,7 +648,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			schemaVersion, schema = sv, s
 		}
 		if schemaVersion == "" {
-			schemaVersion = defaultMigrationVersionFromTaskID()
+			schemaVersion = common.DefaultMigrationVersion()
 		}
 
 		payload := api.TaskDatabaseCreatePayload{}
@@ -771,7 +771,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
 		}
 
-		schemaVersion := defaultMigrationVersionFromTaskID()
+		schemaVersion := common.DefaultMigrationVersion()
 		// Tenant mode project pipeline has its own generation.
 		if project.TenantMode == api.TenantModeTenant {
 			if !s.feature(api.FeatureMultiTenancy) {
@@ -1114,7 +1114,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			ReceiverID: issue.CreatorID,
 			ActivityID: activityID,
 		}
-		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
+		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
 			return fmt.Errorf("failed to post activity to creator inbox: %d, error: %w", issue.CreatorID, err)
 		}
@@ -1125,7 +1125,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 			ReceiverID: issue.AssigneeID,
 			ActivityID: activityID,
 		}
-		_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
+		_, err := s.store.CreateInbox(ctx, inboxCreate)
 		if err != nil {
 			return fmt.Errorf("failed to post activity to assignee inbox: %d, error: %w", issue.AssigneeID, err)
 		}
@@ -1137,7 +1137,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 				ReceiverID: subscriber.ID,
 				ActivityID: activityID,
 			}
-			_, err := s.InboxService.CreateInbox(ctx, inboxCreate)
+			_, err := s.store.CreateInbox(ctx, inboxCreate)
 			if err != nil {
 				return fmt.Errorf("failed to post activity to subscriber inbox: %d, error: %w", subscriber.ID, err)
 			}

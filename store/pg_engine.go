@@ -117,6 +117,9 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return nil
 	}
 
+	// We are also using our own migration core to manage our own schema's migration history.
+	// So here we will create a "bytebase" database to store the migration history if the target
+	// db instance does not have one yet.
 	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
 		return err
 	}
@@ -313,7 +316,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				ReleaseVersion:        serverVersion,
 				UseSemanticVersion:    true,
 				Version:               cutoffSchemaVersion.String(),
-				SemanticVersionSuffix: time.Now().Format("20060102150405"),
+				SemanticVersionSuffix: common.DefaultMigrationVersion(),
 				Namespace:             databaseName,
 				Database:              databaseName,
 				Environment:           "", /* unused in execute migration */
@@ -375,7 +378,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 						ReleaseVersion:        serverVersion,
 						UseSemanticVersion:    true,
 						Version:               pv.version.String(),
-						SemanticVersionSuffix: time.Now().Format("20060102150405"),
+						SemanticVersionSuffix: common.DefaultMigrationVersion(),
 						Namespace:             databaseName,
 						Database:              databaseName,
 						Environment:           "", /* unused in execute migration */

@@ -1,10 +1,10 @@
-import { Anomaly, AnomalyState, ResourceObject } from "../../types";
+import { defineStore } from "pinia";
+import { Anomaly, ResourceObject } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   anomaly: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Anomaly {
   return {
     ...(anomaly.attributes as Omit<
@@ -24,21 +24,13 @@ function convert(
   };
 }
 
-const state: () => AnomalyState = () => ({});
-
-const getters = {
-  convert:
-    (state: AnomalyState, getters: any, rootState: any, rootGetters: any) =>
-    (anomaly: ResourceObject): Anomaly => {
+export const useAnomalyStore = defineStore("anomaly", {
+  actions: {
+    convert(anomaly: ResourceObject): Anomaly {
       // Pass includedList with [] here, otherwise, it may cause cyclic dependency
       // e.g. Database calls this to convert its dataSourceList, while data source here
       // also tries to convert its database.
-      return convert(anomaly, [], rootGetters);
+      return convert(anomaly, []);
     },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-};
+  },
+});

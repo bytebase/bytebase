@@ -11,7 +11,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "@/store/modules/principal";
+import { getPrincipalFromIncludedList } from "./principal";
 
 export function convertBackup(
   backup: ResourceObject,
@@ -59,10 +59,7 @@ export const useBackupStore = defineStore("backup", {
   }),
 
   actions: {
-    convert: (
-      backup: ResourceObject,
-      includedList: ResourceObject[]
-    ): Backup => {
+    convert(backup: ResourceObject, includedList: ResourceObject[]): Backup {
       return convertBackup(backup, includedList || []);
     },
 
