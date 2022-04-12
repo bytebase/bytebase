@@ -11,11 +11,11 @@
 
 <script lang="ts">
 import { reactive, onMounted, onUnmounted } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import { IssueId, PrincipalId, DataSource } from "../types";
 import { fullDataSourcePath } from "../utils";
+import { useDataSourceStore } from "@/store";
 
 interface LocalState {
   dataSource?: DataSource;
@@ -27,7 +27,6 @@ export default {
   name: "DatabaseGrant",
   components: { DataSourceMemberForm },
   async setup() {
-    const store = useStore();
     const router = useRouter();
 
     const keyboardHandler = (e: KeyboardEvent) => {
@@ -47,9 +46,9 @@ export default {
     const dataSource =
       router.currentRoute.value.query.datasource &&
       router.currentRoute.value.query.database
-        ? await store.dispatch("dataSource/fetchDataSourceById", {
-            dataSourceId: router.currentRoute.value.query.datasource,
-            databaseId: router.currentRoute.value.query.database,
+        ? await useDataSourceStore().fetchDataSourceById({
+            dataSourceId: router.currentRoute.value.query.datasource as number,
+            databaseId: router.currentRoute.value.query.database as number,
           })
         : undefined;
 
