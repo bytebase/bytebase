@@ -4,6 +4,7 @@ export * from "./auth";
 export * from "./backup";
 export * from "./bookmark";
 export * from "./command";
+export * from "./dataSource";
 export * from "./debug";
 export * from "./deployment";
 export * from "./environment";

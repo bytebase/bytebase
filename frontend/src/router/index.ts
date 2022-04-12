@@ -31,6 +31,7 @@ import {
   hasFeature,
   useVCSStore,
   useProjectWebhookStore,
+  useDataSourceStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -687,9 +688,8 @@ const routes: Array<RouteRecordRaw> = [
                       return t("common.new");
                     }
                     return `${t("common.data-source")} - ${
-                      store.getters["dataSource/dataSourceById"](
-                        idFromSlug(slug)
-                      ).name
+                      useDataSourceStore().getDataSourceById(idFromSlug(slug))
+                        .name
                     }`;
                   },
                   allowBookmark: true,
@@ -1070,8 +1070,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (dataSourceSlug) {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
+          useDataSourceStore()
+            .fetchDataSourceById({
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
             })

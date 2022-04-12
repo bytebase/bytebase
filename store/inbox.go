@@ -145,6 +145,10 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 	return &inboxSummary, nil
 }
 
+//
+// private function
+//
+
 // composeInbox composes an instance of Inbox by inboxRaw
 func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, error) {
 	inbox := raw.toInbox()
