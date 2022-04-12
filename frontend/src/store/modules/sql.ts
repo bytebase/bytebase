@@ -7,6 +7,7 @@ import {
   ResourceObject,
   SqlResultSet,
 } from "../../types";
+import { useInstanceStore } from "../pinia-modules";
 
 function convert(resultSet: ResourceObject): SqlResultSet {
   return {
@@ -61,9 +62,7 @@ const actions = {
         root: true,
       });
 
-      dispatch("instance/fetchInstanceUserListById", instanceId, {
-        root: true,
-      });
+      useInstanceStore().fetchInstanceUserListById(instanceId);
     }
 
     return resultSet;
