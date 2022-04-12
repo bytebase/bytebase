@@ -11,6 +11,7 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
+import { useActivityStore } from "../pinia-modules";
 
 function convert(
   inbox: ResourceObject,
@@ -22,9 +23,10 @@ function convert(
   let activity: Activity = unknown("ACTIVITY") as Activity;
   activity.id = parseInt(activityId);
 
+  const activityStore = useActivityStore();
   for (const item of includedList || []) {
     if (item.type == "activity" && item.id == activityId) {
-      activity = rootGetters["activity/convert"](item, includedList);
+      activity = activityStore.convert(item, includedList);
     }
   }
 
