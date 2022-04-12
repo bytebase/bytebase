@@ -25,13 +25,13 @@ import (
 
 const (
 	// The schema version consists of major version and minor version.
-	// Backward compatible schema change increases the minor version, while backward non-compatible schema change increase the majar version.
-	// majorSchemaVervion and majorSchemaVervion defines the schema version this version of code can handle.
+	// Backward compatible schema change increases the minor version, while backward non-compatible schema change increase the major version.
+	// majorSchemaVersion and majorSchemaVersion defines the schema version this version of code can handle.
 	// We reserve 4 least significant digits for minor version.
 	// e.g.
-	// 10001 -> Major verion 1, minor version 1
-	// 11001 -> Major verion 1, minor version 1001
-	// 20001 -> Major verion 2, minor version 1
+	// 10001 -> Major version 1, minor version 1
+	// 11001 -> Major version 1, minor version 1001
+	// 20001 -> Major version 2, minor version 1
 	//
 	// The migration file follows the name pattern of {{version_number}}__{{description}}.
 	//
@@ -43,7 +43,7 @@ const (
 	// will require a separate process to upgrade the schema.
 	// If the new release requires a higher MINOR version than the schema file, then it will apply the migration upon
 	// startup.
-	majorSchemaVervion = 1
+	majorSchemaVersion = 1
 )
 
 //go:embed migration
@@ -134,7 +134,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		if err != nil {
 			return err
 		}
-		// This migrates the CREATE DATABSAE record to semantic version format.
+		// This migrates the CREATE DATABASE record to semantic version format.
 		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L251
 		// This 1.0.0 should correspond to 1.0/0000__initial_schema.sql.
 		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000000' WHERE id = 1 AND version = '10000';"); err != nil {
@@ -271,8 +271,8 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 	} else {
 		l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 		major := (*curVer).Major
-		if major != majorSchemaVervion {
-			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVervion, serverVersion)
+		if major != majorSchemaVersion {
+			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
 		}
 	}
 
