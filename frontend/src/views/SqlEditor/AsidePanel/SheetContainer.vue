@@ -84,14 +84,10 @@
 import { escape } from "lodash-es";
 import { computed, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useNamespacedActions,
-  useNamespacedState,
-} from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore, useSQLEditorStore } from "@/store";
-import { SheetActions, SheetState, Sheet, UNKNOWN_ID } from "@/types";
+import { useTabStore, useSQLEditorStore, useSheetStore } from "@/store";
+import { Sheet, UNKNOWN_ID } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
@@ -107,15 +103,9 @@ const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
 
 const isLoading = computed(() => sqlEditorStore.isFetchingSheet);
-
-const { sheetList } = useNamespacedState<SheetState>("sheet", ["sheetList"]);
-
-const { deleteSheet, patchSheetById } = useNamespacedActions<SheetActions>(
-  "sheet",
-  ["deleteSheet", "patchSheetById"]
-);
 
 const state = reactive<State>({
   search: "",
@@ -129,8 +119,8 @@ const queryNameInputerRef = ref<HTMLInputElement>();
 const data = computed(() => {
   const filterSheetList =
     sqlEditorStore.sharedSheet.id !== UNKNOWN_ID
-      ? [...sheetList.value, sqlEditorStore.sharedSheet]
-      : sheetList.value;
+      ? [...sheetStore.sheetList, sqlEditorStore.sharedSheet]
+      : sheetStore.sheetList;
   const tempData =
     filterSheetList && filterSheetList.length > 0
       ? filterSheetList.filter((sheet) => {
@@ -167,7 +157,7 @@ const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
   }
-  if (sheetList.value.length === null) {
+  if (sheetStore.sheetList.length === null) {
     return t("sql-editor.no-sheet-found");
   }
 
@@ -196,7 +186,7 @@ const handleCancelEdit = () => {
 
 const handleSheetNameChanged = () => {
   if (state.editingSheetId) {
-    patchSheetById({
+    sheetStore.patchSheetById({
       id: state.editingSheetId,
       name: state.currentSheetName,
     });
@@ -212,7 +202,7 @@ const handleSheetNameChanged = () => {
 
 const handleDeleteSheet = () => {
   if (state.currentActionSheet) {
-    deleteSheet(state.currentActionSheet.id);
+    sheetStore.deleteSheet(state.currentActionSheet.id);
 
     if (tabStore.currentTab.sheetId === state.currentActionSheet.id) {
       tabStore.updateCurrentTab({
