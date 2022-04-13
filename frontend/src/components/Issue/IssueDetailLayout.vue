@@ -215,7 +215,6 @@ import {
   PropType,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
@@ -282,6 +281,7 @@ import {
   useIssueStore,
   useIssueSubscriberStore,
   useProjectStore,
+  useTaskStore,
 } from "@/store";
 
 export default defineComponent({
@@ -314,13 +314,13 @@ export default defineComponent({
     "status-changed": (eager: boolean) => true,
   },
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
     const route = useRoute();
-    const issueStore = useIssueStore();
-    const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
+    const issueStore = useIssueStore();
+    const issueSubscriberStore = useIssueSubscriberStore();
+    const taskStore = useTaskStore();
     const projectStore = useProjectStore();
 
     watchEffect(function prepare() {
@@ -548,9 +548,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("task/updateStatus", {
+      taskStore
+        .updateStatus({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -563,8 +562,8 @@ export default defineComponent({
     };
 
     const runTaskChecks = (task: Task) => {
-      store
-        .dispatch("task/runChecks", {
+      taskStore
+        .runChecks({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -600,8 +599,8 @@ export default defineComponent({
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
-      store
-        .dispatch("task/patchTask", {
+      taskStore
+        .patchTask({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId,

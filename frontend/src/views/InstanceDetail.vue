@@ -139,7 +139,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -186,7 +185,6 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
 const instanceStore = useInstanceStore();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
