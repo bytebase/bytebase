@@ -66,44 +66,26 @@
 <script lang="ts" setup>
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import {
-  useNamespacedGetters,
-  useNamespacedState,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
 
-import type {
-  SqlEditorState,
-  SqlEditorGetters,
-  Database,
-  DatabaseId,
-} from "@/types";
+import type { Database, DatabaseId } from "@/types";
+import { useSQLEditorStore, useTableStore } from "@/store";
 
 const emit = defineEmits<{
   (e: "close-pane"): void;
 }>();
 
-const { findProjectIdByDatabaseId, connectionInfo } =
-  useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-    "findProjectIdByDatabaseId",
-    "connectionInfo",
-  ]);
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
-const { fetchTableByDatabaseIdAndTableName } = useNamespacedActions("table", [
-  "fetchTableByDatabaseIdAndTableName",
-]);
+const tableStore = useTableStore();
+const sqlEditorStore = useSQLEditorStore();
 
 const tableInfo = ref();
-const ctx = connectionContext.value;
+const ctx = sqlEditorStore.connectionContext;
 const router = useRouter();
 
 const gotoAlterSchema = () => {
   const databaseId = ctx.databaseId as DatabaseId;
-  const projectId = findProjectIdByDatabaseId.value(databaseId);
+  const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
-    connectionInfo.value.databaseListByProjectId.get(projectId);
+    sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId) as any;
   const databaseName = databaseList.find(
     (database: Database) => database.id === databaseId
   ).name;
@@ -127,12 +109,12 @@ const handleClosePane = () => {
 };
 
 watch(
-  () => connectionContext.value.option,
+  () => sqlEditorStore.connectionContext.option,
   async (option) => {
     if (option && option.type === "table") {
-      const res = await fetchTableByDatabaseIdAndTableName({
-        databaseId: option.parentId,
-        tableName: option.label,
+      const res = await tableStore.fetchTableByDatabaseIdAndTableName({
+        databaseId: option.parentId as number,
+        tableName: option.label as string,
       });
 
       tableInfo.value = res;
