@@ -16,7 +16,6 @@ import dataSourceType from "./directives/data-source-type";
 import highlight from "./directives/highlight";
 import { router } from "./router";
 import {
-  store,
   pinia,
   pushNotification,
   useActuatorStore,
@@ -133,7 +132,6 @@ app
   // to re-render the page and remove the event listener required for
   .directive("highlight", highlight)
   .directive("data-source-type", dataSourceType)
-  .use(store)
   .use(pinia)
   .use(router)
   .use(i18n)
