@@ -81,18 +81,12 @@ import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import {
   useNamespacedGetters,
-  useNamespacedState,
   useNamespacedActions,
 } from "vuex-composition-helpers";
 import slug from "slug";
 
-import { pushNotification, useTabStore } from "@/store";
-import {
-  SqlEditorState,
-  SheetGetters,
-  SheetActions,
-  AccessOption,
-} from "@/types";
+import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import { SheetGetters, SheetActions, AccessOption } from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -100,6 +94,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
@@ -121,9 +116,6 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
 const { currentSheet, isCreator } = useNamespacedGetters<SheetGetters>(
   "sheet",
   ["currentSheet", "isCreator"]
@@ -132,17 +124,17 @@ const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
   "patchSheetById",
 ]);
 
-const ctx = connectionContext.value;
+const ctx = computed(() => sqlEditorStore.connectionContext);
 
 const sheet = computed(() => currentSheet.value(tabStore.currentTab));
 const creator = computed(() => isCreator.value(tabStore.currentTab));
 
 const host = window.location.host;
 const connectionSlug = [
-  slug(ctx.instanceName as string),
-  ctx.instanceId,
-  slug(ctx.databaseName as string),
-  ctx.databaseId,
+  slug(ctx.value.instanceName as string),
+  ctx.value.instanceId,
+  slug(ctx.value.databaseName as string),
+  ctx.value.databaseId,
 ].join("_");
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);

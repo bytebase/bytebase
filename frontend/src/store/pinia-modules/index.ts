@@ -27,6 +27,7 @@ export * from "./router";
 export * from "./setting";
 export * from "./stage";
 export * from "./sql";
+export * from "./sqlEditor";
 export * from "./subscription";
 export * from "./tab";
 export * from "./table";
