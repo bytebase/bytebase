@@ -930,7 +930,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.
 
 	// restore to ghost tables, need to replace table names
 	if config.IsGhostTable {
-		fnExecuteStmt = genRestoreFuncWithGhostTable(txn)
+		fnExecSQL := func(query string) error {
+			_, err := txn.Exec(query)
+			return err
+		}
+		fnExecuteStmt = genRestoreFuncWithGhostTable(fnExecSQL)
 	}
 
 	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
@@ -944,29 +948,24 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.
 	return nil
 }
 
-func genRestoreFuncWithGhostTable(txn *sql.Tx) func(string) error {
+func genRestoreFuncWithGhostTable(fnExecSQL func(query string) error) func(string) error {
 	reInsert := regexp.MustCompile(`INSERT INTO ` +
 		// Capture group for optional db prefix like "`dbPrefix`."
 		// the ?: means DO NOT capture this group
 		// the last ? means the whole db prefix is optional
-		"(?:`(.*)`\\.)?" +
+		"(?:`([^`]+)`\\.)?" +
 		// Capture group for the table name, leaving back quote ` outside for convenience
-		"`(.*)` " +
+		"`([^`]+)` " +
 		// Capture group for values to the end of the line
 		"VALUES (.*)")
 
 	reCreate := regexp.MustCompile("CREATE TABLE " +
 		// Capture group for the table name, leaving back quote ` outside for convenience
-		"`(.*)` " +
+		"`([^`]+)` " +
 		// Capture group for the rest of the contents
 		// Note that there will be multiple lines, so using [\s\S]+ to match them all including the line break
 		"([\\s\\S]+)")
-	// reConstraint := regexp.MustCompile("[\\s\\S]*" + // matches anything before the constraint clause, and do NOT capture
-	// 	"CONSTRAINT " +
-	// 	// constraint name, we need to remove it
-	// 	"(`.+`) " +
-	// 	// matches anything after the constraint clause, and do NOT capture
-	// 	"[\\s\\S]*")
+
 	// only matches name after CONSTRAINT qualifier
 	reConstraintName := regexp.MustCompile("CONSTRAINT `[^`]+`")
 	fn := func(stmt string) error {
@@ -981,7 +980,6 @@ func genRestoreFuncWithGhostTable(txn *sql.Tx) func(string) error {
 
 		var stmtWithGhostTables string
 		if matchesInsert != nil {
-			fmt.Printf("matches insert")
 			dbPrefix := ""
 			if matchesInsert[1] != "" {
 				dbPrefix = fmt.Sprintf("`%s`.", matchesInsert[1])
@@ -1004,7 +1002,7 @@ func genRestoreFuncWithGhostTable(txn *sql.Tx) func(string) error {
 
 		fmt.Printf("original: %s\n", stmt)
 		fmt.Printf("modified: %s\n", stmtWithGhostTables)
-		if _, err := txn.Exec(stmtWithGhostTables); err != nil {
+		if err := fnExecSQL(stmtWithGhostTables); err != nil {
 			return err
 		}
 		return nil
