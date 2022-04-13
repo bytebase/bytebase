@@ -46,7 +46,7 @@ const (
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
-	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where-requirement"
+	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 )
 
 // Advice is the result of an advisor.

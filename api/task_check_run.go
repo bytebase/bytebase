@@ -74,7 +74,7 @@ const (
 	// TaskCheckDatabaseStatementCompatibility is the task check type for statement compatibility.
 	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
 	// TaskCheckDatabaseStatementRequireWhere is the task check type for the WHRER clause requirement for UPDATE/DELETE.
-	TaskCheckDatabaseStatementRequireWhere TaskCheckType = "bb.task-check.database.statement.require-where"
+	TaskCheckDatabaseStatementRequireWhere TaskCheckType = "bb.task-check.database.statement.where.require"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.

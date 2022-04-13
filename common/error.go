@@ -47,8 +47,7 @@ const (
 	CompatibilityAddCheck      Code = 10009
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
-	DeleteNoWhere              Code = 10012
-	UpdateNoWhere              Code = 10013
+	StatementNoWhere           Code = 10101
 )
 
 // Error represents an application-specific error. Application errors can be

@@ -64,12 +64,12 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// DELETE
 	case *ast.DeleteStmt:
 		if node.Where == nil {
-			code = common.DeleteNoWhere
+			code = common.StatementNoWhere
 		}
 	// UPDATE
 	case *ast.UpdateStmt:
 		if node.Where == nil {
-			code = common.UpdateNoWhere
+			code = common.StatementNoWhere
 		}
 	}
 
@@ -77,8 +77,8 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 		v.advisorList = append(v.advisorList, advisor.Advice{
 			Status:  advisor.Warn,
 			Code:    code,
-			Title:   "Potential modification of unexpected data",
-			Content: fmt.Sprintf("%q may modify unexpected data", in.Text()),
+			Title:   "Require WHERE clause",
+			Content: fmt.Sprintf("%q require WHERE clause", in.Text()),
 		})
 	}
 	return in, false

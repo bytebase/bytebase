@@ -14,7 +14,7 @@ func TestWhereRequirement(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.DeleteNoWhere,
+					Code:    common.StatementNoWhere,
 					Title:   "Potential modification of unexpected data",
 					Content: "\"DELETE FROM t1\" may modify unexpected data",
 				},
@@ -25,7 +25,7 @@ func TestWhereRequirement(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.UpdateNoWhere,
+					Code:    common.StatementNoWhere,
 					Title:   "Potential modification of unexpected data",
 					Content: "\"UPDATE t1 SET a = 1\" may modify unexpected data",
 				},
