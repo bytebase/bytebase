@@ -21,8 +21,8 @@ import {
 import { getPrincipalFromIncludedList } from "./principal";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
+import { useIssueStore } from "./issue";
 import { defineStore } from "pinia";
-import { store } from "../index";
 
 function convertTaskRun(
   taskRun: ResourceObject,
@@ -223,8 +223,7 @@ export const useTaskStore = defineStore("task", {
       ).data;
       const task = this.convertPartial(data.data, data.included);
 
-      store.dispatch("issue/fetchIssueById", issueId);
-      // useIssueStore().fetchIssueById(issueId);
+      useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
@@ -249,8 +248,7 @@ export const useTaskStore = defineStore("task", {
       ).data;
       const task = this.convertPartial(data.data, data.included);
 
-      store.dispatch("issue/fetchIssueById", issueId);
-      // useIssueStore().fetchIssueById(issueId);
+      useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
@@ -268,8 +266,7 @@ export const useTaskStore = defineStore("task", {
       ).data;
       const task = this.convertPartial(data.data, data.included);
 
-      store.dispatch("issue/fetchIssueById", issueId);
-      // useIssueStore().fetchIssueById(issueId);
+      useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
