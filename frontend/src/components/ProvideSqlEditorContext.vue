@@ -10,6 +10,7 @@ import {
   useProjectStore,
   useTableStore,
   useSQLEditorStore,
+  useSheetStore,
 } from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
@@ -27,6 +28,8 @@ import {
 
 const store = useStore();
 const databaseStore = useDatabaseStore();
+const sheetStore = useSheetStore();
+
 const state = reactive<{
   projectList: Project[];
   instanceIdList: Map<InstanceId, Instance["name"]>;
@@ -119,7 +122,7 @@ const prepareSqlEditorContext = async () => {
   sqlEditorStore.setConnectionTree(connectionTree);
   sqlEditorStore.setConnectionContext({ isLoadingTree: false });
   sqlEditorStore.fetchQueryHistoryList();
-  store.dispatch("sheet/fetchSheetList");
+  sheetStore.fetchSheetList();
 };
 
 onMounted(async () => {

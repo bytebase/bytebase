@@ -17,8 +17,7 @@ type test struct {
 	want      []advisor.Advice
 }
 
-func runTests(t *testing.T, tests []test) {
-	adv := CompatibilityAdvisor{}
+func runTests(t *testing.T, tests []test, adv advisor.Advisor) {
 	logger, _ := zap.NewDevelopmentConfig().Build()
 	ctx := advisor.Context{
 		Logger:    logger,
@@ -108,7 +107,7 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests)
+	runTests(t, tests, &CompatibilityAdvisor{})
 }
 
 func TestAlterTable(t *testing.T) {
@@ -267,7 +266,7 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests)
+	runTests(t, tests, &CompatibilityAdvisor{})
 }
 
 func TestAlterTableChangeColumnType(t *testing.T) {
@@ -329,5 +328,5 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests)
+	runTests(t, tests, &CompatibilityAdvisor{})
 }

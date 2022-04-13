@@ -46,7 +46,6 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
-import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -212,9 +211,6 @@ export interface SheetState {
   sheetList: Sheet[];
   sheetById: Map<SheetId, Sheet>;
 }
-export type SheetGetters = typeof sheetStore.getters;
-export type SheetActions = typeof sheetStore.actions;
-export type SheetMutations = typeof sheetStore.mutations;
 
 export interface DebugState {
   isDebug: boolean;
