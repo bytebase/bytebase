@@ -41,7 +41,6 @@
 
 <script lang="ts">
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
@@ -57,7 +56,12 @@ import {
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
+import {
+  useCurrentUser,
+  useEnvironmentStore,
+  useIssueStore,
+  useProjectStore,
+} from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -77,7 +81,7 @@ export default defineComponent({
     const { t } = useI18n();
     const searchField = ref();
 
-    const store = useStore();
+    const issueStore = useIssueStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
@@ -130,8 +134,8 @@ export default defineComponent({
       // We call open and close separately because normally the number of open issues is limited
       // while the closed issues could be a lot.
       if (state.showOpen) {
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["OPEN"],
             userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
@@ -142,8 +146,8 @@ export default defineComponent({
       }
 
       if (state.showClosed) {
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["DONE", "CANCELED"],
             userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
