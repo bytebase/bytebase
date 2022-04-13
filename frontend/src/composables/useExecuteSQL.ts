@@ -1,6 +1,5 @@
 import { reactive } from "vue";
 import { isEmpty } from "lodash-es";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 
 import {
@@ -11,7 +10,8 @@ import {
   isDDLStatement,
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
-import { pushNotification, useTabStore } from "@/store";
+import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import { TabInfo } from "@/types";
 
 type ExecuteConfig = {
   databaseType: string;
@@ -22,9 +22,10 @@ type ExecuteOption = {
 };
 
 const useExecuteSQL = () => {
-  const store = useStore();
   const { t } = useI18n();
   const tabStore = useTabStore();
+  const sqlEditorStore = useSQLEditorStore();
+
   const state = reactive({
     isLoadingData: false,
   });
@@ -47,7 +48,7 @@ const useExecuteSQL = () => {
     }
 
     const currentTab = tabStore.currentTab;
-    const isDisconnected = store.getters["sqlEditor/isDisconnected"];
+    const isDisconnected = sqlEditorStore.isDisconnected;
     const statement = currentTab.statement;
     const selectedStatement = currentTab.selectedStatement;
     const sqlStatement = selectedStatement || statement;
@@ -80,7 +81,7 @@ const useExecuteSQL = () => {
       }
       // only DDL and DML statements are allowed
       if (isDDLStatement(data) || isDMLStatement(data)) {
-        store.dispatch("sqlEditor/setSqlEditorState", {
+        sqlEditorStore.setSqlEditorState({
           isShowExecutingHint: true,
         });
         return;
@@ -98,22 +99,22 @@ const useExecuteSQL = () => {
     try {
       const isExplain = option?.explain || false;
       state.isLoadingData = true;
-      store.dispatch("sqlEditor/setIsExecuting", true);
+      sqlEditorStore.setIsExecuting(true);
       // remove the comment from the sql statement in front-end
       const selectStatement =
         data !== null ? transformSQL(data, config.databaseType) : sqlStatement;
       const explainStatement = `EXPLAIN ${selectStatement}`;
-      const queryResult = await store.dispatch("sqlEditor/executeQuery", {
+      const queryResult = (await sqlEditorStore.executeQuery({
         statement: isExplain ? explainStatement : selectStatement,
-      });
+      })) as any;
       tabStore.updateCurrentTab({ queryResult });
-      store.dispatch("sqlEditor/fetchQueryHistoryList");
+      sqlEditorStore.fetchQueryHistoryList();
     } catch (error) {
       tabStore.updateCurrentTab({ queryResult: undefined });
       notify("CRITICAL", error as string);
     } finally {
       state.isLoadingData = false;
-      store.dispatch("sqlEditor/setIsExecuting", false);
+      sqlEditorStore.setIsExecuting(false);
     }
   };
 

@@ -22,6 +22,7 @@ import {
   useAuthStore,
   useDatabaseStore,
   useProjectStore,
+  useSQLEditorStore,
 } from "../pinia-modules";
 
 function convertSheet(
@@ -101,7 +102,8 @@ const getters = {
     (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
     (currentTab: TabInfo): boolean => {
       const { currentUser } = useAuthStore();
-      const sharedSheet = rootState.sqlEditor.sharedSheet;
+      const sqlEditorStore = useSQLEditorStore();
+      const sharedSheet = sqlEditorStore.sharedSheet;
       const currentSheet = getters.currentSheet(currentTab);
       const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
@@ -181,7 +183,8 @@ const actions = {
     { commit, state, rootState, rootGetters }: any,
     currentTab: TabInfo
   ): Promise<Sheet> {
-    const ctx = rootState.sqlEditor.connectionContext as ConnectionContext;
+    const sqlEditorStore = useSQLEditorStore();
+    const ctx = sqlEditorStore.connectionContext as ConnectionContext;
 
     const result = (
       await axios.post(`/api/sheet`, {
@@ -215,11 +218,7 @@ const actions = {
   },
   // retrieve
   async fetchSheetList({ commit, dispatch, state, rootGetters }: any) {
-    dispatch(
-      "sqlEditor/setSqlEditorState",
-      { isFetchingSheet: true },
-      { root: true }
-    );
+    useSQLEditorStore().setSqlEditorState({ isFetchingSheet: true });
     const data = (await axios.get(`/api/sheet`)).data;
     const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
       const sheet = convertSheet(rawData, data.included, rootGetters);
@@ -234,11 +233,7 @@ const actions = {
       types.SET_SHEET_LIST,
       sheetList.sort((a, b) => b.createdTs - a.createdTs)
     );
-    dispatch(
-      "sqlEditor/setSqlEditorState",
-      { isFetchingSheet: false },
-      { root: true }
-    );
+    useSQLEditorStore().setSqlEditorState({ isFetchingSheet: false });
   },
   async fetchSheetById(
     { commit, dispatch, state, rootGetters }: any,

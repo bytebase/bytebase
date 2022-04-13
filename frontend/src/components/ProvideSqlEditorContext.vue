@@ -9,6 +9,7 @@ import {
   useInstanceStore,
   useProjectStore,
   useTableStore,
+  useSQLEditorStore,
 } from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
@@ -39,6 +40,7 @@ const state = reactive<{
 const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
 const tableStore = useTableStore();
+const sqlEditorStore = useSQLEditorStore();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
@@ -64,7 +66,7 @@ const prepareAccessibleConnectionByProject = async () => {
 };
 
 const prepareSqlEditorContext = async () => {
-  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: true });
+  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
   let connectionTree = [];
 
   const mapConnectionAtom =
@@ -114,9 +116,9 @@ const prepareSqlEditorContext = async () => {
     }
   }
 
-  store.dispatch("sqlEditor/setConnectionTree", connectionTree);
-  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: false });
-  store.dispatch("sqlEditor/fetchQueryHistoryList");
+  sqlEditorStore.setConnectionTree(connectionTree);
+  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+  sqlEditorStore.fetchQueryHistoryList();
   store.dispatch("sheet/fetchSheetList");
 };
 
