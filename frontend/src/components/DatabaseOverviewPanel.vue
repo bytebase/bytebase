@@ -208,7 +208,12 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { featureToRef, useCurrentUser, useDataSourceStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDataSourceStore,
+  useTableStore,
+} from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -237,9 +242,10 @@ export default defineComponent({
     const state = reactive<LocalState>({});
 
     const currentUser = useCurrentUser();
+    const tableStore = useTableStore();
 
     const prepareTableList = () => {
-      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
+      tableStore.fetchTableListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareTableList);
@@ -266,7 +272,7 @@ export default defineComponent({
     const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseId"](props.database.id);
+      return tableStore.getTableListByDatabaseId(props.database.id);
     });
 
     const viewList = computed(() => {

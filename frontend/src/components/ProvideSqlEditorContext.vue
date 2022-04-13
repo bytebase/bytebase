@@ -8,6 +8,7 @@ import {
   useDatabaseStore,
   useInstanceStore,
   useProjectStore,
+  useTableStore,
 } from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
@@ -37,6 +38,7 @@ const state = reactive<{
 
 const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
+const tableStore = useTableStore();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
@@ -102,10 +104,7 @@ const prepareSqlEditorContext = async () => {
     );
 
     for (const db of filteredDatabaseList) {
-      const tableList = await store.dispatch(
-        "table/fetchTableListByDatabaseId",
-        db.id
-      );
+      const tableList = await tableStore.fetchTableListByDatabaseId(db.id);
 
       const databaseItem = instanceItem.children!.find(
         (item: ConnectionAtom) => item.id === db.id
