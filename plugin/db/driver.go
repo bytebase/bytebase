@@ -384,6 +384,7 @@ type ConnectionContext struct {
 
 // RestoreConfig contains configurations for database restore
 type RestoreConfig struct {
+	// if IsGhostTable is true, we should restore tables to ghost tables instead of the original ones
 	IsGhostTable bool
 }
 
