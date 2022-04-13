@@ -42,9 +42,10 @@ var (
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
-	driverName                        = "pgx"
-	_          db.Driver              = (*Driver)(nil)
-	_          util.MigrationExecutor = (*Driver)(nil)
+	driverName = "pgx"
+
+	_ db.Driver              = (*Driver)(nil)
+	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
 func init() {
