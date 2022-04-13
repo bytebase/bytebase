@@ -28,10 +28,8 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { useNamespacedActions } from "vuex-composition-helpers";
 
-import { useTabStore, useSQLEditorStore } from "@/store";
-import { SheetActions } from "@/types";
+import { useTabStore, useSQLEditorStore, useSheetStore } from "@/store";
 import EditorAction from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
@@ -41,11 +39,7 @@ import { defaultTabName } from "../../../utils/tab";
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
-
-// actions
-const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
-  "upsertSheet",
-]);
+const sheetStore = useSheetStore();
 
 const isShowSaveSheetModal = ref(false);
 
@@ -64,9 +58,9 @@ const handleSaveSheet = async (sheetName?: string) => {
 
   const { name, statement, sheetId } = tabStore.currentTab;
 
-  const sheet = await upsertSheet({
+  const sheet = await sheetStore.upsertSheet({
     sheet: {
-      id: sheetId,
+      id: sheetId as number,
       name: sheetName ? sheetName : name,
       statement,
     },
