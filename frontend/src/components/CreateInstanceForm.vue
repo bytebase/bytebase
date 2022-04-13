@@ -229,7 +229,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
@@ -254,7 +253,6 @@ interface LocalState {
 
 const emit = defineEmits(["dismiss"]);
 
-const store = useStore();
 const router = useRouter();
 const { t } = useI18n();
 const sqlStore = useSQLStore();

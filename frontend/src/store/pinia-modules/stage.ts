@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import {
   ResourceIdentifier,
   ResourceObject,
@@ -8,18 +9,14 @@ import {
   PipelineId,
   Pipeline,
   Environment,
-} from "../../types";
-import {
-  getPrincipalFromIncludedList,
-  useEnvironmentStore,
-} from "../pinia-modules";
-
-const state: () => StageState = () => ({});
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useEnvironmentStore } from "./environment";
+import { useTaskStore } from "./task";
 
 function convertPartial(
   stage: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Omit<Stage, "pipeline"> {
   let environment = unknown("ENVIRONMENT") as Environment;
   if (stage.relationships?.environment.data) {
@@ -31,15 +28,13 @@ function convertPartial(
 
   const taskList: Task[] = [];
   const taskIdList = stage.relationships!.task.data as ResourceIdentifier[];
+  const taskStore = useTaskStore();
   // Needs to iterate through taskIdList to maintain the order
   for (const idItem of taskIdList) {
     for (const item of includedList || []) {
       if (item.type == "task") {
         if (idItem.id == item.id) {
-          const task: Task = rootGetters["task/convertPartial"](
-            item,
-            includedList
-          );
+          const task = taskStore.convertPartial(item, includedList);
           taskList.push(task);
         }
       }
@@ -78,17 +73,20 @@ function convertPartial(
   return result;
 }
 
-const getters = {
-  convertPartial:
-    (state: StageState, getters: any, rootState: any, rootGetters: any) =>
-    (stage: ResourceObject, includedList: ResourceObject[]): Stage => {
+export const useStageStore = defineStore("stage", {
+  state: (): StageState => ({}),
+  actions: {
+    convertPartial(
+      stage: ResourceObject,
+      includedList: ResourceObject[]
+    ): Stage {
       // It's only called when pipeline tries to convert itself, so we don't have a issue yet.
       const pipelineId = stage.attributes.pipelineId as PipelineId;
       const pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
       pipeline.id = pipelineId;
 
       const result: Stage = {
-        ...convertPartial(stage, includedList, rootGetters),
+        ...convertPartial(stage, includedList),
         pipeline,
       };
 
@@ -99,16 +97,5 @@ const getters = {
 
       return result;
     },
-};
-
-const actions = {};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+  },
+});
