@@ -215,7 +215,6 @@ import {
   PropType,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
@@ -279,6 +278,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useInstanceStore,
+  useIssueStore,
   useIssueSubscriberStore,
   useProjectStore,
   useTaskStore,
@@ -314,11 +314,11 @@ export default defineComponent({
     "status-changed": (eager: boolean) => true,
   },
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
     const route = useRoute();
 
     const currentUser = useCurrentUser();
+    const issueStore = useIssueStore();
     const issueSubscriberStore = useIssueSubscriberStore();
     const taskStore = useTaskStore();
     const projectStore = useProjectStore();
@@ -510,7 +510,7 @@ export default defineComponent({
       delete issue.pipeline;
       issue.payload = {};
 
-      store.dispatch("issue/createIssue", issue).then((createdIssue) => {
+      issueStore.createIssue(issue).then((createdIssue) => {
         // Use replace to omit the new issue url in the navigation history.
         router.replace(
           `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
@@ -523,9 +523,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
+      issueStore
+        .updateIssueStatus({
           issueId: (props.issue as Issue).id,
           issueStatusPatch,
         })
@@ -579,8 +578,8 @@ export default defineComponent({
       issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
     ) => {
-      store
-        .dispatch("issue/patchIssue", {
+      issueStore
+        .patchIssue({
           issueId: (props.issue as Issue).id,
           issuePatch,
         })

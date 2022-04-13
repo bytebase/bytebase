@@ -27,7 +27,6 @@ import {
   defineComponent,
   Ref,
 } from "vue";
-import { Store, useStore } from "vuex";
 import { useRoute, _RouteLocationBase } from "vue-router";
 import { idFromSlug } from "../utils";
 import { IssueDetailLayout } from "../components/Issue";
@@ -60,6 +59,7 @@ import {
   useActuatorStore,
   useCurrentUser,
   useDatabaseStore,
+  useIssueStore,
   useProjectStore,
 } from "@/store";
 
@@ -93,10 +93,10 @@ export default defineComponent({
   },
 
   setup(props) {
-    const store = useStore();
     const route = useRoute();
 
     const currentUser = useCurrentUser();
+    const issueStore = useIssueStore();
     const projectStore = useProjectStore();
 
     let newIssueTemplate = ref<IssueTemplate>(defaultTemplate());
@@ -141,8 +141,8 @@ export default defineComponent({
 
     const issue = computed((): Issue | IssueCreate => {
       return state.create
-        ? state.newIssue
-        : store.getters["issue/issueById"](idFromSlug(props.issueSlug));
+        ? state.newIssue!
+        : issueStore.getIssueById(idFromSlug(props.issueSlug));
     });
 
     const findProject = async (): Promise<Project> => {
@@ -161,7 +161,7 @@ export default defineComponent({
       const helper = new IssueCreateHelper({
         template: newIssueTemplate,
         currentUser,
-        store,
+        issueStore,
         route,
       });
       await helper.prepare();
@@ -196,7 +196,7 @@ export default defineComponent({
       const helper = new IssueCreateHelper({
         template: newIssueTemplate,
         currentUser,
-        store,
+        issueStore,
         route,
       });
       await helper.prepare();
@@ -294,7 +294,7 @@ export default defineComponent({
       }
 
       state.pollIssueTimer = setTimeout(() => {
-        store.dispatch("issue/fetchIssueById", idFromSlug(props.issueSlug));
+        issueStore.fetchIssueById(idFromSlug(props.issueSlug));
         pollIssue(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
       }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
     };
@@ -374,7 +374,7 @@ export default defineComponent({
 type IssueCreateHelperContext = {
   template: Ref<IssueTemplate>;
   currentUser: Ref<Principal>;
-  store: Store<any>;
+  issueStore: ReturnType<typeof useIssueStore>;
   route: _RouteLocationBase;
 };
 
@@ -436,11 +436,8 @@ class IssueCreateHelper {
   }
 
   async validate(): Promise<[IssueCreate, Issue]> {
-    const { store } = this.context;
-    const issue: Issue = await store.dispatch(
-      "issue/validateIssue",
-      this.issueCreate
-    );
+    const { issueStore } = this.context;
+    const issue = await issueStore.validateIssue(this.issueCreate!);
 
     this.issue = issue;
 

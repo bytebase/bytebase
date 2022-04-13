@@ -212,7 +212,6 @@ import {
   defineComponent,
   ref,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { NTooltip } from "naive-ui";
@@ -250,6 +249,7 @@ import {
   useCurrentUser,
   useEnvironmentStore,
   useInstanceStore,
+  useIssueStore,
   useProjectStore,
 } from "@/store";
 
@@ -297,7 +297,6 @@ export default defineComponent({
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
     const instanceStore = useInstanceStore();
     const router = useRouter();
 
@@ -496,9 +495,13 @@ export default defineComponent({
       // Do not submit non-selected optional labels
       const labelList = state.labelList.filter((label) => !!label.value);
       context.labels = JSON.stringify(labelList);
-      store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
-        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-      });
+      useIssueStore()
+        .createIssue(newIssue)
+        .then((createdIssue) => {
+          router.push(
+            `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+          );
+        });
     };
 
     // update `state.labelList` when selected Environment changed
