@@ -119,28 +119,16 @@
 import { ref, reactive, nextTick, computed, onMounted, onUnmounted } from "vue";
 import { debounce } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import {
-  useNamespacedGetters,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { pushNotification, useTabStore } from "@/store";
-import { TabInfo, SheetGetters, SheetActions } from "@/types";
+import { pushNotification, useTabStore, useSheetStore } from "@/store";
+import { TabInfo } from "@/types";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
 const tabStore = useTabStore();
+const sheetStore = useSheetStore();
 
-const { currentSheet } = useNamespacedGetters<SheetGetters>("sheet", [
-  "currentSheet",
-]);
-
-const sheet = computed(() => currentSheet.value(tabStore.currentTab));
-
-// actions map
-const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
-  "patchSheetById",
-]);
+const sheet = computed(() => sheetStore.currentSheet(tabStore.currentTab));
 
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
@@ -184,7 +172,7 @@ const recalculateScrollWidth = () => {
 
 const updateSheetName = () => {
   if (tabStore.currentTab.sheetId) {
-    patchSheetById({
+    sheetStore.patchSheetById({
       id: tabStore.currentTab.sheetId,
       name: labelState.currentLabelName,
     });

@@ -21,7 +21,13 @@ import {
   usePrincipalStore,
   useRouterStore,
 } from "../store";
-import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
+import {
+  Database,
+  QuickActionType,
+  Sheet,
+  UNKNOWN_ID,
+  SheetId,
+} from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -37,6 +43,7 @@ import {
   useProjectStore,
   useTableStore,
   useSQLEditorStore,
+  useSheetStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -1172,8 +1179,8 @@ router.beforeEach((to, from, next) => {
         // for sharing the sheet to others
         if (sheetSlug) {
           const [_, sheetId] = sheetSlug.split("_");
-          store
-            .dispatch("sheet/fetchSheetById", sheetId)
+          useSheetStore()
+            .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
               tabStore.addTab({
                 name: sheet.name,

@@ -1,27 +1,22 @@
 import { computed } from "vue";
-import { useNamespacedGetters } from "vuex-composition-helpers";
 import * as monaco from "monaco-editor";
 import type { editor as Editor } from "monaco-editor";
 
 import AutoCompletion from "./AutoCompletion";
-import {
-  Database,
-  Table,
-  CompletionItems,
-  InstanceGetters,
-  SqlDialect,
-} from "../../types";
+import { Database, Table, CompletionItems, SqlDialect } from "../../types";
 import sqlFormatter from "./sqlFormatter";
-import { useDatabaseStore, useTableStore, useSQLEditorStore } from "@/store";
+import {
+  useDatabaseStore,
+  useTableStore,
+  useSQLEditorStore,
+  useInstanceList,
+} from "@/store";
 
 const useMonaco = async (lang: string) => {
   const dataSourceStore = useDatabaseStore();
   const tableStore = useTableStore();
   const sqlEditorStore = useSQLEditorStore();
-
-  const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
-    "instanceList",
-  ]);
+  const instanceList = useInstanceList();
 
   const databaseList = computed(() => {
     const currentInstanceId = sqlEditorStore.connectionContext.instanceId;
@@ -78,7 +73,7 @@ const useMonaco = async (lang: string) => {
         const autoCompletion = new AutoCompletion(
           model,
           position,
-          instanceList.value(),
+          instanceList.value,
           databaseList.value,
           tableList.value
         );

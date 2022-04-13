@@ -17,14 +17,14 @@ import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
 
 import { useMonaco } from "./useMonaco";
-import {
-  useNamespacedActions,
-  useNamespacedGetters,
-  useNamespacedState,
-} from "vuex-composition-helpers";
 
-import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
-import { SheetGetters, SqlDialect } from "../../types";
+import {
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
+import { SqlDialect } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -58,13 +58,10 @@ const language = toRef(props, "language");
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
 const { t } = useI18n();
 
-const { isReadOnly } = useNamespacedGetters<SheetGetters>("sheet", [
-  "isReadOnly",
-]);
-
-const readonly = computed(() => isReadOnly.value(tabStore.currentTab));
+const readonly = computed(() => sheetStore.isReadOnly(tabStore.currentTab));
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
