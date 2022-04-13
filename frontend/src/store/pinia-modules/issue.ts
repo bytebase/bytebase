@@ -22,8 +22,8 @@ import { getPrincipalFromIncludedList } from "./principal";
 import { useActivityStore } from "./activity";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
+import { usePipelineStore } from "./pipeline";
 import { useProjectStore } from "./project";
-import { store } from "../index";
 import { defineStore } from "pinia";
 
 function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
@@ -38,6 +38,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   pipeline.id = parseInt(pipelineId);
 
   const projectStore = useProjectStore();
+  const pipelineStore = usePipelineStore();
   for (const item of includedList || []) {
     if (
       item.type == "project" &&
@@ -51,7 +52,7 @@ function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
       issue.relationships!.pipeline.data &&
       (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
     ) {
-      pipeline = store.getters["pipeline/convert"](item, includedList);
+      pipeline = pipelineStore.convert(item, includedList);
     }
   }
 
