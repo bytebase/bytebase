@@ -48,7 +48,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: "DELETE/UPDATE statements contain WHERE clause",
+			Content: "",
 		})
 	}
 	return we.advisorList, nil
