@@ -26,8 +26,8 @@ import {
   useAnomalyStore,
   useDataSourceStore,
   useInstanceStore,
+  useProjectStore,
 } from "./";
-import { store } from "../index";
 import { defineStore } from "pinia";
 
 function convert(
@@ -71,15 +71,18 @@ function convert(
     anomalyList.push(anomaly);
   }
 
+  const instanceStore = useInstanceStore();
+  const projectStore = useProjectStore();
+  const backupStore = useBackupStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
-      instance = useInstanceStore().convert(item, includedList);
+      instance = instanceStore.convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = store.getters["project/convert"](item, includedList);
+      project = projectStore.convert(item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = useBackupStore().convert(item, includedList);
+      sourceBackup = backupStore.convert(item, includedList);
     }
   }
 
