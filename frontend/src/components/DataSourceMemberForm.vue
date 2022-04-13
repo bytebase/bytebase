@@ -186,7 +186,7 @@ import {
 } from "../types";
 import { issueSlug } from "../utils";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useDatabaseStore } from "@/store";
+import { pushNotification, useDatabaseStore, useIssueStore } from "@/store";
 
 interface LocalState {
   environmentId?: EnvironmentId;
@@ -331,10 +331,7 @@ export default defineComponent({
       let linkedIssue: Issue | undefined = undefined;
       if (state.issueId) {
         try {
-          linkedIssue = await store.dispatch(
-            "issue/fetchIssueById",
-            state.issueId
-          );
+          linkedIssue = await useIssueStore().fetchIssueById(state.issueId);
         } catch (err) {
           console.warn(`Unable to fetch linked issue id ${state.issueId}`, err);
         }
