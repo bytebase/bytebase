@@ -1295,7 +1295,7 @@ subscription:
     bb-feature-backward-compatibility:
       title: Backward compatibility
       desc: >-
-        MySQL and TiDB support schema change with backward compatibility.
+        MySQL and TiDB support checking whether the schema change is backward compatible.
         @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-rbac:
       title: Role management

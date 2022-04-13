@@ -106,7 +106,9 @@
         <template #trigger>
           <NButton
             :disabled="
-              isEmptyStatement || isDisconnected || !tabStore.currentTab.isSaved
+              isEmptyStatement ||
+              sqlEditorStore.isDisconnected ||
+              !tabStore.currentTab.isSaved
             "
             @click.stop.prevent="toggleSharePopover"
           >
@@ -121,21 +123,9 @@
 
 <script lang="ts" setup>
 import { computed, ref, defineEmits } from "vue";
-import {
-  useNamespacedState,
-  useNamespacedGetters,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
-import { useStore } from "vuex";
 
-import { useTabStore } from "@/store";
-import {
-  SqlEditorState,
-  SqlEditorGetters,
-  SqlEditorActions,
-  UNKNOWN_ID,
-  Instance,
-} from "@/types";
+import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
+import { UNKNOWN_ID, Instance } from "@/types";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import SharePopover from "./SharePopover.vue";
 import { useRouter } from "vue-router";
@@ -145,21 +135,12 @@ const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
 }>();
 
-const store = useStore();
 const router = useRouter();
+const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
-const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-  "isDisconnected",
-]);
-
-const { setShouldFormatContent } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setShouldFormatContent"]
-);
+const connectionContext = computed(() => sqlEditorStore.connectionContext);
 
 const isShowSharePopover = ref(false);
 
@@ -167,13 +148,11 @@ const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
 );
 const selectedInstance = computed<Instance>(() => {
-  const ctx = connectionContext.value;
-  return store.getters["instance/instanceById"](ctx.instanceId);
+  const ctx = sqlEditorStore.connectionContext;
+  return instanceStore.getInstanceById(ctx.instanceId);
 });
 const selectedInstanceEngine = computed(() => {
-  return store.getters["instance/instanceFormatedEngine"](
-    selectedInstance.value
-  ) as string;
+  return instanceStore.formatEngine(selectedInstance.value);
 });
 
 const hasReadonlyDataSource = computed(() => {
@@ -213,7 +192,7 @@ const toggleSharePopover = () => {
 };
 
 const handleFormatSQL = () => {
-  setShouldFormatContent(true);
+  sqlEditorStore.setShouldFormatContent(true);
 };
 </script>
 

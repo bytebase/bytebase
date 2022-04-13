@@ -157,7 +157,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
@@ -178,6 +177,8 @@ import {
   pushNotification,
   useCurrentUser,
   useMemberStore,
+  useProjectStore,
+  useRepositoryStore,
 } from "@/store";
 
 interface LocalState {
@@ -200,10 +201,10 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       principalId: UNKNOWN_ID,
@@ -286,8 +287,8 @@ export default defineComponent({
         roleProvider: "BYTEBASE",
       };
       const member = useMemberStore().memberByPrincipalId(state.principalId);
-      store
-        .dispatch("project/createdMember", {
+      projectStore
+        .createdMember({
           projectId: props.project.id,
           projectMember,
         })
@@ -312,8 +313,8 @@ export default defineComponent({
     ): Promise<boolean> =>
       new Promise((resolve, reject) => {
         const projectPatch: ProjectPatch = { roleProvider: roleProvider };
-        store
-          .dispatch("project/patchProject", {
+        projectStore
+          .patchProject({
             projectId: props.project.id,
             projectPatch,
           })
@@ -323,8 +324,8 @@ export default defineComponent({
       });
 
     const syncMemberFromVCS = () => {
-      store
-        .dispatch("project/syncMemberRoleFromVCS", {
+      projectStore
+        .syncMemberRoleFromVCS({
           projectId: props.project.id,
         })
         .then(() => {
@@ -338,8 +339,8 @@ export default defineComponent({
 
     const openWindowForVCSMember = () => {
       // currently we only support Gitlab, so the following redirect URL is fixed
-      store
-        .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
+      useRepositoryStore()
+        .fetchRepositoryByProjectId(props.project.id)
         .then((repository) => {
           // this uri format is for GitLab
           window.open(`${repository.webUrl}/-/project_members`);

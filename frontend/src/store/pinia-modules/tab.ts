@@ -4,11 +4,6 @@ import { TabInfo, AnyTabInfo, TabState } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 
 export const useTabStore = defineStore("tab", {
-  persist: {
-    enabled: true,
-    strategy: "localStorage",
-  },
-
   state: (): TabState => ({
     tabList: [],
     currentTabId: "",

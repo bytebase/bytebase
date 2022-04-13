@@ -275,7 +275,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, PropType } from "vue";
-import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -292,7 +291,14 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUser } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useDatabaseStore,
+  useDataSourceStore,
+  useInstanceStore,
+  useSQLStore,
+} from "@/store";
 
 interface EditDataSource extends DataSource {
   updatedPassword: string;
@@ -314,10 +320,12 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
+const instanceStore = useInstanceStore();
 const { t } = useI18n();
+const dataSourceStore = useDataSourceStore();
 
 const currentUser = useCurrentUser();
+const sqlStore = useSQLStore();
 
 const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
   return {
@@ -529,7 +537,7 @@ const doUpdate = () => {
 
   if (instanceInfoChanged || dataSourceListChanged) {
     state.isUpdating = true;
-    const requests = [];
+    const requests: Promise<any>[] = [];
 
     if (dataSourceListChanged) {
       for (let i = 0; i < state.instance.dataSourceList.length; i++) {
@@ -538,7 +546,7 @@ const doUpdate = () => {
           // Only used to create ReadOnly data source right now.
           if (dataSource.type === "RO") {
             requests.push(
-              store.dispatch("dataSource/createDataSource", {
+              dataSourceStore.createDataSource({
                 databaseId: dataSource.databaseId,
                 instanceId: state.instance.id,
                 name: dataSource.name,
@@ -552,7 +560,7 @@ const doUpdate = () => {
           !isEqual(dataSource, state.originalInstance.dataSourceList[i])
         ) {
           requests.push(
-            store.dispatch("dataSource/patchDataSource", {
+            dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
               dataSource: dataSource,
@@ -564,7 +572,7 @@ const doUpdate = () => {
 
     if (instanceInfoChanged) {
       requests.push(
-        store.dispatch("instance/patchInstance", {
+        instanceStore.patchInstance({
           instanceId: state.instance.id,
           instancePatch: patchedInstance,
         })
@@ -572,8 +580,8 @@ const doUpdate = () => {
     }
 
     Promise.all(requests).then(() => {
-      store
-        .dispatch("instance/fetchInstanceById", state.instance.id)
+      instanceStore
+        .fetchInstanceById(state.instance.id)
         .then((instance) => {
           state.isUpdating = false;
           state.originalInstance = instance;
@@ -597,10 +605,7 @@ const doUpdate = () => {
 
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
           if (connectionInfoChanged) {
-            store.dispatch(
-              "database/fetchDatabaseListByInstanceId",
-              state.instance.id
-            );
+            useDatabaseStore().fetchDatabaseListByInstanceId(state.instance.id);
           }
         })
         .finally(() => {
@@ -622,7 +627,7 @@ const testConnection = () => {
     port: state.instance.port,
     instanceId: state.instance.id,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
         module: "bytebase",

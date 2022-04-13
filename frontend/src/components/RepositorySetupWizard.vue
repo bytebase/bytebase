@@ -45,7 +45,6 @@
 
 <script lang="ts">
 import { reactive, computed, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { BBStepTabItem } from "../bbkit/types";
@@ -63,6 +62,7 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useRepositoryStore } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
@@ -111,7 +111,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const router = useRouter();
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
 
     const stepList: BBStepTabItem[] = [
       { title: t("repository.choose-git-provider"), hideNext: true },
@@ -139,8 +139,8 @@ export default defineComponent({
           webUrl: "",
         },
         repositoryConfig: {
-          baseDirectory: "",
-          branchFilter: "",
+          baseDirectory: "bytebase",
+          branchFilter: "main",
           filePathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
             : DEFAULT_FILE_PATH_TEMPLATE,
@@ -191,8 +191,8 @@ export default defineComponent({
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        store
-          .dispatch("repository/createRepository", {
+        repositoryStore
+          .createRepository({
             projectId: props.project.id,
             repositoryCreate,
           })
@@ -207,8 +207,8 @@ export default defineComponent({
         // It's simple to implement change behavior as delete followed by create.
         // Though the delete can succeed while the create fails, this is rare, and
         // even it happens, user can still configure it again.
-        store
-          .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+        repositoryStore
+          .deleteRepositoryByProjectId(props.project.id)
           .then(() => {
             createFunc();
           });

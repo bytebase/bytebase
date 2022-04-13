@@ -36,13 +36,14 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, watchEffect } from "vue";
+import { computed, PropType, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
+import { useProjectWebhookStore } from "@/store";
+
 import ProjectWebhookCard from "./ProjectWebhookCard.vue";
 import { Project } from "../types";
-import { useStore } from "vuex";
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookPanel",
   components: {
     ProjectWebhookCard,
@@ -58,20 +59,17 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
+    const projectWebhookStore = useProjectWebhookStore();
 
     const prepareProjectWebhookList = () => {
-      store.dispatch(
-        "projectWebhook/fetchProjectWebhookListByProjectId",
-        props.project.id
-      );
+      projectWebhookStore.fetchProjectWebhookListByProjectId(props.project.id);
     };
 
     watchEffect(prepareProjectWebhookList);
 
     const projectWebhookList = computed(() => {
-      return store.getters["projectWebhook/projectWebhookListByProjectId"](
+      return projectWebhookStore.projectWebhookListByProjectId(
         props.project.id
       );
     });
@@ -87,5 +85,5 @@ export default {
       addProjectWebhook,
     };
   },
-};
+});
 </script>

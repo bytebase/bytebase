@@ -97,12 +97,15 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
-import { useStore } from "vuex";
-
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
-import { InboxSummary, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { isDBAOrOwner, isDev } from "@/utils";
-import { hasFeature, useCurrentUser, useSubscriptionStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useInboxStore,
+  useSubscriptionStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -114,7 +117,7 @@ export default defineComponent({
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales, locale } = useI18n();
-    const store = useStore();
+    const inboxStore = useInboxStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
 
@@ -140,14 +143,14 @@ export default defineComponent({
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("inbox/fetchInboxSummaryByUser", currentUser.value.id);
+        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
       }
     };
 
     watchEffect(prepareInboxSummary);
 
-    const inboxSummary = computed((): InboxSummary => {
-      return store.getters["inbox/inboxSummaryByUser"](currentUser.value.id);
+    const inboxSummary = computed(() => {
+      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
     });
 
     const kbarActions = computed(() => [
