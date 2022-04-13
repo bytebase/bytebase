@@ -13,10 +13,12 @@ import {
   SqlDialect,
 } from "../../types";
 import sqlFormatter from "./sqlFormatter";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseStore, useTableStore } from "@/store";
 
 const useMonaco = async (lang: string) => {
   const store = useStore();
+  const dataSourceStore = useDatabaseStore();
+  const tableStore = useTableStore();
 
   const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
     "instanceList",
@@ -25,12 +27,12 @@ const useMonaco = async (lang: string) => {
   const databaseList = computed(() => {
     const currentInstanceId =
       store.state.sqlEditor.connectionContext.instanceId;
-    return useDatabaseStore().getDatabaseListByInstanceId(currentInstanceId);
+    return dataSourceStore.getDatabaseListByInstanceId(currentInstanceId);
   });
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item) => store.getters["table/tableListByDatabaseId"](item.id))
+      .map((item) => tableStore.getTableListByDatabaseId(item.id))
       .flat();
   });
 

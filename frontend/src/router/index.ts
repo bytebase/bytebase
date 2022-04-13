@@ -36,6 +36,7 @@ import {
   useProjectWebhookStore,
   useDataSourceStore,
   useProjectStore,
+  useTableStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -1071,8 +1072,8 @@ router.beforeEach((to, from, next) => {
         if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();
         } else if (tableName) {
-          store
-            .dispatch("table/fetchTableByDatabaseIdAndTableName", {
+          useTableStore()
+            .fetchTableByDatabaseIdAndTableName({
               databaseId: database.id,
               tableName,
             })
