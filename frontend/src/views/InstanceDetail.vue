@@ -163,6 +163,7 @@ import {
   useDatabaseStore,
   useInstanceStore,
   useSubscriptionStore,
+  useSQLStore,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -191,6 +192,7 @@ const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
+const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
   selectedIndex: DATABASE_TAB,
@@ -396,8 +398,8 @@ const doCreateMigrationSchema = () => {
 
 const syncSchema = () => {
   state.syncingSchema = true;
-  store
-    .dispatch("sql/syncSchema", instance.value.id)
+  sqlStore
+    .syncSchema(instance.value.id)
     .then((resultSet: SqlResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {

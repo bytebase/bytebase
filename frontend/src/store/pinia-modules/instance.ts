@@ -26,6 +26,7 @@ import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
 import { useDataSourceStore } from "./dataSource";
+import { useSQLStore } from "./sql";
 import { store } from "../index";
 import { defineStore } from "pinia";
 import { computed, watchEffect } from "vue";
@@ -392,7 +393,7 @@ export const useInstanceStore = defineStore("instance", {
         })
       ).data.data;
 
-      return store.getters["sql/convert"](data) as SqlResultSet;
+      return useSQLStore().convert(data) as SqlResultSet;
     },
     async fetchMigrationHistoryById({
       instanceId,
