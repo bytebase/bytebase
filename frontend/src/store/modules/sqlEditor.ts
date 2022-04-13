@@ -21,6 +21,7 @@ import {
   useActivityStore,
   useDatabaseStore,
   useInstanceStore,
+  useTableStore,
 } from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
@@ -92,7 +93,7 @@ const getters = {
 
       tableList = instance.children
         .map((item: ConnectionAtom) =>
-          rootGetters["table/tableListByDatabaseId"](item.id)
+          useTableStore().getTableListByDatabaseId(item.id)
         )
         .flat();
     }
