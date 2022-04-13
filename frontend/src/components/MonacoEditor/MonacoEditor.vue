@@ -23,13 +23,8 @@ import {
   useNamespacedState,
 } from "vuex-composition-helpers";
 
-import { pushNotification, useTabStore } from "@/store";
-import {
-  SqlEditorActions,
-  SqlEditorState,
-  SheetGetters,
-  SqlDialect,
-} from "../../types";
+import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import { SheetGetters, SqlDialect } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -62,20 +57,12 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 const { t } = useI18n();
-const { shouldSetContent, shouldFormatContent } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "shouldSetContent",
-    "shouldFormatContent",
-  ]);
+
 const { isReadOnly } = useNamespacedGetters<SheetGetters>("sheet", [
   "isReadOnly",
 ]);
-const { setShouldSetContent, setShouldFormatContent } =
-  useNamespacedActions<SqlEditorActions>("sqlEditor", [
-    "setShouldSetContent",
-    "setShouldFormatContent",
-  ]);
 
 const readonly = computed(() => isReadOnly.value(tabStore.currentTab));
 
@@ -232,10 +219,10 @@ onUnmounted(() => {
 });
 
 watch(
-  () => shouldSetContent.value,
+  () => sqlEditorStore.shouldSetContent,
   () => {
-    if (shouldSetContent.value) {
-      setShouldSetContent(false);
+    if (sqlEditorStore.shouldSetContent) {
+      sqlEditorStore.setShouldSetContent(false);
       setContent(editorInstance, tabStore.currentTab.statement);
     }
   }
@@ -243,15 +230,15 @@ watch(
 
 // trigger format code from outside
 watch(
-  () => shouldFormatContent.value,
+  () => sqlEditorStore.shouldFormatContent,
   () => {
-    if (shouldFormatContent.value) {
+    if (sqlEditorStore.shouldFormatContent) {
       formatContent(editorInstance, language.value as SqlDialect);
       nextTick(() => {
         setPositionAtEndOfLine(editorInstance);
         editorInstance.focus();
       });
-      setShouldFormatContent(false);
+      sqlEditorStore.setShouldFormatContent(false);
     }
   }
 );
