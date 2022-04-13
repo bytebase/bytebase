@@ -22,6 +22,7 @@ import { getPrincipalFromIncludedList } from "./principal";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 import { defineStore } from "pinia";
+import { store } from "../index";
 
 function convertTaskRun(
   taskRun: ResourceObject,
@@ -220,13 +221,13 @@ export const useTaskStore = defineStore("task", {
           },
         })
       ).data;
-      const task = convertPartial(data.data, data.included);
+      const task = this.convertPartial(data.data, data.included);
 
-      useIssueStore().fetchIssueById(issueId);
+      store.dispatch("issue/fetchIssueById", issueId);
+      // useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
-
     async patchTask({
       issueId,
       pipelineId,
@@ -246,13 +247,13 @@ export const useTaskStore = defineStore("task", {
           },
         })
       ).data;
-      const task = convertPartial(data.data, data.included);
+      const task = this.convertPartial(data.data, data.included);
 
-      useIssueStore().fetchIssueById(issueId);
+      store.dispatch("issue/fetchIssueById", issueId);
+      // useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
-
     async runChecks({
       issueId,
       pipelineId,
@@ -265,16 +266,12 @@ export const useTaskStore = defineStore("task", {
       const data = (
         await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/check`)
       ).data;
-      const task = convertPartial(data.data, data.included);
+      const task = this.convertPartial(data.data, data.included);
 
-      useIssueStore().fetchIssueById(issueId);
+      store.dispatch("issue/fetchIssueById", issueId);
+      // useIssueStore().fetchIssueById(issueId);
 
       return task;
     },
   },
 });
-
-// TODO: remove me
-function useIssueStore() {
-  return {} as any;
-}

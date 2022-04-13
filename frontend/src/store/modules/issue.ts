@@ -23,6 +23,7 @@ import {
   useActivityStore,
   useDatabaseStore,
   useInstanceStore,
+  usePipelineStore,
   useProjectStore,
 } from "../pinia-modules";
 
@@ -41,6 +42,7 @@ function convert(
   let pipeline = unknown("PIPELINE") as Pipeline;
   pipeline.id = parseInt(pipelineId);
 
+  const pipelineStore = usePipelineStore();
   for (const item of includedList || []) {
     if (
       item.type == "project" &&
@@ -54,7 +56,7 @@ function convert(
       issue.relationships!.pipeline.data &&
       (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
     ) {
-      pipeline = rootGetters["pipeline/convert"](item, includedList);
+      pipeline = pipelineStore.convert(item, includedList);
     }
   }
 

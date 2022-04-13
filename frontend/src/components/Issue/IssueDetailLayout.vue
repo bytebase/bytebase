@@ -281,6 +281,7 @@ import {
   useInstanceStore,
   useIssueSubscriberStore,
   useProjectStore,
+  useTaskStore,
 } from "@/store";
 
 export default defineComponent({
@@ -316,9 +317,10 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
-    const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
+    const issueSubscriberStore = useIssueSubscriberStore();
+    const taskStore = useTaskStore();
     const projectStore = useProjectStore();
 
     watchEffect(function prepare() {
@@ -547,9 +549,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("task/updateStatus", {
+      taskStore
+        .updateStatus({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -562,8 +563,8 @@ export default defineComponent({
     };
 
     const runTaskChecks = (task: Task) => {
-      store
-        .dispatch("task/runChecks", {
+      taskStore
+        .runChecks({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -599,8 +600,8 @@ export default defineComponent({
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
-      store
-        .dispatch("task/patchTask", {
+      taskStore
+        .patchTask({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId,
