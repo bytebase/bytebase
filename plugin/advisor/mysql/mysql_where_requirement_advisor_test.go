@@ -15,8 +15,8 @@ func TestWhereRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.StatementNoWhere,
-					Title:   "Potential modification of unexpected data",
-					Content: "\"DELETE FROM t1\" may modify unexpected data",
+					Title:   "Require WHERE clause",
+					Content: "\"DELETE FROM t1\" requires WHERE clause",
 				},
 			},
 		},
@@ -26,8 +26,8 @@ func TestWhereRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.StatementNoWhere,
-					Title:   "Potential modification of unexpected data",
-					Content: "\"UPDATE t1 SET a = 1\" may modify unexpected data",
+					Title:   "Require WHERE clause",
+					Content: "\"UPDATE t1 SET a = 1\" requires WHERE clause",
 				},
 			},
 		},
