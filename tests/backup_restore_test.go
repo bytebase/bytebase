@@ -260,7 +260,7 @@ func updateRow(t *testing.T, database string, port int, stopChan chan bool) {
 	a.NoError(err)
 
 	t.Log("Start updating data")
-	_, err = db.Exec("CREATE TABLE IF NOT EXIST _update_row_ (id INT PRIMARY KEY)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS _update_row_ (id INT PRIMARY KEY)")
 	a.NoError(err)
 	_, err = db.Exec("REPLACE INTO _update_row_ VALUES (0)")
 	a.NoError(err)
