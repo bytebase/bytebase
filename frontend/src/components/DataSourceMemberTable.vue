@@ -107,12 +107,11 @@
 
 <script lang="ts">
 import { reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import DataSourceMemberForm from "../components/DataSourceMemberForm.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { DataSource, DataSourceMember } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUser } from "@/store";
+import { pushNotification, useCurrentUser, useDataSourceStore } from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -133,8 +132,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
-
     const state = reactive<LocalState>({
       searchText: "",
       showCreateModal: false,
@@ -159,22 +156,24 @@ export default defineComponent({
 
     const deleteMember = (member: DataSourceMember) => {
       // TODO (yw): there is no action named deleteDataSourceMemberByMemberId
-      store
-        .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
-          databaseId: props.dataSource.database.id,
-          dataSourceId: props.dataSource.id,
-          memberId: member.principal.id,
-        })
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "INFO",
-            title: t(
-              "datasource.successfully-revoked-member-principal-name-access-from-props-datasource-name",
-              [member.principal.name, props.dataSource.name]
-            ),
-          });
-        });
+      // TODO (jim): DataSourceMemberTable, DataSourceMemberForm, and DataSourceDetail now have no
+      //   any entrance. These files should probably be removed in the future.
+      // store
+      //   .dispatch("dataSource/deleteDataSourceMemberByMemberId", {
+      //     databaseId: props.dataSource.database.id,
+      //     dataSourceId: props.dataSource.id,
+      //     memberId: member.principal.id,
+      //   })
+      //   .then(() => {
+      //     pushNotification({
+      //       module: "bytebase",
+      //       style: "INFO",
+      //       title: t(
+      //         "datasource.successfully-revoked-member-principal-name-access-from-props-datasource-name",
+      //         [member.principal.name, props.dataSource.name]
+      //       ),
+      //     });
+      //   });
     };
 
     const changeSearchText = (searchText: string) => {

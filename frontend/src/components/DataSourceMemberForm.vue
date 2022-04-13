@@ -166,7 +166,6 @@
 
 <script lang="ts">
 import { computed, reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import DatabaseSelect from "../components/DatabaseSelect.vue";
 import DataSourceSelect from "../components/DataSourceSelect.vue";
@@ -220,7 +219,6 @@ export default defineComponent({
   },
   emits: ["submit", "cancel"],
   setup(props, { emit }) {
-    const store = useStore();
     const databaseStore = useDatabaseStore();
 
     const state = reactive<LocalState>({
@@ -342,39 +340,41 @@ export default defineComponent({
         issueId: linkedIssue?.id,
       };
       // TODO (yw): there is no action named createDataSourceMember
-      store
-        .dispatch("dataSource/createDataSourceMember", {
-          dataSourceId: state.dataSourceId,
-          databaseId: state.databaseId,
-          newDataSourceMember,
-        })
-        .then((dataSource: DataSource) => {
-          emit("submit", dataSource);
+      // TODO (jim): DataSourceMemberTable, DataSourceMemberForm, and DataSourceDetail now have no
+      //   any entrance. These files should probably be removed in the future.
+      // store
+      //   .dispatch("dataSource/createDataSourceMember", {
+      //     dataSourceId: state.dataSourceId,
+      //     databaseId: state.databaseId,
+      //     newDataSourceMember,
+      //   })
+      //   .then((dataSource: DataSource) => {
+      //     emit("submit", dataSource);
 
-          const addedMember = dataSource.memberList.find(
-            (item: DataSourceMember) => {
-              return item.principal.id == state.granteeId;
-            }
-          );
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "datasource.successfully-granted-datasource-name-to-addedmember-principal-name",
-              [dataSource.name, addedMember!.principal.name]
-            ),
-            description: linkedIssue
-              ? t(
-                  "datasource.we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name",
-                  [linkedIssue.name]
-                )
-              : "",
-            link: linkedIssue
-              ? `/issue/${issueSlug(linkedIssue.name, linkedIssue.id)}`
-              : undefined,
-            manualHide: linkedIssue != undefined,
-          });
-        });
+      //     const addedMember = dataSource.memberList.find(
+      //       (item: DataSourceMember) => {
+      //         return item.principal.id == state.granteeId;
+      //       }
+      //     );
+      //     pushNotification({
+      //       module: "bytebase",
+      //       style: "SUCCESS",
+      //       title: t(
+      //         "datasource.successfully-granted-datasource-name-to-addedmember-principal-name",
+      //         [dataSource.name, addedMember!.principal.name]
+      //       ),
+      //       description: linkedIssue
+      //         ? t(
+      //             "datasource.we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name",
+      //             [linkedIssue.name]
+      //           )
+      //         : "",
+      //       link: linkedIssue
+      //         ? `/issue/${issueSlug(linkedIssue.name, linkedIssue.id)}`
+      //         : undefined,
+      //       manualHide: linkedIssue != undefined,
+      //     });
+      //   });
     };
 
     validateGrantee();
