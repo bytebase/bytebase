@@ -128,7 +128,7 @@ import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 const tabStore = useTabStore();
 const sheetStore = useSheetStore();
 
-const sheet = computed(() => sheetStore.currentSheet(tabStore.currentTab));
+const sheet = computed(() => sheetStore.currentSheet);
 
 const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();

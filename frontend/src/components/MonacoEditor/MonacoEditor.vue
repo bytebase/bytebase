@@ -61,7 +61,7 @@ const sqlEditorStore = useSQLEditorStore();
 const sheetStore = useSheetStore();
 const { t } = useI18n();
 
-const readonly = computed(() => sheetStore.isReadOnly(tabStore.currentTab));
+const readonly = computed(() => sheetStore.isReadOnly);
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 

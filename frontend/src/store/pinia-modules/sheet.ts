@@ -21,6 +21,7 @@ import {
   useDatabaseStore,
   useProjectStore,
   useSQLEditorStore,
+  useTabStore,
 } from ".";
 
 function convertSheet(
@@ -67,25 +68,22 @@ export const useSheetStore = defineStore("sheet", {
   }),
 
   getters: {
-    currentSheet:
-      (state: SheetState) =>
-      (currentTab: TabInfo): Sheet => {
-        if (!currentTab || isEmpty(currentTab))
-          return unknown("SHEET") as Sheet;
+    currentSheet(state) {
+      const currentTab = useTabStore().currentTab;
 
-        const sheetId = currentTab.sheetId || UNKNOWN_ID;
+      if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
 
-        return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
-      },
+      const sheetId = currentTab.sheetId || UNKNOWN_ID;
+
+      return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
+    },
     isCreator() {
-      return (currentTab: TabInfo): boolean => {
-        const { currentUser } = useAuthStore();
-        const currentSheet = this.currentSheet(currentTab);
+      const { currentUser } = useAuthStore();
+      const currentSheet = this.currentSheet as Sheet;
 
-        if (!currentSheet) return false;
+      if (!currentSheet) return false;
 
-        return currentUser.id === currentSheet!.creator.id;
-      };
+      return currentUser.id === currentSheet!.creator.id;
     },
     /**
      * Check the sheet whether is read-only.
@@ -97,44 +95,42 @@ export const useSheetStore = defineStore("sheet", {
      */
     isReadOnly() {
       const sqlEdtiorStore = useSQLEditorStore();
-      return (currentTab: TabInfo): boolean => {
-        const { currentUser } = useAuthStore();
-        const sharedSheet = sqlEdtiorStore.sharedSheet;
-        const currentSheet = this.currentSheet(currentTab);
-        const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
+      const { currentUser } = useAuthStore();
+      const sharedSheet = sqlEdtiorStore.sharedSheet;
+      const currentSheet = this.currentSheet as Sheet;
+      const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
-        if (!currentSheet) return true;
-        // normal sheet can be edit by anyone
-        if (!isSharedByOthers) return false;
+      if (!currentSheet) return true;
+      // normal sheet can be edit by anyone
+      if (!isSharedByOthers) return false;
 
-        // if the sheet is shared by others, will be checked the visibility of the sheet.
-        // creator always can edit
-        if (this.isCreator(currentTab)) return false;
-        const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
-        const isProject = currentSheet?.visibility === "PROJECT" ?? false;
-        const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
+      // if the sheet is shared by others, will be checked the visibility of the sheet.
+      // creator always can edit
+      if (this.isCreator) return false;
+      const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
+      const isProject = currentSheet?.visibility === "PROJECT" ?? false;
+      const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
 
-        const isCurrentUserProjectOwner = () => {
-          const projectMemberList = currentSheet?.project.memberList;
+      const isCurrentUserProjectOwner = () => {
+        const projectMemberList = currentSheet?.project.memberList;
 
-          if (projectMemberList && projectMemberList.length > 0) {
-            const currentMemberByProjectMember = projectMemberList?.find(
-              (member: ProjectMember) => {
-                return member.principal.id === currentUser.id;
-              }
-            ) as ProjectMember;
+        if (projectMemberList && projectMemberList.length > 0) {
+          const currentMemberByProjectMember = projectMemberList?.find(
+            (member: ProjectMember) => {
+              return member.principal.id === currentUser.id;
+            }
+          ) as ProjectMember;
 
-            return currentMemberByProjectMember.role !== "OWNER";
-          }
+          return currentMemberByProjectMember.role !== "OWNER";
+        }
 
-          return false;
-        };
-
-        // if current user is not creator, check the link access level by project relationship
-        return (
-          isPrivate || isPublic || (isProject && isCurrentUserProjectOwner())
-        );
+        return false;
       };
+
+      // if current user is not creator, check the link access level by project relationship
+      return (
+        isPrivate || isPublic || (isProject && isCurrentUserProjectOwner())
+      );
     },
   },
 

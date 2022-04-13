@@ -120,8 +120,8 @@ const accessOptions = computed<AccessOption[]>(() => {
 
 const ctx = computed(() => sqlEditorStore.connectionContext);
 
-const sheet = computed(() => sheetStore.currentSheet(tabStore.currentTab));
-const creator = computed(() => sheetStore.isCreator(tabStore.currentTab));
+const sheet = computed(() => sheetStore.currentSheet);
+const creator = computed(() => sheetStore.isCreator);
 
 const host = window.location.host;
 const connectionSlug = [
