@@ -27,7 +27,6 @@ import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
 import { useDataSourceStore } from "./dataSource";
 import { useSQLStore } from "./sql";
-import { store } from "../index";
 import { defineStore } from "pinia";
 import { computed, watchEffect } from "vue";
 
