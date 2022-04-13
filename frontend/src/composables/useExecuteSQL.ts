@@ -11,7 +11,6 @@ import {
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
 import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
-import { TabInfo } from "@/types";
 
 type ExecuteConfig = {
   databaseType: string;
