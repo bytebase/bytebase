@@ -125,10 +125,8 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import {
   Project,
-  Database,
   AvailableLabel,
   DeploymentConfig,
   UNKNOWN_ID,
@@ -144,6 +142,7 @@ import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 import {
   pushNotification,
+  useDatabaseStore,
   useDeploymentStore,
   useEnvironmentList,
   useEnvironmentStore,
@@ -172,7 +171,7 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const deploymentStore = useDeploymentStore();
     const labelStore = useLabelStore();
     const { t } = useI18n();
@@ -198,18 +197,15 @@ export default defineComponent({
     const prepareList = () => {
       useEnvironmentStore().fetchEnvironmentList();
       labelStore.fetchLabelList();
-      store.dispatch("database/fetchDatabaseListByProjectId", props.project.id);
+      databaseStore.fetchDatabaseListByProjectId(props.project.id);
     };
 
     const environmentList = useEnvironmentList();
 
     const { labelList } = storeToRefs(labelStore);
 
-    const databaseList = computed(
-      () =>
-        store.getters["database/databaseListByProjectId"](
-          props.project.id
-        ) as Database[]
+    const databaseList = computed(() =>
+      databaseStore.getDatabaseListByProjectId(props.project.id)
     );
 
     watchEffect(prepareList);

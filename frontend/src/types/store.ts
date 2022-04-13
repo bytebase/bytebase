@@ -115,7 +115,7 @@ export interface ProjectState {
 }
 
 export interface ProjectWebhookState {
-  projectWebhookListByProjectId: Map<ProjectId, ProjectWebhook[]>;
+  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {

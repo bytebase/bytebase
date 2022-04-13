@@ -124,6 +124,8 @@ func getTestPort(testName string) int {
 		return 1255
 	case "TestPITR":
 		return 1258
+	case "TestTenantVCSDatabaseNameTemplate":
+		return 1261
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -411,7 +413,7 @@ func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 
 func findEnvironment(envs []*api.Environment, name string) (*api.Environment, error) {
 	for _, env := range envs {
-		if env.Name == "Prod" {
+		if env.Name == name {
 			return env, nil
 		}
 	}

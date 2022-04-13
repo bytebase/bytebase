@@ -18,7 +18,13 @@ import {
   ResourceObject,
   unknown,
 } from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+import {
+  getPrincipalFromIncludedList,
+  useActivityStore,
+  useDatabaseStore,
+  useInstanceStore,
+  useProjectStore,
+} from "../pinia-modules";
 
 function convert(
   issue: ResourceObject,
@@ -40,7 +46,7 @@ function convert(
       item.type == "project" &&
       (issue.relationships!.project.data as ResourceIdentifier).id == item.id
     ) {
-      project = rootGetters["project/convert"](item);
+      project = useProjectStore().convert(item, includedList || []);
     }
 
     if (
@@ -155,25 +161,19 @@ const actions = {
     // so that we should also update instance/database store, otherwise, we may get
     // unknown instance/database when navigating to other UI from the issue detail page
     // since other UIs are getting instance/database by id from the store.
+    const instanceStore = useInstanceStore();
+    const databaseStore = useDatabaseStore();
     for (const stage of issue.pipeline.stageList) {
       for (const task of stage.taskList) {
-        commit(
-          "instance/setInstanceById",
-          {
-            instanceId: task.instance.id,
-            instance: task.instance,
-          },
-          { root: true }
-        );
+        instanceStore.setInstanceById({
+          instanceId: task.instance.id,
+          instance: task.instance,
+        });
 
         if (task.database) {
-          commit(
-            "database/upsertDatabaseList",
-            {
-              databaseList: [task.database],
-            },
-            { root: true }
-          );
+          databaseStore.upsertDatabaseList({
+            databaseList: [task.database],
+          });
         }
       }
     }
@@ -248,7 +248,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },
@@ -278,7 +278,7 @@ const actions = {
       issue: updatedIssue,
     });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+    useActivityStore().fetchActivityListForIssue(issueId);
 
     return updatedIssue;
   },

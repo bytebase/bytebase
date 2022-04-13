@@ -57,7 +57,7 @@ import {
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { useCurrentUser, useEnvironmentStore } from "@/store";
+import { useCurrentUser, useEnvironmentStore, useProjectStore } from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -81,6 +81,7 @@ export default defineComponent({
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const statusList: string[] = router.currentRoute.value.query.status
       ? (router.currentRoute.value.query.status as string).split(",")
@@ -120,7 +121,7 @@ export default defineComponent({
 
     const project = computed(() => {
       if (state.selectedProjectId) {
-        return store.getters["project/projectById"](state.selectedProjectId);
+        return projectStore.getProjectById(state.selectedProjectId);
       }
       return undefined;
     });

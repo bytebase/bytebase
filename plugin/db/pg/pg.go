@@ -703,7 +703,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	// Skip this backfill for bytebase's database "bb" with user "bb". We will use the one in pg_engine.go instead.
-	isBytebaseDatabase := strings.Contains(driver.baseDSN, "user=bb") && strings.Contains(driver.baseDSN, "sslmode=disable host=/tmp port=")
+	isBytebaseDatabase := strings.Contains(driver.baseDSN, "user=bb") && strings.Contains(driver.baseDSN, "host=/tmp")
 	if err != nil && !isBytebaseDatabase {
 		if !strings.Contains(err.Error(), "invalid stored version") {
 			return nil, err

@@ -41,7 +41,6 @@ import {
   ref,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -50,6 +49,7 @@ import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
+  useDatabaseStore,
   useEnvironmentList,
   useEnvironmentStore,
   useUIStateStore,
@@ -71,7 +71,6 @@ export default defineComponent({
   setup() {
     const searchField = ref();
 
-    const store = useStore();
     const uiStateStore = useUIStateStore();
     const router = useRouter();
 
@@ -108,12 +107,14 @@ export default defineComponent({
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("database/fetchDatabaseList").then((list) => {
-          state.databaseList = sortDatabaseList(
-            cloneDeep(list),
-            environmentList.value
-          );
-        });
+        useDatabaseStore()
+          .fetchDatabaseList()
+          .then((list) => {
+            state.databaseList = sortDatabaseList(
+              cloneDeep(list),
+              environmentList.value
+            );
+          });
       }
     };
 

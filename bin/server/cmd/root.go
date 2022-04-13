@@ -129,7 +129,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5433/dbname?sslrootcert=cert")
+	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
+	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
+	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
+	// rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -293,6 +296,8 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	if useEmbeddedDB() {
 		logger.Info("Preparing embedded PostgreSQL instance...")
 		var err error
+		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+		// to store Bytebase's own metadata.
 		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
 		if err != nil {
 			return nil, err
@@ -369,6 +374,10 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Password, _ = u.User.Password()
 	}
 
+	if connCfg.Username == "" {
+		return nil, fmt.Errorf("missing user in the --pg connection string")
+	}
+
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
@@ -376,6 +385,8 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		connCfg.Port = port
 	}
 
+	// By default, follow the PG convention to use user name as the database name
+	connCfg.Database = connCfg.Username
 	if u.Path != "" {
 		connCfg.Database = u.Path[1:]
 	}
@@ -446,27 +457,22 @@ func (m *Main) Run(ctx context.Context) error {
 	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
 	// TODO(dragonly): remove this hack
 	storeInstance.DatabaseService = s.DatabaseService
-	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
 	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
 	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.ActivityService = store.NewActivityService(m.l, db)
-	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
-	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 
-	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
 	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
 	if err != nil {

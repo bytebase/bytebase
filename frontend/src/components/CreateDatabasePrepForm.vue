@@ -237,6 +237,7 @@ import {
   DatabaseLabel,
   CreateDatabaseContext,
   UNKNOWN_ID,
+  Instance,
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
@@ -244,7 +245,13 @@ import {
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
-import { hasFeature, useCurrentUser, useEnvironmentStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useEnvironmentStore,
+  useInstanceStore,
+  useProjectStore,
+} from "@/store";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -291,9 +298,11 @@ export default defineComponent({
   emits: ["dismiss"],
   setup(props, { emit }) {
     const store = useStore();
+    const instanceStore = useInstanceStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -303,7 +312,7 @@ export default defineComponent({
 
     // Refresh the instance list
     const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
+      instanceStore.fetchInstanceList();
     };
 
     watchEffect(prepareInstanceList);
@@ -326,7 +335,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (!state.projectId) return unknown("PROJECT") as Project;
-      return store.getters["project/projectById"](state.projectId) as Project;
+      return projectStore.getProjectById(state.projectId) as Project;
     });
 
     const isReservedName = computed(() => {
@@ -395,10 +404,10 @@ export default defineComponent({
       return !props.instanceId;
     });
 
-    const selectedInstance = computed(() => {
+    const selectedInstance = computed((): Instance => {
       return state.instanceId
-        ? store.getters["instance/instanceById"](state.instanceId)
-        : unknown("INSTANCE");
+        ? instanceStore.getInstanceById(state.instanceId)
+        : (unknown("INSTANCE") as Instance);
     });
 
     const selectProject = (projectId: ProjectId) => {

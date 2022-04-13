@@ -6,7 +6,6 @@ import type { editor as Editor } from "monaco-editor";
 
 import AutoCompletion from "./AutoCompletion";
 import {
-  ConnectionAtom,
   Database,
   Table,
   CompletionItems,
@@ -14,9 +13,12 @@ import {
   SqlDialect,
 } from "../../types";
 import sqlFormatter from "./sqlFormatter";
+import { useDatabaseStore, useTableStore } from "@/store";
 
 const useMonaco = async (lang: string) => {
   const store = useStore();
+  const dataSourceStore = useDatabaseStore();
+  const tableStore = useTableStore();
 
   const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
     "instanceList",
@@ -25,16 +27,12 @@ const useMonaco = async (lang: string) => {
   const databaseList = computed(() => {
     const currentInstanceId =
       store.state.sqlEditor.connectionContext.instanceId;
-    return store.getters["database/databaseListByInstanceId"](
-      currentInstanceId
-    );
+    return dataSourceStore.getDatabaseListByInstanceId(currentInstanceId);
   });
 
   const tableList = computed(() => {
     return databaseList.value
-      .map((item: ConnectionAtom) =>
-        store.getters["table/tableListByDatabaseId"](item.id)
-      )
+      .map((item) => tableStore.getTableListByDatabaseId(item.id))
       .flat();
   });
 

@@ -6,7 +6,6 @@ import {
   ConnectionAtom,
   QueryInfo,
   ConnectionContext,
-  Instance,
   Database,
   DatabaseId,
   ProjectId,
@@ -18,6 +17,13 @@ import {
 import * as types from "../mutation-types";
 import { makeActions } from "../actions";
 import { unknown } from "@/types";
+import {
+  useActivityStore,
+  useDatabaseStore,
+  useInstanceStore,
+  useTableStore,
+  useSQLStore,
+} from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
   hasSlug: false,
@@ -77,18 +83,18 @@ const getters = {
     rootGetters: any
   ) {
     let instance = {} as any;
-    let databaseList = [];
+    let databaseList: Database[] = [];
     let tableList = [];
 
     if (!isEmpty(getter.connectionTreeByInstanceId)) {
       instance = getter.connectionTreeByInstanceId;
-      databaseList = rootGetters["database/databaseListByInstanceId"](
+      databaseList = useDatabaseStore().getDatabaseListByInstanceId(
         instance.id
       );
 
       tableList = instance.children
         .map((item: ConnectionAtom) =>
-          rootGetters["table/tableListByDatabaseId"](item.id)
+          useTableStore().getTableListByDatabaseId(item.id)
         )
         .flat();
     }
@@ -203,33 +209,26 @@ const actions = {
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
   }),
   async executeQuery(
-    { dispatch, state, rootGetters }: any,
-    payload: Partial<QueryInfo> = {}
+    { dispatch, state }: any,
+    { statement }: Pick<QueryInfo, "statement">
   ) {
-    const queryResult = await dispatch(
-      "sql/query",
-      {
-        instanceId: state.connectionContext.instanceId,
-        databaseName: state.connectionContext.databaseName,
-        ...payload,
-      },
-      { root: true }
-    );
+    const queryResult = await useSQLStore().query({
+      instanceId: state.connectionContext.instanceId,
+      databaseName: state.connectionContext.databaseName,
+      statement,
+    });
 
     return queryResult;
   },
   async fetchConnectionByInstanceIdAndDatabaseId(
     { commit, dispatch }: any,
-    { instanceId, databaseId }: Partial<SqlEditorState["connectionContext"]>
+    {
+      instanceId,
+      databaseId,
+    }: Pick<SqlEditorState["connectionContext"], "instanceId" | "databaseId">
   ) {
-    const instance = (await dispatch("instance/fetchInstanceById", instanceId, {
-      root: true,
-    })) as Instance;
-    const database = (await dispatch(
-      "database/fetchDatabaseById",
-      { databaseId },
-      { root: true }
-    )) as Database;
+    const instance = await useInstanceStore().fetchInstanceById(instanceId);
+    const database = await useDatabaseStore().fetchDatabaseById(databaseId);
 
     commit(types.SET_CONNECTION_CONTEXT, {
       hasSlug: true,
@@ -242,15 +241,10 @@ const actions = {
   },
   async fetchQueryHistoryList({ commit, dispatch }: any) {
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, true);
-    const activityList = await dispatch(
-      "activity/fetchActivityListForQueryHistory",
-      {
+    const activityList =
+      await useActivityStore().fetchActivityListForQueryHistory({
         limit: 50,
-      },
-      {
-        root: true,
-      }
-    );
+      });
     const queryHistoryList: QueryHistory[] = activityList.map(
       (history: any) => {
         return {
@@ -277,9 +271,7 @@ const actions = {
     commit(types.SET_IS_FETCHING_QUERY_HISTORY, false);
   },
   async deleteQueryHistory({ commit, dispatch, state }: any, id: number) {
-    await dispatch("activity/deleteActivityById", id, {
-      root: true,
-    });
+    await useActivityStore().deleteActivityById(id);
 
     commit(
       types.SET_QUERY_HISTORY_LIST,

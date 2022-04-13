@@ -9,7 +9,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { cloneDeep, groupBy, uniqBy } from "lodash-es";
 import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
 import {
@@ -22,14 +21,19 @@ import { BBOutlineItem } from "../bbkit/types";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { useEnvironmentList, useCurrentUser, useLabelStore } from "@/store";
+import {
+  useEnvironmentList,
+  useCurrentUser,
+  useLabelStore,
+  useDatabaseStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
   name: "DatabaseListSidePanel",
   setup() {
     const { t } = useI18n();
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const labelStore = useLabelStore();
     const router = useRouter();
 
@@ -43,7 +47,7 @@ export default defineComponent({
     const prepareList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("database/fetchDatabaseList");
+        databaseStore.fetchDatabaseList();
       }
 
       labelStore.fetchLabelList();
@@ -53,9 +57,7 @@ export default defineComponent({
 
     // Use this to make the list reactive when project is transferred.
     const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalId"](
-        currentUser.value.id
-      );
+      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     });
 
     // Use this to parse database name from name template
