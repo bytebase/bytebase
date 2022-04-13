@@ -22,6 +22,7 @@ import {
   useDatabaseStore,
   useInstanceStore,
   useTableStore,
+  useSQLStore,
 } from "../pinia-modules";
 
 export const getDefaultConnectionContext = () => ({
@@ -208,18 +209,14 @@ const actions = {
     setIsFetchingQueryHistory: types.SET_IS_FETCHING_QUERY_HISTORY,
   }),
   async executeQuery(
-    { dispatch, state, rootGetters }: any,
-    payload: Partial<QueryInfo> = {}
+    { dispatch, state }: any,
+    { statement }: Pick<QueryInfo, "statement">
   ) {
-    const queryResult = await dispatch(
-      "sql/query",
-      {
-        instanceId: state.connectionContext.instanceId,
-        databaseName: state.connectionContext.databaseName,
-        ...payload,
-      },
-      { root: true }
-    );
+    const queryResult = await useSQLStore().query({
+      instanceId: state.connectionContext.instanceId,
+      databaseName: state.connectionContext.databaseName,
+      statement,
+    });
 
     return queryResult;
   },
