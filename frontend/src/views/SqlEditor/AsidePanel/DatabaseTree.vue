@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!connectionContext.isLoadingTree"
+    v-if="!sqlEditorStore.connectionContext.isLoadingTree"
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
@@ -44,20 +44,12 @@
 
 <script lang="ts" setup>
 import { ref, computed, h } from "vue";
-import {
-  useNamespacedState,
-  useNamespacedGetters,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
 import { cloneDeep, omit, escape } from "lodash-es";
 import { useRouter } from "vue-router";
 import { TreeOption, DropdownOption } from "naive-ui";
 
 import {
   ConnectionAtom,
-  SqlEditorState,
-  SqlEditorGetters,
-  SqlEditorActions,
   ConnectionContext,
   Database,
   UNKNOWN_ID,
@@ -67,26 +59,17 @@ import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
 import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
 import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
 import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
-import { useDatabaseStore, useInstanceStore, useTabStore } from "@/store";
+import {
+  useDatabaseStore,
+  useInstanceStore,
+  useTabStore,
+  useSQLEditorStore,
+} from "@/store";
 
 const router = useRouter();
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
-
-const { findProjectIdByDatabaseId, connectionInfo } =
-  useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-    "findProjectIdByDatabaseId",
-    "connectionInfo",
-  ]);
-const { connectionTree, connectionContext } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "connectionTree",
-    "connectionContext",
-  ]);
-const { setConnectionContext } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setConnectionContext"]
-);
+const sqlEditorStore = useSQLEditorStore();
 
 const searchPattern = ref();
 const showDropdown = ref(false);
@@ -128,7 +111,7 @@ const dropdownOptions = computed(() => {
 });
 
 const treeData = computed(() => {
-  const tree = cloneDeep(connectionTree.value);
+  const tree = cloneDeep(sqlEditorStore.connectionTree);
 
   // mapping the prefix icons
   return tree.map((instanceItem) => {
@@ -157,7 +140,7 @@ const treeData = computed(() => {
 });
 
 const defaultExpanedKeys = computed(() => {
-  const ctx = connectionContext.value;
+  const ctx = sqlEditorStore.connectionContext;
   if (ctx.hasSlug) {
     return [`instance-${ctx.instanceId}`, `database-${ctx.databaseId}`];
   } else {
@@ -166,7 +149,7 @@ const defaultExpanedKeys = computed(() => {
 });
 
 const defaultSelectedKeys = computed(() => {
-  const ctx = connectionContext.value;
+  const ctx = sqlEditorStore.connectionContext;
   if (ctx.hasSlug) {
     return [`database-${ctx.databaseId}`];
   } else {
@@ -175,7 +158,7 @@ const defaultSelectedKeys = computed(() => {
 });
 
 const getFlattenConnectionTree = () => {
-  const tree = connectionTree.value;
+  const tree = sqlEditorStore.connectionTree;
   if (!tree) {
     return {};
   }
@@ -209,7 +192,7 @@ const getFlattenConnectionTree = () => {
 
 const setSheetContext = (option: any) => {
   if (option) {
-    let ctx: ConnectionContext = cloneDeep(connectionContext.value);
+    let ctx: ConnectionContext = cloneDeep(sqlEditorStore.connectionContext);
     const { instanceList, databaseList } = getFlattenConnectionTree();
 
     const getInstanceNameByInstanceId = (id: number) => {
@@ -260,7 +243,7 @@ const setSheetContext = (option: any) => {
     }
 
     ctx.hasSlug = true;
-    setConnectionContext(ctx);
+    sqlEditorStore.setConnectionContext(ctx);
 
     if (ctx.instanceId !== UNKNOWN_ID && ctx.databaseId !== UNKNOWN_ID) {
       const database = useDatabaseStore().getDatabaseById(
@@ -313,9 +296,9 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
 const gotoAlterSchema = (option: any) => {
   console.log(option);
   const databaseId = option.parentId;
-  const projectId = findProjectIdByDatabaseId.value(databaseId);
+  const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
-    connectionInfo.value.databaseListByProjectId.get(projectId);
+    sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId);
   const databaseName = databaseList.find(
     (database: Database) => database.id === databaseId
   ).name;
@@ -363,9 +346,11 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onClick: (e: any) => {
       if (e?.target?.id === "tree-node-suffix") return;
       if (option) {
-        let ctx: ConnectionContext = cloneDeep(connectionContext.value);
+        let ctx: ConnectionContext = cloneDeep(
+          sqlEditorStore.connectionContext
+        );
         ctx.option = option;
-        setConnectionContext(ctx);
+        sqlEditorStore.setConnectionContext(ctx);
       }
     },
     onContextmenu(e: MouseEvent) {

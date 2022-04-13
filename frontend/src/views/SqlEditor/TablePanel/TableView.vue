@@ -66,14 +66,11 @@
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useResizeObserver } from "@vueuse/core";
-import { useNamespacedState } from "vuex-composition-helpers";
 import { unparse } from "papaparse";
 import { isEmpty } from "lodash-es";
 import dayjs from "dayjs";
 
-import { useTabStore } from "@/store";
-
-import { SqlEditorState } from "@/types";
+import { useTabStore, useSQLEditorStore } from "@/store";
 
 interface State {
   search: string;
@@ -81,10 +78,7 @@ interface State {
 
 const { t } = useI18n();
 const tabStore = useTabStore();
-
-const { isExecuting } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "isExecuting",
-]);
+const sqlEditorStore = useSQLEditorStore();
 
 const queryResult = computed(() => tabStore.currentTab.queryResult || null);
 
@@ -138,7 +132,7 @@ const notifyMessage = computed(() => {
   if (queryResult.value === null) {
     return t("sql-editor.table-empty-placehoder");
   }
-  if (isExecuting.value) {
+  if (sqlEditorStore.isExecuting) {
     return t("sql-editor.loading-data");
   }
   const data = queryResult.value[2];
@@ -186,7 +180,7 @@ const handleExportBtnClick = (format: "csv" | "json") => {
   const encodedUri = encodeURI(`data:text/${format};charset=utf-8,${rawText}`);
   const formatedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   // Example filename: `mysheet-2022-03-23T09-54-21.json`
-  const filename = `${currentTab.value.name}-${formatedDateString}`;
+  const filename = `${tabStore.currentTab.name}-${formatedDateString}`;
   const link = document.createElement("a");
 
   link.download = `${filename}.${format}`;
