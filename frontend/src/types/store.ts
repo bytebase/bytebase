@@ -46,8 +46,6 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
-import instanceStore from "../store/modules/instance";
-import sqlEditorStore from "../store/modules/sqlEditor";
 import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
@@ -129,9 +127,6 @@ export interface InstanceState {
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
-export type InstanceGetters = typeof instanceStore.getters;
-export type InstanceActions = typeof instanceStore.actions;
-export type InstanceMutations = typeof instanceStore.mutations;
 
 export interface DataSourceState {
   dataSourceById: Map<DataSourceId, DataSource>;
