@@ -37,6 +37,7 @@ import {
   useDataSourceStore,
   useProjectStore,
   useTableStore,
+  useSQLEditorStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -1165,8 +1166,8 @@ router.beforeEach((to, from, next) => {
 
   if (connectionSlug) {
     const [, instanceId, , databaseId] = connectionSlug.split("_");
-    store
-      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
+    useSQLEditorStore()
+      .fetchConnectionByInstanceIdAndDatabaseId({
         instanceId: Number(instanceId),
         databaseId: Number(databaseId),
       })
@@ -1185,7 +1186,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              store.dispatch("sqlEditor/setSqlEditorState", {
+              useSQLEditorStore().setSqlEditorState({
                 sharedSheet: sheet,
               });
 

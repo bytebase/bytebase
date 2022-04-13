@@ -1,5 +1,4 @@
 import { computed } from "vue";
-import { useStore } from "vuex";
 import { useNamespacedGetters } from "vuex-composition-helpers";
 import * as monaco from "monaco-editor";
 import type { editor as Editor } from "monaco-editor";
@@ -13,20 +12,19 @@ import {
   SqlDialect,
 } from "../../types";
 import sqlFormatter from "./sqlFormatter";
-import { useDatabaseStore, useTableStore } from "@/store";
+import { useDatabaseStore, useTableStore, useSQLEditorStore } from "@/store";
 
 const useMonaco = async (lang: string) => {
-  const store = useStore();
   const dataSourceStore = useDatabaseStore();
   const tableStore = useTableStore();
+  const sqlEditorStore = useSQLEditorStore();
 
   const { instanceList } = useNamespacedGetters<InstanceGetters>("instance", [
     "instanceList",
   ]);
 
   const databaseList = computed(() => {
-    const currentInstanceId =
-      store.state.sqlEditor.connectionContext.instanceId;
+    const currentInstanceId = sqlEditorStore.connectionContext.instanceId;
     return dataSourceStore.getDatabaseListByInstanceId(currentInstanceId);
   });
 
