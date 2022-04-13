@@ -1,16 +1,20 @@
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 
 import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
 import { getDefaultConnectionContext } from "@/store/pinia-modules/sqlEditor";
-import { useDatabaseStore, useTabStore, useSQLEditorStore } from "@/store";
+import {
+  useDatabaseStore,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
-  const store = useStore();
   const tabStore = useTabStore();
   const sqlEditorStore = useSQLEditorStore();
+  const sheetStore = useSheetStore();
 
   /**
    * Set the connection by tab info
@@ -19,7 +23,7 @@ const useSQLEditorConnection = () => {
    */
   const setConnectionContextFromCurrentTab = () => {
     const currentTab = tabStore.currentTab;
-    const sheetById = store.state.sheet.sheetById as SheetState["sheetById"];
+    const sheetById = sheetStore.sheetById as SheetState["sheetById"];
 
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
       const sheet = sheetById.get(currentTab.sheetId);
