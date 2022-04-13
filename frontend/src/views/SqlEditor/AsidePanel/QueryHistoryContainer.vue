@@ -51,7 +51,7 @@
     </div>
 
     <div
-      v-show="isLoading && queryHistoryList.length === 0"
+      v-show="isLoading && sqlEditorStore.queryHistoryList.length === 0"
       class="absolute w-full h-full flex justify-center items-center"
     >
       <BBSpin :title="$t('common.loading')" />
@@ -64,14 +64,11 @@ import { escape } from "lodash-es";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useClipboard } from "@vueuse/core";
-import {
-  useNamespacedActions,
-  useNamespacedState,
-} from "vuex-composition-helpers";
+
 import { useDialog } from "naive-ui";
 
-import { pushNotification, useTabStore } from "@/store";
-import { QueryHistory, SqlEditorActions, SqlEditorState } from "@/types";
+import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import { QueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 
 interface State {
@@ -82,16 +79,7 @@ interface State {
 const { t } = useI18n();
 const dialog = useDialog();
 const tabStore = useTabStore();
-
-const { queryHistoryList, isFetchingQueryHistory: isLoading } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "queryHistoryList",
-    "isFetchingQueryHistory",
-  ]);
-const { deleteQueryHistory } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["deleteQueryHistory"]
-);
+const sqlEditorStore = useSQLEditorStore();
 
 const state = reactive<State>({
   search: "",
@@ -101,10 +89,15 @@ const state = reactive<State>({
 const { copy: copyTextToClipboard, isSupported: isCopySupported } =
   useClipboard();
 
+const isLoading = computed(() => {
+  return sqlEditorStore.isFetchingQueryHistory;
+});
+
 const data = computed(() => {
   const tempData =
-    queryHistoryList.value && queryHistoryList.value.length > 0
-      ? queryHistoryList.value.filter((history) => {
+    sqlEditorStore.queryHistoryList &&
+    sqlEditorStore.queryHistoryList.length > 0
+      ? sqlEditorStore.queryHistoryList.filter((history) => {
           let t = false;
 
           if (history.statement.includes(state.search)) {
@@ -132,7 +125,7 @@ const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
   }
-  if (queryHistoryList.value.length === null) {
+  if (sqlEditorStore.queryHistoryList.length === null) {
     return t("sql-editor.no-history-found");
   }
 
@@ -159,7 +152,7 @@ const actionDropdownOptions = computed(() => {
 
 const handleDeleteHistory = () => {
   if (state.currentActionHistory) {
-    deleteQueryHistory(state.currentActionHistory.id);
+    sqlEditorStore.deleteQueryHistory(state.currentActionHistory.id);
   }
 };
 

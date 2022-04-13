@@ -203,9 +203,6 @@ export interface SqlEditorState {
   isShowExecutingHint: boolean;
   sharedSheet: Sheet;
 }
-export type SqlEditorGetters = typeof sqlEditorStore.getters;
-export type SqlEditorActions = typeof sqlEditorStore.actions;
-export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface TabState {
   tabList: TabInfo[];
