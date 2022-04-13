@@ -8,7 +8,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -147,7 +146,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		create.Type,
 		create.Name,
 		create.URL,
-		pq.StringArray(create.ActivityList),
+		create.ActivityList,
 	)
 
 	if err != nil {
@@ -167,7 +166,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		&projectWebhookRaw.Type,
 		&projectWebhookRaw.Name,
 		&projectWebhookRaw.URL,
-		pq.Array(&projectWebhookRaw.ActivityList),
+		&projectWebhookRaw.ActivityList,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -220,7 +219,7 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 			&projectWebhookRaw.Type,
 			&projectWebhookRaw.Name,
 			&projectWebhookRaw.URL,
-			pq.Array(&projectWebhookRaw.ActivityList),
+			&projectWebhookRaw.ActivityList,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -254,7 +253,7 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 		set, args = append(set, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ActivityList; v != nil {
-		activities := pq.StringArray(strings.Split(*v, ","))
+		activities := strings.Split(*v, ",")
 		set, args = append(set, fmt.Sprintf("activity_list = $%d", len(args)+1)), append(args, activities)
 	}
 
@@ -286,7 +285,7 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 			&projectWebhookRaw.Type,
 			&projectWebhookRaw.Name,
 			&projectWebhookRaw.URL,
-			pq.Array(&projectWebhookRaw.ActivityList),
+			&projectWebhookRaw.ActivityList,
 		); err != nil {
 			return nil, FormatError(err)
 		}
