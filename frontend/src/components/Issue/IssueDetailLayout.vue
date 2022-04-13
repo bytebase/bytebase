@@ -279,6 +279,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useInstanceStore,
+  useIssueStore,
   useIssueSubscriberStore,
   useProjectStore,
 } from "@/store";
@@ -316,6 +317,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
+    const issueStore = useIssueStore();
     const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
@@ -508,7 +510,7 @@ export default defineComponent({
       delete issue.pipeline;
       issue.payload = {};
 
-      store.dispatch("issue/createIssue", issue).then((createdIssue) => {
+      issueStore.createIssue(issue).then((createdIssue) => {
         // Use replace to omit the new issue url in the navigation history.
         router.replace(
           `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
@@ -521,9 +523,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
+      issueStore
+        .updateIssueStatus({
           issueId: (props.issue as Issue).id,
           issueStatusPatch,
         })
@@ -578,8 +579,8 @@ export default defineComponent({
       issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
     ) => {
-      store
-        .dispatch("issue/patchIssue", {
+      issueStore
+        .patchIssue({
           issueId: (props.issue as Issue).id,
           issuePatch,
         })

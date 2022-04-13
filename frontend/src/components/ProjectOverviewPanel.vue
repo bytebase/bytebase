@@ -119,7 +119,6 @@ import {
   computed,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
@@ -134,7 +133,7 @@ import {
 } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import { NSpin } from "naive-ui";
-import { useActivityStore, useLabelStore } from "@/store";
+import { useActivityStore, useIssueStore, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 // Show at most 5 activity
@@ -170,7 +169,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const labelStore = useLabelStore();
 
     const state = reactive<LocalState>({
@@ -194,8 +192,8 @@ export default defineComponent({
     };
 
     const prepareIssueList = () => {
-      store
-        .dispatch("issue/fetchIssueList", {
+      useIssueStore()
+        .fetchIssueList({
           projectId: props.project.id,
         })
         .then((issueList: Issue[]) => {
