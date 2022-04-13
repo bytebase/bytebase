@@ -29,3 +29,4 @@ export * from "./tab";
 export * from "./table";
 export * from "./uistate";
 export * from "./vcs";
+export * from "./view";

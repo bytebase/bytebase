@@ -197,7 +197,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -213,6 +212,7 @@ import {
   useCurrentUser,
   useDataSourceStore,
   useTableStore,
+  useViewStore,
 } from "@/store";
 
 interface LocalState {
@@ -235,7 +235,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const dataSourceStore = useDataSourceStore();
 
@@ -243,6 +242,7 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const tableStore = useTableStore();
+    const viewStore = useViewStore();
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -251,7 +251,7 @@ export default defineComponent({
     watchEffect(prepareTableList);
 
     const prepareViewList = () => {
-      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
+      viewStore.fetchViewListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareViewList);
@@ -276,7 +276,7 @@ export default defineComponent({
     });
 
     const viewList = computed(() => {
-      return store.getters["view/viewListByDatabaseId"](props.database.id);
+      return viewStore.getViewListByDatabaseId(props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
