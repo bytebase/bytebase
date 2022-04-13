@@ -40,7 +40,7 @@ export const getDefaultConnectionContext = () => ({
   option: {},
 });
 
-export const useSQLEditorStore = defineStore("sqlEdtior", {
+export const useSQLEditorStore = defineStore("sqlEditor", {
   state: (): SqlEditorState => ({
     connectionTree: [],
     connectionContext: getDefaultConnectionContext(),
