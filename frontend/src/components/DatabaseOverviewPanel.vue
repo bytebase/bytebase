@@ -197,7 +197,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -208,7 +207,13 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { featureToRef, useCurrentUser, useDataSourceStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDataSourceStore,
+  useTableStore,
+  useViewStore,
+} from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
@@ -230,22 +235,23 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({});
 
     const currentUser = useCurrentUser();
+    const tableStore = useTableStore();
+    const viewStore = useViewStore();
 
     const prepareTableList = () => {
-      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
+      tableStore.fetchTableListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareTableList);
 
     const prepareViewList = () => {
-      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
+      viewStore.fetchViewListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareViewList);
@@ -266,11 +272,11 @@ export default defineComponent({
     const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseId"](props.database.id);
+      return tableStore.getTableListByDatabaseId(props.database.id);
     });
 
     const viewList = computed(() => {
-      return store.getters["view/viewListByDatabaseId"](props.database.id);
+      return viewStore.getViewListByDatabaseId(props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {

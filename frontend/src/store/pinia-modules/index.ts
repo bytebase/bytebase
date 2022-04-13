@@ -26,5 +26,7 @@ export * from "./router";
 export * from "./setting";
 export * from "./subscription";
 export * from "./tab";
+export * from "./table";
 export * from "./uistate";
 export * from "./vcs";
+export * from "./view";
