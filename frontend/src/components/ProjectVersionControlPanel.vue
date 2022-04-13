@@ -90,10 +90,9 @@ import { reactive, watchEffect, watch, defineComponent } from "vue";
 import { computed, PropType } from "vue";
 import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryPanel from "./RepositoryPanel.vue";
-import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
-import { useStore } from "vuex";
+import { Project, ProjectWorkflowType, UNKNOWN_ID } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useRepositoryStore } from "@/store";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -120,7 +119,7 @@ export default defineComponent({
   async setup(props) {
     const { t } = useI18n();
 
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
 
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
@@ -129,7 +128,7 @@ export default defineComponent({
     });
 
     const prepareRepository = () => {
-      store.dispatch("repository/fetchRepositoryByProjectId", props.project.id);
+      repositoryStore.fetchRepositoryByProjectId(props.project.id);
     };
 
     watchEffect(prepareRepository);
@@ -141,10 +140,8 @@ export default defineComponent({
       }
     );
 
-    const repository = computed((): Repository => {
-      return store.getters["repository/repositoryByProjectId"](
-        props.project.id
-      );
+    const repository = computed(() => {
+      return repositoryStore.getRepositoryByProjectId(props.project.id);
     });
 
     const enterWizard = (create: boolean) => {

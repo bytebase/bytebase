@@ -157,7 +157,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
@@ -179,6 +178,7 @@ import {
   useCurrentUser,
   useMemberStore,
   useProjectStore,
+  useRepositoryStore,
 } from "@/store";
 
 interface LocalState {
@@ -201,7 +201,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
@@ -340,8 +339,8 @@ export default defineComponent({
 
     const openWindowForVCSMember = () => {
       // currently we only support Gitlab, so the following redirect URL is fixed
-      store
-        .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
+      useRepositoryStore()
+        .fetchRepositoryByProjectId(props.project.id)
         .then((repository) => {
           // this uri format is for GitLab
           window.open(`${repository.webUrl}/-/project_members`);
