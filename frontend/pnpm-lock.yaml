@@ -55,7 +55,6 @@ specifiers:
   vue-router: ^4.0.8
   vue-tsc: ^0.29.6
   vueuc: ^0.4.27
-  vuex: ^4.0.0
 
 dependencies:
   '@bytebase/vue-kbar': 0.1.6_vue@3.2.31
@@ -81,7 +80,6 @@ dependencies:
   vue-i18n: 9.2.0-beta.32_vue@3.2.31
   vue-router: 4.0.14_vue@3.2.31
   vueuc: 0.4.27_vue@3.2.31
-  vuex: 4.0.2_vue@3.2.31
 
 devDependencies:
   '@iconify/json': 1.1.461
@@ -3438,15 +3436,6 @@ packages:
       seemly: 0.3.3
       vdirs: 0.1.7_vue@3.2.31
       vooks: 0.2.12_vue@3.2.31
-      vue: 3.2.31
-    dev: false
-
-  /vuex/4.0.2_vue@3.2.31:
-    resolution: {integrity: sha512-M6r8uxELjZIK8kTKDGgZTYX/ahzblnzC4isU1tpmEuOIIKmV+TRdc+H4s8ds2NuZ7wpUTdGRzJRtoj+lI+pc0Q==}
-    peerDependencies:
-      vue: ^3.0.2
-    dependencies:
-      '@vue/devtools-api': 6.1.0
       vue: 3.2.31
     dev: false
 
