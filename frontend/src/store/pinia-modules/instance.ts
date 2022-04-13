@@ -27,7 +27,6 @@ import { useEnvironmentStore } from "./environment";
 import { useAnomalyStore } from "./anomaly";
 import { useDataSourceStore } from "./dataSource";
 import { useSQLStore } from "./sql";
-import { store } from "../index";
 import { defineStore } from "pinia";
 import { computed, watchEffect } from "vue";
 
@@ -84,6 +83,8 @@ function convert(
   };
 
   const environmentStore = useEnvironmentStore();
+  const anomalyStore = useAnomalyStore();
+  const dataSourceStore = useDataSourceStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
@@ -101,7 +102,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = useAnomalyStore().convert(item);
+        anomalyList[i] = anomalyStore.convert(item);
         anomalyList[i].instance = instancePartial;
       }
     }
@@ -114,7 +115,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = useDataSourceStore().convert(item);
+        dataSourceList[i] = dataSourceStore.convert(item);
       }
     }
   }
