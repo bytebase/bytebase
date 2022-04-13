@@ -2,7 +2,7 @@
   <div class="editor-pane h-full">
     <EditorAction @save-sheet="handleSaveSheet" />
 
-    <template v-if="!isDisconnected">
+    <template v-if="!sqlEditorStore.isDisconnected">
       <QueryEditor @save-sheet="handleSaveSheet" />
     </template>
     <template v-else>
@@ -10,7 +10,7 @@
     </template>
 
     <BBModal
-      v-if="isShowExecutingHint"
+      v-if="sqlEditorStore.isShowExecutingHint"
       :title="$t('common.tips')"
       @close="handleClose"
     >
@@ -28,19 +28,10 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import {
-  useNamespacedState,
-  useNamespacedGetters,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
+import { useNamespacedActions } from "vuex-composition-helpers";
 
-import { useTabStore } from "@/store";
-import {
-  SqlEditorState,
-  SqlEditorActions,
-  SqlEditorGetters,
-  SheetActions,
-} from "@/types";
+import { useTabStore, useSQLEditorStore } from "@/store";
+import { SheetActions } from "@/types";
 import EditorAction from "./EditorAction.vue";
 import QueryEditor from "./QueryEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
@@ -49,20 +40,7 @@ import SaveSheetModal from "./SaveSheetModal.vue";
 import { defaultTabName } from "../../../utils/tab";
 
 const tabStore = useTabStore();
-
-const { isShowExecutingHint } = useNamespacedState<SqlEditorState>(
-  "sqlEditor",
-  ["isShowExecutingHint"]
-);
-
-const { isDisconnected } = useNamespacedGetters<SqlEditorGetters>("sqlEditor", [
-  "isDisconnected",
-]);
-
-const { setSqlEditorState } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setSqlEditorState"]
-);
+const sqlEditorStore = useSQLEditorStore();
 
 // actions
 const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
@@ -72,7 +50,7 @@ const { upsertSheet } = useNamespacedActions<SheetActions>("sheet", [
 const isShowSaveSheetModal = ref(false);
 
 const handleClose = () => {
-  setSqlEditorState({
+  sqlEditorStore.setSqlEditorState({
     isShowExecutingHint: false,
   });
 };

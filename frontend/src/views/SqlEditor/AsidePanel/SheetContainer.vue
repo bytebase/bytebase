@@ -90,15 +90,8 @@ import {
 } from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store";
-import {
-  SheetActions,
-  SheetState,
-  Sheet,
-  SqlEditorActions,
-  SqlEditorState,
-  UNKNOWN_ID,
-} from "@/types";
+import { useTabStore, useSQLEditorStore } from "@/store";
+import { SheetActions, SheetState, Sheet, UNKNOWN_ID } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
@@ -113,19 +106,11 @@ const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 
-const { sharedSheet, isFetchingSheet: isLoading } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "sharedSheet",
-    "isFetchingSheet",
-  ]);
+const isLoading = computed(() => sqlEditorStore.isFetchingSheet);
+
 const { sheetList } = useNamespacedState<SheetState>("sheet", ["sheetList"]);
-
-// actions
-const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setShouldSetContent"]
-);
 
 const { deleteSheet, patchSheetById } = useNamespacedActions<SheetActions>(
   "sheet",
@@ -143,8 +128,8 @@ const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
   const filterSheetList =
-    sharedSheet.value.id !== UNKNOWN_ID
-      ? [...sheetList.value, sharedSheet.value]
+    sqlEditorStore.sharedSheet.id !== UNKNOWN_ID
+      ? [...sheetList.value, sqlEditorStore.sharedSheet]
       : sheetList.value;
   const tempData =
     filterSheetList && filterSheetList.length > 0
@@ -270,7 +255,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       if (tab.sheetId === sheet.id) {
         tabStore.setCurrentTabId(tab.id);
         setConnectionContextFromCurrentTab();
-        setShouldSetContent(true);
+        sqlEditorStore.setShouldSetContent(true);
         return;
       }
     }
@@ -283,7 +268,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       sheetId: sheet.id,
     });
     setConnectionContextFromCurrentTab();
-    setShouldSetContent(true);
+    sqlEditorStore.setShouldSetContent(true);
   }
 };
 </script>

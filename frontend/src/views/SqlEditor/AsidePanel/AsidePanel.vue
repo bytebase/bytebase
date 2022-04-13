@@ -29,22 +29,18 @@
 
 <script lang="ts" setup>
 import { ref, watch } from "vue";
-import { useNamespacedState } from "vuex-composition-helpers";
 
-import type { SqlEditorState } from "@/types";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import SheetContainer from "./SheetContainer.vue";
 import TableSchema from "./TableSchema.vue";
+import { useSQLEditorStore } from "@/store";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
 const TABLE_SCHEMA_PANE_SIZE = FULL_HEIGHT - DATABASE_PANE_SIZE;
 
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
-
+const sqlEditorStore = useSQLEditorStore();
 const databasePaneSzie = ref(FULL_HEIGHT);
 
 const handleResized = (data: any) => {
@@ -57,7 +53,7 @@ const handleCloseTableSchemaPane = () => {
 };
 
 watch(
-  () => connectionContext.value.option,
+  () => sqlEditorStore.connectionContext.option,
   (option) => {
     if (option && option.type === "table") {
       databasePaneSzie.value = DATABASE_PANE_SIZE;

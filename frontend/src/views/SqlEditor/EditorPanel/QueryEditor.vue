@@ -12,11 +12,9 @@
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
 import { computed, defineEmits } from "vue";
-import { useNamespacedState } from "vuex-composition-helpers";
 
-import { useInstanceStore, useTabStore } from "@/store";
+import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { SqlEditorState } from "@/types";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -24,16 +22,13 @@ const emit = defineEmits<{
 
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
-
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
+const sqlEditorStore = useSQLEditorStore();
 
 const { execute } = useExecuteSQL();
 
 const sqlCode = computed(() => tabStore.currentTab.statement);
 const selectedInstance = computed(() => {
-  const ctx = connectionContext.value;
+  const ctx = sqlEditorStore.connectionContext;
   return instanceStore.getInstanceById(ctx.instanceId);
 });
 const selectedInstanceEngine = computed(() => {
