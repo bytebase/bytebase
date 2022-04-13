@@ -16,6 +16,7 @@ const useMonaco = async (lang: string) => {
   const dataSourceStore = useDatabaseStore();
   const tableStore = useTableStore();
   const sqlEditorStore = useSQLEditorStore();
+
   const instanceList = useInstanceList();
 
   const databaseList = computed(() => {

@@ -18,6 +18,7 @@ import {
   useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
+  useIssueStore,
   usePrincipalStore,
   useRouterStore,
 } from "../store";
@@ -759,7 +760,8 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return t("common.new");
                 }
-                return store.getters["issue/issueById"](idFromSlug(slug)).name;
+                const issue = useIssueStore().getIssueById(idFromSlug(slug));
+                return issue.name;
               },
               allowBookmark: true,
             },
@@ -823,6 +825,7 @@ router.beforeEach((to, from, next) => {
   const databaseStore = useDatabaseStore();
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
+  const issueStore = useIssueStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
@@ -1051,8 +1054,8 @@ router.beforeEach((to, from, next) => {
         });
       return;
     }
-    store
-      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+    issueStore
+      .fetchIssueById(idFromSlug(issueSlug))
       .then(() => {
         next();
       })
