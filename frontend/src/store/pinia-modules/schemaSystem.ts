@@ -42,8 +42,8 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
     addGuideline(guideline: DatabaseSchemaGuide) {
       this.guideList.push(guideline);
     },
-    removeGuideline(guideline: DatabaseSchemaGuide) {
-      const index = this.guideList.findIndex((g) => g.id === guideline.id);
+    removeGuideline(id: number) {
+      const index = this.guideList.findIndex((g) => g.id === id);
       if (index < 0) {
         return;
       }

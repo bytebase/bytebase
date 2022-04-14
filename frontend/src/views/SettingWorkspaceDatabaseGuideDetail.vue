@@ -1,6 +1,6 @@
 <template>
   <transition appear name="slide-from-bottom" mode="out-in">
-    <SettingWorkspaceDatabaseGuideCreate
+    <SchemaGuideCreation
       v-if="state.editMode"
       :id="guide.id"
       :name="guide.name"
@@ -16,8 +16,17 @@
           {{ guide.name }}
         </h1>
 
-        <button type="button" class="btn-cancel mr-4">Delete</button>
-        <button type="button" class="btn-primary" @click="onEdit">Edit</button>
+        <BBButtonConfirm
+          :style="'DELETE'"
+          :button-text="$t('common.delete')"
+          :ok-text="$t('common.delete')"
+          :confirm-title="$t('common.delete') + ` '${guide.name}'?`"
+          :require-confirm="true"
+          @confirm="onRemove"
+        />
+        <button type="button" class="btn-primary ml-5" @click="onEdit">
+          Edit
+        </button>
       </div>
       <div class="flex flex-wrap gap-x-3 my-5">
         <span>Environments:</span>
@@ -28,7 +37,7 @@
           :can-remove="false"
         />
       </div>
-      <div class="py-2 flex justify-between items-center mt-10">
+      <div class="py-2 flex justify-between items-center mt-5">
         <SchemaGuideCategoryTabFilter
           :selected="state.selectedCategory"
           :category-list="categoryFilterList"
@@ -59,9 +68,12 @@ import {
   ruleList,
   RulePayload,
 } from "../types";
-import { useEnvironmentStore, useSchemaSystemStore } from "@/store";
+import {
+  pushNotification,
+  useEnvironmentStore,
+  useSchemaSystemStore,
+} from "@/store";
 import { CategoryFilterItem } from "../components/DatabaseSchemaGuide/SchemaGuideCategoryTabFilter.vue";
-import SettingWorkspaceDatabaseGuideCreate from "./SettingWorkspaceDatabaseGuideCreate.vue";
 
 const props = defineProps({
   schemaGuideSlug: {
@@ -76,9 +88,10 @@ interface LocalState {
   editMode: boolean;
 }
 
+const { t } = useI18n();
 const store = useSchemaSystemStore();
 const router = useRouter();
-const ROUTE_NAME = "setting.workspace.database-review-guide.detail";
+const ROUTE_NAME = "setting.workspace.database-review-guide";
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -146,14 +159,14 @@ const selectCategory = (category: string) => {
   state.selectedCategory = category;
   if (category) {
     router.replace({
-      name: ROUTE_NAME,
+      name: `${ROUTE_NAME}.detail`,
       query: {
         category,
       },
     });
   } else {
     router.replace({
-      name: ROUTE_NAME,
+      name: `${ROUTE_NAME}.detail`,
     });
   }
 };
@@ -178,6 +191,18 @@ const onEdit = () => {
   state.editMode = true;
   state.searchText = "";
   state.selectedCategory = undefined;
+};
+
+const onRemove = () => {
+  store.removeGuideline(guide.value.id);
+  router.replace({
+    name: ROUTE_NAME,
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("database-review-guide.remove-guideline"),
+  });
 };
 </script>
 

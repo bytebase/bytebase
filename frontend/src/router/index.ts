@@ -374,16 +374,6 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "database-review-guide",
-                name: "setting.workspace.database-review-guide",
-                meta: {
-                  title: () => t("database-review-guide.title"),
-                },
-                component: () =>
-                  import("../views/SettingWorkspaceDatabaseGuide.vue"),
-                props: true,
-              },
-              {
                 path: "database-review-guide/new",
                 name: "setting.workspace.database-review-guide.create",
                 meta: {

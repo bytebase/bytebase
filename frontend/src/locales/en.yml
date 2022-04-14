@@ -1377,6 +1377,9 @@ database-review-guide:
   search-guideline-name: Search guideline name
   search-rule-name: Search rule name
   add-guideline: Add guideline
+  remove-guideline: Successfully removed the guideline.
+  create-guideline: Successfully created the guideline.
+  update-guideline: Successfully updated the guideline.
   create:
     breadcrumb: Create guideline
     basic-info:

@@ -6,7 +6,7 @@
           {{ $t("database-review-guide.create.configure-rule.from-template") }}
         </p>
         <div
-          class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-8"
+          class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
         >
           <div
             v-for="template in templateList"
@@ -25,7 +25,7 @@
         </p>
         <button
           type="button"
-          class="btn-primary inline-flex justify-center w-64 mt-8"
+          class="btn-primary inline-flex justify-center w-64 mt-4"
           @click="state.openModal = true"
         >
           <div class="flex">
