@@ -120,7 +120,7 @@ func getTestPort(testName string) int {
 		return 1249
 	case "TestGhostSimpleNoop":
 		return 1252
-	case "TestBackupRestore":
+	case "TestBackupRestoreBasic":
 		return 1255
 	case "TestPITR":
 		return 1258

@@ -1007,7 +1007,6 @@ func rewriteToGhostTableForRestore(stmt, timestamp string) string {
 			`_\d{14}$`) // timestamp postfix
 
 		// rewrite constraint names
-		// TODO(dragonly): refactor to looping through tableDef line by line, match and append to buffer
 		lines := strings.Split(tableDef, "\n")
 		var buf strings.Builder
 		for i, line := range lines {
@@ -1042,11 +1041,6 @@ func rewriteToGhostTableForRestore(stmt, timestamp string) string {
 		}
 		tableDefWithRewrittenConstraintName := buf.String()
 
-		// // If there are constraint clauses, we should remove the constraint name to avoid conflict.
-		// // According to the MySQL docs (https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html),
-		// // "If the CONSTRAINT symbol clause is not defined, or a symbol is not included following the CONSTRAINT keyword,
-		// // a constraint name name is generated automatically."
-		// tableDefWithoutConstraintName := reConstraint.ReplaceAllString(tableDef, "CONSTRAINT")
 		stmtWithGhostTables = fmt.Sprintf("CREATE TABLE `%s` %s", ghostTable, tableDefWithRewrittenConstraintName)
 	}
 

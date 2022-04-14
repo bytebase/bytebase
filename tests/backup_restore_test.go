@@ -50,7 +50,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	_, err = db.Exec(fmt.Sprintf(`
-	CREATE Table %s (
+	CREATE TABLE %s (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id > 0)
@@ -99,7 +99,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 		i++
 	}
 	a.NoError(rows.Err())
-	a.Equal(numRecords, i)
+	a.Equal(numRecords+1, i)
 }
 
 // TestPITR tests the PITR behavior
@@ -154,7 +154,7 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	_, err = db.Exec(`
-	CREATE Table t00 (
+	CREATE TABLE t00 (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id > -1)
@@ -162,7 +162,7 @@ func TestPITR(t *testing.T) {
 	`)
 	a.NoError(err)
 	_, err = db.Exec(`
-	CREATE Table t10 (
+	CREATE TABLE t10 (
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
@@ -172,7 +172,7 @@ func TestPITR(t *testing.T) {
 	`)
 	a.NoError(err)
 	_, err = db.Exec(`
-	CREATE Table t11 (
+	CREATE TABLE t11 (
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
