@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -156,6 +157,8 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 
 	row.Next()
 	var projectWebhookRaw api.ProjectWebhookRaw
+	var txtArray pgtype.TextArray
+	
 	if err := row.Scan(
 		&projectWebhookRaw.ID,
 		&projectWebhookRaw.CreatorID,
@@ -166,8 +169,12 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 		&projectWebhookRaw.Type,
 		&projectWebhookRaw.Name,
 		&projectWebhookRaw.URL,
-		&projectWebhookRaw.ActivityList,
+		&txtArray,
 	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -209,6 +216,8 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 	var projectWebhookRawList []*api.ProjectWebhookRaw
 	for rows.Next() {
 		var projectWebhookRaw api.ProjectWebhookRaw
+		var txtArray pgtype.TextArray
+
 		if err := rows.Scan(
 			&projectWebhookRaw.ID,
 			&projectWebhookRaw.CreatorID,
@@ -219,8 +228,12 @@ func findProjectWebhookList(ctx context.Context, tx *sql.Tx, find *api.ProjectWe
 			&projectWebhookRaw.Type,
 			&projectWebhookRaw.Name,
 			&projectWebhookRaw.URL,
-			&projectWebhookRaw.ActivityList,
+			&txtArray,
 		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 			return nil, FormatError(err)
 		}
 
@@ -275,6 +288,8 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 
 	if row.Next() {
 		var projectWebhookRaw api.ProjectWebhookRaw
+		var txtArray pgtype.TextArray
+
 		if err := row.Scan(
 			&projectWebhookRaw.ID,
 			&projectWebhookRaw.CreatorID,
@@ -285,8 +300,12 @@ func patchProjectWebhook(ctx context.Context, tx *sql.Tx, patch *api.ProjectWebh
 			&projectWebhookRaw.Type,
 			&projectWebhookRaw.Name,
 			&projectWebhookRaw.URL,
-			&projectWebhookRaw.ActivityList,
+			&txtArray,
 		); err != nil {
+			return nil, FormatError(err)
+		}
+
+		if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 			return nil, FormatError(err)
 		}
 
