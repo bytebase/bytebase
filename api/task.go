@@ -162,6 +162,7 @@ type TaskRaw struct {
 	DatabaseID          *int
 	TaskRunRawList      []*TaskRunRaw
 	TaskCheckRunRawList []*TaskCheckRunRaw
+	BlockedBy           []*Task
 
 	// Domain specific fields
 	Name              string
@@ -196,6 +197,7 @@ func (raw *TaskRaw) ToTask() *Task {
 		Type:              raw.Type,
 		Payload:           raw.Payload,
 		EarliestAllowedTs: raw.EarliestAllowedTs,
+		BlockedBy:         raw.BlockedBy,
 	}
 	for _, taskRunRaw := range raw.TaskRunRawList {
 		task.TaskRunList = append(task.TaskRunList, taskRunRaw.ToTaskRun())
@@ -229,6 +231,7 @@ type Task struct {
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
+	BlockedBy        []*Task         `jsonapi:"relation,blockedBy"`
 
 	// Domain specific fields
 	Name              string     `jsonapi:"attr,name"`
@@ -262,6 +265,7 @@ func (task *Task) ToRaw() *TaskRaw {
 		Type:              task.Type,
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
+		BlockedBy:         task.BlockedBy,
 	}
 }
 
