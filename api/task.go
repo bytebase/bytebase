@@ -169,6 +169,7 @@ type TaskRaw struct {
 	Type              TaskType
 	Payload           string
 	EarliestAllowedTs int64
+	BlockedBy         []string
 }
 
 // ToTask creates an instance of Task based on the TaskRaw.
@@ -196,6 +197,7 @@ func (raw *TaskRaw) ToTask() *Task {
 		Type:              raw.Type,
 		Payload:           raw.Payload,
 		EarliestAllowedTs: raw.EarliestAllowedTs,
+		BlockedBy:         raw.BlockedBy,
 	}
 	for _, taskRunRaw := range raw.TaskRunRawList {
 		task.TaskRunList = append(task.TaskRunList, taskRunRaw.ToTaskRun())
@@ -236,6 +238,9 @@ type Task struct {
 	Type              TaskType   `jsonapi:"attr,type"`
 	Payload           string     `jsonapi:"attr,payload"`
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
+	// BlockedBy is an array of Task ID.
+	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
+	BlockedBy []string `jsonapi:"attr,blockedBy"`
 }
 
 // ToRaw converts a Task to TaskRaw.
@@ -262,6 +267,7 @@ func (task *Task) ToRaw() *TaskRaw {
 		Type:              task.Type,
 		Payload:           task.Payload,
 		EarliestAllowedTs: task.EarliestAllowedTs,
+		BlockedBy:         task.BlockedBy,
 	}
 }
 
