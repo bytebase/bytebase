@@ -43,7 +43,7 @@ func newDumpCmd() *cobra.Command {
 		},
 	}
 
-	dumpCmd.Flags().StringVar(&dsn, "dsn", "", "database connection string. e.g. mysql://root@localhost:3306/bytebase")
+	dumpCmd.Flags().StringVar(&dsn, "dsn", "", "Database connection string. e.g. mysql://username:password@host:port/dbname?ssl-ca=value1&ssl-cert=value2&ssl-key=value3")
 	dumpCmd.Flags().StringVar(&file, "file", "", "File to store the dump. Output to stdout if unspecified")
 	dumpCmd.Flags().BoolVar(&schemaOnly, "schema-only", false, "Schema only dump.")
 	return dumpCmd

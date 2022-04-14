@@ -27,7 +27,7 @@ func newRestoreCmd() *cobra.Command {
 			return restoreDatabase(context.Background(), u, file)
 		},
 	}
-	restoreCmd.Flags().StringVar(&dsn, "dsn", "", "database connection string. e.g. mysql://root@localhost:3306/bytebase")
+	restoreCmd.Flags().StringVar(&dsn, "dsn", "", "Database connection string. e.g. mysql://username:password@host:port/dbname?ssl-ca=value1&ssl-cert=value2&ssl-key=value3")
 	restoreCmd.Flags().StringVar(&file, "file", "", "File to store the dump.")
 	if err := restoreCmd.MarkFlagRequired("file"); err != nil {
 		panic(err)
