@@ -384,8 +384,10 @@ type ConnectionContext struct {
 
 // RestoreConfig contains configurations for database restore
 type RestoreConfig struct {
-	// if IsGhostTable is true, we should restore tables to ghost tables instead of the original ones
+	// If IsGhostTable is true, we should restore tables to ghost tables instead of the original ones.
 	IsGhostTable bool
+	// If IsGhostTable is true, GhostTableConstraintTimestampSuffix is appended to constraint names in ghost tables.
+	GhostTableConstraintTimestampSuffix string
 }
 
 // Driver is the interface for database driver.

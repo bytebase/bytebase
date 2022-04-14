@@ -7,83 +7,90 @@ import (
 )
 
 func TestRestoreFuncWithGhostTable(t *testing.T) {
-	testCases := [][]string{
-		{"multiple constraints",
-
-			"CREATE TABLE `table` (\n" +
+	type testCase struct {
+		name        string
+		originalSQL string
+		expectedSQL string
+		successful  bool
+	}
+	testCasesSuccess := []testCase{
+		{
+			name: "multiple constraints",
+			originalSQL: "CREATE TABLE `table` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  `fk_id` int DEFAULT NULL,\n" +
 				"  UNIQUE KEY `fk_id` (`fk_id`),\n" +
 				"  CONSTRAINT `chk_table_1` CHECK ((`id` >= 0))\n" +
 				"  CONSTRAINT `fk_table_1` FOREIGN KEY (fk_id) REFERENCES another_table (id)",
-
-			"CREATE TABLE `table_ghost` (\n" +
+			expectedSQL: "CREATE TABLE `table_ghost` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  `fk_id` int DEFAULT NULL,\n" +
 				"  UNIQUE KEY `fk_id` (`fk_id`),\n" +
 				"  CONSTRAINT `chk_table_1_20060102150405` CHECK ((`id` >= 0))\n" +
 				"  CONSTRAINT `fk_table_1_20060102150405` FOREIGN KEY (fk_id) REFERENCES another_table (id)",
+			successful: true,
 		},
-
-		{"constraint name has timestamp postfix with 14 digits (unix timestamp to the second)",
-
-			"CREATE TABLE `table` (\n" +
+		{
+			name: "constraint name has timestamp suffix with 14 digits (unix timestamp to the second)",
+			originalSQL: "CREATE TABLE `table` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_12345678901234` CHECK ((`id` >= 0))",
-
-			"CREATE TABLE `table_ghost` (\n" +
+			expectedSQL: "CREATE TABLE `table_ghost` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_20060102150405` CHECK ((`id` >= 0))",
+			successful: true,
 		},
-
-		{"constraint name has wrong timestamp postfix digits",
-
-			"CREATE TABLE `table` (\n" +
+		{
+			name: "constraint name has wrong timestamp suffix digits",
+			originalSQL: "CREATE TABLE `table` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_1234567890` CHECK ((`id` >= 0))",
-
-			"CREATE TABLE `table_ghost` (\n" +
+			expectedSQL: "CREATE TABLE `table_ghost` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_1234567890_20060102150405` CHECK ((`id` >= 0))",
+			successful: true,
 		},
-
-		{"constraint name is longer than 64 after appending timestamp postfix",
-
-			"CREATE TABLE `table` (\n" +
+		{
+			name: "constraint name is longer than 64 after appending timestamp suffix",
+			originalSQL: "CREATE TABLE `table` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_12345678901234567890123456789012345678901234567890` CHECK ((`id` >= 0))",
-
-			"CREATE TABLE `table_ghost` (\n" +
+			expectedSQL: "CREATE TABLE `table_ghost` (\n" +
 				"  `id` int DEFAULT NULL,\n" +
 				"  CONSTRAINT `chk_table_1_1234567890123456789012345678901234567_20060102150405` CHECK ((`id` >= 0))",
+			successful: true,
 		},
-
-		{"should fail with database prefix",
-
-			"CREATE TABLE `database`.`table`",
-			"",
+		{
+			name:        "should not match any rule",
+			originalSQL: "CREATE TABLE `database`.`table`",
+			expectedSQL: "CREATE TABLE `database`.`table`",
+			successful:  true,
 		},
-
-		{"insert without database prefix",
-
-			"INSERT INTO `table` VALUES (1, 2, 3);",
-			"INSERT INTO `table_ghost` VALUES (1, 2, 3);",
+		{
+			name:        "insert without database prefix",
+			originalSQL: "INSERT INTO `table` VALUES (1, 2, 3);",
+			expectedSQL: "INSERT INTO `table_ghost` VALUES (1, 2, 3);",
+			successful:  true,
 		},
-
-		{"insert with database prefix",
-
-			"INSERT INTO `database`.`table` VALUES (1, 2, 3);",
-			"INSERT INTO `database`.`table_ghost` VALUES (1, 2, 3);",
+		{
+			name:        "insert with database prefix",
+			originalSQL: "INSERT INTO `database`.`table` VALUES (1, 2, 3);",
+			expectedSQL: "",
+			successful:  false,
 		},
 	}
 
-	for _, testCase := range testCases {
-		caseName := testCase[0]
-		originalSQL := testCase[1]
-		expectedSQL := testCase[2]
-		t.Run(caseName, func(t *testing.T) {
-			rewrittenSQL := rewriteToGhostTableForRestore(originalSQL, "20060102150405")
-			require.Equal(t, expectedSQL, rewrittenSQL)
+	for _, tc := range testCasesSuccess {
+		t.Run(tc.name, func(t *testing.T) {
+			a := require.New(t)
+			rewrittenSQL, err := rewriteToGhostTableForRestore(tc.originalSQL, "20060102150405")
+			if tc.successful {
+				a.NoError(err)
+			} else {
+				a.Error(err)
+			}
+			a.Equal(tc.expectedSQL, rewrittenSQL)
 		})
 	}
+
 }

@@ -207,7 +207,11 @@ func TestPITR(t *testing.T) {
 	_, err = db.Exec("SET foreign_key_checks=OFF")
 	a.NoError(err)
 
-	err = driver.Restore(context.TODO(), bufio.NewScanner(buf), dbPlugin.RestoreConfig{IsGhostTable: true})
+	restoreConfig := dbPlugin.RestoreConfig{
+		IsGhostTable:                        true,
+		GhostTableConstraintTimestampSuffix: time.Now().Format("20060102150405"),
+	}
+	err = driver.Restore(context.TODO(), bufio.NewScanner(buf), restoreConfig)
 	a.NoError(err)
 
 	// TODO(dragonly): validate ghost table data and schema
