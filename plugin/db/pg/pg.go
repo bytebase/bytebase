@@ -16,7 +16,8 @@ import (
 	_ "embed"
 
 	// Import pg driver.
-	_ "github.com/lib/pq"
+	// init() in pgx/v4/stdlib will register it's pgx driver
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -39,6 +40,9 @@ var (
 	useDatabaseFmt             = "\\connect %s;\n\n"
 	bytebaseDatabase           = "bytebase"
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
+
+	// driverName is the driver name that our driver dependence register, now is "pgx".
+	driverName = "pgx"
 
 	_ db.Driver              = (*Driver)(nil)
 	_ util.MigrationExecutor = (*Driver)(nil)
@@ -89,7 +93,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	driver.baseDSN = dsn
 	driver.connectionCtx = connCtx
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +141,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 	}
 
 	for _, dsn := range guesses {
-		db, err := sql.Open("postgres", dsn)
+		db, err := sql.Open(driverName, dsn)
 		if err != nil {
 			continue
 		}
@@ -974,7 +978,7 @@ func (driver *Driver) switchDatabase(dbName string) error {
 	}
 
 	dsn := driver.baseDSN + " dbname=" + dbName
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return err
 	}
