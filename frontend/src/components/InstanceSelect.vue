@@ -32,8 +32,8 @@
 </template>
 
 <script lang="ts">
+import { useInstanceStore } from "@/store";
 import { computed, defineComponent, reactive, watch } from "vue";
-import { useStore } from "vuex";
 import { Instance } from "../types";
 
 interface LocalState {
@@ -59,19 +59,19 @@ export default defineComponent({
   },
   emits: ["select-instance-id"],
   setup(props, { emit }) {
-    const store = useStore();
+    const instanceStore = useInstanceStore();
     const state = reactive<LocalState>({
       selectedId: props.selectedId,
     });
 
     const instanceList = computed(() => {
       if (props.environmentId) {
-        return store.getters["instance/instanceListByEnvironmentId"](
+        return instanceStore.getInstanceListByEnvironmentId(
           props.environmentId,
           ["NORMAL", "ARCHIVED"]
         );
       }
-      return store.getters["instance/instanceList"](["NORMAL", "ARCHIVED"]);
+      return instanceStore.getInstanceList(["NORMAL", "ARCHIVED"]);
     });
 
     watch(

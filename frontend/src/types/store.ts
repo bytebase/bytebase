@@ -46,9 +46,6 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
-import instanceStore from "../store/modules/instance";
-import sqlEditorStore from "../store/modules/sqlEditor";
-import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -115,7 +112,7 @@ export interface ProjectState {
 }
 
 export interface ProjectWebhookState {
-  projectWebhookListByProjectId: Map<ProjectId, ProjectWebhook[]>;
+  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {
@@ -129,9 +126,6 @@ export interface InstanceState {
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
-export type InstanceGetters = typeof instanceStore.getters;
-export type InstanceActions = typeof instanceStore.actions;
-export type InstanceMutations = typeof instanceStore.mutations;
 
 export interface DataSourceState {
   dataSourceById: Map<DataSourceId, DataSource>;
@@ -203,9 +197,6 @@ export interface SqlEditorState {
   isShowExecutingHint: boolean;
   sharedSheet: Sheet;
 }
-export type SqlEditorGetters = typeof sqlEditorStore.getters;
-export type SqlEditorActions = typeof sqlEditorStore.actions;
-export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface TabState {
   tabList: TabInfo[];
@@ -220,9 +211,6 @@ export interface SheetState {
   sheetList: Sheet[];
   sheetById: Map<SheetId, Sheet>;
 }
-export type SheetGetters = typeof sheetStore.getters;
-export type SheetActions = typeof sheetStore.actions;
-export type SheetMutations = typeof sheetStore.mutations;
 
 export interface DebugState {
   isDebug: boolean;

@@ -4,24 +4,19 @@ import { TabInfo, AnyTabInfo, TabState } from "@/types";
 import { getDefaultTab } from "@/utils/tab";
 
 export const useTabStore = defineStore("tab", {
-  persist: {
-    enabled: true,
-    strategy: "localStorage",
-  },
-
   state: (): TabState => ({
     tabList: [],
     currentTabId: "",
   }),
 
   getters: {
-    currentTab(state) {
+    currentTab(state): TabInfo {
       const idx = state.tabList.findIndex(
         (tab: TabInfo) => tab.id === state.currentTabId
       );
       return (idx === -1 ? {} : state.tabList[idx]) as TabInfo;
     },
-    hasTabs(state: TabState) {
+    hasTabs(state: TabState): boolean {
       return state.tabList.length > 0;
     },
   },

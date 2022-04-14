@@ -29,12 +29,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useStore } from "vuex";
 import { Database, Environment, Project, ProjectId } from "../../types";
 import ProjectSelect, { Mode as ProjectMode } from "../ProjectSelect.vue";
 import ProjectTenantView, {
   State as ProjectTenantState,
 } from "./ProjectTenantView.vue";
+import { useProjectStore } from "@/store";
 
 export type State = ProjectTenantState & {
   tenantProjectId: ProjectId | undefined;
@@ -50,11 +50,11 @@ defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const store = useStore();
+const projectStore = useProjectStore();
 
 const project = computed(() => {
-  return store.getters["project/projectById"](
-    props.state.tenantProjectId
+  return projectStore.getProjectById(
+    props.state.tenantProjectId as number
   ) as Project;
 });
 

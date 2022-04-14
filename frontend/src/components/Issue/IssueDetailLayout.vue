@@ -215,7 +215,6 @@ import {
   PropType,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
@@ -274,7 +273,16 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { featureToRef, useCurrentUser, useIssueSubscriberStore } from "@/store";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDatabaseStore,
+  useInstanceStore,
+  useIssueStore,
+  useIssueSubscriberStore,
+  useProjectStore,
+  useTaskStore,
+} from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -306,19 +314,18 @@ export default defineComponent({
     "status-changed": (eager: boolean) => true,
   },
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
     const route = useRoute();
-    const issueSubscriberStore = useIssueSubscriberStore();
 
     const currentUser = useCurrentUser();
+    const issueStore = useIssueStore();
+    const issueSubscriberStore = useIssueSubscriberStore();
+    const taskStore = useTaskStore();
+    const projectStore = useProjectStore();
 
     watchEffect(function prepare() {
       if (props.create) {
-        store.dispatch(
-          "project/fetchProjectById",
-          (props.issue as IssueCreate).projectId
-        );
+        projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
       }
     });
 
@@ -328,7 +335,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
+        return projectStore.getProjectById(
           (props.issue as IssueCreate).projectId
         );
       }
@@ -503,7 +510,7 @@ export default defineComponent({
       delete issue.pipeline;
       issue.payload = {};
 
-      store.dispatch("issue/createIssue", issue).then((createdIssue) => {
+      issueStore.createIssue(issue).then((createdIssue) => {
         // Use replace to omit the new issue url in the navigation history.
         router.replace(
           `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
@@ -516,9 +523,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
+      issueStore
+        .updateIssueStatus({
           issueId: (props.issue as Issue).id,
           issueStatusPatch,
         })
@@ -542,9 +548,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("task/updateStatus", {
+      taskStore
+        .updateStatus({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -557,8 +562,8 @@ export default defineComponent({
     };
 
     const runTaskChecks = (task: Task) => {
-      store
-        .dispatch("task/runChecks", {
+      taskStore
+        .runChecks({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -573,8 +578,8 @@ export default defineComponent({
       issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
     ) => {
-      store
-        .dispatch("issue/patchIssue", {
+      issueStore
+        .patchIssue({
           issueId: (props.issue as Issue).id,
           issuePatch,
         })
@@ -594,8 +599,8 @@ export default defineComponent({
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
-      store
-        .dispatch("task/patchTask", {
+      taskStore
+        .patchTask({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId,
@@ -901,7 +906,7 @@ export default defineComponent({
       if (props.create) {
         const databaseId = (selectedTask.value as TaskCreate).databaseId;
         if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
+          return useDatabaseStore().getDatabaseById(databaseId);
         }
         return undefined;
       }
@@ -914,7 +919,7 @@ export default defineComponent({
         if (database.value) {
           return database.value.instance;
         }
-        return store.getters["instance/instanceById"](
+        return useInstanceStore().getInstanceById(
           (selectedTask.value as TaskCreate).instanceId
         );
       }

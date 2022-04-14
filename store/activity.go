@@ -112,6 +112,10 @@ func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*a
 	return activity, nil
 }
 
+//
+// private function
+//
+
 // createActivityRaw creates a new activity.
 func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
