@@ -13,7 +13,6 @@ import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import {
-  store,
   useAuthStore,
   useDatabaseStore,
   useEnvironmentStore,

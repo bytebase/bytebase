@@ -13,7 +13,6 @@ import {
   useSheetStore,
 } from "@/store";
 import { reactive, onMounted } from "vue";
-import { useStore } from "vuex";
 import {
   Instance,
   Database,
@@ -26,7 +25,6 @@ import {
   Project,
 } from "../types";
 
-const store = useStore();
 const databaseStore = useDatabaseStore();
 const sheetStore = useSheetStore();
 
