@@ -3,7 +3,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useCurrentUser } from "@/store";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useInstanceStore,
+  useProjectStore,
+  useTableStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 import { reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -19,6 +27,9 @@ import {
 } from "../types";
 
 const store = useStore();
+const databaseStore = useDatabaseStore();
+const sheetStore = useSheetStore();
+
 const state = reactive<{
   projectList: Project[];
   instanceIdList: Map<InstanceId, Instance["name"]>;
@@ -30,18 +41,20 @@ const state = reactive<{
 });
 
 const currentUser = useCurrentUser();
+const projectStore = useProjectStore();
+const tableStore = useTableStore();
+const sqlEditorStore = useSQLEditorStore();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
   if (currentUser.value.id != UNKNOWN_ID) {
-    state.projectList = await store.dispatch("project/fetchProjectListByUser", {
+    state.projectList = await projectStore.fetchProjectListByUser({
       userId: currentUser.value.id,
     });
   }
 
   const promises = state.projectList.map(async (project) => {
-    const databaseList = await store.dispatch(
-      "database/fetchDatabaseListByProjectId",
+    const databaseList = await databaseStore.fetchDatabaseListByProjectId(
       project.id
     );
     if (databaseList.length >= 0) {
@@ -55,8 +68,8 @@ const prepareAccessibleConnectionByProject = async () => {
   await Promise.all(promises);
 };
 
-const prepareSqlEdtiorContext = async () => {
-  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: true });
+const prepareSqlEditorContext = async () => {
+  sqlEditorStore.setConnectionContext({ isLoadingTree: true });
   let connectionTree = [];
 
   const mapConnectionAtom =
@@ -73,21 +86,20 @@ const prepareSqlEdtiorContext = async () => {
       return connectionAtom;
     };
 
-  const instanceList = await store.dispatch("instance/fetchInstanceList");
+  const instanceList = await useInstanceStore().fetchInstanceList();
   const filteredInstanceList = instanceList.filter((instance: Instance) =>
     state.instanceIdList.has(instance.id)
   );
   connectionTree = filteredInstanceList.map(mapConnectionAtom("instance", 0));
 
   for (const instance of filteredInstanceList) {
-    const databaseList = await store.dispatch(
-      "database/fetchDatabaseListByInstanceId",
+    const databaseList = await databaseStore.fetchDatabaseListByInstanceId(
       instance.id
     );
 
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
-    );
+    )!;
     const filteredDatabaseList = databaseList.filter((database: Database) =>
       state.databaseIdList.has(database.id)
     );
@@ -97,27 +109,24 @@ const prepareSqlEdtiorContext = async () => {
     );
 
     for (const db of filteredDatabaseList) {
-      const tableList = await store.dispatch(
-        "table/fetchTableListByDatabaseId",
-        db.id
-      );
+      const tableList = await tableStore.fetchTableListByDatabaseId(db.id);
 
-      const databaseItem = instanceItem.children.find(
+      const databaseItem = instanceItem.children!.find(
         (item: ConnectionAtom) => item.id === db.id
-      );
+      )!;
 
       databaseItem.children = tableList.map(mapConnectionAtom("table", db.id));
     }
   }
 
-  store.dispatch("sqlEditor/setConnectionTree", connectionTree);
-  store.dispatch("sqlEditor/setConnectionContext", { isLoadingTree: false });
-  store.dispatch("sqlEditor/fetchQueryHistoryList");
-  store.dispatch("sheet/fetchSheetList");
+  sqlEditorStore.setConnectionTree(connectionTree);
+  sqlEditorStore.setConnectionContext({ isLoadingTree: false });
+  sqlEditorStore.fetchQueryHistoryList();
+  sheetStore.fetchSheetList();
 };
 
 onMounted(async () => {
   await prepareAccessibleConnectionByProject();
-  await prepareSqlEdtiorContext();
+  await prepareSqlEditorContext();
 });
 </script>

@@ -52,7 +52,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
   ActivityIssueCommentCreatePayload,
@@ -65,13 +65,12 @@ import {
   Activity,
   Inbox,
 } from "../types";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { issueActivityActionSentence } from "../utils";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
-import { useCurrentUser } from "@/store";
+import { useCurrentUser, useInboxStore } from "@/store";
 
 export default defineComponent({
   name: "InboxList",
@@ -84,7 +83,7 @@ export default defineComponent({
   },
   setup() {
     const { t } = useI18n();
-    const store = useStore();
+    const inboxStore = useInboxStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
@@ -196,18 +195,15 @@ export default defineComponent({
 
     const clickInbox = (inbox: Inbox) => {
       if (inbox.status == "UNREAD") {
-        store
-          .dispatch("inbox/patchInbox", {
+        inboxStore
+          .patchInbox({
             inboxId: inbox.id,
             inboxPatch: {
               status: "READ",
             },
           })
           .then(() => {
-            store.dispatch(
-              "inbox/fetchInboxSummaryByUser",
-              currentUser.value.id
-            );
+            inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
           });
       }
       const link = actionLink(inbox.activity);

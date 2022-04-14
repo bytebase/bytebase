@@ -271,10 +271,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return task, nil
 		}
 
-		instanceFind := &api.InstanceFind{
-			ID: &task.InstanceID,
-		}
-		instance, err := s.server.InstanceService.FindInstance(ctx, instanceFind)
+		instance, err := s.server.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, err
 		}

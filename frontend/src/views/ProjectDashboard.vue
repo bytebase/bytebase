@@ -28,9 +28,8 @@
 </template>
 
 <script lang="ts">
-import { useCurrentUser, useUIStateStore } from "@/store";
+import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
 import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
-import { useStore } from "vuex";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Project, UNKNOWN_ID } from "../types";
 
@@ -48,16 +47,15 @@ export default defineComponent({
   setup() {
     const searchField = ref();
 
-    const store = useStore();
     const uiStateStore = useUIStateStore();
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
       showGuide: false,
     });
-
-    const currentUser = useCurrentUser();
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -77,8 +75,8 @@ export default defineComponent({
     const prepareProjectList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch("project/fetchProjectListByUser", {
+        projectStore
+          .fetchProjectListByUser({
             userId: currentUser.value.id,
           })
           .then((projectList: Project[]) => {

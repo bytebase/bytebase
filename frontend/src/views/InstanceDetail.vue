@@ -139,7 +139,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -160,7 +159,10 @@ import {
   featureToRef,
   pushNotification,
   useCurrentUser,
+  useDatabaseStore,
+  useInstanceStore,
   useSubscriptionStore,
+  useSQLStore,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -183,11 +185,12 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
+const instanceStore = useInstanceStore();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
+const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
   selectedIndex: DATABASE_TAB,
@@ -200,12 +203,12 @@ const state = reactive<LocalState>({
 });
 
 const instance = computed((): Instance => {
-  return store.getters["instance/instanceById"](idFromSlug(props.instanceSlug));
+  return instanceStore.getInstanceById(idFromSlug(props.instanceSlug));
 });
 
 const checkMigrationSetup = () => {
-  store
-    .dispatch("instance/checkMigrationSetup", instance.value.id)
+  instanceStore
+    .checkMigrationSetup(instance.value.id)
     .then((migration: InstanceMigration) => {
       state.migrationSetupStatus = migration.status;
     });
@@ -262,8 +265,8 @@ const attentionActionText = computed((): string => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const databaseList = computed<Database[]>(() => {
-  const list: Database[] = store.getters["database/databaseListByInstanceId"](
+const databaseList = computed(() => {
+  const list = useDatabaseStore().getDatabaseListByInstanceId(
     instance.value.id
   );
 
@@ -288,7 +291,7 @@ const databaseList = computed<Database[]>(() => {
 });
 
 const instanceUserList = computed(() => {
-  return store.getters["instance/instanceUserListById"](instance.value.id);
+  return instanceStore.getInstanceUserListById(instance.value.id);
 });
 
 const allowEdit = computed(() => {
@@ -315,8 +318,8 @@ const tabItemList = computed((): BBTabFilterItem[] => {
 });
 
 const doArchive = () => {
-  store
-    .dispatch("instance/patchInstance", {
+  instanceStore
+    .patchInstance({
       instanceId: instance.value.id,
       instancePatch: {
         rowStatus: "ARCHIVED",
@@ -336,13 +339,13 @@ const doArchive = () => {
 
 const doRestore = () => {
   const { subscription } = subscriptionStore;
-  const instanceList = store.getters["instance/instanceList"](["NORMAL"]);
+  const instanceList = instanceStore.getInstanceList(["NORMAL"]);
   if ((subscription?.instanceCount ?? 0) <= instanceList.length) {
     state.showFeatureModal = true;
     return;
   }
-  store
-    .dispatch("instance/patchInstance", {
+  instanceStore
+    .patchInstance({
       instanceId: instance.value.id,
       instancePatch: {
         rowStatus: "NORMAL",
@@ -362,8 +365,8 @@ const doRestore = () => {
 
 const doCreateMigrationSchema = () => {
   state.creatingMigrationSchema = true;
-  store
-    .dispatch("instance/createMigrationSetup", instance.value.id)
+  instanceStore
+    .createMigrationSetup(instance.value.id)
     .then((resultSet: SqlResultSet) => {
       state.creatingMigrationSchema = false;
       if (resultSet.error) {
@@ -393,8 +396,8 @@ const doCreateMigrationSchema = () => {
 
 const syncSchema = () => {
   state.syncingSchema = true;
-  store
-    .dispatch("sql/syncSchema", instance.value.id)
+  sqlStore
+    .syncSchema(instance.value.id)
     .then((resultSet: SqlResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {

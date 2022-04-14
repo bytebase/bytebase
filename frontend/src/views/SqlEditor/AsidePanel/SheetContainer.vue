@@ -84,21 +84,10 @@
 import { escape } from "lodash-es";
 import { computed, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useNamespacedActions,
-  useNamespacedState,
-} from "vuex-composition-helpers";
 import { useDialog } from "naive-ui";
 
-import { useTabStore } from "@/store";
-import {
-  SheetActions,
-  SheetState,
-  Sheet,
-  SqlEditorActions,
-  SqlEditorState,
-  UNKNOWN_ID,
-} from "@/types";
+import { useTabStore, useSQLEditorStore, useSheetStore } from "@/store";
+import { Sheet, UNKNOWN_ID } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 
@@ -113,24 +102,10 @@ const { t } = useI18n();
 const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 const dialog = useDialog();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
 
-const { sharedSheet, isFetchingSheet: isLoading } =
-  useNamespacedState<SqlEditorState>("sqlEditor", [
-    "sharedSheet",
-    "isFetchingSheet",
-  ]);
-const { sheetList } = useNamespacedState<SheetState>("sheet", ["sheetList"]);
-
-// actions
-const { setShouldSetContent } = useNamespacedActions<SqlEditorActions>(
-  "sqlEditor",
-  ["setShouldSetContent"]
-);
-
-const { deleteSheet, patchSheetById } = useNamespacedActions<SheetActions>(
-  "sheet",
-  ["deleteSheet", "patchSheetById"]
-);
+const isLoading = computed(() => sqlEditorStore.isFetchingSheet);
 
 const state = reactive<State>({
   search: "",
@@ -143,9 +118,9 @@ const queryNameInputerRef = ref<HTMLInputElement>();
 
 const data = computed(() => {
   const filterSheetList =
-    sharedSheet.value.id !== UNKNOWN_ID
-      ? [...sheetList.value, sharedSheet.value]
-      : sheetList.value;
+    sqlEditorStore.sharedSheet.id !== UNKNOWN_ID
+      ? [...sheetStore.sheetList, sqlEditorStore.sharedSheet]
+      : sheetStore.sheetList;
   const tempData =
     filterSheetList && filterSheetList.length > 0
       ? filterSheetList.filter((sheet) => {
@@ -182,7 +157,7 @@ const notifyMessage = computed(() => {
   if (isLoading.value) {
     return "";
   }
-  if (sheetList.value.length === null) {
+  if (sheetStore.sheetList.length === null) {
     return t("sql-editor.no-sheet-found");
   }
 
@@ -211,7 +186,7 @@ const handleCancelEdit = () => {
 
 const handleSheetNameChanged = () => {
   if (state.editingSheetId) {
-    patchSheetById({
+    sheetStore.patchSheetById({
       id: state.editingSheetId,
       name: state.currentSheetName,
     });
@@ -227,7 +202,7 @@ const handleSheetNameChanged = () => {
 
 const handleDeleteSheet = () => {
   if (state.currentActionSheet) {
-    deleteSheet(state.currentActionSheet.id);
+    sheetStore.deleteSheet(state.currentActionSheet.id);
 
     if (tabStore.currentTab.sheetId === state.currentActionSheet.id) {
       tabStore.updateCurrentTab({
@@ -270,7 +245,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       if (tab.sheetId === sheet.id) {
         tabStore.setCurrentTabId(tab.id);
         setConnectionContextFromCurrentTab();
-        setShouldSetContent(true);
+        sqlEditorStore.setShouldSetContent(true);
         return;
       }
     }
@@ -283,7 +258,7 @@ const handleSheetClick = async (sheet: Sheet) => {
       sheetId: sheet.id,
     });
     setConnectionContextFromCurrentTab();
-    setShouldSetContent(true);
+    sqlEditorStore.setShouldSetContent(true);
   }
 };
 </script>
