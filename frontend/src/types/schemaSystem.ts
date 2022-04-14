@@ -63,6 +63,23 @@ export interface SelectedRule extends Rule {
   level: RuleLevel;
 }
 
+interface SchemaRule {
+  id: string;
+  level: RuleLevel;
+  payload?: {
+    [key: string]: any;
+  };
+}
+
+export interface DatabaseSchemaGuide {
+  id: number;
+  name: string;
+  ruleList: SchemaRule[];
+  environmentList: number[];
+  createdTs: number;
+  updatedTs: number;
+}
+
 export interface RuleCategory<T extends Rule> {
   id: CategoryType;
   name: string;

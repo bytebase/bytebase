@@ -1373,6 +1373,8 @@ subscription:
       desc: Large organization, has dedicated DBA group to manage database fleet
 database-review-guide:
   title: DB Guide
+  search-guideline-name: Search guideline name
+  add-guideline: Add guideline
   create:
     breadcrumb: Create guideline
     basic-info:

@@ -41,6 +41,12 @@
       </div>
     </dl>
     <div class="w-full mt-5 flex flex-col">
+      <InputWithTemplate
+        :templates="state.templates"
+        :value="state.payload"
+        @change="(val) => (state.payload = val)"
+        class="my-20"
+      />
       <textarea
         id="license"
         v-model="state.license"
@@ -78,10 +84,13 @@ import PricingTable from "../components/PricingTable.vue";
 import { PlanType } from "../types";
 import { pushNotification, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { Template } from "../components/InputWithTemplate/types";
 
 interface LocalState {
   loading: boolean;
   license: string;
+  payload: string;
+  templates: Template[];
 }
 
 export default defineComponent({
@@ -96,6 +105,17 @@ export default defineComponent({
     const state = reactive<LocalState>({
       loading: false,
       license: "",
+      payload: "{{^uk_{{aaa}}_{{column_list}}$}}",
+      templates: [
+        {
+          id: "table",
+          description: "The table name",
+        },
+        {
+          id: "column_list",
+          description: "Index column names, joined by _",
+        },
+      ],
     });
 
     const disabled = computed((): boolean => {

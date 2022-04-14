@@ -9,6 +9,7 @@ import {
   Project,
   ProjectWebhook,
   VCS,
+  DatabaseSchemaGuide,
 } from "../types";
 import { IdType } from "../types/id";
 
@@ -82,6 +83,10 @@ export function fullDataSourcePath(dataSource: DataSource): string {
 
 export function vcsSlug(vcs: VCS): string {
   return [slug(vcs.name), vcs.id].join("-");
+}
+
+export function schemaGuideSlug(guide: DatabaseSchemaGuide): string {
+  return [slug(guide.name), guide.id].join("-");
 }
 
 export function connectionSlug(database: Database): string {

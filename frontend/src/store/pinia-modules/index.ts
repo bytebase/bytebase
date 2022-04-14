@@ -24,3 +24,4 @@ export * from "./subscription";
 export * from "./tab";
 export * from "./uistate";
 export * from "./vcs";
+export * from "./schemaSystem";

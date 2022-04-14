@@ -102,6 +102,7 @@ export default defineComponent({
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
+      const schemaGuideSlug = routeSlug.schemaGuideSlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -154,6 +155,11 @@ export default defineComponent({
         list.push({
           name: t("common.version-control"),
           path: "/setting/version-control",
+        });
+      } else if (schemaGuideSlug) {
+        list.push({
+          name: t("database-review-guide.title"),
+          path: "/setting/database-review-guide",
         });
       }
 

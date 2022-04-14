@@ -7,7 +7,7 @@
       :finish-title="$t('common.confirm-and-add')"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
-      @cancel="cancelSetup"
+      @cancel="backToListView"
     >
       <template #0>
         <SchemaGuideInfo
@@ -44,7 +44,7 @@ import { BBStepTabItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Rule, RuleLevel, SelectedRule } from "../types/schemaSystem";
-import { useEnvironmentList } from "@/store";
+import { useEnvironmentList, useSchemaSystemStore } from "@/store";
 
 interface LocalState {
   currentStep: number;
@@ -55,6 +55,8 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
+const store = useSchemaSystemStore();
+const environmentList = useEnvironmentList(["NORMAL"]);
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -66,7 +68,7 @@ const stepList: BBStepTabItem[] = [
   { title: t("database-review-guide.create.preview.name") },
 ];
 
-const cancelSetup = () => {
+const backToListView = () => {
   router.push({
     name: "setting.workspace.database-review-guide",
   });
@@ -78,8 +80,6 @@ const state = reactive<LocalState>({
   selectedEnvNameList: [],
   ruleList: [],
 });
-
-const environmentList = useEnvironmentList(["NORMAL"]);
 
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
@@ -102,7 +102,36 @@ const tryChangeStep = (
   allowChangeCallback();
 };
 
-const tryFinishSetup = (allowChangeCallback: () => void) => {};
+const tryFinishSetup = (allowChangeCallback: () => void) => {
+  const envIds: number[] = [];
+  for (const envName of state.selectedEnvNameList) {
+    const id = environmentList.value.find((e) => e.name === envName)?.id;
+    if (id) {
+      envIds.push(id);
+    }
+  }
+
+  store.addGuideline({
+    id: store.guideList.length + 1,
+    name: state.name,
+    environmentList: envIds,
+    createdTs: new Date().getTime(),
+    updatedTs: new Date().getTime(),
+    ruleList: state.ruleList.map((rule) => ({
+      id: rule.id,
+      level: rule.level,
+      payload: rule.payload
+        ? Object.entries(rule.payload).reduce((res, [key, val]) => {
+            res[key] = val.value ?? val.default;
+            return res;
+          }, {} as { [key: string]: any })
+        : undefined,
+    })),
+  });
+
+  allowChangeCallback();
+  backToListView();
+};
 
 const onTemplateApply = (ruleList: SelectedRule[]) => {
   state.ruleList = [...ruleList];

@@ -33,6 +33,7 @@ import {
   useVCSStore,
   useProjectWebhookStore,
   useDataSourceStore,
+  useSchemaSystemStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -373,6 +374,16 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "database-review-guide",
+                name: "setting.workspace.database-review-guide",
+                meta: {
+                  title: () => t("database-review-guide.title"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDatabaseGuide.vue"),
+                props: true,
+              },
+              {
                 path: "database-review-guide/new",
                 name: "setting.workspace.database-review-guide.create",
                 meta: {
@@ -380,6 +391,25 @@ const routes: Array<RouteRecordRaw> = [
                 },
                 component: () =>
                   import("../views/SettingWorkspaceDatabaseGuideCreate.vue"),
+                props: true,
+              },
+              {
+                path: "database-review-guide/:schemaGuideSlug",
+                name: "setting.workspace.database-review-guide.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.schemaGuideSlug as string;
+                    console.log(`slug: ${slug}`);
+                    console.log(`idFromSlug(slug): ${idFromSlug(slug)}`);
+                    console.log(
+                      useSchemaSystemStore().getGuideById(idFromSlug(slug))
+                    );
+                    return useSchemaSystemStore().getGuideById(idFromSlug(slug))
+                      .name;
+                  },
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDatabaseGuideDetail.vue"),
                 props: true,
               },
             ],

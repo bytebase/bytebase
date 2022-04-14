@@ -24,6 +24,7 @@ import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
 import { Sheet } from "./sheet";
+import { DatabaseSchemaGuide } from "./schemaSystem";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -72,6 +73,7 @@ export type RouterSlug = {
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
+  schemaGuideSlug?: string;
 };
 
 // Quick Action Type
@@ -135,7 +137,8 @@ export type ResourceType =
   | "REPOSITORY"
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
-  | "SHEET";
+  | "SHEET"
+  | "SCHEMA_GUIDE";
 
 export const unknown = (
   type: ResourceType
@@ -162,7 +165,8 @@ export const unknown = (
   | Repository
   | Anomaly
   | DeploymentConfig
-  | Sheet => {
+  | Sheet
+  | DatabaseSchemaGuide => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -482,6 +486,15 @@ export const unknown = (
     visibility: "PRIVATE",
   };
 
+  const UNKNOWN_SCHEMA_GUIDE: DatabaseSchemaGuide = {
+    id: UNKNOWN_ID,
+    name: "",
+    createdTs: 0,
+    updatedTs: 0,
+    environmentList: [],
+    ruleList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -529,6 +542,8 @@ export const unknown = (
       return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
+    case "SCHEMA_GUIDE":
+      return UNKNOWN_SCHEMA_GUIDE;
   }
 };
 
@@ -558,7 +573,8 @@ export const empty = (
   | Repository
   | Anomaly
   | DeploymentConfig
-  | Sheet => {
+  | Sheet
+  | DatabaseSchemaGuide => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -876,6 +892,15 @@ export const empty = (
     visibility: "PRIVATE",
   };
 
+  const EMPTY_SCHEMA_GUIDE: DatabaseSchemaGuide = {
+    id: EMPTY_ID,
+    name: "",
+    createdTs: 0,
+    updatedTs: 0,
+    environmentList: [],
+    ruleList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -923,5 +948,7 @@ export const empty = (
       return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
+    case "SCHEMA_GUIDE":
+      return EMPTY_SCHEMA_GUIDE;
   }
 };

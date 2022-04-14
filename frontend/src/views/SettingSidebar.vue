@@ -110,6 +110,10 @@ export default defineComponent({
       default: "",
       type: String,
     },
+    schemaGuideSlug: {
+      default: "",
+      type: String,
+    },
   },
   setup() {
     const routerStore = useRouterStore();
