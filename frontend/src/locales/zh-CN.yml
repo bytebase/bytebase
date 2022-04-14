@@ -1204,3 +1204,21 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
+database-review-guide:
+  title: DB Guide
+  create:
+    breadcrumb: 创建 guideline
+    basic-info:
+      name: 基本信息
+      display-name: 名称
+      display-name-label: 用以区分不同 Guideline 的名称。
+      environments: 环境
+      environments-label: 将 guideline 应用于哪些环境。一个环境只能配置一个 guideline。
+      environments-select: 选择环境
+    configure-rule:
+      name: 配置规则
+      add-rule: 增加规则
+      from-template: 你可以通过模板来添加规则
+      from-scratch: 或者从头开始创建
+    preview:
+      name: 预览

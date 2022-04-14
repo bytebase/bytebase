@@ -68,6 +68,12 @@
             >{{ $t("settings.sidebar.version-control") }}</router-link
           >
           <router-link
+            v-if="showOwnerItem"
+            to="/setting/database-review-guide"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("database-review-guide.title") }}</router-link
+          >
+          <router-link
             to="/setting/subscription"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.subscription") }}</router-link

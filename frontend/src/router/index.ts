@@ -362,6 +362,26 @@ const routes: Array<RouteRecordRaw> = [
                   import("../views/SettingWorkspaceIntegrationSlack.vue"),
                 props: true,
               },
+              {
+                path: "database-review-guide",
+                name: "setting.workspace.database-review-guide",
+                meta: {
+                  title: () => t("database-review-guide.title"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDatabaseGuide.vue"),
+                props: true,
+              },
+              {
+                path: "database-review-guide/new",
+                name: "setting.workspace.database-review-guide.create",
+                meta: {
+                  title: () => t("database-review-guide.create.breadcrumb"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceDatabaseGuideCreate.vue"),
+                props: true,
+              },
             ],
           },
           {

@@ -1371,3 +1371,22 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
+database-review-guide:
+  title: DB Guide
+  create:
+    breadcrumb: Create guideline
+    basic-info:
+      name: Basic info
+      display-name: Display name
+      display-name-label: >-
+        An display name to help identifying among different guidelines.
+      environments: Environments
+      environments-label: Apply guideline to selected environments. One environment can only has one guideline.
+      environments-select: Select environments
+    configure-rule:
+      name: Configure rule
+      add-rule: Add rule
+      from-template: You can add rules from a template
+      from-scratch: Or starting from scratch
+    preview:
+      name: Preview
