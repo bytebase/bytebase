@@ -20,18 +20,26 @@
         {{ $t("database-review-guide.create.basic-info.environments") }}
         <span style="color: red">*</span>
       </label>
-      <p class="mt-1 textinfolabel">
+      <p class="mt-1 textinfolabel mb-5">
         {{ $t("database-review-guide.create.basic-info.environments-label") }}
       </p>
+      <BBAttention
+        v-if="availableEnvironmentNameList.length === 0"
+        :style="'WARN'"
+        :description="
+          $t('database-review-guide.create.basic-info.no-available-environment')
+        "
+        class="mb-5"
+      />
       <div class="flex">
         <LabelSelect
           v-model:value="selectedEnvNameList"
-          :options="environmentList"
+          :options="availableEnvironmentNameList"
           :multiple="true"
           :placeholder="
             $t('database-review-guide.create.basic-info.environments-select')
           "
-          class="flex items-center relative values py-1 my-5 border border-gray-300 rounded cursor-pointer"
+          class="flex items-center relative values py-1 border border-gray-300 rounded cursor-pointer"
         />
       </div>
     </div>
@@ -39,7 +47,9 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
+import { PropType, computed } from "vue";
+import { useSchemaSystemStore } from "@/store";
+import { Environment } from "../../types";
 
 const props = defineProps({
   name: {
@@ -52,9 +62,22 @@ const props = defineProps({
   },
   environmentList: {
     required: true,
-    type: Array as PropType<string[]>,
+    type: Array as PropType<Environment[]>,
   },
 });
 
 const emit = defineEmits(["name-change"]);
+
+const store = useSchemaSystemStore();
+
+const availableEnvironmentNameList = computed(() => {
+  const filteredList = store.availableEnvironments(props.environmentList);
+
+  return [
+    ...new Set([
+      ...props.selectedEnvNameList,
+      ...filteredList.map((e) => e.name),
+    ]),
+  ];
+});
 </script>

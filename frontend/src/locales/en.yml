@@ -1373,7 +1373,7 @@ subscription:
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
 database-review-guide:
-  title: DB Guide
+  title: Schema Guideline
   search-guideline-name: Search guideline name
   search-rule-name: Search rule name
   add-guideline: Add guideline
@@ -1390,6 +1390,7 @@ database-review-guide:
       environments: Environments
       environments-label: Apply guideline to selected environments. One environment can only has one guideline.
       environments-select: Select environments
+      no-available-environment: No available environment. One environment can only has one schema guideline.
     configure-rule:
       name: Configure rule
       add-rule: Add rule

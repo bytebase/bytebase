@@ -12,7 +12,7 @@
       <SchemaGuideInfo
         :name="state.name"
         :selected-env-name-list="state.selectedEnvNameList"
-        :environment-list="environmentList?.map((env) => env.name) ?? []"
+        :environment-list="environmentList"
         @name-change="(val) => (state.name = val)"
         class="py-5"
       />

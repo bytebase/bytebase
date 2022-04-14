@@ -17,19 +17,13 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
     guideList: [],
   }),
   actions: {
-    availableEnvironments(
-      guide: DatabaseSchemaGuide,
-      environmentList: Environment[]
-    ): Environment[] {
+    availableEnvironments(environmentList: Environment[]): Environment[] {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.id, env);
         return map;
       }, new Map<number, Environment>());
 
       for (const guideline of this.guideList) {
-        if (guideline.id === guide.id) {
-          continue;
-        }
         for (const envId of guideline.environmentList) {
           if (envMap.has(envId)) {
             envMap.delete(envId);

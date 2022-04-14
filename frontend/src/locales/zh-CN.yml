@@ -1206,7 +1206,7 @@ subscription:
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
 database-review-guide:
-  title: DB Guide
+  title: Schema Guideline
   search-guideline-name: 搜索 guideline 名称
   add-guideline: 新增 guideline
   search-rule-name: 搜索规则名称
@@ -1222,6 +1222,7 @@ database-review-guide:
       environments: 环境
       environments-label: 将 guideline 应用于哪些环境。一个环境只能配置一个 guideline。
       environments-select: 选择环境
+      no-available-environment: 没有可供选择的环境。一个环境仅能创建一个 guideline。
     configure-rule:
       name: 配置规则
       add-rule: 增加规则

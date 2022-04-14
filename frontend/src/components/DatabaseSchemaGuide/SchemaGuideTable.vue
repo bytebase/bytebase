@@ -12,7 +12,7 @@
         {{ guide.name }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        <div class="flex gap-x-3">
+        <div class="flex gap-x-2">
           <BBBadge
             v-for="envId in guide.environmentList"
             :key="envId"

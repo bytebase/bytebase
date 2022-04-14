@@ -28,7 +28,7 @@
           Edit
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5">
+      <div class="flex flex-wrap gap-x-2 my-5">
         <span>Environments:</span>
         <BBBadge
           v-for="envId in guide.environmentList"
