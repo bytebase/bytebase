@@ -13,7 +13,7 @@ func TestGetDatabase(t *testing.T) {
 	}{
 		{"mysql://root@localhost:3306/bytebase_test_todo", "bytebase_test_todo"},
 		{"mysql://root@localhost:13308/", ""},
-		{"mysql://root@localhost:13308/bytebase_test_todo?ssl-rs=", "bytebase_test_todo"},
+		{"mysql://root@localhost:13308/bytebase_test_todo?ssl-key=a", "bytebase_test_todo"},
 	} {
 		u, err := dburl.Parse(tt.u)
 		if err != nil {
