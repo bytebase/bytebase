@@ -90,7 +90,6 @@
 
 <script lang="ts">
 import { PropType, computed, reactive, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
@@ -122,7 +121,6 @@ export default defineComponent({
   },
   emits: ["update-custom-field"],
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({});
@@ -139,7 +137,6 @@ export default defineComponent({
 
     const issueContext = computed((): IssueContext => {
       return {
-        store,
         currentUser: currentUser.value,
         create: false,
         issue: props.issue,
