@@ -169,9 +169,7 @@ type TaskRaw struct {
 	Type              TaskType
 	Payload           string
 	EarliestAllowedTs int64
-	// BlockedBy is an array of Task ID.
-	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
-	BlockedBy []string
+	BlockedBy         []string
 }
 
 // ToTask creates an instance of Task based on the TaskRaw.
@@ -240,7 +238,9 @@ type Task struct {
 	Type              TaskType   `jsonapi:"attr,type"`
 	Payload           string     `jsonapi:"attr,payload"`
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
-	BlockedBy         []string   `jsonapi:"attr,blockedBy"`
+	// BlockedBy is an array of Task ID.
+	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
+	BlockedBy []string `jsonapi:"attr,blockedBy"`
 }
 
 // ToRaw converts a Task to TaskRaw.
