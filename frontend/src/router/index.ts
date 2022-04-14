@@ -641,18 +641,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/grant",
-            name: "workspace.database.grant",
-            meta: {
-              title: () => t("datasource.grant-database"),
-            },
-            components: {
-              content: () => import("../views/DatabaseGrant.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
