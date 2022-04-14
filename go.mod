@@ -25,6 +25,7 @@ require (
 	github.com/spf13/cobra v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
+	github.com/xo/dburl v0.9.1 // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect

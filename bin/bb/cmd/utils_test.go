@@ -1,24 +1,26 @@
 package cmd
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/xo/dburl"
 )
 
-func TestParseDns(t *testing.T) {
-	for _, test := range []struct {
-		dsn     string
-		want    *dataSource
-		wantErr error
+func TestGetDatabase(t *testing.T) {
+	for _, tt := range []struct {
+		u   string
+		exp string
 	}{
-		{"", nil, fmt.Errorf("invalid dsn: ")},
-		{"mysql://user:pass@localhost:3306/db?param1=value1&param2=value2", &dataSource{driver: "mysql", username: "user", password: "pass", host: "localhost", port: "3306", database: "db", params: map[string]string{"param1": "value1", "param2": "value2"}}, nil},
-		{"postgres://user@localhost/db", &dataSource{driver: "postgres", username: "user", host: "localhost", database: "db", params: map[string]string{}}, nil},
+		{"mysql://root@localhost:3306/bytebase_test_todo", "bytebase_test_todo"},
+		{"mysql://root@localhost:13308/", ""},
+		{"mysql://root@localhost:13308/bytebase_test_todo?ssl-rs=", "bytebase_test_todo"},
 	} {
-		ds, err := parseDSN(test.dsn)
-		require.Equal(t, test.want, ds)
-		require.Equal(t, test.wantErr, err)
+		u, err := dburl.Parse(tt.u)
+		if err != nil {
+			t.Error(err)
+		}
+		if getDatabase(u) != tt.exp {
+			t.Error("expected", tt.exp, "got", getDatabase(u))
+		}
 	}
 }

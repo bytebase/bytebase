@@ -42,27 +42,19 @@ func TestMigrate(t *testing.T) {
 		{
 			args: []string{
 				"migrate",
-				"--type", "mysql",
-				"--username", "root",
-				"--host", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 				"-c", `"
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
 		name TEXT NULL
 	);"`,
-				"--database", "bytebase_test_todo",
 			},
 			expected: _TestMigrate02,
 		},
 		{
 			args: []string{
 				"dump",
-				"--type", "mysql",
-				"--username", "root",
-				"--hostname", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
-				"--database", "bytebase_test_todo",
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestMigrate03,
 		},
@@ -85,10 +77,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"migrate",
-				"--type", "mysql",
-				"--username", "root",
-				"--host", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", mysql.Port()),
 				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
 			expected: _TestCreateDatabase01,
@@ -96,11 +85,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--type", "mysql",
-				"--username", "root",
-				"--hostname", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
-				"--database", "bytebase_test_todo",
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestCreateDatabase02,
 		},

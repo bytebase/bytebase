@@ -1,85 +1,48 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"regexp"
-	"strings"
+
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/xo/dburl"
+	"go.uber.org/zap"
 )
 
-// driver://[username[:password]@]host[:port]/[database][?param1=value1&...&paramN=valueN]
-var dsnPattern *regexp.Regexp
-
-func init() {
-	dsnPattern = regexp.MustCompile(
-		`^(?P<driver>.+?)(?::\/\/)` + // driver://
-			`(?:(?P<username>.+?)(?::(?P<password>.+?))?@)?` + // [username[:password]@]
-			`(?P<host>.+?)(?::(?P<port>.+?))?` + // host[:port]
-			`\/(?P<database>.+?)` + // /[database]
-			`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&...&paramN=valueN]
+func getDatabase(u *dburl.URL) string {
+	if u.Path == "" {
+		return ""
+	}
+	return u.Path[1:]
 }
 
-type dataSource struct {
-	driver   string
-	username string
-	password string
-	host     string
-	port     string
-	database string
-	params   map[string]string
-
-	sslCA   string // server-ca.pem
-	sslCert string // client-cert.pem
-	sslKey  string // client-key.pem
-}
-
-func parseDSN(dsn string) (*dataSource, error) {
-	if !dsnPattern.MatchString(dsn) {
-		return nil, fmt.Errorf("invalid dsn: %s", dsn)
+func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, error) {
+	var dbType db.Type
+	switch u.Driver {
+	case "mysql":
+		dbType = db.MySQL
+	case "pg":
+		dbType = db.Postgres
+	default:
+		return nil, fmt.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
 	}
 
-	ds := new(dataSource)
-	ds.params = make(map[string]string)
-
-	matches := dsnPattern.FindStringSubmatch(dsn)
-	names := dsnPattern.SubexpNames()
-
-	for i, match := range matches {
-		switch names[i] {
-		case "driver":
-			ds.driver = match
-		case "username":
-			ds.username = match
-		case "password":
-			ds.password = match
-		case "host":
-			ds.host = match
-		case "port":
-			ds.port = match
-		case "database":
-			ds.database = match
-		case "params":
-			if len(match) == 0 {
-				// no params
-				continue
-			}
-			for _, v := range strings.Split(match, "&") {
-				param := strings.SplitN(v, "=", 2)
-				if len(param) != 2 {
-					return nil, fmt.Errorf("invalid param: %s", v)
-				}
-				switch value := param[1]; param[0] {
-				case "ssl-ca":
-					ds.sslCA = value
-				case "ssl-cert":
-					ds.sslCert = value
-				case "ssl-key":
-					ds.sslKey = value
-				default:
-					ds.params[param[0]] = value
-				}
-			}
-		}
+	passwd, _ := u.User.Password()
+	driver, err := db.Open(ctx, dbType, db.DriverConfig{Logger: logger}, db.ConnectionConfig{
+		Host:     u.Hostname(),
+		Port:     u.Port(),
+		Username: u.User.Username(),
+		Password: passwd,
+		Database: getDatabase(u),
+		TLSConfig: db.TLSConfig{
+			SslCA:   u.Query().Get("ssl-ca"),
+			SslCert: u.Query().Get("ssl-cert"),
+			SslKey:  u.Query().Get("ssl-key"),
+		},
+	}, db.ConnectionContext{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database, got error: %w", err)
 	}
 
-	return ds, nil
+	return driver, nil
 }
