@@ -142,7 +142,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`,
 			create.CreatorID,
 			create.CreatorID,
@@ -166,6 +166,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheetRaw.ID,
+			&sheetRaw.RowStatus,
 			&sheetRaw.CreatorID,
 			&sheetRaw.CreatedTs,
 			&sheetRaw.UpdaterID,
@@ -200,7 +201,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 		visibility
 	)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
+	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 `,
 		create.CreatorID,
 		create.CreatorID,
@@ -221,6 +222,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
 		&sheetRaw.ID,
+		&sheetRaw.RowStatus,
 		&sheetRaw.CreatorID,
 		&sheetRaw.CreatedTs,
 		&sheetRaw.UpdaterID,
@@ -245,11 +247,14 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 // patchSheet updates a sheet's name/statement/visibility.
 func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode common.ReleaseMode) (*api.SheetRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+	}
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Statement; v != nil {
 		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
@@ -270,7 +275,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`, len(args)),
 			args...,
 		)
@@ -285,6 +290,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 			databaseID := sql.NullInt32{}
 			if err := row.Scan(
 				&sheetRaw.ID,
+				&sheetRaw.RowStatus,
 				&sheetRaw.CreatorID,
 				&sheetRaw.CreatedTs,
 				&sheetRaw.UpdaterID,
@@ -315,7 +321,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 	UPDATE sheet
 	SET `+strings.Join(set, ", ")+`
 	WHERE id = $%d
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
+	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
 `, len(args)),
 		args...,
 	)
@@ -330,6 +336,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheetRaw.ID,
+			&sheetRaw.RowStatus,
 			&sheetRaw.CreatorID,
 			&sheetRaw.CreatedTs,
 			&sheetRaw.UpdaterID,
@@ -356,10 +363,12 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 
 func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode common.ReleaseMode) ([]*api.SheetRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
-	// Standard fields
+
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+
+	// Standard fields
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
@@ -389,6 +398,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 		rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
+			row_status,
 			creator_id,
 			created_ts,
 			updater_id,
@@ -416,6 +426,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 			databaseID := sql.NullInt32{}
 			if err := rows.Scan(
 				&sheetRaw.ID,
+				&sheetRaw.RowStatus,
 				&sheetRaw.CreatorID,
 				&sheetRaw.CreatedTs,
 				&sheetRaw.UpdaterID,
@@ -449,6 +460,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 	rows, err := tx.QueryContext(ctx, `
 	SELECT
 		id,
+		row_status,
 		creator_id,
 		created_ts,
 		updater_id,
@@ -473,6 +485,7 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
 			&sheetRaw.ID,
+			&sheetRaw.RowStatus,
 			&sheetRaw.CreatorID,
 			&sheetRaw.CreatedTs,
 			&sheetRaw.UpdaterID,
