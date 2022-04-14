@@ -3,5 +3,3 @@
     <SchemaGuideCreation :selectedEnvNameList="[]" :selectedRuleList="[]" />
   </div>
 </template>
-
-<script lang="ts" setup></script>

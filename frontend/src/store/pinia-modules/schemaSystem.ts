@@ -2,9 +2,12 @@ import axios from "axios";
 import {
   empty,
   unknown,
+  SchemaGuideId,
   EMPTY_ID,
   Environment,
   DatabaseSchemaGuide,
+  DatabaseSchemaGuideCreate,
+  DatabaseSchemaGuidePatch,
 } from "../../types";
 import { defineStore } from "pinia";
 
@@ -33,10 +36,18 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
 
       return [...envMap.values()];
     },
-    addGuideline(guideline: DatabaseSchemaGuide) {
-      this.guideList.push(guideline);
+    addGuideline(guideline: DatabaseSchemaGuideCreate) {
+      const mock = empty("SCHEMA_GUIDE") as DatabaseSchemaGuide;
+      this.guideList.push({
+        ...guideline,
+        id: this.guideList.length + 1,
+        creator: mock.creator,
+        updater: mock.updater,
+        createdTs: new Date().getTime() / 1000,
+        updatedTs: new Date().getTime() / 1000,
+      });
     },
-    removeGuideline(id: number) {
+    removeGuideline(id: SchemaGuideId) {
       const index = this.guideList.findIndex((g) => g.id === id);
       if (index < 0) {
         return;
@@ -46,18 +57,21 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         ...this.guideList.slice(index + 1),
       ];
     },
-    updateGuideline(guideline: DatabaseSchemaGuide) {
-      const index = this.guideList.findIndex((g) => g.id === guideline.id);
+    updateGuideline(id: SchemaGuideId, guideline: DatabaseSchemaGuidePatch) {
+      const index = this.guideList.findIndex((g) => g.id === id);
       if (index < 0) {
         return;
       }
       this.guideList = [
         ...this.guideList.slice(0, index),
-        guideline,
+        {
+          ...this.guideList[index],
+          ...guideline,
+        },
         ...this.guideList.slice(index + 1),
       ];
     },
-    getGuideById(id: number): DatabaseSchemaGuide {
+    getGuideById(id: SchemaGuideId): DatabaseSchemaGuide {
       if (id == EMPTY_ID) {
         return empty("SCHEMA_GUIDE") as DatabaseSchemaGuide;
       }

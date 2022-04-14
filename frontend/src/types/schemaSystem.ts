@@ -1,3 +1,6 @@
+import { SchemaGuideId } from "./id";
+import { Principal } from "./principal";
+
 export enum RuleLevel {
   Disabled = "disabled",
   Error = "error",
@@ -72,13 +75,33 @@ interface SchemaRule {
 }
 
 export interface DatabaseSchemaGuide {
-  id: number;
+  id: SchemaGuideId;
+
+  // Standard fields
+  creator: Principal;
+  createdTs: number;
+  updater: Principal;
+  updatedTs: number;
+
+  // Domain specific fields
   name: string;
   ruleList: SchemaRule[];
   environmentList: number[];
-  createdTs: number;
-  updatedTs: number;
 }
+
+export interface DatabaseSchemaGuideCreate {
+  // Domain specific fields
+  name: string;
+  ruleList: SchemaRule[];
+  environmentList: number[];
+}
+
+export type DatabaseSchemaGuidePatch = {
+  // Domain specific fields
+  name?: string;
+  ruleList?: SchemaRule[];
+  environmentList?: number[];
+};
 
 export interface RuleCategory<T extends Rule> {
   id: CategoryType;

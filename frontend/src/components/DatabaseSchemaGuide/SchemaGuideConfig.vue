@@ -192,6 +192,7 @@ const templateList: Template[] = [
 
 const onTemplateApply = (template: Template) => {
   emit("apply-template", template.ruleList);
+  state.activeRuleId = "";
 };
 
 const onRuleSelect = (rule: Rule) => {

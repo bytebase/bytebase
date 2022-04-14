@@ -137,11 +137,8 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   }
 
   const guide = {
-    id: props.id ?? store.guideList.length + 1,
     name: state.name,
     environmentList: envIds,
-    createdTs: new Date().getTime() / 1000,
-    updatedTs: new Date().getTime() / 1000,
     ruleList: state.selectedRuleList.map((rule) => ({
       id: rule.id,
       level: rule.level,
@@ -155,7 +152,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   };
 
   if (props.id) {
-    store.updateGuideline(guide);
+    store.updateGuideline(props.id, guide);
   } else {
     store.addGuideline(guide);
   }
