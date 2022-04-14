@@ -641,18 +641,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/grant",
-            name: "workspace.database.grant",
-            meta: {
-              title: () => t("datasource.grant-database"),
-            },
-            components: {
-              content: () => import("../views/DatabaseGrant.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
@@ -687,25 +675,6 @@ const routes: Array<RouteRecordRaw> = [
                   allowBookmark: true,
                 },
                 component: () => import("../views/TableDetail.vue"),
-                props: true,
-              },
-              {
-                path: "datasource/:dataSourceSlug",
-                name: "workspace.database.datasource.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.dataSourceSlug as string;
-                    if (slug.toLowerCase() == "new") {
-                      return t("common.new");
-                    }
-                    return `${t("common.data-source")} - ${
-                      useDataSourceStore().getDataSourceById(idFromSlug(slug))
-                        .name
-                    }`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DataSourceDetail.vue"),
                 props: true,
               },
               {
