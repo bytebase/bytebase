@@ -162,7 +162,6 @@ type TaskRaw struct {
 	DatabaseID          *int
 	TaskRunRawList      []*TaskRunRaw
 	TaskCheckRunRawList []*TaskCheckRunRaw
-	BlockedBy           []*Task
 
 	// Domain specific fields
 	Name              string
@@ -170,6 +169,7 @@ type TaskRaw struct {
 	Type              TaskType
 	Payload           string
 	EarliestAllowedTs int64
+	BlockedBy         []string
 }
 
 // ToTask creates an instance of Task based on the TaskRaw.
@@ -231,7 +231,6 @@ type Task struct {
 	Database         *Database       `jsonapi:"relation,database"`
 	TaskRunList      []*TaskRun      `jsonapi:"relation,taskRun"`
 	TaskCheckRunList []*TaskCheckRun `jsonapi:"relation,taskCheckRun"`
-	BlockedBy        []*Task         `jsonapi:"relation,blockedBy"`
 
 	// Domain specific fields
 	Name              string     `jsonapi:"attr,name"`
@@ -239,6 +238,7 @@ type Task struct {
 	Type              TaskType   `jsonapi:"attr,type"`
 	Payload           string     `jsonapi:"attr,payload"`
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
+	BlockedBy         []string   `jsonapi:"attr,blockedBy"`
 }
 
 // ToRaw converts a Task to TaskRaw.
