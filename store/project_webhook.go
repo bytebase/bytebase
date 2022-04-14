@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jackc/pgtype"
 	"strings"
+
+	"github.com/jackc/pgtype"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -158,7 +159,7 @@ func createProjectWebhook(ctx context.Context, tx *sql.Tx, create *api.ProjectWe
 	row.Next()
 	var projectWebhookRaw api.ProjectWebhookRaw
 	var txtArray pgtype.TextArray
-	
+
 	if err := row.Scan(
 		&projectWebhookRaw.ID,
 		&projectWebhookRaw.CreatorID,
