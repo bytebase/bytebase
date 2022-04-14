@@ -87,6 +87,7 @@ type SheetRaw struct {
 	ID int
 
 	// Standard fields
+	RowStatus RowStatus
 	CreatorID int
 	CreatedTs int64
 	UpdaterID int
@@ -116,6 +117,7 @@ func (raw *SheetRaw) ToSheet() *Sheet {
 		ID: raw.ID,
 
 		// Standard fields
+		RowStatus: raw.RowStatus,
 		CreatorID: raw.CreatorID,
 		CreatedTs: raw.CreatedTs,
 		UpdaterID: raw.UpdaterID,
@@ -143,6 +145,7 @@ type Sheet struct {
 	ID int `jsonapi:"primary,sheet"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
 	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -192,6 +195,7 @@ type SheetPatch struct {
 	ID int `jsonapi:"primary,sheetPatch"`
 
 	// Standard fields
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
@@ -207,8 +211,9 @@ type SheetPatch struct {
 
 // SheetFind is the API message for finding sheets.
 type SheetFind struct {
+	ID *int
+
 	// Standard fields
-	ID        *int
 	RowStatus *RowStatus
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID *int
