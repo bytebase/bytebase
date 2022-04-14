@@ -100,6 +100,7 @@ common:
   new: 创建
   add: 添加
   confirm-and-add: 确认并添加
+  confirm-and-update: 确认并更新
   query: 查询
   transfer: 转移
   migration: 迁移

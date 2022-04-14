@@ -23,12 +23,12 @@
       </div>
     </aside>
     <div class="flex-1">
-      <div class="mb-5" v-if="name">
+      <div class="mb-9" v-if="name">
         <h1 class="text-left text-3xl font-bold mb-2">
           {{ name }}
         </h1>
       </div>
-      <div v-for="category in categoryList" :key="category.id" class="py-4">
+      <div v-for="category in categoryList" :key="category.id" class="pb-4">
         <a
           :href="`#${category.id.replace(/\./g, '-')}`"
           :id="category.id.replace(/\./g, '-')"

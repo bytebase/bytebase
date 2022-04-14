@@ -56,5 +56,5 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["name-change", "environments-change"]);
+const emit = defineEmits(["name-change"]);
 </script>

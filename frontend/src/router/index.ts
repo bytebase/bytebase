@@ -399,11 +399,6 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaGuideSlug as string;
-                    console.log(`slug: ${slug}`);
-                    console.log(`idFromSlug(slug): ${idFromSlug(slug)}`);
-                    console.log(
-                      useSchemaSystemStore().getGuideById(idFromSlug(slug))
-                    );
                     return useSchemaSystemStore().getGuideById(idFromSlug(slug))
                       .name;
                   },

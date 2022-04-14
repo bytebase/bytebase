@@ -1,34 +1,48 @@
 <template>
-  <div class="my-5">
-    <div class="flex flex-col items-center justify-center md:flex-row">
-      <h1 class="text-xl md:text-3xl font-semibold flex-1">{{ guide.name }}</h1>
+  <transition appear name="slide-from-bottom" mode="out-in">
+    <SettingWorkspaceDatabaseGuideCreate
+      v-if="state.editMode"
+      :id="guide.id"
+      :name="guide.name"
+      :selectedEnvNameList="
+        guide.environmentList.map((id) => environmentNameFromId(id))
+      "
+      :selectedRuleList="selectedRuleList"
+      @cancel="state.editMode = false"
+    />
+    <div class="my-5" v-else>
+      <div class="flex flex-col items-center justify-center md:flex-row">
+        <h1 class="text-xl md:text-3xl font-semibold flex-1">
+          {{ guide.name }}
+        </h1>
 
-      <button type="button" class="btn-cancel mr-4">Delete</button>
-      <button type="button" class="btn-primary">Edit</button>
+        <button type="button" class="btn-cancel mr-4">Delete</button>
+        <button type="button" class="btn-primary" @click="onEdit">Edit</button>
+      </div>
+      <div class="flex flex-wrap gap-x-3 my-5">
+        <span>Environments:</span>
+        <BBBadge
+          v-for="envId in guide.environmentList"
+          :key="envId"
+          :text="environmentNameFromId(envId)"
+          :can-remove="false"
+        />
+      </div>
+      <div class="py-2 flex justify-between items-center mt-10">
+        <SchemaGuideCategoryTabFilter
+          :selected="state.selectedCategory"
+          :category-list="categoryFilterList"
+          @select="selectCategory"
+        />
+        <BBTableSearch
+          ref="searchField"
+          :placeholder="$t('database-review-guide.search-rule-name')"
+          @change-text="(text) => (state.searchText = text)"
+        />
+      </div>
+      <SchemaGuidePreview :rule-list="filteredSelectedRuleList" class="py-5" />
     </div>
-    <div class="flex flex-wrap gap-x-3 my-5">
-      <span>Environments:</span>
-      <BBBadge
-        v-for="envId in guide.environmentList"
-        :key="envId"
-        :text="environmentNameFromId(envId)"
-        :can-remove="false"
-      />
-    </div>
-    <div class="py-2 flex justify-between items-center mt-10">
-      <SchemaGuideCategoryTabFilter
-        :selected="state.selectedCategory"
-        :category-list="categoryFilterList"
-        @select="selectCategory"
-      />
-      <BBTableSearch
-        ref="searchField"
-        :placeholder="$t('database-review-guide.search-rule-name')"
-        @change-text="(text) => (state.searchText = text)"
-      />
-    </div>
-    <SchemaGuidePreview :rule-list="filteredSelectedRuleList" class="py-5" />
-  </div>
+  </transition>
 </template>
 
 <script lang="ts" setup>
@@ -47,6 +61,7 @@ import {
 } from "../types";
 import { useEnvironmentStore, useSchemaSystemStore } from "@/store";
 import { CategoryFilterItem } from "../components/DatabaseSchemaGuide/SchemaGuideCategoryTabFilter.vue";
+import SettingWorkspaceDatabaseGuideCreate from "./SettingWorkspaceDatabaseGuideCreate.vue";
 
 const props = defineProps({
   schemaGuideSlug: {
@@ -58,6 +73,7 @@ const props = defineProps({
 interface LocalState {
   searchText: string;
   selectedCategory?: string;
+  editMode: boolean;
 }
 
 const store = useSchemaSystemStore();
@@ -69,6 +85,7 @@ const state = reactive<LocalState>({
   selectedCategory: router.currentRoute.value.query.category
     ? (router.currentRoute.value.query.category as string)
     : undefined,
+  editMode: false,
 });
 
 const environmentNameFromId = function (id: EnvironmentId) {
@@ -156,4 +173,26 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
     );
   });
 });
+
+const onEdit = () => {
+  state.editMode = true;
+  state.searchText = "";
+  state.selectedCategory = undefined;
+};
 </script>
+
+<style scoped>
+.slide-from-bottom-enter-active {
+  transition: all 0.2s ease-in-out;
+}
+
+.slide-from-bottom-leave-active {
+  transition: all 0.2s ease-in-out;
+}
+
+.slide-from-bottom-enter-from,
+.slide-from-bottom-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+}
+</style>

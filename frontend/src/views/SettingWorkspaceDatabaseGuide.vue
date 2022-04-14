@@ -1,18 +1,16 @@
 <template>
   <div class="mx-auto">
-    <div class="flex justify-end">
-      <button
-        type="button"
-        class="btn-primary inline-flex justify-center w-60 mt-8"
-        @click="goToCreationView"
-      >
-        <div class="flex">
-          <heroicons-solid:plus-circle class="w-5 h-5 mr-2" />
+    <div class="flex justify-start mt-4">
+      <div class="flex flex-col items-center w-28">
+        <button class="btn-icon-primary p-3" @click.prevent="goToCreationView">
+          <heroicons-outline:plus-sm class="w-6 h-6" />
+        </button>
+        <h3 class="mt-1 text-base font-normal text-main tracking-tight">
           {{ $t("database-review-guide.add-guideline") }}
-        </div>
-      </button>
+        </h3>
+      </div>
     </div>
-    <div class="py-2 flex justify-between items-center mt-10">
+    <div class="py-2 flex justify-between items-center mt-2">
       <!-- eslint-disable vue/attribute-hyphenation -->
       <EnvironmentTabFilter
         :selectedId="state.selectedEnvironment?.id"

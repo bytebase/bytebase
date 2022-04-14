@@ -68,8 +68,6 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         return empty("SCHEMA_GUIDE") as DatabaseSchemaGuide;
       }
 
-      console.log(this.guideList.map((g) => g.id));
-
       return (
         this.guideList.find((g) => g.id === id) ||
         (unknown("SCHEMA_GUIDE") as DatabaseSchemaGuide)

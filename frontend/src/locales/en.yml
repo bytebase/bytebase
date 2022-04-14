@@ -100,6 +100,7 @@ common:
   new: New
   add: Add
   confirm-and-add: Confirm and add
+  confirm-and-update: Confirm and update
   query: Query
   transfer: Transfer
   migration: Migration
