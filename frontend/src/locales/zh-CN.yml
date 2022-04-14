@@ -1208,6 +1208,7 @@ database-review-guide:
   title: DB Guide
   search-guideline-name: 搜索 guideline 名称
   add-guideline: 新增 guideline
+  search-rule-name: 搜索规则名称
   create:
     breadcrumb: 创建 guideline
     basic-info:

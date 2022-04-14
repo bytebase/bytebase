@@ -1374,6 +1374,7 @@ subscription:
 database-review-guide:
   title: DB Guide
   search-guideline-name: Search guideline name
+  search-rule-name: Search rule name
   add-guideline: Add guideline
   create:
     breadcrumb: Create guideline

@@ -24,7 +24,7 @@
         @change-text="(text) => (state.searchText = text)"
       />
     </div>
-    <SchemaGuideTable :guide-list="filteredList(guideList)" />
+    <SchemaGuideTable :guide-list="filteredGuideList" />
   </div>
 </template>
 
@@ -48,7 +48,6 @@ const ROUTE_NAME = "setting.workspace.database-review-guide";
 interface LocalState {
   searchText: string;
   selectedEnvironment?: Environment;
-  showGuide: boolean;
 }
 
 const state = reactive<LocalState>({
@@ -58,7 +57,6 @@ const state = reactive<LocalState>({
         parseInt(router.currentRoute.value.query.environment as string, 10)
       )
     : undefined,
-  showGuide: false,
 });
 
 const selectEnvironment = (environment: Environment) => {
@@ -79,11 +77,8 @@ const goToCreationView = () => {
   });
 };
 
-const guideList = computed(() => {
-  return store.guideList;
-});
-
-const filteredList = (list: DatabaseSchemaGuide[]) => {
+const filteredGuideList = computed((): DatabaseSchemaGuide[] => {
+  const list = store.guideList;
   if (!state.selectedEnvironment && !state.searchText) {
     // Select "All"
     return list;
@@ -96,5 +91,5 @@ const filteredList = (list: DatabaseSchemaGuide[]) => {
         guide.name.toLowerCase().includes(state.searchText.toLowerCase()))
     );
   });
-};
+});
 </script>
