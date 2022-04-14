@@ -9,13 +9,13 @@ export const useTabStore = defineStore("tab", {
   }),
 
   getters: {
-    currentTab(state) {
+    currentTab(state): TabInfo {
       const idx = state.tabList.findIndex(
         (tab: TabInfo) => tab.id === state.currentTabId
       );
       return (idx === -1 ? {} : state.tabList[idx]) as TabInfo;
     },
-    hasTabs(state: TabState) {
+    hasTabs(state: TabState): boolean {
       return state.tabList.length > 0;
     },
   },
