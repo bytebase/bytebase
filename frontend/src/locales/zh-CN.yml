@@ -1237,6 +1237,7 @@ schame-review:
       add-rule: 增加规则
       select-rule: 选择规则
       from-template: 你可以通过模板来添加规则
+      change-template: 选择新的模板
       confirm-override-title: 规则变更
       confirm-override-description: 之前的规则将会被覆盖
     preview:

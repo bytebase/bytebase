@@ -1405,6 +1405,7 @@ schame-review:
       add-rule: Add rule
       select-rule: Select rule
       from-template: You can add rules from a template
+      change-template: Change the template
       confirm-override-title: Confirm change
       confirm-override-description: Your rules will be overridden
     preview:

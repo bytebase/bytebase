@@ -1,30 +1,12 @@
 <template>
   <div>
-    <div>
-      <p class="textlabel">
-        {{ $t("schame-review.create.configure-rule.from-template") }}
-      </p>
-      <div
-        class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
-      >
-        <div
-          v-for="(template, index) in templateList"
-          :key="template.name"
-          class="cursor-pointer bg-transparent border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
-          @click="onTemplateApply(index)"
-        >
-          <img class="h-24" :src="template.image" alt="" />
-          <span class="text-lg lg:text-xl mt-4">{{ template.name }}</span>
-        </div>
-      </div>
-    </div>
-    <div
-      :class="
-        selectRuleList.length > 0
-          ? 'border-b-1 border-gray-200 border-t mt-7'
-          : ''
-      "
-    >
+    <SchemaReviewTemplates
+      v-if="selectRuleList.length === 0"
+      :template-list="templateList"
+      :title="$t('schame-review.create.configure-rule.from-template')"
+      @select="(index) => onTemplateApply(index)"
+    />
+    <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
       <ul role="list" class="divide-y divide-gray-200">
         <li v-for="rule in selectRuleList" :key="rule.id" class="">
           <SchemaRuleConfig
@@ -36,6 +18,25 @@
           />
         </li>
       </ul>
+    </div>
+    <div class="mt-5" v-if="selectRuleList.length > 0">
+      <div
+        class="flex cursor-pointer items-center px-2 text-indigo-500"
+        @click="state.openTemplate = !state.openTemplate"
+      >
+        <heroicons-solid:chevron-right
+          class="w-5 h-5 transform transition-all"
+          :class="state.openTemplate ? 'rotate-90' : ''"
+        />
+        <span class="ml-3"> Change template </span>
+      </div>
+      <SchemaReviewTemplates
+        v-if="state.openTemplate"
+        :template-list="templateList"
+        :title="$t('schame-review.create.configure-rule.change-template')"
+        @select="(index) => onTemplateApply(index)"
+        class="mx-10 mt-5"
+      />
     </div>
   </div>
 </template>
@@ -51,6 +52,7 @@ import {
 
 interface LocalState {
   activeRuleId: string;
+  openTemplate: boolean;
 }
 
 const props = defineProps({
@@ -68,6 +70,7 @@ const emit = defineEmits(["apply-template", "change"]);
 
 const state = reactive<LocalState>({
   activeRuleId: "",
+  openTemplate: false,
 });
 
 const selectedRuleIdList = computed((): string[] => {
