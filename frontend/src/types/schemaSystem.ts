@@ -133,6 +133,12 @@ export function convertToCategoryList<T extends SchemaRule>(
   );
 }
 
+export interface SchemaReviewTemplate {
+  name: string;
+  image: string;
+  ruleList: SelectedRule[];
+}
+
 export const ruleList: SchemaRule[] = [
   {
     id: "engine.mysql.use-innodb",

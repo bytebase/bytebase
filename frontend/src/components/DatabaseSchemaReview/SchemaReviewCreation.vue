@@ -21,8 +21,9 @@
       <SchemaReviewConfig
         class="py-5"
         :select-rule-list="state.selectedRuleList"
+        :template-list="templateList"
         @change="onRuleChange"
-        @apply-template="onTemplateApply"
+        @apply-template="tryApplyTemplate"
       />
     </template>
     <template #2>
@@ -33,6 +34,24 @@
       />
     </template>
   </BBStepTab>
+  <BBAlert
+    v-if="state.showAlertModal"
+    style="CRITICAL"
+    :ok-text="$t('common.confirm')"
+    :title="$t('schame-review.create.configure-rule.confirm-override-title')"
+    :description="
+      $t('schame-review.create.configure-rule.confirm-override-description')
+    "
+    @ok="
+      () => {
+        state.showAlertModal = false;
+        state.ruleUpdated = false;
+        onTemplateApply(state.pendingApplyTemplateIndex);
+      }
+    "
+    @cancel="state.showAlertModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -40,7 +59,12 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../../bbkit/types";
-import { SelectedRule } from "../../types/schemaSystem";
+import {
+  ruleList,
+  RuleLevel,
+  SelectedRule,
+  SchemaReviewTemplate,
+} from "../../types/schemaSystem";
 import {
   pushNotification,
   useEnvironmentList,
@@ -52,6 +76,9 @@ interface LocalState {
   name: string;
   selectedEnvNameList: string[];
   selectedRuleList: SelectedRule[];
+  ruleUpdated: boolean;
+  showAlertModal: boolean;
+  pendingApplyTemplateIndex: number;
 }
 
 const props = withDefaults(
@@ -92,6 +119,9 @@ const state = reactive<LocalState>({
   name: props.name,
   selectedEnvNameList: props.selectedEnvNameList,
   selectedRuleList: props.selectedRuleList,
+  ruleUpdated: false,
+  showAlertModal: false,
+  pendingApplyTemplateIndex: -1,
 });
 
 const onCancel = () => {
@@ -165,8 +195,95 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   onCancel();
 };
 
-const onTemplateApply = (ruleList: SelectedRule[]) => {
-  state.selectedRuleList = [...ruleList];
+const getRuleListWithLevel = (
+  idList: string[],
+  level: RuleLevel
+): SelectedRule[] => {
+  return idList.reduce((res, id) => {
+    const rule = ruleList.find((r) => r.id === id);
+    if (!rule) {
+      return res;
+    }
+    res.push({
+      ...rule,
+      level,
+    });
+    return res;
+  }, [] as SelectedRule[]);
+};
+
+const templateList: SchemaReviewTemplate[] = [
+  {
+    name: "Schema review for Prod",
+    image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
+    ruleList: [
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        [
+          "naming.table",
+          "naming.column",
+          "naming.index.pk",
+          "naming.index.uk",
+          "naming.index.idx",
+        ],
+        RuleLevel.Warning
+      ),
+      ...getRuleListWithLevel(
+        [
+          "query.select.no-select-all",
+          "query.where.require",
+          "query.where.no-leading-wildcard-like",
+          "table.require-pk",
+        ],
+        RuleLevel.Error
+      ),
+      ...getRuleListWithLevel(
+        ["column.required", "column.no-null"],
+        RuleLevel.Warning
+      ),
+    ],
+  },
+  {
+    name: "Schema review for Dev",
+    image: new URL("../../assets/plan-free.png", import.meta.url).href,
+    ruleList: [
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        [
+          "naming.table",
+          "naming.column",
+          "naming.index.pk",
+          "naming.index.uk",
+          "naming.index.idx",
+          "query.select.no-select-all",
+          "query.where.require",
+          "query.where.no-leading-wildcard-like",
+        ],
+        RuleLevel.Warning
+      ),
+      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        ["column.required", "column.no-null"],
+        RuleLevel.Warning
+      ),
+    ],
+  },
+];
+
+const onTemplateApply = (index: number) => {
+  if (index < 0 || index >= templateList.length) {
+    return;
+  }
+  state.selectedRuleList = [...templateList[index].ruleList];
+};
+
+const tryApplyTemplate = (index: number) => {
+  if (state.ruleUpdated || props.id) {
+    state.showAlertModal = true;
+    state.pendingApplyTemplateIndex = index;
+    return;
+  }
+  onTemplateApply(index);
 };
 
 const onRuleChange = (rule: SelectedRule) => {
@@ -176,5 +293,6 @@ const onRuleChange = (rule: SelectedRule) => {
     rule,
     ...state.selectedRuleList.slice(index + 1),
   ];
+  state.ruleUpdated = true;
 };
 </script>
