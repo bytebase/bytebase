@@ -459,12 +459,12 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 	}
 
 	blockedBy := []string{}
-	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: raw.ID})
+	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: raw.ID})
 	if err != nil {
 		return nil, err
 	}
 	for _, taskDAG := range taskDAGList {
-		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.ToTaskID))
+		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.FromTaskID))
 	}
 	task.BlockedBy = blockedBy
 

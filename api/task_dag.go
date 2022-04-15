@@ -1,7 +1,7 @@
 package api
 
 // TaskDAG describes task dependency relationship.
-// FromTaskID is blocked by ToTaskID
+// FromTaskID blocks ToTaskID
 // It's rather DAGEdge than DAG
 type TaskDAG struct {
 	ID int
@@ -25,5 +25,5 @@ type TaskDAGCreate struct {
 
 // TaskDAGFind is the API message to find TaskDAG.
 type TaskDAGFind struct {
-	FromTaskID int
+	ToTaskID int
 }
