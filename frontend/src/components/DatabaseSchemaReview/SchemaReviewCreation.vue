@@ -12,9 +12,10 @@
       <template #0>
         <SchemaReviewInfo
           :name="state.name"
-          :selected-env-name-list="state.selectedEnvNameList"
-          :environment-list="environmentList"
+          :selected-environment-list="state.selectedEnvironmentList"
+          :available-environment-list="availableEnvironmentList"
           @name-change="(val) => (state.name = val)"
+          @toggle-env="(env) => onEnvToggle(env)"
           class="py-5"
         />
       </template>
@@ -65,8 +66,9 @@ import {
   ruleList,
   RuleLevel,
   SelectedRule,
+  Environment,
   SchemaReviewTemplate,
-} from "../../types/schemaSystem";
+} from "../../types";
 import {
   pushNotification,
   useEnvironmentList,
@@ -76,7 +78,7 @@ import {
 interface LocalState {
   currentStep: number;
   name: string;
-  selectedEnvNameList: string[];
+  selectedEnvironmentList: Environment[];
   selectedRuleList: SelectedRule[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
@@ -87,13 +89,13 @@ const props = withDefaults(
   defineProps<{
     reviewId?: number;
     name?: string;
-    selectedEnvNameList?: string[];
+    selectedEnvironmentList?: Environment[];
     selectedRuleList?: SelectedRule[];
   }>(),
   {
     reviewId: undefined,
     name: "Database schema review",
-    selectedEnvNameList: () => [],
+    selectedEnvironmentList: () => [],
     selectedRuleList: () => [],
   }
 );
@@ -103,7 +105,6 @@ const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
 const store = useSchemaSystemStore();
-const environmentList = useEnvironmentList(["NORMAL"]);
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -119,11 +120,22 @@ const stepList: BBStepTabItem[] = [
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name,
-  selectedEnvNameList: props.selectedEnvNameList,
+  selectedEnvironmentList: props.selectedEnvironmentList,
   selectedRuleList: props.selectedRuleList,
   ruleUpdated: false,
   showAlertModal: false,
   pendingApplyTemplateIndex: -1,
+});
+
+const availableEnvironmentList = computed((): Environment[] => {
+  const environmentList = useEnvironmentList(["NORMAL"]);
+
+  const filteredList = store.availableEnvironments(
+    environmentList.value,
+    props.reviewId
+  );
+
+  return filteredList;
 });
 
 const onCancel = () => {
@@ -139,7 +151,7 @@ const onCancel = () => {
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
     case BASIC_INFO_STEP:
-      return !!state.name && state.selectedEnvNameList.length > 0;
+      return !!state.name && state.selectedEnvironmentList.length > 0;
     case CONFIGURE_RULE_STEP:
       return state.selectedRuleList.length > 0;
     case PREVIEW_STEP:
@@ -158,17 +170,9 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
-  const envIds: number[] = [];
-  for (const envName of state.selectedEnvNameList) {
-    const id = environmentList.value.find((e) => e.name === envName)?.id;
-    if (id) {
-      envIds.push(id);
-    }
-  }
-
   const review = {
     name: state.name,
-    environmentList: envIds,
+    environmentList: state.selectedEnvironmentList.map((env) => env.id),
     ruleList: state.selectedRuleList.map((rule) => ({
       id: rule.id,
       level: rule.level,
@@ -271,6 +275,19 @@ const templateList: SchemaReviewTemplate[] = [
     ],
   },
 ];
+
+const onEnvToggle = (env: Environment) => {
+  const index = state.selectedEnvironmentList.findIndex((e) => e.id === env.id);
+
+  if (index >= 0) {
+    state.selectedEnvironmentList = [
+      ...state.selectedEnvironmentList.slice(0, index),
+      ...state.selectedEnvironmentList.slice(index + 1),
+    ];
+  } else {
+    state.selectedEnvironmentList.push(env);
+  }
+};
 
 const onTemplateApply = (index: number) => {
   if (index < 0 || index >= templateList.length) {

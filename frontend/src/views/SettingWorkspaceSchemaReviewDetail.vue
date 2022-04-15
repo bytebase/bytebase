@@ -4,8 +4,8 @@
       v-if="state.editMode"
       :review-id="review.id"
       :name="review.name"
-      :selectedEnvNameList="envNameList"
-      :selectedRuleList="selectedRuleList"
+      :selected-environment-list="environmentList"
+      :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
     />
     <div class="my-5" v-else>
@@ -18,11 +18,11 @@
         </button>
       </div>
       <div class="flex flex-wrap gap-x-3 my-5">
-        <span class="font-semibold">{{ $t("common.environments") }}:</span>
+        <span class="font-semibold">{{ $t("common.environments") }}</span>
         <BBBadge
-          v-for="envName in envNameList"
-          :key="envName"
-          :text="envName"
+          v-for="env in environmentList"
+          :key="env.id"
+          :text="env.name"
           :can-remove="false"
         />
       </div>
@@ -111,7 +111,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug } from "../utils";
+import { idFromSlug, environmentName } from "../utils";
 import {
   levelList,
   RuleLevel,
@@ -122,7 +122,8 @@ import {
   SelectedRule,
   ruleList,
   RulePayload,
-} from "../types/schemaSystem";
+  Environment,
+} from "../types";
 import {
   pushNotification,
   useEnvironmentStore,
@@ -165,10 +166,14 @@ const review = computed((): DatabaseSchemaReview => {
   return store.getReviewById(idFromSlug(props.schemaReviewSlug));
 });
 
-const envNameList = computed((): string[] => {
-  return review.value.environmentList.map((envId) =>
-    envStore.getEnvironmentNameById(envId)
-  );
+const environmentList = computed((): Environment[] => {
+  return review.value.environmentList.map((envId) => {
+    const env = envStore.getEnvironmentById(envId);
+    return {
+      ...env,
+      name: environmentName(env),
+    };
+  });
 });
 
 const ruleMap = ruleList.reduce((map, rule) => {

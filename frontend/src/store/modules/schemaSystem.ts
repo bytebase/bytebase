@@ -20,13 +20,19 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
     reviewList: [],
   }),
   actions: {
-    availableEnvironments(environmentList: Environment[]): Environment[] {
+    availableEnvironments(
+      environmentList: Environment[],
+      reviewId: SchemaReviewId | undefined
+    ): Environment[] {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.id, env);
         return map;
       }, new Map<number, Environment>());
 
       for (const review of this.reviewList) {
+        if (review.id === reviewId) {
+          continue;
+        }
         for (const envId of review.environmentList) {
           if (envMap.has(envId)) {
             envMap.delete(envId);
