@@ -9,8 +9,8 @@ INSERT INTO
 VALUES
     (
         11101,
-        11018,
-        11017
+        11017,
+        11018
     );
 
 INSERT INTO
@@ -22,8 +22,8 @@ INSERT INTO
 VALUES
     (
         11102,
-        11019,
-        11018
+        11018,
+        11019
     );
 
 ALTER SEQUENCE task_dag_id_seq RESTART WITH 11103;
