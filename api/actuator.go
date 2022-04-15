@@ -10,5 +10,5 @@ type ServerInfo struct {
 	Port           string `json:"port"`
 	NeedAdminSetup bool   `json:"needAdminSetup"`
 	// You can use StartedTs in dev env, But may leak jwt keys in release version and cause some security issues.
-	// StartedTs   int64  `json:"statedTs"`
+	// StartedTs   int64  `json:"startedTs"`
 }
