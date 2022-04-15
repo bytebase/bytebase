@@ -1376,7 +1376,7 @@ schame-review:
   title: Schema Review
   no-rule-set: No schema review
   get-start: Get started by configure the schema rules.
-  add-review: Add schema review
+  add-review: Add review
   search-rule-name: Search rule name
   remove-review: Successfully removed the review.
   create-review: Successfully created the review.

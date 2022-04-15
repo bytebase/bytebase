@@ -1,57 +1,59 @@
 <template>
-  <BBStepTab
-    class="my-4"
-    :step-item-list="stepList"
-    :allow-next="allowNext"
-    :finish-title="$t(`common.confirm-and-${id ? 'update' : 'add'}`)"
-    @try-change-step="tryChangeStep"
-    @try-finish="tryFinishSetup"
-    @cancel="onCancel"
-  >
-    <template #0>
-      <SchemaReviewInfo
-        :name="state.name"
-        :selected-env-name-list="state.selectedEnvNameList"
-        :environment-list="environmentList"
-        @name-change="(val) => (state.name = val)"
-        class="py-5"
-      />
-    </template>
-    <template #1>
-      <SchemaReviewConfig
-        class="py-5"
-        :select-rule-list="state.selectedRuleList"
-        :template-list="templateList"
-        @change="onRuleChange"
-        @apply-template="tryApplyTemplate"
-      />
-    </template>
-    <template #2>
-      <SchemaReviewPreview
-        :name="state.name"
-        :rule-list="state.selectedRuleList"
-        class="py-5"
-      />
-    </template>
-  </BBStepTab>
-  <BBAlert
-    v-if="state.showAlertModal"
-    style="CRITICAL"
-    :ok-text="$t('common.confirm')"
-    :title="$t('schame-review.create.configure-rule.confirm-override-title')"
-    :description="
-      $t('schame-review.create.configure-rule.confirm-override-description')
-    "
-    @ok="
-      () => {
-        state.showAlertModal = false;
-        state.ruleUpdated = false;
-        onTemplateApply(state.pendingApplyTemplateIndex);
-      }
-    "
-    @cancel="state.showAlertModal = false"
-  >
-  </BBAlert>
+  <div>
+    <BBStepTab
+      class="my-4"
+      :step-item-list="stepList"
+      :allow-next="allowNext"
+      :finish-title="$t(`common.confirm-and-${reviewId ? 'update' : 'add'}`)"
+      @try-change-step="tryChangeStep"
+      @try-finish="tryFinishSetup"
+      @cancel="onCancel"
+    >
+      <template #0>
+        <SchemaReviewInfo
+          :name="state.name"
+          :selected-env-name-list="state.selectedEnvNameList"
+          :environment-list="environmentList"
+          @name-change="(val) => (state.name = val)"
+          class="py-5"
+        />
+      </template>
+      <template #1>
+        <SchemaReviewConfig
+          class="py-5"
+          :select-rule-list="state.selectedRuleList"
+          :template-list="templateList"
+          @change="onRuleChange"
+          @apply-template="tryApplyTemplate"
+        />
+      </template>
+      <template #2>
+        <SchemaReviewPreview
+          :name="state.name"
+          :rule-list="state.selectedRuleList"
+          class="py-5"
+        />
+      </template>
+    </BBStepTab>
+    <BBAlert
+      v-if="state.showAlertModal"
+      style="CRITICAL"
+      :ok-text="$t('common.confirm')"
+      :title="$t('schame-review.create.configure-rule.confirm-override-title')"
+      :description="
+        $t('schame-review.create.configure-rule.confirm-override-description')
+      "
+      @ok="
+        () => {
+          state.showAlertModal = false;
+          state.ruleUpdated = false;
+          onTemplateApply(state.pendingApplyTemplateIndex);
+        }
+      "
+      @cancel="state.showAlertModal = false"
+    >
+    </BBAlert>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -83,13 +85,13 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    id?: number;
+    reviewId?: number;
     name?: string;
     selectedEnvNameList?: string[];
     selectedRuleList?: SelectedRule[];
   }>(),
   {
-    id: undefined,
+    reviewId: undefined,
     name: "Database schema review",
     selectedEnvNameList: () => [],
     selectedRuleList: () => [],
@@ -125,7 +127,7 @@ const state = reactive<LocalState>({
 });
 
 const onCancel = () => {
-  if (props.id) {
+  if (props.reviewId) {
     emit("cancel");
   } else {
     router.push({
@@ -179,8 +181,8 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     })),
   };
 
-  if (props.id) {
-    store.updateReview(props.id, review);
+  if (props.reviewId) {
+    store.updateReview(props.reviewId, review);
   } else {
     store.addReview(review);
   }
@@ -188,7 +190,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(`schame-review.${props.id ? "update" : "create"}-review`),
+    title: t(`schame-review.${props.reviewId ? "update" : "create"}-review`),
   });
 
   allowChangeCallback();
@@ -278,7 +280,7 @@ const onTemplateApply = (index: number) => {
 };
 
 const tryApplyTemplate = (index: number) => {
-  if (state.ruleUpdated || props.id) {
+  if (state.ruleUpdated || props.reviewId) {
     state.showAlertModal = true;
     state.pendingApplyTemplateIndex = index;
     return;

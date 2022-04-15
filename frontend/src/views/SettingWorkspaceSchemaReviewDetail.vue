@@ -2,7 +2,7 @@
   <transition appear name="slide-from-bottom" mode="out-in">
     <SchemaReviewCreation
       v-if="state.editMode"
-      :id="review.id"
+      :review-id="review.id"
       :name="review.name"
       :selectedEnvNameList="envNameList"
       :selectedRuleList="selectedRuleList"
