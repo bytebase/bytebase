@@ -274,4 +274,32 @@ VALUES
         102
     );
 
-ALTER SEQUENCE issue_id_seq RESTART WITH 13010;
+-- Issue for task dependency
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        pipeline_id,
+        name,
+        status,
+        type,
+        description,
+        assignee_id
+    )
+VALUES
+    (
+        13010,
+        1,
+        1,
+        3001,
+        9010,
+        'Hello task dependency!',
+        'OPEN',
+        'bb.issue.database.schema.update',
+        'This issue is to demonstrate task dependency.',
+        101
+    );
+
+ALTER SEQUENCE issue_id_seq RESTART WITH 13011;
