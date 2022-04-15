@@ -19,21 +19,6 @@
           </div>
         </div>
       </div>
-      <div class="border-t border-gray-200 mt-8 pt-8">
-        <p class="textlabel">
-          {{ $t("schame-review.create.configure-rule.from-scratch") }}
-        </p>
-        <button
-          type="button"
-          class="btn-primary inline-flex justify-center w-64 mt-4"
-          @click="state.openModal = true"
-        >
-          <div class="flex">
-            <heroicons-solid:plus-circle class="w-5 h-5 mr-2" />
-            {{ $t("schame-review.create.configure-rule.add-rule") }}
-          </div>
-        </button>
-      </div>
     </div>
     <div v-else>
       <div
@@ -46,42 +31,19 @@
               :selected-rule="rule"
               :active="rule.id === state.activeRuleId"
               @activate="onRuleActivate"
-              @remove="(val) => $emit('remove', val)"
               @level-change="(level) => onLevelChange(rule, level)"
               @payload-change="(val) => onPayloadChange(rule, val)"
             />
           </li>
         </ul>
       </div>
-
-      <button
-        type="button"
-        class="btn-normal inline-flex justify-center w-64"
-        @click="state.openModal = true"
-      >
-        <div class="flex">
-          <heroicons-solid:plus-circle class="w-5 h-5 mr-2" />
-          {{ $t("schame-review.create.configure-rule.add-rule") }}
-        </div>
-      </button>
     </div>
-    <BBModal
-      :title="$t('schame-review.create.configure-rule.select-rule')"
-      v-if="state.openModal"
-      @close="state.openModal = false"
-    >
-      <SchemaRuleSelection
-        @select="onRuleSelect"
-        :selected-rule-id-list="selectedRuleIdList"
-      />
-    </BBModal>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import {
-  SchemaRule,
   ruleList,
   SelectedRule,
   RulePayload,
@@ -95,7 +57,6 @@ interface Template {
 }
 
 interface LocalState {
-  openModal: boolean;
   activeRuleId: string;
 }
 
@@ -106,10 +67,9 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["apply-template", "select", "remove", "change"]);
+const emit = defineEmits(["apply-template", "change"]);
 
 const state = reactive<LocalState>({
-  openModal: false,
   activeRuleId: "",
 });
 
@@ -193,12 +153,6 @@ const templateList: Template[] = [
 const onTemplateApply = (template: Template) => {
   emit("apply-template", template.ruleList);
   state.activeRuleId = "";
-};
-
-const onRuleSelect = (rule: SchemaRule) => {
-  state.openModal = false;
-  state.activeRuleId = rule.id;
-  emit("select", rule);
 };
 
 const onRuleActivate = (id: string) => {

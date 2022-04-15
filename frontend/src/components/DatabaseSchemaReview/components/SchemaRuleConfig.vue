@@ -28,12 +28,6 @@
           {{ selectedRule.description }}
         </div>
       </div>
-      <div
-        class="flex items-center p-2 mr-3 rounded opacity-0 cursor-pointer hover:bg-red-200 group-hover:opacity-100"
-        @click="$emit('remove', selectedRule)"
-      >
-        <heroicons-outline:trash class="w-5 h-5 text-red-400" />
-      </div>
     </div>
     <div v-if="active" class="px-10 py-5 text-sm">
       <div class="mb-7">
@@ -140,12 +134,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits([
-  "activate",
-  "remove",
-  "payload-change",
-  "level-change",
-]);
+const emit = defineEmits(["activate", "payload-change", "level-change"]);
 
 const state = reactive<LocalState>({
   payload: initStatePayload(props.selectedRule.payload),

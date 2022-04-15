@@ -21,8 +21,6 @@
       <SchemaReviewConfig
         class="py-5"
         :select-rule-list="state.selectedRuleList"
-        @select="onRuleSelect"
-        @remove="onRuleRemove"
         @change="onRuleChange"
         @apply-template="onTemplateApply"
       />
@@ -42,7 +40,7 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../../bbkit/types";
-import { SchemaRule, RuleLevel, SelectedRule } from "../../types/schemaSystem";
+import { SelectedRule } from "../../types/schemaSystem";
 import {
   pushNotification,
   useEnvironmentList,
@@ -169,21 +167,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
 
 const onTemplateApply = (ruleList: SelectedRule[]) => {
   state.selectedRuleList = [...ruleList];
-};
-
-const onRuleSelect = (rule: SchemaRule) => {
-  state.selectedRuleList.push({
-    ...rule,
-    level: RuleLevel.Error,
-  });
-};
-
-const onRuleRemove = (rule: SelectedRule) => {
-  const index = state.selectedRuleList.findIndex((r) => r.id === rule.id);
-  state.selectedRuleList = [
-    ...state.selectedRuleList.slice(0, index),
-    ...state.selectedRuleList.slice(index + 1),
-  ];
 };
 
 const onRuleChange = (rule: SelectedRule) => {
