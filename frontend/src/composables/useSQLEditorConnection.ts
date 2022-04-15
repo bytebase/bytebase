@@ -2,7 +2,7 @@ import { useRouter } from "vue-router";
 
 import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
-import { getDefaultConnectionContext } from "@/store/pinia-modules/sqlEditor";
+import { getDefaultConnectionContext } from "@/store";
 import {
   useDatabaseStore,
   useTabStore,
