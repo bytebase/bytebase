@@ -1,6 +1,6 @@
 common:
   when: When
-  view: view
+  view: View
   you: you
   general: General
   slack: Slack
@@ -1374,9 +1374,10 @@ subscription:
       desc: Large organization, has dedicated DBA group to manage database fleet
 schame-review:
   title: Schema Review
-  search-review-name: Search review name
+  no-rule-set: No schema review
+  get-start: Get started by configure the schema rules.
+  add-review: Add schema review
   search-rule-name: Search rule name
-  add-review: Add rule set
   remove-review: Successfully removed the review.
   create-review: Successfully created the review.
   update-review: Successfully updated the review.
