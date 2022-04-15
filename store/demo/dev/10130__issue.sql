@@ -297,7 +297,7 @@ VALUES
         9010,
         'Hello task dependency!',
         'OPEN',
-        'bb.issue.general',
+        'bb.issue.database.schema.update',
         'This issue is to demonstrate task dependency.',
         101
     );
