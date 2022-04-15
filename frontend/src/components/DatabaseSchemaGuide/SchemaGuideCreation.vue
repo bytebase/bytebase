@@ -42,7 +42,7 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../../bbkit/types";
-import { Rule, RuleLevel, SelectedRule } from "../../types/schemaSystem";
+import { SchemaRule, RuleLevel, SelectedRule } from "../../types/schemaSystem";
 import {
   pushNotification,
   useEnvironmentList,
@@ -173,7 +173,7 @@ const onTemplateApply = (ruleList: SelectedRule[]) => {
   state.selectedRuleList = [...ruleList];
 };
 
-const onRuleSelect = (rule: Rule) => {
+const onRuleSelect = (rule: SchemaRule) => {
   state.selectedRuleList.push({
     ...rule,
     level: RuleLevel.Error,

@@ -47,7 +47,7 @@
 import { computed, PropType } from "vue";
 import {
   ruleList,
-  Rule,
+  SchemaRule,
   convertToCategoryList,
 } from "../../../types/schemaSystem";
 
@@ -65,11 +65,12 @@ const categoryList = computed(() => {
 });
 
 const selectedRuleIdSet = computed(() => new Set(props.selectedRuleIdList));
-const isRuleSelected = (rule: Rule): boolean => {
+
+const isRuleSelected = (rule: SchemaRule): boolean => {
   return selectedRuleIdSet.value.has(rule.id);
 };
 
-const onSelect = (rule: Rule) => {
+const onSelect = (rule: SchemaRule) => {
   if (isRuleSelected(rule)) {
     return;
   }

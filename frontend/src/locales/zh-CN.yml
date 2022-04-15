@@ -1206,23 +1206,23 @@ subscription:
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
 database-review-guide:
-  title: Schema Guideline
-  search-guideline-name: 搜索 guideline 名称
-  add-guideline: 新增 guideline
+  title: Schema 准则
+  search-guideline-name: 搜索准则名称
+  add-guideline: 新增准则
   search-rule-name: 搜索规则名称
-  remove-guideline: guideline 已删除
-  create-guideline: guideline 已创建
-  update-guideline: guideline 已更新
+  remove-guideline: 准则已删除
+  create-guideline: 准则已创建
+  update-guideline: 准则已更新
   create:
-    breadcrumb: 创建 guideline
+    breadcrumb: 创建准则
     basic-info:
       name: 基本信息
       display-name: 名称
-      display-name-label: 用以区分不同 Guideline 的名称。
+      display-name-label: 用以区分不同准则的名称。
       environments: 环境
-      environments-label: 将 guideline 应用于哪些环境。一个环境只能配置一个 guideline。
+      environments-label: 将该准则应用于哪些环境。一个环境只能配置一个准则。
       environments-select: 选择环境
-      no-available-environment: 没有可供选择的环境。一个环境仅能创建一个 guideline。
+      no-available-environment: 没有可供选择的环境。一个环境仅能创建一个准则。
     configure-rule:
       name: 配置规则
       add-rule: 增加规则

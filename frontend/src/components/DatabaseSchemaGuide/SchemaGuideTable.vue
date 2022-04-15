@@ -16,7 +16,7 @@
           <BBBadge
             v-for="envId in guide.environmentList"
             :key="envId"
-            :text="environmentNameFromId(envId)"
+            :text="envStore.getEnvironmentNameById(envId)"
             :can-remove="false"
           />
         </div>
@@ -35,8 +35,8 @@
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../../bbkit/types";
-import { environmentName, schemaGuideSlug } from "../../utils";
-import { EnvironmentId, DatabaseSchemaGuide } from "../../types";
+import { schemaGuideSlug } from "../../utils";
+import { DatabaseSchemaGuide } from "../../types";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentStore } from "@/store";
 
@@ -49,6 +49,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const router = useRouter();
+const envStore = useEnvironmentStore();
 
 const columnList: BBTableColumn[] = [
   {
@@ -73,11 +74,5 @@ const onRowClick = function (section: number, row: number) {
       schemaGuideSlug: schemaGuideSlug(guide),
     },
   });
-};
-
-const environmentNameFromId = function (id: EnvironmentId) {
-  const env = useEnvironmentStore().getEnvironmentById(id);
-
-  return environmentName(env);
 };
 </script>

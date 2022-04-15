@@ -7,12 +7,6 @@ export enum RuleLevel {
   Warning = "warning",
 }
 
-export const levelList = [
-  { id: RuleLevel.Error, name: "Error" },
-  { id: RuleLevel.Warning, name: "Warning" },
-  { id: RuleLevel.Disabled, name: "Disabled" },
-];
-
 enum PayloadType {
   String = "string",
   StringArray = "string[]",
@@ -42,19 +36,11 @@ export interface RulePayload {
   [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
 }
 
-export type DatabaseType = "MySQL" | "Common";
+type DatabaseType = "MySQL" | "Common";
 
 export type CategoryType = "engine" | "naming" | "query" | "table" | "column";
 
-export const categoryOrder: Map<CategoryType, number> = new Map([
-  ["engine", 5],
-  ["naming", 4],
-  ["query", 3],
-  ["table", 2],
-  ["column", 1],
-]);
-
-export interface Rule {
+export interface SchemaRule {
   id: string;
   category: CategoryType;
   database: DatabaseType[];
@@ -62,11 +48,11 @@ export interface Rule {
   payload?: RulePayload;
 }
 
-export interface SelectedRule extends Rule {
+export interface SelectedRule extends SchemaRule {
   level: RuleLevel;
 }
 
-interface SchemaRule {
+interface DatabaseSchemaRule {
   id: string;
   level: RuleLevel;
   payload?: {
@@ -85,31 +71,39 @@ export interface DatabaseSchemaGuide {
 
   // Domain specific fields
   name: string;
-  ruleList: SchemaRule[];
+  ruleList: DatabaseSchemaRule[];
   environmentList: number[];
 }
 
 export interface DatabaseSchemaGuideCreate {
   // Domain specific fields
   name: string;
-  ruleList: SchemaRule[];
+  ruleList: DatabaseSchemaRule[];
   environmentList: number[];
 }
 
 export type DatabaseSchemaGuidePatch = {
   // Domain specific fields
   name?: string;
-  ruleList?: SchemaRule[];
+  ruleList?: DatabaseSchemaRule[];
   environmentList?: number[];
 };
 
-export interface RuleCategory<T extends Rule> {
+interface RuleCategory<T extends SchemaRule> {
   id: CategoryType;
   name: string;
   ruleList: T[];
 }
 
-export function convertToCategoryList<T extends Rule>(
+const categoryOrder: Map<CategoryType, number> = new Map([
+  ["engine", 5],
+  ["naming", 4],
+  ["query", 3],
+  ["table", 2],
+  ["column", 1],
+]);
+
+export function convertToCategoryList<T extends SchemaRule>(
   ruleList: T[]
 ): RuleCategory<T>[] {
   const dict = ruleList.reduce((dict, rule) => {
@@ -133,7 +127,7 @@ export function convertToCategoryList<T extends Rule>(
   );
 }
 
-export const ruleList: Rule[] = [
+export const ruleList: SchemaRule[] = [
   {
     id: "engine.mysql.use-innodb",
     category: "engine",

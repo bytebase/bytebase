@@ -28,19 +28,12 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  useEnvironmentList,
-  useEnvironmentStore,
-  useSchemaSystemStore,
-} from "@/store";
+import { useEnvironmentStore, useSchemaSystemStore } from "@/store";
 import { Environment, DatabaseSchemaGuide } from "../types";
 
-const { t } = useI18n();
 const router = useRouter();
 const store = useSchemaSystemStore();
-const environmentList = useEnvironmentList(["NORMAL"]);
 const ROUTE_NAME = "setting.workspace.database-review-guide";
 
 interface LocalState {

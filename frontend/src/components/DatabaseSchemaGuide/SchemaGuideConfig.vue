@@ -81,7 +81,7 @@
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import {
-  Rule,
+  SchemaRule,
   ruleList,
   SelectedRule,
   RulePayload,
@@ -195,7 +195,7 @@ const onTemplateApply = (template: Template) => {
   state.activeRuleId = "";
 };
 
-const onRuleSelect = (rule: Rule) => {
+const onRuleSelect = (rule: SchemaRule) => {
   state.openModal = false;
   state.activeRuleId = rule.id;
   emit("select", rule);

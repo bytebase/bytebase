@@ -109,10 +109,16 @@
 <script lang="ts" setup>
 import { reactive, PropType, watch } from "vue";
 import {
-  levelList,
+  RuleLevel,
   SelectedRule,
   RulePayload,
 } from "../../../types/schemaSystem";
+
+const levelList = [
+  { id: RuleLevel.Error, name: "Error" },
+  { id: RuleLevel.Warning, name: "Warning" },
+  { id: RuleLevel.Disabled, name: "Disabled" },
+];
 
 interface LocalState {
   payload: {

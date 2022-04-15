@@ -4,9 +4,7 @@
       v-if="state.editMode"
       :id="guide.id"
       :name="guide.name"
-      :selectedEnvNameList="
-        guide.environmentList.map((id) => environmentNameFromId(id))
-      "
+      :selectedEnvNameList="envNameList"
       :selectedRuleList="selectedRuleList"
       @cancel="state.editMode = false"
     />
@@ -31,9 +29,9 @@
       <div class="flex flex-wrap gap-x-2 my-5">
         <span>{{ $t("common.environments") }}:</span>
         <BBBadge
-          v-for="envId in guide.environmentList"
-          :key="envId"
-          :text="environmentNameFromId(envId)"
+          v-for="envName in envNameList"
+          :key="envName"
+          :text="envName"
           :can-remove="false"
         />
       </div>
@@ -58,10 +56,9 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName } from "../utils";
+import { idFromSlug } from "../utils";
 import {
-  Rule,
-  EnvironmentId,
+  SchemaRule,
   DatabaseSchemaGuide,
   convertToCategoryList,
   SelectedRule,
@@ -90,6 +87,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const store = useSchemaSystemStore();
+const envStore = useEnvironmentStore();
 const router = useRouter();
 const ROUTE_NAME = "setting.workspace.database-review-guide";
 
@@ -101,20 +99,20 @@ const state = reactive<LocalState>({
   editMode: false,
 });
 
-const environmentNameFromId = function (id: EnvironmentId) {
-  const env = useEnvironmentStore().getEnvironmentById(id);
-
-  return environmentName(env);
-};
-
 const guide = computed((): DatabaseSchemaGuide => {
   return store.getGuideById(idFromSlug(props.schemaGuideSlug));
+});
+
+const envNameList = computed((): string[] => {
+  return guide.value.environmentList.map((envId) =>
+    envStore.getEnvironmentNameById(envId)
+  );
 });
 
 const ruleMap = ruleList.reduce((map, rule) => {
   map.set(rule.id, rule);
   return map;
-}, new Map<string, Rule>());
+}, new Map<string, SchemaRule>());
 
 const selectedRuleList = computed((): SelectedRule[] => {
   if (!guide.value) {

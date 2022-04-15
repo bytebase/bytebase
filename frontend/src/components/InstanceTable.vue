@@ -43,7 +43,7 @@ import { reactive, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
-import { urlfy, instanceSlug, environmentName } from "../utils";
+import { urlfy, instanceSlug } from "../utils";
 import { EnvironmentId, Instance } from "../types";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentStore } from "@/store";
@@ -90,6 +90,7 @@ export default defineComponent({
     });
 
     const router = useRouter();
+    const envStore = useEnvironmentStore();
 
     const clickInstance = function (section: number, row: number) {
       const instance = props.instanceList[row];
@@ -97,8 +98,7 @@ export default defineComponent({
     };
 
     const environmentNameFromId = function (id: EnvironmentId) {
-      const env = useEnvironmentStore().getEnvironmentById(id);
-      return environmentName(env);
+      return envStore.getEnvironmentNameById(id);
     };
 
     const instanceLink = (instance: Instance): string => {
