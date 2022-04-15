@@ -128,8 +128,8 @@ func findTaskDAGRawListImpl(ctx context.Context, tx *sql.Tx, find *api.TaskDAGFi
 			to_task_id,
 			payload
 		FROM task_dag
-		WHERE from_task_id = $1
-	`, find.FromTaskID)
+		WHERE to_task_id = $1
+	`, find.ToTaskID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
