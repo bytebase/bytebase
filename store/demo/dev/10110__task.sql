@@ -518,4 +518,94 @@ VALUES
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);"}'
     );
 
-ALTER SEQUENCE task_id_seq RESTART WITH 11017;
+-- Task for task dependency
+
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
+    (
+        11017,
+        1,
+        1,
+        9010,
+        10017,
+        6001,
+        7002,
+        'Update testdb_dev gh-ost sync',
+        'bb.task.database.schema.update.ghost.sync',
+        'PENDING_APPROVAL',
+        '{"statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
+    );
+
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
+    (
+        11018,
+        1,
+        1,
+        9010,
+        10017,
+        6001,
+        7002,
+        'Update testdb_dev gh-ost cutover',
+        'bb.task.database.schema.update.ghost.cutover',
+        'PENDING_APPROVAL',
+        '{}'
+    );
+
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
+    (
+        11019,
+        1,
+        1,
+        9010,
+        10017,
+        6001,
+        7002,
+        'Update testdb_dev gh-ost drop original table',
+        'bb.task.database.schema.update.ghost.drop-original-table',
+        'PENDING_APPROVAL',
+        '{"databaseName":"testdb_prod","tableName":"_tbl1_del"}'
+    );
+
+
+ALTER SEQUENCE task_id_seq RESTART WITH 11020;
