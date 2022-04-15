@@ -1380,7 +1380,13 @@ schame-review:
   remove-review: Successfully removed the review.
   create-review: Successfully created the review.
   update-review: Successfully updated the review.
-  filter-by-database: Filter
+  filter: Filter
+  database: Database
+  error-level:
+    name: Error Level
+    error: Error
+    warning: Warning
+    disabled: Disabled
   create:
     breadcrumb: Create review
     basic-info:

@@ -1213,7 +1213,13 @@ schame-review:
   remove-review: 准则已删除
   create-review: 准则已创建
   update-review: 准则已更新
-  filter-by-database: 筛选
+  filter: 筛选
+  database: 数据库
+  error-level:
+    name: 错误等级
+    error: 错误
+    warning: 警告
+    disabled: 禁用
   create:
     breadcrumb: 创建准则
     basic-info:

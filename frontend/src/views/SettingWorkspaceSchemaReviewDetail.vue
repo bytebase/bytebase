@@ -27,7 +27,7 @@
         </button>
       </div>
       <div class="flex flex-wrap gap-x-3 my-5">
-        <span>{{ $t("common.environments") }}:</span>
+        <span class="font-semibold">{{ $t("common.environments") }}:</span>
         <BBBadge
           v-for="envName in envNameList"
           :key="envName"
@@ -35,20 +35,43 @@
           :can-remove="false"
         />
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5">
-        <span>{{ $t("schame-review.filter-by-database") }}:</span>
-        <div v-for="db in databaseList" :key="db" class="flex items-center">
-          <input
-            type="checkbox"
-            :id="db"
-            :value="db"
-            :checked="state.checkedDatabase.has(db)"
-            @input="toggleCheckedDatabase(db)"
-            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-          />
-          <label :for="db" class="ml-2 items-center text-sm text-gray-600">
-            {{ db }}
-          </label>
+      <div class="space-y-2">
+        <span class="font-semibold">{{ $t("schame-review.filter") }}</span>
+        <div class="flex flex-wrap gap-x-3">
+          <span>{{ $t("schame-review.database") }}:</span>
+          <div v-for="db in databaseList" :key="db" class="flex items-center">
+            <input
+              type="checkbox"
+              :id="db"
+              :value="db"
+              :checked="state.checkedDatabase.has(db)"
+              @input="toggleCheckedDatabase(db)"
+              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+            />
+            <label :for="db" class="ml-2 items-center text-sm text-gray-600">
+              {{ db }}
+            </label>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-x-3">
+          <span>{{ $t("schame-review.error-level.name") }}:</span>
+          <div
+            v-for="level in levelList"
+            :key="level"
+            class="flex items-center"
+          >
+            <input
+              type="checkbox"
+              :id="level"
+              :value="level"
+              :checked="state.checkedLevel.has(level)"
+              @input="toggleCheckedLevel(level)"
+              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+            />
+            <label :for="level" class="ml-2 items-center text-sm text-gray-600">
+              {{ $t(`schame-review.error-level.${level}`) }}
+            </label>
+          </div>
         </div>
       </div>
       <div class="py-2 flex justify-between items-center mt-5">
@@ -74,6 +97,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug } from "../utils";
 import {
+  levelList,
+  RuleLevel,
   DatabaseType,
   SchemaRule,
   DatabaseSchemaReview,
@@ -81,7 +106,7 @@ import {
   SelectedRule,
   ruleList,
   RulePayload,
-} from "../types";
+} from "../types/schemaSystem";
 import {
   pushNotification,
   useEnvironmentStore,
@@ -101,6 +126,7 @@ interface LocalState {
   selectedCategory?: string;
   editMode: boolean;
   checkedDatabase: Set<DatabaseType>;
+  checkedLevel: Set<RuleLevel>;
 }
 
 const { t } = useI18n();
@@ -116,6 +142,7 @@ const state = reactive<LocalState>({
     : undefined,
   editMode: false,
   checkedDatabase: new Set<DatabaseType>(),
+  checkedLevel: new Set<RuleLevel>(),
 });
 
 const review = computed((): DatabaseSchemaReview => {
@@ -184,6 +211,14 @@ const toggleCheckedDatabase = (db: DatabaseType) => {
   }
 };
 
+const toggleCheckedLevel = (level: RuleLevel) => {
+  if (state.checkedLevel.has(level)) {
+    state.checkedLevel.delete(level);
+  } else {
+    state.checkedLevel.add(level);
+  }
+};
+
 const categoryFilterList = computed((): CategoryFilterItem[] => {
   return convertToCategoryList(selectedRuleList.value).map((c) => ({
     id: c.id,
@@ -212,7 +247,8 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
     if (
       !state.selectedCategory &&
       !state.searchText &&
-      state.checkedDatabase.size === 0
+      state.checkedDatabase.size === 0 &&
+      state.checkedLevel.size === 0
     ) {
       // Select "All"
       return true;
@@ -226,7 +262,9 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
           .toLowerCase()
           .includes(state.searchText.toLowerCase())) &&
       (state.checkedDatabase.size === 0 ||
-        selectedRule.database.some((db) => state.checkedDatabase.has(db)))
+        selectedRule.database.some((db) => state.checkedDatabase.has(db))) &&
+      (state.checkedLevel.size === 0 ||
+        state.checkedLevel.has(selectedRule.level))
     );
   });
 });

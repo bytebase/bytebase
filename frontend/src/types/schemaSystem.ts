@@ -7,6 +7,12 @@ export enum RuleLevel {
   Warning = "warning",
 }
 
+export const levelList = [
+  RuleLevel.Error,
+  RuleLevel.Warning,
+  RuleLevel.Disabled,
+];
+
 enum PayloadType {
   String = "string",
   StringArray = "string[]",

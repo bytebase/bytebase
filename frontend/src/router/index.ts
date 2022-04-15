@@ -400,8 +400,9 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewSlug as string;
-                    return useSchemaSystemStore().getGuideById(idFromSlug(slug))
-                      .name;
+                    return useSchemaSystemStore().getReviewById(
+                      idFromSlug(slug)
+                    ).name;
                   },
                 },
                 component: () =>

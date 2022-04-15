@@ -37,7 +37,7 @@
     </div>
     <div v-if="active" class="px-10 py-5 text-sm">
       <div class="mb-7">
-        <p class="mb-3">Level</p>
+        <p class="mb-3">{{ $t("schame-review.error-level.name") }}</p>
         <div class="flex gap-x-3">
           <div
             v-for="(level, index) in levelList"
@@ -45,18 +45,18 @@
             class="flex items-center"
           >
             <input
-              :id="`level-${level.id}`"
-              :value="level.id"
+              :id="`level-${level}`"
+              :value="level"
               type="radio"
-              :checked="level.id === selectedRule.level"
-              @input="emit('level-change', level.id)"
+              :checked="level === selectedRule.level"
+              @input="emit('level-change', level)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             />
             <label
-              :for="`level-${level.id}`"
+              :for="`level-${level}`"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ level.name }}
+              {{ $t(`schame-review.error-level.${level}`) }}
             </label>
           </div>
         </div>
@@ -109,16 +109,10 @@
 <script lang="ts" setup>
 import { reactive, PropType, watch } from "vue";
 import {
-  RuleLevel,
+  levelList,
   SelectedRule,
   RulePayload,
 } from "../../../types/schemaSystem";
-
-const levelList = [
-  { id: RuleLevel.Error, name: "Error" },
-  { id: RuleLevel.Warning, name: "Warning" },
-  { id: RuleLevel.Disabled, name: "Disabled" },
-];
 
 interface LocalState {
   payload: {
