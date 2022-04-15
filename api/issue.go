@@ -31,6 +31,8 @@ const (
 	IssueDatabaseGrant IssueType = "bb.issue.database.grant"
 	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
 	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
+	// IssueDatabaseSchemaUpdateGhost is the issue type for updating database schemas using gh-ost.
+	IssueDatabaseSchemaUpdateGhost IssueType = "bb.issue.database.schema.update.ghost"
 	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
@@ -199,6 +201,28 @@ type UpdateSchemaDetail struct {
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType db.MigrationType `json:"migrationType"`
+	// UpdateSchemaDetail is the details of schema update.
+	// When a project is in tenant mode, there should be one item in the list.
+	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	// VCSPushEvent is the event information for VCS push.
+	VCSPushEvent *vcs.PushEvent
+}
+
+// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost
+type UpdateSchemaGhostDetail struct {
+	// DatabaseID is the ID of a database.
+	DatabaseID int `json:"databaseId"`
+	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
+	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
+	DatabaseName string `json:"databaseName"`
+	// Statement is the statement to update database schema.
+	Statement string `json:"statement"`
+	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
+	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+}
+
+// UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
+type UpdateSchemaGhostContext struct {
 	// UpdateSchemaDetail is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
 	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
