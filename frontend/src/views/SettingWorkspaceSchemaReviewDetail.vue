@@ -39,37 +39,54 @@
         <span class="font-semibold">{{ $t("schame-review.filter") }}</span>
         <div class="flex flex-wrap gap-x-3">
           <span>{{ $t("schame-review.database") }}:</span>
-          <div v-for="db in databaseList" :key="db" class="flex items-center">
+          <div
+            v-for="db in databaseList"
+            :key="db.id"
+            class="flex items-center"
+          >
             <input
               type="checkbox"
-              :id="db"
-              :value="db"
-              :checked="state.checkedDatabase.has(db)"
-              @input="toggleCheckedDatabase(db)"
+              :id="db.id"
+              :value="db.id"
+              :checked="state.checkedDatabase.has(db.id)"
+              @input="toggleCheckedDatabase(db.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             />
-            <label :for="db" class="ml-2 items-center text-sm text-gray-600">
-              {{ db }}
+            <label :for="db.id" class="ml-2 items-center text-sm text-gray-600">
+              {{ db.id }}
+              <span
+                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+              >
+                {{ db.count }}
+              </span>
             </label>
           </div>
         </div>
         <div class="flex flex-wrap gap-x-3">
           <span>{{ $t("schame-review.error-level.name") }}:</span>
           <div
-            v-for="level in levelList"
-            :key="level"
+            v-for="level in errorLevelList"
+            :key="level.id"
             class="flex items-center"
           >
             <input
               type="checkbox"
-              :id="level"
-              :value="level"
-              :checked="state.checkedLevel.has(level)"
-              @input="toggleCheckedLevel(level)"
+              :id="level.id"
+              :value="level.id"
+              :checked="state.checkedLevel.has(level.id)"
+              @input="toggleCheckedLevel(level.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             />
-            <label :for="level" class="ml-2 items-center text-sm text-gray-600">
-              {{ $t(`schame-review.error-level.${level}`) }}
+            <label
+              :for="level.id"
+              class="ml-2 items-center text-sm text-gray-600"
+            >
+              {{ $t(`schame-review.error-level.${level.id}`) }}
+              <span
+                class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
+              >
+                {{ level.count }}
+              </span>
             </label>
           </div>
         </div>
@@ -192,15 +209,28 @@ const selectedRuleList = computed((): SelectedRule[] => {
   return res;
 });
 
-const databaseList = computed((): DatabaseType[] => {
-  return [
-    ...new Set(
-      selectedRuleList.value.reduce((res, rule) => {
-        res.push(...rule.database);
-        return res;
-      }, [] as DatabaseType[])
-    ),
-  ];
+const databaseList = computed((): { id: DatabaseType; count: number }[] => {
+  const tmp = selectedRuleList.value.reduce((dict, rule) => {
+    for (const db of rule.database) {
+      if (!dict[db]) {
+        dict[db] = {
+          id: db,
+          count: 0,
+        };
+      }
+      dict[db].count += 1;
+    }
+    return dict;
+  }, {} as { [id: string]: { id: DatabaseType; count: number } });
+
+  return Object.values(tmp);
+});
+
+const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
+  return levelList.map((level) => ({
+    id: level,
+    count: selectedRuleList.value.filter((rule) => rule.level === level).length,
+  }));
 });
 
 const toggleCheckedDatabase = (db: DatabaseType) => {

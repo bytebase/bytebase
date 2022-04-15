@@ -1,6 +1,6 @@
 <template>
   <BBBadge
-    :text="`${level[0].toUpperCase()}${level.slice(1).toLowerCase()}`"
+    :text="$t(`schame-review.error-level.${level}`)"
     :can-remove="false"
     :theme="theme"
   />
