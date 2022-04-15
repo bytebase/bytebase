@@ -1226,6 +1226,7 @@ database-review-guide:
     configure-rule:
       name: 配置规则
       add-rule: 增加规则
+      select-rule: 选择规则
       from-template: 你可以通过模板来添加规则
       from-scratch: 或者从头开始创建
     preview:

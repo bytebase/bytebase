@@ -66,7 +66,7 @@
       </button>
     </div>
     <BBModal
-      title="Select rule"
+      :title="$t('database-review-guide.create.configure-rule.select-rule')"
       v-if="state.openModal"
       @close="state.openModal = false"
     >

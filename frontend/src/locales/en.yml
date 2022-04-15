@@ -1394,6 +1394,7 @@ database-review-guide:
     configure-rule:
       name: Configure rule
       add-rule: Add rule
+      select-rule: Select rule
       from-template: You can add rules from a template
       from-scratch: Or starting from scratch
     preview:

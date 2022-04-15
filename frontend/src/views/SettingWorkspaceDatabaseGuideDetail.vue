@@ -25,11 +25,11 @@
           @confirm="onRemove"
         />
         <button type="button" class="btn-primary ml-5" @click="onEdit">
-          Edit
+          {{ $t("common.edit") }}
         </button>
       </div>
       <div class="flex flex-wrap gap-x-2 my-5">
-        <span>Environments:</span>
+        <span>{{ $t("common.environments") }}:</span>
         <BBBadge
           v-for="envId in guide.environmentList"
           :key="envId"

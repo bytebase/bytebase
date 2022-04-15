@@ -81,5 +81,13 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         (unknown("SCHEMA_GUIDE") as DatabaseSchemaGuide)
       );
     },
+
+    async fetchGuideList() {
+      throw new Error("function haven't implement yet");
+    },
+    async fetchGuideById(id: SchemaGuideId) {
+      console.log(`fetchGuideById: ${id}`);
+      throw new Error(`guide ${id} not found`);
+    },
   },
 });

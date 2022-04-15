@@ -939,7 +939,8 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.version-control.detail")
+      to.name?.toString() != "setting.workspace.version-control.detail" &&
+      to.name?.toString() != "setting.workspace.database-review-guide.detail")
   ) {
     next();
     return;
@@ -966,6 +967,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
+  const schemaGuideSlug = routerSlug.schemaGuideSlug;
 
   if (principalId) {
     usePrincipalStore()
@@ -1161,6 +1163,22 @@ router.beforeEach((to, from, next) => {
   if (vcsSlug) {
     useVCSStore()
       .fetchVCSById(idFromSlug(vcsSlug))
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
+  if (schemaGuideSlug) {
+    useSchemaSystemStore()
+      .fetchGuideById(idFromSlug(schemaGuideSlug))
       .then(() => {
         next();
       })
