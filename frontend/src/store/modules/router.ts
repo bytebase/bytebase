@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { RouteLocationNormalized } from "vue-router";
-import { RouterSlug } from "../../types";
+import { RouterSlug } from "@/types";
 
 export const useRouterStore = defineStore("router", {
   // need not to initialize a state since we store everything into localStorage

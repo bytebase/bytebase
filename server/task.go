@@ -458,7 +458,17 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 		taskCheckRun.Updater = updater
 	}
 
-	instance, err := s.composeInstanceByID(ctx, task.InstanceID)
+	blockedBy := []string{}
+	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{FromTaskID: raw.ID})
+	if err != nil {
+		return nil, err
+	}
+	for _, taskDAG := range taskDAGList {
+		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.ToTaskID))
+	}
+	task.BlockedBy = blockedBy
+
+	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -519,10 +529,11 @@ func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *
 		}
 	}
 
-	task.Instance, err = s.composeInstanceByID(ctx, task.InstanceID)
+	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return err
 	}
+	task.Instance = instance
 
 	if task.DatabaseID != nil {
 		databaseFind := &api.DatabaseFind{
@@ -657,8 +668,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
 		taskPatched.Status == api.TaskDone {
-		// TODO(dragonly): remove this composition
-		instance, err := s.composeInstanceByID(ctx, task.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}

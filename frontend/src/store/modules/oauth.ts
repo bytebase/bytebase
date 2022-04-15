@@ -1,6 +1,6 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import { VCSId, OAuthToken, ResourceObject, VCSType } from "@/types";
-import { defineStore } from "pinia";
 
 const convert = (raw: ResourceObject): OAuthToken => {
   const attr = raw.attributes;

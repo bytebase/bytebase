@@ -1,31 +1,28 @@
+import { defineStore } from "pinia";
 import {
   ResourceIdentifier,
   ResourceObject,
   Pipeline,
   PipelineState,
   Stage,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
-
-const state: () => PipelineState = () => ({});
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useStageStore } from "./stage";
 
 function convert(
   pipeline: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Pipeline {
   const stageList: Stage[] = [];
   const stageIdList = pipeline.relationships!.stage
     .data as ResourceIdentifier[];
+  const stageStore = useStageStore();
   // Needs to iterate through stageIdList to maintain the order
   for (const idItem of stageIdList) {
     for (const item of includedList || []) {
       if (item.type == "stage") {
         if (idItem.id == item.id) {
-          const stage: Stage = rootGetters["stage/convertPartial"](
-            item,
-            includedList
-          );
+          const stage: Stage = stageStore.convertPartial(item, includedList);
           stageList.push(stage);
         }
       }
@@ -60,23 +57,14 @@ function convert(
 
   return result;
 }
-
-const getters = {
-  convert:
-    (state: PipelineState, getters: any, rootState: any, rootGetters: any) =>
-    (pipeline: ResourceObject, includedList: ResourceObject[]): Pipeline => {
-      return convert(pipeline, includedList, rootGetters);
+export const usePipelineStore = defineStore("pipeline", {
+  state: (): PipelineState => ({}),
+  actions: {
+    convert(
+      pipeline: ResourceObject,
+      includedList: ResourceObject[]
+    ): Pipeline {
+      return convert(pipeline, includedList);
     },
-};
-
-const actions = {};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+  },
+});

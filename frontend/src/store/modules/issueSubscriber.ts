@@ -6,7 +6,7 @@ import {
   IssueSubscriberState,
   ResourceObject,
   IssueId,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(

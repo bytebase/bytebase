@@ -292,7 +292,7 @@ type ActivityFind struct {
 
 	// Domain specific fields
 	CreatorID   *int
-	Type        *string
+	TypePrefix  *string
 	Level       *ActivityLevel
 	ContainerID *int
 	Limit       *int

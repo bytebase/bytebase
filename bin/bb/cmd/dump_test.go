@@ -32,11 +32,7 @@ func TestDump(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--type", "mysql",
-				"--username", "root",
-				"--hostname", "localhost",
-				"--port", fmt.Sprint(mysql.Port()),
-				"--database", "bytebase_test_todo",
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestDump,
 		},

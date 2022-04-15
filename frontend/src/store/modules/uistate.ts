@@ -1,5 +1,5 @@
-import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
+import { isUndefined } from "lodash-es";
 
 const COLLAPSE_MODULE = "ui.list.collapse";
 const INTRO_MODULE = "ui.intro";

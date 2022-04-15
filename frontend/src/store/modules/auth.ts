@@ -1,5 +1,7 @@
+import { defineStore, storeToRefs } from "pinia";
 import axios from "axios";
 import { isEqual } from "lodash-es";
+import { Ref } from "vue";
 import {
   Principal,
   AuthState,
@@ -12,9 +14,7 @@ import {
   AuthProvider,
 } from "@/types";
 import { getIntCookie } from "@/utils";
-import { defineStore, storeToRefs } from "pinia";
 import { usePrincipalStore } from "./principal";
-import { Ref } from "vue";
 
 function convert(user: ResourceObject): Principal {
   return usePrincipalStore().principalById(parseInt(user.id, 10));

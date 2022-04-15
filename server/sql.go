@@ -84,7 +84,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, sync.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
@@ -121,7 +121,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
 		}
 
-		instance, err := s.composeInstanceByID(ctx, exec.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
@@ -240,7 +240,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 		// to avoid changing the updated_ts
 		if version != instance.EngineVersion {
-			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
+			_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
 				UpdaterID:     api.SystemBotID,
 				EngineVersion: &version,
@@ -254,7 +254,6 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Sync schema
 		userList, schemaList, err := driver.SyncSchema(ctx)
 		if err != nil {
-			fmt.Printf("sync schema error: %v\n", err)
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {

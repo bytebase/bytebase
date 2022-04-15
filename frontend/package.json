@@ -1,6 +1,6 @@
 {
   "name": "bytebase",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "vite --mode dev",
@@ -34,10 +34,7 @@
     "vue": "^3.2.30",
     "vue-i18n": "^9.2.0-beta.20",
     "vue-router": "^4.0.8",
-    "vueuc": "^0.4.27",
-    "vuex": "^4.0.0",
-    "vuex-composition-helpers": "^2.0.1",
-    "vuex-persistedstate": "^4.1.0"
+    "vueuc": "^0.4.27"
   },
   "devDependencies": {
     "@iconify/json": "^1.1.432",

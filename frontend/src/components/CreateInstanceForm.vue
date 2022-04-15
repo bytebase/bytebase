@@ -229,7 +229,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
@@ -243,7 +242,7 @@ import {
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useInstanceStore } from "@/store";
+import { pushNotification, useInstanceStore, useSQLStore } from "@/store";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -254,9 +253,9 @@ interface LocalState {
 
 const emit = defineEmits(["dismiss"]);
 
-const store = useStore();
 const router = useRouter();
 const { t } = useI18n();
+const sqlStore = useSQLStore();
 
 const engineList: EngineType[] = [
   "MYSQL",
@@ -392,7 +391,7 @@ const tryCreate = () => {
     host: state.instance.host,
     port: state.instance.port,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
       doCreate();
     } else {
@@ -439,7 +438,7 @@ const testConnection = () => {
     useEmptyPassword: false,
     instanceId: undefined,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
         module: "bytebase",

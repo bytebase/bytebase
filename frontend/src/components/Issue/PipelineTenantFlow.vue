@@ -116,8 +116,8 @@ import {
 } from "../../types";
 import { activeTask, activeTaskInStage, taskSlug } from "../../utils";
 import { isEmpty } from "lodash-es";
-import { useStore } from "vuex";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
+import { useDatabaseStore } from "@/store";
 
 interface FlowItem {
   stageId: StageId;
@@ -159,22 +159,17 @@ export default defineComponent({
   },
   emits: ["select-stage-id", "select-task"],
   setup(props, { emit }) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
 
     watchEffect(function prepare() {
       if (props.create) {
-        store.dispatch(
-          "database/fetchDatabaseListByProjectId",
-          props.project.id
-        );
+        databaseStore.fetchDatabaseListByProjectId(props.project.id);
       }
     });
 
     const databaseForTask = (task: Task | TaskCreate): Database => {
       if (props.create) {
-        return store.getters["database/databaseById"](
-          (task as TaskCreate).databaseId
-        ) as Database;
+        return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
       } else {
         return (task as Task).database!;
       }

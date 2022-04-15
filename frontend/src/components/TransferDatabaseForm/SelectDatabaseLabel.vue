@@ -65,7 +65,6 @@ export default {
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect, watch } from "vue";
-import { useStore } from "vuex";
 import { capitalize, cloneDeep } from "lodash-es";
 import {
   Database,
@@ -83,7 +82,7 @@ import {
   hidePrefix,
 } from "../../utils";
 import { useI18n } from "vue-i18n";
-import { useLabelStore } from "@/store";
+import { useLabelStore, useProjectStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 const props = defineProps<{
@@ -99,13 +98,13 @@ const state = reactive({
   databaseLabelList: cloneDeep(props.database.labels),
 });
 
-const store = useStore();
 const labelStore = useLabelStore();
+const projectStore = useProjectStore();
 
 const { t } = useI18n();
 
 const targetProject = computed(() => {
-  return store.getters["project/projectById"](props.targetProjectId) as Project;
+  return projectStore.getProjectById(props.targetProjectId) as Project;
 });
 
 const { labelList } = storeToRefs(labelStore);
@@ -115,7 +114,7 @@ const availableLabelList = computed(() => {
 });
 
 const prepare = () => {
-  store.dispatch("project/fetchProjectById", props.targetProjectId);
+  projectStore.fetchProjectById(props.targetProjectId);
   labelStore.fetchLabelList();
 };
 

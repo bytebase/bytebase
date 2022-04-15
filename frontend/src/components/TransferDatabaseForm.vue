@@ -100,7 +100,6 @@ import {
   reactive,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
@@ -111,7 +110,12 @@ import {
   DatabaseLabel,
 } from "../types";
 import { sortDatabaseList } from "../utils";
-import { pushNotification, useCurrentUser, useEnvironmentList } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+} from "@/store";
 
 type TransferSource = "DEFAULT" | "OTHER";
 
@@ -134,7 +138,7 @@ export default defineComponent({
   },
   emits: ["submit", "dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
 
     const state = reactive<LocalState>({
       transferSource:
@@ -144,10 +148,7 @@ export default defineComponent({
     const currentUser = useCurrentUser();
 
     const prepareDatabaseListForDefaultProject = () => {
-      store.dispatch(
-        "database/fetchDatabaseListByProjectId",
-        DEFAULT_PROJECT_ID
-      );
+      databaseStore.fetchDatabaseListByProjectId(DEFAULT_PROJECT_ID);
     };
 
     watchEffect(prepareDatabaseListForDefaultProject);
@@ -158,13 +159,11 @@ export default defineComponent({
       var list;
       if (state.transferSource == "DEFAULT") {
         list = cloneDeep(
-          store.getters["database/databaseListByProjectId"](DEFAULT_PROJECT_ID)
+          databaseStore.getDatabaseListByProjectId(DEFAULT_PROJECT_ID)
         );
       } else {
         list = cloneDeep(
-          store.getters["database/databaseListByPrincipalId"](
-            currentUser.value.id
-          )
+          databaseStore.getDatabaseListByPrincipalId(currentUser.value.id)
         ).filter((item: Database) => item.project.id != props.projectId);
       }
 
@@ -180,8 +179,8 @@ export default defineComponent({
     };
 
     const transferDatabase = (labels: DatabaseLabel[]) => {
-      store
-        .dispatch("database/transferProject", {
+      databaseStore
+        .transferProject({
           databaseId: state.selectedDatabase!.id,
           projectId: props.projectId,
           labels,

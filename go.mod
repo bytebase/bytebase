@@ -14,8 +14,9 @@ require (
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
+	github.com/jackc/pgtype v1.10.0
+	github.com/jackc/pgx/v4 v4.15.0
 	github.com/labstack/echo/v4 v4.6.1
-	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
 	github.com/pingcap/tidb/parser v0.0.0-20211209055157-9f744cdf8266
@@ -25,6 +26,7 @@ require (
 	github.com/spf13/cobra v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
+	github.com/xo/dburl v0.9.1
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect

@@ -79,20 +79,15 @@
 import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
-import {
-  useNamespacedGetters,
-  useNamespacedState,
-  useNamespacedActions,
-} from "vuex-composition-helpers";
 import slug from "slug";
 
-import { pushNotification, useTabStore } from "@/store";
 import {
-  SqlEditorState,
-  SheetGetters,
-  SheetActions,
-  AccessOption,
-} from "@/types";
+  pushNotification,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
+import { AccessOption } from "@/types";
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -100,6 +95,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
@@ -121,28 +118,17 @@ const accessOptions = computed<AccessOption[]>(() => {
   ];
 });
 
-const { connectionContext } = useNamespacedState<SqlEditorState>("sqlEditor", [
-  "connectionContext",
-]);
-const { currentSheet, isCreator } = useNamespacedGetters<SheetGetters>(
-  "sheet",
-  ["currentSheet", "isCreator"]
-);
-const { patchSheetById } = useNamespacedActions<SheetActions>("sheet", [
-  "patchSheetById",
-]);
+const ctx = computed(() => sqlEditorStore.connectionContext);
 
-const ctx = connectionContext.value;
-
-const sheet = computed(() => currentSheet.value(tabStore.currentTab));
-const creator = computed(() => isCreator.value(tabStore.currentTab));
+const sheet = computed(() => sheetStore.currentSheet);
+const creator = computed(() => sheetStore.isCreator);
 
 const host = window.location.host;
 const connectionSlug = [
-  slug(ctx.instanceName as string),
-  ctx.instanceId,
-  slug(ctx.databaseName as string),
-  ctx.databaseId,
+  slug(ctx.value.instanceName as string),
+  ctx.value.instanceId,
+  slug(ctx.value.databaseName as string),
+  ctx.value.databaseId,
 ].join("_");
 
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
@@ -159,7 +145,7 @@ const creatorAccessDescStyle = computed(() => {
 
 const updateSheet = () => {
   if (tabStore.currentTab.sheetId) {
-    patchSheetById({
+    sheetStore.patchSheetById({
       id: tabStore.currentTab.sheetId,
       visibility: currentAccess.value.value,
     });

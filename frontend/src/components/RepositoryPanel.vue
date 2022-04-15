@@ -91,9 +91,8 @@ import {
   RepositoryConfig,
   Project,
 } from "../types";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useRepositoryStore } from "@/store";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -119,7 +118,7 @@ export default defineComponent({
   emits: ["change-repository"],
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
@@ -165,15 +164,13 @@ export default defineComponent({
     });
 
     const restoreToUIWorkflowType = () => {
-      store
-        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("repository.restore-ui-workflow-success"),
-          });
+      repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("repository.restore-ui-workflow-success"),
         });
+      });
     };
 
     const doUpdate = () => {
@@ -202,8 +199,8 @@ export default defineComponent({
         repositoryPatch.schemaPathTemplate =
           state.repositoryConfig.schemaPathTemplate;
       }
-      store
-        .dispatch("repository/updateRepositoryByProjectId", {
+      repositoryStore
+        .updateRepositoryByProjectId({
           projectId: props.project.id,
           repositoryPatch,
         })

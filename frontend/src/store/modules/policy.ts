@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   Environment,
@@ -10,7 +11,6 @@ import {
 import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
-import { defineStore } from "pinia";
 
 function convert(
   policy: ResourceObject,
