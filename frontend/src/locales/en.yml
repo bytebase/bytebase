@@ -1380,6 +1380,7 @@ database-review-guide:
   remove-guideline: Successfully removed the guideline.
   create-guideline: Successfully created the guideline.
   update-guideline: Successfully updated the guideline.
+  filter-by-database: Filter
   create:
     breadcrumb: Create guideline
     basic-info:

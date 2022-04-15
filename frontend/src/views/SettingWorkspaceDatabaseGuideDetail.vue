@@ -26,7 +26,7 @@
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-2 my-5">
+      <div class="flex flex-wrap gap-x-3 my-5">
         <span>{{ $t("common.environments") }}:</span>
         <BBBadge
           v-for="envName in envNameList"
@@ -34,6 +34,22 @@
           :text="envName"
           :can-remove="false"
         />
+      </div>
+      <div class="flex flex-wrap gap-x-3 my-5">
+        <span>{{ $t("database-review-guide.filter-by-database") }}:</span>
+        <div v-for="db in databaseList" :key="db" class="flex items-center">
+          <input
+            type="checkbox"
+            :id="db"
+            :value="db"
+            :checked="state.checkedDatabase.has(db)"
+            @input="toggleCheckedDatabase(db)"
+            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+          />
+          <label :for="db" class="ml-2 items-center text-sm text-gray-600">
+            {{ db }}
+          </label>
+        </div>
       </div>
       <div class="py-2 flex justify-between items-center mt-5">
         <SchemaGuideCategoryTabFilter
@@ -58,6 +74,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug } from "../utils";
 import {
+  DatabaseType,
   SchemaRule,
   DatabaseSchemaGuide,
   convertToCategoryList,
@@ -83,6 +100,7 @@ interface LocalState {
   searchText: string;
   selectedCategory?: string;
   editMode: boolean;
+  checkedDatabase: Set<DatabaseType>;
 }
 
 const { t } = useI18n();
@@ -97,6 +115,7 @@ const state = reactive<LocalState>({
     ? (router.currentRoute.value.query.category as string)
     : undefined,
   editMode: false,
+  checkedDatabase: new Set<DatabaseType>(),
 });
 
 const guide = computed((): DatabaseSchemaGuide => {
@@ -146,6 +165,25 @@ const selectedRuleList = computed((): SelectedRule[] => {
   return res;
 });
 
+const databaseList = computed((): DatabaseType[] => {
+  return [
+    ...new Set(
+      selectedRuleList.value.reduce((res, rule) => {
+        res.push(...rule.database);
+        return res;
+      }, [] as DatabaseType[])
+    ),
+  ];
+});
+
+const toggleCheckedDatabase = (db: DatabaseType) => {
+  if (state.checkedDatabase.has(db)) {
+    state.checkedDatabase.delete(db);
+  } else {
+    state.checkedDatabase.add(db);
+  }
+};
+
 const categoryFilterList = computed((): CategoryFilterItem[] => {
   return convertToCategoryList(selectedRuleList.value).map((c) => ({
     id: c.id,
@@ -171,7 +209,11 @@ const selectCategory = (category: string) => {
 
 const filteredSelectedRuleList = computed((): SelectedRule[] => {
   return selectedRuleList.value.filter((selectedRule) => {
-    if (!state.selectedCategory && !state.searchText) {
+    if (
+      !state.selectedCategory &&
+      !state.searchText &&
+      state.checkedDatabase.size === 0
+    ) {
       // Select "All"
       return true;
     }
@@ -180,7 +222,11 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
       (!state.selectedCategory ||
         selectedRule.category === state.selectedCategory) &&
       (!state.searchText ||
-        selectedRule.id.toLowerCase().includes(state.searchText.toLowerCase()))
+        selectedRule.id
+          .toLowerCase()
+          .includes(state.searchText.toLowerCase())) &&
+      (state.checkedDatabase.size === 0 ||
+        selectedRule.database.some((db) => state.checkedDatabase.has(db)))
     );
   });
 });

@@ -82,11 +82,15 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       );
     },
 
-    async fetchGuideList() {
+    async fetchGuideList(): Promise<DatabaseSchemaGuide[]> {
       throw new Error("function haven't implement yet");
     },
-    async fetchGuideById(id: SchemaGuideId) {
-      throw new Error(`guide ${id} not found`);
+    async fetchGuideById(id: SchemaGuideId): Promise<DatabaseSchemaGuide> {
+      const guide = this.getGuideById(id);
+      if (!guide) {
+        throw new Error(`guide ${id} not found`);
+      }
+      return guide;
     },
   },
 });

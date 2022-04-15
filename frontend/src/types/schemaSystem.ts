@@ -36,7 +36,7 @@ export interface RulePayload {
   [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
 }
 
-type DatabaseType = "MySQL" | "Common";
+export type DatabaseType = "MySQL" | "Common";
 
 export type CategoryType = "engine" | "naming" | "query" | "table" | "column";
 

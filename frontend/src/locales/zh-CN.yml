@@ -1213,6 +1213,7 @@ database-review-guide:
   remove-guideline: 准则已删除
   create-guideline: 准则已创建
   update-guideline: 准则已更新
+  filter-by-database: 筛选
   create:
     breadcrumb: 创建准则
     basic-info:
