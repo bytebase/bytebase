@@ -1207,8 +1207,8 @@ subscription:
       desc: 大型组织，有专属 DBA 团队来管理数据库
 schame-review:
   title: Schema 审查
-  no-rule-set: 没有 Schema 审查
-  get-start: 配置规则来开启 Schema 审查
+  no-rule-set: 没有 schema 审查
+  get-start: 配置规则来开启 schema 审查
   add-review: 新增审查
   search-rule-name: 搜索规则名称
   remove-review: 审查已删除
@@ -1216,6 +1216,7 @@ schame-review:
   update-review: 审查已更新
   filter: 筛选
   database: 数据库
+  delete: 删除该 schema 审查
   error-level:
     name: 错误等级
     error: 错误

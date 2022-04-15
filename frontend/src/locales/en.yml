@@ -1383,6 +1383,7 @@ schame-review:
   update-review: Successfully updated the review.
   filter: Filter
   database: Database
+  delete: Delete this schema review
   error-level:
     name: Error Level
     error: Error

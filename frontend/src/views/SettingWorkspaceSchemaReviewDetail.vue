@@ -13,15 +13,6 @@
         <h1 class="text-xl md:text-3xl font-semibold flex-1">
           {{ review.name }}
         </h1>
-
-        <BBButtonConfirm
-          :style="'DELETE'"
-          :button-text="$t('common.delete')"
-          :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${review.name}'?`"
-          :require-confirm="true"
-          @confirm="onRemove"
-        />
         <button type="button" class="btn-primary ml-5" @click="onEdit">
           {{ $t("common.edit") }}
         </button>
@@ -104,6 +95,14 @@
         />
       </div>
       <SchemaReviewPreview :rule-list="filteredSelectedRuleList" class="py-5" />
+      <BBButtonConfirm
+        :style="'DELETE'"
+        :button-text="$t('schame-review.delete')"
+        :ok-text="$t('common.delete')"
+        :confirm-title="$t('common.delete') + ` '${review.name}'?`"
+        :require-confirm="true"
+        @confirm="onRemove"
+      />
     </div>
   </transition>
 </template>
