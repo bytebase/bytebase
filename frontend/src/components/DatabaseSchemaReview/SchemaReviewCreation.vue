@@ -9,7 +9,7 @@
     @cancel="onCancel"
   >
     <template #0>
-      <SchemaGuideInfo
+      <SchemaReviewInfo
         :name="state.name"
         :selected-env-name-list="state.selectedEnvNameList"
         :environment-list="environmentList"
@@ -18,7 +18,7 @@
       />
     </template>
     <template #1>
-      <SchemaGuideConfig
+      <SchemaReviewConfig
         class="py-5"
         :select-rule-list="state.selectedRuleList"
         @select="onRuleSelect"
@@ -28,7 +28,7 @@
       />
     </template>
     <template #2>
-      <SchemaGuidePreview
+      <SchemaReviewPreview
         :name="state.name"
         :rule-list="state.selectedRuleList"
         class="py-5"
@@ -65,7 +65,7 @@ const props = withDefaults(
   }>(),
   {
     id: undefined,
-    name: "Database schema guideline",
+    name: "Database schema review",
     selectedEnvNameList: () => [],
     selectedRuleList: () => [],
   }
@@ -81,12 +81,12 @@ const environmentList = useEnvironmentList(["NORMAL"]);
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
-const ROUTE_NAME = "setting.workspace.database-review-guide";
+const ROUTE_NAME = "setting.workspace.schame-review";
 
 const stepList: BBStepTabItem[] = [
-  { title: t("database-review-guide.create.basic-info.name") },
-  { title: t("database-review-guide.create.configure-rule.name") },
-  { title: t("database-review-guide.create.preview.name") },
+  { title: t("schame-review.create.basic-info.name") },
+  { title: t("schame-review.create.configure-rule.name") },
+  { title: t("schame-review.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
@@ -136,7 +136,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     }
   }
 
-  const guide = {
+  const review = {
     name: state.name,
     environmentList: envIds,
     ruleList: state.selectedRuleList.map((rule) => ({
@@ -152,17 +152,15 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   };
 
   if (props.id) {
-    store.updateGuideline(props.id, guide);
+    store.updateReview(props.id, review);
   } else {
-    store.addGuideline(guide);
+    store.addReview(review);
   }
 
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(
-      `database-review-guide.${props.id ? "update" : "create"}-guideline`
-    ),
+    title: t(`schame-review.${props.id ? "update" : "create"}-review`),
   });
 
   allowChangeCallback();

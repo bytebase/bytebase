@@ -1,4 +1,4 @@
-import { SchemaGuideId } from "./id";
+import { SchemaReviewId } from "./id";
 import { Principal } from "./principal";
 
 export enum RuleLevel {
@@ -60,8 +60,8 @@ interface DatabaseSchemaRule {
   };
 }
 
-export interface DatabaseSchemaGuide {
-  id: SchemaGuideId;
+export interface DatabaseSchemaReview {
+  id: SchemaReviewId;
 
   // Standard fields
   creator: Principal;
@@ -75,14 +75,14 @@ export interface DatabaseSchemaGuide {
   environmentList: number[];
 }
 
-export interface DatabaseSchemaGuideCreate {
+export interface DatabaseSchemaReviewCreate {
   // Domain specific fields
   name: string;
   ruleList: DatabaseSchemaRule[];
   environmentList: number[];
 }
 
-export type DatabaseSchemaGuidePatch = {
+export type DatabaseSchemaReviewPatch = {
   // Domain specific fields
   name?: string;
   ruleList?: DatabaseSchemaRule[];

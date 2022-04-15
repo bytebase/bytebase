@@ -375,37 +375,37 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "database-review-guide",
-                name: "setting.workspace.database-review-guide",
+                path: "schame-review",
+                name: "setting.workspace.schame-review",
                 meta: {
-                  title: () => t("database-review-guide.title"),
+                  title: () => t("schame-review.title"),
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceDatabaseGuide.vue"),
+                  import("../views/SettingWorkspaceSchemaReview.vue"),
                 props: true,
               },
               {
-                path: "database-review-guide/new",
-                name: "setting.workspace.database-review-guide.create",
+                path: "schame-review/new",
+                name: "setting.workspace.schame-review.create",
                 meta: {
-                  title: () => t("database-review-guide.create.breadcrumb"),
+                  title: () => t("schame-review.create.breadcrumb"),
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceDatabaseGuideCreate.vue"),
+                  import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
                 props: true,
               },
               {
-                path: "database-review-guide/:schemaGuideSlug",
-                name: "setting.workspace.database-review-guide.detail",
+                path: "schame-review/:schemaReviewSlug",
+                name: "setting.workspace.schame-review.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.schemaGuideSlug as string;
+                    const slug = route.params.schemaReviewSlug as string;
                     return useSchemaSystemStore().getGuideById(idFromSlug(slug))
                       .name;
                   },
                 },
                 component: () =>
-                  import("../views/SettingWorkspaceDatabaseGuideDetail.vue"),
+                  import("../views/SettingWorkspaceSchemaReviewDetail.vue"),
                 props: true,
               },
             ],
@@ -940,7 +940,7 @@ router.beforeEach((to, from, next) => {
     to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail" &&
-      to.name?.toString() != "setting.workspace.database-review-guide.detail")
+      to.name?.toString() != "setting.workspace.schame-review.detail")
   ) {
     next();
     return;
@@ -967,7 +967,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
-  const schemaGuideSlug = routerSlug.schemaGuideSlug;
+  const schemaReviewSlug = routerSlug.schemaReviewSlug;
 
   if (principalId) {
     usePrincipalStore()
@@ -1176,9 +1176,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (schemaGuideSlug) {
+  if (schemaReviewSlug) {
     useSchemaSystemStore()
-      .fetchGuideById(idFromSlug(schemaGuideSlug))
+      .fetchReviewById(idFromSlug(schemaReviewSlug))
       .then(() => {
         next();
       })

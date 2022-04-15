@@ -2,32 +2,32 @@
   <div class="space-y-5">
     <div>
       <label class="textlabel mt-4">
-        {{ $t("database-review-guide.create.basic-info.display-name") }}
+        {{ $t("schame-review.create.basic-info.display-name") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("database-review-guide.create.basic-info.display-name-label") }}
+        {{ $t("schame-review.create.basic-info.display-name-label") }}
       </p>
       <BBTextField
         class="mt-2 w-full"
-        placeholder="Database guideline name"
+        placeholder="Database review name"
         :value="name"
         @input="$emit('name-change', $event.target.value)"
       />
     </div>
     <div>
       <label class="textlabel mt-4">
-        {{ $t("database-review-guide.create.basic-info.environments") }}
+        {{ $t("schame-review.create.basic-info.environments") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel mb-5">
-        {{ $t("database-review-guide.create.basic-info.environments-label") }}
+        {{ $t("schame-review.create.basic-info.environments-label") }}
       </p>
       <BBAttention
         v-if="availableEnvironmentNameList.length === 0"
         :style="'WARN'"
         :description="
-          $t('database-review-guide.create.basic-info.no-available-environment')
+          $t('schame-review.create.basic-info.no-available-environment')
         "
         class="mb-5"
       />
@@ -37,7 +37,7 @@
           :options="availableEnvironmentNameList"
           :multiple="true"
           :placeholder="
-            $t('database-review-guide.create.basic-info.environments-select')
+            $t('schame-review.create.basic-info.environments-select')
           "
           class="flex items-center relative values py-1 border border-gray-300 rounded cursor-pointer"
         />

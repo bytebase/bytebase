@@ -103,7 +103,7 @@ export default defineComponent({
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
-      const schemaGuideSlug = routeSlug.schemaGuideSlug;
+      const schemaReviewSlug = routeSlug.schemaReviewSlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -155,10 +155,10 @@ export default defineComponent({
           name: t("common.version-control"),
           path: "/setting/version-control",
         });
-      } else if (schemaGuideSlug) {
+      } else if (schemaReviewSlug) {
         list.push({
-          name: t("database-review-guide.title"),
-          path: "/setting/database-review-guide",
+          name: t("schame-review.title"),
+          path: "/setting/schame-review",
         });
       }
 

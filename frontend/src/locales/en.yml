@@ -1372,26 +1372,26 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
-database-review-guide:
-  title: Schema Guideline
-  search-guideline-name: Search guideline name
+schame-review:
+  title: Schema Review
+  search-review-name: Search review name
   search-rule-name: Search rule name
-  add-guideline: Add guideline
-  remove-guideline: Successfully removed the guideline.
-  create-guideline: Successfully created the guideline.
-  update-guideline: Successfully updated the guideline.
+  add-review: Add rule set
+  remove-review: Successfully removed the review.
+  create-review: Successfully created the review.
+  update-review: Successfully updated the review.
   filter-by-database: Filter
   create:
-    breadcrumb: Create guideline
+    breadcrumb: Create review
     basic-info:
       name: Basic info
       display-name: Display name
       display-name-label: >-
-        An display name to help identifying among different guidelines.
+        An display name to help identifying among different reviews.
       environments: Environments
-      environments-label: Apply guideline to selected environments. One environment can only has one guideline.
+      environments-label: Apply the review to selected environments. One environment can only has one review.
       environments-select: Select environments
-      no-available-environment: No available environment. One environment can only has one schema guideline.
+      no-available-environment: No available environment. One environment can only has one schema review.
     configure-rule:
       name: Configure rule
       add-rule: Add rule

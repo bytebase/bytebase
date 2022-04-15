@@ -6,7 +6,7 @@
           <heroicons-outline:plus-sm class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-base font-normal text-main tracking-tight">
-          {{ $t("database-review-guide.add-guideline") }}
+          {{ $t("schame-review.add-review") }}
         </h3>
       </div>
     </div>
@@ -18,11 +18,11 @@
       />
       <BBTableSearch
         ref="searchField"
-        :placeholder="$t('database-review-guide.search-guideline-name')"
+        :placeholder="$t('schame-review.search-review-name')"
         @change-text="(text) => (state.searchText = text)"
       />
     </div>
-    <SchemaGuideTable :guide-list="filteredGuideList" />
+    <SchemaReviewTable :review-list="filteredReviewList" />
   </div>
 </template>
 
@@ -30,11 +30,11 @@
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useEnvironmentStore, useSchemaSystemStore } from "@/store";
-import { Environment, DatabaseSchemaGuide } from "../types";
+import { Environment, DatabaseSchemaReview } from "../types";
 
 const router = useRouter();
 const store = useSchemaSystemStore();
-const ROUTE_NAME = "setting.workspace.database-review-guide";
+const ROUTE_NAME = "setting.workspace.schame-review";
 
 interface LocalState {
   searchText: string;
@@ -68,18 +68,18 @@ const goToCreationView = () => {
   });
 };
 
-const filteredGuideList = computed((): DatabaseSchemaGuide[] => {
-  const list = store.guideList;
+const filteredReviewList = computed((): DatabaseSchemaReview[] => {
+  const list = store.reviewList;
   if (!state.selectedEnvironment && !state.searchText) {
     // Select "All"
     return list;
   }
-  return list.filter((guide) => {
+  return list.filter((review) => {
     return (
       (!state.selectedEnvironment ||
-        new Set(guide.environmentList).has(state.selectedEnvironment.id)) &&
+        new Set(review.environmentList).has(state.selectedEnvironment.id)) &&
       (!state.searchText ||
-        guide.name.toLowerCase().includes(state.searchText.toLowerCase()))
+        review.name.toLowerCase().includes(state.searchText.toLowerCase()))
     );
   });
 });

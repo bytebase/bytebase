@@ -171,11 +171,11 @@ export const useRouterStore = defineStore("router", {
         // /setting/version-control/:vcsId
         // Total 2 elements, 2nd element is the version control system id
         const guideComponents = currentRoute.path.match(
-          "/setting/database-review-guide/([0-9a-zA-Z_-]+)"
+          "/setting/schame-review/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (guideComponents[1]) {
           return {
-            schemaGuideSlug: guideComponents[1],
+            schemaReviewSlug: guideComponents[1],
           };
         }
       }

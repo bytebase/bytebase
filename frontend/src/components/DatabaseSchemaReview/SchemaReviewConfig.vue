@@ -3,7 +3,7 @@
     <div v-if="selectRuleList.length === 0">
       <div>
         <p class="textlabel">
-          {{ $t("database-review-guide.create.configure-rule.from-template") }}
+          {{ $t("schame-review.create.configure-rule.from-template") }}
         </p>
         <div
           class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
@@ -21,7 +21,7 @@
       </div>
       <div class="border-t border-gray-200 mt-8 pt-8">
         <p class="textlabel">
-          {{ $t("database-review-guide.create.configure-rule.from-scratch") }}
+          {{ $t("schame-review.create.configure-rule.from-scratch") }}
         </p>
         <button
           type="button"
@@ -30,7 +30,7 @@
         >
           <div class="flex">
             <heroicons-solid:plus-circle class="w-5 h-5 mr-2" />
-            {{ $t("database-review-guide.create.configure-rule.add-rule") }}
+            {{ $t("schame-review.create.configure-rule.add-rule") }}
           </div>
         </button>
       </div>
@@ -61,12 +61,12 @@
       >
         <div class="flex">
           <heroicons-solid:plus-circle class="w-5 h-5 mr-2" />
-          {{ $t("database-review-guide.create.configure-rule.add-rule") }}
+          {{ $t("schame-review.create.configure-rule.add-rule") }}
         </div>
       </button>
     </div>
     <BBModal
-      :title="$t('database-review-guide.create.configure-rule.select-rule')"
+      :title="$t('schame-review.create.configure-rule.select-rule')"
       v-if="state.openModal"
       @close="state.openModal = false"
     >
@@ -136,7 +136,7 @@ const getRuleListWithLevel = (
 
 const templateList: Template[] = [
   {
-    name: "Guideline for Prod",
+    name: "Schema review for Prod",
     image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
     ruleList: [
       ...getRuleListWithLevel(
@@ -164,7 +164,7 @@ const templateList: Template[] = [
     ],
   },
   {
-    name: "Guideline for Dev",
+    name: "Schema review for Dev",
     image: new URL("../../assets/plan-free.png", import.meta.url).href,
     ruleList: [
       ...getRuleListWithLevel(

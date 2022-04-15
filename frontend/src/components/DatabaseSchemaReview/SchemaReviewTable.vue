@@ -1,20 +1,20 @@
 <template>
   <BBTable
     :column-list="columnList"
-    :data-source="guideList"
+    :data-source="reviewList"
     :show-header="true"
     :left-bordered="false"
     :right-bordered="false"
     @click-row="onRowClick"
   >
-    <template #body="{ rowData: guide }">
+    <template #body="{ rowData: review }">
       <BBTableCell class="w-32">
-        {{ guide.name }}
+        {{ review.name }}
       </BBTableCell>
       <BBTableCell class="w-16">
         <div class="flex gap-x-2">
           <BBBadge
-            v-for="envId in guide.environmentList"
+            v-for="envId in review.environmentList"
             :key="envId"
             :text="envStore.getEnvironmentNameById(envId)"
             :can-remove="false"
@@ -22,10 +22,10 @@
         </div>
       </BBTableCell>
       <BBTableCell class="w-16">
-        {{ humanizeTs(guide.updatedTs) }}
+        {{ humanizeTs(review.updatedTs) }}
       </BBTableCell>
       <BBTableCell class="w-16">
-        {{ humanizeTs(guide.createdTs) }}
+        {{ humanizeTs(review.createdTs) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -35,15 +35,15 @@
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { BBTableColumn } from "../../bbkit/types";
-import { schemaGuideSlug } from "../../utils";
-import { DatabaseSchemaGuide } from "../../types";
+import { schemaReviewSlug } from "../../utils";
+import { DatabaseSchemaReview } from "../../types";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentStore } from "@/store";
 
 const props = defineProps({
-  guideList: {
+  reviewList: {
     required: true,
-    type: Object as PropType<DatabaseSchemaGuide[]>,
+    type: Object as PropType<DatabaseSchemaReview[]>,
   },
 });
 
@@ -67,11 +67,11 @@ const columnList: BBTableColumn[] = [
 ];
 
 const onRowClick = function (section: number, row: number) {
-  const guide = props.guideList[row];
+  const review = props.reviewList[row];
   router.push({
-    name: "setting.workspace.database-review-guide.detail",
+    name: "setting.workspace.schame-review.detail",
     params: {
-      schemaGuideSlug: schemaGuideSlug(guide),
+      schemaReviewSlug: schemaReviewSlug(review),
     },
   });
 };

@@ -69,9 +69,9 @@
           >
           <router-link
             v-if="showOwnerItem"
-            to="/setting/database-review-guide"
+            to="/setting/schame-review"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("database-review-guide.title") }}</router-link
+            >{{ $t("schame-review.title") }}</router-link
           >
           <router-link
             to="/setting/subscription"
@@ -110,7 +110,7 @@ export default defineComponent({
       default: "",
       type: String,
     },
-    schemaGuideSlug: {
+    schemaReviewSlug: {
       default: "",
       type: String,
     },

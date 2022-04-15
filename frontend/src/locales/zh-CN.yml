@@ -1205,14 +1205,14 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
-database-review-guide:
+schame-review:
   title: Schema 准则
-  search-guideline-name: 搜索准则名称
-  add-guideline: 新增准则
+  search-review-name: 搜索准则名称
+  add-review: 新增准则
   search-rule-name: 搜索规则名称
-  remove-guideline: 准则已删除
-  create-guideline: 准则已创建
-  update-guideline: 准则已更新
+  remove-review: 准则已删除
+  create-review: 准则已创建
+  update-review: 准则已更新
   filter-by-database: 筛选
   create:
     breadcrumb: 创建准则

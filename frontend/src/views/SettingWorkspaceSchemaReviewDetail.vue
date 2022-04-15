@@ -1,9 +1,9 @@
 <template>
   <transition appear name="slide-from-bottom" mode="out-in">
-    <SchemaGuideCreation
+    <SchemaReviewCreation
       v-if="state.editMode"
-      :id="guide.id"
-      :name="guide.name"
+      :id="review.id"
+      :name="review.name"
       :selectedEnvNameList="envNameList"
       :selectedRuleList="selectedRuleList"
       @cancel="state.editMode = false"
@@ -11,14 +11,14 @@
     <div class="my-5" v-else>
       <div class="flex flex-col items-center justify-center md:flex-row">
         <h1 class="text-xl md:text-3xl font-semibold flex-1">
-          {{ guide.name }}
+          {{ review.name }}
         </h1>
 
         <BBButtonConfirm
           :style="'DELETE'"
           :button-text="$t('common.delete')"
           :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${guide.name}'?`"
+          :confirm-title="$t('common.delete') + ` '${review.name}'?`"
           :require-confirm="true"
           @confirm="onRemove"
         />
@@ -36,7 +36,7 @@
         />
       </div>
       <div class="flex flex-wrap gap-x-3 my-5">
-        <span>{{ $t("database-review-guide.filter-by-database") }}:</span>
+        <span>{{ $t("schame-review.filter-by-database") }}:</span>
         <div v-for="db in databaseList" :key="db" class="flex items-center">
           <input
             type="checkbox"
@@ -52,18 +52,18 @@
         </div>
       </div>
       <div class="py-2 flex justify-between items-center mt-5">
-        <SchemaGuideCategoryTabFilter
+        <SchemaReviewCategoryTabFilter
           :selected="state.selectedCategory"
           :category-list="categoryFilterList"
           @select="selectCategory"
         />
         <BBTableSearch
           ref="searchField"
-          :placeholder="$t('database-review-guide.search-rule-name')"
+          :placeholder="$t('schame-review.search-rule-name')"
           @change-text="(text) => (state.searchText = text)"
         />
       </div>
-      <SchemaGuidePreview :rule-list="filteredSelectedRuleList" class="py-5" />
+      <SchemaReviewPreview :rule-list="filteredSelectedRuleList" class="py-5" />
     </div>
   </transition>
 </template>
@@ -76,7 +76,7 @@ import { idFromSlug } from "../utils";
 import {
   DatabaseType,
   SchemaRule,
-  DatabaseSchemaGuide,
+  DatabaseSchemaReview,
   convertToCategoryList,
   SelectedRule,
   ruleList,
@@ -87,10 +87,10 @@ import {
   useEnvironmentStore,
   useSchemaSystemStore,
 } from "@/store";
-import { CategoryFilterItem } from "../components/DatabaseSchemaGuide/SchemaGuideCategoryTabFilter.vue";
+import { CategoryFilterItem } from "../components/DatabaseSchemaReview/SchemaReviewCategoryTabFilter.vue";
 
 const props = defineProps({
-  schemaGuideSlug: {
+  schemaReviewSlug: {
     required: true,
     type: String,
   },
@@ -107,7 +107,7 @@ const { t } = useI18n();
 const store = useSchemaSystemStore();
 const envStore = useEnvironmentStore();
 const router = useRouter();
-const ROUTE_NAME = "setting.workspace.database-review-guide";
+const ROUTE_NAME = "setting.workspace.schame-review";
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -118,12 +118,12 @@ const state = reactive<LocalState>({
   checkedDatabase: new Set<DatabaseType>(),
 });
 
-const guide = computed((): DatabaseSchemaGuide => {
-  return store.getGuideById(idFromSlug(props.schemaGuideSlug));
+const review = computed((): DatabaseSchemaReview => {
+  return store.getReviewById(idFromSlug(props.schemaReviewSlug));
 });
 
 const envNameList = computed((): string[] => {
-  return guide.value.environmentList.map((envId) =>
+  return review.value.environmentList.map((envId) =>
     envStore.getEnvironmentNameById(envId)
   );
 });
@@ -134,13 +134,13 @@ const ruleMap = ruleList.reduce((map, rule) => {
 }, new Map<string, SchemaRule>());
 
 const selectedRuleList = computed((): SelectedRule[] => {
-  if (!guide.value) {
+  if (!review.value) {
     return [];
   }
 
   const res: SelectedRule[] = [];
 
-  for (const selectedRule of guide.value.ruleList) {
+  for (const selectedRule of review.value.ruleList) {
     const rule = ruleMap.get(selectedRule.id);
     if (!rule) {
       continue;
@@ -238,14 +238,14 @@ const onEdit = () => {
 };
 
 const onRemove = () => {
-  store.removeGuideline(guide.value.id);
+  store.removeReview(review.value.id);
   router.replace({
     name: ROUTE_NAME,
   });
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("database-review-guide.remove-guideline"),
+    title: t("schame-review.remove-review"),
   });
 };
 </script>
