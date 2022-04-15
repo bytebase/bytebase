@@ -9,5 +9,6 @@ type ServerInfo struct {
 	Host           string `json:"host"`
 	Port           string `json:"port"`
 	NeedAdminSetup bool   `json:"needAdminSetup"`
-	StartedTs      int64  `json:"startedTs"`
+	// Rand may be based on the server start time, thus exposing startedTs to the client may cause security issues (e.g. jwt key is based on Rand).
+	// StartedTs   int64  `json:"startedTs"`
 }
