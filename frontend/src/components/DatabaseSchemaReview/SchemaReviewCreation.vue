@@ -31,7 +31,8 @@
       <template #2>
         <SchemaReviewPreview
           :name="state.name"
-          :rule-list="state.selectedRuleList"
+          :selected-rule-list="state.selectedRuleList"
+          :selected-environment-list="state.selectedEnvironmentList"
           class="py-5"
         />
       </template>

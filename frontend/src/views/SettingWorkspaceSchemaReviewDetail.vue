@@ -94,7 +94,10 @@
           @change-text="(text) => (state.searchText = text)"
         />
       </div>
-      <SchemaReviewPreview :rule-list="filteredSelectedRuleList" class="py-5" />
+      <SchemaReviewPreview
+        :selected-rule-list="filteredSelectedRuleList"
+        class="py-5"
+      />
       <BBButtonConfirm
         :style="'DELETE'"
         :button-text="$t('schame-review.delete')"

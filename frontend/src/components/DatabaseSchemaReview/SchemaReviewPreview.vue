@@ -23,10 +23,22 @@
       </div>
     </aside>
     <div class="flex-1">
-      <div class="mb-9" v-if="name">
+      <div class="mb-5" v-if="name">
         <h1 class="text-left text-3xl font-bold mb-2">
           {{ name }}
         </h1>
+      </div>
+      <div
+        v-if="selectedEnvironmentList.length > 0"
+        class="flex flex-wrap gap-x-3 mb-9"
+      >
+        <span class="font-semibold">{{ $t("common.environments") }}</span>
+        <BBBadge
+          v-for="env in selectedEnvironmentList"
+          :key="env.id"
+          :text="getEnvName(env)"
+          :can-remove="false"
+        />
       </div>
       <div v-for="category in categoryList" :key="category.id" class="pb-4">
         <a
@@ -96,22 +108,28 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
-import { SelectedRule, convertToCategoryList } from "../../types/schemaSystem";
+import { computed } from "vue";
+import { SelectedRule, convertToCategoryList, Environment } from "../../types";
+import { environmentName } from "../../utils";
 
-const props = defineProps({
-  name: {
-    required: false,
-    default: "",
-    type: String,
-  },
-  ruleList: {
-    required: true,
-    type: Array as PropType<SelectedRule[]>,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    name?: string;
+    selectedEnvironmentList?: Environment[];
+    selectedRuleList?: SelectedRule[];
+  }>(),
+  {
+    name: "",
+    selectedEnvironmentList: () => [],
+    selectedRuleList: () => [],
+  }
+);
 
 const categoryList = computed(() => {
-  return convertToCategoryList(props.ruleList);
+  return convertToCategoryList(props.selectedRuleList);
 });
+
+const getEnvName = (env: Environment): string => {
+  return environmentName(env);
+};
 </script>
