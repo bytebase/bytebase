@@ -9,5 +9,4 @@ type ServerInfo struct {
 	Host           string `json:"host"`
 	Port           string `json:"port"`
 	NeedAdminSetup bool   `json:"needAdminSetup"`
-	StartedTs      int64  `json:"startedTs"`
 }
