@@ -387,4 +387,4 @@ VALUES
         'Dev'
     );
 
-ALTER SEQUENCE stage_id_seq RESTART WITH 10017;
+ALTER SEQUENCE stage_id_seq RESTART WITH 10018;
