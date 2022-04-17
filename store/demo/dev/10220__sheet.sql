@@ -7,9 +7,7 @@ INSERT INTO
         project_id,
         database_id,
         name,
-        statement,
-        source,
-        type
+        statement
     )
 VALUES
     (
@@ -18,10 +16,69 @@ VALUES
         101,
         3001,
         7019,
-        'my-sheet',
-        'SELECT * FROM demo',
-        'BYTEBASE',
-        'SQL'
+        'demo data',
+        'SELECT * FROM demo'
     );
 
-ALTER SEQUENCE sheet_id_seq RESTART WITH 22002;
+INSERT INTO
+    sheet (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement
+    )
+VALUES
+    (
+        22002,
+        101,
+        101,
+        3002,
+        'all employee',
+        'SELECT * FROM employee'
+    );
+
+INSERT INTO
+    sheet (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement,
+        visibility
+    )
+VALUES
+    (
+        22003,
+        102,
+        102,
+        3002,
+        'shared employee with project',
+        'SELECT * FROM employee',
+        'PROJECT'
+    );
+
+INSERT INTO
+    sheet (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement,
+        visibility
+    )
+VALUES
+    (
+        22004,
+        103,
+        103,
+        3003,
+        'shared all employee',
+        'SELECT * FROM employee',
+        'PUBLIC'
+    );
+
+ALTER SEQUENCE sheet_id_seq RESTART WITH 22005;

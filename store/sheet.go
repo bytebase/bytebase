@@ -388,6 +388,9 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 	if v := find.Visibility; v != nil {
 		where, args = append(where, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.PrincipalID; v != nil {
+		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
+	}
 	if mode == common.ReleaseModeDev {
 		if v := find.Source; v != nil {
 			where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
