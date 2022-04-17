@@ -349,7 +349,24 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         let ctx: ConnectionContext = cloneDeep(
           sqlEditorStore.connectionContext
         );
+        // 1.Set option for ctx, which will be consumed by components like TableSchema.
         ctx.option = option;
+        // 2. Set context info. Fix issue: https://github.com/bytebase/bytebase/issues/1120
+        // 2.1 handle instance node
+        if (option.type === "instance") {
+          ctx.instanceId = option.id as number;
+          ctx.instanceName = option.label || "";
+        }
+        // 2.2 handle database node
+        if (option.type === "database") {
+          ctx.databaseId = option.id as number;
+          ctx.databaseName = option.label || "";
+        }
+        // 2.3 handle table node
+        if (option.type === "table") {
+          ctx.tableId = option.id as number;
+          ctx.tableName = option.label;
+        }
         sqlEditorStore.setConnectionContext(ctx);
       }
     },
