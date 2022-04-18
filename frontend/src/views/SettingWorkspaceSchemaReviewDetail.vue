@@ -34,7 +34,9 @@
         class="my-5"
         :style="`WARN`"
         :title="$t('common.environments')"
-        :description="$t('schema-review.create.basic-info.no-environments')"
+        :description="
+          $t('schema-review.create.basic-info.no-selected-environments')
+        "
       />
       <div class="space-y-2 my-5">
         <span class="font-semibold">{{ $t("schema-review.filter") }}</span>

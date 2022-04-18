@@ -1,6 +1,7 @@
 <template>
   <div>
     <SchemaReviewTemplates
+      :required="true"
       v-if="selectRuleList.length === 0"
       :template-list="templateList"
       :title="$t('schema-review.create.configure-rule.from-template')"
@@ -31,6 +32,7 @@
         <span class="ml-3"> Change template </span>
       </div>
       <SchemaReviewTemplates
+        :required="false"
         v-if="state.openTemplate"
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"

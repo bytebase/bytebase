@@ -12,7 +12,7 @@
         class="mt-2 w-full"
         placeholder="Database review name"
         :value="name"
-        @input="$emit('name-change', $event.target.value)"
+        @input="(e) => onNameChange(e)"
       />
     </div>
     <div>
@@ -25,8 +25,9 @@
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         :style="'WARN'"
+        :title="$t('common.environments')"
         :description="
-          $t('schema-review.create.basic-info.no-available-environment')
+          $t('schema-review.create.basic-info.no-available-environment-desc')
         "
         class="mb-5"
       />
@@ -36,7 +37,9 @@
           :key="env.id"
           :class="[
             'flex items-center',
-            env.disabled ? 'cursor-not-allowed text-gray-400' : 'text-gray-600',
+            env.disabled
+              ? 'cursor-not-allowed text-gray-400'
+              : 'cursor-pointer text-gray-600',
           ]"
         >
           <input
@@ -47,8 +50,13 @@
             :checked="isEnvSelected(env)"
             @input="$emit('toggle-env', env)"
             class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+            :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
           />
-          <label :for="`${env.id}`" class="ml-2 items-center text-sm">
+          <label
+            :for="`${env.id}`"
+            class="ml-2 items-center text-sm"
+            :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
+          >
             {{ env.displayName }}
           </label>
         </div>
@@ -57,7 +65,7 @@
     <div>
       <div class="mt-5" v-if="isEdit">
         <div
-          class="flex cursor-pointer items-center px-2 text-indigo-500"
+          class="flex cursor-pointer items-center text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
         >
           <heroicons-solid:chevron-right
@@ -67,16 +75,18 @@
           <span class="ml-3"> Change template </span>
         </div>
         <SchemaReviewTemplates
+          :required="false"
           v-if="state.openTemplate"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
           :title="$t('schema-review.create.configure-rule.change-template')"
           @select="(index) => $emit('select-template', index)"
-          class="mx-10 mt-5"
+          class="mx-8 mt-5"
         />
       </div>
       <SchemaReviewTemplates
         v-else
+        :required="true"
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"
         :title="$t('schema-review.create.basic-info.choose-template')"
@@ -154,5 +164,9 @@ const selectedEnvIdSet = computed(() => {
 });
 const isEnvSelected = (env: Environment): boolean => {
   return selectedEnvIdSet.value.has(env.id);
+};
+
+const onNameChange = (event: Event) => {
+  emit("name-change", (<HTMLInputElement>event.target).value);
 };
 </script>

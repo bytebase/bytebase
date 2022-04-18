@@ -19,7 +19,7 @@
       </template>
     </div>
     <template v-else>
-      <SchemaReviewEmptyView @click="goToCreationView" />
+      <SchemaReviewEmptyView @create="goToCreationView" />
     </template>
   </div>
 </template>

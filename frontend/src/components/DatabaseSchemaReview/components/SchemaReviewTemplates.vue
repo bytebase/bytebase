@@ -2,7 +2,7 @@
   <div>
     <p class="textlabel">
       {{ title }}
-      <span style="color: red">*</span>
+      <span v-if="required" style="color: red">*</span>
     </p>
     <div
       class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
@@ -46,6 +46,10 @@ const props = defineProps({
   title: {
     required: true,
     type: String,
+  },
+  required: {
+    required: true,
+    type: Boolean,
   },
 });
 

@@ -1399,8 +1399,9 @@ schema-review:
       environments: Environments
       environments-label: Apply the review to selected environments. One environment can only has one review.
       environments-select: Select environments
-      no-environments: No environments applied
-      no-available-environment: No available environment. One environment can only has one schema review.
+      no-selected-environments: No environments applied
+      no-available-environment: 没有可供选择的环境
+      no-available-environment-desc: No available environment. One environment can only has one schema review.
       choose-template: Choose template
     configure-rule:
       name: Configure rule
