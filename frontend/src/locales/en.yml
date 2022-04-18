@@ -1384,6 +1384,7 @@ schema-review:
   filter: Filter
   database: Database
   delete: Delete this schema review
+  no-permission: Only DBA or Owner has permission to create or update review
   error-level:
     name: Error Level
     error: Error

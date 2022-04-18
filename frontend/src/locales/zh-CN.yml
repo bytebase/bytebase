@@ -1217,6 +1217,7 @@ schema-review:
   filter: 筛选
   database: 数据库
   delete: 删除该 schema 审查
+  no-permission: 仅 DBA 或所有者有权限创建或更新审查
   error-level:
     name: 错误等级
     error: 错误

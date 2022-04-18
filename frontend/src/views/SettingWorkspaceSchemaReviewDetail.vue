@@ -13,7 +13,12 @@
         <h1 class="text-xl md:text-3xl font-semibold flex-1">
           {{ review.name }}
         </h1>
-        <button type="button" class="btn-primary ml-5" @click="onEdit">
+        <button
+          v-if="hasPermission"
+          type="button"
+          class="btn-primary ml-5"
+          @click="onEdit"
+        >
           {{ $t("common.edit") }}
         </button>
       </div>
@@ -126,7 +131,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName } from "../utils";
+import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
 import {
   LEVEL_LIST,
   RuleLevel,
@@ -140,6 +145,7 @@ import {
   Environment,
 } from "../types";
 import {
+  useCurrentUser,
   pushNotification,
   useEnvironmentStore,
   useSchemaSystemStore,
@@ -165,6 +171,7 @@ const { t } = useI18n();
 const store = useSchemaSystemStore();
 const envStore = useEnvironmentStore();
 const router = useRouter();
+const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.schema-review";
 
 const state = reactive<LocalState>({
@@ -175,6 +182,10 @@ const state = reactive<LocalState>({
   editMode: false,
   checkedDatabase: new Set<DatabaseType>(),
   checkedLevel: new Set<RuleLevel>(),
+});
+
+const hasPermission = computed(() => {
+  return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
 const review = computed((): DatabaseSchemaReview => {

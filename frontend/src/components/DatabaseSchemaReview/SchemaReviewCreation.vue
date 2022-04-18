@@ -76,10 +76,12 @@ import {
   SchemaReviewTemplate,
 } from "../../types";
 import {
+  useCurrentUser,
   pushNotification,
   useEnvironmentList,
   useSchemaSystemStore,
 } from "@/store";
+import { isOwner, isDBA } from "../../utils";
 
 interface LocalState {
   currentStep: number;
@@ -112,6 +114,11 @@ const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
 const store = useSchemaSystemStore();
+const currentUser = useCurrentUser();
+
+const hasPermission = computed(() => {
+  return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
+});
 
 const getRuleListWithLevel = (
   idList: string[],
@@ -256,6 +263,13 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
+  if (!hasPermission.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("schema-review.no-permission"),
+    });
+  }
   const review = {
     name: state.name,
     environmentList: state.selectedEnvironmentList.map((env) => env.id),

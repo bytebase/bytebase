@@ -68,7 +68,6 @@
             >{{ $t("settings.sidebar.version-control") }}</router-link
           >
           <router-link
-            v-if="showOwnerItem"
             to="/setting/schema-review"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("schema-review.title") }}</router-link
