@@ -60,11 +60,13 @@
           @select-stage-id="selectStageId"
         />
       </template>
+
       <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
         <IssueStagePanel
           :stage="selectedStage"
           :selected-task="selectedTask"
-          :single-mode="isTenantDeployMode"
+          :is-tenant-mode="isTenantDeployMode"
+          :is-ghost-mode="isGhostMode"
         />
       </div>
     </template>
@@ -736,9 +738,14 @@ export default defineComponent({
 
     const isTenantDeployMode = computed((): boolean => {
       return (
-        props.issue.type === "bb.issue.database.schema.update" &&
+        (props.issue.type === "bb.issue.database.schema.update" ||
+          props.issue.type === "bb.issue.database.data.update") &&
         project.value.tenantMode === "TENANT"
       );
+    });
+
+    const isGhostMode = computed((): boolean => {
+      return props.issue.type === "bb.issue.database.schema.update.ghost";
     });
 
     const selectedStatement = computed((): string => {
@@ -974,6 +981,7 @@ export default defineComponent({
       currentUser,
       project,
       isTenantDeployMode,
+      isGhostMode,
       issueTemplate,
       selectedStage,
       selectedTask,
