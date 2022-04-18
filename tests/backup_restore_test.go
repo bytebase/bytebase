@@ -53,7 +53,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	CREATE TABLE %s (
 		id INT,
 		PRIMARY KEY (id),
-		CHECK (id > 0)
+		CHECK (id >= 0)
 	);
 	`, table))
 	a.NoError(err)
@@ -62,7 +62,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	tx, err := db.Begin()
 	a.NoError(err)
 	defer tx.Rollback()
-	for i := 1; i <= numRecords; i++ {
+	for i := 0; i < numRecords; i++ {
 		_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%d)", table, i))
 		a.NoError(err)
 	}
@@ -90,7 +90,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// validate data
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", table))
 	a.NoError(err)
-	i := 1
+	i := 0
 	for rows.Next() {
 		var col int
 		err := rows.Scan(&col)
@@ -99,7 +99,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 		i++
 	}
 	a.NoError(rows.Err())
-	a.Equal(numRecords+1, i)
+	a.Equal(numRecords, i)
 }
 
 // TestPITR tests the PITR behavior
@@ -155,7 +155,7 @@ func TestPITR(t *testing.T) {
 	CREATE TABLE t0 (
 		id INT,
 		PRIMARY KEY (id),
-		CHECK (id > -1)
+		CHECK (id >= 0)
 	);
 	`)
 	a.NoError(err)
@@ -272,7 +272,7 @@ func updateRow(t *testing.T, username, localhost, database string, port int, sto
 	a.NoError(err)
 	_, err = db.Exec("REPLACE INTO _update_row_ VALUES (0)")
 	a.NoError(err)
-	i := 1
+	i := 0
 	for {
 		select {
 		case <-stopChan:
