@@ -19,7 +19,7 @@ func newRestoreCmd() *cobra.Command {
 	restoreCmd := &cobra.Command{
 		Use:   "restore",
 		Short: "restores the schema of a database instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
 				return fmt.Errorf("failed to parse dsn, got error: %w", err)
