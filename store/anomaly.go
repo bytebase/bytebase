@@ -60,11 +60,11 @@ func (raw *anomalyRaw) toAnomaly() *api.Anomaly {
 func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpsert) (*api.Anomaly, error) {
 	anomalyRaw, err := s.upsertActiveAnomalyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to upsert active anomaly with AnomalyUpsert[%+v], error[%w]", upsert, err)
+		return nil, fmt.Errorf("failed to upsert active anomaly with AnomalyUpsert[%+v], error[%w]", upsert, err)
 	}
 	anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
+		return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
 	}
 	return anomaly, nil
 }
@@ -73,13 +73,13 @@ func (s *Store) UpsertActiveAnomaly(ctx context.Context, upsert *api.AnomalyUpse
 func (s *Store) FindAnomaly(ctx context.Context, find *api.AnomalyFind) ([]*api.Anomaly, error) {
 	anomalyRawList, err := s.findAnomalyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find anomaly with AnomalyFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find anomaly with AnomalyFind[%+v], error[%w]", find, err)
 	}
 	var anomalyList []*api.Anomaly
 	for _, anomalyRaw := range anomalyRawList {
 		anomaly, err := s.composeAnomaly(ctx, anomalyRaw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
+			return nil, fmt.Errorf("failed to compose anomaly with AnomalyRaw[%+v], error[%w]", anomalyRaw, err)
 		}
 		anomalyList = append(anomalyList, anomaly)
 	}
