@@ -144,6 +144,22 @@
                   @update-statement="updateStatement"
                 />
               </template>
+              <template v-else-if="isGhostMode">
+                <!--
+                  For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
+                  has a SQL statement.
+                  So we display the first task's SQL statement what ever the selectedTaskIs
+                -->
+                <IssueTaskStatementPanel
+                  :sql-hint="sqlHint()"
+                  :statement="selectedStatement"
+                  :create="create"
+                  :allow-edit="allowEditStatement"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                  @apply-statement-to-other-stages="applyStatementToOtherStages"
+                />
+              </template>
               <template v-else>
                 <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
                    The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
@@ -268,6 +284,7 @@ import {
   TaskPatch,
   UpdateSchemaContext,
   UpdateSchemaDetail,
+  TaskDatabaseSchemaUpdateGhostSyncPayload,
 } from "../../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -408,6 +425,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             task.statement = newStatement;
@@ -760,6 +778,18 @@ export default defineComponent({
           const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
           return payload.statement;
         }
+      } else if (isGhostMode.value) {
+        if (props.create) {
+          const issueCreate = props.issue as IssueCreate;
+          const context = issueCreate.createContext as UpdateSchemaContext;
+          return context.updateSchemaDetailList[0].statement;
+        } else {
+          const stage = selectedStage.value as Stage;
+          const task = stage.taskList[0];
+          const payload =
+            task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
+          return payload.statement;
+        }
       } else {
         if (router.currentRoute.value.query.sql) {
           const sql = router.currentRoute.value.query.sql as string;
@@ -877,6 +907,10 @@ export default defineComponent({
     });
 
     const showIssueTaskStatementPanel = computed(() => {
+      if (props.issue.type === "bb.issue.database.schema.update.ghost") {
+        return true;
+      }
+
       const task = selectedTask.value;
       return (
         task.type == "bb.task.general" ||
@@ -900,6 +934,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             count++;
