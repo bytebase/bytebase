@@ -38,8 +38,6 @@ interface TemplatePayload {
   value?: string;
 }
 
-type RulePayloadType = string | string[];
-
 export interface RulePayload {
   [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
 }
