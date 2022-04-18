@@ -140,7 +140,8 @@ const getRuleListWithLevel = (
 const TEMPLATE_LIST: SchemaReviewTemplate[] = [
   {
     name: "Schema review for Prod",
-    image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
+    imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)
+      .href,
     ruleList: [
       ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
       ...getRuleListWithLevel(
@@ -170,7 +171,7 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
   },
   {
     name: "Schema review for Dev",
-    image: new URL("../../assets/plan-free.png", import.meta.url).href,
+    imagePath: new URL("../../assets/plan-free.png", import.meta.url).href,
     ruleList: [
       ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
       ...getRuleListWithLevel(

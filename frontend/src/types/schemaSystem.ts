@@ -135,7 +135,7 @@ export function convertToCategoryList<T extends SchemaRule>(
 
 export interface SchemaReviewTemplate {
   name: string;
-  image: string;
+  imagePath: string;
   ruleList: SelectedRule[];
 }
 
