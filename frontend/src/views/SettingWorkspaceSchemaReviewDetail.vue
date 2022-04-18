@@ -128,7 +128,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug, environmentName } from "../utils";
 import {
-  levelList,
+  LEVEL_LIST,
   RuleLevel,
   DatabaseType,
   SchemaRule,
@@ -246,7 +246,7 @@ const databaseList = computed((): { id: DatabaseType; count: number }[] => {
 });
 
 const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
-  return levelList.map((level) => ({
+  return LEVEL_LIST.map((level) => ({
     id: level,
     count: selectedRuleList.value.filter((rule) => rule.level === level).length,
   }));

@@ -7,7 +7,7 @@ export enum RuleLevel {
   Warning = "warning",
 }
 
-export const levelList = [
+export const LEVEL_LIST = [
   RuleLevel.Error,
   RuleLevel.Warning,
   RuleLevel.Disabled,

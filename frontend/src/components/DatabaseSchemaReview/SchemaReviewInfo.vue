@@ -72,16 +72,17 @@
             class="w-5 h-5 transform transition-all"
             :class="state.openTemplate ? 'rotate-90' : ''"
           />
-          <span class="ml-3"> Change template </span>
+          <span class="ml-l text-sm font-medium">
+            {{ $t("schema-review.create.configure-rule.change-template") }}
+          </span>
         </div>
         <SchemaReviewTemplates
-          :required="false"
           v-if="state.openTemplate"
+          :required="false"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
-          :title="$t('schema-review.create.configure-rule.change-template')"
           @select="(index) => $emit('select-template', index)"
-          class="mx-8 mt-5"
+          class="mx-5 mt-5"
         />
       </div>
       <SchemaReviewTemplates

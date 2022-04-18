@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p class="textlabel">
+    <p class="textlabel" v-if="title">
       {{ title }}
       <span v-if="required" style="color: red">*</span>
     </p>
@@ -44,7 +44,8 @@ const props = defineProps({
     type: Number,
   },
   title: {
-    required: true,
+    required: false,
+    default: "",
     type: String,
   },
   required: {

@@ -2,7 +2,7 @@
   <div>
     <BBStepTab
       class="my-4"
-      :step-item-list="stepList"
+      :step-item-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${reviewId ? 'update' : 'add'}`)"
       @try-change-step="tryChangeStep"
@@ -14,7 +14,7 @@
           :name="state.name"
           :selected-environment-list="state.selectedEnvironmentList"
           :available-environment-list="availableEnvironmentList"
-          :template-list="templateList"
+          :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           :is-edit="!!reviewId"
           @select-template="tryApplyTemplate"
@@ -27,7 +27,7 @@
         <SchemaReviewConfig
           class="py-5"
           :select-rule-list="state.selectedRuleList"
-          :template-list="templateList"
+          :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           @change="onRuleChange"
           @apply-template="tryApplyTemplate"
@@ -113,12 +113,88 @@ const { t } = useI18n();
 const router = useRouter();
 const store = useSchemaSystemStore();
 
+const getRuleListWithLevel = (
+  idList: string[],
+  level: RuleLevel
+): SelectedRule[] => {
+  return idList.reduce((res, id) => {
+    const rule = ruleList.find((r) => r.id === id);
+    if (!rule) {
+      return res;
+    }
+    res.push({
+      ...rule,
+      level,
+    });
+    return res;
+  }, [] as SelectedRule[]);
+};
+
+const TEMPLATE_LIST: SchemaReviewTemplate[] = [
+  {
+    name: "Schema review for Prod",
+    image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
+    ruleList: [
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        [
+          "naming.table",
+          "naming.column",
+          "naming.index.pk",
+          "naming.index.uk",
+          "naming.index.idx",
+        ],
+        RuleLevel.Warning
+      ),
+      ...getRuleListWithLevel(
+        [
+          "query.select.no-select-all",
+          "query.where.require",
+          "query.where.no-leading-wildcard-like",
+          "table.require-pk",
+        ],
+        RuleLevel.Error
+      ),
+      ...getRuleListWithLevel(
+        ["column.required", "column.no-null"],
+        RuleLevel.Warning
+      ),
+    ],
+  },
+  {
+    name: "Schema review for Dev",
+    image: new URL("../../assets/plan-free.png", import.meta.url).href,
+    ruleList: [
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        [
+          "naming.table",
+          "naming.column",
+          "naming.index.pk",
+          "naming.index.uk",
+          "naming.index.idx",
+          "query.select.no-select-all",
+          "query.where.require",
+          "query.where.no-leading-wildcard-like",
+        ],
+        RuleLevel.Warning
+      ),
+      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.Error),
+      ...getRuleListWithLevel(
+        ["column.required", "column.no-null"],
+        RuleLevel.Warning
+      ),
+    ],
+  },
+];
+
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
 const ROUTE_NAME = "setting.workspace.schema-review";
+const DEFAULT_TEMPLATE_INDEX = 0;
 
-const stepList: BBStepTabItem[] = [
+const STEP_LIST: BBStepTabItem[] = [
   { title: t("schema-review.create.basic-info.name") },
   { title: t("schema-review.create.configure-rule.name") },
   { title: t("schema-review.create.preview.name") },
@@ -128,10 +204,12 @@ const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
   name: props.name,
   selectedEnvironmentList: props.selectedEnvironmentList,
-  selectedRuleList: props.selectedRuleList,
+  selectedRuleList: props.selectedRuleList.length
+    ? [...props.selectedRuleList]
+    : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
   ruleUpdated: false,
   showAlertModal: false,
-  templateIndex: -1,
+  templateIndex: props.reviewId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
 
@@ -209,81 +287,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   onCancel();
 };
 
-const getRuleListWithLevel = (
-  idList: string[],
-  level: RuleLevel
-): SelectedRule[] => {
-  return idList.reduce((res, id) => {
-    const rule = ruleList.find((r) => r.id === id);
-    if (!rule) {
-      return res;
-    }
-    res.push({
-      ...rule,
-      level,
-    });
-    return res;
-  }, [] as SelectedRule[]);
-};
-
-const templateList: SchemaReviewTemplate[] = [
-  {
-    name: "Schema review for Prod",
-    image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.pk",
-          "naming.index.uk",
-          "naming.index.idx",
-        ],
-        RuleLevel.Warning
-      ),
-      ...getRuleListWithLevel(
-        [
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
-          "table.require-pk",
-        ],
-        RuleLevel.Error
-      ),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null"],
-        RuleLevel.Warning
-      ),
-    ],
-  },
-  {
-    name: "Schema review for Dev",
-    image: new URL("../../assets/plan-free.png", import.meta.url).href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.pk",
-          "naming.index.uk",
-          "naming.index.idx",
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
-        ],
-        RuleLevel.Warning
-      ),
-      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.Error),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null"],
-        RuleLevel.Warning
-      ),
-    ],
-  },
-];
-
 const onEnvToggle = (env: Environment) => {
   const index = state.selectedEnvironmentList.findIndex((e) => e.id === env.id);
 
@@ -298,12 +301,12 @@ const onEnvToggle = (env: Environment) => {
 };
 
 const onTemplateApply = (index: number) => {
-  if (index < 0 || index >= templateList.length) {
+  if (index < 0 || index >= TEMPLATE_LIST.length) {
     return;
   }
   state.templateIndex = index;
   state.pendingApplyTemplateIndex = -1;
-  state.selectedRuleList = [...templateList[index].ruleList];
+  state.selectedRuleList = [...TEMPLATE_LIST[index].ruleList];
 };
 
 const tryApplyTemplate = (index: number) => {

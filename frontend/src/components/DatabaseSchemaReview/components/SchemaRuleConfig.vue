@@ -34,7 +34,7 @@
         <p class="mb-3">{{ $t("schema-review.error-level.name") }}</p>
         <div class="flex gap-x-3">
           <div
-            v-for="(level, index) in levelList"
+            v-for="(level, index) in LEVEL_LIST"
             :key="index"
             class="flex items-center"
           >
@@ -103,7 +103,7 @@
 <script lang="ts" setup>
 import { reactive, PropType, watch } from "vue";
 import {
-  levelList,
+  LEVEL_LIST,
   SelectedRule,
   RulePayload,
 } from "../../../types/schemaSystem";
