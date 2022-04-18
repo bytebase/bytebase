@@ -4,6 +4,7 @@ import {
   unknown,
   SchemaReviewId,
   EMPTY_ID,
+  UNKNOWN_ID,
   Environment,
   DatabaseSchemaReview,
   DatabaseSchemaReviewCreate,
@@ -78,7 +79,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       ];
     },
     getReviewById(id: SchemaReviewId): DatabaseSchemaReview {
-      if (id == EMPTY_ID) {
+      if (id === EMPTY_ID) {
         return empty("SCHEMA_REVIEW") as DatabaseSchemaReview;
       }
 
@@ -93,7 +94,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
     },
     async fetchReviewById(id: SchemaReviewId): Promise<DatabaseSchemaReview> {
       const review = this.getReviewById(id);
-      if (!review) {
+      if (review.id === UNKNOWN_ID || review.id === EMPTY_ID) {
         throw new Error(`review ${id} not found`);
       }
       return review;
