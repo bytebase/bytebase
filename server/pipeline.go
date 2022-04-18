@@ -17,7 +17,7 @@ func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline
 		return nil, err
 	}
 	if pipelineRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Pipeline not found with ID %v", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline not found with ID %v", id)}
 	}
 
 	pipeline, err := s.composePipelineRelationship(ctx, pipelineRaw)

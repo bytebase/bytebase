@@ -215,12 +215,10 @@ type SheetFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
-	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID *int
 
 	// Related fields
-	ProjectID *int
-	// Query all related sheets with databaseId can be used for database transfer checking.
+	ProjectID  *int
 	DatabaseID *int
 
 	// Domain fields
@@ -229,6 +227,8 @@ type SheetFind struct {
 	Source     *SheetSource
 	Type       *SheetType
 	Payload    *string
+	// If present, will only find sheet which related project containing PrincipalID as an active member.
+	PrincipalID *int
 }
 
 func (find *SheetFind) String() string {

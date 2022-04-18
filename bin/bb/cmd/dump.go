@@ -25,7 +25,7 @@ func newDumpCmd() *cobra.Command {
 	dumpCmd := &cobra.Command{
 		Use:   "dump",
 		Short: "Exports the schema of a database instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
 				return fmt.Errorf("failed to parse dsn, got error: %w", err)

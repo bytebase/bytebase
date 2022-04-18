@@ -56,11 +56,11 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to upsert policy with PolicyUpsert[%+v], error[%w]", upsert, err)
+		return nil, fmt.Errorf("failed to upsert policy with PolicyUpsert[%+v], error[%w]", upsert, err)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
+		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
 	}
 	return policy, nil
 }
@@ -69,11 +69,11 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get policy with PolicyFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get policy with PolicyFind[%+v], error[%w]", find, err)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
+		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
 	}
 	return policy, nil
 }

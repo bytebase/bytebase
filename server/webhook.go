@@ -280,7 +280,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		}
 	}
 	if len(multipleDatabaseForSameEnv) > 0 {
-		return "", fmt.Errorf("Ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
+		return "", fmt.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -297,7 +297,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
 	}
 	return string(createContext), nil
 }
@@ -319,7 +319,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
 	}
 	return string(createContext), nil
 }
