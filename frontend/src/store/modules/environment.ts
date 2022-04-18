@@ -1,4 +1,6 @@
+import { defineStore } from "pinia";
 import axios from "axios";
+import { computed } from "vue";
 import {
   empty,
   EMPTY_ID,
@@ -13,8 +15,6 @@ import {
 } from "@/types";
 import { usePolicyStore } from "./policy";
 import { getPrincipalFromIncludedList } from "./principal";
-import { defineStore } from "pinia";
-import { computed } from "vue";
 
 function convert(
   environment: ResourceObject,

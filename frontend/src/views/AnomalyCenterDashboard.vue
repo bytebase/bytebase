@@ -127,11 +127,10 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, Database, EnvironmentId } from "../types";
+import { Anomaly, EnvironmentId, UNKNOWN_ID } from "../types";
 import {
   databaseSlug,
   instanceSlug,
@@ -144,6 +143,7 @@ import { cloneDeep } from "lodash-es";
 import {
   featureToRef,
   useCurrentUser,
+  useDatabaseStore,
   useEnvironmentList,
   useInstanceList,
 } from "@/store";
@@ -167,7 +167,7 @@ export default defineComponent({
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
   setup() {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const { t } = useI18n();
 
     const currentUser = useCurrentUser();
@@ -183,15 +183,15 @@ export default defineComponent({
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout
-      store.dispatch("database/fetchDatabaseList");
+      if (currentUser.value.id !== UNKNOWN_ID) {
+        databaseStore.fetchDatabaseList();
+      }
     };
 
     watchEffect(prepareDatabaseList);
 
-    const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalId"](
-        currentUser.value.id
-      );
+    const databaseList = computed(() => {
+      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     });
 
     const instanceList = useInstanceList();

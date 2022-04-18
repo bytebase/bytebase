@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   Activity,
@@ -9,13 +10,13 @@ import {
   PrincipalId,
   ProjectId,
   ResourceObject,
-} from "../../types";
-import { useAuthStore, getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { useAuthStore } from "./auth";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   activity: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Activity {
   const payload = activity.attributes.payload
     ? JSON.parse((activity.attributes.payload as string) || "{}")
@@ -35,203 +36,158 @@ function convert(
   };
 }
 
-const state: () => ActivityState = () => ({
-  activityListByUser: new Map(),
-  activityListByIssue: new Map(),
-});
-
-const getters = {
-  convert:
-    (state: ActivityState, getters: any, rootState: any, rootGetters: any) =>
-    (activity: ResourceObject, includedList: ResourceObject[]): Activity => {
-      return convert(activity, includedList || [], rootGetters);
+export const useActivityStore = defineStore("activity", {
+  state: (): ActivityState => ({
+    activityListByUser: new Map(),
+    activityListByIssue: new Map(),
+  }),
+  actions: {
+    convert(
+      activity: ResourceObject,
+      includedList: ResourceObject[]
+    ): Activity {
+      return convert(activity, includedList || []);
     },
-
-  activityListByUser:
-    (state: ActivityState) =>
-    (userId: PrincipalId): Activity[] => {
-      return state.activityListByUser.get(userId) || [];
+    getActivityListByUser(userId: PrincipalId): Activity[] {
+      return this.activityListByUser.get(userId) || [];
     },
-  activityListByIssue:
-    (state: ActivityState) =>
-    (issueId: IssueId): Activity[] => {
-      return state.activityListByIssue.get(issueId) || [];
+    getActivityListByIssue(issueId: IssueId): Activity[] {
+      return this.activityListByIssue.get(issueId) || [];
     },
-};
-
-const actions = {
-  async fetchActivityListForUser(
-    { commit, rootGetters }: any,
-    userId: PrincipalId
-  ) {
-    const data = (await axios.get(`/api/activity`)).data;
-    const activityList = data.data.map((activity: ResourceObject) => {
-      return convert(activity, data.included, rootGetters);
-    });
-
-    commit("setActivityListForUser", { userId, activityList });
-    return activityList;
-  },
-
-  async fetchActivityListForIssue(
-    { commit, rootGetters }: any,
-    issueId: IssueId
-  ) {
-    const data = (await axios.get(`/api/activity?container=${issueId}`)).data;
-    const activityList = data.data.map((activity: ResourceObject) => {
-      return convert(activity, data.included, rootGetters);
-    });
-
-    commit("setActivityListForIssue", { issueId, activityList });
-    return activityList;
-  },
-
-  // We do not store the returned list because the caller will specify different limits
-  async fetchActivityListForProject(
-    { rootGetters }: any,
-    {
-      projectId,
-      limit,
-    }: {
-      projectId: ProjectId;
-      limit?: number;
-    }
-  ) {
-    const queryList = [`container=${projectId}`];
-    if (limit) {
-      queryList.push(`limit=${limit}`);
-    }
-    const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
-    const activityList = data.data.map((activity: ResourceObject) => {
-      return convert(activity, data.included, rootGetters);
-    });
-
-    return activityList;
-  },
-
-  async fetchActivityListForQueryHistory(
-    { rootGetters }: any,
-    {
-      limit,
-    }: {
-      limit: number;
-    }
-  ) {
-    const { currentUser } = useAuthStore();
-    const queryList = [
-      "type=bb.sql-editor.query",
-      `user=${currentUser.id}`,
-      `limit=${limit}`,
-      // only fetch the successful query history
-      `level=INFO`,
-    ];
-    const data = (await axios.get(`/api/activity?${queryList.join("&")}`)).data;
-    const activityList = data.data.map((activity: ResourceObject) => {
-      return convert(activity, data.included, rootGetters);
-    });
-
-    return activityList;
-  },
-
-  async createActivity(
-    { dispatch, rootGetters }: any,
-    newActivity: ActivityCreate
-  ) {
-    const data = (
-      await axios.post(`/api/activity`, {
-        data: {
-          type: "activityCreate",
-          attributes: newActivity,
-        },
-      })
-    ).data;
-    const createdActivity: Activity = convert(
-      data.data,
-      data.included,
-      rootGetters
-    );
-
-    // There might exist other activities happened since the last fetch, so we do a full refetch.
-    if (newActivity.type.startsWith("bb.issue.")) {
-      dispatch("fetchActivityListForIssue", newActivity.containerId);
-    }
-
-    return createdActivity;
-  },
-
-  async updateComment(
-    { dispatch, rootGetters }: any,
-    {
-      activityId,
-      updatedComment,
-    }: {
-      activityId: ActivityId;
-      updatedComment: string;
-    }
-  ) {
-    const activityPatch: ActivityPatch = {
-      comment: updatedComment,
-    };
-    const data = (
-      await axios.patch(`/api/activity/${activityId}`, {
-        data: {
-          type: "activityPatch",
-          attributes: activityPatch,
-        },
-      })
-    ).data;
-    const updatedActivity = convert(data.data, data.included, rootGetters);
-
-    dispatch("fetchActivityListForIssue", updatedActivity.containerId);
-
-    return updatedActivity;
-  },
-
-  async deleteActivity({ dispatch }: any, activity: Activity) {
-    await axios.delete(`/api/activity/${activity.id}`);
-
-    if (activity.type.startsWith("bb.issue.")) {
-      dispatch("fetchActivityListForIssue", activity.containerId);
-    }
-  },
-
-  async deleteActivityById(_: any, id: number) {
-    await axios.delete(`/api/activity/${id}`);
-  },
-};
-
-const mutations = {
-  setActivityListForUser(
-    state: ActivityState,
-    {
+    setActivityListForUser({
       userId,
       activityList,
     }: {
       userId: PrincipalId;
       activityList: Activity[];
-    }
-  ) {
-    state.activityListByUser.set(userId, activityList);
-  },
-
-  setActivityListForIssue(
-    state: ActivityState,
-    {
+    }) {
+      this.activityListByUser.set(userId, activityList);
+    },
+    setActivityListForIssue({
       issueId,
       activityList,
     }: {
       issueId: IssueId;
       activityList: Activity[];
-    }
-  ) {
-    state.activityListByIssue.set(issueId, activityList);
-  },
-};
+    }) {
+      this.activityListByIssue.set(issueId, activityList);
+    },
+    async fetchActivityListForUser(userId: PrincipalId) {
+      const data = (await axios.get(`/api/activity`)).data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
 
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+      this.setActivityListForUser({ userId, activityList });
+      return activityList;
+    },
+    async fetchActivityListForIssue(issueId: IssueId) {
+      const queryList = ["typePrefix=bb.issue.", `container=${issueId}`];
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
+
+      this.setActivityListForIssue({ issueId, activityList });
+      return activityList;
+    },
+    // We do not store the returned list because the caller will specify different limits
+    async fetchActivityListForProject({
+      projectId,
+      limit,
+    }: {
+      projectId: ProjectId;
+      limit?: number;
+    }) {
+      const queryList = ["typePrefix=bb.project.", `container=${projectId}`];
+      if (limit) {
+        queryList.push(`limit=${limit}`);
+      }
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
+
+      return activityList;
+    },
+    async fetchActivityListForQueryHistory({ limit }: { limit: number }) {
+      const { currentUser } = useAuthStore();
+      const queryList = [
+        "typePrefix=bb.sql-editor.query",
+        `user=${currentUser.id}`,
+        `limit=${limit}`,
+        // only fetch the successful query history
+        `level=INFO`,
+      ];
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
+
+      return activityList;
+    },
+    async createActivity(newActivity: ActivityCreate) {
+      const data = (
+        await axios.post(`/api/activity`, {
+          data: {
+            type: "activityCreate",
+            attributes: newActivity,
+          },
+        })
+      ).data;
+      const createdActivity = convert(data.data, data.included);
+
+      // There might exist other activities happened since the last fetch, so we do a full refetch.
+      if (newActivity.type.startsWith("bb.issue.")) {
+        this.fetchActivityListForIssue(newActivity.containerId);
+      }
+
+      return createdActivity;
+    },
+    async updateComment({
+      activityId,
+      updatedComment,
+    }: {
+      activityId: ActivityId;
+      updatedComment: string;
+    }) {
+      const activityPatch: ActivityPatch = {
+        comment: updatedComment,
+      };
+      const data = (
+        await axios.patch(`/api/activity/${activityId}`, {
+          data: {
+            type: "activityPatch",
+            attributes: activityPatch,
+          },
+        })
+      ).data;
+      const updatedActivity = convert(data.data, data.included);
+
+      this.fetchActivityListForIssue(updatedActivity.containerId);
+
+      return updatedActivity;
+    },
+    async deleteActivity(activity: Activity) {
+      await axios.delete(`/api/activity/${activity.id}`);
+
+      if (activity.type.startsWith("bb.issue.")) {
+        this.fetchActivityListForIssue(activity.containerId);
+      }
+    },
+    async deleteActivityById(id: number) {
+      await axios.delete(`/api/activity/${id}`);
+    },
+  },
+});

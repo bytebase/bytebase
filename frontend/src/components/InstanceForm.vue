@@ -275,7 +275,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, PropType } from "vue";
-import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
@@ -295,8 +294,10 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useCurrentUser,
+  useDatabaseStore,
   useDataSourceStore,
   useInstanceStore,
+  useSQLStore,
 } from "@/store";
 
 interface EditDataSource extends DataSource {
@@ -319,12 +320,12 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
 const instanceStore = useInstanceStore();
 const { t } = useI18n();
 const dataSourceStore = useDataSourceStore();
 
 const currentUser = useCurrentUser();
+const sqlStore = useSQLStore();
 
 const dataSourceList = props.instance.dataSourceList.map((dataSource) => {
   return {
@@ -604,10 +605,7 @@ const doUpdate = () => {
 
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
           if (connectionInfoChanged) {
-            store.dispatch(
-              "database/fetchDatabaseListByInstanceId",
-              state.instance.id
-            );
+            useDatabaseStore().fetchDatabaseListByInstanceId(state.instance.id);
           }
         })
         .finally(() => {
@@ -629,7 +627,7 @@ const testConnection = () => {
     port: state.instance.port,
     instanceId: state.instance.id,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
         module: "bytebase",

@@ -1,6 +1,6 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import { ActuatorState, ServerInfo } from "@/types";
-import { acceptHMRUpdate, defineStore } from "pinia";
 
 export const useActuatorStore = defineStore("actuator", {
   state: (): ActuatorState => ({
@@ -37,7 +37,3 @@ export const useActuatorStore = defineStore("actuator", {
     },
   },
 });
-
-if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useActuatorStore, import.meta.hot));
-}

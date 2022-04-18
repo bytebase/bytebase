@@ -1,5 +1,7 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import dayjs from "dayjs";
+import { computed, Ref } from "vue";
 import {
   Subscription,
   FeatureType,
@@ -7,8 +9,6 @@ import {
   FEATURE_MATRIX,
   SubscriptionState,
 } from "@/types";
-import { defineStore } from "pinia";
-import { computed, Ref } from "vue";
 
 export const useSubscriptionStore = defineStore("subscription", {
   state: (): SubscriptionState => ({

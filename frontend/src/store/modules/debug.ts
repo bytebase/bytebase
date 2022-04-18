@@ -1,7 +1,7 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import type { DebugState, ResourceObject } from "@/types";
 import type { Debug, DebugPatch } from "@/types/debug";
-import { defineStore } from "pinia";
 
 function convert(debug: ResourceObject): Debug {
   return { ...(debug.attributes as Omit<Debug, "">) };

@@ -139,7 +139,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { idFromSlug, isDBAOrOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
@@ -160,8 +159,10 @@ import {
   featureToRef,
   pushNotification,
   useCurrentUser,
+  useDatabaseStore,
   useInstanceStore,
   useSubscriptionStore,
+  useSQLStore,
 } from "@/store";
 
 const DATABASE_TAB = 0;
@@ -184,12 +185,12 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
 const instanceStore = useInstanceStore();
 const subscriptionStore = useSubscriptionStore();
 const { t } = useI18n();
 
 const currentUser = useCurrentUser();
+const sqlStore = useSQLStore();
 
 const state = reactive<LocalState>({
   selectedIndex: DATABASE_TAB,
@@ -264,8 +265,8 @@ const attentionActionText = computed((): string => {
 
 const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
-const databaseList = computed<Database[]>(() => {
-  const list: Database[] = store.getters["database/databaseListByInstanceId"](
+const databaseList = computed(() => {
+  const list = useDatabaseStore().getDatabaseListByInstanceId(
     instance.value.id
   );
 
@@ -395,8 +396,8 @@ const doCreateMigrationSchema = () => {
 
 const syncSchema = () => {
   state.syncingSchema = true;
-  store
-    .dispatch("sql/syncSchema", instance.value.id)
+  sqlStore
+    .syncSchema(instance.value.id)
     .then((resultSet: SqlResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {

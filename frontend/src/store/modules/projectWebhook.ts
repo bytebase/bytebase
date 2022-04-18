@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   ProjectId,
@@ -9,13 +10,12 @@ import {
   ProjectWebhookTestResult,
   ResourceObject,
   unknown,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   projectWebhook: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): ProjectWebhook {
   return {
     ...(projectWebhook.attributes as Omit<
@@ -42,24 +42,20 @@ function convertTestResult(
   };
 }
 
-const state: () => ProjectWebhookState = () => ({
-  projectWebhookListByProjectId: new Map(),
-});
+export const useProjectWebhookStore = defineStore("projectWebhook", {
+  state: (): ProjectWebhookState => ({
+    projectWebhookList: new Map(),
+  }),
 
-const getters = {
-  projectWebhookListByProjectId:
-    (state: ProjectWebhookState) =>
-    (projectId: ProjectId): ProjectWebhook[] => {
-      return state.projectWebhookListByProjectId.get(projectId) || [];
+  actions: {
+    projectWebhookListByProjectId(projectId: ProjectId): ProjectWebhook[] {
+      return this.projectWebhookList.get(projectId) || [];
     },
-
-  projectWebhookById:
-    (state: ProjectWebhookState) =>
-    (
+    projectWebhookById(
       projectId: ProjectId,
       projectWebhookId: ProjectWebhookId
-    ): ProjectWebhook => {
-      const list = state.projectWebhookListByProjectId.get(projectId);
+    ): ProjectWebhook {
+      const list = this.projectWebhookList.get(projectId);
       if (list) {
         for (const hook of list) {
           if (hook.id == projectWebhookId) {
@@ -69,86 +65,70 @@ const getters = {
       }
       return unknown("PROJECT_HOOK") as ProjectWebhook;
     },
-};
-
-const actions = {
-  async createProjectWebhook(
-    { commit, rootGetters }: any,
-    {
+    async createProjectWebhook({
       projectId,
       projectWebhookCreate,
     }: {
       projectId: ProjectId;
       projectWebhookCreate: ProjectWebhookCreate;
-    }
-  ): Promise<ProjectWebhook> {
-    const data = (
-      await axios.post(`/api/project/${projectId}/webhook`, {
-        data: {
-          type: "projectWebhookCreate",
-          attributes: projectWebhookCreate,
-        },
-      })
-    ).data;
-    const createdProjectWebhook = convert(
-      data.data,
-      data.included,
-      rootGetters
-    );
+    }): Promise<ProjectWebhook> {
+      const data = (
+        await axios.post(`/api/project/${projectId}/webhook`, {
+          data: {
+            type: "projectWebhookCreate",
+            attributes: projectWebhookCreate,
+          },
+        })
+      ).data;
+      const createdProjectWebhook = convert(data.data, data.included);
 
-    commit("upsertProjectWebhookByProjectId", {
-      projectId,
-      projectWebhook: createdProjectWebhook,
-    });
+      this.upsertProjectWebhookByProjectId({
+        projectId,
+        projectWebhook: createdProjectWebhook,
+      });
 
-    return createdProjectWebhook;
-  },
+      return createdProjectWebhook;
+    },
 
-  async fetchProjectWebhookListByProjectId(
-    { commit, rootGetters }: any,
-    projectId: ProjectId
-  ): Promise<ProjectWebhook[]> {
-    const data = (await axios.get(`/api/project/${projectId}/webhook`)).data;
-    const projectWebhookList = data.data.map(
-      (projectWebhook: ResourceObject) => {
-        return convert(projectWebhook, data.included, rootGetters);
-      }
-    );
+    async fetchProjectWebhookListByProjectId(
+      projectId: ProjectId
+    ): Promise<ProjectWebhook[]> {
+      const data = (await axios.get(`/api/project/${projectId}/webhook`)).data;
+      const projectWebhookList = data.data.map(
+        (projectWebhook: ResourceObject) => {
+          return convert(projectWebhook, data.included);
+        }
+      );
 
-    commit("setProjectWebhookListByProjectId", {
-      projectId,
-      projectWebhookList,
-    });
+      this.setProjectWebhookListByProjectId({
+        projectId,
+        projectWebhookList,
+      });
 
-    return projectWebhookList;
-  },
+      return projectWebhookList;
+    },
 
-  async fetchProjectWebhookById(
-    { commit, rootGetters }: any,
-    {
+    async fetchProjectWebhookById({
       projectId,
       projectWebhookId,
     }: {
       projectId: ProjectId;
       projectWebhookId: ProjectWebhookId;
-    }
-  ): Promise<ProjectWebhook> {
-    const data = (
-      await axios.get(`/api/project/${projectId}/webhook/${projectWebhookId}`)
-    ).data;
-    const projectWebhook = convert(data.data, data.included, rootGetters);
+    }): Promise<ProjectWebhook> {
+      const data = (
+        await axios.get(`/api/project/${projectId}/webhook/${projectWebhookId}`)
+      ).data;
+      const projectWebhook = convert(data.data, data.included);
 
-    commit("upsertProjectWebhookByProjectId", {
-      projectId,
-      projectWebhook,
-    });
+      this.upsertProjectWebhookByProjectId({
+        projectId,
+        projectWebhook,
+      });
 
-    return projectWebhook;
-  },
+      return projectWebhook;
+    },
 
-  async updateProjectWebhookById(
-    { commit, rootGetters }: any,
-    {
+    async updateProjectWebhookById({
       projectId,
       projectWebhookId,
       projectWebhookPatch,
@@ -156,132 +136,91 @@ const actions = {
       projectId: ProjectId;
       projectWebhookId: ProjectWebhookId;
       projectWebhookPatch: ProjectWebhookPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(
-        `/api/project/${projectId}/webhook/${projectWebhookId}`,
-        {
-          data: {
-            type: "projectWebhookPatch",
-            attributes: projectWebhookPatch,
-          },
+    }) {
+      const data = (
+        await axios.patch(
+          `/api/project/${projectId}/webhook/${projectWebhookId}`,
+          {
+            data: {
+              type: "projectWebhookPatch",
+              attributes: projectWebhookPatch,
+            },
+          }
+        )
+      ).data;
+      const updatedProjectWebhook = convert(data.data, data.included);
+
+      this.upsertProjectWebhookByProjectId({
+        projectId,
+        projectWebhook: updatedProjectWebhook,
+      });
+
+      return updatedProjectWebhook;
+    },
+
+    async deleteProjectWebhookById({
+      projectId,
+      projectWebhookId,
+    }: {
+      projectId: ProjectId;
+      projectWebhookId: ProjectWebhookId;
+    }) {
+      await axios.delete(
+        `/api/project/${projectId}/webhook/${projectWebhookId}`
+      );
+
+      const list = this.projectWebhookList.get(projectId);
+      if (list) {
+        const i = list.findIndex((item) => item.id == projectWebhookId);
+        if (i >= 0) {
+          list.splice(i, 1);
         }
-      )
-    ).data;
-    const updatedProjectWebhook = convert(
-      data.data,
-      data.included,
-      rootGetters
-    );
+      }
+    },
 
-    commit("upsertProjectWebhookByProjectId", {
-      projectId,
-      projectWebhook: updatedProjectWebhook,
-    });
-
-    return updatedProjectWebhook;
-  },
-
-  async deleteProjectWebhookById(
-    { dispatch, commit }: any,
-    {
+    async testProjectWebhookById({
       projectId,
       projectWebhookId,
     }: {
       projectId: ProjectId;
       projectWebhookId: ProjectWebhookId;
-    }
-  ) {
-    await axios.delete(`/api/project/${projectId}/webhook/${projectWebhookId}`);
+    }) {
+      const data = (
+        await axios.get(
+          `/api/project/${projectId}/webhook/${projectWebhookId}/test`
+        )
+      ).data;
 
-    commit("deleteProjectWebhookById", {
-      projectId,
-      projectWebhookId,
-    });
-  },
-
-  async testProjectWebhookById(
-    { dispatch, commit }: any,
-    {
-      projectId,
-      projectWebhookId,
-    }: {
-      projectId: ProjectId;
-      projectWebhookId: ProjectWebhookId;
-    }
-  ) {
-    const data = (
-      await axios.get(
-        `/api/project/${projectId}/webhook/${projectWebhookId}/test`
-      )
-    ).data;
-
-    return convertTestResult(data.data);
-  },
-};
-
-const mutations = {
-  setProjectWebhookListByProjectId(
-    state: ProjectWebhookState,
-    {
+      return convertTestResult(data.data);
+    },
+    setProjectWebhookListByProjectId({
       projectId,
       projectWebhookList,
     }: {
       projectId: ProjectId;
       projectWebhookList: ProjectWebhook[];
-    }
-  ) {
-    state.projectWebhookListByProjectId.set(projectId, projectWebhookList);
-  },
+    }) {
+      this.projectWebhookList.set(projectId, projectWebhookList);
+    },
 
-  upsertProjectWebhookByProjectId(
-    state: ProjectWebhookState,
-    {
+    upsertProjectWebhookByProjectId({
       projectId,
       projectWebhook,
     }: {
       projectId: ProjectId;
       projectWebhook: ProjectWebhook;
-    }
-  ) {
-    const list = state.projectWebhookListByProjectId.get(projectId);
-    if (list) {
-      const i = list.findIndex((item) => item.id == projectWebhook.id);
-      if (i >= 0) {
-        list[i] = projectWebhook;
+    }) {
+      const list = this.projectWebhookList.get(projectId);
+      if (list) {
+        const i = list.findIndex((item) => item.id == projectWebhook.id);
+        if (i >= 0) {
+          list[i] = projectWebhook;
+        } else {
+          list.push(projectWebhook);
+        }
       } else {
-        list.push(projectWebhook);
+        this.projectWebhookList.set(projectId, [projectWebhook]);
       }
-    } else {
-      state.projectWebhookListByProjectId.set(projectId, [projectWebhook]);
-    }
+    },
   },
-
-  deleteProjectWebhookById(
-    state: ProjectWebhookState,
-    {
-      projectId,
-      projectWebhookId,
-    }: {
-      projectId: ProjectId;
-      projectWebhookId: ProjectWebhookId;
-    }
-  ) {
-    const list = state.projectWebhookListByProjectId.get(projectId);
-    if (list) {
-      const i = list.findIndex((item) => item.id == projectWebhookId);
-      if (i >= 0) {
-        list.splice(i, 1);
-      }
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

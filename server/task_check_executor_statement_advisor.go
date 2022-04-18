@@ -41,6 +41,8 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
 		}
 		advisorType = advisor.MySQLMigrationCompatibility
+	case api.TaskCheckDatabaseStatementRequireWhere:
+		advisorType = advisor.MySQLWhereRequirement
 	}
 
 	adviceList, err := advisor.Check(
