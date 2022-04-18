@@ -7,7 +7,7 @@
       ref="inputRef"
       v-model="state.data"
       :style="`width: ${state.width}px;`"
-      :class="className"
+      class="px-0 m-0 py-1 cleared-input outline-none"
       type="text"
       @keyup="(e) => $emit('keyup', e)"
     />
@@ -25,10 +25,6 @@ const props = defineProps({
   maxWidth: {
     default: 0,
     type: Number,
-  },
-  className: {
-    default: "",
-    type: String,
   },
 });
 

@@ -11,8 +11,8 @@ module.exports = {
   safelist: [
     // "w-xxx" is used by BBTab
     // "pl-xxx" is used by BBOutline
-    // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar
-    // "hover:bg-xxx" is used by TaskCheckBadgeBar
+    // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar BBBadge
+    // "hover:bg-xxx" is used by TaskCheckBadgeBar BBBadge
     // "grid-cols-xxx" is used by AnomalyCenterDashboard
     { pattern: /^w-/ },
     { pattern: /^pl-/ },
@@ -20,6 +20,8 @@ module.exports = {
     { pattern: /^bg-blue-/, variants: ["hover"] },
     { pattern: /^bg-yellow-/, variants: ["hover"] },
     { pattern: /^bg-red-/, variants: ["hover"] },
+    { pattern: /^bg-indigo-/, variants: ["hover"] },
+    { pattern: /^text-indigo-/ },
     { pattern: /^text-gray-/ },
     { pattern: /^text-blue-/ },
     { pattern: /^text-yellow-/ },

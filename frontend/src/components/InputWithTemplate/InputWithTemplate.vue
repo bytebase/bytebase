@@ -25,7 +25,6 @@
             v-else
             :value="data.value"
             :max-width="state.inputMaxWidth"
-            class-name="px-0 m-0 py-1 cleared-input outline-none"
             @keyup="(e) => onKeyup(i, e)"
             @change="(val) => onTemplateChange(i, val)"
           />
