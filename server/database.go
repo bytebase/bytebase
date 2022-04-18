@@ -30,7 +30,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find instance").SetInternal(err)
 		}
 		if instance == nil {
-			err := fmt.Errorf("Instance ID not found %v", databaseCreate.InstanceID)
+			err := fmt.Errorf("instance ID not found %v", databaseCreate.InstanceID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		databaseCreate.EnvironmentID = instance.EnvironmentID
@@ -39,7 +39,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find project").SetInternal(err)
 		}
 		if project == nil {
-			err := fmt.Errorf("Project ID not found %v", databaseCreate.ProjectID)
+			err := fmt.Errorf("project ID not found %v", databaseCreate.ProjectID)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		if project.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {

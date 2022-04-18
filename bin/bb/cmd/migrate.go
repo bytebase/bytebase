@@ -29,7 +29,7 @@ func newMigrateCmd() *cobra.Command {
 	migrateCmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Migrate the database schema",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
 				return fmt.Errorf("failed to parse dsn, got error: %w", err)

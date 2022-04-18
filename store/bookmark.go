@@ -48,11 +48,11 @@ func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
 func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Bookmark with BookmarkCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Bookmark with BookmarkCreate[%+v], error[%w]", create, err)
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
 	}
 	return bookmark, nil
 }
@@ -62,14 +62,14 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 	find := &api.BookmarkFind{ID: &id}
 	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get Bookmark with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Bookmark with ID[%d], error[%w]", id, err)
 	}
 	if bookmarkRaw == nil {
 		return nil, nil
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
 	}
 	return bookmark, nil
 }
@@ -78,13 +78,13 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Bookmark list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Bookmark list, error[%w]", err)
 	}
 	var bookmarkList []*api.Bookmark
 	for _, raw := range bookmarkRawList {
 		bookmark, err := s.composeBookmark(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", raw, err)
 		}
 		bookmarkList = append(bookmarkList, bookmark)
 	}

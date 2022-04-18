@@ -29,11 +29,11 @@ func (raw *issueSubscriberRaw) toIssueSubscriber() *api.IssueSubscriber {
 func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	issueSubRaw, err := s.createIssueSubscriberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create IssueSubscriber with IssueSubscriberCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create IssueSubscriber with IssueSubscriberCreate[%+v], error[%w]", create, err)
 	}
 	issueSub, err := s.composeIssueSubscriber(ctx, issueSubRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", issueSubRaw, err)
+		return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", issueSubRaw, err)
 	}
 	return issueSub, nil
 }
@@ -42,13 +42,13 @@ func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubs
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find IssueSubscriber list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find IssueSubscriber list, error[%w]", err)
 	}
 	var issueSubList []*api.IssueSubscriber
 	for _, raw := range issueSubRawList {
 		issueSub, err := s.composeIssueSubscriber(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", raw, err)
 		}
 		issueSubList = append(issueSubList, issueSub)
 	}

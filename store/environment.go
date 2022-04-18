@@ -48,11 +48,11 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Environment with EnvironmentCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Environment with EnvironmentCreate[%+v], error[%w]", create, err)
 	}
 	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Environment with environmentRaw[%+v], error[%w]", environmentRaw, err)
+		return nil, fmt.Errorf("failed to compose Environment with environmentRaw[%+v], error[%w]", environmentRaw, err)
 	}
 	return Environment, nil
 }
@@ -61,13 +61,13 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	EnvironmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Environment list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Environment list, error[%w]", err)
 	}
 	var EnvironmentList []*api.Environment
 	for _, raw := range EnvironmentRawList {
 		Environment, err := s.composeEnvironment(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Environment role with environmentRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error[%w]", raw, err)
 		}
 		EnvironmentList = append(EnvironmentList, Environment)
 	}
@@ -78,11 +78,11 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to patch Environment with EnvironmentPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Environment with EnvironmentPatch[%+v], error[%w]", patch, err)
 	}
 	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Environment role with environmentRaw[%+v], error[%w]", environmentRaw, err)
+		return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error[%w]", environmentRaw, err)
 	}
 	return Environment, nil
 }
@@ -91,7 +91,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get environment with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get environment with ID[%d], error[%w]", id, err)
 	}
 	if envRaw == nil {
 		return nil, nil
@@ -99,7 +99,7 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 
 	env, err := s.composeEnvironment(ctx, envRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose environment with environmentRaw[%+v], error[%w]", envRaw, err)
+		return nil, fmt.Errorf("failed to compose environment with environmentRaw[%+v], error[%w]", envRaw, err)
 	}
 
 	return env, nil
