@@ -1396,6 +1396,7 @@ schema-review:
     basic-info:
       name: Basic info
       display-name: Display name
+      display-name-default: Schema review policy
       display-name-label: >-
         An display name to help identifying among different reviews.
       environments: Environments

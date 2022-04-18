@@ -24,7 +24,7 @@ import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
 import { Sheet } from "./sheet";
-import { DatabaseSchemaReview } from "./schemaSystem";
+import { DatabaseSchemaReviewPolicy } from "./schemaSystem";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -166,7 +166,7 @@ export const unknown = (
   | Anomaly
   | DeploymentConfig
   | Sheet
-  | DatabaseSchemaReview => {
+  | DatabaseSchemaReviewPolicy => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -486,7 +486,7 @@ export const unknown = (
     visibility: "PRIVATE",
   };
 
-  const UNKNOWN_SCHEMA_REVIEW: DatabaseSchemaReview = {
+  const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: UNKNOWN_ID,
     name: "",
     createdTs: 0,
@@ -543,7 +543,7 @@ export const unknown = (
     case "SHEET":
       return UNKNOWN_SHEET;
     case "SCHEMA_REVIEW":
-      return UNKNOWN_SCHEMA_REVIEW;
+      return UNKNOWN_SCHEMA_REVIEW_POLICY;
   }
 };
 
@@ -574,7 +574,7 @@ export const empty = (
   | Anomaly
   | DeploymentConfig
   | Sheet
-  | DatabaseSchemaReview => {
+  | DatabaseSchemaReviewPolicy => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -892,7 +892,7 @@ export const empty = (
     visibility: "PRIVATE",
   };
 
-  const EMPTY_SCHEMA_REVIEW: DatabaseSchemaReview = {
+  const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: EMPTY_ID,
     name: "",
     createdTs: 0,
@@ -949,6 +949,6 @@ export const empty = (
     case "SHEET":
       return EMPTY_SHEET;
     case "SCHEMA_REVIEW":
-      return EMPTY_SCHEMA_REVIEW;
+      return EMPTY_SCHEMA_REVIEW_POLICY;
   }
 };

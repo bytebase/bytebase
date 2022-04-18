@@ -66,7 +66,7 @@ interface DatabaseSchemaRule {
   };
 }
 
-export interface DatabaseSchemaReview {
+export interface DatabaseSchemaReviewPolicy {
   id: SchemaReviewId;
 
   // Standard fields
@@ -81,14 +81,14 @@ export interface DatabaseSchemaReview {
   environmentList: number[];
 }
 
-export interface DatabaseSchemaReviewCreate {
+export interface DatabaseSchemaReviewPolicyCreate {
   // Domain specific fields
   name: string;
   ruleList: DatabaseSchemaRule[];
   environmentList: number[];
 }
 
-export type DatabaseSchemaReviewPatch = {
+export type DatabaseSchemaReviewPolicyPatch = {
   // Domain specific fields
   name?: string;
   ruleList?: DatabaseSchemaRule[];

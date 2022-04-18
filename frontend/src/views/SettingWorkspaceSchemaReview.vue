@@ -32,7 +32,7 @@ import {
   useSchemaSystemStore,
   useCurrentUser,
 } from "@/store";
-import { DatabaseSchemaReview } from "../types/schemaSystem";
+import { DatabaseSchemaReviewPolicy } from "../types/schemaSystem";
 import { schemaReviewSlug, isOwner, isDBA } from "../utils";
 import { computed } from "vue";
 
@@ -60,7 +60,7 @@ const goToCreationView = () => {
   }
 };
 
-const onClick = (review: DatabaseSchemaReview) => {
+const onClick = (review: DatabaseSchemaReviewPolicy) => {
   router.push({
     name: `${ROUTE_NAME}.detail`,
     params: {

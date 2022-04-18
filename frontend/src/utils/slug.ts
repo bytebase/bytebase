@@ -9,7 +9,7 @@ import {
   Project,
   ProjectWebhook,
   VCS,
-  DatabaseSchemaReview,
+  DatabaseSchemaReviewPolicy,
 } from "../types";
 import { IdType } from "../types/id";
 
@@ -85,7 +85,7 @@ export function vcsSlug(vcs: VCS): string {
   return [slug(vcs.name), vcs.id].join("-");
 }
 
-export function schemaReviewSlug(guide: DatabaseSchemaReview): string {
+export function schemaReviewSlug(guide: DatabaseSchemaReviewPolicy): string {
   return [slug(guide.name), guide.id].join("-");
 }
 

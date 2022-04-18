@@ -141,7 +141,7 @@ import {
   RuleLevel,
   DatabaseType,
   SchemaRule,
-  DatabaseSchemaReview,
+  DatabaseSchemaReviewPolicy,
   convertToCategoryList,
   SelectedRule,
   ruleList,
@@ -192,7 +192,7 @@ const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
-const review = computed((): DatabaseSchemaReview => {
+const review = computed((): DatabaseSchemaReviewPolicy => {
   return store.getReviewById(idFromSlug(props.schemaReviewSlug));
 });
 

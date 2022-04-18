@@ -6,15 +6,15 @@ import {
   EMPTY_ID,
   UNKNOWN_ID,
   Environment,
-  DatabaseSchemaReview,
-  DatabaseSchemaReviewCreate,
-  DatabaseSchemaReviewPatch,
+  DatabaseSchemaReviewPolicy,
+  DatabaseSchemaReviewPolicyCreate,
+  DatabaseSchemaReviewPolicyPatch,
 } from "../../types";
 import { defineStore } from "pinia";
 import { useCurrentUser } from "./auth";
 
 interface SchemaSystemState {
-  reviewList: DatabaseSchemaReview[];
+  reviewList: DatabaseSchemaReviewPolicy[];
 }
 
 export const useSchemaSystemStore = defineStore("schemaSystem", {
@@ -44,7 +44,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
 
       return [...envMap.values()];
     },
-    addReview(review: DatabaseSchemaReviewCreate) {
+    addReview(review: DatabaseSchemaReviewPolicyCreate) {
       // TODO: need update after backend is implemented
       const user = useCurrentUser();
       this.reviewList.push({
@@ -67,7 +67,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         ...this.reviewList.slice(index + 1),
       ];
     },
-    updateReview(id: SchemaReviewId, review: DatabaseSchemaReviewPatch) {
+    updateReview(id: SchemaReviewId, review: DatabaseSchemaReviewPolicyPatch) {
       // TODO: need update after backend is implemented
       const index = this.reviewList.findIndex((g) => g.id === id);
       if (index < 0) {
@@ -82,21 +82,23 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         ...this.reviewList.slice(index + 1),
       ];
     },
-    getReviewById(id: SchemaReviewId): DatabaseSchemaReview {
+    getReviewById(id: SchemaReviewId): DatabaseSchemaReviewPolicy {
       if (id === EMPTY_ID) {
-        return empty("SCHEMA_REVIEW") as DatabaseSchemaReview;
+        return empty("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy;
       }
 
       return (
         this.reviewList.find((g) => g.id === id) ||
-        (unknown("SCHEMA_REVIEW") as DatabaseSchemaReview)
+        (unknown("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy)
       );
     },
 
-    async fetchReviewList(): Promise<DatabaseSchemaReview[]> {
+    async fetchReviewList(): Promise<DatabaseSchemaReviewPolicy[]> {
       throw new Error("function haven't implement yet");
     },
-    async fetchReviewById(id: SchemaReviewId): Promise<DatabaseSchemaReview> {
+    async fetchReviewById(
+      id: SchemaReviewId
+    ): Promise<DatabaseSchemaReviewPolicy> {
       // TODO: should remove this after the backend is implemented
       const review = this.getReviewById(id);
       if (review.id === UNKNOWN_ID || review.id === EMPTY_ID) {

@@ -63,13 +63,13 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { DatabaseSchemaReview } from "../../../types/schemaSystem";
+import { DatabaseSchemaReviewPolicy } from "../../../types/schemaSystem";
 import { useEnvironmentStore } from "@/store";
 
 const props = defineProps({
   review: {
     required: true,
-    type: Object as PropType<DatabaseSchemaReview>,
+    type: Object as PropType<DatabaseSchemaReviewPolicy>,
   },
 });
 const emit = defineEmits(["click"]);
