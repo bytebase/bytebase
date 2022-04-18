@@ -58,11 +58,13 @@ export interface SelectedRule extends SchemaRule {
   level: RuleLevel;
 }
 
+type RulePayloadType = string | string[];
+
 interface DatabaseSchemaRule {
   id: string;
   level: RuleLevel;
   payload?: {
-    [key: string]: any;
+    [key: string]: RulePayloadType;
   };
 }
 
