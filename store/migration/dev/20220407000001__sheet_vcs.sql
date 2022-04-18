@@ -7,3 +7,9 @@ CREATE INDEX idx_sheet_project_id ON sheet(project_id);
 CREATE INDEX idx_sheet_name ON sheet(name);
 
 ALTER TABLE repository ADD sheet_path_template TEXT NOT NULL DEFAULT '';
+
+CREATE OR REPLACE TRIGGER update_sheet_updated_ts
+BEFORE
+UPDATE OF project_id, database_id, name, statement, visibility, source, type, payload
+    ON sheet FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
