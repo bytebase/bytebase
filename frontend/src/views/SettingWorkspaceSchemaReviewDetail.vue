@@ -47,17 +47,13 @@
         <span class="font-semibold">{{ $t("schema-review.filter") }}</span>
         <div class="flex flex-wrap gap-x-3">
           <span>{{ $t("schema-review.database") }}:</span>
-          <div
-            v-for="db in databaseList"
-            :key="db.id"
-            class="flex items-center"
-          >
+          <div v-for="db in engineList" :key="db.id" class="flex items-center">
             <input
               type="checkbox"
               :id="db.id"
               :value="db.id"
-              :checked="state.checkedDatabase.has(db.id)"
-              @input="toggleCheckedDatabase(db.id)"
+              :checked="state.checkedEngine.has(db.id)"
+              @input="toggleCheckedEngine(db.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             />
             <label :for="db.id" class="ml-2 items-center text-sm text-gray-600">
@@ -139,9 +135,9 @@ import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
 import {
   LEVEL_LIST,
   RuleLevel,
-  DatabaseType,
   SchemaRule,
   DatabaseSchemaReviewPolicy,
+  SchemaRuleEngineType,
   convertToCategoryList,
   SelectedRule,
   ruleList,
@@ -167,7 +163,7 @@ interface LocalState {
   searchText: string;
   selectedCategory?: string;
   editMode: boolean;
-  checkedDatabase: Set<DatabaseType>;
+  checkedEngine: Set<SchemaRuleEngineType>;
   checkedLevel: Set<RuleLevel>;
 }
 
@@ -184,7 +180,7 @@ const state = reactive<LocalState>({
     ? (router.currentRoute.value.query.category as string)
     : undefined,
   editMode: false,
-  checkedDatabase: new Set<DatabaseType>(),
+  checkedEngine: new Set<SchemaRuleEngineType>(),
   checkedLevel: new Set<RuleLevel>(),
 });
 
@@ -243,22 +239,22 @@ const selectedRuleList = computed((): SelectedRule[] => {
   return res;
 });
 
-const databaseList = computed((): { id: DatabaseType; count: number }[] => {
-  const tmp = selectedRuleList.value.reduce((dict, rule) => {
-    for (const db of rule.database) {
-      if (!dict[db]) {
-        dict[db] = {
-          id: db,
+const engineList = computed(
+  (): { id: SchemaRuleEngineType; count: number }[] => {
+    const tmp = selectedRuleList.value.reduce((dict, rule) => {
+      if (!dict[rule.engine]) {
+        dict[rule.engine] = {
+          id: rule.engine,
           count: 0,
         };
       }
-      dict[db].count += 1;
-    }
-    return dict;
-  }, {} as { [id: string]: { id: DatabaseType; count: number } });
+      dict[rule.engine].count += 1;
+      return dict;
+    }, {} as { [id: string]: { id: SchemaRuleEngineType; count: number } });
 
-  return Object.values(tmp);
-});
+    return Object.values(tmp);
+  }
+);
 
 const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
   return LEVEL_LIST.map((level) => ({
@@ -267,11 +263,11 @@ const errorLevelList = computed((): { id: RuleLevel; count: number }[] => {
   }));
 });
 
-const toggleCheckedDatabase = (db: DatabaseType) => {
-  if (state.checkedDatabase.has(db)) {
-    state.checkedDatabase.delete(db);
+const toggleCheckedEngine = (engine: SchemaRuleEngineType) => {
+  if (state.checkedEngine.has(engine)) {
+    state.checkedEngine.delete(engine);
   } else {
-    state.checkedDatabase.add(db);
+    state.checkedEngine.add(engine);
   }
 };
 
@@ -311,7 +307,7 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
     if (
       !state.selectedCategory &&
       !state.searchText &&
-      state.checkedDatabase.size === 0 &&
+      state.checkedEngine.size === 0 &&
       state.checkedLevel.size === 0
     ) {
       // Select "All"
@@ -325,8 +321,8 @@ const filteredSelectedRuleList = computed((): SelectedRule[] => {
         selectedRule.id
           .toLowerCase()
           .includes(state.searchText.toLowerCase())) &&
-      (state.checkedDatabase.size === 0 ||
-        selectedRule.database.some((db) => state.checkedDatabase.has(db))) &&
+      (state.checkedEngine.size === 0 ||
+        state.checkedEngine.has(selectedRule.engine)) &&
       (state.checkedLevel.size === 0 ||
         state.checkedLevel.has(selectedRule.level))
     );

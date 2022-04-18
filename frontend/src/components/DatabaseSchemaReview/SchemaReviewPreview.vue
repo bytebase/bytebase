@@ -59,12 +59,7 @@
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
-              <BBBadge
-                v-for="db in rule.database"
-                :key="`${rule.id}-${db}`"
-                :text="db"
-                :can-remove="false"
-              />
+              <BBBadge :text="rule.engine" :can-remove="false" />
             </div>
           </div>
           <p class="py-2 text-gray-400">{{ rule.description }}</p>

@@ -15,12 +15,7 @@
           <h1 class="text-base font-semibold text-gray-900">
             {{ selectedRule.id }}
           </h1>
-          <BBBadge
-            v-for="db in selectedRule.database"
-            :key="`${selectedRule.id}-${db}`"
-            :text="db"
-            :can-remove="false"
-          />
+          <BBBadge :text="selectedRule.engine" :can-remove="false" />
           <SchemaRuleLevelBadge :level="selectedRule.level" />
         </div>
         <div class="text-sm text-gray-400">

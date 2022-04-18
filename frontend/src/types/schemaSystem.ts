@@ -42,14 +42,14 @@ export interface RulePayload {
   [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
 }
 
-export type DatabaseType = "MySQL" | "Common";
+export type SchemaRuleEngineType = "MySQL" | "Common";
 
 export type CategoryType = "engine" | "naming" | "query" | "table" | "column";
 
 export interface SchemaRule {
   id: string;
   category: CategoryType;
-  database: DatabaseType[];
+  engine: SchemaRuleEngineType;
   description: string;
   payload?: RulePayload;
 }
@@ -143,19 +143,19 @@ export const ruleList: SchemaRule[] = [
   {
     id: "engine.mysql.use-innodb",
     category: "engine",
-    database: ["MySQL"],
+    engine: "MySQL",
     description: "Require InnoDB as the storage engine.",
   },
   {
     id: "table.require-pk",
     category: "table",
-    database: ["Common"],
+    engine: "Common",
     description: "Require the table to have a primary key.",
   },
   {
     id: "naming.table",
     category: "naming",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the table name format. Default snake_lower_case.",
     payload: {
       format: {
@@ -167,7 +167,7 @@ export const ruleList: SchemaRule[] = [
   {
     id: "naming.column",
     category: "naming",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the column name format. Default snake_lower_case.",
     payload: {
       format: {
@@ -179,7 +179,7 @@ export const ruleList: SchemaRule[] = [
   {
     id: "naming.index.pk",
     category: "naming",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the primary key name format.",
     payload: {
       pk: {
@@ -201,7 +201,7 @@ export const ruleList: SchemaRule[] = [
   {
     id: "naming.index.uk",
     category: "naming",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the unique key name format.",
     payload: {
       uk: {
@@ -223,7 +223,7 @@ export const ruleList: SchemaRule[] = [
   {
     id: "naming.index.idx",
     category: "naming",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the index name format.",
     payload: {
       idx: {
@@ -245,7 +245,7 @@ export const ruleList: SchemaRule[] = [
   {
     id: "column.required",
     category: "column",
-    database: ["Common"],
+    engine: "Common",
     description: "Enforce the required columns in each table.",
     payload: {
       columns: {
@@ -257,25 +257,25 @@ export const ruleList: SchemaRule[] = [
   {
     id: "column.no-null",
     category: "column",
-    database: ["Common"],
+    engine: "Common",
     description: "Columns cannot have NULL value.",
   },
   {
     id: "query.select.no-select-all",
     category: "query",
-    database: ["Common"],
+    engine: "Common",
     description: "Disallow 'SELECT *'.",
   },
   {
     id: "query.where.require",
     category: "query",
-    database: ["Common"],
+    engine: "Common",
     description: "Require 'WHERE' clause.",
   },
   {
     id: "query.where.no-leading-wildcard-like",
     category: "query",
-    database: ["Common"],
+    engine: "Common",
     description:
       "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.",
   },
