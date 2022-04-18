@@ -98,7 +98,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		for _, item := range patchList {
 			envPatch, ok := item.(*api.EnvironmentPatch)
 			if !ok {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(errors.New("Failed to convert request item to *api.EnvironmentPatch"))
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(errors.New("failed to convert request item to *api.EnvironmentPatch"))
 			}
 			envPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 			if _, err := s.store.PatchEnvironment(ctx, envPatch); err != nil {

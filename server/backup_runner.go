@@ -85,7 +85,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					if db == nil {
-						err := fmt.Errorf("Failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
+						err := fmt.Errorf("failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
 						s.l.Error(err.Error(),
 							zap.Int("id", backupSetting.ID),
 							zap.Int("databaseID", backupSetting.DatabaseID),

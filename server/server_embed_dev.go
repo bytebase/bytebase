@@ -8,6 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func embedFrontend(logger *zap.Logger, e *echo.Echo) {
+func embedFrontend(logger *zap.Logger, _ *echo.Echo) {
 	logger.Info("Dev mode, skip embedding frontend")
 }
