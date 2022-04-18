@@ -137,6 +137,7 @@ const getRuleListWithLevel = (
   }, [] as SelectedRule[]);
 };
 
+// TODO: i18n
 const TEMPLATE_LIST: SchemaReviewTemplate[] = [
   {
     name: "Schema review for Prod",

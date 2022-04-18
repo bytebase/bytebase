@@ -139,6 +139,7 @@ export interface SchemaReviewTemplate {
   ruleList: SelectedRule[];
 }
 
+// TODO: i18n
 export const ruleList: SchemaRule[] = [
   {
     id: "engine.mysql.use-innodb",

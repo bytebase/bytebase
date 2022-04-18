@@ -489,6 +489,8 @@ export const unknown = (
   const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: UNKNOWN_ID,
     name: "",
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
     environmentList: [],
@@ -895,6 +897,8 @@ export const empty = (
   const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: EMPTY_ID,
     name: "",
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
     environmentList: [],
