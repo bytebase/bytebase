@@ -143,7 +143,7 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
     name: "Schema review for Prod",
     image: new URL("../../assets/plan-enterprise.png", import.meta.url).href,
     ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
       ...getRuleListWithLevel(
         [
           "naming.table",
@@ -152,7 +152,7 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
           "naming.index.uk",
           "naming.index.idx",
         ],
-        RuleLevel.Warning
+        RuleLevel.WARNING
       ),
       ...getRuleListWithLevel(
         [
@@ -161,11 +161,11 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
           "query.where.no-leading-wildcard-like",
           "table.require-pk",
         ],
-        RuleLevel.Error
+        RuleLevel.ERROR
       ),
       ...getRuleListWithLevel(
         ["column.required", "column.no-null"],
-        RuleLevel.Warning
+        RuleLevel.WARNING
       ),
     ],
   },
@@ -173,7 +173,7 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
     name: "Schema review for Dev",
     image: new URL("../../assets/plan-free.png", import.meta.url).href,
     ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.Error),
+      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
       ...getRuleListWithLevel(
         [
           "naming.table",
@@ -185,12 +185,12 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
           "query.where.require",
           "query.where.no-leading-wildcard-like",
         ],
-        RuleLevel.Warning
+        RuleLevel.WARNING
       ),
-      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.Error),
+      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.ERROR),
       ...getRuleListWithLevel(
         ["column.required", "column.no-null"],
-        RuleLevel.Warning
+        RuleLevel.WARNING
       ),
     ],
   },

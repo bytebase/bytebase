@@ -20,9 +20,9 @@ const props = defineProps({
 
 const style = computed((): BBAttentionStyle => {
   switch (props.level) {
-    case RuleLevel.Error:
+    case RuleLevel.ERROR:
       return "CRITICAL";
-    case RuleLevel.Warning:
+    case RuleLevel.WARNING:
       return "WARN";
     default:
       return "INFO";

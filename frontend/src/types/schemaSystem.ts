@@ -2,37 +2,37 @@ import { SchemaReviewId } from "./id";
 import { Principal } from "./principal";
 
 export enum RuleLevel {
-  Disabled = "disabled",
-  Error = "error",
-  Warning = "warning",
+  DISABLED = "disabled",
+  ERROR = "error",
+  WARNING = "warning",
 }
 
 export const LEVEL_LIST = [
-  RuleLevel.Error,
-  RuleLevel.Warning,
-  RuleLevel.Disabled,
+  RuleLevel.ERROR,
+  RuleLevel.WARNING,
+  RuleLevel.DISABLED,
 ];
 
 enum PayloadType {
-  String = "string",
-  StringArray = "string[]",
-  Template = "template",
+  STRING = "string",
+  STRING_ARRAY = "string[]",
+  TEMPLATE = "template",
 }
 
 interface StringPayload {
-  type: PayloadType.String;
+  type: PayloadType.STRING;
   default: string;
   value?: string;
 }
 
 interface StringArrayPayload {
-  type: PayloadType.StringArray;
+  type: PayloadType.STRING_ARRAY;
   default: string[];
   value?: string[];
 }
 
 interface TemplatePayload {
-  type: PayloadType.Template;
+  type: PayloadType.TEMPLATE;
   default: string;
   templates: { id: string; description?: string }[];
   value?: string;
@@ -159,7 +159,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the table name format. Default snake_lower_case.",
     payload: {
       format: {
-        type: PayloadType.String,
+        type: PayloadType.STRING,
         default: "^[a-z]+(_[a-z]+)?$",
       },
     },
@@ -171,7 +171,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the column name format. Default snake_lower_case.",
     payload: {
       format: {
-        type: PayloadType.String,
+        type: PayloadType.STRING,
         default: "^[a-z]+(_[a-z]+)?$",
       },
     },
@@ -183,7 +183,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the primary key name format.",
     payload: {
       pk: {
-        type: PayloadType.Template,
+        type: PayloadType.TEMPLATE,
         default: "^pk_{{table}}_{{column_list}}$",
         templates: [
           {
@@ -205,7 +205,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the unique key name format.",
     payload: {
       uk: {
-        type: PayloadType.Template,
+        type: PayloadType.TEMPLATE,
         default: "^uk_{{table}}_{{column_list}}$",
         templates: [
           {
@@ -227,7 +227,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the index name format.",
     payload: {
       idx: {
-        type: PayloadType.Template,
+        type: PayloadType.TEMPLATE,
         default: "^idx_{{table}}_{{column_list}}$",
         templates: [
           {
@@ -249,7 +249,7 @@ export const ruleList: SchemaRule[] = [
     description: "Enforce the required columns in each table.",
     payload: {
       columns: {
-        type: PayloadType.StringArray,
+        type: PayloadType.STRING_ARRAY,
         default: ["id", "created_ts", "updated_ts", "creator_id", "updater_id"],
       },
     },
