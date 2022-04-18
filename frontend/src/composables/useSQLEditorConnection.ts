@@ -1,15 +1,20 @@
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 
 import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
-import { getDefaultConnectionContext } from "../store/modules/sqlEditor";
-import { useDatabaseStore, useTabStore } from "@/store";
+import { getDefaultConnectionContext } from "@/store";
+import {
+  useDatabaseStore,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
-  const store = useStore();
   const tabStore = useTabStore();
+  const sqlEditorStore = useSQLEditorStore();
+  const sheetStore = useSheetStore();
 
   /**
    * Set the connection by tab info
@@ -18,12 +23,12 @@ const useSQLEditorConnection = () => {
    */
   const setConnectionContextFromCurrentTab = () => {
     const currentTab = tabStore.currentTab;
-    const sheetById = store.state.sheet.sheetById as SheetState["sheetById"];
+    const sheetById = sheetStore.sheetById as SheetState["sheetById"];
 
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
       const sheet = sheetById.get(currentTab.sheetId);
 
-      store.dispatch("sqlEditor/setConnectionContext", {
+      sqlEditorStore.setConnectionContext({
         hasSlug: true,
         projectId: sheet?.database?.projectId || DEFAULT_PROJECT_ID,
         instanceId: sheet?.database?.instanceId || UNKNOWN_ID,
@@ -42,10 +47,7 @@ const useSQLEditorConnection = () => {
         });
       }
     } else {
-      store.dispatch(
-        "sqlEditor/setConnectionContext",
-        getDefaultConnectionContext()
-      );
+      sqlEditorStore.setConnectionContext(getDefaultConnectionContext());
 
       router.push({
         path: "/sql-editor",

@@ -13,15 +13,21 @@ import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import {
-  store,
   useAuthStore,
   useDatabaseStore,
   useEnvironmentStore,
   useInstanceStore,
+  useIssueStore,
   usePrincipalStore,
   useRouterStore,
 } from "../store";
-import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
+import {
+  Database,
+  QuickActionType,
+  Sheet,
+  UNKNOWN_ID,
+  SheetId,
+} from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -36,6 +42,8 @@ import {
   useDataSourceStore,
   useProjectStore,
   useTableStore,
+  useSQLEditorStore,
+  useSheetStore,
 } from "@/store";
 
 const HOME_MODULE = "workspace.home";
@@ -632,18 +640,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/grant",
-            name: "workspace.database.grant",
-            meta: {
-              title: () => t("datasource.grant-database"),
-            },
-            components: {
-              content: () => import("../views/DatabaseGrant.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
@@ -678,25 +674,6 @@ const routes: Array<RouteRecordRaw> = [
                   allowBookmark: true,
                 },
                 component: () => import("../views/TableDetail.vue"),
-                props: true,
-              },
-              {
-                path: "datasource/:dataSourceSlug",
-                name: "workspace.database.datasource.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.dataSourceSlug as string;
-                    if (slug.toLowerCase() == "new") {
-                      return t("common.new");
-                    }
-                    return `${t("common.data-source")} - ${
-                      useDataSourceStore().getDataSourceById(idFromSlug(slug))
-                        .name
-                    }`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DataSourceDetail.vue"),
                 props: true,
               },
               {
@@ -751,7 +728,8 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return t("common.new");
                 }
-                return store.getters["issue/issueById"](idFromSlug(slug)).name;
+                const issue = useIssueStore().getIssueById(idFromSlug(slug));
+                return issue.name;
               },
               allowBookmark: true,
             },
@@ -815,6 +793,7 @@ router.beforeEach((to, from, next) => {
   const databaseStore = useDatabaseStore();
   const environmentStore = useEnvironmentStore();
   const instanceStore = useInstanceStore();
+  const issueStore = useIssueStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
   const projectWebhookStore = useProjectWebhookStore();
@@ -1043,8 +1022,8 @@ router.beforeEach((to, from, next) => {
         });
       return;
     }
-    store
-      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+    issueStore
+      .fetchIssueById(idFromSlug(issueSlug))
       .then(() => {
         next();
       })
@@ -1162,8 +1141,8 @@ router.beforeEach((to, from, next) => {
 
   if (connectionSlug) {
     const [, instanceId, , databaseId] = connectionSlug.split("_");
-    store
-      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
+    useSQLEditorStore()
+      .fetchConnectionByInstanceIdAndDatabaseId({
         instanceId: Number(instanceId),
         databaseId: Number(databaseId),
       })
@@ -1171,8 +1150,8 @@ router.beforeEach((to, from, next) => {
         // for sharing the sheet to others
         if (sheetSlug) {
           const [_, sheetId] = sheetSlug.split("_");
-          store
-            .dispatch("sheet/fetchSheetById", sheetId)
+          useSheetStore()
+            .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
               tabStore.addTab({
                 name: sheet.name,
@@ -1182,7 +1161,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              store.dispatch("sqlEditor/setSqlEditorState", {
+              useSQLEditorStore().setSqlEditorState({
                 sharedSheet: sheet,
               });
 

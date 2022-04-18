@@ -188,4 +188,26 @@ VALUES
         'OPEN'
     );
 
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 9010;
+-- Pipeline for task dependency
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        status
+    )
+VALUES
+    (
+        9010,
+        1,
+        1624879944,
+        1,
+        1624879944,
+        'Pipeline - Task Dependency',
+        'OPEN'
+    );
+
+ALTER SEQUENCE pipeline_id_seq RESTART WITH 9011;

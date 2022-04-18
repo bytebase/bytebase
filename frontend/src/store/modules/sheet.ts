@@ -1,33 +1,30 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import { isEmpty } from "lodash-es";
-
-import * as types from "../mutation-types";
-import { makeActions } from "../actions";
-import type {
+import {
   Sheet,
   SheetId,
   SheetState,
   SheetPatch,
   Principal,
   ResourceObject,
-  ConnectionContext,
   TabInfo,
   Database,
   Project,
   ProjectMember,
+  unknown,
+  UNKNOWN_ID,
 } from "@/types";
-import { unknown, UNKNOWN_ID } from "@/types";
-import { getPrincipalFromIncludedList } from "../pinia";
-import {
-  useAuthStore,
-  useDatabaseStore,
-  useProjectStore,
-} from "../pinia-modules";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useAuthStore } from "./auth";
+import { useDatabaseStore } from "./database";
+import { useProjectStore } from "./project";
+import { useSQLEditorStore } from "./sqlEditor";
+import { useTabStore } from "./tab";
 
 function convertSheet(
   sheet: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Sheet {
   let project = unknown("PROJECT") as Project;
   let database = unknown("DATABASE") as Database;
@@ -62,47 +59,43 @@ function convertSheet(
   };
 }
 
-const state: () => SheetState = () => {
-  return {
+export const useSheetStore = defineStore("sheet", {
+  state: (): SheetState => ({
     sheetList: [],
     sheetById: new Map(),
-  };
-};
+  }),
 
-const getters = {
-  currentSheet:
-    (state: SheetState) =>
-    (currentTab: TabInfo): Sheet => {
+  getters: {
+    currentSheet(state) {
+      const currentTab = useTabStore().currentTab;
+
       if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
 
       const sheetId = currentTab.sheetId || UNKNOWN_ID;
 
       return state.sheetById.get(sheetId) || (unknown("SHEET") as Sheet);
     },
-  isCreator:
-    (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
-    (currentTab: TabInfo): boolean => {
+    isCreator() {
       const { currentUser } = useAuthStore();
-      const currentSheet = getters.currentSheet(currentTab);
+      const currentSheet = this.currentSheet as Sheet;
 
       if (!currentSheet) return false;
 
       return currentUser.id === currentSheet!.creator.id;
     },
-  /**
-   * Check the sheet whether is read-only.
-   * 1、If the sheet is not created yet, it can not be edited.
-   * 2、If the sheet is created by the current user, it can be edited.
-   * 3、If the sheet is created by other user, will be checked the visibility of the sheet.
-   *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
-   *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
-   */
-  isReadOnly:
-    (state: SheetState, getters: any, rootState: any, rootGetters: any) =>
-    (currentTab: TabInfo): boolean => {
+    /**
+     * Check the sheet whether is read-only.
+     * 1、If the sheet is not created yet, it can not be edited.
+     * 2、If the sheet is created by the current user, it can be edited.
+     * 3、If the sheet is created by other user, will be checked the visibility of the sheet.
+     *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
+     *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
+     */
+    isReadOnly() {
+      const sqlEdtiorStore = useSQLEditorStore();
       const { currentUser } = useAuthStore();
-      const sharedSheet = rootState.sqlEditor.sharedSheet;
-      const currentSheet = getters.currentSheet(currentTab);
+      const sharedSheet = sqlEdtiorStore.sharedSheet;
+      const currentSheet = this.currentSheet as Sheet;
       const isSharedByOthers = sharedSheet.id !== UNKNOWN_ID;
 
       if (!currentSheet) return true;
@@ -111,7 +104,7 @@ const getters = {
 
       // if the sheet is shared by others, will be checked the visibility of the sheet.
       // creator always can edit
-      if (getters.isCreator(currentTab)) return false;
+      if (this.isCreator) return false;
       const isPrivate = currentSheet?.visibility === "PRIVATE" ?? false;
       const isProject = currentSheet?.visibility === "PROJECT" ?? false;
       const isPublic = currentSheet?.visibility === "PUBLIC" ?? false;
@@ -124,7 +117,7 @@ const getters = {
             (member: ProjectMember) => {
               return member.principal.id === currentUser.id;
             }
-          );
+          ) as ProjectMember;
 
           return currentMemberByProjectMember.role !== "OWNER";
         }
@@ -137,182 +130,144 @@ const getters = {
         isPrivate || isPublic || (isProject && isCurrentUserProjectOwner())
       );
     },
-};
-
-const mutations = {
-  [types.SET_SHEET_STATE](state: SheetState, payload: Partial<SheetState>) {
-    Object.assign(state, payload);
   },
-  [types.SET_SHEET_LIST](state: SheetState, payload: Sheet[]) {
-    state.sheetList = payload;
-  },
-  [types.SET_SHEET_BY_ID](
-    state: SheetState,
-    { sheetId, sheet }: { sheetId: SheetId; sheet: Sheet }
-  ) {
-    const item = state.sheetList.find((sheet) => sheet.id === sheetId);
-    if (item !== undefined) {
-      Object.assign(item, sheet);
-    }
-    state.sheetById.set(sheetId, sheet);
-  },
-  [types.DELETE_SHEET](state: SheetState, sheetId: SheetId) {
-    const idx = state.sheetList.findIndex((sheet) => sheet.id === sheetId);
-    if (idx !== -1) state.sheetList.splice(idx, 1);
 
-    if (state.sheetById.has(sheetId)) {
-      state.sheetById.delete(sheetId);
-    }
-  },
-};
+  actions: {
+    setSheetState(payload: Partial<SheetState>) {
+      Object.assign(this, payload);
+    },
+    setSheetList(payload: Sheet[]) {
+      this.sheetList = payload;
+    },
+    setSheetById({ sheetId, sheet }: { sheetId: SheetId; sheet: Sheet }) {
+      const item = this.sheetList.find((sheet) => sheet.id === sheetId);
+      if (item !== undefined) {
+        Object.assign(item, sheet);
+      }
+      this.sheetById.set(sheetId, sheet);
+    },
+    deleteSheetById(sheetId: SheetId) {
+      const idx = this.sheetList.findIndex((sheet) => sheet.id === sheetId);
+      if (idx !== -1) this.sheetList.splice(idx, 1);
 
-type ActionsMap = {
-  setSheetState: typeof mutations.SET_SHEET_STATE;
-  setSheetList: typeof mutations.SET_SHEET_LIST;
-};
+      if (this.sheetById.has(sheetId)) {
+        this.sheetById.delete(sheetId);
+      }
+    },
+    // create
+    async createSheet(currentTab: TabInfo): Promise<Sheet> {
+      const sqlEditorStore = useSQLEditorStore();
+      const ctx = sqlEditorStore.connectionContext;
 
-const actions = {
-  ...makeActions<ActionsMap>({
-    setSheetState: types.SET_SHEET_STATE,
-    setSheetList: types.SET_SHEET_LIST,
-  }),
-  // create
-  async createSheet(
-    { commit, state, rootState, rootGetters }: any,
-    currentTab: TabInfo
-  ): Promise<Sheet> {
-    const ctx = rootState.sqlEditor.connectionContext as ConnectionContext;
-
-    const result = (
-      await axios.post(`/api/sheet`, {
-        data: {
-          type: "createSheet",
-          attributes: {
-            projectId: ctx.projectId,
-            databaseId: ctx.databaseId,
-            name: currentTab.name,
-            statement: currentTab.statement,
-            visibility: "PRIVATE",
+      const result = (
+        await axios.post(`/api/sheet`, {
+          data: {
+            type: "createSheet",
+            attributes: {
+              projectId: ctx.projectId,
+              databaseId: ctx.databaseId,
+              name: currentTab.name,
+              statement: currentTab.statement,
+              visibility: "PRIVATE",
+            },
           },
-        },
-      })
-    ).data;
-    const sheet = convertSheet(result.data, result.included, rootGetters);
+        })
+      ).data;
+      const sheet = convertSheet(result.data, result.included);
 
-    commit(
-      types.SET_SHEET_LIST,
-      (state.sheetList as Sheet[])
-        .concat(sheet)
-        .sort((a, b) => b.createdTs - a.createdTs)
-    );
+      this.setSheetList(
+        this.sheetList.concat(sheet).sort((a, b) => b.createdTs - a.createdTs)
+      );
 
-    commit(types.SET_SHEET_BY_ID, {
-      sheetId: sheet.id,
-      sheet: sheet,
-    });
-
-    return sheet;
-  },
-  // retrieve
-  async fetchSheetList({ commit, dispatch, state, rootGetters }: any) {
-    dispatch(
-      "sqlEditor/setSqlEditorState",
-      { isFetchingSheet: true },
-      { root: true }
-    );
-    const data = (await axios.get(`/api/sheet`)).data;
-    const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
-      const sheet = convertSheet(rawData, data.included, rootGetters);
-      commit(types.SET_SHEET_BY_ID, {
+      this.setSheetById({
         sheetId: sheet.id,
         sheet: sheet,
       });
+
       return sheet;
-    });
+    },
+    // retrieve
+    async fetchSheetList() {
+      const sqlEditorStore = useSQLEditorStore();
+      sqlEditorStore.setSqlEditorState({ isFetchingSheet: true });
+      const data = (await axios.get(`/api/sheet`)).data;
+      const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
+        const sheet = convertSheet(rawData, data.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
+        return sheet;
+      });
 
-    commit(
-      types.SET_SHEET_LIST,
-      sheetList.sort((a, b) => b.createdTs - a.createdTs)
-    );
-    dispatch(
-      "sqlEditor/setSqlEditorState",
-      { isFetchingSheet: false },
-      { root: true }
-    );
+      this.setSheetList(sheetList.sort((a, b) => b.createdTs - a.createdTs));
+      sqlEditorStore.setSqlEditorState({ isFetchingSheet: false });
+    },
+    async fetchSheetById(sheetId: SheetId) {
+      const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
+      const sheet = convertSheet(data.data, data.included);
+      this.setSheetById({
+        sheetId: sheet.id,
+        sheet: sheet,
+      });
+
+      return sheet;
+    },
+    // update
+    async patchSheetById({
+      id,
+      name,
+      statement,
+      visibility,
+    }: SheetPatch): Promise<Sheet> {
+      const attributes: Omit<SheetPatch, "id"> = {};
+      if (name) {
+        attributes.name = name;
+      }
+      if (statement) {
+        attributes.statement = statement;
+      }
+      if (visibility) {
+        attributes.visibility = visibility;
+      }
+
+      const result = (
+        await axios.patch(`/api/sheet/${id}`, {
+          data: {
+            type: "sheetPatch",
+            attributes,
+          },
+        })
+      ).data;
+
+      const sheet = convertSheet(result.data, result.included);
+
+      this.setSheetById({
+        sheetId: sheet.id,
+        sheet: sheet,
+      });
+
+      return sheet;
+    },
+    // delete
+    async deleteSheet(id: number) {
+      await axios.delete(`/api/sheet/${id}`);
+
+      this.deleteSheetById(id);
+    },
+    // upsert
+    async upsertSheet(payload: {
+      sheet: Pick<Sheet, "id" | "name" | "statement">;
+      currentTab: TabInfo;
+    }): Promise<Sheet> {
+      const { sheet, currentTab } = payload;
+      const hasSheet = this.sheetById.has(sheet.id);
+
+      if (hasSheet) {
+        return this.patchSheetById(sheet);
+      } else {
+        return this.createSheet(currentTab);
+      }
+    },
   },
-  async fetchSheetById(
-    { commit, dispatch, state, rootGetters }: any,
-    sheetId: SheetId
-  ) {
-    const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
-    const sheet = convertSheet(data.data, data.included, rootGetters);
-    commit(types.SET_SHEET_BY_ID, {
-      sheetId: sheet.id,
-      sheet: sheet,
-    });
-
-    return sheet;
-  },
-  // update
-  async patchSheetById(
-    { commit, dispatch, rootGetters }: any,
-    { id, name, statement, visibility }: SheetPatch
-  ): Promise<Sheet> {
-    const attributes: Omit<SheetPatch, "id"> = {};
-    if (name) {
-      attributes.name = name;
-    }
-    if (statement) {
-      attributes.statement = statement;
-    }
-    if (visibility) {
-      attributes.visibility = visibility;
-    }
-
-    const result = (
-      await axios.patch(`/api/sheet/${id}`, {
-        data: {
-          type: "sheetPatch",
-          attributes,
-        },
-      })
-    ).data;
-
-    const sheet = convertSheet(result.data, result.included, rootGetters);
-
-    commit(types.SET_SHEET_BY_ID, {
-      sheetId: sheet.id,
-      sheet: sheet,
-    });
-
-    return sheet;
-  },
-  // delete
-  async deleteSheet({ commit, state }: any, id: number) {
-    await axios.delete(`/api/sheet/${id}`);
-
-    commit(types.DELETE_SHEET, id);
-  },
-  // upsert
-  async upsertSheet(
-    { commit, dispatch, state }: any,
-    payload: { sheet: Partial<Sheet>; currentTab: TabInfo }
-  ): Promise<Sheet> {
-    const { sheet, currentTab } = payload;
-    const hasSheet = state.sheetById.has(sheet.id);
-
-    if (hasSheet) {
-      return dispatch("patchSheetById", sheet);
-    } else {
-      return dispatch("createSheet", currentTab);
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

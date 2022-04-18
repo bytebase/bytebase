@@ -26,22 +26,19 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useStore } from "vuex";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
-import { useTabStore } from "@/store";
+import { useTabStore, useSQLEditorStore } from "@/store";
 
-const store = useStore();
 const tabStore = useTabStore();
+const sqlEditorStore = useSQLEditorStore();
 
 const hasTabs = computed(() => tabStore.hasTabs);
 const paneKey = computed(() => tabStore.currentTab.id);
-const isDisconnected = computed(
-  () => store.getters["sqlEditor/isDisconnected"]
-);
+const isDisconnected = computed(() => sqlEditorStore.isDisconnected);
 </script>
 
 <style>

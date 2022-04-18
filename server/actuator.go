@@ -13,12 +13,11 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := context.Background()
 		serverInfo := api.ServerInfo{
-			Version:   s.version,
-			Readonly:  s.readonly,
-			Demo:      s.demo,
-			Host:      s.host,
-			Port:      strconv.Itoa(s.port),
-			StartedTs: s.startedTs,
+			Version:  s.version,
+			Readonly: s.readonly,
+			Demo:     s.demo,
+			Host:     s.host,
+			Port:     strconv.Itoa(s.port),
 		}
 
 		findRole := api.Owner

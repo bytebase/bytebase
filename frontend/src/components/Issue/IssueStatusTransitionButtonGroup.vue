@@ -112,7 +112,6 @@
 
 <script lang="ts">
 import { PropType, computed, reactive, defineComponent, ref } from "vue";
-import { Store, useStore } from "vuex";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   activeTask,
@@ -152,7 +151,6 @@ interface UpdateStatusModalState {
 }
 
 export type IssueContext = {
-  store: Store<any>;
   currentUser: Principal;
   create: boolean;
   issue: Issue | IssueCreate;
@@ -181,7 +179,6 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const { t } = useI18n();
-    const store = useStore();
     const menu = ref<InstanceType<typeof BBContextMenu>>();
 
     const updateStatusModalState = reactive<UpdateStatusModalState>({
@@ -196,7 +193,6 @@ export default defineComponent({
 
     const issueContext = computed((): IssueContext => {
       return {
-        store,
         currentUser: currentUser.value,
         create: props.create,
         issue: props.issue,

@@ -1075,7 +1075,7 @@ func getDatabases(txn *sql.Tx) ([]string, error) {
 
 // getDatabaseStmt gets the create statement of a database.
 func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
+	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return "", err

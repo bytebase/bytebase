@@ -89,7 +89,6 @@
 
 <script lang="ts">
 import { computed, reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
@@ -121,6 +120,7 @@ import {
   useDatabaseStore,
   useEnvironmentList,
   useProjectStore,
+  useRepositoryStore,
 } from "@/store";
 
 type LocalState = ProjectStandardState &
@@ -156,11 +156,11 @@ export default defineComponent({
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+    const repositoryStore = useRepositoryStore();
 
     useEventListener(window, "keydown", (e) => {
       if (e.code === "Escape") {
@@ -291,8 +291,8 @@ export default defineComponent({
           },
         });
       } else if (project.workflowType === "VCS") {
-        store
-          .dispatch("repository/fetchRepositoryByProjectId", project.id)
+        repositoryStore
+          .fetchRepositoryByProjectId(project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });
@@ -318,11 +318,8 @@ export default defineComponent({
           },
         });
       } else if (database.project.workflowType == "VCS") {
-        store
-          .dispatch(
-            "repository/fetchRepositoryByProjectId",
-            database.project.id
-          )
+        repositoryStore
+          .fetchRepositoryByProjectId(database.project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });

@@ -284,7 +284,6 @@
 
 <script lang="ts">
 import { computed, onMounted, reactive, watch, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
@@ -305,7 +304,12 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUser, useDatabaseStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUser,
+  useDatabaseStore,
+  useRepositoryStore,
+} from "@/store";
 
 const OVERVIEW_TAB = 0;
 const MIGRATION_HISTORY_TAB = 1;
@@ -341,8 +345,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const databaseStore = useDatabaseStore();
+    const repositoryStore = useRepositoryStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -493,11 +497,8 @@ export default defineComponent({
           },
         });
       } else if (database.value.project.workflowType == "VCS") {
-        store
-          .dispatch(
-            "repository/fetchRepositoryByProjectId",
-            database.value.project.id
-          )
+        repositoryStore
+          .fetchRepositoryByProjectId(database.value.project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });
@@ -519,11 +520,8 @@ export default defineComponent({
           },
         });
       } else if (database.value.project.workflowType == "VCS") {
-        store
-          .dispatch(
-            "repository/fetchRepositoryByProjectId",
-            database.value.project.id
-          )
+        repositoryStore
+          .fetchRepositoryByProjectId(database.value.project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });
