@@ -1385,6 +1385,7 @@ schema-review:
   database: Database
   delete: Delete this schema review
   no-permission: Only DBA or Owner has permission to create or update review
+  delete-attention: To delete this review, unlink all environments first.
   error-level:
     name: Error Level
     error: Error

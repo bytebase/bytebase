@@ -1218,6 +1218,7 @@ schema-review:
   database: 数据库
   delete: 删除该 schema 审查
   no-permission: 仅 DBA 或所有者有权限创建或更新审查
+  delete-attention: 删除审查前，需要先解除所有环境的关联。
   error-level:
     name: 错误等级
     error: 错误

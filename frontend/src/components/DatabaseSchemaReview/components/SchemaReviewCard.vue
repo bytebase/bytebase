@@ -64,7 +64,7 @@ import {
   DatabaseSchemaReview,
   DatabaseType,
   ruleList,
-} from "../../types/schemaSystem";
+} from "../../../types/schemaSystem";
 import { useEnvironmentStore } from "@/store";
 
 const props = defineProps({

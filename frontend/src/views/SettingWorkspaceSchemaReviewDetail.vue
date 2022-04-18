@@ -115,7 +115,11 @@
         :selected-rule-list="filteredSelectedRuleList"
         class="py-5"
       />
+      <div v-if="environmentList.length > 0" class="textinfolabel">
+        {{ $t("schema-review.delete-attention") }}
+      </div>
       <BBButtonConfirm
+        v-else
         :style="'DELETE'"
         :button-text="$t('schema-review.delete')"
         :ok-text="$t('common.delete')"
@@ -150,7 +154,7 @@ import {
   useEnvironmentStore,
   useSchemaSystemStore,
 } from "@/store";
-import { CategoryFilterItem } from "../components/DatabaseSchemaReview/SchemaReviewCategoryTabFilter.vue";
+import { CategoryFilterItem } from "../components/DatabaseSchemaReview/components/SchemaReviewCategoryTabFilter.vue";
 
 const props = defineProps({
   schemaReviewSlug: {
@@ -336,6 +340,9 @@ const onEdit = () => {
 };
 
 const onRemove = () => {
+  if (environmentList.value.length > 0) {
+    return;
+  }
   store.removeReview(review.value.id);
   router.replace({
     name: ROUTE_NAME,
