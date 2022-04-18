@@ -39,7 +39,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	_, stop := mysql.SetupTestInstance(t, port)
 	defer stop()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
 	defer db.Close()
 
@@ -141,7 +141,7 @@ func TestPITR(t *testing.T) {
 	_, stop := mysql.SetupTestInstance(t, port)
 	defer stop()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
 	defer db.Close()
 
@@ -188,7 +188,7 @@ func TestPITR(t *testing.T) {
 
 	// concurrently update data
 	stopChan := make(chan bool)
-	go updateRow(t, database, port, stopChan)
+	go updateRow(t, username, localhost, database, port, stopChan)
 	defer func() { stopChan <- true }()
 
 	// restore to ghost database
@@ -258,9 +258,9 @@ func backup(a *require.Assertions, driver dbPlugin.Driver, database string) *byt
 	return &buf
 }
 
-func updateRow(t *testing.T, database string, port int, stopChan chan bool) {
+func updateRow(t *testing.T, username, localhost, database string, port int, stopChan chan bool) {
 	a := require.New(t)
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
 	defer db.Close()
 
