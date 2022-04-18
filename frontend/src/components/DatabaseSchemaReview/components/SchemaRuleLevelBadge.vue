@@ -2,13 +2,14 @@
   <BBBadge
     :text="$t(`schema-review.error-level.${level}`)"
     :can-remove="false"
-    :theme="theme"
+    :style="style"
   />
 </template>
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
 import { RuleLevel } from "../../../types/schemaSystem";
+import { BBAttentionStyle } from "../../../bbkit/types";
 
 const props = defineProps({
   level: {
@@ -17,14 +18,14 @@ const props = defineProps({
   },
 });
 
-const theme = computed((): string => {
+const style = computed((): BBAttentionStyle => {
   switch (props.level) {
     case RuleLevel.Error:
-      return "red";
+      return "CRITICAL";
     case RuleLevel.Warning:
-      return "yellow";
+      return "WARN";
     default:
-      return "gray";
+      return "INFO";
   }
 });
 </script>
