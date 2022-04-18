@@ -312,7 +312,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		}
 		// When getting private/project sheet list, we should set the PrincipalID to ensure only
 		// the sheet which related project containing PrincipalID as an active member could be found.
-		if sheetFind.Visibility != nil && *sheetFind.Visibility != api.PublicSheet {
+		if sheetFind.Visibility != nil && (*sheetFind.Visibility == api.PrivateSheet || *sheetFind.Visibility == api.ProjectSheet) {
 			principalID := c.Get(getPrincipalIDContextKey()).(int)
 			sheetFind.PrincipalID = &principalID
 		}

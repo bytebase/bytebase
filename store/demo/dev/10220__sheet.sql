@@ -1,4 +1,3 @@
--- Sheet for principal 101 "Demo Owner"
 INSERT INTO
     sheet (
         id,
@@ -7,7 +6,8 @@ INSERT INTO
         project_id,
         database_id,
         name,
-        statement
+        statement,
+        visibility
     )
 VALUES
     (
@@ -16,27 +16,32 @@ VALUES
         101,
         3001,
         7019,
-        'demo data',
-        'SELECT * FROM demo'
+        'My test cases',
+        'SELECT * FROM test_case',
+        'PRIVATE'
     );
 
 INSERT INTO
     sheet (
         id,
+        row_status,
         creator_id,
         updater_id,
         project_id,
         name,
-        statement
+        statement,
+        visibility
     )
 VALUES
     (
         22002,
+        'ARCHIVED',
         101,
         101,
         3002,
-        'all employee',
-        'SELECT * FROM employee'
+        'My starred items',
+        'SELECT * FROM item WHERE starred=true',
+        'PRIVATE'
     );
 
 INSERT INTO
@@ -55,8 +60,8 @@ VALUES
         102,
         102,
         3002,
-        'shared employee with project',
-        'SELECT * FROM employee',
+        'All coupon of our shop',
+        'SELECT * FROM coupon WHERE shop_id=101',
         'PROJECT'
     );
 
@@ -76,8 +81,8 @@ VALUES
         103,
         103,
         3003,
-        'shared all employee',
-        'SELECT * FROM employee',
+        'All blogs from Alex',
+        'SELECT * FROM blog WHERE author="Alex"',
         'PUBLIC'
     );
 
