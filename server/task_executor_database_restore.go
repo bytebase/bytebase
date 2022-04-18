@@ -141,7 +141,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 
-	if err := driver.Restore(ctx, sc, db.RestoreConfig{}); err != nil {
+	if err := driver.Restore(ctx, sc); err != nil {
 		return fmt.Errorf("failed to restore backup: %w", err)
 	}
 	return nil

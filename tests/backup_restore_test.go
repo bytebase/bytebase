@@ -84,7 +84,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(context.TODO(), bufio.NewScanner(buf), dbPlugin.RestoreConfig{})
+	err = driver.Restore(context.TODO(), bufio.NewScanner(buf))
 	a.NoError(err)
 
 	// validate data
@@ -128,11 +128,9 @@ func TestPITR(t *testing.T) {
 		defer tx.Rollback()
 
 		for i := begin; i < end; i++ {
-			_, err := tx.Exec(fmt.Sprintf("INSERT INTO t00 VALUES (%d)", i))
+			_, err := tx.Exec(fmt.Sprintf("INSERT INTO t0 VALUES (%d)", i))
 			a.NoError(err)
-			_, err = tx.Exec(fmt.Sprintf("INSERT INTO t10 VALUES (%d, %d)", i, i))
-			a.NoError(err)
-			_, err = tx.Exec(fmt.Sprintf("INSERT INTO t11 VALUES (%d, %d)", i, i))
+			_, err = tx.Exec(fmt.Sprintf("INSERT INTO t1 VALUES (%d, %d)", i, i))
 			a.NoError(err)
 		}
 
@@ -154,7 +152,7 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	_, err = db.Exec(`
-	CREATE TABLE t00 (
+	CREATE TABLE t0 (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id > -1)
@@ -162,22 +160,12 @@ func TestPITR(t *testing.T) {
 	`)
 	a.NoError(err)
 	_, err = db.Exec(`
-	CREATE TABLE t10 (
+	CREATE TABLE t1 (
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
 		UNIQUE INDEX (pid),
-		CONSTRAINT FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
-	);
-	`)
-	a.NoError(err)
-	_, err = db.Exec(`
-	CREATE TABLE t11 (
-		id INT,
-		pid INT,
-		PRIMARY KEY (id),
-		UNIQUE INDEX (pid),
-		CONSTRAINT FOREIGN KEY (pid) REFERENCES t00(id) ON DELETE NO ACTION
+		CONSTRAINT FOREIGN KEY (pid) REFERENCES t0(id) ON DELETE NO ACTION
 	);
 	`)
 	a.NoError(err)
@@ -186,32 +174,38 @@ func TestPITR(t *testing.T) {
 	insertData(db, a, 0, 10)
 
 	// make a full backup of t0
-	driver := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
+	driverBackup := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
 	defer func() {
-		err := driver.Close(context.TODO())
+		err := driverBackup.Close(context.TODO())
 		a.NoError(err)
 	}()
 
-	buf := backup(a, driver, database)
+	buf := backup(a, driverBackup, database)
 	t.Log(buf.String())
 
 	// insert more data to make time point t1
-	insertData(db, a, 100, 200)
+	insertData(db, a, 10, 20)
 
 	// concurrently update data
 	stopChan := make(chan bool)
 	go updateRow(t, database, port, stopChan)
 	defer func() { stopChan <- true }()
 
-	// restore to ghost tables
+	// restore to ghost database
 	_, err = db.Exec("SET foreign_key_checks=OFF")
 	a.NoError(err)
 
-	restoreConfig := dbPlugin.RestoreConfig{
-		IsGhostTable:                        true,
-		GhostTableConstraintTimestampSuffix: time.Now().Format("20060102150405"),
-	}
-	err = driver.Restore(context.TODO(), bufio.NewScanner(buf), restoreConfig)
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_ghost", database))
+	a.NoError(err)
+	_, err = db.Exec(fmt.Sprintf("USE %s_ghost", database))
+	a.NoError(err)
+
+	driverRestore := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, fmt.Sprintf("%s_ghost", database))
+	defer func() {
+		err := driverRestore.Close(context.TODO())
+		a.NoError(err)
+	}()
+	err = driverRestore.Restore(context.TODO(), bufio.NewScanner(buf))
 	a.NoError(err)
 
 	// TODO(dragonly): validate ghost table data and schema
@@ -222,7 +216,17 @@ func TestPITR(t *testing.T) {
 	_, err = db.Exec("SET foreign_key_checks=ON")
 	a.NoError(err)
 
-	// TODO(dragonly): swap tables atomically
+	// the user can inspect the ghost table for now, and decide whether to execute the cut over
+	// cut over stage, swap tables
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_old", database))
+	a.NoError(err)
+	queryRename := fmt.Sprintf("RENAME TABLE"+
+		" `%s`.`t0` TO `%s_old`.`t0`, `%s`.`t1` TO `%s_old`.`t1`,"+
+		" `%s_ghost`.`t0` TO `%s`.`t0`, `%s_ghost`.`t1` TO `%s`.`t1`",
+		database, database, database, database, database, database, database, database)
+	t.Log(queryRename)
+	_, err = db.Exec(queryRename)
+	a.NoError(err)
 }
 
 func getDbDriver(a *require.Assertions, host, port, username, database string) dbPlugin.Driver {

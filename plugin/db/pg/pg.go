@@ -189,7 +189,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database
@@ -806,7 +806,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.RestoreConfig) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

@@ -771,7 +771,7 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner, config db.RestoreConfig) (err error) {
+func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
