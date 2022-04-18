@@ -2,6 +2,7 @@
   <div>
     <p class="textlabel">
       {{ title }}
+      <span style="color: red">*</span>
     </p>
     <div
       class="flex flex-col sm:flex-row justify-start items-center gap-x-10 gap-y-10 mt-4"
@@ -9,11 +10,20 @@
       <div
         v-for="(template, index) in templateList"
         :key="template.name"
-        class="cursor-pointer bg-transparent border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
+        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
+        :class="
+          index == selectedTemplateIndex
+            ? 'bg-gray-100'
+            : 'bg-transparent cursor-pointer'
+        "
         @click="$emit('select', index)"
       >
         <img class="h-24" :src="template.image" alt="" />
         <span class="text-lg lg:text-xl mt-4">{{ template.name }}</span>
+        <heroicons-solid:check-circle
+          v-if="index == selectedTemplateIndex"
+          class="w-7 h-7 text-gray-500 absolute top-3 left-3"
+        />
       </div>
     </div>
   </div>
@@ -21,12 +31,17 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { SchemaReviewTemplate } from "../../types/schemaSystem";
+import { SchemaReviewTemplate } from "../../../types/schemaSystem";
 
 const props = defineProps({
   templateList: {
     required: true,
     type: Object as PropType<SchemaReviewTemplate[]>,
+  },
+  selectedTemplateIndex: {
+    required: false,
+    default: -1,
+    type: Number,
   },
   title: {
     required: true,

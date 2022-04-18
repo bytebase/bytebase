@@ -1231,7 +1231,9 @@ schame-review:
       environments: 环境
       environments-label: 将该审查应用于哪些环境。一个环境只能配置一个审查。
       environments-select: 选择环境
+      no-environments: 没有选择环境
       no-available-environment: 没有可供选择的环境。一个环境仅能创建一个审查。
+      choose-template: 选择模板
     configure-rule:
       name: 配置规则
       add-rule: 增加规则

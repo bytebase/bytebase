@@ -14,6 +14,10 @@
           :name="state.name"
           :selected-environment-list="state.selectedEnvironmentList"
           :available-environment-list="availableEnvironmentList"
+          :template-list="templateList"
+          :selected-template-index="state.templateIndex"
+          :is-edit="!!reviewId"
+          @select-template="tryApplyTemplate"
           @name-change="(val) => (state.name = val)"
           @toggle-env="(env) => onEnvToggle(env)"
           class="py-5"
@@ -24,6 +28,7 @@
           class="py-5"
           :select-rule-list="state.selectedRuleList"
           :template-list="templateList"
+          :selected-template-index="state.templateIndex"
           @change="onRuleChange"
           @apply-template="tryApplyTemplate"
         />
@@ -83,6 +88,7 @@ interface LocalState {
   selectedRuleList: SelectedRule[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
+  templateIndex: number;
   pendingApplyTemplateIndex: number;
 }
 
@@ -125,6 +131,7 @@ const state = reactive<LocalState>({
   selectedRuleList: props.selectedRuleList,
   ruleUpdated: false,
   showAlertModal: false,
+  templateIndex: -1,
   pendingApplyTemplateIndex: -1,
 });
 
@@ -152,7 +159,7 @@ const onCancel = () => {
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
     case BASIC_INFO_STEP:
-      return !!state.name && state.selectedEnvironmentList.length > 0;
+      return !!state.name && state.selectedRuleList.length > 0;
     case CONFIGURE_RULE_STEP:
       return state.selectedRuleList.length > 0;
     case PREVIEW_STEP:
@@ -294,6 +301,8 @@ const onTemplateApply = (index: number) => {
   if (index < 0 || index >= templateList.length) {
     return;
   }
+  state.templateIndex = index;
+  state.pendingApplyTemplateIndex = -1;
   state.selectedRuleList = [...templateList[index].ruleList];
 };
 

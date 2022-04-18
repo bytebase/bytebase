@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-5">
+  <div class="space-y-9">
     <div>
-      <label class="textlabel mt-4">
+      <label class="textlabel">
         {{ $t("schame-review.create.basic-info.display-name") }}
         <span style="color: red">*</span>
       </label>
@@ -16,9 +16,8 @@
       />
     </div>
     <div>
-      <label class="textlabel mt-4">
+      <label class="textlabel">
         {{ $t("schame-review.create.basic-info.environments") }}
-        <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel mb-5">
         {{ $t("schame-review.create.basic-info.environments-label") }}
@@ -55,18 +54,51 @@
         </div>
       </div>
     </div>
+    <div>
+      <div class="mt-5" v-if="isEdit">
+        <div
+          class="flex cursor-pointer items-center px-2 text-indigo-500"
+          @click="state.openTemplate = !state.openTemplate"
+        >
+          <heroicons-solid:chevron-right
+            class="w-5 h-5 transform transition-all"
+            :class="state.openTemplate ? 'rotate-90' : ''"
+          />
+          <span class="ml-3"> Change template </span>
+        </div>
+        <SchemaReviewTemplates
+          v-if="state.openTemplate"
+          :template-list="templateList"
+          :selected-template-index="selectedTemplateIndex"
+          :title="$t('schame-review.create.configure-rule.change-template')"
+          @select="(index) => $emit('select-template', index)"
+          class="mx-10 mt-5"
+        />
+      </div>
+      <SchemaReviewTemplates
+        v-else
+        :template-list="templateList"
+        :selected-template-index="selectedTemplateIndex"
+        :title="$t('schame-review.create.basic-info.choose-template')"
+        @select="(index) => $emit('select-template', index)"
+      />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PropType, computed } from "vue";
+import { PropType, reactive, computed } from "vue";
 import { useSchemaSystemStore, useEnvironmentList } from "@/store";
-import { Environment } from "../../types";
+import { Environment, SchemaReviewTemplate } from "../../types";
 import { environmentName } from "../../utils";
 
 interface LocalEnvironment extends Environment {
   disabled: boolean;
   displayName: string;
+}
+
+interface LocalState {
+  openTemplate: boolean;
 }
 
 const props = defineProps({
@@ -82,9 +114,25 @@ const props = defineProps({
     required: true,
     type: Array as PropType<Environment[]>,
   },
+  templateList: {
+    required: true,
+    type: Object as PropType<SchemaReviewTemplate[]>,
+  },
+  selectedTemplateIndex: {
+    required: true,
+    type: Number,
+  },
+  isEdit: {
+    required: true,
+    type: Boolean,
+  },
 });
 
-const emit = defineEmits(["name-change", "toggle-env"]);
+const emit = defineEmits(["name-change", "toggle-env", "select-template"]);
+
+const state = reactive<LocalState>({
+  openTemplate: false,
+});
 
 const store = useSchemaSystemStore();
 

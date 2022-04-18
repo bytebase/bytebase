@@ -33,6 +33,7 @@
       <SchemaReviewTemplates
         v-if="state.openTemplate"
         :template-list="templateList"
+        :selected-template-index="selectedTemplateIndex"
         :title="$t('schame-review.create.configure-rule.change-template')"
         @select="(index) => onTemplateApply(index)"
         class="mx-10 mt-5"
@@ -63,6 +64,10 @@ const props = defineProps({
   templateList: {
     required: true,
     type: Object as PropType<SchemaReviewTemplate[]>,
+  },
+  selectedTemplateIndex: {
+    required: true,
+    type: Number,
   },
 });
 

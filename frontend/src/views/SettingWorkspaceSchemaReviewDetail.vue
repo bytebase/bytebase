@@ -17,7 +17,10 @@
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5">
+      <div
+        class="flex flex-wrap gap-x-3 my-5"
+        v-if="environmentList.length > 0"
+      >
         <span class="font-semibold">{{ $t("common.environments") }}</span>
         <BBBadge
           v-for="env in environmentList"
@@ -26,7 +29,14 @@
           :can-remove="false"
         />
       </div>
-      <div class="space-y-2">
+      <BBAttention
+        v-else
+        class="my-5"
+        :style="`WARN`"
+        :title="$t('common.environments')"
+        :description="$t('schame-review.create.basic-info.no-environments')"
+      />
+      <div class="space-y-2 my-5">
         <span class="font-semibold">{{ $t("schame-review.filter") }}</span>
         <div class="flex flex-wrap gap-x-3">
           <span>{{ $t("schame-review.database") }}:</span>
