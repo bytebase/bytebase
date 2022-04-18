@@ -15,7 +15,6 @@
           <h1 class="text-base font-semibold text-gray-900">
             {{ selectedRule.id }}
           </h1>
-          <!-- <BBBadge :text="rule.category" :can-remove="false" /> -->
           <BBBadge
             v-for="db in selectedRule.database"
             :key="`${selectedRule.id}-${db}`"
