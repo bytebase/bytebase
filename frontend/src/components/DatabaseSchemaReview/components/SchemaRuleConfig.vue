@@ -89,7 +89,7 @@
           </div>
           <InputWithTemplate
             v-else-if="payload.type == 'template'"
-            :templates="payload.templates"
+            :template-list="payload.templateList"
             :value="state.payload[key]"
             @change="(val) => (state.payload[key] = val)"
           />

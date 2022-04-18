@@ -34,7 +34,7 @@ interface StringArrayPayload {
 interface TemplatePayload {
   type: PayloadType.TEMPLATE;
   default: string;
-  templates: { id: string; description?: string }[];
+  templateList: { id: string; description?: string }[];
   value?: string;
 }
 
@@ -185,7 +185,7 @@ export const ruleList: SchemaRule[] = [
       pk: {
         type: PayloadType.TEMPLATE,
         default: "^pk_{{table}}_{{column_list}}$",
-        templates: [
+        templateList: [
           {
             id: "table",
             description: "The table name",
@@ -207,7 +207,7 @@ export const ruleList: SchemaRule[] = [
       uk: {
         type: PayloadType.TEMPLATE,
         default: "^uk_{{table}}_{{column_list}}$",
-        templates: [
+        templateList: [
           {
             id: "table",
             description: "The table name",
@@ -229,7 +229,7 @@ export const ruleList: SchemaRule[] = [
       idx: {
         type: PayloadType.TEMPLATE,
         default: "^idx_{{table}}_{{column_list}}$",
-        templates: [
+        templateList: [
           {
             id: "table",
             description: "The table name",

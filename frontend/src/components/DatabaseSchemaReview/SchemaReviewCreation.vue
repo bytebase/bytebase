@@ -94,8 +94,6 @@ interface LocalState {
   pendingApplyTemplateIndex: number;
 }
 
-const { t } = useI18n();
-
 const props = withDefaults(
   defineProps<{
     reviewId?: number;
@@ -105,7 +103,7 @@ const props = withDefaults(
   }>(),
   {
     reviewId: undefined,
-    name: t("schema-review.create.basic-info.display-name-default"),
+    name: "",
     selectedEnvironmentList: () => [],
     selectedRuleList: () => [],
   }
@@ -113,6 +111,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["cancel"]);
 
+const { t } = useI18n();
 const router = useRouter();
 const store = useSchemaSystemStore();
 const currentUser = useCurrentUser();
@@ -210,7 +209,7 @@ const STEP_LIST: BBStepTabItem[] = [
 
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
-  name: props.name,
+  name: props.name || t("schema-review.create.basic-info.display-name-default"),
   selectedEnvironmentList: props.selectedEnvironmentList,
   selectedRuleList: props.selectedRuleList.length
     ? [...props.selectedRuleList]
