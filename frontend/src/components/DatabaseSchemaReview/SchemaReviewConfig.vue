@@ -7,20 +7,7 @@
       :title="$t('schema-review.create.configure-rule.from-template')"
       @select="(index) => onTemplateApply(index)"
     />
-    <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
-      <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="rule in selectRuleList" :key="rule.id" class="">
-          <SchemaRuleConfig
-            :selected-rule="rule"
-            :active="rule.id === state.activeRuleId"
-            @activate="onRuleActivate"
-            @level-change="(level) => onLevelChange(rule, level)"
-            @payload-change="(val) => onPayloadChange(rule, val)"
-          />
-        </li>
-      </ul>
-    </div>
-    <div class="mt-5" v-if="selectRuleList.length > 0">
+    <div class="mb-5" v-if="selectRuleList.length > 0">
       <div
         class="flex cursor-pointer items-center px-2 text-indigo-500"
         @click="state.openTemplate = !state.openTemplate"
@@ -41,6 +28,19 @@
         @select="(index) => onTemplateApply(index)"
         class="mx-8 mt-5"
       />
+    </div>
+    <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
+      <ul role="list" class="divide-y divide-gray-200">
+        <li v-for="rule in selectRuleList" :key="rule.id" class="">
+          <SchemaRuleConfig
+            :selected-rule="rule"
+            :active="rule.id === state.activeRuleId"
+            @activate="onRuleActivate"
+            @level-change="(level) => onLevelChange(rule, level)"
+            @payload-change="(val) => onPayloadChange(rule, val)"
+          />
+        </li>
+      </ul>
     </div>
   </div>
 </template>

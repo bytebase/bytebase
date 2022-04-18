@@ -11,6 +11,7 @@ import {
   DatabaseSchemaReviewPatch,
 } from "../../types";
 import { defineStore } from "pinia";
+import { useCurrentUser } from "./auth";
 
 interface SchemaSystemState {
   reviewList: DatabaseSchemaReview[];
@@ -44,17 +45,19 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       return [...envMap.values()];
     },
     addReview(review: DatabaseSchemaReviewCreate) {
-      const mock = empty("SCHEMA_REVIEW") as DatabaseSchemaReview;
+      // TODO: need update after backend is implemented
+      const user = useCurrentUser();
       this.reviewList.push({
         ...review,
         id: this.reviewList.length + 1,
-        creator: mock.creator,
-        updater: mock.updater,
+        creator: user.value,
+        updater: user.value,
         createdTs: new Date().getTime() / 1000,
         updatedTs: new Date().getTime() / 1000,
       });
     },
     removeReview(id: SchemaReviewId) {
+      // TODO: need update after backend is implemented
       const index = this.reviewList.findIndex((g) => g.id === id);
       if (index < 0) {
         return;
@@ -65,6 +68,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       ];
     },
     updateReview(id: SchemaReviewId, review: DatabaseSchemaReviewPatch) {
+      // TODO: need update after backend is implemented
       const index = this.reviewList.findIndex((g) => g.id === id);
       if (index < 0) {
         return;
