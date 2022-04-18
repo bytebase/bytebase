@@ -375,28 +375,28 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "schame-review",
-                name: "setting.workspace.schame-review",
+                path: "schema-review",
+                name: "setting.workspace.schema-review",
                 meta: {
-                  title: () => t("schame-review.title"),
+                  title: () => t("schema-review.title"),
                 },
                 component: () =>
                   import("../views/SettingWorkspaceSchemaReview.vue"),
                 props: true,
               },
               {
-                path: "schame-review/new",
-                name: "setting.workspace.schame-review.create",
+                path: "schema-review/new",
+                name: "setting.workspace.schema-review.create",
                 meta: {
-                  title: () => t("schame-review.create.breadcrumb"),
+                  title: () => t("schema-review.create.breadcrumb"),
                 },
                 component: () =>
                   import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
                 props: true,
               },
               {
-                path: "schame-review/:schemaReviewSlug",
-                name: "setting.workspace.schame-review.detail",
+                path: "schema-review/:schemaReviewSlug",
+                name: "setting.workspace.schema-review.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewSlug as string;
@@ -941,7 +941,7 @@ router.beforeEach((to, from, next) => {
     to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail" &&
-      to.name?.toString() != "setting.workspace.schame-review.detail")
+      to.name?.toString() != "setting.workspace.schema-review.detail")
   ) {
     next();
     return;

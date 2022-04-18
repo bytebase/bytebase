@@ -3,7 +3,7 @@
     <SchemaReviewTemplates
       v-if="selectRuleList.length === 0"
       :template-list="templateList"
-      :title="$t('schame-review.create.configure-rule.from-template')"
+      :title="$t('schema-review.create.configure-rule.from-template')"
       @select="(index) => onTemplateApply(index)"
     />
     <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
@@ -34,7 +34,7 @@
         v-if="state.openTemplate"
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"
-        :title="$t('schame-review.create.configure-rule.change-template')"
+        :title="$t('schema-review.create.configure-rule.change-template')"
         @select="(index) => onTemplateApply(index)"
         class="mx-10 mt-5"
       />

@@ -33,7 +33,7 @@
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
           <dt class="text-sm font-medium text-control-light">
-            {{ $t("schame-review.database") }}
+            {{ $t("schema-review.database") }}
           </dt>
           <dd class="mt-1 flex gap-x-2 text-sm text-main col-span-2">
             <BBBadge

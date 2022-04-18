@@ -69,9 +69,9 @@
           >
           <router-link
             v-if="showOwnerItem"
-            to="/setting/schame-review"
+            to="/setting/schema-review"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("schame-review.title") }}</router-link
+            >{{ $t("schema-review.title") }}</router-link
           >
           <router-link
             to="/setting/subscription"

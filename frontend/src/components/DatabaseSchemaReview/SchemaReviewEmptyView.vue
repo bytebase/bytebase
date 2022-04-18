@@ -6,10 +6,10 @@
       <div class="text-center flex flex-col justify-center items-center">
         <img src="../../assets/illustration/no-data.webp" class="w-52" />
         <h3 class="mt-2 font-medium text-gray-900">
-          {{ $t("schame-review.no-rule-set") }}
+          {{ $t("schema-review.no-rule-set") }}
         </h3>
         <p class="mt-1 text-sm text-gray-500">
-          {{ $t("schame-review.get-start") }}
+          {{ $t("schema-review.get-start") }}
         </p>
         <div class="mt-6">
           <button
@@ -17,7 +17,7 @@
             class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             @click="$emit('click')"
           >
-            {{ $t("schame-review.add-review") }}
+            {{ $t("schema-review.add-review") }}
           </button>
         </div>
       </div>

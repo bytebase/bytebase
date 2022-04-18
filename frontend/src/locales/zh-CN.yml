@@ -1205,7 +1205,7 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
-schame-review:
+schema-review:
   title: Schema 审查
   no-rule-set: 没有 schema 审查
   get-start: 配置规则来开启 schema 审查

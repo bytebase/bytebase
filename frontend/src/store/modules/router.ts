@@ -171,7 +171,7 @@ export const useRouterStore = defineStore("router", {
         // /setting/version-control/:vcsId
         // Total 2 elements, 2nd element is the version control system id
         const guideComponents = currentRoute.path.match(
-          "/setting/schame-review/([0-9a-zA-Z_-]+)"
+          "/setting/schema-review/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (guideComponents[1]) {
           return {

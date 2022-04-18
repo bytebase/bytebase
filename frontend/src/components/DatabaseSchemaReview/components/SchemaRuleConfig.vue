@@ -31,7 +31,7 @@
     </div>
     <div v-if="active" class="px-10 py-5 text-sm">
       <div class="mb-7">
-        <p class="mb-3">{{ $t("schame-review.error-level.name") }}</p>
+        <p class="mb-3">{{ $t("schema-review.error-level.name") }}</p>
         <div class="flex gap-x-3">
           <div
             v-for="(level, index) in levelList"
@@ -50,7 +50,7 @@
               :for="`level-${level}`"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`schame-review.error-level.${level}`) }}
+              {{ $t(`schema-review.error-level.${level}`) }}
             </label>
           </div>
         </div>

@@ -10,7 +10,7 @@
             <heroicons-outline:plus-sm class="w-6 h-6" />
           </button>
           <h3 class="mt-1 text-base font-normal text-main tracking-tight">
-            {{ $t("schame-review.add-review") }}
+            {{ $t("schema-review.add-review") }}
           </h3>
         </div>
       </div>
@@ -32,7 +32,7 @@ import { schemaReviewSlug } from "../utils";
 
 const router = useRouter();
 const store = useSchemaSystemStore();
-const ROUTE_NAME = "setting.workspace.schame-review";
+const ROUTE_NAME = "setting.workspace.schema-review";
 
 const goToCreationView = () => {
   router.push({

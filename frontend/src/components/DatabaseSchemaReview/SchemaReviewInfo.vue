@@ -2,11 +2,11 @@
   <div class="space-y-9">
     <div>
       <label class="textlabel">
-        {{ $t("schame-review.create.basic-info.display-name") }}
+        {{ $t("schema-review.create.basic-info.display-name") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("schame-review.create.basic-info.display-name-label") }}
+        {{ $t("schema-review.create.basic-info.display-name-label") }}
       </p>
       <BBTextField
         class="mt-2 w-full"
@@ -17,16 +17,16 @@
     </div>
     <div>
       <label class="textlabel">
-        {{ $t("schame-review.create.basic-info.environments") }}
+        {{ $t("schema-review.create.basic-info.environments") }}
       </label>
       <p class="mt-1 textinfolabel mb-5">
-        {{ $t("schame-review.create.basic-info.environments-label") }}
+        {{ $t("schema-review.create.basic-info.environments-label") }}
       </p>
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         :style="'WARN'"
         :description="
-          $t('schame-review.create.basic-info.no-available-environment')
+          $t('schema-review.create.basic-info.no-available-environment')
         "
         class="mb-5"
       />
@@ -70,7 +70,7 @@
           v-if="state.openTemplate"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
-          :title="$t('schame-review.create.configure-rule.change-template')"
+          :title="$t('schema-review.create.configure-rule.change-template')"
           @select="(index) => $emit('select-template', index)"
           class="mx-10 mt-5"
         />
@@ -79,7 +79,7 @@
         v-else
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"
-        :title="$t('schame-review.create.basic-info.choose-template')"
+        :title="$t('schema-review.create.basic-info.choose-template')"
         @select="(index) => $emit('select-template', index)"
       />
     </div>

@@ -1372,7 +1372,7 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
-schame-review:
+schema-review:
   title: Schema Review
   no-rule-set: No schema review
   get-start: Get started by configure the schema rules.

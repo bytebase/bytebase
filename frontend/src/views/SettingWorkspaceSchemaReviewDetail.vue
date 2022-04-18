@@ -34,12 +34,12 @@
         class="my-5"
         :style="`WARN`"
         :title="$t('common.environments')"
-        :description="$t('schame-review.create.basic-info.no-environments')"
+        :description="$t('schema-review.create.basic-info.no-environments')"
       />
       <div class="space-y-2 my-5">
-        <span class="font-semibold">{{ $t("schame-review.filter") }}</span>
+        <span class="font-semibold">{{ $t("schema-review.filter") }}</span>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schame-review.database") }}:</span>
+          <span>{{ $t("schema-review.database") }}:</span>
           <div
             v-for="db in databaseList"
             :key="db.id"
@@ -64,7 +64,7 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schame-review.error-level.name") }}:</span>
+          <span>{{ $t("schema-review.error-level.name") }}:</span>
           <div
             v-for="level in errorLevelList"
             :key="level.id"
@@ -82,7 +82,7 @@
               :for="level.id"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`schame-review.error-level.${level.id}`) }}
+              {{ $t(`schema-review.error-level.${level.id}`) }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -100,7 +100,7 @@
         />
         <BBTableSearch
           ref="searchField"
-          :placeholder="$t('schame-review.search-rule-name')"
+          :placeholder="$t('schema-review.search-rule-name')"
           @change-text="(text) => (state.searchText = text)"
         />
       </div>
@@ -110,7 +110,7 @@
       />
       <BBButtonConfirm
         :style="'DELETE'"
-        :button-text="$t('schame-review.delete')"
+        :button-text="$t('schema-review.delete')"
         :ok-text="$t('common.delete')"
         :confirm-title="$t('common.delete') + ` '${review.name}'?`"
         :require-confirm="true"
@@ -163,7 +163,7 @@ const { t } = useI18n();
 const store = useSchemaSystemStore();
 const envStore = useEnvironmentStore();
 const router = useRouter();
-const ROUTE_NAME = "setting.workspace.schame-review";
+const ROUTE_NAME = "setting.workspace.schema-review";
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -330,7 +330,7 @@ const onRemove = () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("schame-review.remove-review"),
+    title: t("schema-review.remove-review"),
   });
 };
 </script>

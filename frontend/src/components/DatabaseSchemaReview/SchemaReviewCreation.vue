@@ -46,9 +46,9 @@
       v-if="state.showAlertModal"
       style="CRITICAL"
       :ok-text="$t('common.confirm')"
-      :title="$t('schame-review.create.configure-rule.confirm-override-title')"
+      :title="$t('schema-review.create.configure-rule.confirm-override-title')"
       :description="
-        $t('schame-review.create.configure-rule.confirm-override-description')
+        $t('schema-review.create.configure-rule.confirm-override-description')
       "
       @ok="
         () => {
@@ -116,12 +116,12 @@ const store = useSchemaSystemStore();
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
-const ROUTE_NAME = "setting.workspace.schame-review";
+const ROUTE_NAME = "setting.workspace.schema-review";
 
 const stepList: BBStepTabItem[] = [
-  { title: t("schame-review.create.basic-info.name") },
-  { title: t("schame-review.create.configure-rule.name") },
-  { title: t("schame-review.create.preview.name") },
+  { title: t("schema-review.create.basic-info.name") },
+  { title: t("schema-review.create.configure-rule.name") },
+  { title: t("schema-review.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
@@ -202,7 +202,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(`schame-review.${props.reviewId ? "update" : "create"}-review`),
+    title: t(`schema-review.${props.reviewId ? "update" : "create"}-review`),
   });
 
   allowChangeCallback();
