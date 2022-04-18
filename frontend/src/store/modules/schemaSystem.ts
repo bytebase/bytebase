@@ -93,6 +93,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       throw new Error("function haven't implement yet");
     },
     async fetchReviewById(id: SchemaReviewId): Promise<DatabaseSchemaReview> {
+      // TODO: should remove this after the backend is implemented
       const review = this.getReviewById(id);
       if (review.id === UNKNOWN_ID || review.id === EMPTY_ID) {
         throw new Error(`review ${id} not found`);
