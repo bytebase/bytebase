@@ -168,10 +168,10 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /setting/schema-review/:schemaReviewId
+        // /setting/schema-review-policy/:schemaReviewPolicyId
         // Total 2 elements, 2nd element is the schema review id
         const schemaReviewComponents = currentRoute.path.match(
-          "/setting/schema-review/([0-9a-zA-Z_-]+)"
+          "/setting/schema-review-policy/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (schemaReviewComponents[1]) {
           return {

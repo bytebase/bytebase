@@ -1,6 +1,6 @@
 <template>
   <BBBadge
-    :text="$t(`schema-review.error-level.${level}`)"
+    :text="$t(`schema-review-policy.error-level.${level.toLowerCase()}`)"
     :can-remove="false"
     :style="style"
   />

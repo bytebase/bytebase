@@ -1372,20 +1372,29 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
-schema-review:
+schema-review-policy:
   title: Schema Review
-  no-rule-set: No schema review
+  no-rule-set: No schema review policy
   get-start: Get started by configure the schema rules.
-  add-review: Add review
+  add-review: Add review policy
   search-rule-name: Search rule name
-  remove-review: Successfully removed the review.
-  create-review: Successfully created the review.
-  update-review: Successfully updated the review.
+  remove-review: Successfully removed the review policy.
+  create-review: Successfully created the review policy.
+  update-review: Successfully updated the review policy.
   filter: Filter
   database: Database
-  delete: Delete this schema review
-  no-permission: Only DBA or Owner has permission to create or update review
-  delete-attention: To delete this review, unlink all environments first.
+  delete: Delete this schema review policy
+  no-permission: Only DBA or Owner has permission to create or update review policy.
+  delete-attention: To delete this review policy, unlink all environments first.
+  engine:
+    mysql: MySQL
+    common: Common
+  category:
+    engine: Engine
+    naming: Naming
+    query: Query
+    table: Table
+    column: Column
   error-level:
     name: Error Level
     error: Error
@@ -1403,8 +1412,8 @@ schema-review:
       environments-label: Apply the review to selected environments. One environment can only has one review.
       environments-select: Select environments
       no-selected-environments: No environments applied
-      no-available-environment: 没有可供选择的环境
-      no-available-environment-desc: No available environment. One environment can only has one schema review.
+      no-available-environment: No available environments
+      no-available-environment-desc: No available environment. One environment can only has one schema review policy.
       choose-template: Choose template
     configure-rule:
       name: Configure rule

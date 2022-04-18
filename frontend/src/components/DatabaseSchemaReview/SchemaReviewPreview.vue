@@ -5,7 +5,9 @@
         <h1 class="text-left text-2xl font-semibold">Rules</h1>
         <fieldset v-for="(category, index) in categoryList" :key="index">
           <div class="block text-sm font-medium text-gray-900">
-            {{ category.name }}
+            {{
+              $t(`schema-review-policy.category.${category.id.toLowerCase()}`)
+            }}
           </div>
           <div
             v-for="(rule, ruleIndex) in category.ruleList"
@@ -46,7 +48,7 @@
           :id="category.id.replace(/\./g, '-')"
           class="text-left text-2xl text-indigo-600 font-semibold hover:underline"
         >
-          {{ category.name }}
+          {{ $t(`schema-review-policy.category.${category.id.toLowerCase()}`) }}
         </a>
         <div v-for="rule in category.ruleList" :key="rule.id" class="py-4">
           <div class="sm:flex sm:items-center sm:space-x-4">
@@ -59,7 +61,12 @@
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
-              <BBBadge :text="rule.engine" :can-remove="false" />
+              <BBBadge
+                :text="
+                  $t(`schema-review-policy.engine.${rule.engine.toLowerCase()}`)
+                "
+                :can-remove="false"
+              />
             </div>
           </div>
           <p class="py-2 text-gray-400">{{ rule.description }}</p>
@@ -73,15 +80,15 @@
                 {{ key }}:
                 <span
                   v-if="
-                    rule.payload[key].type === 'string' ||
-                    rule.payload[key].type === 'template'
+                    rule.payload[key].type === 'STRING' ||
+                    rule.payload[key].type === 'TEMPLATE'
                   "
                   class="bg-gray-100 rounded text-sm p-2"
                 >
                   {{ rule.payload[key].value || rule.payload[key].default }}
                 </span>
                 <div
-                  v-else-if="rule.payload[key].type === 'string[]'"
+                  v-else-if="rule.payload[key].type === 'STRING[]'"
                   class="flex flex-wrap gap-3 ml-5 mt-3"
                 >
                   <span

@@ -375,32 +375,32 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "schema-review",
-                name: "setting.workspace.schema-review",
+                path: "schema-review-policy",
+                name: "setting.workspace.schema-review-policy",
                 meta: {
-                  title: () => t("schema-review.title"),
+                  title: () => t("schema-review-policy.title"),
                 },
                 component: () =>
                   import("../views/SettingWorkspaceSchemaReview.vue"),
                 props: true,
               },
               {
-                path: "schema-review/new",
-                name: "setting.workspace.schema-review.create",
+                path: "schema-review-policy/new",
+                name: "setting.workspace.schema-review-policy.create",
                 meta: {
-                  title: () => t("schema-review.create.breadcrumb"),
+                  title: () => t("schema-review-policy.create.breadcrumb"),
                 },
                 component: () =>
                   import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
                 props: true,
               },
               {
-                path: "schema-review/:schemaReviewSlug",
-                name: "setting.workspace.schema-review.detail",
+                path: "schema-review-policy/:schemaReviewSlug",
+                name: "setting.workspace.schema-review-policy.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewSlug as string;
-                    return useSchemaSystemStore().getReviewById(
+                    return useSchemaSystemStore().getReviewPolicyById(
                       idFromSlug(slug)
                     ).name;
                   },
@@ -941,7 +941,7 @@ router.beforeEach((to, from, next) => {
     to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail" &&
-      to.name?.toString() != "setting.workspace.schema-review.detail")
+      to.name?.toString() != "setting.workspace.schema-review-policy.detail")
   ) {
     next();
     return;
@@ -1179,7 +1179,7 @@ router.beforeEach((to, from, next) => {
 
   if (schemaReviewSlug) {
     useSchemaSystemStore()
-      .fetchReviewById(idFromSlug(schemaReviewSlug))
+      .fetchReviewPolicyById(idFromSlug(schemaReviewSlug))
       .then(() => {
         next();
       })

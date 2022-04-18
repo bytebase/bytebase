@@ -46,9 +46,13 @@
       v-if="state.showAlertModal"
       style="CRITICAL"
       :ok-text="$t('common.confirm')"
-      :title="$t('schema-review.create.configure-rule.confirm-override-title')"
+      :title="
+        $t('schema-review-policy.create.configure-rule.confirm-override-title')
+      "
       :description="
-        $t('schema-review.create.configure-rule.confirm-override-description')
+        $t(
+          'schema-review-policy.create.configure-rule.confirm-override-description'
+        )
       "
       @ok="
         () => {
@@ -200,18 +204,20 @@ const TEMPLATE_LIST: SchemaReviewTemplate[] = [
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
-const ROUTE_NAME = "setting.workspace.schema-review";
+const ROUTE_NAME = "setting.workspace.schema-review-policy";
 const DEFAULT_TEMPLATE_INDEX = 0;
 
 const STEP_LIST: BBStepTabItem[] = [
-  { title: t("schema-review.create.basic-info.name") },
-  { title: t("schema-review.create.configure-rule.name") },
-  { title: t("schema-review.create.preview.name") },
+  { title: t("schema-review-policy.create.basic-info.name") },
+  { title: t("schema-review-policy.create.configure-rule.name") },
+  { title: t("schema-review-policy.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
-  name: props.name || t("schema-review.create.basic-info.display-name-default"),
+  name:
+    props.name ||
+    t("schema-review-policy.create.basic-info.display-name-default"),
   selectedEnvironmentList: props.selectedEnvironmentList,
   selectedRuleList: props.selectedRuleList.length
     ? [...props.selectedRuleList]
@@ -269,7 +275,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-review.no-permission"),
+      title: t("schema-review-policy.no-permission"),
     });
   }
   const review = {
@@ -288,15 +294,17 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   };
 
   if (props.reviewId) {
-    store.updateReview(props.reviewId, review);
+    store.updateReviewPolicy(props.reviewId, review);
   } else {
-    store.addReview(review);
+    store.addReviewPolicy(review);
   }
 
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(`schema-review.${props.reviewId ? "update" : "create"}-review`),
+    title: t(
+      `schema-review-policy.${props.reviewId ? "update" : "create"}-review`
+    ),
   });
 
   allowChangeCallback();

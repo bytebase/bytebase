@@ -2,11 +2,11 @@
   <div class="space-y-9">
     <div>
       <label class="textlabel">
-        {{ $t("schema-review.create.basic-info.display-name") }}
+        {{ $t("schema-review-policy.create.basic-info.display-name") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("schema-review.create.basic-info.display-name-label") }}
+        {{ $t("schema-review-policy.create.basic-info.display-name-label") }}
       </p>
       <BBTextField
         class="mt-2 w-full"
@@ -17,17 +17,19 @@
     </div>
     <div>
       <label class="textlabel">
-        {{ $t("schema-review.create.basic-info.environments") }}
+        {{ $t("schema-review-policy.create.basic-info.environments") }}
       </label>
       <p class="mt-1 textinfolabel mb-5">
-        {{ $t("schema-review.create.basic-info.environments-label") }}
+        {{ $t("schema-review-policy.create.basic-info.environments-label") }}
       </p>
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         :style="'WARN'"
         :title="$t('common.environments')"
         :description="
-          $t('schema-review.create.basic-info.no-available-environment-desc')
+          $t(
+            'schema-review-policy.create.basic-info.no-available-environment-desc'
+          )
         "
         class="mb-5"
       />
@@ -73,7 +75,9 @@
             :class="state.openTemplate ? 'rotate-90' : ''"
           />
           <span class="ml-l text-sm font-medium">
-            {{ $t("schema-review.create.configure-rule.change-template") }}
+            {{
+              $t("schema-review-policy.create.configure-rule.change-template")
+            }}
           </span>
         </div>
         <SchemaReviewTemplates
@@ -90,7 +94,7 @@
         :required="true"
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"
-        :title="$t('schema-review.create.basic-info.choose-template')"
+        :title="$t('schema-review-policy.create.basic-info.choose-template')"
         @select="(index) => $emit('select-template', index)"
       />
     </div>

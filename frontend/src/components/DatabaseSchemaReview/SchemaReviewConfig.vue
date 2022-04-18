@@ -4,7 +4,7 @@
       :required="true"
       v-if="selectRuleList.length === 0"
       :template-list="templateList"
-      :title="$t('schema-review.create.configure-rule.from-template')"
+      :title="$t('schema-review-policy.create.configure-rule.from-template')"
       @select="(index) => onTemplateApply(index)"
     />
     <div class="mb-5" v-if="selectRuleList.length > 0">
@@ -17,7 +17,7 @@
           :class="state.openTemplate ? 'rotate-90' : ''"
         />
         <span class="ml-1 text-sm font-medium">
-          {{ $t("schema-review.create.configure-rule.change-template") }}
+          {{ $t("schema-review-policy.create.configure-rule.change-template") }}
         </span>
       </div>
       <SchemaReviewTemplates

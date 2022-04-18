@@ -40,34 +40,43 @@
         :style="`WARN`"
         :title="$t('common.environments')"
         :description="
-          $t('schema-review.create.basic-info.no-selected-environments')
+          $t('schema-review-policy.create.basic-info.no-selected-environments')
         "
       />
       <div class="space-y-2 my-5">
-        <span class="font-semibold">{{ $t("schema-review.filter") }}</span>
+        <span class="font-semibold">{{
+          $t("schema-review-policy.filter")
+        }}</span>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schema-review.database") }}:</span>
-          <div v-for="db in engineList" :key="db.id" class="flex items-center">
+          <span>{{ $t("schema-review-policy.database") }}:</span>
+          <div
+            v-for="engine in engineList"
+            :key="engine.id"
+            class="flex items-center"
+          >
             <input
               type="checkbox"
-              :id="db.id"
-              :value="db.id"
-              :checked="state.checkedEngine.has(db.id)"
-              @input="toggleCheckedEngine(db.id)"
+              :id="engine.id"
+              :value="engine.id"
+              :checked="state.checkedEngine.has(engine.id)"
+              @input="toggleCheckedEngine(engine.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             />
-            <label :for="db.id" class="ml-2 items-center text-sm text-gray-600">
-              {{ db.id }}
+            <label
+              :for="engine.id"
+              class="ml-2 items-center text-sm text-gray-600"
+            >
+              {{ $t(`schema-review-policy.engine.${engine.id.toLowerCase()}`) }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
-                {{ db.count }}
+                {{ engine.count }}
               </span>
             </label>
           </div>
         </div>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schema-review.error-level.name") }}:</span>
+          <span>{{ $t("schema-review-policy.error-level.name") }}:</span>
           <div
             v-for="level in errorLevelList"
             :key="level.id"
@@ -85,7 +94,9 @@
               :for="level.id"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`schema-review.error-level.${level.id}`) }}
+              {{
+                $t(`schema-review-policy.error-level.${level.id.toLowerCase()}`)
+              }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -103,7 +114,7 @@
         />
         <BBTableSearch
           ref="searchField"
-          :placeholder="$t('schema-review.search-rule-name')"
+          :placeholder="$t('schema-review-policy.search-rule-name')"
           @change-text="(text) => (state.searchText = text)"
         />
       </div>
@@ -112,12 +123,12 @@
         class="py-5"
       />
       <div v-if="environmentList.length > 0" class="textinfolabel">
-        {{ $t("schema-review.delete-attention") }}
+        {{ $t("schema-review-policy.delete-attention") }}
       </div>
       <BBButtonConfirm
         v-else
         :style="'DELETE'"
-        :button-text="$t('schema-review.delete')"
+        :button-text="$t('schema-review-policy.delete')"
         :ok-text="$t('common.delete')"
         :confirm-title="$t('common.delete') + ` '${review.name}'?`"
         :require-confirm="true"
@@ -142,6 +153,7 @@ import {
   SelectedRule,
   ruleList,
   RulePayload,
+  PayloadType,
   Environment,
 } from "../types";
 import {
@@ -172,7 +184,7 @@ const store = useSchemaSystemStore();
 const envStore = useEnvironmentStore();
 const router = useRouter();
 const currentUser = useCurrentUser();
-const ROUTE_NAME = "setting.workspace.schema-review";
+const ROUTE_NAME = "setting.workspace.schema-review-policy";
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -189,7 +201,7 @@ const hasPermission = computed(() => {
 });
 
 const review = computed((): DatabaseSchemaReviewPolicy => {
-  return store.getReviewById(idFromSlug(props.schemaReviewSlug));
+  return store.getReviewPolicyById(idFromSlug(props.schemaReviewSlug));
 });
 
 const environmentList = computed((): Environment[] => {
@@ -219,20 +231,37 @@ const selectedRuleList = computed((): SelectedRule[] => {
     if (!rule) {
       continue;
     }
+
+    const payload = rule.payload
+      ? Object.entries(rule.payload).reduce((obj, [key, val]) => {
+          const target = selectedRule.payload
+            ? selectedRule.payload[key]
+            : undefined;
+          obj[key] = {
+            ...val,
+          };
+
+          switch (val.type) {
+            case PayloadType.STRING:
+            case PayloadType.TEMPLATE:
+              if (typeof target === "string") {
+                obj[key].value = target;
+              }
+              break;
+            case PayloadType.STRING_ARRAY:
+              if (Array.isArray(target)) {
+                obj[key].value = target;
+              }
+              break;
+          }
+
+          return obj;
+        }, {} as RulePayload)
+      : undefined;
     res.push({
       ...rule,
       level: selectedRule.level,
-      payload: rule.payload
-        ? Object.entries(rule.payload).reduce((obj, [key, val]) => {
-            obj[key] = {
-              ...val,
-              value: selectedRule.payload
-                ? selectedRule.payload[key]
-                : undefined,
-            };
-            return obj;
-          }, {} as RulePayload)
-        : undefined,
+      payload,
     });
   }
 
@@ -282,7 +311,7 @@ const toggleCheckedLevel = (level: RuleLevel) => {
 const categoryFilterList = computed((): CategoryFilterItem[] => {
   return convertToCategoryList(selectedRuleList.value).map((c) => ({
     id: c.id,
-    name: c.name,
+    name: t(`schema-review-policy.category.${c.id.toLowerCase()}`),
   }));
 });
 
@@ -339,14 +368,14 @@ const onRemove = () => {
   if (environmentList.value.length > 0) {
     return;
   }
-  store.removeReview(review.value.id);
+  store.removeReviewPolicy(review.value.id);
   router.replace({
     name: ROUTE_NAME,
   });
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("schema-review.remove-review"),
+    title: t("schema-review-policy.remove-review"),
   });
 };
 </script>

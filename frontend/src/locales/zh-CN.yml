@@ -1205,20 +1205,29 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
-schema-review:
-  title: Schema 审查
-  no-rule-set: 没有 schema 审查
-  get-start: 配置规则来开启 schema 审查
-  add-review: 新增审查
+schema-review-policy:
+  title: Schema 审查策略
+  no-rule-set: 没有 schema 审查策略
+  get-start: 配置规则来开启 schema 审查策略
+  add-review: 新增审查策略
   search-rule-name: 搜索规则名称
-  remove-review: 审查已删除
-  create-review: 审查已创建
-  update-review: 审查已更新
+  remove-review: 审查策略已删除
+  create-review: 审查策略已创建
+  update-review: 审查策略已更新
   filter: 筛选
   database: 数据库
-  delete: 删除该 schema 审查
-  no-permission: 仅 DBA 或所有者有权限创建或更新审查
+  delete: 删除该 schema 审查策略
+  no-permission: 仅 DBA 或所有者有权限创建或更新审查策略。
   delete-attention: 删除审查前，需要先解除所有环境的关联。
+  engine:
+    mysql: MySQL
+    common: 通用
+  category:
+    engine: 引擎
+    naming: 命名
+    query: 查询
+    table: 表
+    column: 列
   error-level:
     name: 错误等级
     error: 错误

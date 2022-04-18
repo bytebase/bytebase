@@ -157,8 +157,8 @@ export default defineComponent({
         });
       } else if (schemaReviewSlug) {
         list.push({
-          name: t("schema-review.title"),
-          path: "/setting/schema-review",
+          name: t("schema-review-policy.title"),
+          path: "/setting/schema-review-policy",
         });
       }
 

@@ -15,7 +15,14 @@
           <h1 class="text-base font-semibold text-gray-900">
             {{ selectedRule.id }}
           </h1>
-          <BBBadge :text="selectedRule.engine" :can-remove="false" />
+          <BBBadge
+            :text="
+              $t(
+                `schema-review-policy.engine.${selectedRule.engine.toLowerCase()}`
+              )
+            "
+            :can-remove="false"
+          />
           <SchemaRuleLevelBadge :level="selectedRule.level" />
         </div>
         <div class="text-sm text-gray-400">
@@ -25,7 +32,7 @@
     </div>
     <div v-if="active" class="px-10 py-5 text-sm">
       <div class="mb-7">
-        <p class="mb-3">{{ $t("schema-review.error-level.name") }}</p>
+        <p class="mb-3">{{ $t("schema-review-policy.error-level.name") }}</p>
         <div class="flex gap-x-3">
           <div
             v-for="(level, index) in LEVEL_LIST"
@@ -44,7 +51,9 @@
               :for="`level-${level}`"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`schema-review.error-level.${level}`) }}
+              {{
+                $t(`schema-review-policy.error-level.${level.toLowerCase()}`)
+              }}
             </label>
           </div>
         </div>
@@ -59,13 +68,13 @@
             {{ `${key[0].toUpperCase()}${key.slice(1).toLowerCase()}` }}
           </p>
           <input
-            v-if="payload.type == 'string'"
+            v-if="payload.type == 'STRING'"
             v-model="state.payload[key]"
             type="text"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
             :placeholder="payload.default"
           />
-          <div v-else-if="payload.type == 'string[]'">
+          <div v-else-if="payload.type == 'STRING[]'">
             <div class="flex flex-wrap gap-4 mb-4">
               <BBBadge
                 v-for="(val, index) in state.payload[key]"
@@ -83,7 +92,7 @@
             />
           </div>
           <InputWithTemplate
-            v-else-if="payload.type == 'template'"
+            v-else-if="payload.type == 'TEMPLATE'"
             :template-list="payload.templateList"
             :value="state.payload[key]"
             @change="(val) => (state.payload[key] = val)"
