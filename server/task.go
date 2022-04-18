@@ -96,7 +96,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 			newStatement = *taskPatch.Statement
 
-			if task.Type == api.TaskDatabaseSchemaUpdate {
+			switch task.Type {
+			case api.TaskDatabaseSchemaUpdate:
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
@@ -112,7 +113,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
-			} else if task.Type == api.TaskDatabaseDataUpdate {
+			case api.TaskDatabaseDataUpdate:
+
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
@@ -128,6 +130,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
 			}
 		}
 

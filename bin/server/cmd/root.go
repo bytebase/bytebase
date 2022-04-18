@@ -100,7 +100,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			if frontendHost == "" {
 				frontendHost = host
 			}

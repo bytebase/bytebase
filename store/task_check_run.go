@@ -54,11 +54,10 @@ func (s *TaskCheckRunService) CreateTaskCheckRunIfNeeded(ctx context.Context, cr
 	runningCount := 0
 	if create.SkipIfAlreadyTerminated {
 		for _, taskCheckRun := range taskCheckRunList {
-			if taskCheckRun.Status == api.TaskCheckRunDone ||
-				taskCheckRun.Status == api.TaskCheckRunFailed ||
-				taskCheckRun.Status == api.TaskCheckRunCanceled {
+			switch taskCheckRun.Status {
+			case api.TaskCheckRunDone, api.TaskCheckRunFailed, api.TaskCheckRunCanceled:
 				return taskCheckRun, nil
-			} else if taskCheckRun.Status == api.TaskCheckRunRunning {
+			case api.TaskCheckRunRunning:
 				runningCount++
 			}
 		}
