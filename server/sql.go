@@ -474,13 +474,13 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
 			if err != nil {
-				return fmt.Errorf("Failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+				return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 			}
 			var dbList []*api.Database
 			for _, dbRaw := range dbRawList {
 				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 				if err != nil {
-					return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+					return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
 				}
 				dbList = append(dbList, db)
 			}
@@ -520,7 +520,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 					dbPatched, err := s.composeDatabaseRelationship(ctx, dbRawPatched)
 					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
+						return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
 					}
 
 					tableDelete := &api.TableDelete{
@@ -571,7 +571,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 					db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+						return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
 					}
 
 					for _, table := range schema.TableList {
@@ -650,7 +650,7 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
 	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
-	if err := util.ApplyMultiStatements(sc, func(stmt string) error {
+	if err := util.ApplyMultiStatements(sc, func(_ string) error {
 		count++
 		return nil
 	}); err != nil {
