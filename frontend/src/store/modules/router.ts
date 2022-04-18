@@ -168,14 +168,14 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /setting/version-control/:vcsId
-        // Total 2 elements, 2nd element is the version control system id
-        const guideComponents = currentRoute.path.match(
+        // /setting/schema-review/:schemaReviewId
+        // Total 2 elements, 2nd element is the schema review id
+        const schemaReviewComponents = currentRoute.path.match(
           "/setting/schema-review/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
-        if (guideComponents[1]) {
+        if (schemaReviewComponents[1]) {
           return {
-            schemaReviewSlug: guideComponents[1],
+            schemaReviewSlug: schemaReviewComponents[1],
           };
         }
       }

@@ -82,7 +82,6 @@ import { storeToRefs } from "pinia";
 interface LocalState {
   loading: boolean;
   license: string;
-  payload: string;
 }
 
 export default defineComponent({
@@ -97,7 +96,6 @@ export default defineComponent({
     const state = reactive<LocalState>({
       loading: false,
       license: "",
-      payload: "{{^uk_{{aaa}}_{{column_list}}$}}",
     });
 
     const disabled = computed((): boolean => {
