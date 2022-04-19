@@ -16,7 +16,7 @@ import (
 
 func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	g.GET("/project/:projectID/webhook", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -46,7 +46,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/webhook", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -81,7 +81,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -116,7 +116,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -159,7 +159,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -184,7 +184,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectID/webhook/:webhookID/test", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
