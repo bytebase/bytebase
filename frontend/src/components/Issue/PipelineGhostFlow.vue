@@ -76,7 +76,7 @@
       <div class="task-list p-2 md:flex md:items-center relative">
         <template v-for="(task, j) in taskList" :key="j">
           <div
-            class="task px-2 py-1 cursor-pointer border rounded md:w-80 flex justify-between items-center"
+            class="task px-2 py-1 cursor-pointer border rounded md:w-64 flex justify-between items-center"
             :class="taskClass(task)"
             @click="
               onClickTask(selectedStageId, task.name, create ? j + 1 : task.id)
@@ -104,11 +104,11 @@
             </div>
             <div v-if="getTaskProgress(task) > 0">
               <BBProgressPie
-                class="w-12 h-12 text-info"
+                class="w-9 h-9 text-info"
                 :percent="getTaskProgress(task)"
               >
                 <template #default="{ percent }">
-                  <span class="text-sm">{{ percent }}%</span>
+                  <span class="text-xs scale-90">{{ percent }}%</span>
                 </template>
               </BBProgressPie>
             </div>
@@ -116,12 +116,10 @@
 
           <div
             v-if="j < taskList.length - 1"
-            class="hidden md:flex items-center justify-center w-2 h-2 overflow-hidden relative"
+            class="hidden md:flex items-center justify-center w-4 h-2 overflow-visible relative"
           >
             <!-- show an arrow indicator between tasks -->
-            <heroicons-outline:chevron-right
-              class="w-6 h-6 absolute translate-x-[-2px]"
-            />
+            <heroicons-outline:chevron-right class="w-4 h-4" />
           </div>
         </template>
       </div>
