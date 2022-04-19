@@ -152,9 +152,8 @@ import {
   convertToCategoryList,
   SelectedRule,
   ruleList,
-  RulePayload,
-  PayloadType,
   Environment,
+  convertPolicyPayloadToRulePayload,
 } from "../types";
 import {
   useCurrentUser,
@@ -232,36 +231,13 @@ const selectedRuleList = computed((): SelectedRule[] => {
       continue;
     }
 
-    const payload = rule.payload
-      ? Object.entries(rule.payload).reduce((obj, [key, val]) => {
-          const target = selectedRule.payload
-            ? selectedRule.payload[key]
-            : undefined;
-          obj[key] = {
-            ...val,
-          };
-
-          switch (val.type) {
-            case PayloadType.STRING:
-            case PayloadType.TEMPLATE:
-              if (typeof target === "string") {
-                obj[key].value = target;
-              }
-              break;
-            case PayloadType.STRING_ARRAY:
-              if (Array.isArray(target)) {
-                obj[key].value = target;
-              }
-              break;
-          }
-
-          return obj;
-        }, {} as RulePayload)
-      : undefined;
     res.push({
       ...rule,
       level: selectedRule.level,
-      payload,
+      payload: convertPolicyPayloadToRulePayload(
+        selectedRule.payload,
+        rule.payload
+      ),
     });
   }
 

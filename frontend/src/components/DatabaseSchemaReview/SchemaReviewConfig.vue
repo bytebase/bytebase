@@ -109,7 +109,7 @@ const onPayloadChange = (rule: SelectedRule, data: { [val: string]: any }) => {
       dict[key] = { ...val };
       dict[key].value = data[key];
       return dict;
-    }, {} as RulePayload),
+    }, {} as any),
   };
 
   emit("change", newRule);

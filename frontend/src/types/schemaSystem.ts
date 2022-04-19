@@ -38,9 +38,18 @@ interface TemplatePayload {
   value?: string;
 }
 
-export interface RulePayload {
-  [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
+interface NamingFormatRulePayload {
+  format: StringPayload | TemplatePayload;
 }
+
+interface RequiredColumnsRulePayload {
+  list: StringArrayPayload;
+}
+
+export type RulePayload =
+  | NamingFormatRulePayload
+  | RequiredColumnsRulePayload
+  | undefined;
 
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
@@ -58,13 +67,75 @@ export interface SelectedRule extends SchemaRule {
   level: RuleLevel;
 }
 
+// rule payload
+interface NamingFormatPolicyPayload {
+  format: string;
+}
+
+interface RequiredColumnsPolicyPayload {
+  list: string[];
+}
+
+type PolicyPayload =
+  | NamingFormatPolicyPayload
+  | RequiredColumnsPolicyPayload
+  | undefined;
+
 interface DatabaseSchemaRule {
   id: string;
   level: RuleLevel;
-  payload?: {
-    [key: string]: string | string[] | undefined;
-  };
+  payload?: PolicyPayload;
 }
+
+export const convertPolicyPayloadToRulePayload = (
+  policyPayload: PolicyPayload,
+  rulePayload: RulePayload
+): RulePayload => {
+  if (!policyPayload || !rulePayload) {
+    return;
+  }
+
+  return Object.entries(rulePayload).reduce((obj, [key, val]) => {
+    obj[key] = {
+      ...val,
+    };
+
+    switch (val.type) {
+      case PayloadType.STRING:
+      case PayloadType.TEMPLATE:
+        const format = (policyPayload as NamingFormatPolicyPayload).format;
+        if (typeof format === "string") {
+          obj[key].value = format;
+        }
+        break;
+      case PayloadType.STRING_ARRAY:
+        const list = (policyPayload as RequiredColumnsPolicyPayload).list;
+        if (Array.isArray(list)) {
+          obj[key].value = list;
+        }
+        break;
+    }
+
+    return obj;
+  }, {} as any);
+};
+
+export const convertRulePayloadToPolicyPayload = (
+  payload: RulePayload
+): PolicyPayload => {
+  if (!payload) {
+    return;
+  }
+  if ("format" in payload) {
+    return {
+      format: payload.format.value ?? payload.format.default,
+    } as NamingFormatPolicyPayload;
+  } else if ("list" in payload) {
+    return {
+      list: payload.list.value ?? payload.list.default,
+    } as RequiredColumnsPolicyPayload;
+  }
+};
 
 export interface DatabaseSchemaReviewPolicy {
   id: SchemaReviewPolicyId;
@@ -180,7 +251,7 @@ export const ruleList: SchemaRule[] = [
     engine: "COMMON",
     description: "Enforce the primary key name format.",
     payload: {
-      pk: {
+      format: {
         type: PayloadType.TEMPLATE,
         default: "^pk_{{table}}_{{column_list}}$",
         templateList: [
@@ -202,7 +273,7 @@ export const ruleList: SchemaRule[] = [
     engine: "COMMON",
     description: "Enforce the unique key name format.",
     payload: {
-      uk: {
+      format: {
         type: PayloadType.TEMPLATE,
         default: "^uk_{{table}}_{{column_list}}$",
         templateList: [
@@ -224,7 +295,7 @@ export const ruleList: SchemaRule[] = [
     engine: "COMMON",
     description: "Enforce the index name format.",
     payload: {
-      idx: {
+      format: {
         type: PayloadType.TEMPLATE,
         default: "^idx_{{table}}_{{column_list}}$",
         templateList: [
@@ -246,7 +317,7 @@ export const ruleList: SchemaRule[] = [
     engine: "COMMON",
     description: "Enforce the required columns in each table.",
     payload: {
-      columnList: {
+      list: {
         type: PayloadType.STRING_ARRAY,
         default: ["id", "created_ts", "updated_ts", "creator_id", "updater_id"],
       },

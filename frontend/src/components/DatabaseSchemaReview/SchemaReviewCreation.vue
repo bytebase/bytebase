@@ -78,6 +78,7 @@ import {
   SelectedRule,
   Environment,
   SchemaReviewTemplate,
+  convertRulePayloadToPolicyPayload,
 } from "../../types";
 import {
   useCurrentUser,
@@ -284,12 +285,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     ruleList: state.selectedRuleList.map((rule) => ({
       id: rule.id,
       level: rule.level,
-      payload: rule.payload
-        ? Object.entries(rule.payload).reduce((res, [key, val]) => {
-            res[key] = val.value ?? val.default;
-            return res;
-          }, {} as { [key: string]: any })
-        : undefined,
+      payload: convertRulePayloadToPolicyPayload(rule.payload),
     })),
   };
 

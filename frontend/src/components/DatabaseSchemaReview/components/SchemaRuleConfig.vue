@@ -117,9 +117,7 @@ interface LocalState {
   };
 }
 
-const initStatePayload = (
-  payload: RulePayload | undefined
-): { [val: string]: any } => {
+const initStatePayload = (payload: RulePayload): { [val: string]: any } => {
   return Object.entries(payload ?? {}).reduce((res, [key, val]) => {
     res[key] = val.value ?? val.default;
     return res;
