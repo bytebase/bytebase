@@ -1078,12 +1078,13 @@ UPDATE
     ON sheet FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- sheet_stargazer table stores the sheet stargazers.
-CREATE TABLE sheet_stargazer (
+-- sheet_organizer table stores the sheet status data from a principal.
+CREATE TABLE sheet_organizer (
     id SERIAL PRIMARY KEY,
     sheet_id INTEGER NOT NULL REFERENCES sheet (id),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    status TEXT NOT NULL CHECK (status IN ('STARRED', 'UNSTARRED')) DEFAULT 'UNSTARRED'
+    starred BOOLEAN NOT NULL DEFAULT false,
+    pinned BOOLEAN NOT NULL DEFAULT false,
 );
 
-CREATE UNIQUE INDEX idx_sheet_stargazer_unique_sheet_id_principal_id ON sheet_stargazer(sheet_id, principal_id);
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_organizer(sheet_id, principal_id);

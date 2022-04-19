@@ -1,12 +1,12 @@
 INSERT INTO
-    sheet_stargazer (
+    sheet_organizer (
         sheet_id,
         principal_id,
-        status
+        starred
     )
 VALUES
     (
         22002,
         101,
-        'STARRED'
+        true
     );
