@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 
 func (s *Server) registerVCSRoutes(g *echo.Group) {
 	g.POST("/vcs", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		vcsCreate := &api.VCSCreate{
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
@@ -40,7 +39,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.GET("/vcs", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		vcsFind := &api.VCSFind{}
 		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
@@ -55,7 +54,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.GET("/vcs/:vcsID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
@@ -74,7 +73,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/vcs/:vcsID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
@@ -104,7 +103,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/vcs/:vcsID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("VCS is not a number: %s", c.Param("vcsID"))).SetInternal(err)
@@ -124,7 +123,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.GET("/vcs/:vcsID/repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
@@ -155,7 +154,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 	})
 
 	g.GET("/vcs/:vcsID/external-repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("vcsID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("vcsID"))).SetInternal(err)
