@@ -801,7 +801,7 @@ export default defineComponent({
 
     const selectedStatement = computed((): string => {
       if (isTenantDeployMode.value) {
-        // In tenant mode, the entire issue shares an only SQL statement
+        // In tenant mode, the entire issue shares only one SQL statement
         if (props.create) {
           const issueCreate = props.issue as IssueCreate;
           const context = issueCreate.createContext as UpdateSchemaContext;
