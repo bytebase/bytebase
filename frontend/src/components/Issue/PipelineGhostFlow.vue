@@ -105,6 +105,7 @@
             <div v-if="getTaskProgress(task) > 0">
               <BBProgressPie
                 class="w-9 h-9 text-info"
+                :thickness="2"
                 :percent="getTaskProgress(task)"
               >
                 <template #default="{ percent }">
