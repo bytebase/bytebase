@@ -232,7 +232,7 @@ task:
   type:
     bb-task-database-schema-update-ghost-sync: Sync data
     bb-task-database-schema-update-ghost-cutover: Switch tables
-    bb-task-database-schema-update-ghost-drop-original-table: Drop original Table
+    bb-task-database-schema-update-ghost-drop-original-table: Drop original table
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
