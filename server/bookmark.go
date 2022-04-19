@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	g.POST("/bookmark", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		bookmarkCreate := &api.BookmarkCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, bookmarkCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create bookmark request").SetInternal(err)
@@ -38,7 +37,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 
 	g.GET("/bookmark/user/:userID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
@@ -60,7 +59,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/bookmark/:bookmarkID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("bookmarkID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("bookmarkID"))).SetInternal(err)

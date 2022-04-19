@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -219,7 +218,7 @@ func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.Handler
 
 		// We either have a valid access token or we will attempt to generate new access token and refresh token
 		if err == nil {
-			ctx := context.Background()
+			ctx := c.Request().Context()
 			principalID, err := strconv.Atoi(claims.Subject)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")

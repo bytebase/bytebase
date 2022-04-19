@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,7 +15,7 @@ import (
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	g.POST("/environment", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		envCreate := &api.EnvironmentCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create environment request").SetInternal(err)
@@ -40,7 +39,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 
 	g.GET("/environment", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		envFind := &api.EnvironmentFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
@@ -59,7 +58,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/environment/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Environment ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -89,7 +88,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/environment/reorder", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		patchList, err := jsonapi.UnmarshalManyPayload(c.Request().Body, reflect.TypeOf(new(api.EnvironmentPatch)))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(err)

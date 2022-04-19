@@ -17,7 +17,7 @@ import (
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		if err := s.instanceCountGuard(ctx); err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		instanceFind := &api.InstanceFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
@@ -82,7 +82,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -104,7 +104,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/instance/:instanceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -176,7 +176,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/user", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -198,7 +198,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -231,7 +231,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/status", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -271,7 +271,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/history/:historyID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -334,7 +334,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/history", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
