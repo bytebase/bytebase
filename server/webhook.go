@@ -27,7 +27,7 @@ var (
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		var b []byte
 		b, err := io.ReadAll(c.Request().Body)
 		if err != nil {

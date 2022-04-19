@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	g.POST("/issue/:issueID/subscriber", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -43,7 +42,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue/:issueID/subscriber", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -65,7 +64,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/issue/:issueID/subscriber/:subscriberID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID is not a number: %s", c.Param("issueID"))).SetInternal(err)

@@ -20,7 +20,7 @@ import (
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueCreate := &api.IssueCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
@@ -39,7 +39,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueFind := &api.IssueFind{}
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
@@ -93,7 +93,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue/:issueID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -115,7 +115,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/issue/:issueID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -221,7 +221,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/issue/:issueID/status", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
