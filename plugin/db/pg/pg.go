@@ -973,6 +973,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	return nil
 }
 
+// switchDatabase try to close a closed database, and then open a database named `dbName`
 func (driver *Driver) switchDatabase(dbName string) error {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
