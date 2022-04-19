@@ -814,7 +814,7 @@ export default defineComponent({
         }
       } else if (isGhostMode.value) {
         // In gh-ost mode, each stage can own its SQL statement
-        // But only for task.type === "bb.issue.database.schema.update.ghost"
+        // But only for task.type === "bb.task.database.schema.update.ghost.sync"
         const task = selectedTask.value;
         if (task.type === "bb.task.database.schema.update.ghost.sync") {
           if (props.create) {
