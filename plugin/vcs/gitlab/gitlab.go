@@ -225,7 +225,7 @@ type oauthResponse struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// transform to *vcs.OAuthToken
+// convert to *vcs.OAuthToken
 func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 	return &vcs.OAuthToken{
 		AccessToken:  o.AccessToken,
