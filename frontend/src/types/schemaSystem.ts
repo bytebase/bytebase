@@ -69,21 +69,21 @@ export interface RuleTemplate {
   level: RuleLevel;
 }
 
-interface BasePolicyRuleType {
+interface BaseSchemaRuleType {
   id: RuleId;
   level: RuleLevel;
 }
 
-interface NamingFormatRuleType extends BasePolicyRuleType {
+interface NamingFormatRuleType extends BaseSchemaRuleType {
   format: string;
 }
 
-interface RequiredColumnRuleType extends BasePolicyRuleType {
+interface RequiredColumnRuleType extends BaseSchemaRuleType {
   columnList: string[];
 }
 
-type PolicyRule =
-  | BasePolicyRuleType
+type SchemaPolicyRule =
+  | BaseSchemaRuleType
   | NamingFormatRuleType
   | RequiredColumnRuleType;
 
@@ -98,21 +98,21 @@ export interface DatabaseSchemaReviewPolicy {
 
   // Domain specific fields
   name: string;
-  ruleList: PolicyRule[];
+  ruleList: SchemaPolicyRule[];
   environmentIdList: number[];
 }
 
 export interface DatabaseSchemaReviewPolicyCreate {
   // Domain specific fields
   name: string;
-  ruleList: PolicyRule[];
+  ruleList: SchemaPolicyRule[];
   environmentIdList: number[];
 }
 
 export type DatabaseSchemaReviewPolicyPatch = {
   // Domain specific fields
   name?: string;
-  ruleList?: PolicyRule[];
+  ruleList?: SchemaPolicyRule[];
   environmentIdList?: number[];
 };
 
@@ -319,7 +319,7 @@ export const ruleList: RuleTemplate[] = [
 ];
 
 export const convertPolicyRuleToRuleTemplate = (
-  policyRule: PolicyRule,
+  policyRule: SchemaPolicyRule,
   ruleTemplate: RuleTemplate
 ): RuleTemplate | undefined => {
   if (policyRule.id !== ruleTemplate.id) {
@@ -365,8 +365,8 @@ export const convertPolicyRuleToRuleTemplate = (
 
 export const convertRuleTemplateToPolicyRule = (
   rule: RuleTemplate
-): PolicyRule => {
-  const base: BasePolicyRuleType = {
+): SchemaPolicyRule => {
+  const base: BaseSchemaRuleType = {
     id: rule.id,
     level: rule.level,
   };
