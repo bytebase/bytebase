@@ -1,10 +1,12 @@
 INSERT INTO
     sheet_stargazer (
         sheet_id,
-        stargazer_id
+        principal_id,
+        status
     )
 VALUES
     (
         22002,
-        101
+        101,
+        'STARRED'
     );
