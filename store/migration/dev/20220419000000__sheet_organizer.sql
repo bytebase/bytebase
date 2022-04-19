@@ -4,7 +4,7 @@ CREATE TABLE sheet_organizer (
     sheet_id INTEGER NOT NULL REFERENCES sheet (id),
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     starred BOOLEAN NOT NULL DEFAULT false,
-    pinned BOOLEAN NOT NULL DEFAULT false,
+    pinned BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_organizer(sheet_id, principal_id);
