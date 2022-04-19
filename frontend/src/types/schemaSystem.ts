@@ -46,8 +46,22 @@ export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
 export type CategoryType = "ENGINE" | "NAMING" | "QUERY" | "TABLE" | "COLUMN";
 
-export interface SchemaRule {
-  id: string;
+export type RuleId =
+  | "engine.mysql.use-innodb"
+  | "table.require-pk"
+  | "naming.table"
+  | "naming.column"
+  | "naming.index.pk"
+  | "naming.index.uk"
+  | "naming.index.idx"
+  | "column.required"
+  | "column.no-null"
+  | "query.select.no-select-all"
+  | "query.where.require"
+  | "query.where.no-leading-wildcard-like";
+
+export interface RuleTemplate {
+  id: RuleId;
   category: CategoryType;
   engine: SchemaRuleEngineType;
   description: string;
@@ -55,22 +69,23 @@ export interface SchemaRule {
   level: RuleLevel;
 }
 
-// rule payload
-interface NamingFormatPolicyPayload {
+interface BasePolicyRuleType {
+  id: RuleId;
+  level: RuleLevel;
+}
+
+interface NamingFormatRuleType extends BasePolicyRuleType {
   format: string;
 }
 
-interface RequiredColumnsPolicyPayload {
-  list: string[];
+interface RequiredColumnRuleType extends BasePolicyRuleType {
+  columnList: string[];
 }
 
-type PolicyPayload = NamingFormatPolicyPayload | RequiredColumnsPolicyPayload;
-
-interface DatabaseSchemaRule {
-  id: string;
-  level: RuleLevel;
-  payload?: PolicyPayload;
-}
+type PolicyRule =
+  | BasePolicyRuleType
+  | NamingFormatRuleType
+  | RequiredColumnRuleType;
 
 export interface DatabaseSchemaReviewPolicy {
   id: SchemaReviewPolicyId;
@@ -83,33 +98,33 @@ export interface DatabaseSchemaReviewPolicy {
 
   // Domain specific fields
   name: string;
-  ruleList: DatabaseSchemaRule[];
+  ruleList: PolicyRule[];
   environmentIdList: number[];
 }
 
 export interface DatabaseSchemaReviewPolicyCreate {
   // Domain specific fields
   name: string;
-  ruleList: DatabaseSchemaRule[];
+  ruleList: PolicyRule[];
   environmentIdList: number[];
 }
 
 export type DatabaseSchemaReviewPolicyPatch = {
   // Domain specific fields
   name?: string;
-  ruleList?: DatabaseSchemaRule[];
+  ruleList?: PolicyRule[];
   environmentIdList?: number[];
 };
 
 interface RuleCategory {
   id: CategoryType;
-  ruleList: SchemaRule[];
+  ruleList: RuleTemplate[];
 }
 
 export interface SchemaReviewTemplate {
   name: string;
   imagePath: string;
-  ruleList: SchemaRule[];
+  ruleList: RuleTemplate[];
 }
 
 const categoryOrder: Map<CategoryType, number> = new Map([
@@ -121,7 +136,7 @@ const categoryOrder: Map<CategoryType, number> = new Map([
 ]);
 
 export const convertToCategoryList = (
-  ruleList: SchemaRule[]
+  ruleList: RuleTemplate[]
 ): RuleCategory[] => {
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
@@ -143,7 +158,7 @@ export const convertToCategoryList = (
 };
 
 // TODO: i18n
-export const ruleList: SchemaRule[] = [
+export const ruleList: RuleTemplate[] = [
   {
     id: "engine.mysql.use-innodb",
     category: "ENGINE",
@@ -303,52 +318,73 @@ export const ruleList: SchemaRule[] = [
   },
 ];
 
-export const convertPolicyPayloadToRulePayload = (
-  policyPayload: PolicyPayload | undefined,
-  rulePayload: RulePayload | undefined
-): RulePayload | undefined => {
-  if (!policyPayload || !rulePayload) {
+export const convertPolicyRuleToRuleTemplate = (
+  policyRule: PolicyRule,
+  ruleTemplate: RuleTemplate
+): RuleTemplate | undefined => {
+  if (policyRule.id !== ruleTemplate.id) {
     return;
   }
+  if (!ruleTemplate.payload) {
+    return { ...ruleTemplate, level: policyRule.level };
+  }
 
-  return Object.entries(rulePayload).reduce((obj, [key, val]) => {
-    obj[key] = {
-      ...val,
-    };
+  const payload = Object.entries(ruleTemplate.payload).reduce(
+    (obj, [key, val]) => {
+      obj[key] = {
+        ...val,
+      };
 
-    switch (val.type) {
-      case PayloadType.STRING:
-      case PayloadType.TEMPLATE:
-        const format = (policyPayload as NamingFormatPolicyPayload).format;
-        if (typeof format === "string") {
-          obj[key].value = format;
-        }
-        break;
-      case PayloadType.STRING_ARRAY:
-        const list = (policyPayload as RequiredColumnsPolicyPayload).list;
-        if (Array.isArray(list)) {
-          obj[key].value = list;
-        }
-        break;
-    }
+      switch (val.type) {
+        case PayloadType.STRING:
+        case PayloadType.TEMPLATE:
+          const format = (policyRule as NamingFormatRuleType).format;
+          if (typeof format === "string") {
+            obj[key].value = format;
+          }
+          break;
+        case PayloadType.STRING_ARRAY:
+          const list = (policyRule as RequiredColumnRuleType).columnList;
+          if (Array.isArray(list)) {
+            obj[key].value = list;
+          }
+          break;
+      }
 
-    return obj;
-  }, {} as RulePayload);
+      return obj;
+    },
+    {} as RulePayload
+  );
+
+  return {
+    ...ruleTemplate,
+    level: policyRule.level,
+    payload,
+  };
 };
 
-export const convertRulePayloadToPolicyPayload = (
-  payload: RulePayload | undefined
-): PolicyPayload | undefined => {
-  if (!payload) {
-    return;
+export const convertRuleTemplateToPolicyRule = (
+  rule: RuleTemplate
+): PolicyRule => {
+  const base: BasePolicyRuleType = {
+    id: rule.id,
+    level: rule.level,
+  };
+  if (!rule.payload) {
+    return base;
   }
-  if ("format" in payload) {
+
+  if ("format" in rule.payload) {
     return {
-      format: payload.format.value ?? payload.format.default,
-    } as NamingFormatPolicyPayload;
-  } else if ("list" in payload) {
+      ...base,
+      format: rule.payload.format.value ?? rule.payload.format.default,
+    } as NamingFormatRuleType;
+  } else if ("list" in rule.payload) {
     return {
-      list: payload.list.value ?? payload.list.default,
-    } as RequiredColumnsPolicyPayload;
+      ...base,
+      columnList: rule.payload.list.value ?? rule.payload.list.default,
+    } as RequiredColumnRuleType;
+  } else {
+    return base;
   }
 };

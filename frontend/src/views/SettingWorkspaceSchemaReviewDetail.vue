@@ -144,15 +144,16 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
 import {
+  RuleId,
   LEVEL_LIST,
   RuleLevel,
-  SchemaRule,
+  RuleTemplate,
   DatabaseSchemaReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
   ruleList,
   Environment,
-  convertPolicyPayloadToRulePayload,
+  convertPolicyRuleToRuleTemplate,
 } from "../types";
 import {
   useCurrentUser,
@@ -215,32 +216,28 @@ const environmentList = computed((): Environment[] => {
 const ruleMap = ruleList.reduce((map, rule) => {
   map.set(rule.id, rule);
   return map;
-}, new Map<string, SchemaRule>());
+}, new Map<RuleId, RuleTemplate>());
 
-const selectedRuleList = computed((): SchemaRule[] => {
+const selectedRuleList = computed((): RuleTemplate[] => {
   if (!review.value) {
     return [];
   }
 
-  const res: SchemaRule[] = [];
+  const ruleTemplateList: RuleTemplate[] = [];
 
-  for (const selectedRule of review.value.ruleList) {
-    const rule = ruleMap.get(selectedRule.id);
+  for (const policyRule of review.value.ruleList) {
+    const rule = ruleMap.get(policyRule.id);
     if (!rule) {
       continue;
     }
 
-    res.push({
-      ...rule,
-      level: selectedRule.level,
-      payload: convertPolicyPayloadToRulePayload(
-        selectedRule.payload,
-        rule.payload
-      ),
-    });
+    const data = convertPolicyRuleToRuleTemplate(policyRule, rule);
+    if (data) {
+      ruleTemplateList.push(data);
+    }
   }
 
-  return res;
+  return ruleTemplateList;
 });
 
 const engineList = computed(
@@ -306,7 +303,7 @@ const selectCategory = (category: string) => {
   }
 };
 
-const filteredSelectedRuleList = computed((): SchemaRule[] => {
+const filteredSelectedRuleList = computed((): RuleTemplate[] => {
   return selectedRuleList.value.filter((selectedRule) => {
     if (
       !state.selectedCategory &&

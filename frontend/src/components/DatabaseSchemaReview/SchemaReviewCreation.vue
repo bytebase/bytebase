@@ -75,10 +75,10 @@ import { BBStepTabItem } from "../../bbkit/types";
 import {
   ruleList,
   RuleLevel,
-  SchemaRule,
+  RuleTemplate,
   Environment,
   SchemaReviewTemplate,
-  convertRulePayloadToPolicyPayload,
+  convertRuleTemplateToPolicyRule,
 } from "../../types";
 import {
   useCurrentUser,
@@ -92,7 +92,7 @@ interface LocalState {
   currentStep: number;
   name: string;
   selectedEnvironmentList: Environment[];
-  selectedRuleList: SchemaRule[];
+  selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
   templateIndex: number;
@@ -104,7 +104,7 @@ const props = withDefaults(
     reviewId?: number;
     name?: string;
     selectedEnvironmentList?: Environment[];
-    selectedRuleList?: SchemaRule[];
+    selectedRuleList?: RuleTemplate[];
   }>(),
   {
     reviewId: undefined,
@@ -128,7 +128,7 @@ const hasPermission = computed(() => {
 const getRuleListWithLevel = (
   idList: string[],
   level: RuleLevel
-): SchemaRule[] => {
+): RuleTemplate[] => {
   return idList.reduce((res, id) => {
     const rule = ruleList.find((r) => r.id === id);
     if (!rule) {
@@ -139,7 +139,7 @@ const getRuleListWithLevel = (
       level,
     });
     return res;
-  }, [] as SchemaRule[]);
+  }, [] as RuleTemplate[]);
 };
 
 // TODO: i18n
@@ -282,11 +282,9 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   const review = {
     name: state.name,
     environmentIdList: state.selectedEnvironmentList.map((env) => env.id),
-    ruleList: state.selectedRuleList.map((rule) => ({
-      id: rule.id,
-      level: rule.level,
-      payload: convertRulePayloadToPolicyPayload(rule.payload),
-    })),
+    ruleList: state.selectedRuleList.map((rule) =>
+      convertRuleTemplateToPolicyRule(rule)
+    ),
   };
 
   if (props.reviewId) {
@@ -338,7 +336,7 @@ const tryApplyTemplate = (index: number) => {
   onTemplateApply(index);
 };
 
-const onRuleChange = (rule: SchemaRule) => {
+const onRuleChange = (rule: RuleTemplate) => {
   const index = state.selectedRuleList.findIndex((r) => r.id === rule.id);
   state.selectedRuleList = [
     ...state.selectedRuleList.slice(0, index),

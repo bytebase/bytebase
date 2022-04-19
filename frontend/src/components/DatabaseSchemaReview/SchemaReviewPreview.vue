@@ -109,14 +109,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { SchemaRule, convertToCategoryList, Environment } from "../../types";
+import { RuleTemplate, convertToCategoryList, Environment } from "../../types";
 import { environmentName } from "../../utils";
 
 const props = withDefaults(
   defineProps<{
     name?: string;
     selectedEnvironmentList?: Environment[];
-    selectedRuleList?: SchemaRule[];
+    selectedRuleList?: RuleTemplate[];
   }>(),
   {
     name: "",

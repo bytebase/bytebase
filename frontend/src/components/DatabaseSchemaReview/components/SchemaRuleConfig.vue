@@ -103,7 +103,7 @@
 import { reactive, PropType, watch } from "vue";
 import {
   LEVEL_LIST,
-  SchemaRule,
+  RuleTemplate,
   RulePayload,
 } from "../../../types/schemaSystem";
 
@@ -125,7 +125,7 @@ const initStatePayload = (
 const props = defineProps({
   selectedRule: {
     required: true,
-    type: Object as PropType<SchemaRule>,
+    type: Object as PropType<RuleTemplate>,
   },
   active: {
     require: true,

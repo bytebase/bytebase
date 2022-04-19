@@ -48,7 +48,7 @@
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import {
-  SchemaRule,
+  RuleTemplate,
   RuleLevel,
   SchemaReviewTemplate,
 } from "../../types/schemaSystem";
@@ -61,7 +61,7 @@ interface LocalState {
 const props = defineProps({
   selectRuleList: {
     required: true,
-    type: Object as PropType<SchemaRule[]>,
+    type: Object as PropType<RuleTemplate[]>,
   },
   templateList: {
     required: true,
@@ -97,7 +97,7 @@ const onRuleActivate = (id: string) => {
   }
 };
 
-const onPayloadChange = (rule: SchemaRule, data: { [val: string]: any }) => {
+const onPayloadChange = (rule: RuleTemplate, data: { [val: string]: any }) => {
   if (!rule.payload) {
     return;
   }
@@ -114,7 +114,7 @@ const onPayloadChange = (rule: SchemaRule, data: { [val: string]: any }) => {
   emit("change", newRule);
 };
 
-const onLevelChange = (rule: SchemaRule, level: RuleLevel) => {
+const onLevelChange = (rule: RuleTemplate, level: RuleLevel) => {
   emit("change", {
     ...rule,
     level,
