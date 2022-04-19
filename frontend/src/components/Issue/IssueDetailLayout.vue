@@ -161,19 +161,22 @@
                 <!--
                   For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
                   has a SQL statement.
-                  So we display the first task's SQL statement what ever the selectedTaskId is
-                  TBD: When the other two tasks are selected we should show the SQL which will be internally
+                  TODO(jim): When the other two tasks are selected we should show the SQL which will be internally
                   executed (change table name and drop table).
                 -->
-                <IssueTaskStatementPanel
-                  :sql-hint="sqlHint()"
-                  :statement="selectedStatement"
-                  :create="create"
-                  :allow-edit="allowEditStatement"
-                  :show-apply-statement="showIssueTaskStatementApply"
-                  @update-statement="updateStatement"
-                  @apply-statement-to-other-stages="applyStatementToOtherStages"
-                />
+                <template v-if="isGhostSyncTaskSelected">
+                  <IssueTaskStatementPanel
+                    :sql-hint="sqlHint()"
+                    :statement="selectedStatement"
+                    :create="create"
+                    :allow-edit="allowEditStatement"
+                    :show-apply-statement="showIssueTaskStatementApply"
+                    @update-statement="updateStatement"
+                    @apply-statement-to-other-stages="
+                      applyStatementToOtherStages
+                    "
+                  />
+                </template>
               </template>
               <template v-else>
                 <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
@@ -769,6 +772,10 @@ export default defineComponent({
           );
         case "bb.task.database.restore":
           return "";
+        case "bb.task.database.schema.update.ghost.sync":
+        case "bb.task.database.schema.update.ghost.cutover":
+        case "bb.task.database.schema.update.ghost.drop-original-table":
+          return ""; // should never reach here
       }
     };
 
@@ -786,8 +793,15 @@ export default defineComponent({
       return props.issue.type === "bb.issue.database.schema.update.ghost";
     });
 
+    const isGhostSyncTaskSelected = computed((): boolean => {
+      return (
+        selectedTask.value.type === "bb.task.database.schema.update.ghost.sync"
+      );
+    });
+
     const selectedStatement = computed((): string => {
       if (isTenantDeployMode.value) {
+        // In tenant mode, the entire issue shares an only SQL statement
         if (props.create) {
           const issueCreate = props.issue as IssueCreate;
           const context = issueCreate.createContext as UpdateSchemaContext;
@@ -799,16 +813,19 @@ export default defineComponent({
           return payload.statement;
         }
       } else if (isGhostMode.value) {
-        if (props.create) {
-          const issueCreate = props.issue as IssueCreate;
-          const context = issueCreate.createContext as UpdateSchemaContext;
-          return context.updateSchemaDetailList[0].statement;
+        // In gh-ost mode, each stage can own its SQL statement
+        // But only for task.type === "bb.issue.database.schema.update.ghost"
+        const task = selectedTask.value;
+        if (task.type === "bb.task.database.schema.update.ghost.sync") {
+          if (props.create) {
+            return (task as TaskCreate).statement;
+          } else {
+            const payload = (task as Task)
+              .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
+            return payload.statement;
+          }
         } else {
-          const stage = selectedStage.value as Stage;
-          const task = stage.taskList[0];
-          const payload =
-            task.payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-          return payload.statement;
+          return "";
         }
       } else {
         if (router.currentRoute.value.query.sql) {
@@ -927,15 +944,12 @@ export default defineComponent({
     });
 
     const showIssueTaskStatementPanel = computed(() => {
-      if (props.issue.type === "bb.issue.database.schema.update.ghost") {
-        return true;
-      }
-
       const task = selectedTask.value;
       return (
         task.type == "bb.task.general" ||
         task.type == "bb.task.database.create" ||
         task.type == "bb.task.database.schema.update" ||
+        task.type == "bb.task.database.schema.update.ghost.sync" ||
         task.type == "bb.task.database.data.update"
       );
     });
@@ -1037,6 +1051,7 @@ export default defineComponent({
       project,
       isTenantDeployMode,
       isGhostMode,
+      isGhostSyncTaskSelected,
       issueTemplate,
       selectedStage,
       selectedTask,
