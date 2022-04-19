@@ -114,6 +114,9 @@ export type Task = {
   // Tasks like creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
+
+  // Task DAG
+  blockedBy: Task[];
 };
 
 export type TaskCreate = {
