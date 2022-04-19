@@ -1372,23 +1372,21 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
+engine:
+  mysql: MySQL
+  common: Common
 schema-review-policy:
   title: Schema Review
-  no-rule-set: No schema review policy
-  get-start: Get started by configure the schema rules.
+  no-policy-set: No schema review policy
   add-review: Add review policy
   search-rule-name: Search rule name
   remove-review: Successfully removed the review policy.
   create-review: Successfully created the review policy.
   update-review: Successfully updated the review policy.
   filter: Filter
-  database: Database
   delete: Delete this schema review policy
   no-permission: Only DBA or Owner has permission to create or update review policy.
   delete-attention: To delete this review policy, unlink all environments first.
-  engine:
-    mysql: MySQL
-    common: Common
   category:
     engine: Engine
     naming: Naming
@@ -1401,25 +1399,22 @@ schema-review-policy:
     warning: Warning
     disabled: Disabled
   create:
-    breadcrumb: Create review
+    breadcrumb: Create schema review policy
     basic-info:
       name: Basic info
       display-name: Display name
       display-name-default: Schema review policy
       display-name-label: >-
-        An display name to help identifying among different reviews.
+        A display name to help identifying among different review policies.
       environments: Environments
-      environments-label: Apply the review to selected environments. One environment can only has one review.
+      environments-label: Apply the review policy to the selected environments. One environment can only link one policy.
       environments-select: Select environments
-      no-selected-environments: No environments applied
-      no-available-environment: No available environments
-      no-available-environment-desc: No available environment. One environment can only has one schema review policy.
+      no-linked-environments: No linked environment
+      no-available-environment: No available environment
+      no-available-environment-desc: No available environment. One environment can only link one schema review policy.
       choose-template: Choose template
     configure-rule:
       name: Configure rule
-      add-rule: Add rule
-      select-rule: Select rule
-      from-template: You can add rules from a template
       change-template: Change the template
       confirm-override-title: Confirm change
       confirm-override-description: Your rules will be overridden

@@ -16,11 +16,7 @@
             {{ selectedRule.id }}
           </h1>
           <BBBadge
-            :text="
-              $t(
-                `schema-review-policy.engine.${selectedRule.engine.toLowerCase()}`
-              )
-            "
+            :text="$t(`engine.${selectedRule.engine.toLowerCase()}`)"
             :can-remove="false"
           />
           <SchemaRuleLevelBadge :level="selectedRule.level" />

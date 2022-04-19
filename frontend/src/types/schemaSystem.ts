@@ -55,10 +55,6 @@ export interface SchemaRule {
   level: RuleLevel;
 }
 
-// export interface SelectedRule extends SchemaRule {
-//   level: RuleLevel;
-// }
-
 // rule payload
 interface NamingFormatPolicyPayload {
   format: string;
@@ -75,56 +71,6 @@ interface DatabaseSchemaRule {
   level: RuleLevel;
   payload?: PolicyPayload;
 }
-
-export const convertPolicyPayloadToRulePayload = (
-  policyPayload: PolicyPayload | undefined,
-  rulePayload: RulePayload | undefined
-): RulePayload | undefined => {
-  if (!policyPayload || !rulePayload) {
-    return;
-  }
-
-  return Object.entries(rulePayload).reduce((obj, [key, val]) => {
-    obj[key] = {
-      ...val,
-    };
-
-    switch (val.type) {
-      case PayloadType.STRING:
-      case PayloadType.TEMPLATE:
-        const format = (policyPayload as NamingFormatPolicyPayload).format;
-        if (typeof format === "string") {
-          obj[key].value = format;
-        }
-        break;
-      case PayloadType.STRING_ARRAY:
-        const list = (policyPayload as RequiredColumnsPolicyPayload).list;
-        if (Array.isArray(list)) {
-          obj[key].value = list;
-        }
-        break;
-    }
-
-    return obj;
-  }, {} as RulePayload);
-};
-
-export const convertRulePayloadToPolicyPayload = (
-  payload: RulePayload | undefined
-): PolicyPayload | undefined => {
-  if (!payload) {
-    return;
-  }
-  if ("format" in payload) {
-    return {
-      format: payload.format.value ?? payload.format.default,
-    } as NamingFormatPolicyPayload;
-  } else if ("list" in payload) {
-    return {
-      list: payload.list.value ?? payload.list.default,
-    } as RequiredColumnsPolicyPayload;
-  }
-};
 
 export interface DatabaseSchemaReviewPolicy {
   id: SchemaReviewPolicyId;
@@ -160,6 +106,12 @@ interface RuleCategory {
   ruleList: SchemaRule[];
 }
 
+export interface SchemaReviewTemplate {
+  name: string;
+  imagePath: string;
+  ruleList: SchemaRule[];
+}
+
 const categoryOrder: Map<CategoryType, number> = new Map([
   ["ENGINE", 5],
   ["NAMING", 4],
@@ -189,12 +141,6 @@ export const convertToCategoryList = (
       (categoryOrder.get(c1.id as CategoryType) || 0)
   );
 };
-
-export interface SchemaReviewTemplate {
-  name: string;
-  imagePath: string;
-  ruleList: SchemaRule[];
-}
 
 // TODO: i18n
 export const ruleList: SchemaRule[] = [
@@ -356,3 +302,53 @@ export const ruleList: SchemaRule[] = [
     level: RuleLevel.ERROR,
   },
 ];
+
+export const convertPolicyPayloadToRulePayload = (
+  policyPayload: PolicyPayload | undefined,
+  rulePayload: RulePayload | undefined
+): RulePayload | undefined => {
+  if (!policyPayload || !rulePayload) {
+    return;
+  }
+
+  return Object.entries(rulePayload).reduce((obj, [key, val]) => {
+    obj[key] = {
+      ...val,
+    };
+
+    switch (val.type) {
+      case PayloadType.STRING:
+      case PayloadType.TEMPLATE:
+        const format = (policyPayload as NamingFormatPolicyPayload).format;
+        if (typeof format === "string") {
+          obj[key].value = format;
+        }
+        break;
+      case PayloadType.STRING_ARRAY:
+        const list = (policyPayload as RequiredColumnsPolicyPayload).list;
+        if (Array.isArray(list)) {
+          obj[key].value = list;
+        }
+        break;
+    }
+
+    return obj;
+  }, {} as RulePayload);
+};
+
+export const convertRulePayloadToPolicyPayload = (
+  payload: RulePayload | undefined
+): PolicyPayload | undefined => {
+  if (!payload) {
+    return;
+  }
+  if ("format" in payload) {
+    return {
+      format: payload.format.value ?? payload.format.default,
+    } as NamingFormatPolicyPayload;
+  } else if ("list" in payload) {
+    return {
+      list: payload.list.value ?? payload.list.default,
+    } as RequiredColumnsPolicyPayload;
+  }
+};

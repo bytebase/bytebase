@@ -6,11 +6,8 @@
       <div class="text-center flex flex-col justify-center items-center">
         <img src="../../assets/illustration/no-data.webp" class="w-52" />
         <h3 class="mt-2 font-medium text-gray-900">
-          {{ $t("schema-review-policy.no-rule-set") }}
+          {{ $t("schema-review-policy.no-policy-set") }}
         </h3>
-        <p class="mt-1 text-sm text-gray-500">
-          {{ $t("schema-review-policy.get-start") }}
-        </p>
         <div class="mt-6">
           <button
             type="button"

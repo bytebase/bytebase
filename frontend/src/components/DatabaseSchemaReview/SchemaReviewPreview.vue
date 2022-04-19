@@ -62,9 +62,7 @@
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
               <BBBadge
-                :text="
-                  $t(`schema-review-policy.engine.${rule.engine.toLowerCase()}`)
-                "
+                :text="$t(`engine.${rule.engine.toLowerCase()}`)"
                 :can-remove="false"
               />
             </div>

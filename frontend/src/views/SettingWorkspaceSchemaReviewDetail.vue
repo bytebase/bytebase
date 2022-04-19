@@ -40,7 +40,7 @@
         :style="`WARN`"
         :title="$t('common.environments')"
         :description="
-          $t('schema-review-policy.create.basic-info.no-selected-environments')
+          $t('schema-review-policy.create.basic-info.no-linked-environments')
         "
       />
       <div class="space-y-2 my-5">
@@ -48,7 +48,7 @@
           $t("schema-review-policy.filter")
         }}</span>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schema-review-policy.database") }}:</span>
+          <span>{{ $t("common.database") }}:</span>
           <div
             v-for="engine in engineList"
             :key="engine.id"
@@ -66,7 +66,7 @@
               :for="engine.id"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`schema-review-policy.engine.${engine.id.toLowerCase()}`) }}
+              {{ $t(`engine.${engine.id.toLowerCase()}`) }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >

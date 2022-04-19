@@ -1205,23 +1205,21 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
+engine:
+  mysql: MySQL
+  common: 通用
 schema-review-policy:
   title: Schema 审查策略
-  no-rule-set: 没有 schema 审查策略
-  get-start: 配置规则来开启 schema 审查策略
+  no-policy-set: 没有 schema 审查策略
   add-review: 新增审查策略
   search-rule-name: 搜索规则名称
   remove-review: 审查策略已删除
   create-review: 审查策略已创建
   update-review: 审查策略已更新
   filter: 筛选
-  database: 数据库
   delete: 删除该 schema 审查策略
   no-permission: 仅 DBA 或所有者有权限创建或更新审查策略。
   delete-attention: 删除审查前，需要先解除所有环境的关联。
-  engine:
-    mysql: MySQL
-    common: 通用
   category:
     engine: 引擎
     naming: 命名
@@ -1234,7 +1232,7 @@ schema-review-policy:
     warning: 警告
     disabled: 禁用
   create:
-    breadcrumb: 创建审查
+    breadcrumb: 创建审查策略
     basic-info:
       name: 基本信息
       display-name: 名称
@@ -1243,15 +1241,12 @@ schema-review-policy:
       environments: 环境
       environments-label: 将该审查应用于哪些环境。一个环境只能配置一个审查。
       environments-select: 选择环境
-      no-selected-environments: 没有选择环境
+      no-linked-environments: 没有选择环境
       no-available-environment: 没有可供选择的环境
       no-available-environment-desc: 没有可供选择的环境。一个环境仅能创建一个审查。
       choose-template: 选择模板
     configure-rule:
       name: 配置规则
-      add-rule: 增加规则
-      select-rule: 选择规则
-      from-template: 你可以通过模板来添加规则
       change-template: 更改模板
       confirm-override-title: 规则变更
       confirm-override-description: 之前的规则将会被覆盖
