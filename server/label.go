@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,11 +11,9 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ()
-
 func (s *Server) registerLabelRoutes(g *echo.Group) {
 	g.GET("/label", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		rowStatus := api.Normal
 		find := &api.LabelKeyFind{
 			RowStatus: &rowStatus,
@@ -50,7 +47,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/label/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("id is not a number: %s", c.Param("id"))).SetInternal(err)
