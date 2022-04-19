@@ -13,20 +13,38 @@ import SplashLayout from "../layouts/SplashLayout.vue";
 import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import {
-  store,
   useAuthStore,
+  useDatabaseStore,
   useEnvironmentStore,
+  useInstanceStore,
+  useIssueStore,
   usePrincipalStore,
   useRouterStore,
 } from "../store";
-import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
+import {
+  Database,
+  QuickActionType,
+  Sheet,
+  UNKNOWN_ID,
+  SheetId,
+} from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore, hasFeature, useVCSStore } from "@/store";
+import {
+  useTabStore,
+  hasFeature,
+  useVCSStore,
+  useProjectWebhookStore,
+  useDataSourceStore,
+  useProjectStore,
+  useTableStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -35,6 +53,8 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
+
+// console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -461,7 +481,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = store.getters["project/projectById"](
+                const project = useProjectStore().getProjectById(
                   idFromSlug(slug)
                 );
 
@@ -504,9 +524,8 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
-                    return store.getters["project/projectById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useProjectStore().getProjectById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -531,7 +550,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     return `${t("common.webhook")} - ${
-                      store.getters["projectWebhook/projectWebhookById"](
+                      useProjectWebhookStore().projectWebhookById(
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
@@ -621,18 +640,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/grant",
-            name: "workspace.database.grant",
-            meta: {
-              title: () => t("datasource.grant-database"),
-            },
-            components: {
-              content: () => import("../views/DatabaseGrant.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
@@ -649,9 +656,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["database/databaseById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useDatabaseStore().getDatabaseById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -671,34 +677,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "datasource/:dataSourceSlug",
-                name: "workspace.database.datasource.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.dataSourceSlug as string;
-                    if (slug.toLowerCase() == "new") {
-                      return t("common.new");
-                    }
-                    return `${t("common.data-source")} - ${
-                      store.getters["dataSource/dataSourceById"](
-                        idFromSlug(slug)
-                      ).name
-                    }`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DataSourceDetail.vue"),
-                props: true,
-              },
-              {
                 path: "history/:migrationHistorySlug",
                 name: "workspace.database.history.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return store.getters["instance/migrationHistoryById"](
+                    return useInstanceStore().getMigrationHistoryById(
                       idFromSlug(slug)
-                    ).version;
+                    )?.version;
                   },
                   allowBookmark: true,
                 },
@@ -724,9 +710,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["instance/instanceById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useInstanceStore().getInstanceById(idFromSlug(slug))
+                      .name;
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
@@ -743,7 +728,8 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return t("common.new");
                 }
-                return store.getters["issue/issueById"](idFromSlug(slug)).name;
+                const issue = useIssueStore().getIssueById(idFromSlug(slug));
+                return issue.name;
               },
               allowBookmark: true,
             },
@@ -804,9 +790,14 @@ export const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
   const authStore = useAuthStore();
+  const databaseStore = useDatabaseStore();
   const environmentStore = useEnvironmentStore();
+  const instanceStore = useInstanceStore();
+  const issueStore = useIssueStore();
   const tabStore = useTabStore();
   const routerStore = useRouterStore();
+  const projectWebhookStore = useProjectWebhookStore();
+  const projectStore = useProjectStore();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -974,14 +965,14 @@ router.beforeEach((to, from, next) => {
   }
 
   if (projectSlug) {
-    store
-      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
+    projectStore
+      .fetchProjectById(idFromSlug(projectSlug))
       .then(() => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          store
-            .dispatch("projectWebhook/fetchProjectWebhookById", {
+          projectWebhookStore
+            .fetchProjectWebhookById({
               projectId: idFromSlug(projectSlug),
               projectWebhookId: idFromSlug(projectWebhookSlug),
             })
@@ -1010,16 +1001,29 @@ router.beforeEach((to, from, next) => {
   if (issueSlug) {
     if (issueSlug.toLowerCase() == "new") {
       // For preparing the database if user visits creating issue url directly.
+      const requests: Promise<any>[] = [];
       if (to.query.databaseList) {
         for (const databaseId of (to.query.databaseList as string).split(",")) {
-          store.dispatch("database/fetchDatabaseById", { databaseId });
+          requests.push(
+            databaseStore.fetchDatabaseById(parseInt(databaseId, 10))
+          );
         }
       }
-      next();
+      Promise.all(requests)
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
       return;
     }
-    store
-      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+    issueStore
+      .fetchIssueById(idFromSlug(issueSlug))
       .then(() => {
         next();
       })
@@ -1038,16 +1042,14 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    store
-      .dispatch("database/fetchDatabaseById", {
-        databaseId: idFromSlug(databaseSlug),
-      })
+    databaseStore
+      .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
         if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();
         } else if (tableName) {
-          store
-            .dispatch("table/fetchTableByDatabaseIdAndTableName", {
+          useTableStore()
+            .fetchTableByDatabaseIdAndTableName({
               databaseId: database.id,
               tableName,
             })
@@ -1062,8 +1064,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (dataSourceSlug) {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
+          useDataSourceStore()
+            .fetchDataSourceById({
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
             })
@@ -1078,8 +1080,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (migrationHistorySlug) {
-          store
-            .dispatch("instance/fetchMigrationHistoryById", {
+          instanceStore
+            .fetchMigrationHistoryById({
               instanceId: database.instance.id,
               migrationHistoryId: idFromSlug(migrationHistorySlug),
             })
@@ -1106,8 +1108,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    store
-      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
+    instanceStore
+      .fetchInstanceById(idFromSlug(instanceSlug))
       .then(() => {
         next();
       })
@@ -1139,8 +1141,8 @@ router.beforeEach((to, from, next) => {
 
   if (connectionSlug) {
     const [, instanceId, , databaseId] = connectionSlug.split("_");
-    store
-      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
+    useSQLEditorStore()
+      .fetchConnectionByInstanceIdAndDatabaseId({
         instanceId: Number(instanceId),
         databaseId: Number(databaseId),
       })
@@ -1148,8 +1150,8 @@ router.beforeEach((to, from, next) => {
         // for sharing the sheet to others
         if (sheetSlug) {
           const [_, sheetId] = sheetSlug.split("_");
-          store
-            .dispatch("sheet/fetchSheetById", sheetId)
+          useSheetStore()
+            .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
               tabStore.addTab({
                 name: sheet.name,
@@ -1159,7 +1161,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              store.dispatch("sqlEditor/setSqlEditorState", {
+              useSQLEditorStore().setSqlEditorState({
                 sharedSheet: sheet,
               });
 

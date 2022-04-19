@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   Anomaly,
@@ -19,14 +20,17 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia-modules/principal";
-import { useBackupStore, useAnomalyStore } from "@/store";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useAnomalyStore } from "./anomaly";
+import { useBackupStore } from "./backup";
+import { useDataSourceStore } from "./dataSource";
+import { useInstanceStore } from "./instance";
+import { useProjectStore } from "./project";
 
 function convert(
   database: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Database {
   // We first populate the id for instance, project and dataSourceList.
   // And if we also provide the detail info for those objects in the includedList,
@@ -65,15 +69,18 @@ function convert(
     anomalyList.push(anomaly);
   }
 
+  const instanceStore = useInstanceStore();
+  const projectStore = useProjectStore();
+  const backupStore = useBackupStore();
   for (const item of includedList || []) {
     if (item.type == "instance" && item.id == instanceId) {
-      instance = rootGetters["instance/convert"](item, includedList);
+      instance = instanceStore.convert(item, includedList);
     }
     if (item.type == "project" && item.id == projectId) {
-      project = rootGetters["project/convert"](item, includedList);
+      project = projectStore.convert(item, includedList);
     }
     if (item.type == "backup" && item.id == sourceBackupId) {
-      sourceBackup = useBackupStore().convert(item, includedList);
+      sourceBackup = backupStore.convert(item, includedList);
     }
   }
 
@@ -136,7 +143,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = useDataSourceStore().convert(item);
         dataSourceList[i].instanceId = instance.id;
         dataSourceList[i].databaseId = databaseWPartial.id;
       }
@@ -182,29 +189,24 @@ const databaseSorter = (a: Database, b: Database): number => {
   return a.name.localeCompare(b.name);
 };
 
-const state: () => DatabaseState = () => ({
-  databaseListByInstanceId: new Map(),
-  databaseListByProjectId: new Map(),
-});
-
-const getters = {
-  convert:
-    (state: DatabaseState, getters: any, rootState: any, rootGetters: any) =>
-    (database: ResourceObject, inlcudedList: ResourceObject[]): Database => {
-      return convert(database, inlcudedList, rootGetters);
+export const useDatabaseStore = defineStore("database", {
+  state: (): DatabaseState => ({
+    databaseListByInstanceId: new Map(),
+    databaseListByProjectId: new Map(),
+  }),
+  actions: {
+    convert(
+      database: ResourceObject,
+      includedList: ResourceObject[]
+    ): Database {
+      return convert(database, includedList);
     },
-
-  databaseListByInstanceId:
-    (state: DatabaseState) =>
-    (instanceId: InstanceId): Database[] => {
-      return state.databaseListByInstanceId.get(instanceId) || [];
+    getDatabaseListByInstanceId(instanceId: InstanceId): Database[] {
+      return this.databaseListByInstanceId.get(instanceId) || [];
     },
-
-  databaseListByPrincipalId:
-    (state: DatabaseState) =>
-    (userId: PrincipalId): Database[] => {
+    getDatabaseListByPrincipalId(userId: PrincipalId): Database[] {
       const list: Database[] = [];
-      for (const [_, databaseList] of state.databaseListByInstanceId) {
+      for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
           for (const member of item.project.memberList) {
             if (member.principal.id == userId) {
@@ -216,12 +218,9 @@ const getters = {
       }
       return list;
     },
-
-  databaseListByEnvironmentId:
-    (state: DatabaseState) =>
-    (environmentId: EnvironmentId): Database[] => {
+    getDatabaseListByEnvironmentId(environmentId: EnvironmentId): Database[] {
       const list: Database[] = [];
-      for (const [_, databaseList] of state.databaseListByInstanceId) {
+      for (const [_, databaseList] of this.databaseListByInstanceId) {
         databaseList.forEach((item: Database) => {
           if (item.instance.environment.id == environmentId) {
             list.push(item);
@@ -230,29 +229,23 @@ const getters = {
       }
       return list;
     },
-
-  databaseListByProjectId:
-    (state: DatabaseState) =>
-    (projectId: ProjectId): Database[] => {
-      return state.databaseListByProjectId.get(projectId) || [];
+    getDatabaseListByProjectId(projectId: ProjectId): Database[] {
+      return this.databaseListByProjectId.get(projectId) || [];
     },
-
-  databaseById:
-    (state: DatabaseState) =>
-    (databaseId: DatabaseId, instanceId?: InstanceId): Database => {
+    getDatabaseById(databaseId: DatabaseId, instanceId?: InstanceId): Database {
       if (databaseId == EMPTY_ID) {
         return empty("DATABASE") as Database;
       }
 
       if (instanceId) {
-        const list = state.databaseListByInstanceId.get(instanceId) || [];
+        const list = this.databaseListByInstanceId.get(instanceId) || [];
         return (
           list.find((item) => item.id == databaseId) ||
           (unknown("DATABASE") as Database)
         );
       }
 
-      for (const [_, list] of state.databaseListByInstanceId) {
+      for (const [_, list] of this.databaseListByInstanceId) {
         const database = list.find((item) => item.id == databaseId);
         if (database) {
           return database;
@@ -261,124 +254,160 @@ const getters = {
 
       return unknown("DATABASE") as Database;
     },
-};
+    setDatabaseListByProjectId({
+      databaseList,
+      projectId,
+    }: {
+      databaseList: Database[];
+      projectId: ProjectId;
+    }) {
+      this.databaseListByProjectId.set(projectId, databaseList);
+    },
+    upsertDatabaseList({
+      databaseList,
+      instanceId,
+    }: {
+      databaseList: Database[];
+      instanceId?: InstanceId;
+    }) {
+      if (instanceId) {
+        this.databaseListByInstanceId.set(instanceId, databaseList);
+      } else {
+        for (const database of databaseList) {
+          const listByInstance = this.databaseListByInstanceId.get(
+            database.instance.id
+          );
+          if (listByInstance) {
+            const i = listByInstance.findIndex(
+              (item: Database) => item.id == database.id
+            );
+            if (i != -1) {
+              listByInstance[i] = database;
+            } else {
+              listByInstance.push(database);
+            }
+          } else {
+            this.databaseListByInstanceId.set(database.instance.id, [database]);
+          }
 
-const actions = {
-  async fetchDatabaseListByInstanceId(
-    { commit, rootGetters }: any,
-    instanceId: InstanceId
-  ) {
-    const data = (await axios.get(`/api/database?instance=${instanceId}`)).data;
-    const databaseList = data.data.map((database: ResourceObject) => {
-      return convert(database, data.included, rootGetters);
-    });
-    databaseList.sort(databaseSorter);
+          const listByProject = this.databaseListByProjectId.get(
+            database.project.id
+          );
+          if (listByProject) {
+            const i = listByProject.findIndex(
+              (item: Database) => item.id == database.id
+            );
+            if (i != -1) {
+              listByProject[i] = database;
+            } else {
+              listByProject.push(database);
+            }
+          } else {
+            this.databaseListByProjectId.set(database.project.id, [database]);
+          }
+        }
+      }
+    },
+    async fetchDatabaseListByInstanceId(instanceId: InstanceId) {
+      const data = (await axios.get(`/api/database?instance=${instanceId}`))
+        .data;
+      const databaseList: Database[] = data.data.map(
+        (database: ResourceObject) => {
+          return convert(database, data.included);
+        }
+      );
+      databaseList.sort(databaseSorter);
 
-    commit("upsertDatabaseList", { databaseList, instanceId });
+      this.upsertDatabaseList({ databaseList, instanceId });
 
-    return databaseList;
-  },
+      return databaseList;
+    },
+    async fetchDatabaseByInstanceIdAndName({
+      instanceId,
+      name,
+    }: {
+      instanceId: InstanceId;
+      name: string;
+    }) {
+      const data = (
+        await axios.get(`/api/database?instance=${instanceId}&name=${name}`)
+      ).data;
+      const database = data.data[0];
+      return convert(database, data.included);
+    },
+    async fetchDatabaseListByProjectId(projectId: ProjectId) {
+      const data = (await axios.get(`/api/database?project=${projectId}`)).data;
+      const databaseList: Database[] = data.data.map(
+        (database: ResourceObject) => {
+          return convert(database, data.included);
+        }
+      );
+      databaseList.sort(databaseSorter);
 
-  async fetchDatabaseByInstanceIdAndName(
-    { commit, rootGetters }: any,
-    { instanceId, name }: { instanceId: InstanceId; name: string }
-  ) {
-    const data = (
-      await axios.get(`/api/database?instance=${instanceId}&name=${name}`)
-    ).data;
-    const database = data.data[0];
-    return convert(database, data.included, rootGetters);
-  },
+      this.setDatabaseListByProjectId({ databaseList, projectId });
 
-  async fetchDatabaseListByProjectId(
-    { commit, rootGetters }: any,
-    projectId: ProjectId
-  ) {
-    const data = (await axios.get(`/api/database?project=${projectId}`)).data;
-    const databaseList = data.data.map((database: ResourceObject) => {
-      return convert(database, data.included, rootGetters);
-    });
-    databaseList.sort(databaseSorter);
+      return databaseList;
+    },
+    // Server uses the caller identity to fetch the database list related to the caller.
+    async fetchDatabaseList() {
+      const data = (await axios.get(`/api/database`)).data;
+      const databaseList: Database[] = data.data.map(
+        (database: ResourceObject) => {
+          return convert(database, data.included);
+        }
+      );
+      databaseList.sort(databaseSorter);
 
-    commit("setDatabaseListByProjectId", { databaseList, projectId });
+      this.upsertDatabaseList({ databaseList });
 
-    return databaseList;
-  },
+      return databaseList;
+    },
+    async fetchDatabaseListByEnvironmentId(environmentId: EnvironmentId) {
+      // Don't fetch the data source info as the current user may not have access to the
+      // database of this particular environment.
+      const data = (
+        await axios.get(`/api/database?environment=${environmentId}`)
+      ).data;
+      const databaseList: Database[] = data.data.map(
+        (database: ResourceObject) => {
+          return convert(database, data.included);
+        }
+      );
+      databaseList.sort(databaseSorter);
 
-  // Server uses the caller identity to fetch the database list related to the caller.
-  async fetchDatabaseList({ commit, rootGetters }: any) {
-    const data = (await axios.get(`/api/database`)).data;
-    const databaseList = data.data.map((database: ResourceObject) => {
-      return convert(database, data.included, rootGetters);
-    });
-    databaseList.sort(databaseSorter);
+      this.upsertDatabaseList({ databaseList });
 
-    commit("upsertDatabaseList", { databaseList });
+      return databaseList;
+    },
+    async fetchDatabaseById(databaseId: DatabaseId) {
+      const url = `/api/database/${databaseId}`;
+      const data = (await axios.get(url)).data;
+      const database = convert(data.data, data.included);
 
-    return databaseList;
-  },
+      this.upsertDatabaseList({
+        databaseList: [database],
+      });
 
-  async fetchDatabaseListByEnvironmentId(
-    { state, commit, rootGetters }: any,
-    environmentId: EnvironmentId
-  ) {
-    // Don't fetch the data source info as the current user may not have access to the
-    // database of this particular environment.
-    const data = (await axios.get(`/api/database?environment=${environmentId}`))
-      .data;
-    const databaseList = data.data.map((database: ResourceObject) => {
-      return convert(database, data.included, rootGetters);
-    });
-    databaseList.sort(databaseSorter);
+      return database;
+    },
+    async createDatabase(newDatabase: DatabaseCreate) {
+      const data = (
+        await axios.post(`/api/database`, {
+          data: {
+            type: "DatabaseCreate",
+            attributes: newDatabase,
+          },
+        })
+      ).data;
+      const createdDatabase: Database = convert(data.data, data.included);
 
-    commit("upsertDatabaseList", { databaseList });
+      this.upsertDatabaseList({
+        databaseList: [createdDatabase],
+      });
 
-    return databaseList;
-  },
-
-  async fetchDatabaseById(
-    { commit, rootGetters }: any,
-    { databaseId }: { databaseId: DatabaseId }
-  ) {
-    const url = `/api/database/${databaseId}`;
-    const data = (await axios.get(url)).data;
-    const database = convert(data.data, data.included, rootGetters);
-
-    commit("upsertDatabaseList", {
-      databaseList: [database],
-    });
-
-    return database;
-  },
-
-  async createDatabase(
-    { commit, rootGetters }: any,
-    newDatabase: DatabaseCreate
-  ) {
-    const data = (
-      await axios.post(`/api/database`, {
-        data: {
-          type: "DatabaseCreate",
-          attributes: newDatabase,
-        },
-      })
-    ).data;
-    const createdDatabase: Database = convert(
-      data.data,
-      data.included,
-      rootGetters
-    );
-
-    commit("upsertDatabaseList", {
-      databaseList: [createdDatabase],
-    });
-
-    return createdDatabase;
-  },
-
-  async transferProject(
-    { commit, rootGetters }: any,
-    {
+      return createdDatabase;
+    },
+    async transferProject({
       databaseId,
       projectId,
       labels,
@@ -386,127 +415,52 @@ const actions = {
       databaseId: DatabaseId;
       projectId: ProjectId;
       labels?: DatabaseLabel[];
-    }
-  ) {
-    const attributes: any = { projectId };
-    if (labels) {
-      attributes.labels = JSON.stringify(labels);
-    }
-    const data = (
-      await axios.patch(`/api/database/${databaseId}`, {
-        data: {
-          type: "databasePatch",
-          attributes,
-        },
-      })
-    ).data;
-    const updatedDatabase = convert(data.data, data.included, rootGetters);
+    }) {
+      const attributes: any = { projectId };
+      if (labels) {
+        attributes.labels = JSON.stringify(labels);
+      }
+      const data = (
+        await axios.patch(`/api/database/${databaseId}`, {
+          data: {
+            type: "databasePatch",
+            attributes,
+          },
+        })
+      ).data;
 
-    commit("upsertDatabaseList", {
-      databaseList: [updatedDatabase],
-    });
+      const updatedDatabase = convert(data.data, data.included);
 
-    return updatedDatabase;
-  },
+      this.upsertDatabaseList({
+        databaseList: [updatedDatabase],
+      });
 
-  async patchDatabaseLabels(
-    { commit, rootGetters }: any,
-    {
+      return updatedDatabase;
+    },
+    async patchDatabaseLabels({
       databaseId,
       labels,
     }: {
       databaseId: DatabaseId;
       labels: DatabaseLabel[];
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/database/${databaseId}`, {
-        data: {
-          type: "databasePatch",
-          attributes: {
-            labels: JSON.stringify(labels),
+    }) {
+      const data = (
+        await axios.patch(`/api/database/${databaseId}`, {
+          data: {
+            type: "databasePatch",
+            attributes: {
+              labels: JSON.stringify(labels),
+            },
           },
-        },
-      })
-    ).data;
-    const updatedDatabase = convert(data.data, data.included, rootGetters);
+        })
+      ).data;
+      const updatedDatabase = convert(data.data, data.included);
 
-    commit("upsertDatabaseList", {
-      databaseList: [updatedDatabase],
-    });
+      this.upsertDatabaseList({
+        databaseList: [updatedDatabase],
+      });
 
-    return updatedDatabase;
+      return updatedDatabase;
+    },
   },
-};
-
-const mutations = {
-  setDatabaseListByProjectId(
-    state: DatabaseState,
-    {
-      databaseList,
-      projectId,
-    }: {
-      databaseList: Database[];
-      projectId: ProjectId;
-    }
-  ) {
-    state.databaseListByProjectId.set(projectId, databaseList);
-  },
-
-  upsertDatabaseList(
-    state: DatabaseState,
-    {
-      databaseList,
-      instanceId,
-    }: {
-      databaseList: Database[];
-      instanceId?: InstanceId;
-    }
-  ) {
-    if (instanceId) {
-      state.databaseListByInstanceId.set(instanceId, databaseList);
-    } else {
-      for (const database of databaseList) {
-        const listByInstance = state.databaseListByInstanceId.get(
-          database.instance.id
-        );
-        if (listByInstance) {
-          const i = listByInstance.findIndex(
-            (item: Database) => item.id == database.id
-          );
-          if (i != -1) {
-            listByInstance[i] = database;
-          } else {
-            listByInstance.push(database);
-          }
-        } else {
-          state.databaseListByInstanceId.set(database.instance.id, [database]);
-        }
-
-        const listByProject = state.databaseListByProjectId.get(
-          database.project.id
-        );
-        if (listByProject) {
-          const i = listByProject.findIndex(
-            (item: Database) => item.id == database.id
-          );
-          if (i != -1) {
-            listByProject[i] = database;
-          } else {
-            listByProject.push(database);
-          }
-        } else {
-          state.databaseListByProjectId.set(database.project.id, [database]);
-        }
-      }
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

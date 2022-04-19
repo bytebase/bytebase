@@ -10,7 +10,7 @@ import {
   DatabaseId,
   ResourceObject,
   unknown,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 export function convertBackup(

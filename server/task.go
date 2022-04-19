@@ -96,7 +96,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 			newStatement = *taskPatch.Statement
 
-			if task.Type == api.TaskDatabaseSchemaUpdate {
+			switch task.Type {
+			case api.TaskDatabaseSchemaUpdate:
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
@@ -112,7 +113,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
-			} else if task.Type == api.TaskDatabaseDataUpdate {
+			case api.TaskDatabaseDataUpdate:
+
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
@@ -128,6 +130,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
 			}
 		}
 
@@ -458,7 +461,17 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) 
 		taskCheckRun.Updater = updater
 	}
 
-	instance, err := s.composeInstanceByID(ctx, task.InstanceID)
+	blockedBy := []string{}
+	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: raw.ID})
+	if err != nil {
+		return nil, err
+	}
+	for _, taskDAG := range taskDAGList {
+		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.FromTaskID))
+	}
+	task.BlockedBy = blockedBy
+
+	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -519,10 +532,11 @@ func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *
 		}
 	}
 
-	task.Instance, err = s.composeInstanceByID(ctx, task.InstanceID)
+	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return err
 	}
+	task.Instance = instance
 
 	if task.DatabaseID != nil {
 		databaseFind := &api.DatabaseFind{
@@ -657,8 +671,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
 		taskPatched.Status == api.TaskDone {
-		// TODO(dragonly): remove this composition
-		instance, err := s.composeInstanceByID(ctx, task.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}

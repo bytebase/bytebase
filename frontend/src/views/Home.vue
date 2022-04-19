@@ -49,13 +49,12 @@
 
 <script lang="ts">
 import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import { activeEnvironment, activeTask } from "../utils";
 import { Environment, Issue, TaskStatus, UNKNOWN_ID } from "../types";
-import { useCurrentUser, useEnvironmentStore } from "@/store";
+import { useCurrentUser, useEnvironmentStore, useIssueStore } from "@/store";
 
 // Show at most 10 recently closed issues
 const MAX_CLOSED_ISSUE_COUNT = 10;
@@ -78,7 +77,7 @@ export default defineComponent({
   setup() {
     const searchField = ref();
 
-    const store = useStore();
+    const issueStore = useIssueStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -104,8 +103,8 @@ export default defineComponent({
     const prepareIssueList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["OPEN"],
             userId: currentUser.value.id,
           })
@@ -129,8 +128,8 @@ export default defineComponent({
             }
           });
 
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["DONE", "CANCELED"],
             userId: currentUser.value.id,
             limit: MAX_CLOSED_ISSUE_COUNT,

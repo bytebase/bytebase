@@ -281,32 +281,40 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.GET("/sheet", func(c echo.Context) error {
 		ctx := context.Background()
 		sheetFind := &api.SheetFind{}
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind.CreatorID = &creatorID
 
-		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			sheetFind.RowStatus = &rowStatus
 		}
-
-		if projectIDStr := c.QueryParams().Get("projectId"); projectIDStr != "" {
+		if projectIDStr := c.QueryParam("projectId"); projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
 			}
 			sheetFind.ProjectID = &projectID
 		}
-
-		if databaseIDStr := c.QueryParams().Get("databaseId"); databaseIDStr != "" {
+		if databaseIDStr := c.QueryParam("databaseId"); databaseIDStr != "" {
 			databaseID, err := strconv.Atoi(databaseIDStr)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.QueryParam("databaseId"))).SetInternal(err)
 			}
 			sheetFind.DatabaseID = &databaseID
 		}
-
 		if visibility := api.SheetVisibility(c.QueryParam("visibility")); visibility != "" {
 			sheetFind.Visibility = &visibility
+		}
+		if creatorIDStr := c.QueryParam("creatorId"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creatorID ID is not a number: %s", c.QueryParam("creatorId"))).SetInternal(err)
+			}
+			sheetFind.CreatorID = &creatorID
+		}
+		// When getting private/project sheet list, we should set the PrincipalID to ensure only
+		// the sheet which related project containing PrincipalID as an active member could be found.
+		if sheetFind.Visibility != nil && (*sheetFind.Visibility == api.PrivateSheet || *sheetFind.Visibility == api.ProjectSheet) {
+			principalID := c.Get(getPrincipalIDContextKey()).(int)
+			sheetFind.PrincipalID = &principalID
 		}
 
 		sheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)

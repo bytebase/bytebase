@@ -91,7 +91,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
 	if updater == nil {
-		return nil, fmt.Errorf("Updater principal not found for ID %v", create.CreatorID)
+		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
 	// Call external webhook endpoint in Go routine to avoid blocking web serveing thread.
@@ -173,7 +173,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if oldAssignee == nil {
-						err := fmt.Errorf("Failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
+						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
 						m.s.l.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
@@ -203,7 +203,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if newAssignee == nil {
-						err := fmt.Errorf("Failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
+						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
 						m.s.l.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
@@ -248,7 +248,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 		if task == nil {
-			err := fmt.Errorf("Failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
+			err := fmt.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
 			m.s.l.Warn(err.Error(),
 				zap.String("issue_name", meta.issue.Name),
 				zap.Int("task_id", update.TaskID),
@@ -259,9 +259,10 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		title = "Task changed - " + task.Name
 		switch update.NewStatus {
 		case api.TaskPending:
-			if update.OldStatus == api.TaskRunning {
+			switch update.OldStatus {
+			case api.TaskRunning:
 				title = "Task canceled - " + task.Name
-			} else if update.OldStatus == api.TaskPendingApproval {
+			case api.TaskPendingApproval:
 				title = "Task approved - " + task.Name
 			}
 		case api.TaskRunning:

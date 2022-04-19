@@ -586,7 +586,7 @@ func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, 
 		return nil, err
 	}
 	if projectRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Project not found with ID %d", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project not found with ID %d", id)}
 	}
 
 	project, err := s.composeProjectRelationship(ctx, projectRaw)

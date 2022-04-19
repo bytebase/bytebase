@@ -110,11 +110,11 @@ func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
 	backupRaw, err := s.createBackupRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Backup with BackupCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Backup with BackupCreate[%+v], error[%w]", create, err)
 	}
 	backup, err := s.composeBackup(ctx, backupRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
 	}
 	return backup, nil
 }
@@ -123,14 +123,14 @@ func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*ap
 func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
 	backupRaw, err := s.getBackupRawByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get backup setting by ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get backup setting by ID[%d], error[%w]", id, err)
 	}
 	if backupRaw == nil {
 		return nil, nil
 	}
 	backupSetting, err := s.composeBackup(ctx, backupRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
 	}
 	return backupSetting, nil
 }
@@ -139,13 +139,13 @@ func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) 
 func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
 	backupRawList, err := s.findBackupRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Backup list with BackupFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Backup list with BackupFind[%+v], error[%w]", find, err)
 	}
 	var backupList []*api.Backup
 	for _, raw := range backupRawList {
 		backup, err := s.composeBackup(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
 		}
 		backupList = append(backupList, backup)
 	}
@@ -156,11 +156,11 @@ func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Ba
 func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
 	backupRaw, err := s.patchBackupRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to patch Backup with BackupPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Backup with BackupPatch[%+v], error[%w]", patch, err)
 	}
 	backup, err := s.composeBackup(ctx, backupRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
 	}
 	return backup, nil
 }
@@ -169,14 +169,14 @@ func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.B
 func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get backup setting by ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get backup setting by ID[%d], error[%w]", id, err)
 	}
 	if backupSettingRaw == nil {
 		return nil, nil
 	}
 	backupSetting, err := s.composeBackupSetting(ctx, backupSettingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose BackupSetting with backupSettingRaw[%+v], error[%w]", backupSettingRaw, err)
+		return nil, fmt.Errorf("failed to compose BackupSetting with backupSettingRaw[%+v], error[%w]", backupSettingRaw, err)
 	}
 	return backupSetting, nil
 }
@@ -185,11 +185,11 @@ func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.
 func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
 	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to upsert backup setting with BackupSettingUpsert[%+v], error[%w]", upsert, err)
+		return nil, fmt.Errorf("failed to upsert backup setting with BackupSettingUpsert[%+v], error[%w]", upsert, err)
 	}
 	backup, err := s.composeBackupSetting(ctx, backupSettingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", backupSettingRaw, err)
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupSettingRaw, err)
 	}
 	return backup, nil
 }
@@ -198,13 +198,13 @@ func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSetti
 func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
 	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find matching backup setting list with BackupSettingsMatch[%+v], error[%w]", match, err)
+		return nil, fmt.Errorf("failed to find matching backup setting list with BackupSettingsMatch[%+v], error[%w]", match, err)
 	}
 	var backupSettingList []*api.BackupSetting
 	for _, raw := range backupSettingRawList {
 		backupSetting, err := s.composeBackupSetting(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
 		}
 		backupSettingList = append(backupSettingList, backupSetting)
 	}

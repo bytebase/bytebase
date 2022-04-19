@@ -1,8 +1,8 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   empty,
   EMPTY_ID,
-  Member,
   MemberId,
   PrincipalId,
   Project,
@@ -17,13 +17,12 @@ import {
   ResourceObject,
   RowStatus,
   unknown,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   project: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Project {
   const attrs = project.attributes as Omit<
     Project,
@@ -61,7 +60,7 @@ function convert(
         .data as ResourceIdentifier[];
       for (const idItem of projectMemberIdList) {
         if (idItem.id == item.id) {
-          const member = convertMember(item, includedList, rootGetters);
+          const member = convertMember(item, includedList);
           member.project = projectWithoutMemberList;
           memberList.push(member);
         }
@@ -88,8 +87,7 @@ function convert(
 // an unknown project first.
 function convertMember(
   projectMember: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): ProjectMember {
   const attrs = projectMember.attributes as Omit<
     ProjectMember,
@@ -119,22 +117,22 @@ function convertMember(
   };
 }
 
-const state: () => ProjectState = () => ({
-  projectById: new Map(),
-});
+export const useProjectStore = defineStore("project", {
+  state: (): ProjectState => ({
+    projectById: new Map(),
+  }),
 
-const getters = {
-  convert:
-    (state: ProjectState, getters: any, rootState: any, rootGetters: any) =>
-    (instance: ResourceObject, includedList: ResourceObject[]): Project => {
-      return convert(instance, includedList || [], rootGetters);
+  actions: {
+    convert(instance: ResourceObject, includedList: ResourceObject[]): Project {
+      return convert(instance, includedList || []);
     },
 
-  projectListByUser:
-    (state: ProjectState) =>
-    (userId: PrincipalId, rowStatusList?: RowStatus[]): Project[] => {
+    getProjectListByUser(
+      userId: PrincipalId,
+      rowStatusList?: RowStatus[]
+    ): Project[] {
       const result: Project[] = [];
-      for (const [_, project] of state.projectById) {
+      for (const [_, project] of this.projectById) {
         if (
           (!rowStatusList && project.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(project.rowStatus))
@@ -151,163 +149,142 @@ const getters = {
       return result;
     },
 
-  projectById:
-    (state: ProjectState) =>
-    (projectId: ProjectId): Project => {
+    getProjectById(projectId: ProjectId): Project {
       if (projectId == EMPTY_ID) {
         return empty("PROJECT") as Project;
       }
 
-      return (
-        state.projectById.get(projectId) || (unknown("PROJECT") as Project)
-      );
+      return this.projectById.get(projectId) || (unknown("PROJECT") as Project);
     },
-};
+    async fetchProjectList() {
+      const data = (await axios.get(`/api/project`)).data;
+      const projectList = data.data.map((project: ResourceObject) => {
+        return convert(project, data.included);
+      });
 
-const actions = {
-  async fetchProjectList({ commit, rootGetters }: any) {
-    const data = (await axios.get(`/api/project`)).data;
-    const projectList = data.data.map((project: ResourceObject) => {
-      return convert(project, data.included, rootGetters);
-    });
+      this.upsertProjectList(projectList);
+      return projectList;
+    },
 
-    commit("upsertProjectList", projectList);
-    return projectList;
-  },
-
-  async fetchProjectListByUser(
-    { commit, rootGetters }: any,
-    {
+    async fetchProjectListByUser({
       userId,
       rowStatusList = [],
     }: {
       userId: PrincipalId;
       rowStatusList?: RowStatus[];
-    }
-  ) {
-    const projectList: Project[] = [];
+    }) {
+      const projectList: Project[] = [];
 
-    const fetchProjectList = async (rowStatus?: RowStatus) => {
-      let path = `/api/project?user=${userId}`;
-      if (rowStatus) path += `&rowstatus=${rowStatus}`;
-      const data = (await axios.get(path)).data;
-      const list: Project[] = data.data.map((project: ResourceObject) => {
-        return convert(project, data.included, rootGetters);
-      });
-      // projects are mutual excluded by different rowstatus
-      // so we don't need to unique them by id here
-      projectList.push(...list);
-    };
+      const fetchProjectList = async (rowStatus?: RowStatus) => {
+        let path = `/api/project?user=${userId}`;
+        if (rowStatus) path += `&rowstatus=${rowStatus}`;
+        const data = (await axios.get(path)).data;
+        const list: Project[] = data.data.map((project: ResourceObject) => {
+          return convert(project, data.included);
+        });
+        // projects are mutual excluded by different rowstatus
+        // so we don't need to unique them by id here
+        projectList.push(...list);
+      };
 
-    if (rowStatusList.length === 0) {
-      // if no rowStatus specified, fetch all
-      await fetchProjectList();
-    } else {
-      // otherwise, fetch different rowStatus one-by-one
-      for (const rowStatus of rowStatusList) {
-        await fetchProjectList(rowStatus);
+      if (rowStatusList.length === 0) {
+        // if no rowStatus specified, fetch all
+        await fetchProjectList();
+      } else {
+        // otherwise, fetch different rowStatus one-by-one
+        for (const rowStatus of rowStatusList) {
+          await fetchProjectList(rowStatus);
+        }
       }
-    }
 
-    commit("upsertProjectList", projectList);
-    return projectList;
-  },
+      this.upsertProjectList(projectList);
+      return projectList;
+    },
 
-  async fetchProjectById({ commit, rootGetters }: any, projectId: ProjectId) {
-    const data = (await axios.get(`/api/project/${projectId}`)).data;
-    const project = convert(data.data, data.included, rootGetters);
+    async fetchProjectById(projectId: ProjectId) {
+      const data = (await axios.get(`/api/project/${projectId}`)).data;
+      const project = convert(data.data, data.included);
 
-    commit("setProjectById", {
-      projectId,
-      project,
-    });
-    return project;
-  },
+      this.setProjectById({
+        projectId,
+        project,
+      });
+      return project;
+    },
 
-  async createProject({ commit, rootGetters }: any, newProject: ProjectCreate) {
-    const data = (
-      await axios.post(`/api/project`, {
-        data: {
-          type: "ProjectCreate",
-          attributes: newProject,
-        },
-      })
-    ).data;
-    const createdProject = convert(data.data, data.included, rootGetters);
+    async createProject(newProject: ProjectCreate) {
+      const data = (
+        await axios.post(`/api/project`, {
+          data: {
+            type: "ProjectCreate",
+            attributes: newProject,
+          },
+        })
+      ).data;
+      const createdProject = convert(data.data, data.included);
 
-    commit("setProjectById", {
-      projectId: createdProject.id,
-      project: createdProject,
-    });
+      this.setProjectById({
+        projectId: createdProject.id,
+        project: createdProject,
+      });
 
-    return createdProject;
-  },
+      return createdProject;
+    },
 
-  async patchProject(
-    { commit, rootGetters }: any,
-    {
+    async patchProject({
       projectId,
       projectPatch,
     }: {
       projectId: ProjectId;
       projectPatch: ProjectPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/project/${projectId}`, {
-        data: {
-          type: "projectPatch",
-          attributes: projectPatch,
-        },
-      })
-    ).data;
-    const updatedProject = convert(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(`/api/project/${projectId}`, {
+          data: {
+            type: "projectPatch",
+            attributes: projectPatch,
+          },
+        })
+      ).data;
+      const updatedProject = convert(data.data, data.included);
 
-    commit("setProjectById", {
-      projectId,
-      project: updatedProject,
-    });
+      this.setProjectById({
+        projectId,
+        project: updatedProject,
+      });
 
-    return updatedProject;
-  },
+      return updatedProject;
+    },
 
-  // sync member role from vcs
-  async syncMemberRoleFromVCS(
-    { dispatch }: any,
-    { projectId }: { projectId: ProjectId }
-  ) {
-    await axios.post(`/api/project/${projectId}/sync-member`);
-    const updatedProject = await dispatch("fetchProjectById", projectId);
+    // sync member role from vcs
+    async syncMemberRoleFromVCS({ projectId }: { projectId: ProjectId }) {
+      await axios.post(`/api/project/${projectId}/sync-member`);
+      const updatedProject = await this.fetchProjectById(projectId);
 
-    return updatedProject;
-  },
+      return updatedProject;
+    },
 
-  // Project Role Mapping
-  // Returns existing member if the principalId has already been created.
-  async createdMember(
-    { dispatch }: any,
-    {
+    // Project Role Mapping
+    // Returns existing member if the principalId has already been created.
+    async createdMember({
       projectId,
       projectMember,
     }: {
       projectId: ProjectId;
       projectMember: ProjectMemberCreate;
-    }
-  ) {
-    await axios.post(`/api/project/${projectId}/member`, {
-      data: {
-        type: "projectMemberCreate",
-        attributes: projectMember,
-      },
-    });
+    }) {
+      await axios.post(`/api/project/${projectId}/member`, {
+        data: {
+          type: "projectMemberCreate",
+          attributes: projectMember,
+        },
+      });
 
-    const updatedProject = await dispatch("fetchProjectById", projectId);
-    return updatedProject;
-  },
+      const updatedProject = await this.fetchProjectById(projectId);
+      return updatedProject;
+    },
 
-  async patchMember(
-    { dispatch }: any,
-    {
+    async patchMember({
       projectId,
       memberId,
       projectMemberPatch,
@@ -315,57 +292,41 @@ const actions = {
       projectId: ProjectId;
       memberId: MemberId;
       projectMemberPatch: ProjectMemberPatch;
-    }
-  ) {
-    await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
-      data: {
-        type: "projectMemberPatch",
-        attributes: projectMemberPatch,
-      },
-    });
+    }) {
+      await axios.patch(`/api/project/${projectId}/member/${memberId}`, {
+        data: {
+          type: "projectMemberPatch",
+          attributes: projectMemberPatch,
+        },
+      });
 
-    const updatedProject = await dispatch("fetchProjectById", projectId);
+      const updatedProject = await this.fetchProjectById(projectId);
 
-    return updatedProject;
-  },
+      return updatedProject;
+    },
 
-  async deleteMember({ dispatch }: any, member: ProjectMember) {
-    await axios.delete(`/api/project/${member.project.id}/member/${member.id}`);
+    async deleteMember(member: ProjectMember) {
+      await axios.delete(
+        `/api/project/${member.project.id}/member/${member.id}`
+      );
 
-    const updatedProject = await dispatch(
-      "fetchProjectById",
-      member.project.id
-    );
+      const updatedProject = await this.fetchProjectById(member.project.id);
 
-    return updatedProject;
-  },
-};
-
-const mutations = {
-  setProjectById(
-    state: ProjectState,
-    {
+      return updatedProject;
+    },
+    setProjectById({
       projectId,
       project,
     }: {
       projectId: ProjectId;
       project: Project;
-    }
-  ) {
-    state.projectById.set(projectId, project);
+    }) {
+      this.projectById.set(projectId, project);
+    },
+    upsertProjectList(projectList: Project[]) {
+      for (const project of projectList) {
+        this.projectById.set(project.id, project);
+      }
+    },
   },
-
-  upsertProjectList(state: ProjectState, projectList: Project[]) {
-    for (const project of projectList) {
-      state.projectById.set(project.id, project);
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   ConnectionInfo,
@@ -6,7 +7,9 @@ import {
   QueryInfo,
   ResourceObject,
   SqlResultSet,
-} from "../../types";
+} from "@/types";
+import { useDatabaseStore } from "./database";
+import { useInstanceStore } from "./instance";
 
 function convert(resultSet: ResourceObject): SqlResultSet {
   return {
@@ -15,92 +18,76 @@ function convert(resultSet: ResourceObject): SqlResultSet {
   };
 }
 
-const getters = {
-  convert:
-    () =>
-    (resultSet: ResourceObject): SqlResultSet => {
+export const useSQLStore = defineStore("sql", {
+  actions: {
+    convert(resultSet: ResourceObject): SqlResultSet {
       return convert(resultSet);
     },
-};
 
-const actions = {
-  async ping({ commit }: any, connectionInfo: ConnectionInfo) {
-    const data = (
-      await axios.post(`/api/sql/ping`, {
-        data: {
-          type: "connectionInfo",
-          attributes: connectionInfo,
-        },
-      })
-    ).data.data;
-
-    return convert(data);
-  },
-  async syncSchema({ dispatch }: any, instanceId: InstanceId) {
-    const data = (
-      await axios.post(
-        `/api/sql/sync-schema`,
-        {
+    async ping(connectionInfo: ConnectionInfo) {
+      const data = (
+        await axios.post(`/api/sql/ping`, {
           data: {
-            type: "sqlSyncSchema",
-            attributes: {
-              instanceId,
+            type: "connectionInfo",
+            attributes: connectionInfo,
+          },
+        })
+      ).data.data;
+
+      return convert(data);
+    },
+    async syncSchema(instanceId: InstanceId) {
+      const data = (
+        await axios.post(
+          `/api/sql/sync-schema`,
+          {
+            data: {
+              type: "sqlSyncSchema",
+              attributes: {
+                instanceId,
+              },
             },
           },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data.data;
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data.data;
 
-    const resultSet = convert(data);
-    if (!resultSet.error) {
-      // Refresh the corresponding list.
-      dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
-        root: true,
-      });
+      const resultSet = convert(data);
+      if (!resultSet.error) {
+        // Refresh the corresponding list.
+        useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
+        useInstanceStore().fetchInstanceUserListById(instanceId);
+      }
 
-      dispatch("instance/fetchInstanceUserListById", instanceId, {
-        root: true,
-      });
-    }
-
-    return resultSet;
-  },
-  async query({ dispatch }: any, queryInfo: QueryInfo) {
-    const data = (
-      await axios.post(
-        `/api/sql/execute`,
-        {
-          data: {
-            type: "sqlExecute",
-            attributes: {
-              ...queryInfo,
-              readonly: true,
+      return resultSet;
+    },
+    async query(queryInfo: QueryInfo) {
+      const data = (
+        await axios.post(
+          `/api/sql/execute`,
+          {
+            data: {
+              type: "sqlExecute",
+              attributes: {
+                ...queryInfo,
+                readonly: true,
+              },
             },
           },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data.data;
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data.data;
 
-    const resultSet = convert(data);
-    if (resultSet.error) {
-      throw new Error(resultSet.error);
-    }
+      const resultSet = convert(data);
+      if (resultSet.error) {
+        throw new Error(resultSet.error);
+      }
 
-    return resultSet.data;
+      return resultSet.data;
+    },
   },
-};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  getters,
-  actions,
-  mutations,
-};
+});

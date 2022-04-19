@@ -40,7 +40,6 @@ type Server struct {
 	ProjectService          api.ProjectService
 	ProjectMemberService    api.ProjectMemberService
 	ProjectWebhookService   api.ProjectWebhookService
-	InstanceService         api.InstanceService
 	InstanceUserService     api.InstanceUserService
 	DatabaseService         api.DatabaseService
 	TableService            api.TableService
@@ -48,12 +47,10 @@ type Server struct {
 	ViewService             api.ViewService
 	IndexService            api.IndexService
 	IssueService            api.IssueService
-	IssueSubscriberService  api.IssueSubscriberService
 	PipelineService         api.PipelineService
 	StageService            api.StageService
 	TaskService             api.TaskService
 	TaskCheckRunService     api.TaskCheckRunService
-	BookmarkService         api.BookmarkService
 	RepositoryService       api.RepositoryService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService

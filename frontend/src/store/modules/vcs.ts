@@ -10,7 +10,7 @@ import {
   VCSPatch,
   empty,
   EMPTY_ID,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(vcs: ResourceObject, includedList: ResourceObject[]): VCS {

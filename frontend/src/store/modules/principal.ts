@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   PrincipalId,
@@ -14,7 +15,6 @@ import {
   RoleType,
 } from "@/types";
 import { randomString } from "@/utils";
-import { defineStore } from "pinia";
 import { useAuthStore } from "./auth";
 
 function convert(principal: ResourceObject): Principal {

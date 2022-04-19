@@ -1,4 +1,6 @@
+import { defineStore } from "pinia";
 import axios from "axios";
+import { computed, watchEffect } from "vue";
 import {
   Anomaly,
   DataSource,
@@ -20,18 +22,17 @@ import {
   RowStatus,
   SqlResultSet,
   unknown,
-} from "../../types";
-import { InstanceUser } from "../../types/InstanceUser";
-import {
-  getPrincipalFromIncludedList,
-  useEnvironmentStore,
-} from "../pinia-modules";
-import { useAnomalyStore } from "@/store";
+} from "@/types";
+import { InstanceUser } from "@/types/InstanceUser";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useEnvironmentStore } from "./environment";
+import { useAnomalyStore } from "./anomaly";
+import { useDataSourceStore } from "./dataSource";
+import { useSQLStore } from "./sql";
 
 function convert(
   instance: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Instance {
   const environmentId = (
     instance.relationships!.environment.data as ResourceIdentifier
@@ -82,6 +83,8 @@ function convert(
   };
 
   const environmentStore = useEnvironmentStore();
+  const anomalyStore = useAnomalyStore();
+  const dataSourceStore = useDataSourceStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
@@ -99,7 +102,7 @@ function convert(
         (anomaly: Anomaly) => parseInt(item.id) == anomaly.id
       );
       if (i != -1) {
-        anomalyList[i] = useAnomalyStore().convert(item);
+        anomalyList[i] = anomalyStore.convert(item);
         anomalyList[i].instance = instancePartial;
       }
     }
@@ -112,7 +115,7 @@ function convert(
         (dataSource: DataSource) => parseInt(item.id) == dataSource.id
       );
       if (i != -1) {
-        dataSourceList[i] = rootGetters["dataSource/convert"](item);
+        dataSourceList[i] = dataSourceStore.convert(item);
       }
     }
   }
@@ -132,11 +135,7 @@ function convert(
   };
 }
 
-function convertUser(
-  instanceUser: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
-): InstanceUser {
+function convertUser(instanceUser: ResourceObject): InstanceUser {
   return {
     ...(instanceUser.attributes as Omit<InstanceUser, "id">),
     id: parseInt(instanceUser.id),
@@ -160,25 +159,23 @@ function convertMigrationHistory(history: ResourceObject): MigrationHistory {
   };
 }
 
-const state: () => InstanceState = () => ({
-  instanceById: new Map(),
-  instanceUserListById: new Map(),
-  migrationHistoryById: new Map(),
-  migrationHistoryListByIdAndDatabaseName: new Map(),
-});
-
-const getters = {
-  convert:
-    (state: InstanceState, getters: any, rootState: any, rootGetters: any) =>
-    (instance: ResourceObject, includedList: ResourceObject[]): Instance => {
-      return convert(instance, includedList, rootGetters);
+export const useInstanceStore = defineStore("instance", {
+  state: (): InstanceState => ({
+    instanceById: new Map(),
+    instanceUserListById: new Map(),
+    migrationHistoryById: new Map(),
+    migrationHistoryListByIdAndDatabaseName: new Map(),
+  }),
+  actions: {
+    convert(
+      instance: ResourceObject,
+      includedList: ResourceObject[]
+    ): Instance {
+      return convert(instance, includedList);
     },
-
-  instanceList:
-    (state: InstanceState) =>
-    (rowStatusList?: RowStatus[]): Instance[] => {
+    getInstanceList(rowStatusList?: RowStatus[]): Instance[] {
       const list = [];
-      for (const [_, instance] of state.instanceById) {
+      for (const [_, instance] of this.instanceById) {
         if (
           (!rowStatusList && instance.rowStatus == "NORMAL") ||
           (rowStatusList && rowStatusList.includes(instance.rowStatus))
@@ -190,38 +187,28 @@ const getters = {
         return b.createdTs - a.createdTs;
       });
     },
-
-  instanceListByEnvironmentId:
-    (state: InstanceState, getters: any) =>
-    (environmentId: EnvironmentId, rowStatusList?: RowStatus[]): Instance[] => {
-      const list = getters["instanceList"](rowStatusList);
+    getInstanceListByEnvironmentId(
+      environmentId: EnvironmentId,
+      rowStatusList?: RowStatus[]
+    ): Instance[] {
+      const list = this.getInstanceList(rowStatusList);
       return list.filter((item: Instance) => {
         return item.environment.id == environmentId;
       });
     },
-
-  instanceById:
-    (state: InstanceState) =>
-    (instanceId: InstanceId): Instance => {
+    getInstanceById(instanceId: InstanceId): Instance {
       if (instanceId == EMPTY_ID) {
         return empty("INSTANCE") as Instance;
       }
 
       return (
-        state.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
+        this.instanceById.get(instanceId) || (unknown("INSTANCE") as Instance)
       );
     },
-
-  instanceUserListById:
-    (state: InstanceState) =>
-    (instanceId: InstanceId): InstanceUser[] => {
-      return state.instanceUserListById.get(instanceId) || [];
+    getInstanceUserListById(instanceId: InstanceId): InstanceUser[] {
+      return this.instanceUserListById.get(instanceId) || [];
     },
-
-  // Get the formated engine string from instance for SQL transformer.
-  instanceFormatedEngine:
-    () =>
-    (instance: Instance): string => {
+    formatEngine(instance: Instance): string {
       switch (instance.engine) {
         case "POSTGRES":
           return "PostgreSQL";
@@ -230,323 +217,54 @@ const getters = {
           return "MySQL";
       }
     },
-
-  migrationHistoryById:
-    (state: InstanceState) =>
-    (migrationHistoryId: MigrationHistoryId): MigrationHistory | undefined => {
-      return state.migrationHistoryById.get(migrationHistoryId);
+    getMigrationHistoryById(
+      migrationHistoryId: MigrationHistoryId
+    ): MigrationHistory | undefined {
+      return this.migrationHistoryById.get(migrationHistoryId);
     },
-
-  migrationHistoryListByInstanceIdAndDatabaseName:
-    (state: InstanceState) =>
-    (instanceId: InstanceId, databaseName: string): MigrationHistory[] => {
+    getMigrationHistoryListByInstanceIdAndDatabaseName(
+      instanceId: InstanceId,
+      databaseName: string
+    ): MigrationHistory[] {
       return (
-        state.migrationHistoryListByIdAndDatabaseName.get(
+        this.migrationHistoryListByIdAndDatabaseName.get(
           [instanceId, databaseName].join(".")
         ) || []
       );
     },
-};
-
-const actions = {
-  async fetchInstanceList(
-    { commit, rootGetters }: any,
-    rowStatusList?: RowStatus[]
-  ) {
-    const path =
-      "/api/instance" +
-      (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
-    const data = (await axios.get(path)).data;
-    const instanceList = data.data.map((instance: ResourceObject) => {
-      return convert(instance, data.included, rootGetters);
-    });
-
-    commit("setInstanceList", instanceList);
-
-    return instanceList;
-  },
-
-  async fetchInstanceById(
-    { commit, rootGetters }: any,
-    instanceId: InstanceId
-  ) {
-    const data = (await axios.get(`/api/instance/${instanceId}`)).data;
-    const instance = convert(data.data, data.included, rootGetters);
-
-    commit("setInstanceById", {
-      instanceId,
-      instance,
-    });
-    return instance;
-  },
-
-  async createInstance(
-    { commit, rootGetters }: any,
-    newInstance: InstanceCreate
-  ) {
-    const data = (
-      await axios.post(
-        `/api/instance`,
-        {
-          data: {
-            type: "InstanceCreate",
-            attributes: newInstance,
-          },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data;
-    const createdInstance = convert(data.data, data.included, rootGetters);
-
-    commit("setInstanceById", {
-      instanceId: createdInstance.id,
-      instance: createdInstance,
-    });
-
-    return createdInstance;
-  },
-
-  async patchInstance(
-    { commit, rootGetters }: any,
-    {
-      instanceId,
-      instancePatch,
-    }: {
-      instanceId: InstanceId;
-      instancePatch: InstancePatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(
-        `/api/instance/${instanceId}`,
-        {
-          data: {
-            type: "instancePatch",
-            attributes: instancePatch,
-          },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data;
-    const updatedInstance = convert(data.data, data.included, rootGetters);
-
-    commit("setInstanceById", {
-      instanceId: updatedInstance.id,
-      instance: updatedInstance,
-    });
-
-    return updatedInstance;
-  },
-
-  async deleteInstanceById(
-    { commit }: { state: InstanceState; commit: any },
-    instanceId: InstanceId
-  ) {
-    await axios.delete(`/api/instance/${instanceId}`);
-
-    commit("deleteInstanceById", instanceId);
-  },
-
-  async fetchInstanceUserListById(
-    { commit, rootGetters }: any,
-    instanceId: InstanceId
-  ) {
-    const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
-    const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
-      return convertUser(instanceUser, data.included, rootGetters);
-    });
-
-    commit("setInstanceUserListById", {
-      instanceId,
-      instanceUserList,
-    });
-    return instanceUserList;
-  },
-
-  async checkMigrationSetup(
-    {}: any,
-    instanceId: InstanceId
-  ): Promise<InstanceMigration> {
-    const data = (
-      await axios.get(`/api/instance/${instanceId}/migration/status`, {
-        timeout: INSTANCE_OPERATION_TIMEOUT,
-      })
-    ).data.data;
-
-    return {
-      status: data.attributes.status,
-      error: data.attributes.error,
-    };
-  },
-
-  async createMigrationSetup(
-    { rootGetters }: any,
-    instanceId: InstanceId
-  ): Promise<SqlResultSet> {
-    const data = (
-      await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
-        timeout: INSTANCE_OPERATION_TIMEOUT,
-      })
-    ).data.data;
-
-    return rootGetters["sql/convert"](data);
-  },
-
-  async fetchMigrationHistoryById(
-    { commit, rootGetters }: any,
-    {
-      instanceId,
-      migrationHistoryId,
-    }: {
-      instanceId: InstanceId;
-      migrationHistoryId: MigrationHistoryId;
-    }
-  ) {
-    const data = (
-      await axios.get(
-        `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`,
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data;
-    const migrationHistory = convertMigrationHistory(data.data);
-
-    commit("setMigrationHistoryById", {
-      migrationHistoryId,
-      migrationHistory,
-    });
-    return migrationHistory;
-  },
-
-  async fetchMigrationHistoryByVersion(
-    { commit }: any,
-    {
-      instanceId,
-      databaseName,
-      version,
-    }: {
-      instanceId: InstanceId;
-      databaseName: string;
-      version: string;
-    }
-  ) {
-    const data = (
-      await axios.get(
-        `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`,
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data.data;
-    const historyList = data.map((history: ResourceObject) => {
-      return convertMigrationHistory(history);
-    });
-
-    if (historyList.length > 0) {
-      commit("setMigrationHistoryById", {
-        migrationHistoryId: historyList[0].id,
-        migrationHistory: historyList[0],
+    setInstanceList(instanceList: Instance[]) {
+      instanceList.forEach((instance) => {
+        this.instanceById.set(instance.id, instance);
       });
-      return historyList[0];
-    }
-    throw new Error(
-      `Migration version ${version} not found in database ${databaseName}.`
-    );
-  },
-
-  async fetchMigrationHistory(
-    { commit }: any,
-    {
-      instanceId,
-      databaseName,
-      limit,
-    }: {
-      instanceId: InstanceId;
-      databaseName: string;
-      limit?: number;
-    }
-  ): Promise<MigrationHistory> {
-    let url = `/api/instance/${instanceId}/migration/history?database=${databaseName}`;
-    if (limit) {
-      url += `&limit=${limit}`;
-    }
-    const data = (
-      await axios.get(url, {
-        timeout: INSTANCE_OPERATION_TIMEOUT,
-      })
-    ).data.data;
-    const historyList = data.map((history: ResourceObject) => {
-      return convertMigrationHistory(history);
-    });
-
-    commit("setMigrationHistoryListByInstanceIdAndDatabaseName", {
-      instanceId,
-      databaseName,
-      historyList,
-    });
-
-    return historyList;
-  },
-};
-
-const mutations = {
-  setInstanceList(state: InstanceState, instanceList: Instance[]) {
-    instanceList.forEach((instance) => {
-      state.instanceById.set(instance.id, instance);
-    });
-  },
-
-  setInstanceById(
-    state: InstanceState,
-    {
+    },
+    setInstanceById({
       instanceId,
       instance,
     }: {
       instanceId: InstanceId;
       instance: Instance;
-    }
-  ) {
-    state.instanceById.set(instanceId, instance);
-  },
-
-  deleteInstanceById(state: InstanceState, instanceId: InstanceId) {
-    state.instanceById.delete(instanceId);
-  },
-
-  setInstanceUserListById(
-    state: InstanceState,
-    {
+    }) {
+      this.instanceById.set(instanceId, instance);
+    },
+    setInstanceUserListById({
       instanceId,
       instanceUserList,
     }: {
       instanceId: InstanceId;
       instanceUserList: InstanceUser[];
-    }
-  ) {
-    state.instanceUserListById.set(instanceId, instanceUserList);
-  },
-
-  setMigrationHistoryById(
-    state: InstanceState,
-    {
+    }) {
+      this.instanceUserListById.set(instanceId, instanceUserList);
+    },
+    setMigrationHistoryById({
       migrationHistoryId,
       migrationHistory,
     }: {
       migrationHistoryId: MigrationHistoryId;
       migrationHistory: MigrationHistory;
-    }
-  ) {
-    state.migrationHistoryById.set(migrationHistoryId, migrationHistory);
-  },
-
-  setMigrationHistoryListByInstanceIdAndDatabaseName(
-    state: InstanceState,
-    {
+    }) {
+      this.migrationHistoryById.set(migrationHistoryId, migrationHistory);
+    },
+    setMigrationHistoryListByInstanceIdAndDatabaseName({
       instanceId,
       databaseName,
       historyList,
@@ -554,19 +272,224 @@ const mutations = {
       instanceId: InstanceId;
       databaseName: string;
       historyList: MigrationHistory[];
-    }
-  ) {
-    state.migrationHistoryListByIdAndDatabaseName.set(
-      [instanceId, databaseName].join("."),
-      historyList
-    );
-  },
-};
+    }) {
+      this.migrationHistoryListByIdAndDatabaseName.set(
+        [instanceId, databaseName].join("."),
+        historyList
+      );
+    },
+    async fetchInstanceList(rowStatusList?: RowStatus[]) {
+      const path =
+        "/api/instance" +
+        (rowStatusList ? "?rowstatus=" + rowStatusList.join(",") : "");
+      const data = (await axios.get(path)).data;
+      const instanceList: Instance[] = data.data.map(
+        (instance: ResourceObject) => {
+          return convert(instance, data.included);
+        }
+      );
 
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
+      this.setInstanceList(instanceList);
+
+      return instanceList;
+    },
+    async fetchInstanceById(instanceId: InstanceId) {
+      const data = (await axios.get(`/api/instance/${instanceId}`)).data;
+      const instance = convert(data.data, data.included);
+
+      this.setInstanceById({
+        instanceId,
+        instance,
+      });
+      return instance;
+    },
+    async createInstance(newInstance: InstanceCreate) {
+      const data = (
+        await axios.post(
+          `/api/instance`,
+          {
+            data: {
+              type: "InstanceCreate",
+              attributes: newInstance,
+            },
+          },
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data;
+      const createdInstance = convert(data.data, data.included);
+
+      this.setInstanceById({
+        instanceId: createdInstance.id,
+        instance: createdInstance,
+      });
+
+      return createdInstance;
+    },
+    async patchInstance({
+      instanceId,
+      instancePatch,
+    }: {
+      instanceId: InstanceId;
+      instancePatch: InstancePatch;
+    }) {
+      const data = (
+        await axios.patch(
+          `/api/instance/${instanceId}`,
+          {
+            data: {
+              type: "instancePatch",
+              attributes: instancePatch,
+            },
+          },
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data;
+      const updatedInstance = convert(data.data, data.included);
+
+      this.setInstanceById({
+        instanceId: updatedInstance.id,
+        instance: updatedInstance,
+      });
+
+      return updatedInstance;
+    },
+    async deleteInstanceById(instanceId: InstanceId) {
+      await axios.delete(`/api/instance/${instanceId}`);
+      this.instanceById.delete(instanceId);
+    },
+    async fetchInstanceUserListById(instanceId: InstanceId) {
+      const data = (await axios.get(`/api/instance/${instanceId}/user`)).data;
+      const instanceUserList = data.data.map((instanceUser: ResourceObject) => {
+        return convertUser(instanceUser);
+      });
+
+      this.setInstanceUserListById({
+        instanceId,
+        instanceUserList,
+      });
+      return instanceUserList;
+    },
+    async checkMigrationSetup(
+      instanceId: InstanceId
+    ): Promise<InstanceMigration> {
+      const data = (
+        await axios.get(`/api/instance/${instanceId}/migration/status`, {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        })
+      ).data.data;
+
+      return {
+        status: data.attributes.status,
+        error: data.attributes.error,
+      };
+    },
+    async createMigrationSetup(instanceId: InstanceId): Promise<SqlResultSet> {
+      const data = (
+        await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        })
+      ).data.data;
+
+      return useSQLStore().convert(data) as SqlResultSet;
+    },
+    async fetchMigrationHistoryById({
+      instanceId,
+      migrationHistoryId,
+    }: {
+      instanceId: InstanceId;
+      migrationHistoryId: MigrationHistoryId;
+    }) {
+      const data = (
+        await axios.get(
+          `/api/instance/${instanceId}/migration/history/${migrationHistoryId}`,
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data;
+      const migrationHistory = convertMigrationHistory(data.data);
+
+      this.setMigrationHistoryById({
+        migrationHistoryId,
+        migrationHistory,
+      });
+      return migrationHistory;
+    },
+    async fetchMigrationHistoryByVersion({
+      instanceId,
+      databaseName,
+      version,
+    }: {
+      instanceId: InstanceId;
+      databaseName: string;
+      version: string;
+    }) {
+      const data = (
+        await axios.get(
+          `/api/instance/${instanceId}/migration/history?database=${databaseName}&version=${version}`,
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data.data;
+      const historyList: MigrationHistory[] = data.map(
+        (history: ResourceObject) => {
+          return convertMigrationHistory(history);
+        }
+      );
+
+      if (historyList.length > 0) {
+        this.setMigrationHistoryById({
+          migrationHistoryId: historyList[0].id,
+          migrationHistory: historyList[0],
+        });
+        return historyList[0];
+      }
+      throw new Error(
+        `Migration version ${version} not found in database ${databaseName}.`
+      );
+    },
+    async fetchMigrationHistory({
+      instanceId,
+      databaseName,
+      limit,
+    }: {
+      instanceId: InstanceId;
+      databaseName: string;
+      limit?: number;
+    }): Promise<MigrationHistory[]> {
+      let url = `/api/instance/${instanceId}/migration/history?database=${databaseName}`;
+      if (limit) {
+        url += `&limit=${limit}`;
+      }
+      const data = (
+        await axios.get(url, {
+          timeout: INSTANCE_OPERATION_TIMEOUT,
+        })
+      ).data.data;
+      const historyList: MigrationHistory[] = data.map(
+        (history: ResourceObject) => {
+          return convertMigrationHistory(history);
+        }
+      );
+
+      this.setMigrationHistoryListByInstanceIdAndDatabaseName({
+        instanceId,
+        databaseName,
+        historyList,
+      });
+
+      return historyList;
+    },
+  },
+});
+
+export const useInstanceList = (rowStatusList?: RowStatus[]) => {
+  const store = useInstanceStore();
+  watchEffect(() => store.fetchInstanceList(rowStatusList));
+  return computed(() => store.getInstanceList(rowStatusList));
 };

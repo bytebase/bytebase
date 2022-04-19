@@ -84,7 +84,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, sync.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
@@ -121,7 +121,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
 		}
 
-		instance, err := s.composeInstanceByID(ctx, exec.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
@@ -240,7 +240,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 		// to avoid changing the updated_ts
 		if version != instance.EngineVersion {
-			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
+			_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
 				UpdaterID:     api.SystemBotID,
 				EngineVersion: &version,
@@ -254,7 +254,6 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Sync schema
 		userList, schemaList, err := driver.SyncSchema(ctx)
 		if err != nil {
-			fmt.Printf("sync schema error: %v\n", err)
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
@@ -475,13 +474,13 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
 			if err != nil {
-				return fmt.Errorf("Failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+				return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 			}
 			var dbList []*api.Database
 			for _, dbRaw := range dbRawList {
 				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 				if err != nil {
-					return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+					return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
 				}
 				dbList = append(dbList, db)
 			}
@@ -521,7 +520,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 					dbPatched, err := s.composeDatabaseRelationship(ctx, dbRawPatched)
 					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
+						return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
 					}
 
 					tableDelete := &api.TableDelete{
@@ -572,7 +571,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 					db, err := s.composeDatabaseRelationship(ctx, dbRaw)
 					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
+						return fmt.Errorf("failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
 					}
 
 					for _, table := range schema.TableList {
@@ -651,7 +650,7 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 	// Check if the query has only one statement.
 	count := 0
 	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
-	if err := util.ApplyMultiStatements(sc, func(stmt string) error {
+	if err := util.ApplyMultiStatements(sc, func(_ string) error {
 		count++
 		return nil
 	}); err != nil {

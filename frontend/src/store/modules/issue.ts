@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   empty,
@@ -17,14 +18,15 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
-} from "../../types";
-import { getPrincipalFromIncludedList } from "../pinia";
+} from "@/types";
+import { getPrincipalFromIncludedList } from "./principal";
+import { useActivityStore } from "./activity";
+import { useDatabaseStore } from "./database";
+import { useInstanceStore } from "./instance";
+import { usePipelineStore } from "./pipeline";
+import { useProjectStore } from "./project";
 
-function convert(
-  issue: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
-): Issue {
+function convert(issue: ResourceObject, includedList: ResourceObject[]): Issue {
   const projectId = (issue.relationships!.project.data as ResourceIdentifier)
     .id;
   let project: Project = unknown("PROJECT") as Project;
@@ -35,12 +37,14 @@ function convert(
   let pipeline = unknown("PIPELINE") as Pipeline;
   pipeline.id = parseInt(pipelineId);
 
+  const projectStore = useProjectStore();
+  const pipelineStore = usePipelineStore();
   for (const item of includedList || []) {
     if (
       item.type == "project" &&
       (issue.relationships!.project.data as ResourceIdentifier).id == item.id
     ) {
-      project = rootGetters["project/convert"](item);
+      project = projectStore.convert(item, includedList || []);
     }
 
     if (
@@ -48,7 +52,7 @@ function convert(
       issue.relationships!.pipeline.data &&
       (issue.relationships!.pipeline.data as ResourceIdentifier).id == item.id
     ) {
-      pipeline = rootGetters["pipeline/convert"](item, includedList);
+      pipeline = pipelineStore.convert(item, includedList);
     }
   }
 
@@ -86,26 +90,22 @@ function convert(
   };
 }
 
-const state: () => IssueState = () => ({
-  issueById: new Map(),
-});
-
-const getters = {
-  issueById:
-    (state: IssueState) =>
-    (issueId: IssueId): Issue => {
+export const useIssueStore = defineStore("issue", {
+  state: (): IssueState => ({
+    issueById: new Map(),
+  }),
+  actions: {
+    getIssueById(issueId: IssueId): Issue {
       if (issueId == EMPTY_ID) {
         return empty("ISSUE") as Issue;
       }
 
-      return state.issueById.get(issueId) || (unknown("ISSUE") as Issue);
+      return this.issueById.get(issueId) || (unknown("ISSUE") as Issue);
     },
-};
-
-const actions = {
-  async fetchIssueList(
-    { rootGetters }: any,
-    {
+    setIssueById({ issueId, issue }: { issueId: IssueId; issue: Issue }) {
+      this.issueById.set(issueId, issue);
+    },
+    async fetchIssueList({
       issueStatusList,
       userId,
       projectId,
@@ -115,194 +115,154 @@ const actions = {
       userId?: PrincipalId;
       projectId?: ProjectId;
       limit?: number;
-    }
-  ) {
-    const queryList = [];
-    if (issueStatusList) {
-      queryList.push(`status=${issueStatusList.join(",")}`);
-    }
-    if (userId) {
-      queryList.push(`user=${userId}`);
-    }
-    if (projectId) {
-      queryList.push(`project=${projectId}`);
-    }
-    if (limit) {
-      queryList.push(`limit=${limit}`);
-    }
-    let url = "/api/issue";
-    if (queryList.length > 0) {
-      url += `?${queryList.join("&")}`;
-    }
-    const data = (await axios.get(url)).data;
-    const issueList = data.data.map((issue: ResourceObject) => {
-      return convert(issue, data.included, rootGetters);
-    });
+    }) {
+      const queryList = [];
+      if (issueStatusList) {
+        queryList.push(`status=${issueStatusList.join(",")}`);
+      }
+      if (userId) {
+        queryList.push(`user=${userId}`);
+      }
+      if (projectId) {
+        queryList.push(`project=${projectId}`);
+      }
+      if (limit) {
+        queryList.push(`limit=${limit}`);
+      }
+      let url = "/api/issue";
+      if (queryList.length > 0) {
+        url += `?${queryList.join("&")}`;
+      }
+      const data = (await axios.get(url)).data;
+      const issueList: Issue[] = data.data.map((issue: ResourceObject) => {
+        return convert(issue, data.included);
+      });
 
-    // The caller consumes directly, so we don't store it.
-    return issueList;
-  },
+      // The caller consumes directly, so we don't store it.
+      return issueList;
+    },
+    async fetchIssueById(issueId: IssueId) {
+      const data = (await axios.get(`/api/issue/${issueId}`)).data;
+      const issue = convert(data.data, data.included);
+      this.setIssueById({
+        issueId,
+        issue,
+      });
 
-  async fetchIssueById({ commit, rootGetters }: any, issueId: IssueId) {
-    const data = (await axios.get(`/api/issue/${issueId}`)).data;
-    const issue = convert(data.data, data.included, rootGetters);
-    commit("setIssueById", {
-      issueId,
-      issue,
-    });
-
-    // It might be the first time the particular instance/database objects are returned,
-    // so that we should also update instance/database store, otherwise, we may get
-    // unknown instance/database when navigating to other UI from the issue detail page
-    // since other UIs are getting instance/database by id from the store.
-    for (const stage of issue.pipeline.stageList) {
-      for (const task of stage.taskList) {
-        commit(
-          "instance/setInstanceById",
-          {
+      // It might be the first time the particular instance/database objects are returned,
+      // so that we should also update instance/database store, otherwise, we may get
+      // unknown instance/database when navigating to other UI from the issue detail page
+      // since other UIs are getting instance/database by id from the store.
+      const instanceStore = useInstanceStore();
+      const databaseStore = useDatabaseStore();
+      for (const stage of issue.pipeline.stageList) {
+        for (const task of stage.taskList) {
+          instanceStore.setInstanceById({
             instanceId: task.instance.id,
             instance: task.instance,
-          },
-          { root: true }
-        );
+          });
 
-        if (task.database) {
-          commit(
-            "database/upsertDatabaseList",
-            {
+          if (task.database) {
+            databaseStore.upsertDatabaseList({
               databaseList: [task.database],
-            },
-            { root: true }
-          );
+            });
+          }
         }
       }
-    }
-    return issue;
-  },
-
-  async createIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
-    const data = (
-      await axios.post(`/api/issue`, {
-        data: {
-          type: "IssueCreate",
-          attributes: {
-            ...newIssue,
-            // Server expects payload as string, so we stringify first.
-            createContext: JSON.stringify(newIssue.createContext),
-            payload: JSON.stringify(newIssue.payload),
+      return issue;
+    },
+    async createIssue(newIssue: IssueCreate) {
+      const data = (
+        await axios.post(`/api/issue`, {
+          data: {
+            type: "IssueCreate",
+            attributes: {
+              ...newIssue,
+              // Server expects payload as string, so we stringify first.
+              createContext: JSON.stringify(newIssue.createContext),
+              payload: JSON.stringify(newIssue.payload),
+            },
           },
-        },
-      })
-    ).data;
-    const createdIssue = convert(data.data, data.included, rootGetters);
+        })
+      ).data;
+      const createdIssue = convert(data.data, data.included);
 
-    commit("setIssueById", {
-      issueId: createdIssue.id,
-      issue: createdIssue,
-    });
+      this.setIssueById({
+        issueId: createdIssue.id,
+        issue: createdIssue,
+      });
 
-    return createdIssue;
-  },
-
-  async validateIssue({ commit, rootGetters }: any, newIssue: IssueCreate) {
-    const data = (
-      await axios.post(`/api/issue`, {
-        data: {
-          type: "IssueCreate",
-          attributes: {
-            ...newIssue,
-            // Server expects payload as string, so we stringify first.
-            createContext: JSON.stringify(newIssue.createContext),
-            payload: JSON.stringify(newIssue.payload),
-            validateOnly: true,
+      return createdIssue;
+    },
+    async validateIssue(newIssue: IssueCreate) {
+      const data = (
+        await axios.post(`/api/issue`, {
+          data: {
+            type: "IssueCreate",
+            attributes: {
+              ...newIssue,
+              // Server expects payload as string, so we stringify first.
+              createContext: JSON.stringify(newIssue.createContext),
+              payload: JSON.stringify(newIssue.payload),
+              validateOnly: true,
+            },
           },
-        },
-      })
-    ).data;
-    const createdIssue = convert(data.data, data.included, rootGetters);
-    return createdIssue;
-  },
-
-  async patchIssue(
-    { commit, dispatch, rootGetters }: any,
-    {
+        })
+      ).data;
+      const createdIssue = convert(data.data, data.included);
+      return createdIssue;
+    },
+    async patchIssue({
       issueId,
       issuePatch,
     }: {
       issueId: IssueId;
       issuePatch: IssuePatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/issue/${issueId}`, {
-        data: {
-          type: "issuePatch",
-          attributes: issuePatch,
-        },
-      })
-    ).data;
-    const updatedIssue = convert(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(`/api/issue/${issueId}`, {
+          data: {
+            type: "issuePatch",
+            attributes: issuePatch,
+          },
+        })
+      ).data;
+      const updatedIssue = convert(data.data, data.included);
 
-    commit("setIssueById", {
-      issueId: issueId,
-      issue: updatedIssue,
-    });
+      this.setIssueById({
+        issueId: issueId,
+        issue: updatedIssue,
+      });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+      useActivityStore().fetchActivityListForIssue(issueId);
 
-    return updatedIssue;
-  },
-
-  async updateIssueStatus(
-    { commit, dispatch, rootGetters }: any,
-    {
+      return updatedIssue;
+    },
+    async updateIssueStatus({
       issueId,
       issueStatusPatch,
     }: {
       issueId: IssueId;
       issueStatusPatch: IssueStatusPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/issue/${issueId}/status`, {
-        data: {
-          type: "issueStatusPatch",
-          attributes: issueStatusPatch,
-        },
-      })
-    ).data;
-    const updatedIssue = convert(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(`/api/issue/${issueId}/status`, {
+          data: {
+            type: "issueStatusPatch",
+            attributes: issueStatusPatch,
+          },
+        })
+      ).data;
+      const updatedIssue = convert(data.data, data.included);
 
-    commit("setIssueById", {
-      issueId: issueId,
-      issue: updatedIssue,
-    });
+      this.setIssueById({
+        issueId: issueId,
+        issue: updatedIssue,
+      });
 
-    dispatch("activity/fetchActivityListForIssue", issueId, { root: true });
+      useActivityStore().fetchActivityListForIssue(issueId);
 
-    return updatedIssue;
+      return updatedIssue;
+    },
   },
-};
-
-const mutations = {
-  setIssueById(
-    state: IssueState,
-    {
-      issueId,
-      issue,
-    }: {
-      issueId: IssueId;
-      issue: Issue;
-    }
-  ) {
-    state.issueById.set(issueId, issue);
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

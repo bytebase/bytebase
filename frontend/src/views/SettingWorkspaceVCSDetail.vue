@@ -145,7 +145,6 @@ import {
   onUnmounted,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import RepositoryTable from "../components/RepositoryTable.vue";
 import isEmpty from "lodash-es/isEmpty";
@@ -157,7 +156,12 @@ import {
   OAuthWindowEventPayload,
   OAuthToken,
 } from "../types";
-import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
+import {
+  pushNotification,
+  useOAuthStore,
+  useRepositoryStore,
+  useVCSStore,
+} from "@/store";
 
 interface LocalState {
   name: string;
@@ -176,8 +180,8 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const vcsStore = useVCSStore();
+    const repositoryStore = useRepositoryStore();
     const router = useRouter();
 
     const vcs = computed((): VCS => {
@@ -220,7 +224,7 @@ export default defineComponent({
     };
 
     const prepareRepositoryList = () => {
-      store.dispatch("repository/fetchRepositoryListByVCSId", vcs.value.id);
+      repositoryStore.fetchRepositoryListByVCSId(vcs.value.id);
     };
 
     watchEffect(prepareRepositoryList);
@@ -233,7 +237,7 @@ export default defineComponent({
     });
 
     const repositoryList = computed(() =>
-      store.getters["repository/repositoryListByVCSId"](vcs.value.id)
+      repositoryStore.getRepositoryListByVCSId(vcs.value.id)
     );
 
     const allowUpdate = computed(() => {

@@ -270,7 +270,7 @@ func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, erro
 		return nil, err
 	}
 	if id > 0 && issueRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("Issue not found with ID %v", id)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("issue not found with ID %v", id)}
 	}
 
 	if issueRaw == nil {
@@ -308,16 +308,12 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriberRaw := range issueSubscriberRawList {
-		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
-		}
-		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	for _, issueSub := range issueSubscriberList {
+		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
 	project, err := s.composeProjectByID(ctx, issue.ProjectID)
@@ -357,22 +353,19 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
 	}
-	issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
 	}
-	for _, issueSubscriberRaw := range issueSubscriberRawList {
-		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
-		}
-		issue.SubscriberList = append(issue.SubscriberList, issueSubscriber.Subscriber)
+	for _, issueSub := range issueSubscriberList {
+		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
-	issue.Project, err = s.composeProjectByID(ctx, issue.ProjectID)
+	project, err := s.composeProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
+	issue.Project = project
 
 	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
 		return err
@@ -390,7 +383,7 @@ func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) e
 		return err
 	}
 	if assignee == nil {
-		return fmt.Errorf("Principal ID not found: %d", assigneeID)
+		return fmt.Errorf("principal ID not found: %d", assigneeID)
 	}
 	if assignee.Role != api.Owner && assignee.Role != api.DBA {
 		return fmt.Errorf("%s is not allowed as assignee", assignee.Role)
@@ -454,7 +447,7 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 				IssueID:      issue.ID,
 				SubscriberID: subscriberID,
 			}
-			_, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, subscriberCreate)
+			_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
 			}
@@ -551,8 +544,8 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 
 func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
 	var pipelineCreate *api.PipelineCreate
-	switch {
-	case issueCreate.Type == api.IssueDatabaseCreate:
+	switch issueCreate.Type {
+	case api.IssueDatabaseCreate:
 		m := api.CreateDatabaseContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -562,7 +555,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 
 		// Find instance.
-		instance, err := s.composeInstanceByID(ctx, m.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, m.InstanceID)
 		if err != nil {
 			return nil, err
 		}
@@ -743,7 +736,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				},
 			}
 		}
-	case issueCreate.Type == api.IssueDatabaseSchemaUpdate || issueCreate.Type == api.IssueDatabaseDataUpdate:
+	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
 		m := api.UpdateSchemaContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
 			return nil, err
@@ -777,7 +770,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if !s.feature(api.FeatureMultiTenancy) {
 				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 			}
-			if !(m.MigrationType == db.Migrate || m.MigrationType == db.Data) {
+			if m.MigrationType != db.Migrate && m.MigrationType != db.Data {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
 			}
 			if len(m.UpdateSchemaDetailList) != 1 {
@@ -944,9 +937,10 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
 	taskName := fmt.Sprintf("Establish %q baseline", database.Name)
-	if migrationType == db.Migrate {
+	switch migrationType {
+	case db.Migrate:
 		taskName = fmt.Sprintf("Update %q schema", database.Name)
-	} else if migrationType == db.Data {
+	case db.Data:
 		taskName = fmt.Sprintf("Update %q data", database.Name)
 	}
 	payload := api.TaskDatabaseSchemaUpdatePayload{}
@@ -1221,7 +1215,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 			}
 		}
 		if found {
-			err := fmt.Errorf("Conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
+			err := fmt.Errorf("conflicting database name, project has existing base database named %q, but it's not from the selected peer tenants", baseDatabaseName)
 			return "", "", echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		return "", "", nil

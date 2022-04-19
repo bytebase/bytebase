@@ -30,7 +30,6 @@ export type InputFieldType = "Boolean" | "String";
 export type OutputFieldType = "String" | "Database";
 
 export type IssueContext = {
-  store: Store<any>;
   currentUser: Principal;
   create: boolean;
   issue: Issue | IssueCreate;

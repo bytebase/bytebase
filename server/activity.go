@@ -74,8 +74,8 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.CreatorID = &creatorID
 		}
-		if typeStr := c.QueryParams().Get("type"); typeStr != "" {
-			activityFind.Type = &typeStr
+		if typePrefixStr := c.QueryParams().Get("typePrefix"); typePrefixStr != "" {
+			activityFind.TypePrefix = &typePrefixStr
 		}
 		if levelStr := c.QueryParams().Get("level"); levelStr != "" {
 			activityLevel := api.ActivityLevel(levelStr)

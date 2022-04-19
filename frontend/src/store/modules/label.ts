@@ -1,5 +1,5 @@
-import axios from "axios";
 import { defineStore } from "pinia";
+import axios from "axios";
 import {
   Label,
   ResourceObject,
@@ -7,7 +7,7 @@ import {
   LabelId,
   LabelPatch,
   LabelValueType,
-} from "../../types";
+} from "@/types";
 
 function convert(label: ResourceObject): Label {
   const valueList = (label.attributes.valueList || []) as LabelValueType[];

@@ -100,7 +100,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			if frontendHost == "" {
 				frontendHost = host
 			}
@@ -457,19 +457,16 @@ func (m *Main) Run(ctx context.Context) error {
 	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
 	// TODO(dragonly): remove this hack
 	storeInstance.DatabaseService = s.DatabaseService
-	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
 	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
 	s.StageService = store.NewStageService(m.l, db)
 	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
 	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.BookmarkService = store.NewBookmarkService(m.l, db)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
 	s.LabelService = store.NewLabelService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)

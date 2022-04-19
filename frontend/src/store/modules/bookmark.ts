@@ -7,7 +7,7 @@ import {
   BookmarkState,
   ResourceObject,
   unknown,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(

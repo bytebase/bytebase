@@ -109,11 +109,10 @@
 
 <script lang="ts">
 import { computed, reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { DataSource } from "../types";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useDatabaseStore } from "@/store";
 
 type Connection = {
   name: string;
@@ -138,7 +137,7 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
 
     const state = reactive<LocalState>({
       showPassword: false,
@@ -147,7 +146,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const database = computed(() => {
-      return store.getters["database/databaseById"](
+      return databaseStore.getDatabaseById(
         props.dataSource.databaseId,
         props.dataSource.instanceId
       );
