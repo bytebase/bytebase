@@ -26,16 +26,16 @@
               <span class="text-sm flex-1">{{ taskNameOfStage(stage) }}</span>
             </div>
             <div class="tooltip-wrapper">
-              <span class="tooltip whitespace-nowrap"
-                >Missing SQL statement</span
-              >
+              <span class="tooltip whitespace-nowrap">
+                Missing SQL statement
+              </span>
               <span
                 v-if="!isValidStage(stage)"
                 class="ml-2 w-5 h-5 flex justify-center rounded-full select-none bg-error text-white hover:bg-error-hover"
               >
-                <span class="text-center font-normal" aria-hidden="true"
-                  >!</span
-                >
+                <span class="text-center font-normal" aria-hidden="true">
+                  !
+                </span>
               </span>
             </div>
           </span>
