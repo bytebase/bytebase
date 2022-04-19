@@ -5,6 +5,10 @@ import {
   Pipeline,
   PipelineState,
   Stage,
+  TaskId,
+  Task,
+  Attributes,
+  unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useStageStore } from "./stage";
@@ -54,6 +58,27 @@ function convert(
       task.stage = stage;
     }
   }
+
+  // Then we compose tasks' blockedBy since we have converted all tasks in this pipeline
+  const taskMapById = new Map<TaskId, Task>();
+  result.stageList.forEach((stage) =>
+    stage.taskList.forEach((task) => {
+      taskMapById.set(task.id, task);
+    })
+  );
+  result.stageList.forEach((stage) =>
+    stage.taskList.forEach((task) => {
+      // attributes.blockedBy is string[] since jsonapi's limitation
+      const blockedByTaskIdList = (task as Attributes).blockedBy as string[];
+      const blockedBy = (blockedByTaskIdList || []).map((blockedById) => {
+        return (
+          taskMapById.get(parseInt(blockedById, 10)) ||
+          (unknown("TASK") as Task)
+        );
+      });
+      task.blockedBy = blockedBy;
+    })
+  );
 
   return result;
 }

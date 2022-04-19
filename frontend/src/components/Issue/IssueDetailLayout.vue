@@ -52,6 +52,19 @@
           @select-task="selectTask"
         />
       </template>
+      <template v-else-if="isGhostMode">
+        <PipelineGhostFlow
+          v-if="project"
+          :create="create"
+          :project="project"
+          :pipeline="issue.pipeline!"
+          :selected-stage="selectedStage"
+          :selected-task="selectedTask"
+          class="border-t border-b"
+          @select-stage-id="selectStageId"
+          @select-task="selectTask"
+        />
+      </template>
       <template v-else>
         <PipelineSimpleFlow
           :create="create"
@@ -60,11 +73,13 @@
           @select-stage-id="selectStageId"
         />
       </template>
+
       <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
         <IssueStagePanel
           :stage="selectedStage"
           :selected-task="selectedTask"
-          :single-mode="isTenantDeployMode"
+          :is-tenant-mode="isTenantDeployMode"
+          :is-ghost-mode="isGhostMode"
         />
       </div>
     </template>
@@ -141,6 +156,27 @@
                   :show-apply-statement="false"
                   @update-statement="updateStatement"
                 />
+              </template>
+              <template v-else-if="isGhostMode">
+                <!--
+                  For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
+                  has a SQL statement.
+                  TODO(jim): When the other two tasks are selected we should show the SQL which will be internally
+                  executed (change table name and drop table).
+                -->
+                <template v-if="isGhostSyncTaskSelected">
+                  <IssueTaskStatementPanel
+                    :sql-hint="sqlHint()"
+                    :statement="selectedStatement"
+                    :create="create"
+                    :allow-edit="allowEditStatement"
+                    :show-apply-statement="showIssueTaskStatementApply"
+                    @update-statement="updateStatement"
+                    @apply-statement-to-other-stages="
+                      applyStatementToOtherStages
+                    "
+                  />
+                </template>
               </template>
               <template v-else>
                 <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
@@ -227,6 +263,7 @@ import {
   stageSlug,
   activeTask,
   taskSlug,
+  isDev,
 } from "../../utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -239,6 +276,7 @@ import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "./IssueActivityPanel.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import PipelineTenantFlow from "./PipelineTenantFlow.vue";
+import PipelineGhostFlow from "./PipelineGhostFlow.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import {
   Issue,
@@ -266,6 +304,7 @@ import {
   TaskPatch,
   UpdateSchemaContext,
   UpdateSchemaDetail,
+  TaskDatabaseSchemaUpdateGhostSyncPayload,
 } from "../../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -298,6 +337,7 @@ export default defineComponent({
     IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
     PipelineTenantFlow,
+    PipelineGhostFlow,
     TaskCheckBar,
   },
   props: {
@@ -406,6 +446,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             task.statement = newStatement;
@@ -731,18 +772,36 @@ export default defineComponent({
           );
         case "bb.task.database.restore":
           return "";
+        case "bb.task.database.schema.update.ghost.sync":
+        case "bb.task.database.schema.update.ghost.cutover":
+        case "bb.task.database.schema.update.ghost.drop-original-table":
+          return ""; // should never reach here
       }
     };
 
     const isTenantDeployMode = computed((): boolean => {
+      if (project.value.tenantMode !== "TENANT") return false;
       return (
-        props.issue.type === "bb.issue.database.schema.update" &&
-        project.value.tenantMode === "TENANT"
+        props.issue.type === "bb.issue.database.schema.update" ||
+        props.issue.type === "bb.issue.database.data.update"
+      );
+    });
+
+    const isGhostMode = computed((): boolean => {
+      if (!isDev()) return false;
+
+      return props.issue.type === "bb.issue.database.schema.update.ghost";
+    });
+
+    const isGhostSyncTaskSelected = computed((): boolean => {
+      return (
+        selectedTask.value.type === "bb.task.database.schema.update.ghost.sync"
       );
     });
 
     const selectedStatement = computed((): string => {
       if (isTenantDeployMode.value) {
+        // In tenant mode, the entire issue shares only one SQL statement
         if (props.create) {
           const issueCreate = props.issue as IssueCreate;
           const context = issueCreate.createContext as UpdateSchemaContext;
@@ -752,6 +811,21 @@ export default defineComponent({
           const task = issue.pipeline.stageList[0].taskList[0];
           const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
           return payload.statement;
+        }
+      } else if (isGhostMode.value) {
+        // In gh-ost mode, each stage can own its SQL statement
+        // But only for task.type === "bb.task.database.schema.update.ghost.sync"
+        const task = selectedTask.value;
+        if (task.type === "bb.task.database.schema.update.ghost.sync") {
+          if (props.create) {
+            return (task as TaskCreate).statement;
+          } else {
+            const payload = (task as Task)
+              .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
+            return payload.statement;
+          }
+        } else {
+          return "";
         }
       } else {
         if (router.currentRoute.value.query.sql) {
@@ -875,6 +949,7 @@ export default defineComponent({
         task.type == "bb.task.general" ||
         task.type == "bb.task.database.create" ||
         task.type == "bb.task.database.schema.update" ||
+        task.type == "bb.task.database.schema.update.ghost.sync" ||
         task.type == "bb.task.database.data.update"
       );
     });
@@ -893,6 +968,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             count++;
@@ -974,6 +1050,8 @@ export default defineComponent({
       currentUser,
       project,
       isTenantDeployMode,
+      isGhostMode,
+      isGhostSyncTaskSelected,
       issueTemplate,
       selectedStage,
       selectedTask,

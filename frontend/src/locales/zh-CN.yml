@@ -224,6 +224,10 @@ task:
     warn: 警告
     error: 错误
   earliest-allowed-time-no-modify: 您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。
+  type:
+    bb-task-database-schema-update-ghost-sync: 同步数据
+    bb-task-database-schema-update-ghost-cutover: 切换表
+    bb-task-database-schema-update-ghost-drop-original-table: 删除原始表
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
