@@ -193,7 +193,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database

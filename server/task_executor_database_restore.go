@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+
 	"go.uber.org/zap"
 )
 
