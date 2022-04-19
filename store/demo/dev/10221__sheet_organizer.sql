@@ -8,7 +8,7 @@ INSERT INTO
     )
 VALUES
     (
-        23001,
+        22101,
         22001,
         101,
         false,
@@ -25,7 +25,7 @@ INSERT INTO
     )
 VALUES
     (
-        23002,
+        22102,
         22002,
         101,
         true,
@@ -42,11 +42,28 @@ INSERT INTO
     )
 VALUES
     (
-        23003,
+        22103,
         22003,
-        101,
-        true,
+        102,
+        false,
         true
     );
 
-ALTER SEQUENCE sheet_id_seq RESTART WITH 23004;
+INSERT INTO
+    sheet_organizer (
+        id,
+        sheet_id,
+        principal_id,
+        starred,
+        pinned
+    )
+VALUES
+    (
+        22104,
+        22004,
+        102,
+        true,
+        false
+    );
+
+ALTER SEQUENCE sheet_id_seq RESTART WITH 22105;
