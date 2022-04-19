@@ -227,13 +227,19 @@ type oauthResponse struct {
 
 // convert to *vcs.OAuthToken
 func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
-	return &vcs.OAuthToken{
+	oauthToken := &vcs.OAuthToken{
 		AccessToken:  o.AccessToken,
 		RefreshToken: o.RefreshToken,
 		ExpiresIn:    o.ExpiresIn,
 		CreatedAt:    o.CreatedAt,
 		ExpiresTs:    o.ExpiresTs,
 	}
+	// For GitLab, as of 13.12, the default config won't expire the access token,
+	// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	if oauthToken.ExpiresIn != 0 {
+		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
+	}
+	return oauthToken
 }
 
 // ExchangeOAuthToken exchange oauth content with the provided authentication code.
@@ -271,12 +277,6 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	}
 	if oauthResp.Error != "" {
 		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
-	}
-
-	// For GitLab, as of 13.12, the default config won't expire the access token,
-	// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
-	if oauthResp.ExpiresIn != 0 {
-		oauthResp.ExpiresTs = oauthResp.CreatedAt + oauthResp.ExpiresIn
 	}
 	return oauthResp.toVCSOAuthToken(), nil
 }
