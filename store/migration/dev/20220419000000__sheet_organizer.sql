@@ -1,4 +1,4 @@
--- sheet_organizer table stores the sheet status data from a principal.
+-- sheet_organizer table stores the sheet status for a principal.
 CREATE TABLE sheet_organizer (
     id SERIAL PRIMARY KEY,
     sheet_id INTEGER NOT NULL REFERENCES sheet (id),
