@@ -166,6 +166,7 @@ const commentLink = (task: Task, taskRun: TaskRun): CommentLink => {
           )}`,
         };
       }
+      // TODO(jim): format for gh-ost related tasks
     }
   } else if (taskRun.status == "FAILED") {
     if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
