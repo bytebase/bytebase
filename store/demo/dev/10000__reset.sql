@@ -24,6 +24,9 @@ DELETE FROM
     activity;
 
 DELETE FROM
+    sheet_organizer;
+
+DELETE FROM
     sheet;
 
 DELETE FROM
