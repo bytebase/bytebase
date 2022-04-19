@@ -189,9 +189,8 @@ watchEffect(function prepare() {
 const databaseOfTask = (task: Task | TaskCreate): Database => {
   if (props.create) {
     return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
-  } else {
-    return (task as Task).database!;
   }
+  return (task as Task).database!;
 };
 
 const isSelectedStage = (stage: Stage | StageCreate): boolean => {
@@ -203,7 +202,9 @@ const isSelectedTask = (task: Task | TaskCreate): boolean => {
 };
 
 const isActiveStage = (stage: Stage | StageCreate): boolean => {
-  if (props.create) return false;
+  if (props.create) {
+    return false;
+  }
 
   const task = activeTaskInStage(stage as Stage);
   if (activeTask(props.pipeline as Pipeline).id === task.id) {
@@ -213,7 +214,9 @@ const isActiveStage = (stage: Stage | StageCreate): boolean => {
 };
 
 const isActiveTask = (task: Task | TaskCreate): boolean => {
-  if (props.create) return false;
+  if (props.create) {
+    return false;
+  }
   task = task as Task;
   return activeTask(props.pipeline as Pipeline).id === task.id;
 };
@@ -221,25 +224,23 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
 const taskStatusOfStage = (stage: Stage | StageCreate) => {
   if (props.create) {
     return stage.taskList[0].status;
-  } else {
-    const activeTask = activeTaskInStage(stage as Stage);
-    return activeTask.status;
   }
+  const activeTask = activeTaskInStage(stage as Stage);
+  return activeTask.status;
 };
 
 const taskNameOfStage = (stage: Stage | StageCreate) => {
   if (props.create) {
     return stage.taskList[0].status;
-  } else {
-    const activeTask = activeTaskInStage(stage as Stage);
-    const { taskList } = stage as Stage;
-    for (let i = 0; i < stage.taskList.length; i++) {
-      if (taskList[i].id == activeTask.id) {
-        return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
-      }
-    }
-    return activeTask.name;
   }
+  const activeTask = activeTaskInStage(stage as Stage);
+  const { taskList } = stage as Stage;
+  for (let i = 0; i < stage.taskList.length; i++) {
+    if (taskList[i].id == activeTask.id) {
+      return `${activeTask.name} (${i + 1}/${stage.taskList.length})`;
+    }
+  }
+  return activeTask.name;
 };
 
 const taskNameOfTask = (task: Task | TaskCreate) => {
@@ -267,15 +268,16 @@ const taskList = computed(() => {
 const selectedStageId = computed(() => {
   if (!props.create) {
     return (props.selectedStage as Stage).id;
-  } else {
-    return (props.pipeline.stageList as StageCreate[]).indexOf(
-      props.selectedStage as StageCreate
-    );
   }
+  return (props.pipeline.stageList as StageCreate[]).indexOf(
+    props.selectedStage as StageCreate
+  );
 });
 
 const getTaskProgress = (task: Task | TaskCreate) => {
-  if (props.create) return 0;
+  if (props.create) {
+    return 0;
+  }
   if (task.type !== "bb.task.database.schema.update.ghost.sync") return 0;
   const progress = 66.6; // TODO(jim): not implemented yet
   return progress;
