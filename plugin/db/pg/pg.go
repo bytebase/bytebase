@@ -438,19 +438,22 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
-func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
+// hasDatabase finds if there is a database named `dbName` in this instance
+func (driver *Driver) hasDatabase(ctx context.Context, dbName string) (bool, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return false, err
 	}
-	exist := false
 	for _, database := range databases {
-		if database.name == bytebaseDatabase {
-			exist = true
-			break
+		if database.name == dbName {
+			return true, nil
 		}
 	}
-	return exist, nil
+	return false, nil
+}
+
+func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
+	return driver.hasDatabase(ctx, bytebaseDatabase)
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
