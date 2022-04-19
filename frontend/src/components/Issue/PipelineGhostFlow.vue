@@ -64,6 +64,14 @@
       </div>
     </div>
 
+    <!--
+      We don't parse the tasks' dependency relationships here, since we have exactly 1
+      [sync->cutover->drop-original-table] thread in each stage.
+
+      If we support multi-tenant-gh-ost mode in the future, we may have more than
+      one series of [sync->cutover->drop-original-table] threads.
+      Then we may repeat the horizon scroller. Each row is a thread of gh-ost migration.
+    -->
     <NScrollbar x-scrollable>
       <div class="task-list p-2 md:flex md:items-center relative">
         <template v-for="(task, j) in taskList" :key="j">
