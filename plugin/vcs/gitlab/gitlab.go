@@ -241,10 +241,20 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if err != nil {
 		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
 	}
+	defer resp.Body.Close()
 
-	oauthToken := &vcs.OAuthToken{}
-	if err := json.Unmarshal(body, oauthToken); err != nil {
+	oauthToken := struct {
+		*vcs.OAuthToken
+		Error            string `json:"error,omitempty"`
+		ErrorDescription string `json:"error_description,omitempty"`
+	}{
+		OAuthToken: &vcs.OAuthToken{},
+	}
+	if err := json.Unmarshal(body, &oauthToken); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+	if oauthToken.Error != "" {
+		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v, error_description: %v", oauthToken.Error, oauthToken.ErrorDescription)
 	}
 
 	// For GitLab, as of 13.12, the default config won't expire the access token,
@@ -252,7 +262,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	if oauthToken.ExpiresIn != 0 {
 		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
 	}
-	return oauthToken, nil
+	return oauthToken.OAuthToken, nil
 }
 
 // FetchRepositoryList fetched all repositories in which the authenticated user
