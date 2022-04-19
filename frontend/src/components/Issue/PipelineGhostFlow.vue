@@ -94,7 +94,7 @@
                 {{ taskNameOfTask(task) }}
               </div>
             </div>
-            <div v-if="isDev && getTaskProgress(task) > 0">
+            <div v-if="getTaskProgress(task) > 0">
               <BBProgressPie
                 class="w-12 h-12 text-info"
                 :percent="getTaskProgress(task)"
