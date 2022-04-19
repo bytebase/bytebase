@@ -150,7 +150,6 @@ import {
   DatabaseSchemaReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
-  SelectedRule,
   ruleList,
   Environment,
   convertPolicyPayloadToRulePayload,
@@ -204,7 +203,7 @@ const review = computed((): DatabaseSchemaReviewPolicy => {
 });
 
 const environmentList = computed((): Environment[] => {
-  return review.value.environmentList.map((envId) => {
+  return review.value.environmentIdList.map((envId) => {
     const env = envStore.getEnvironmentById(envId);
     return {
       ...env,
@@ -218,12 +217,12 @@ const ruleMap = ruleList.reduce((map, rule) => {
   return map;
 }, new Map<string, SchemaRule>());
 
-const selectedRuleList = computed((): SelectedRule[] => {
+const selectedRuleList = computed((): SchemaRule[] => {
   if (!review.value) {
     return [];
   }
 
-  const res: SelectedRule[] = [];
+  const res: SchemaRule[] = [];
 
   for (const selectedRule of review.value.ruleList) {
     const rule = ruleMap.get(selectedRule.id);
@@ -307,7 +306,7 @@ const selectCategory = (category: string) => {
   }
 };
 
-const filteredSelectedRuleList = computed((): SelectedRule[] => {
+const filteredSelectedRuleList = computed((): SchemaRule[] => {
   return selectedRuleList.value.filter((selectedRule) => {
     if (
       !state.selectedCategory &&

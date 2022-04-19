@@ -35,7 +35,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         if (review.id === reviewId) {
           continue;
         }
-        for (const envId of review.environmentList) {
+        for (const envId of review.environmentIdList) {
           if (envMap.has(envId)) {
             envMap.delete(envId);
           }

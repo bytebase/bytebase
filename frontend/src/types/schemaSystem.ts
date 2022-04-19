@@ -15,7 +15,7 @@ export const LEVEL_LIST = [
 
 export enum PayloadType {
   STRING = "STRING",
-  STRING_ARRAY = "STRING[]",
+  STRING_ARRAY = "STRING_ARRAY",
   TEMPLATE = "TEMPLATE",
 }
 
@@ -38,18 +38,9 @@ interface TemplatePayload {
   value?: string;
 }
 
-interface NamingFormatRulePayload {
-  format: StringPayload | TemplatePayload;
+export interface RulePayload {
+  [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
 }
-
-interface RequiredColumnsRulePayload {
-  list: StringArrayPayload;
-}
-
-export type RulePayload =
-  | NamingFormatRulePayload
-  | RequiredColumnsRulePayload
-  | undefined;
 
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
@@ -61,11 +52,12 @@ export interface SchemaRule {
   engine: SchemaRuleEngineType;
   description: string;
   payload?: RulePayload;
-}
-
-export interface SelectedRule extends SchemaRule {
   level: RuleLevel;
 }
+
+// export interface SelectedRule extends SchemaRule {
+//   level: RuleLevel;
+// }
 
 // rule payload
 interface NamingFormatPolicyPayload {
@@ -76,10 +68,7 @@ interface RequiredColumnsPolicyPayload {
   list: string[];
 }
 
-type PolicyPayload =
-  | NamingFormatPolicyPayload
-  | RequiredColumnsPolicyPayload
-  | undefined;
+type PolicyPayload = NamingFormatPolicyPayload | RequiredColumnsPolicyPayload;
 
 interface DatabaseSchemaRule {
   id: string;
@@ -88,9 +77,9 @@ interface DatabaseSchemaRule {
 }
 
 export const convertPolicyPayloadToRulePayload = (
-  policyPayload: PolicyPayload,
-  rulePayload: RulePayload
-): RulePayload => {
+  policyPayload: PolicyPayload | undefined,
+  rulePayload: RulePayload | undefined
+): RulePayload | undefined => {
   if (!policyPayload || !rulePayload) {
     return;
   }
@@ -117,12 +106,12 @@ export const convertPolicyPayloadToRulePayload = (
     }
 
     return obj;
-  }, {} as any);
+  }, {} as RulePayload);
 };
 
 export const convertRulePayloadToPolicyPayload = (
-  payload: RulePayload
-): PolicyPayload => {
+  payload: RulePayload | undefined
+): PolicyPayload | undefined => {
   if (!payload) {
     return;
   }
@@ -149,26 +138,26 @@ export interface DatabaseSchemaReviewPolicy {
   // Domain specific fields
   name: string;
   ruleList: DatabaseSchemaRule[];
-  environmentList: number[];
+  environmentIdList: number[];
 }
 
 export interface DatabaseSchemaReviewPolicyCreate {
   // Domain specific fields
   name: string;
   ruleList: DatabaseSchemaRule[];
-  environmentList: number[];
+  environmentIdList: number[];
 }
 
 export type DatabaseSchemaReviewPolicyPatch = {
   // Domain specific fields
   name?: string;
   ruleList?: DatabaseSchemaRule[];
-  environmentList?: number[];
+  environmentIdList?: number[];
 };
 
-interface RuleCategory<T extends SchemaRule> {
+interface RuleCategory {
   id: CategoryType;
-  ruleList: T[];
+  ruleList: SchemaRule[];
 }
 
 const categoryOrder: Map<CategoryType, number> = new Map([
@@ -179,9 +168,9 @@ const categoryOrder: Map<CategoryType, number> = new Map([
   ["COLUMN", 1],
 ]);
 
-export function convertToCategoryList<T extends SchemaRule>(
-  ruleList: T[]
-): RuleCategory<T>[] {
+export const convertToCategoryList = (
+  ruleList: SchemaRule[]
+): RuleCategory[] => {
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
       const id = rule.category.toLowerCase();
@@ -192,19 +181,19 @@ export function convertToCategoryList<T extends SchemaRule>(
     }
     dict[rule.category].ruleList.push(rule);
     return dict;
-  }, {} as { [key: string]: RuleCategory<T> });
+  }, {} as { [key: string]: RuleCategory });
 
   return Object.values(dict).sort(
     (c1, c2) =>
       (categoryOrder.get(c2.id as CategoryType) || 0) -
       (categoryOrder.get(c1.id as CategoryType) || 0)
   );
-}
+};
 
 export interface SchemaReviewTemplate {
   name: string;
   imagePath: string;
-  ruleList: SelectedRule[];
+  ruleList: SchemaRule[];
 }
 
 // TODO: i18n
@@ -214,18 +203,22 @@ export const ruleList: SchemaRule[] = [
     category: "ENGINE",
     engine: "MYSQL",
     description: "Require InnoDB as the storage engine.",
+    level: RuleLevel.ERROR,
   },
   {
     id: "table.require-pk",
     category: "TABLE",
     engine: "COMMON",
     description: "Require the table to have a primary key.",
+    level: RuleLevel.ERROR,
   },
   {
     id: "naming.table",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the table name format. Default snake_lower_case.",
+    level: RuleLevel.ERROR,
+
     payload: {
       format: {
         type: PayloadType.STRING,
@@ -238,6 +231,8 @@ export const ruleList: SchemaRule[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the column name format. Default snake_lower_case.",
+    level: RuleLevel.ERROR,
+
     payload: {
       format: {
         type: PayloadType.STRING,
@@ -250,13 +245,15 @@ export const ruleList: SchemaRule[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the primary key name format.",
+    level: RuleLevel.ERROR,
+
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
         default: "^pk_{{table}}_{{column_list}}$",
         templateList: [
           {
-            id: "TABLE",
+            id: "table",
             description: "The table name",
           },
           {
@@ -272,13 +269,15 @@ export const ruleList: SchemaRule[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the unique key name format.",
+    level: RuleLevel.ERROR,
+
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
         default: "^uk_{{table}}_{{column_list}}$",
         templateList: [
           {
-            id: "TABLE",
+            id: "table",
             description: "The table name",
           },
           {
@@ -294,13 +293,15 @@ export const ruleList: SchemaRule[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the index name format.",
+    level: RuleLevel.ERROR,
+
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
         default: "^idx_{{table}}_{{column_list}}$",
         templateList: [
           {
-            id: "TABLE",
+            id: "table",
             description: "The table name",
           },
           {
@@ -316,6 +317,8 @@ export const ruleList: SchemaRule[] = [
     category: "COLUMN",
     engine: "COMMON",
     description: "Enforce the required columns in each table.",
+    level: RuleLevel.ERROR,
+
     payload: {
       list: {
         type: PayloadType.STRING_ARRAY,
@@ -328,18 +331,21 @@ export const ruleList: SchemaRule[] = [
     category: "COLUMN",
     engine: "COMMON",
     description: "Columns cannot have NULL value.",
+    level: RuleLevel.ERROR,
   },
   {
     id: "query.select.no-select-all",
     category: "QUERY",
     engine: "COMMON",
     description: "Disallow 'SELECT *'.",
+    level: RuleLevel.ERROR,
   },
   {
     id: "query.where.require",
     category: "QUERY",
     engine: "COMMON",
     description: "Require 'WHERE' clause.",
+    level: RuleLevel.ERROR,
   },
   {
     id: "query.where.no-leading-wildcard-like",
@@ -347,5 +353,6 @@ export const ruleList: SchemaRule[] = [
     engine: "COMMON",
     description:
       "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.",
+    level: RuleLevel.ERROR,
   },
 ];

@@ -75,7 +75,7 @@ import { BBStepTabItem } from "../../bbkit/types";
 import {
   ruleList,
   RuleLevel,
-  SelectedRule,
+  SchemaRule,
   Environment,
   SchemaReviewTemplate,
   convertRulePayloadToPolicyPayload,
@@ -92,7 +92,7 @@ interface LocalState {
   currentStep: number;
   name: string;
   selectedEnvironmentList: Environment[];
-  selectedRuleList: SelectedRule[];
+  selectedRuleList: SchemaRule[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
   templateIndex: number;
@@ -104,7 +104,7 @@ const props = withDefaults(
     reviewId?: number;
     name?: string;
     selectedEnvironmentList?: Environment[];
-    selectedRuleList?: SelectedRule[];
+    selectedRuleList?: SchemaRule[];
   }>(),
   {
     reviewId: undefined,
@@ -128,7 +128,7 @@ const hasPermission = computed(() => {
 const getRuleListWithLevel = (
   idList: string[],
   level: RuleLevel
-): SelectedRule[] => {
+): SchemaRule[] => {
   return idList.reduce((res, id) => {
     const rule = ruleList.find((r) => r.id === id);
     if (!rule) {
@@ -139,7 +139,7 @@ const getRuleListWithLevel = (
       level,
     });
     return res;
-  }, [] as SelectedRule[]);
+  }, [] as SchemaRule[]);
 };
 
 // TODO: i18n
@@ -281,7 +281,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   }
   const review = {
     name: state.name,
-    environmentList: state.selectedEnvironmentList.map((env) => env.id),
+    environmentIdList: state.selectedEnvironmentList.map((env) => env.id),
     ruleList: state.selectedRuleList.map((rule) => ({
       id: rule.id,
       level: rule.level,
@@ -338,7 +338,7 @@ const tryApplyTemplate = (index: number) => {
   onTemplateApply(index);
 };
 
-const onRuleChange = (rule: SelectedRule) => {
+const onRuleChange = (rule: SchemaRule) => {
   const index = state.selectedRuleList.findIndex((r) => r.id === rule.id);
   state.selectedRuleList = [
     ...state.selectedRuleList.slice(0, index),

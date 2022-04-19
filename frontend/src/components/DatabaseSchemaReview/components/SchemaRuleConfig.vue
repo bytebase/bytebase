@@ -74,7 +74,7 @@
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
             :placeholder="payload.default"
           />
-          <div v-else-if="payload.type == 'STRING[]'">
+          <div v-else-if="payload.type == 'STRING_ARRAY'">
             <div class="flex flex-wrap gap-4 mb-4">
               <BBBadge
                 v-for="(val, index) in state.payload[key]"
@@ -107,7 +107,7 @@
 import { reactive, PropType, watch } from "vue";
 import {
   LEVEL_LIST,
-  SelectedRule,
+  SchemaRule,
   RulePayload,
 } from "../../../types/schemaSystem";
 
@@ -117,7 +117,9 @@ interface LocalState {
   };
 }
 
-const initStatePayload = (payload: RulePayload): { [val: string]: any } => {
+const initStatePayload = (
+  payload: RulePayload | undefined
+): { [val: string]: any } => {
   return Object.entries(payload ?? {}).reduce((res, [key, val]) => {
     res[key] = val.value ?? val.default;
     return res;
@@ -127,7 +129,7 @@ const initStatePayload = (payload: RulePayload): { [val: string]: any } => {
 const props = defineProps({
   selectedRule: {
     required: true,
-    type: Object as PropType<SelectedRule>,
+    type: Object as PropType<SchemaRule>,
   },
   active: {
     require: true,

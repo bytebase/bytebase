@@ -88,7 +88,7 @@
                   {{ rule.payload[key].value || rule.payload[key].default }}
                 </span>
                 <div
-                  v-else-if="rule.payload[key].type === 'STRING[]'"
+                  v-else-if="rule.payload[key].type === 'STRING_ARRAY'"
                   class="flex flex-wrap gap-3 ml-5 mt-3"
                 >
                   <span
@@ -111,14 +111,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { SelectedRule, convertToCategoryList, Environment } from "../../types";
+import { SchemaRule, convertToCategoryList, Environment } from "../../types";
 import { environmentName } from "../../utils";
 
 const props = withDefaults(
   defineProps<{
     name?: string;
     selectedEnvironmentList?: Environment[];
-    selectedRuleList?: SelectedRule[];
+    selectedRuleList?: SchemaRule[];
   }>(),
   {
     name: "",
