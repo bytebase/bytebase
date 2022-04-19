@@ -1088,3 +1088,5 @@ CREATE TABLE sheet_organizer (
 );
 
 CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_organizer(sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON sheet_organizer(principal_id);
