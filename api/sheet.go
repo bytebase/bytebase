@@ -174,7 +174,6 @@ type Sheet struct {
 // SheetCreate is the API message for creating a sheet.
 type SheetCreate struct {
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID int
 
 	// Related fields
@@ -196,7 +195,6 @@ type SheetPatch struct {
 
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
-	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
 	// Related fields
@@ -227,8 +225,11 @@ type SheetFind struct {
 	Source     *SheetSource
 	Type       *SheetType
 	Payload    *string
-	// If present, will only find sheet which related project containing PrincipalID as an active member.
+	// Find sheets which related project containing PrincipalID as an active member.
 	PrincipalID *int
+	// Find sheets which related organizer has starred/pinned records.
+	// For now, we only need the starred sheets.
+	OrganizerID *int
 }
 
 func (find *SheetFind) String() string {
@@ -244,7 +245,6 @@ type SheetDelete struct {
 	ID int
 
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
 }
 

@@ -236,6 +236,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	s.registerLabelRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
+	s.registerSheetOrganizerRoutes(apiGroup)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

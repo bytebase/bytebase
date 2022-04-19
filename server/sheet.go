@@ -21,7 +21,9 @@ import (
 func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.POST("/sheet", func(c echo.Context) error {
 		ctx := context.Background()
-		sheetCreate := &api.SheetCreate{}
+		sheetCreate := &api.SheetCreate{
+			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create sheet request").SetInternal(err)
 		}
@@ -54,8 +56,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", sheetCreate.ProjectID))
 		}
-
-		sheetCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
 		sheetRaw, err := s.SheetService.CreateSheet(ctx, sheetCreate)
 		if err != nil {
@@ -306,9 +306,16 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if creatorIDStr := c.QueryParam("creatorId"); creatorIDStr != "" {
 			creatorID, err := strconv.Atoi(creatorIDStr)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creatorID ID is not a number: %s", c.QueryParam("creatorId"))).SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Creator ID is not a number: %s", c.QueryParam("creatorId"))).SetInternal(err)
 			}
 			sheetFind.CreatorID = &creatorID
+		}
+		if organizerIDStr := c.QueryParam("organizerId"); organizerIDStr != "" {
+			organizerID, err := strconv.Atoi(organizerIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Organizer ID is not a number: %s", organizerIDStr)).SetInternal(err)
+			}
+			sheetFind.OrganizerID = &organizerID
 		}
 		// When getting private/project sheet list, we should set the PrincipalID to ensure only
 		// the sheet which related project containing PrincipalID as an active member could be found.
@@ -388,17 +395,17 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet ID: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet with ID: %d", id)).SetInternal(err)
 		}
 
 		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated sheet relationship: %v", sheet.ID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship with ID %d", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, sheet); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal patch sheet response: %v", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal patch sheet response: %d", id)).SetInternal(err)
 		}
 		return nil
 	})
