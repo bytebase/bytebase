@@ -35,9 +35,6 @@ func (i Instance) Port() int { return i.port }
 // Start starts a postgres instance on given port, outputs to stdout and stderr.
 //
 // If port is 0, then it will choose a random unused port.
-//
-// If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
-// Otherwise, returns immediately.
 func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 
