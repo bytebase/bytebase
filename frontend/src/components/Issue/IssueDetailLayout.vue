@@ -780,10 +780,10 @@ export default defineComponent({
     };
 
     const isTenantDeployMode = computed((): boolean => {
+      if (project.value.tenantMode !== "TENANT") return false;
       return (
-        (props.issue.type === "bb.issue.database.schema.update" ||
-          props.issue.type === "bb.issue.database.data.update") &&
-        project.value.tenantMode === "TENANT"
+        props.issue.type === "bb.issue.database.schema.update" ||
+        props.issue.type === "bb.issue.database.data.update"
       );
     });
 
