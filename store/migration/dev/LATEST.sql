@@ -1078,7 +1078,7 @@ UPDATE
     ON sheet FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- sheet_organizer table stores the sheet status data from a principal.
+-- sheet_organizer table stores the sheet status for a principal.
 CREATE TABLE sheet_organizer (
     id SERIAL PRIMARY KEY,
     sheet_id INTEGER NOT NULL REFERENCES sheet (id),
