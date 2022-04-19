@@ -52,6 +52,19 @@
           @select-task="selectTask"
         />
       </template>
+      <template v-else-if="isGhostMode">
+        <PipelineGhostFlow
+          v-if="project"
+          :create="create"
+          :project="project"
+          :pipeline="issue.pipeline!"
+          :selected-stage="selectedStage"
+          :selected-task="selectedTask"
+          class="border-t border-b"
+          @select-stage-id="selectStageId"
+          @select-task="selectTask"
+        />
+      </template>
       <template v-else>
         <PipelineSimpleFlow
           :create="create"
@@ -148,7 +161,9 @@
                 <!--
                   For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
                   has a SQL statement.
-                  So we display the first task's SQL statement what ever the selectedTaskIs
+                  So we display the first task's SQL statement what ever the selectedTaskId is
+                  TBD: When the other two tasks are selected we should show the SQL which will be internally
+                  executed (change table name and drop table).
                 -->
                 <IssueTaskStatementPanel
                   :sql-hint="sqlHint()"
@@ -245,6 +260,7 @@ import {
   stageSlug,
   activeTask,
   taskSlug,
+  isDev,
 } from "../../utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -257,6 +273,7 @@ import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "./IssueActivityPanel.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import PipelineTenantFlow from "./PipelineTenantFlow.vue";
+import PipelineGhostFlow from "./PipelineGhostFlow.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import {
   Issue,
@@ -317,6 +334,7 @@ export default defineComponent({
     IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
     PipelineTenantFlow,
+    PipelineGhostFlow,
     TaskCheckBar,
   },
   props: {
@@ -763,6 +781,8 @@ export default defineComponent({
     });
 
     const isGhostMode = computed((): boolean => {
+      if (!isDev()) return false;
+
       return props.issue.type === "bb.issue.database.schema.update.ghost";
     });
 
