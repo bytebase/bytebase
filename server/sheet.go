@@ -319,7 +319,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	// Get sheet list which is shared with current user.
-	// The wanted sheets would be PROJECT sheets which current user is one of the active member of its project and all public sheets.
+	// The desired sheets would be PROJECT sheets which current user is one of the active member of its project and all public sheets.
 	g.GET("/sheet/shared", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
