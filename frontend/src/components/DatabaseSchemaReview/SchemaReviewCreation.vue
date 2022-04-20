@@ -12,7 +12,7 @@
       <template #0>
         <SchemaReviewInfo
           :name="state.name"
-          :selected-environment-list="state.selectedEnvironmentList"
+          :selected-environment="state.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
@@ -37,7 +37,7 @@
         <SchemaReviewPreview
           :name="state.name"
           :selected-rule-list="state.selectedRuleList"
-          :selected-environment-list="state.selectedEnvironmentList"
+          :selected-environment="state.selectedEnvironment"
           class="py-5"
         />
       </template>
@@ -92,7 +92,7 @@ import { isOwner, isDBA } from "../../utils";
 interface LocalState {
   currentStep: number;
   name: string;
-  selectedEnvironmentList: Environment[];
+  selectedEnvironment?: Environment;
   selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
@@ -104,13 +104,13 @@ const props = withDefaults(
   defineProps<{
     reviewId?: number;
     name?: string;
-    selectedEnvironmentList?: Environment[];
+    selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
     reviewId: undefined,
     name: "",
-    selectedEnvironmentList: () => [],
+    selectedEnvironment: undefined,
     selectedRuleList: () => [],
   }
 );
@@ -221,7 +221,7 @@ const state = reactive<LocalState>({
   name:
     props.name ||
     t("schema-review-policy.create.basic-info.display-name-default"),
-  selectedEnvironmentList: props.selectedEnvironmentList,
+  selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: props.selectedRuleList.length
     ? [...props.selectedRuleList]
     : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
@@ -283,7 +283,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   }
   const review = {
     name: state.name,
-    environmentIdList: state.selectedEnvironmentList.map((env) => env.id),
+    environmentId: state.selectedEnvironment?.id,
     ruleList: state.selectedRuleList.map((rule) =>
       convertRuleTemplateToPolicyRule(rule)
     ),
@@ -308,16 +308,12 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
 };
 
 const onEnvToggle = (env: Environment) => {
-  const index = state.selectedEnvironmentList.findIndex((e) => e.id === env.id);
-
-  if (index >= 0) {
-    state.selectedEnvironmentList = [
-      ...state.selectedEnvironmentList.slice(0, index),
-      ...state.selectedEnvironmentList.slice(index + 1),
-    ];
+  if (state.selectedEnvironment?.id === env.id) {
+    state.selectedEnvironment = undefined;
   } else {
-    state.selectedEnvironmentList.push(env);
+    state.selectedEnvironment = env;
   }
+  console.log(state.selectedEnvironment);
 };
 
 const onTemplateApply = (index: number) => {

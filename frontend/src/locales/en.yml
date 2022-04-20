@@ -1378,7 +1378,7 @@ engine:
 schema-review-policy:
   title: Schema Review
   no-policy-set: No schema review policy
-  add-review: Add review policy
+  add-review: Add policy
   search-rule-name: Search rule name
   remove-review: Successfully removed the review policy.
   create-review: Successfully created the review policy.
@@ -1386,7 +1386,7 @@ schema-review-policy:
   filter: Filter
   delete: Delete this schema review policy
   no-permission: Only DBA or Owner has permission to create or update review policy.
-  delete-attention: To delete this review policy, unlink all environments first.
+  delete-attention: To delete this review policy, unlink the environment first.
   category:
     engine: Engine
     naming: Naming

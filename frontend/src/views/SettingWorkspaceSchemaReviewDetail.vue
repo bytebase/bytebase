@@ -4,7 +4,7 @@
       v-if="state.editMode"
       :review-id="reviewPolicy.id"
       :name="reviewPolicy.name"
-      :selected-environment-list="environmentList"
+      :selected-environment="environment"
       :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
     />
@@ -22,17 +22,9 @@
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div
-        class="flex flex-wrap gap-x-3 my-5"
-        v-if="environmentList.length > 0"
-      >
-        <span class="font-semibold">{{ $t("common.environments") }}</span>
-        <BBBadge
-          v-for="env in environmentList"
-          :key="env.id"
-          :text="env.name"
-          :can-remove="false"
-        />
+      <div class="flex flex-wrap gap-x-3 my-5" v-if="environment">
+        <span class="font-semibold">{{ $t("common.environment") }}</span>
+        <BBBadge :text="environment.name" :can-remove="false" />
       </div>
       <BBAttention
         v-else
@@ -122,7 +114,7 @@
         :selected-rule-list="filteredSelectedRuleList"
         class="py-5"
       />
-      <div v-if="environmentList.length > 0" class="textinfolabel">
+      <div v-if="environment" class="textinfolabel">
         {{ $t("schema-review-policy.delete-attention") }}
       </div>
       <BBButtonConfirm
@@ -203,14 +195,15 @@ const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
   return store.getReviewPolicyById(idFromSlug(props.schemaReviewSlug));
 });
 
-const environmentList = computed((): Environment[] => {
-  return reviewPolicy.value.environmentIdList.map((envId) => {
-    const env = envStore.getEnvironmentById(envId);
-    return {
-      ...env,
-      name: environmentName(env),
-    };
-  });
+const environment = computed((): Environment | undefined => {
+  if (!reviewPolicy.value.environmentId) {
+    return;
+  }
+  const env = envStore.getEnvironmentById(reviewPolicy.value.environmentId);
+  return {
+    ...env,
+    name: environmentName(env),
+  };
 });
 
 const ruleMap = ruleTemplateList.reduce((map, rule) => {
@@ -337,7 +330,7 @@ const onEdit = () => {
 };
 
 const onRemove = () => {
-  if (environmentList.value.length > 0) {
+  if (reviewPolicy.value.environmentId) {
     return;
   }
   store.removeReviewPolicy(reviewPolicy.value.id);

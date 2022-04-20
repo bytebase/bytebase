@@ -30,15 +30,10 @@
           {{ name }}
         </h1>
       </div>
-      <div
-        v-if="selectedEnvironmentList.length > 0"
-        class="flex flex-wrap gap-x-3 mb-9"
-      >
-        <span class="font-semibold">{{ $t("common.environments") }}</span>
+      <div v-if="selectedEnvironment" class="flex flex-wrap gap-x-3 mb-9">
+        <span class="font-semibold">{{ $t("common.environment") }}</span>
         <BBBadge
-          v-for="env in selectedEnvironmentList"
-          :key="env.id"
-          :text="getEnvName(env)"
+          :text="environmentName(selectedEnvironment)"
           :can-remove="false"
         />
       </div>
@@ -111,12 +106,12 @@ import { environmentName } from "../../utils";
 const props = withDefaults(
   defineProps<{
     name?: string;
-    selectedEnvironmentList?: Environment[];
+    selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
     name: "",
-    selectedEnvironmentList: () => [],
+    selectedEnvironment: undefined,
     selectedRuleList: () => [],
   }
 );
@@ -124,8 +119,4 @@ const props = withDefaults(
 const categoryList = computed(() => {
   return convertToCategoryList(props.selectedRuleList);
 });
-
-const getEnvName = (env: Environment): string => {
-  return environmentName(env);
-};
 </script>

@@ -45,12 +45,12 @@
           ]"
         >
           <input
-            type="checkbox"
+            type="radio"
             :id="`${env.id}`"
             :value="env.id"
             :disabled="env.disabled"
-            :checked="isEnvSelected(env)"
-            @input="$emit('toggle-env', env)"
+            :checked="env.id === selectedEnvironment?.id"
+            @click="$emit('toggle-env', env)"
             class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
           />
@@ -121,9 +121,10 @@ const props = defineProps({
     required: true,
     type: String,
   },
-  selectedEnvironmentList: {
-    required: true,
-    type: Array as PropType<Environment[]>,
+  selectedEnvironment: {
+    required: false,
+    default: undefined,
+    type: Object as PropType<Environment>,
   },
   availableEnvironmentList: {
     required: true,
@@ -164,12 +165,12 @@ const environmentList = computed((): LocalEnvironment[] => {
   }));
 });
 
-const selectedEnvIdSet = computed(() => {
-  return new Set(props.selectedEnvironmentList.map((env) => env.id));
-});
-const isEnvSelected = (env: Environment): boolean => {
-  return selectedEnvIdSet.value.has(env.id);
-};
+// const selectedEnvIdSet = computed(() => {
+//   return new Set(props.selectedEnvironmentList.map((env) => env.id));
+// });
+// const isEnvSelected = (env: Environment): boolean => {
+//   return selectedEnvIdSet.value.has(env.id);
+// };
 
 const onNameChange = (event: Event) => {
   emit("name-change", (<HTMLInputElement>event.target).value);

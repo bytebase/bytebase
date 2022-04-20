@@ -24,9 +24,8 @@
           </dt>
           <dd class="mt-1 flex gap-x-2 text-sm text-main col-span-2">
             <BBBadge
-              v-for="envId in review.environmentList"
-              :key="envId"
-              :text="envStore.getEnvironmentNameById(envId)"
+              v-if="review.environmentId"
+              :text="envStore.getEnvironmentNameById(review.environmentId)"
               :can-remove="false"
             />
           </dd>

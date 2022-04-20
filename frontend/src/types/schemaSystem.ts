@@ -104,21 +104,21 @@ export interface DatabaseSchemaReviewPolicy {
   // Domain specific fields
   name: string;
   ruleList: SchemaPolicyRule[];
-  environmentIdList: number[];
+  environmentId?: number;
 }
 
 export interface DatabaseSchemaReviewPolicyCreate {
   // Domain specific fields
   name: string;
   ruleList: SchemaPolicyRule[];
-  environmentIdList: number[];
+  environmentId?: number;
 }
 
 export type DatabaseSchemaReviewPolicyPatch = {
   // Domain specific fields
   name?: string;
   ruleList?: SchemaPolicyRule[];
-  environmentIdList?: number[];
+  environmentId?: number;
 };
 
 export interface SchemaReviewPolicyTemplate {
