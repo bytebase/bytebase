@@ -101,7 +101,7 @@ p, OWNER, /sheet/{id}, GET
 p, OWNER, /sheet/{id}, PATCH
 p, OWNER, /sheet/{id}, PATCH_SELF
 p, OWNER, /sheet/{id}, DELETE_SELF
+p, OWNER, /sheet/{id}/organizer, PATCH
 p, OWNER, /sheet/project/:projectID/sync, POST
-p, OWNER, /sheet/:sheetID/organizer, PATCH
 p, OWNER, /debug, GET
 p, OWNER, /debug, PATCH

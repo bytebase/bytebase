@@ -21,6 +21,6 @@ type SheetOrganizerFind struct {
 type SheetOrganizerUpsert struct {
 	SheetID     int
 	PrincipalID int
-	Starred     *bool `jsonapi:"attr,starred"`
-	Pinned      *bool `jsonapi:"attr,pinned"`
+	Starred     bool `jsonapi:"attr,starred"`
+	Pinned      bool `jsonapi:"attr,pinned"`
 }
