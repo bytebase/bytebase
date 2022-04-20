@@ -4,7 +4,7 @@
       :required="true"
       v-if="selectRuleList.length === 0"
       :template-list="templateList"
-      :title="$t('schema-review-policy.create.configure-rule.from-template')"
+      :title="$t('schema-review-policy.create.basic-info.choose-template')"
       @select="(index) => onTemplateApply(index)"
     />
     <div class="mb-5" v-if="selectRuleList.length > 0">
@@ -31,10 +31,10 @@
     </div>
     <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
       <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="rule in selectRuleList" :key="rule.id" class="">
+        <li v-for="rule in selectRuleList" :key="rule.type" class="">
           <SchemaRuleConfig
             :selected-rule="rule"
-            :active="rule.id === state.activeRuleId"
+            :active="rule.type === state.activeRuleType"
             @activate="onRuleActivate"
             @level-change="(level) => onLevelChange(rule, level)"
             @payload-change="(val) => onPayloadChange(rule, val)"
@@ -46,15 +46,16 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType, reactive, computed } from "vue";
+import { PropType, reactive } from "vue";
 import {
+  RuleType,
   RuleTemplate,
   RuleLevel,
   SchemaReviewPolicyTemplate,
 } from "../../types/schemaSystem";
 
 interface LocalState {
-  activeRuleId: string;
+  activeRuleType: RuleType | null;
   openTemplate: boolean;
 }
 
@@ -76,24 +77,20 @@ const props = defineProps({
 const emit = defineEmits(["apply-template", "change"]);
 
 const state = reactive<LocalState>({
-  activeRuleId: "",
+  activeRuleType: null,
   openTemplate: false,
-});
-
-const selectedRuleIdList = computed((): string[] => {
-  return props.selectRuleList.map((r) => r.id);
 });
 
 const onTemplateApply = (index: number) => {
   emit("apply-template", index);
-  state.activeRuleId = "";
+  state.activeRuleType = null;
 };
 
-const onRuleActivate = (id: string) => {
-  if (id === state.activeRuleId) {
-    state.activeRuleId = "";
+const onRuleActivate = (type: RuleType) => {
+  if (type === state.activeRuleType) {
+    state.activeRuleType = null;
   } else {
-    state.activeRuleId = id;
+    state.activeRuleType = type;
   }
 };
 

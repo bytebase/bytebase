@@ -144,7 +144,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
 import {
-  RuleId,
+  RuleType,
   LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
@@ -214,9 +214,9 @@ const environmentList = computed((): Environment[] => {
 });
 
 const ruleMap = ruleList.reduce((map, rule) => {
-  map.set(rule.id, rule);
+  map.set(rule.type, rule);
   return map;
-}, new Map<RuleId, RuleTemplate>());
+}, new Map<RuleType, RuleTemplate>());
 
 const selectedRuleList = computed((): RuleTemplate[] => {
   if (!review.value) {
@@ -226,7 +226,7 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   const ruleTemplateList: RuleTemplate[] = [];
 
   for (const policyRule of review.value.ruleList) {
-    const rule = ruleMap.get(policyRule.id);
+    const rule = ruleMap.get(policyRule.type);
     if (!rule) {
       continue;
     }
@@ -319,7 +319,7 @@ const filteredSelectedRuleList = computed((): RuleTemplate[] => {
       (!state.selectedCategory ||
         selectedRule.category === state.selectedCategory) &&
       (!state.searchText ||
-        selectedRule.id
+        selectedRule.type
           .toLowerCase()
           .includes(state.searchText.toLowerCase())) &&
       (state.checkedEngine.size === 0 ||

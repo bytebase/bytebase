@@ -73,6 +73,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../../bbkit/types";
 import {
+  RuleType,
   ruleList,
   RuleLevel,
   RuleTemplate,
@@ -126,11 +127,11 @@ const hasPermission = computed(() => {
 });
 
 const getRuleListWithLevel = (
-  idList: string[],
+  typeList: RuleType[],
   level: RuleLevel
 ): RuleTemplate[] => {
-  return idList.reduce((res, id) => {
-    const rule = ruleList.find((r) => r.id === id);
+  return typeList.reduce((res, type) => {
+    const rule = ruleList.find((r) => r.type === type);
     if (!rule) {
       return res;
     }
@@ -337,7 +338,7 @@ const tryApplyTemplate = (index: number) => {
 };
 
 const onRuleChange = (rule: RuleTemplate) => {
-  const index = state.selectedRuleList.findIndex((r) => r.id === rule.id);
+  const index = state.selectedRuleList.findIndex((r) => r.type === rule.type);
   state.selectedRuleList = [
     ...state.selectedRuleList.slice(0, index),
     rule,
