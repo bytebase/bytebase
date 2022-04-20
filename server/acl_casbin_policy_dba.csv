@@ -95,5 +95,6 @@ p, DBA, /sheet/{id}, PATCH
 p, DBA, /sheet/{id}, PATCH_SELF
 p, DBA, /sheet/{id}, DELETE_SELF
 p, DBA, /sheet/project/:projectID/sync, POST
+p, DBA, /sheet/:sheetID/organizer, PATCH
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH

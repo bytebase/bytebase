@@ -21,7 +21,7 @@ import (
 func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.POST("/sheet", func(c echo.Context) error {
 		ctx := c.Request().Context()
-    sheetCreate := &api.SheetCreate{
+		sheetCreate := &api.SheetCreate{
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
