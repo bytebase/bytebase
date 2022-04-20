@@ -177,7 +177,9 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pg        *postgres.Instance
+	pg *postgres.Instance
+	// pgStarted only used if we install Postgres and boot it,
+	// Close() will shutdown Postgres if it is true.
 	pgStarted bool
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
@@ -234,18 +236,20 @@ func start() {
 		return
 	}
 
-	// We use port+1 for datastore port.
+	// We use port+1 as datastore port.
 	datastorePort := port + 1
 	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
-	m, err := NewMain(activeProfile, logger)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	m, err := NewMain(ctx, activeProfile, logger, level)
 	if err != nil {
 		logger.Error(err.Error())
+		cancel()
 		return
 	}
-	m.lvl = level
 
 	// Setup signal handlers.
-	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
 	// Trigger graceful shutdown on SIGINT or SIGTERM.
 	// The default signal sent by the `kill` command is SIGTERM,
@@ -274,9 +278,12 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
+func NewMain(ctx context.Context, activeProfile Profile, l *zap.Logger, logLevel *zap.AtomicLevel) (*Main, error) {
+	/* <------- Configure directory -------> */
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
 	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
+
+	/* <------- Print some help info -------> */
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -292,9 +299,10 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
+	/* <------- Install Postgres on machine if using embedded db  -------> */
 	var pgInstance *postgres.Instance
 	if useEmbeddedDB() {
-		logger.Info("Preparing embedded PostgreSQL instance...")
+		l.Info("Preparing embedded PostgreSQL instance...")
 		var err error
 		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 		// to store Bytebase's own metadata.
@@ -303,10 +311,45 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 			return nil, err
 		}
 	}
+
+	var db *store.DB
+	var pgStarted = false
+	if useEmbeddedDB() {
+		var err error
+		db, err = newEmbeddedDB(l, &activeProfile, pgInstance)
+		if err != nil {
+			return nil, err
+		}
+		pgStarted = true
+	} else {
+		var err error
+		db, err = newExternalDB(l, &activeProfile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Open the connection of `bb` in Postgres and setup migration if needed
+	cancelCtx, cancel := context.WithCancel(ctx)
+	if err := db.Open(cancelCtx); err != nil {
+		cancel()
+		return nil, fmt.Errorf("cannot open db: %w", err)
+	}
+
+	s, err := setupService(ctx, l, logLevel, db, &activeProfile)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("cannot setupService: %w", err)
+	}
 	return &Main{
-		profile: &activeProfile,
-		l:       logger,
-		pg:      pgInstance,
+		profile:      &activeProfile,
+		l:            l,
+		lvl:          logLevel,
+		server:       s,
+		serverCancel: cancel,
+		pg:           pgInstance,
+		pgStarted:    pgStarted,
+		db:           db,
 	}, nil
 }
 
@@ -348,20 +391,13 @@ func useEmbeddedDB() bool {
 	return len(pgURL) == 0
 }
 
-func (m *Main) newDB() (*store.DB, error) {
-	if useEmbeddedDB() {
-		return m.newEmbeddedDB()
-	}
-	return m.newExternalDB()
-}
-
-func (m *Main) newExternalDB() (*store.DB, error) {
+func newExternalDB(l *zap.Logger, profile *Profile) (*store.DB, error) {
 	u, err := url.Parse(pgURL)
 	if err != nil {
 		return nil, err
 	}
 
-	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
+	l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
@@ -398,98 +434,81 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	db := store.NewDB(l, connCfg, profile.demoDataDir, readonly, version, profile.mode)
 	return db, nil
 }
 
-func (m *Main) newEmbeddedDB() (*store.DB, error) {
-	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+func newEmbeddedDB(l *zap.Logger, profile *Profile, pg *postgres.Instance) (*store.DB, error) {
+	if err := pg.Start(profile.datastorePort, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
-	m.pgStarted = true
 
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	connCfg := dbdriver.ConnectionConfig{
-		Username: m.profile.pgUser,
+		Username: profile.pgUser,
 		Password: "",
 		Host:     common.GetPostgresSocketDir(),
-		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
+		Port:     fmt.Sprintf("%d", profile.datastorePort),
 	}
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	db := store.NewDB(l, connCfg, profile.demoDataDir, readonly, version, profile.mode)
 	return db, nil
 }
 
-// Run will run the main server.
-func (m *Main) Run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	m.serverCancel = cancel
-
-	db, err := m.newDB()
-	if err != nil {
-		return fmt.Errorf("cannot new db: %w", err)
-	}
-
-	// Open connection of `bb` in Postgres and setup migration if needed
-	if err := db.Open(ctx); err != nil {
-		return fmt.Errorf("cannot open db: %w", err)
-	}
-
-	settingService := store.NewSettingService(m.l, db)
+func setupService(ctx context.Context, l *zap.Logger, logLevel *zap.AtomicLevel, db *store.DB, profile *Profile) (*server.Server, error) {
+	settingService := store.NewSettingService(l, db)
 	config, err := initSetting(ctx, settingService)
 	if err != nil {
-		return fmt.Errorf("failed to init config: %w", err)
+		return nil, fmt.Errorf("failed to init config %w", err)
 	}
-
 	err = initBranding(ctx, settingService)
 	if err != nil {
-		return fmt.Errorf("failed to init branding: %w", err)
+		return nil, fmt.Errorf("failed to init branding: %w", err)
 	}
 
-	m.db = db
+	cacheService := server.NewCacheService(l)
+	storeInstance := store.New(l, db, cacheService)
 
-	cacheService := server.NewCacheService(m.l)
-	storeInstance := store.New(m.l, db, cacheService)
-
-	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(l, storeInstance, logLevel, version, host, profile.port, frontendHost, frontendPort, profile.datastorePort, profile.mode, profile.dataDir, profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
-	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
-	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
-	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
+	s.ProjectService = store.NewProjectService(l, db, cacheService)
+	s.ProjectMemberService = store.NewProjectMemberService(l, db)
+	s.ProjectWebhookService = store.NewProjectWebhookService(l, db)
+	s.DatabaseService = store.NewDatabaseService(l, db, cacheService, storeInstance)
 	// TODO(dragonly): remove this hack
 	storeInstance.DatabaseService = s.DatabaseService
-	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
-	s.TableService = store.NewTableService(m.l, db)
-	s.ColumnService = store.NewColumnService(m.l, db)
-	s.ViewService = store.NewViewService(m.l, db)
-	s.IndexService = store.NewIndexService(m.l, db)
-	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
-	s.StageService = store.NewStageService(m.l, db)
-	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
-	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
-	s.LabelService = store.NewLabelService(m.l, db)
-	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
-	s.SheetService = store.NewSheetService(m.l, db)
+	s.InstanceUserService = store.NewInstanceUserService(l, db)
+	s.TableService = store.NewTableService(l, db)
+	s.ColumnService = store.NewColumnService(l, db)
+	s.ViewService = store.NewViewService(l, db)
+	s.IndexService = store.NewIndexService(l, db)
+	s.IssueService = store.NewIssueService(l, db, cacheService)
+	s.PipelineService = store.NewPipelineService(l, db, cacheService)
+	s.StageService = store.NewStageService(l, db)
+	s.TaskCheckRunService = store.NewTaskCheckRunService(l, db)
+	s.TaskService = store.NewTaskService(l, db, store.NewTaskRunService(l, db), s.TaskCheckRunService)
+	s.RepositoryService = store.NewRepositoryService(l, db, s.ProjectService)
+	s.LabelService = store.NewLabelService(l, db)
+	s.DeploymentConfigService = store.NewDeploymentConfigService(l, db)
+	s.SheetService = store.NewSheetService(l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
-	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
+	licenseService, err := enterprise.NewLicenseService(l, profile.dataDir, profile.mode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	s.LicenseService = licenseService
 	s.InitSubscription()
 
-	m.server = s
+	return s, nil
+}
 
+// Run will run the main server.
+func (m *Main) Run(ctx context.Context) error {
 	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
-
-	if err := s.Run(ctx); err != nil {
+	if err := m.server.Run(ctx); err != nil {
 		return err
 	}
-
 	return nil
 }
 

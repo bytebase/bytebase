@@ -193,7 +193,7 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	excludedDatabaseList := map[string]bool{
 		// Skip our internal "bytebase" database
@@ -480,6 +480,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		}
 
 		if !exist {
+			driver.l.Info("Try to creat bytebase database.")
 			if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
 				driver.l.Error("Failed to create bytebase database.",
 					zap.Error(err),
