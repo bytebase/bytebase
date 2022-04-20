@@ -24,21 +24,19 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
   actions: {
     availableEnvironments(
       environmentList: Environment[],
-      reviewId: SchemaReviewPolicyId | undefined
+      reviewPolicyId: SchemaReviewPolicyId | undefined
     ): Environment[] {
       const envMap = environmentList.reduce((map, env) => {
         map.set(env.id, env);
         return map;
       }, new Map<number, Environment>());
 
-      for (const review of this.reviewPolicyList) {
-        if (review.id === reviewId) {
+      for (const reviewPolicy of this.reviewPolicyList) {
+        if (reviewPolicy.id === reviewPolicyId || !reviewPolicy.environmentId) {
           continue;
         }
-        for (const envId of review.environmentIdList) {
-          if (envMap.has(envId)) {
-            envMap.delete(envId);
-          }
+        if (envMap.has(reviewPolicy.environmentId)) {
+          envMap.delete(reviewPolicy.environmentId);
         }
       }
 
