@@ -11,7 +11,13 @@ type SheetOrganizer struct {
 	Pinned      bool `jsonapi:"attr,pinned"`
 }
 
-// SheetOrganizerUpsert is the message to upsert a sheet organizer.
+// SheetOrganizerFind is the API message to find a sheet organizer.
+type SheetOrganizerFind struct {
+	SheetID     int
+	PrincipalID int
+}
+
+// SheetOrganizerUpsert is the API message to upsert a sheet organizer.
 type SheetOrganizerUpsert struct {
 	SheetID     int
 	PrincipalID int

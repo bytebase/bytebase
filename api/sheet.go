@@ -169,6 +169,8 @@ type Sheet struct {
 	Source     SheetSource     `jsonapi:"attr,source"`
 	Type       SheetType       `jsonapi:"attr,type"`
 	Payload    string          `jsonapi:"attr,payload"`
+	Starred    bool            `jsonapi:"attr,starred"`
+	Pinned     bool            `jsonapi:"attr,pinned"`
 }
 
 // SheetCreate is the API message for creating a sheet.

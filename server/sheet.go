@@ -22,8 +22,9 @@ import (
 func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.POST("/sheet", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		sheetCreate := &api.SheetCreate{
-			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
+			CreatorID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create sheet request").SetInternal(err)
@@ -66,7 +67,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
 		}
-		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet with ID %d", sheetRaw.ID)).SetInternal(err)
 		}
@@ -295,8 +296,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			sheetFind.RowStatus = &rowStatus
 		}
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind.CreatorID = &principalID
+
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind.CreatorID = &currentPrincipalID
 
 		mySheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
 		if err != nil {
@@ -304,7 +306,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		}
 		var mySheetList []*api.Sheet
 		for _, sheetRaw := range mySheetRawList {
-			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship: %v", sheet.Name)).SetInternal(err)
 			}
@@ -327,8 +329,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
 		}
 
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind.PrincipalID = &principalID
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind.PrincipalID = &currentPrincipalID
 
 		var sheetRawList []*api.SheetRaw
 		projectSheetVisibility := api.ProjectSheet
@@ -349,7 +351,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		var sheetList []*api.Sheet
 		for _, sheetRaw := range sheetRawList {
-			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose shared sheet relationship: %v", sheet)).SetInternal(err)
 			}
@@ -372,8 +374,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Bad request: %s", err.Error())).SetInternal(err)
 		}
 
-		principalID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind.OrganizerID = &principalID
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind.OrganizerID = &currentPrincipalID
 
 		starredSheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
 		if err != nil {
@@ -381,7 +383,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		}
 		var starredSheetList []*api.Sheet
 		for _, sheetRaw := range starredSheetRawList {
-			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship: %v", sheet.Name)).SetInternal(err)
 			}
@@ -414,7 +416,8 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
 		}
 
-		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet relationship: %v", sheet.ID)).SetInternal(err)
 		}
@@ -433,9 +436,10 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		sheetPatch := &api.SheetPatch{
 			ID:        id,
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch sheet request").SetInternal(err)
@@ -449,7 +453,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch sheet with ID: %d", id)).SetInternal(err)
 		}
 
-		sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+		sheet, err := s.composeSheetRelationship(ctx, sheetRaw, currentPrincipalID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship with ID %d", id)).SetInternal(err)
 		}
@@ -484,7 +488,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 }
 
 // composeSheetRelationship composes sheet relationships.
-func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw) (*api.Sheet, error) {
+func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw, currentPrincipalID int) (*api.Sheet, error) {
 	sheet := raw.ToSheet()
 
 	creator, err := s.store.GetPrincipalByID(ctx, sheet.CreatorID)
@@ -513,6 +517,18 @@ func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw
 			return nil, err
 		}
 		sheet.Database = database
+	}
+
+	sheetOrganizer, err := s.store.FindSheetOrganizer(ctx, &api.SheetOrganizerFind{
+		SheetID:     sheet.ID,
+		PrincipalID: currentPrincipalID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if sheetOrganizer != nil {
+		sheet.Starred = sheetOrganizer.Starred
+		sheet.Pinned = sheetOrganizer.Pinned
 	}
 
 	return sheet, nil
