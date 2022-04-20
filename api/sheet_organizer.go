@@ -12,7 +12,6 @@ type SheetOrganizer struct {
 }
 
 // SheetOrganizerUpsert is the message to upsert a sheet organizer.
-// NOTE: We use PATCH for Upsert, this is inspired by https://google.aip.dev/134#patch-and-put
 type SheetOrganizerUpsert struct {
 	SheetID     int
 	PrincipalID int
