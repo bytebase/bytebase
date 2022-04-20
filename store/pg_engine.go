@@ -420,7 +420,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 		return semver.Version{}, err
 	}
 	if len(versions) == 0 {
-		return semver.Version{}, fmt.Errorf("Migration path %s has no minor version", minorPathPrefix)
+		return semver.Version{}, fmt.Errorf("migration path %s has no minor version", minorPathPrefix)
 	}
 	minorVersion := versions[len(versions)-1]
 
@@ -434,7 +434,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 		return semver.Version{}, err
 	}
 	if len(patchVersions) == 0 {
-		return semver.Version{}, fmt.Errorf("Migration path %s has no patch version", patchPathPrefix)
+		return semver.Version{}, fmt.Errorf("migration path %s has no patch version", patchPathPrefix)
 	}
 	return patchVersions[len(patchVersions)-1].version, nil
 }

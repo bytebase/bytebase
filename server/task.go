@@ -37,7 +37,7 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
@@ -96,7 +96,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 			newStatement = *taskPatch.Statement
 
-			if task.Type == api.TaskDatabaseSchemaUpdate {
+			switch task.Type {
+			case api.TaskDatabaseSchemaUpdate:
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
@@ -112,7 +113,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
-			} else if task.Type == api.TaskDatabaseDataUpdate {
+			case api.TaskDatabaseDataUpdate:
+
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
@@ -128,6 +130,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
 			}
 		}
 
@@ -289,7 +292,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/pipeline/:pipelineID/task/:taskID/status", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
@@ -358,7 +361,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 
 	g.POST("/pipeline/:pipelineID/task/:taskID/check", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)

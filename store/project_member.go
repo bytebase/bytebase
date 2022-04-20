@@ -362,17 +362,17 @@ func patchProjectMember(ctx context.Context, tx *sql.Tx, patch *api.ProjectMembe
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Role; v != nil {
-		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, api.Role(*v))
+		set, args = append(set, fmt.Sprintf("role = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.RoleProvider; v != nil {
-		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, api.Role(*v))
+		set, args = append(set, fmt.Sprintf("role_provider = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Payload; v != nil {
 		payload := "{}"
 		if *v == "" {
 			payload = *v
 		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, api.Role(payload))
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 
 	args = append(args, patch.ID)

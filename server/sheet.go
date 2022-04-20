@@ -20,7 +20,7 @@ import (
 
 func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.POST("/sheet", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		sheetCreate := &api.SheetCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create sheet request").SetInternal(err)
@@ -74,7 +74,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sheet/project/:projectID/sync", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -279,16 +279,13 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.GET("/sheet", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		sheetFind := &api.SheetFind{}
-		creatorID := c.Get(getPrincipalIDContextKey()).(int)
-		sheetFind.CreatorID = &creatorID
 
-		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
+		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			sheetFind.RowStatus = &rowStatus
 		}
-
 		if projectIDStr := c.QueryParam("projectId"); projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)
 			if err != nil {
@@ -296,7 +293,6 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 			sheetFind.ProjectID = &projectID
 		}
-
 		if databaseIDStr := c.QueryParam("databaseId"); databaseIDStr != "" {
 			databaseID, err := strconv.Atoi(databaseIDStr)
 			if err != nil {
@@ -304,9 +300,21 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			}
 			sheetFind.DatabaseID = &databaseID
 		}
-
 		if visibility := api.SheetVisibility(c.QueryParam("visibility")); visibility != "" {
 			sheetFind.Visibility = &visibility
+		}
+		if creatorIDStr := c.QueryParam("creatorId"); creatorIDStr != "" {
+			creatorID, err := strconv.Atoi(creatorIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("creatorID ID is not a number: %s", c.QueryParam("creatorId"))).SetInternal(err)
+			}
+			sheetFind.CreatorID = &creatorID
+		}
+		// When getting private/project sheet list, we should set the PrincipalID to ensure only
+		// the sheet which related project containing PrincipalID as an active member could be found.
+		if sheetFind.Visibility != nil && (*sheetFind.Visibility == api.PrivateSheet || *sheetFind.Visibility == api.ProjectSheet) {
+			principalID := c.Get(getPrincipalIDContextKey()).(int)
+			sheetFind.PrincipalID = &principalID
 		}
 
 		sheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
@@ -330,7 +338,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.GET("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -361,7 +369,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -396,7 +404,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)

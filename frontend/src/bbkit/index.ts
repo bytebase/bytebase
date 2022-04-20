@@ -11,6 +11,7 @@ import BBNotification from "./BBNotification.vue";
 import BBOutline from "./BBOutline.vue";
 import BBSelect from "./BBSelect.vue";
 import BBComboBox from "./BBComboBox.vue";
+import BBProgressPie from "./BBProgressPie.vue";
 import BBSpin from "./BBSpin.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBStepTab from "./BBStepTab.vue";
@@ -40,6 +41,7 @@ export {
   BBOutline,
   BBSelect,
   BBComboBox,
+  BBProgressPie,
   BBSpin,
   BBStepBar,
   BBStepTab,

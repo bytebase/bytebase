@@ -25,7 +25,7 @@ func getRoleContextKey() string {
 
 func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		// Skips auth, actuator, plan
 		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan", "/api/oauth") {
 			return next(c)
@@ -92,16 +92,17 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 }
 
 func isOperatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int, method string) (bool, error) {
-	if method == "GET" {
+	switch method {
+	case http.MethodGet:
 		return isGettingSelf(ctx, c, s, curPrincipalID)
-	} else if method == "PATCH" || method == "DELETE" {
+	case http.MethodPatch, http.MethodDelete:
 		return isUpdatingSelf(ctx, c, s, curPrincipalID)
+	default:
+		return false, nil
 	}
-
-	return false, nil
 }
 
-func isGettingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipalID int) (bool, error) {
+func isGettingSelf(_ context.Context, c echo.Context, _ *Server, curPrincipalID int) (bool, error) {
 	if strings.HasPrefix(c.Path(), "/api/inbox/user") {
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {

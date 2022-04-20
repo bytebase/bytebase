@@ -9,7 +9,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +18,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 	// for now, we only support Gitlab
 	g.GET("/auth/provider", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		vcsFind := &api.VCSFind{}
 		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
@@ -47,7 +46,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/login/:auth_provider", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		var user *api.Principal
 
 		authProvider := api.PrincipalAuthProvider(c.Param("auth_provider"))
@@ -92,7 +91,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				// exchange OAuth Token
-				oauthToken, err := vcsPlugin.Get(vcsFound.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
+				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
 					ctx,
 					vcsFound.InstanceURL,
 					&common.OAuthExchange{
@@ -106,7 +105,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
 				}
 
-				gitlabUserInfo, err := vcsPlugin.Get(vcs.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+				gitlabUserInfo, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
@@ -121,7 +120,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				// we only allow active user to login via gitlab
-				if gitlabUserInfo.State != vcsPlugin.StateActive {
+				if gitlabUserInfo.State != vcs.StateActive {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via Gitlab, user is Archived")
 				}
 
@@ -190,7 +189,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/signup", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		signUp := &api.SignUp{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, signUp); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sign up request").SetInternal(err)

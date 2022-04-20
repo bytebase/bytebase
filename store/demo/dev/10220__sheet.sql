@@ -1,4 +1,3 @@
--- Sheet for principal 101 "Demo Owner"
 INSERT INTO
     sheet (
         id,
@@ -8,8 +7,7 @@ INSERT INTO
         database_id,
         name,
         statement,
-        source,
-        type
+        visibility
     )
 VALUES
     (
@@ -18,10 +16,74 @@ VALUES
         101,
         3001,
         7019,
-        'my-sheet',
-        'SELECT * FROM demo',
-        'BYTEBASE',
-        'SQL'
+        'My test cases',
+        'SELECT * FROM test_case',
+        'PRIVATE'
     );
 
-ALTER SEQUENCE sheet_id_seq RESTART WITH 22002;
+INSERT INTO
+    sheet (
+        id,
+        row_status,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement,
+        visibility
+    )
+VALUES
+    (
+        22002,
+        'ARCHIVED',
+        101,
+        101,
+        3002,
+        'My starred items',
+        'SELECT * FROM item WHERE starred=true',
+        'PRIVATE'
+    );
+
+INSERT INTO
+    sheet (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement,
+        visibility
+    )
+VALUES
+    (
+        22003,
+        102,
+        102,
+        3002,
+        'All coupon of our shop',
+        'SELECT * FROM coupon WHERE shop_id=101',
+        'PROJECT'
+    );
+
+INSERT INTO
+    sheet (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        name,
+        statement,
+        visibility
+    )
+VALUES
+    (
+        22004,
+        103,
+        103,
+        3003,
+        'All blogs from Alex',
+        'SELECT * FROM blog WHERE author="Alex"',
+        'PUBLIC'
+    );
+
+ALTER SEQUENCE sheet_id_seq RESTART WITH 22005;

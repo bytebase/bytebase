@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+
 	"go.uber.org/zap"
 )
 
@@ -48,7 +49,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 
 	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("Failed to find backup with ID[%d], error[%w]", payload.BackupID, err)
+		return true, nil, fmt.Errorf("failed to find backup with ID[%d], error[%w]", payload.BackupID, err)
 	}
 	if backup == nil {
 		return true, nil, fmt.Errorf("backup with ID[%d] not found", payload.BackupID)

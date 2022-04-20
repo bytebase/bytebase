@@ -20,7 +20,7 @@ var (
 
 func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		find := &api.SettingFind{}
 		settingRawList, err := s.SettingService.FindSettingList(ctx, find)
 		if err != nil {
@@ -53,7 +53,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/setting/:name", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		settingPatch := &api.SettingPatch{
 			Name:      api.SettingName(c.Param("name")),
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),

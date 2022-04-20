@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
 	g.POST("/member", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		memberCreate := &api.MemberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
@@ -75,7 +74,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/member", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		memberFind := &api.MemberFind{}
 		memberList, err := s.store.FindMember(ctx, memberFind)
 		if err != nil {
@@ -90,7 +89,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/member/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)

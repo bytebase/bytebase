@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 func (s *Server) registerInboxRoutes(g *echo.Group) {
 	g.GET("/inbox/user/:userID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
@@ -45,7 +44,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 	})
 
 	g.GET("/inbox/user/:userID/summary", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		userID, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("User ID is not a number: %s", c.Param("userID"))).SetInternal(err)
@@ -60,7 +59,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/inbox/:inboxID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("inboxID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("inboxID"))).SetInternal(err)
