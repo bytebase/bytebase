@@ -18,9 +18,6 @@ type TaskDAG struct {
 
 // TaskDAGCreate is the API message to create TaskDAG.
 type TaskDAGCreate struct {
-	// Standard fields
-	CreatorID int
-
 	// Domain Specific fields
 	FromTaskID int
 	ToTaskID   int

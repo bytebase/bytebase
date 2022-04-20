@@ -1000,7 +1000,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 
 		for _, taskDAGCreate := range stageCreate.TaskDAGList {
-			taskDAGCreate.CreatorID = creatorID
 			taskDAGCreate.FromTaskID = taskID[taskDAGCreate.FromTaskID]
 			taskDAGCreate.ToTaskID = taskID[taskDAGCreate.ToTaskID]
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
