@@ -5,10 +5,11 @@ package server
 
 import (
 	"embed"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"io/fs"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 //go:embed dist

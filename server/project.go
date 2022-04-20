@@ -20,7 +20,7 @@ import (
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
 	g.POST("/project", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectCreate := &api.ProjectCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
@@ -70,7 +70,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectFind := &api.ProjectFind{}
 		if userIDStr := c.QueryParam("user"); userIDStr != "" {
 			userID, err := strconv.Atoi(userIDStr)
@@ -123,7 +123,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -145,7 +145,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -181,7 +181,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we link the repository with the project, we will also change the project workflow type to VCS
 	g.POST("/project/:projectID/repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -282,7 +282,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	// 1. repository also contains project, which would cause circular dependency when composing it.
 	// 2. repository info is only needed when fetching a particular project by id, thus it's unnecessary to include it in the project list response.
 	g.GET("/project/:projectID/repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -319,7 +319,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
 	g.PATCH("/project/:projectID/repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -437,7 +437,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 	// When we unlink the repository with the project, we will also change the project workflow type to UI
 	g.DELETE("/project/:projectID/repository", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -503,7 +503,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:id/deployment", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -539,7 +539,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:id/deployment", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
