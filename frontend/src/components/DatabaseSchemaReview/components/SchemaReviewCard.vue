@@ -28,6 +28,13 @@
               :text="envStore.getEnvironmentNameById(review.environmentId)"
               :can-remove="false"
             />
+            <span class="text-yellow-700" v-else>
+              {{
+                $t(
+                  "schema-review-policy.create.basic-info.no-linked-environments"
+                )
+              }}
+            </span>
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">

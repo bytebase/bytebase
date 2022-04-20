@@ -1,6 +1,7 @@
 import { SchemaReviewPolicyId } from "./id";
 import { Principal } from "./principal";
 
+// The rule level
 export enum RuleLevel {
   DISABLED = "DISABLED",
   ERROR = "ERROR",
@@ -13,6 +14,7 @@ export const LEVEL_LIST = [
   RuleLevel.DISABLED,
 ];
 
+// The rule template payload
 enum PayloadType {
   STRING = "STRING",
   STRING_ARRAY = "STRING_ARRAY",
@@ -51,10 +53,13 @@ export type RuleTemplatePayload =
   | RequiredColumnRuleTemplatePayload
   | undefined;
 
+// The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
+// The category type for rule template
 export type CategoryType = "ENGINE" | "NAMING" | "QUERY" | "TABLE" | "COLUMN";
 
+// The identifier for rule template
 export type RuleType =
   | "engine.mysql.use-innodb"
   | "table.require-pk"
@@ -69,6 +74,7 @@ export type RuleType =
   | "query.where.require"
   | "query.where.no-leading-wildcard-like";
 
+// Rule template for frontend
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
@@ -78,10 +84,18 @@ export interface RuleTemplate {
   level: RuleLevel;
 }
 
+// The naming format rule payload. Used by
+// naming.table
+// naming.column
+// naming.index.pk
+// naming.index.uk
+// naming.index.idk
 interface NamingFormatPayload {
   format: string;
 }
 
+// The naming format rule payload. Used by
+// column.required
 interface RequiredColumnPayload {
   columnList: string[];
 }
@@ -92,6 +106,7 @@ export interface SchemaPolicyRule {
   payload?: NamingFormatPayload | RequiredColumnPayload;
 }
 
+// The API for schema review policy in backend.
 export interface DatabaseSchemaReviewPolicy {
   id: SchemaReviewPolicyId;
 
@@ -317,10 +332,18 @@ export const convertToCategoryList = (
   );
 };
 
+// The convertRuleTemplateToPolicyRule will convert the review policy rule to rule template for frontend useage.
+// Will throw exception if we don't implement the payload handler for specific type of rule.
 export const convertPolicyRuleToRuleTemplate = (
   policyRule: SchemaPolicyRule,
   ruleTemplate: RuleTemplate
 ): RuleTemplate => {
+  if (policyRule.type !== ruleTemplate.type) {
+    throw new Error(
+      `The rule type is not same. policyRule:${ruleTemplate.type}, ruleTemplate:${ruleTemplate.type}`
+    );
+  }
+
   const res = { ...ruleTemplate, level: policyRule.level };
 
   if (!ruleTemplate.payload) {
@@ -354,9 +377,11 @@ export const convertPolicyRuleToRuleTemplate = (
       };
   }
 
-  return res;
+  throw new Error(`Invalid rule ${ruleTemplate.type}`);
 };
 
+// The convertRuleTemplateToPolicyRule will convert rule template to review policy rule for backend useage.
+// Will throw exception if we don't implement the payload handler for specific type of rule.
 export const convertRuleTemplateToPolicyRule = (
   rule: RuleTemplate
 ): SchemaPolicyRule => {
@@ -395,5 +420,5 @@ export const convertRuleTemplateToPolicyRule = (
       };
   }
 
-  return base;
+  throw new Error(`Invalid rule ${rule.type}`);
 };
