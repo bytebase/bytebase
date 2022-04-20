@@ -19,11 +19,3 @@ type SheetOrganizerUpsert struct {
 	Starred     *bool `jsonapi:"attr,starred"`
 	Pinned      *bool `jsonapi:"attr,pinned"`
 }
-
-// SheetOrganizerFind is the API message to find sheet organizers.
-type SheetOrganizerFind struct {
-	SheetID     *int
-	PrincipalID *int
-	Starred     *bool
-	Pinned      *bool
-}

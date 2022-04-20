@@ -3,11 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 // sheetOrganizerRaw is the store model for SheetOrganizer.
@@ -54,51 +51,6 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 	return sheetOrganizer, nil
 }
 
-// FindSheetOrganizerList retrieves a list of SheetOrganizer.
-func (s *Store) FindSheetOrganizerList(ctx context.Context, find *api.SheetOrganizerFind) ([]*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	sheetOrganizerRawlist, err := findSheetOrganizerList(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	var sheetOrganizerList []*api.SheetOrganizer
-	for _, raw := range sheetOrganizerRawlist {
-		sheetOrganizerList = append(sheetOrganizerList, raw.toSheetOrganizer())
-	}
-
-	return sheetOrganizerList, nil
-}
-
-// FindSheetOrganizer retrieves a SheetOrganizer.
-func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	sheetOrganizerRawlist, err := findSheetOrganizerList(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(sheetOrganizerRawlist) == 0 {
-		return nil, nil
-	} else if len(sheetOrganizerRawlist) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d sheet organizer with filter %+v, expect 1. ", len(sheetOrganizerRawlist), find)}
-	}
-
-	sheetOrganizer := sheetOrganizerRawlist[0].toSheetOrganizer()
-
-	return sheetOrganizer, nil
-}
-
 func upsertSheetOrganizer(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 	  INSERT INTO sheet_organizer (
@@ -136,57 +88,4 @@ func upsertSheetOrganizer(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrga
 	}
 
 	return &sheetOrganizerRaw, nil
-}
-
-func findSheetOrganizerList(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
-	where, args := []string{"1 = 1"}, []interface{}{}
-
-	if v := find.SheetID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.PrincipalID; v != nil {
-		where, args = append(where, fmt.Sprintf("principal_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Starred; v != nil {
-		where, args = append(where, fmt.Sprintf("starred = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.Pinned; v != nil {
-		where, args = append(where, fmt.Sprintf("pinned = $%d", len(args)+1)), append(args, *v)
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-	SELECT
-		id,
-		sheet_id,
-		principal_id,
-		starred,
-		pinned
-	FROM sheet_organizer
-	WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var sheetOrganizerRawList []*sheetOrganizerRaw
-	for rows.Next() {
-		var sheetOrganizerRaw sheetOrganizerRaw
-		if err := rows.Scan(
-			&sheetOrganizerRaw.ID,
-			&sheetOrganizerRaw.SheetID,
-			&sheetOrganizerRaw.PrincipalID,
-			&sheetOrganizerRaw.Starred,
-			&sheetOrganizerRaw.Pinned,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		sheetOrganizerRawList = append(sheetOrganizerRawList, &sheetOrganizerRaw)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return sheetOrganizerRawList, nil
 }
