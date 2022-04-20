@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -33,7 +32,7 @@ func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
 
 func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	g.PATCH("/policy/environment/:environmentID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		environmentID, err := strconv.Atoi(c.Param("environmentID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -69,7 +68,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 
 	g.GET("/policy/environment/:environmentID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		environmentID, err := strconv.Atoi(c.Param("environmentID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("environmentID is not a number: %s", c.Param("id"))).SetInternal(err)

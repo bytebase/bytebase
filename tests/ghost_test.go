@@ -97,9 +97,11 @@ func newMigrationContext(config config) (*base.MigrationContext, error) {
 }
 
 func TestGhostSimpleNoop(t *testing.T) {
-	const (
+	t.Parallel()
+	a := require.New(t)
+	var (
 		localhost = "127.0.0.1"
-		port      = 13306
+		port      = getTestPort(t.Name())
 		user      = "root"
 		database  = "gh_ost_test_db"
 		table     = "tbl"
@@ -108,30 +110,30 @@ func TestGhostSimpleNoop(t *testing.T) {
 	defer stop()
 
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
-	require.NoError(t, err)
+	a.NoError(err)
 	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	require.NoError(t, err)
+	a.NoError(err)
 
 	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	require.NoError(t, err)
+	a.NoError(err)
 
 	_, err = db.Exec(fmt.Sprintf("CREATE TABLE %s (id INT PRIMARY KEY, data INT)", table))
-	require.NoError(t, err)
+	a.NoError(err)
 
 	tx, err := db.Begin()
-	require.NoError(t, err)
+	a.NoError(err)
 	defer tx.Rollback()
 
 	const n = 100
-	for i := 1; i <= n; i++ {
+	for i := 0; i < n; i++ {
 		_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%v, %v)", table, i, i))
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	err = tx.Commit()
-	require.NoError(t, err)
+	a.NoError(err)
 
 	migrationContext, err := newMigrationContext(config{
 		host:           localhost,
@@ -142,9 +144,9 @@ func TestGhostSimpleNoop(t *testing.T) {
 		alterStatement: "ALTER TABLE tbl ADD name VARCHAR(64)",
 		noop:           true,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	migrator := logic.NewMigrator(migrationContext)
 	err = migrator.Migrate()
-	require.NoError(t, err)
+	a.NoError(err)
 }
