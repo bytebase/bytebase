@@ -364,7 +364,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	// Get current user starred sheet list.
-	// The wanted sheets would be any visibility but have a record of sheet organizer.
+	// The desired sheets would be any visibility but have a record of sheet organizer.
 	g.GET("/sheet/starred", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		sheetFind, err := composeCommonSheetFindByQueryParams(c.QueryParams())
