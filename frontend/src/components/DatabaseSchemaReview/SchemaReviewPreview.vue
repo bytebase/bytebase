@@ -15,10 +15,10 @@
             class="pt-2 flex items-center text-sm group"
           >
             <a
-              :href="`#${rule.id.replace(/\./g, '-')}`"
+              :href="`#${rule.type.replace(/\./g, '-')}`"
               class="text-gray-600 hover:underline cursor-pointer"
             >
-              {{ rule.id }}
+              {{ rule.type }}
             </a>
           </div>
         </fieldset>
@@ -50,14 +50,14 @@
         >
           {{ $t(`schema-review-policy.category.${category.id.toLowerCase()}`) }}
         </a>
-        <div v-for="rule in category.ruleList" :key="rule.id" class="py-4">
+        <div v-for="rule in category.ruleList" :key="rule.type" class="py-4">
           <div class="sm:flex sm:items-center sm:space-x-4">
             <a
-              :href="`#${rule.id.replace(/\./g, '-')}`"
-              :id="rule.id.replace(/\./g, '-')"
+              :href="`#${rule.type.replace(/\./g, '-')}`"
+              :id="rule.type.replace(/\./g, '-')"
               class="text-left text-xl text-gray-600 hover:underline whitespace-nowrap"
             >
-              {{ rule.id }}
+              {{ rule.type }}
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
@@ -71,27 +71,23 @@
           <div v-if="rule.payload" class="mt-1">
             <ul role="list" class="space-y-4 list-disc list-inside">
               <li
-                v-for="key in Object.keys(rule.payload)"
+                v-for="[key, obj] in Object.entries(rule.payload)"
                 :key="key"
                 class="leading-8"
               >
                 {{ key }}:
                 <span
-                  v-if="
-                    rule.payload[key].type === 'STRING' ||
-                    rule.payload[key].type === 'TEMPLATE'
-                  "
+                  v-if="obj.type === 'STRING' || obj.type === 'TEMPLATE'"
                   class="bg-gray-100 rounded text-sm p-2"
                 >
-                  {{ rule.payload[key].value || rule.payload[key].default }}
+                  {{ obj.value ?? obj.default }}
                 </span>
                 <div
-                  v-else-if="rule.payload[key].type === 'STRING_ARRAY'"
+                  v-else-if="obj.type === 'STRING_ARRAY'"
                   class="flex flex-wrap gap-3 ml-5 mt-3"
                 >
                   <span
-                    v-for="(val, i) in rule.payload[key].value ||
-                    rule.payload[key].default"
+                    v-for="(val, i) in obj.value ?? obj.default"
                     :key="i"
                     class="bg-gray-100 rounded text-sm p-2"
                   >

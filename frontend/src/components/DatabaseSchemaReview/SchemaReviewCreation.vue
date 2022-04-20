@@ -74,10 +74,10 @@ import { useRouter } from "vue-router";
 import { BBStepTabItem } from "../../bbkit/types";
 import {
   RuleType,
-  ruleList,
+  ruleTemplateList,
   RuleLevel,
-  RuleTemplate,
   Environment,
+  RuleTemplate,
   SchemaReviewPolicyTemplate,
   convertRuleTemplateToPolicyRule,
 } from "../../types";
@@ -131,10 +131,11 @@ const getRuleListWithLevel = (
   level: RuleLevel
 ): RuleTemplate[] => {
   return typeList.reduce((res, type) => {
-    const rule = ruleList.find((r) => r.type === type);
+    const rule = ruleTemplateList.find((r) => r.type === type);
     if (!rule) {
       return res;
     }
+
     res.push({
       ...rule,
       level,

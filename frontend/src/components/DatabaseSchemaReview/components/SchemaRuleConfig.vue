@@ -3,7 +3,7 @@
     <div
       class="flex justify-center items-center py-4 px-2 group cursor-pointer hover:bg-gray-100"
       :class="active ? 'bg-gray-100' : ''"
-      @click="$emit('activate', selectedRule.id)"
+      @click="$emit('activate', selectedRule.type)"
     >
       <heroicons-solid:chevron-right
         class="w-5 h-5 transform transition-all"
@@ -13,7 +13,7 @@
       <div class="flex-1 flex flex-col ml-3">
         <div class="flex mb-2 items-center space-x-2">
           <h1 class="text-base font-semibold text-gray-900">
-            {{ selectedRule.id }}
+            {{ selectedRule.type }}
           </h1>
           <BBBadge
             :text="$t(`engine.${selectedRule.engine.toLowerCase()}`)"
@@ -104,7 +104,7 @@ import { reactive, PropType, watch } from "vue";
 import {
   LEVEL_LIST,
   RuleTemplate,
-  RulePayload,
+  RuleTemplatePayload,
 } from "../../../types/schemaSystem";
 
 interface LocalState {
@@ -114,7 +114,7 @@ interface LocalState {
 }
 
 const initStatePayload = (
-  payload: RulePayload | undefined
+  payload: RuleTemplatePayload
 ): { [val: string]: any } => {
   return Object.entries(payload ?? {}).reduce((res, [key, val]) => {
     res[key] = val.value ?? val.default;

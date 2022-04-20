@@ -31,7 +31,7 @@
     </div>
     <div :class="selectRuleList.length > 0 ? 'border-b-1 border-gray-200' : ''">
       <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="rule in selectRuleList" :key="rule.type" class="">
+        <li v-for="rule in selectRuleList" :key="rule.type">
           <SchemaRuleConfig
             :selected-rule="rule"
             :active="rule.type === state.activeRuleType"
@@ -49,8 +49,8 @@
 import { PropType, reactive } from "vue";
 import {
   RuleType,
-  RuleTemplate,
   RuleLevel,
+  RuleTemplate,
   SchemaReviewPolicyTemplate,
 } from "../../types/schemaSystem";
 

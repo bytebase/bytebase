@@ -13,7 +13,7 @@ export const LEVEL_LIST = [
   RuleLevel.DISABLED,
 ];
 
-export enum PayloadType {
+enum PayloadType {
   STRING = "STRING",
   STRING_ARRAY = "STRING_ARRAY",
   TEMPLATE = "TEMPLATE",
@@ -38,9 +38,18 @@ interface TemplatePayload {
   value?: string;
 }
 
-export interface RulePayload {
-  [key: string]: StringPayload | StringArrayPayload | TemplatePayload;
+interface NamingFormatRuleTemplatePayload {
+  format: StringPayload | TemplatePayload;
 }
+
+interface RequiredColumnRuleTemplatePayload {
+  list: StringArrayPayload;
+}
+
+export type RuleTemplatePayload =
+  | NamingFormatRuleTemplatePayload
+  | RequiredColumnRuleTemplatePayload
+  | undefined;
 
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
@@ -65,27 +74,9 @@ export interface RuleTemplate {
   category: CategoryType;
   engine: SchemaRuleEngineType;
   description: string;
-  payload?: RulePayload;
+  payload?: RuleTemplatePayload;
   level: RuleLevel;
 }
-
-// interface BaseSchemaRuleType {
-//   type: RuleType;
-//   level: RuleLevel;
-// }
-
-// interface NamingFormatRuleType extends BaseSchemaRuleType {
-//   format: string;
-// }
-
-// interface RequiredColumnRuleType extends BaseSchemaRuleType {
-//   columnList: string[];
-// }
-
-// type SchemaPolicyRule =
-//   | BaseSchemaRuleType
-//   | NamingFormatRuleType
-//   | RequiredColumnRuleType;
 
 interface NamingFormatPayload {
   format: string;
@@ -95,7 +86,7 @@ interface RequiredColumnPayload {
   columnList: string[];
 }
 
-interface SchemaPolicyRule {
+export interface SchemaPolicyRule {
   type: RuleType;
   level: RuleLevel;
   payload?: NamingFormatPayload | RequiredColumnPayload;
@@ -130,49 +121,14 @@ export type DatabaseSchemaReviewPolicyPatch = {
   environmentIdList?: number[];
 };
 
-interface RuleCategory {
-  id: CategoryType;
-  ruleList: RuleTemplate[];
-}
-
 export interface SchemaReviewPolicyTemplate {
   name: string;
   imagePath: string;
   ruleList: RuleTemplate[];
 }
 
-const categoryOrder: Map<CategoryType, number> = new Map([
-  ["ENGINE", 5],
-  ["NAMING", 4],
-  ["QUERY", 3],
-  ["TABLE", 2],
-  ["COLUMN", 1],
-]);
-
-export const convertToCategoryList = (
-  ruleList: RuleTemplate[]
-): RuleCategory[] => {
-  const dict = ruleList.reduce((dict, rule) => {
-    if (!dict[rule.category]) {
-      const id = rule.category.toLowerCase();
-      dict[rule.category] = {
-        id: rule.category,
-        ruleList: [],
-      };
-    }
-    dict[rule.category].ruleList.push(rule);
-    return dict;
-  }, {} as { [key: string]: RuleCategory });
-
-  return Object.values(dict).sort(
-    (c1, c2) =>
-      (categoryOrder.get(c2.id as CategoryType) || 0) -
-      (categoryOrder.get(c1.id as CategoryType) || 0)
-  );
-};
-
 // TODO: i18n
-export const ruleList: RuleTemplate[] = [
+export const ruleTemplateList: RuleTemplate[] = [
   {
     type: "engine.mysql.use-innodb",
     category: "ENGINE",
@@ -192,33 +148,32 @@ export const ruleList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the table name format. Default snake_lower_case.",
-    level: RuleLevel.ERROR,
     payload: {
       format: {
         type: PayloadType.STRING,
         default: "^[a-z]+(_[a-z]+)?$",
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "naming.column",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the column name format. Default snake_lower_case.",
-    level: RuleLevel.ERROR,
     payload: {
       format: {
         type: PayloadType.STRING,
         default: "^[a-z]+(_[a-z]+)?$",
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "naming.index.pk",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the primary key name format.",
-    level: RuleLevel.ERROR,
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
@@ -235,13 +190,13 @@ export const ruleList: RuleTemplate[] = [
         ],
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "naming.index.uk",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the unique key name format.",
-    level: RuleLevel.ERROR,
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
@@ -258,13 +213,13 @@ export const ruleList: RuleTemplate[] = [
         ],
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "naming.index.idx",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the index name format.",
-    level: RuleLevel.ERROR,
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
@@ -281,19 +236,20 @@ export const ruleList: RuleTemplate[] = [
         ],
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "column.required",
     category: "COLUMN",
     engine: "COMMON",
     description: "Enforce the required columns in each table.",
-    level: RuleLevel.ERROR,
     payload: {
       list: {
         type: PayloadType.STRING_ARRAY,
         default: ["id", "created_ts", "updated_ts", "creator_id", "updater_id"],
       },
     },
+    level: RuleLevel.ERROR,
   },
   {
     type: "column.no-null",
@@ -326,52 +282,79 @@ export const ruleList: RuleTemplate[] = [
   },
 ];
 
+const categoryOrder: Map<CategoryType, number> = new Map([
+  ["ENGINE", 5],
+  ["NAMING", 4],
+  ["QUERY", 3],
+  ["TABLE", 2],
+  ["COLUMN", 1],
+]);
+
+interface RuleCategory {
+  id: CategoryType;
+  ruleList: RuleTemplate[];
+}
+
+export const convertToCategoryList = (
+  ruleList: RuleTemplate[]
+): RuleCategory[] => {
+  const dict = ruleList.reduce((dict, rule) => {
+    if (!dict[rule.category]) {
+      const id = rule.category.toLowerCase();
+      dict[rule.category] = {
+        id: rule.category,
+        ruleList: [],
+      };
+    }
+    dict[rule.category].ruleList.push(rule);
+    return dict;
+  }, {} as { [key: string]: RuleCategory });
+
+  return Object.values(dict).sort(
+    (c1, c2) =>
+      (categoryOrder.get(c2.id as CategoryType) || 0) -
+      (categoryOrder.get(c1.id as CategoryType) || 0)
+  );
+};
+
 export const convertPolicyRuleToRuleTemplate = (
   policyRule: SchemaPolicyRule,
   ruleTemplate: RuleTemplate
-): RuleTemplate | undefined => {
-  if (policyRule.type !== ruleTemplate.type) {
-    return;
-  }
+): RuleTemplate => {
+  const res = { ...ruleTemplate, level: policyRule.level };
+
   if (!ruleTemplate.payload) {
-    return { ...ruleTemplate, level: policyRule.level };
+    return res;
   }
 
-  const payload = Object.entries(ruleTemplate.payload).reduce(
-    (obj, [key, val]) => {
-      obj[key] = {
-        ...val,
+  switch (ruleTemplate.type) {
+    case "naming.column":
+    case "naming.index.idx":
+    case "naming.index.pk":
+    case "naming.index.uk":
+    case "naming.table":
+      const namingPayload =
+        ruleTemplate.payload as NamingFormatRuleTemplatePayload;
+      namingPayload.format.value = (
+        policyRule.payload as NamingFormatPayload
+      ).format;
+      return {
+        ...res,
+        payload: namingPayload,
       };
-      if (!policyRule.payload) {
-        return obj;
-      }
+    case "column.required":
+      const requiredColumnPayload =
+        ruleTemplate.payload as RequiredColumnRuleTemplatePayload;
+      requiredColumnPayload.list.value = (
+        policyRule.payload as RequiredColumnPayload
+      ).columnList;
+      return {
+        ...res,
+        payload: requiredColumnPayload,
+      };
+  }
 
-      switch (val.type) {
-        case PayloadType.STRING:
-        case PayloadType.TEMPLATE:
-          const format = (policyRule.payload as NamingFormatPayload).format;
-          if (typeof format === "string") {
-            obj[key].value = format;
-          }
-          break;
-        case PayloadType.STRING_ARRAY:
-          const list = (policyRule.payload as RequiredColumnPayload).columnList;
-          if (Array.isArray(list)) {
-            obj[key].value = list;
-          }
-          break;
-      }
-
-      return obj;
-    },
-    {} as RulePayload
-  );
-
-  return {
-    ...ruleTemplate,
-    level: policyRule.level,
-    payload,
-  };
+  return res;
 };
 
 export const convertRuleTemplateToPolicyRule = (
@@ -391,8 +374,8 @@ export const convertRuleTemplateToPolicyRule = (
     case "naming.index.pk":
     case "naming.index.uk":
     case "naming.table":
-      const format = (rule.payload.format.value ??
-        rule.payload.format.default) as string;
+      const namingPayload = rule.payload as NamingFormatRuleTemplatePayload;
+      const format = namingPayload.format.value ?? namingPayload.format.default;
       return {
         ...base,
         payload: {
@@ -400,8 +383,10 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "column.required":
-      const columnList = (rule.payload.list.value ??
-        rule.payload.list.default) as string[];
+      const requiredColumnPayload =
+        rule.payload as RequiredColumnRuleTemplatePayload;
+      const columnList =
+        requiredColumnPayload.list.value ?? requiredColumnPayload.list.default;
       return {
         ...base,
         payload: {
@@ -411,18 +396,4 @@ export const convertRuleTemplateToPolicyRule = (
   }
 
   return base;
-
-  // if ("format" in rule.payload) {
-  //   return {
-  //     ...base,
-  //     format: rule.payload.format.value ?? rule.payload.format.default,
-  //   } as NamingFormatRuleType;
-  // } else if ("list" in rule.payload) {
-  //   return {
-  //     ...base,
-  //     columnList: rule.payload.list.value ?? rule.payload.list.default,
-  //   } as RequiredColumnRuleType;
-  // } else {
-  //   return base;
-  // }
 };

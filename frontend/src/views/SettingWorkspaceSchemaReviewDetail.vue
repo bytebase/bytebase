@@ -2,8 +2,8 @@
   <transition appear name="slide-from-bottom" mode="out-in">
     <SchemaReviewCreation
       v-if="state.editMode"
-      :review-id="review.id"
-      :name="review.name"
+      :review-id="reviewPolicy.id"
+      :name="reviewPolicy.name"
       :selected-environment-list="environmentList"
       :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
@@ -11,7 +11,7 @@
     <div class="my-5" v-else>
       <div class="flex flex-col items-center justify-center md:flex-row">
         <h1 class="text-xl md:text-3xl font-semibold flex-1">
-          {{ review.name }}
+          {{ reviewPolicy.name }}
         </h1>
         <button
           v-if="hasPermission"
@@ -130,7 +130,7 @@
         :style="'DELETE'"
         :button-text="$t('schema-review-policy.delete')"
         :ok-text="$t('common.delete')"
-        :confirm-title="$t('common.delete') + ` '${review.name}'?`"
+        :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
         @confirm="onRemove"
       />
@@ -151,7 +151,7 @@ import {
   DatabaseSchemaReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
-  ruleList,
+  ruleTemplateList,
   Environment,
   convertPolicyRuleToRuleTemplate,
 } from "../types";
@@ -199,12 +199,12 @@ const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
-const review = computed((): DatabaseSchemaReviewPolicy => {
+const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
   return store.getReviewPolicyById(idFromSlug(props.schemaReviewSlug));
 });
 
 const environmentList = computed((): Environment[] => {
-  return review.value.environmentIdList.map((envId) => {
+  return reviewPolicy.value.environmentIdList.map((envId) => {
     const env = envStore.getEnvironmentById(envId);
     return {
       ...env,
@@ -213,19 +213,19 @@ const environmentList = computed((): Environment[] => {
   });
 });
 
-const ruleMap = ruleList.reduce((map, rule) => {
+const ruleMap = ruleTemplateList.reduce((map, rule) => {
   map.set(rule.type, rule);
   return map;
 }, new Map<RuleType, RuleTemplate>());
 
 const selectedRuleList = computed((): RuleTemplate[] => {
-  if (!review.value) {
+  if (!reviewPolicy.value) {
     return [];
   }
 
   const ruleTemplateList: RuleTemplate[] = [];
 
-  for (const policyRule of review.value.ruleList) {
+  for (const policyRule of reviewPolicy.value.ruleList) {
     const rule = ruleMap.get(policyRule.type);
     if (!rule) {
       continue;
@@ -340,7 +340,7 @@ const onRemove = () => {
   if (environmentList.value.length > 0) {
     return;
   }
-  store.removeReviewPolicy(review.value.id);
+  store.removeReviewPolicy(reviewPolicy.value.id);
   router.replace({
     name: ROUTE_NAME,
   });
