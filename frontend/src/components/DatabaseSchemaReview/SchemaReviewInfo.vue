@@ -25,7 +25,7 @@
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         :style="'WARN'"
-        :title="$t('common.environments')"
+        :title="$t('common.environment')"
         :description="
           $t(
             'schema-review-policy.create.basic-info.no-available-environment-desc'
