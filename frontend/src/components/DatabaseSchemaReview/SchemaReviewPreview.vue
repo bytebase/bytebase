@@ -37,6 +37,14 @@
           :can-remove="false"
         />
       </div>
+      <BBAttention
+        v-else-if="isPreviewStep"
+        class="my-5"
+        :style="`WARN`"
+        :title="
+          $t('schema-review-policy.create.basic-info.no-linked-environments')
+        "
+      />
       <div v-for="category in categoryList" :key="category.id" class="pb-4">
         <a
           :href="`#${category.id.replace(/\./g, '-')}`"
@@ -73,7 +81,7 @@
                 {{ key }}:
                 <span
                   v-if="obj.type === 'STRING' || obj.type === 'TEMPLATE'"
-                  class="bg-gray-100 rounded text-sm p-2"
+                  class="bg-gray-100 rounded text-sm font-semibold p-2"
                 >
                   {{ obj.value ?? obj.default }}
                 </span>
@@ -84,7 +92,7 @@
                   <span
                     v-for="(val, i) in obj.value ?? obj.default"
                     :key="i"
-                    class="bg-gray-100 rounded text-sm p-2"
+                    class="bg-gray-100 rounded text-sm font-semibold p-2"
                   >
                     {{ val }}
                   </span>
@@ -106,11 +114,13 @@ import { environmentName } from "../../utils";
 const props = withDefaults(
   defineProps<{
     name?: string;
+    isPreviewStep?: boolean;
     selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
     name: "",
+    isPreviewStep: false,
     selectedEnvironment: undefined,
     selectedRuleList: () => [],
   }

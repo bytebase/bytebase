@@ -70,7 +70,12 @@
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
             :placeholder="payload.default"
           />
-          <div v-else-if="payload.type == 'STRING_ARRAY'">
+          <div
+            v-else-if="
+              payload.type == 'STRING_ARRAY' &&
+              Array.isArray(state.payload[key])
+            "
+          >
             <div class="flex flex-wrap gap-4 mb-4">
               <BBBadge
                 v-for="(val, index) in state.payload[key]"
@@ -90,7 +95,7 @@
           <InputWithTemplate
             v-else-if="payload.type == 'TEMPLATE'"
             :template-list="payload.templateList"
-            :value="state.payload[key]"
+            :value="getStringPayload(key)"
             @change="(val) => (state.payload[key] = val)"
           />
         </div>
@@ -109,7 +114,7 @@ import {
 
 interface LocalState {
   payload: {
-    [val: string]: any;
+    [val: string]: string | string[];
   };
 }
 
@@ -150,7 +155,7 @@ const removeFromList = (key: string, val: any) => {
     return;
   }
 
-  const values: Array<any> = state.payload[key];
+  const values = state.payload[key] as string[];
   const index = values.indexOf(val);
   if (index < 0) {
     return;
@@ -165,8 +170,12 @@ const pushToList = (key: string, e: any) => {
   }
 
   const val = e.target.value.trim();
-  state.payload[key].push(val);
+  (state.payload[key] as string[]).push(val);
 
   e.target.value = "";
+};
+
+const getStringPayload = (key: string): string => {
+  return state.payload[key] as string;
 };
 </script>

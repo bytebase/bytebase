@@ -30,8 +30,7 @@
         v-else
         class="my-5"
         :style="`WARN`"
-        :title="$t('common.environments')"
-        :description="
+        :title="
           $t('schema-review-policy.create.basic-info.no-linked-environments')
         "
       />

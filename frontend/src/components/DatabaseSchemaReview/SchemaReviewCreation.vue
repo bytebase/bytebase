@@ -36,6 +36,7 @@
       <template #2>
         <SchemaReviewPreview
           :name="state.name"
+          :is-preview-step="true"
           :selected-rule-list="state.selectedRuleList"
           :selected-environment="state.selectedEnvironment"
           class="py-5"
