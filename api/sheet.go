@@ -213,6 +213,8 @@ type SheetFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+	// Using to find the creator own sheet list.
+	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	CreatorID *int
 
 	// Related fields
@@ -225,11 +227,12 @@ type SheetFind struct {
 	Source     *SheetSource
 	Type       *SheetType
 	Payload    *string
-	// Find sheets which related project containing PrincipalID as an active member.
-	PrincipalID *int
-	// Find sheets which related organizer has starred/pinned records.
+	// Using to find starred/pinned sheet list, could be PRIVATE/PORJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
 	OrganizerID *int
+	// Using to find a constraint sheet list which related project containing PrincipalID as an active member.
+	// When finding shared PROJECT/PROJECT sheet, the value should have value.
+	PrincipalID *int
 }
 
 func (find *SheetFind) String() string {

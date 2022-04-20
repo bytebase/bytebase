@@ -332,7 +332,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		for _, sheetRaw := range sheetRawList {
 			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch sheet relationship: %v", sheet.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship: %v", sheet.Name)).SetInternal(err)
 			}
 			sheetList = append(sheetList, sheet)
 		}
@@ -340,6 +340,105 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sheet list response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/sheet/shared", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		sheetFind := &api.SheetFind{}
+
+		if projectIDStr := c.QueryParam("projectId"); projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
+			}
+			sheetFind.ProjectID = &projectID
+		}
+		if databaseIDStr := c.QueryParam("databaseId"); databaseIDStr != "" {
+			databaseID, err := strconv.Atoi(databaseIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.QueryParam("databaseId"))).SetInternal(err)
+			}
+			sheetFind.DatabaseID = &databaseID
+		}
+		// When getting private/project sheet list, we should set the PrincipalID to ensure only
+		// the sheet which related project containing PrincipalID as an active member could be found.
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind.PrincipalID = &principalID
+
+		var sheetRawList []*api.SheetRaw
+		projectSheetVisibility := api.ProjectSheet
+		sheetFind.Visibility = &projectSheetVisibility
+		projectSheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared project sheet list").SetInternal(err)
+		}
+		sheetRawList = append(sheetRawList, projectSheetRawList...)
+
+		publicSheetVisibility := api.PublicSheet
+		sheetFind.Visibility = &publicSheetVisibility
+		publicSheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch shared public sheet list").SetInternal(err)
+		}
+		sheetRawList = append(sheetRawList, publicSheetRawList...)
+
+		var sheetList []*api.Sheet
+		for _, sheetRaw := range sheetRawList {
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose shared sheet relationship: %v", sheet)).SetInternal(err)
+			}
+			sheetList = append(sheetList, sheet)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, sheetList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal shared sheet list response").SetInternal(err)
+		}
+		return nil
+	})
+
+	g.GET("/sheet/starred", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		principalID := c.Get(getPrincipalIDContextKey()).(int)
+		sheetFind := &api.SheetFind{
+			PrincipalID: &principalID,
+			OrganizerID: &principalID,
+		}
+
+		if projectIDStr := c.QueryParam("projectId"); projectIDStr != "" {
+			projectID, err := strconv.Atoi(projectIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.QueryParam("projectId"))).SetInternal(err)
+			}
+			sheetFind.ProjectID = &projectID
+		}
+		if databaseIDStr := c.QueryParam("databaseId"); databaseIDStr != "" {
+			databaseID, err := strconv.Atoi(databaseIDStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.QueryParam("databaseId"))).SetInternal(err)
+			}
+			sheetFind.DatabaseID = &databaseID
+		}
+
+		starredSheetRawList, err := s.SheetService.FindSheetList(ctx, sheetFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch starred sheet list").SetInternal(err)
+		}
+		var starredSheetList []*api.Sheet
+		for _, sheetRaw := range starredSheetRawList {
+			sheet, err := s.composeSheetRelationship(ctx, sheetRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose sheet relationship: %v", sheet.Name)).SetInternal(err)
+			}
+			starredSheetList = append(starredSheetList, sheet)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, starredSheetList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal starred sheet list response").SetInternal(err)
 		}
 		return nil
 	})
