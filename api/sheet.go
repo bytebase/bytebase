@@ -213,7 +213,7 @@ type SheetFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
-	// Using to find the creator own sheet list.
+	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	CreatorID *int
 
