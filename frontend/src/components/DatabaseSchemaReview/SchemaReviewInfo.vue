@@ -104,7 +104,7 @@
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import { useSchemaSystemStore, useEnvironmentList } from "@/store";
-import { Environment, SchemaReviewTemplate } from "../../types";
+import { Environment, SchemaReviewPolicyTemplate } from "../../types";
 import { environmentName } from "../../utils";
 
 interface LocalEnvironment extends Environment {
@@ -131,7 +131,7 @@ const props = defineProps({
   },
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewTemplate[]>,
+    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: true,

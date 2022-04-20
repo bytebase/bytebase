@@ -31,12 +31,12 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { SchemaReviewTemplate } from "../../../types/schemaSystem";
+import { SchemaReviewPolicyTemplate } from "../../../types/schemaSystem";
 
 const props = defineProps({
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewTemplate[]>,
+    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: false,

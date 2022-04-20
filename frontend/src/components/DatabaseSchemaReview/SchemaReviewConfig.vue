@@ -50,7 +50,7 @@ import { PropType, reactive, computed } from "vue";
 import {
   RuleTemplate,
   RuleLevel,
-  SchemaReviewTemplate,
+  SchemaReviewPolicyTemplate,
 } from "../../types/schemaSystem";
 
 interface LocalState {
@@ -65,7 +65,7 @@ const props = defineProps({
   },
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewTemplate[]>,
+    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: true,

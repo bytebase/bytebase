@@ -77,7 +77,7 @@ import {
   RuleLevel,
   RuleTemplate,
   Environment,
-  SchemaReviewTemplate,
+  SchemaReviewPolicyTemplate,
   convertRuleTemplateToPolicyRule,
 } from "../../types";
 import {
@@ -143,7 +143,7 @@ const getRuleListWithLevel = (
 };
 
 // TODO: i18n
-const TEMPLATE_LIST: SchemaReviewTemplate[] = [
+const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
   {
     name: "Schema review for Prod",
     imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)

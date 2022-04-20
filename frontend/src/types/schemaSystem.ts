@@ -121,7 +121,7 @@ interface RuleCategory {
   ruleList: RuleTemplate[];
 }
 
-export interface SchemaReviewTemplate {
+export interface SchemaReviewPolicyTemplate {
   name: string;
   imagePath: string;
   ruleList: RuleTemplate[];
@@ -179,7 +179,6 @@ export const ruleList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Enforce the table name format. Default snake_lower_case.",
     level: RuleLevel.ERROR,
-
     payload: {
       format: {
         type: PayloadType.STRING,
@@ -193,7 +192,6 @@ export const ruleList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Enforce the column name format. Default snake_lower_case.",
     level: RuleLevel.ERROR,
-
     payload: {
       format: {
         type: PayloadType.STRING,
@@ -231,7 +229,6 @@ export const ruleList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Enforce the unique key name format.",
     level: RuleLevel.ERROR,
-
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
@@ -255,7 +252,6 @@ export const ruleList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Enforce the index name format.",
     level: RuleLevel.ERROR,
-
     payload: {
       format: {
         type: PayloadType.TEMPLATE,
@@ -279,7 +275,6 @@ export const ruleList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Enforce the required columns in each table.",
     level: RuleLevel.ERROR,
-
     payload: {
       list: {
         type: PayloadType.STRING_ARRAY,
