@@ -429,6 +429,7 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("cannot new db: %w", err)
 	}
 
+	// Open connection of `bb` in Postgres and setup migration if needed
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
