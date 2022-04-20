@@ -37,7 +37,7 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
@@ -292,7 +292,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/pipeline/:pipelineID/task/:taskID/status", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
@@ -361,7 +361,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 
 	g.POST("/pipeline/:pipelineID/task/:taskID/check", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)

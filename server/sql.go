@@ -21,7 +21,7 @@ import (
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		connectionInfo := &api.ConnectionInfo{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
@@ -78,7 +78,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sql/sync-schema", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
@@ -102,7 +102,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sql/execute", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request").SetInternal(err)

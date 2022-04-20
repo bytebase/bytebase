@@ -18,7 +18,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 
 	// for now, we only support Gitlab
 	g.GET("/auth/provider", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		vcsFind := &api.VCSFind{}
 		vcsList, err := s.store.FindVCS(ctx, vcsFind)
 		if err != nil {
@@ -46,7 +46,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/login/:auth_provider", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		var user *api.Principal
 
 		authProvider := api.PrincipalAuthProvider(c.Param("auth_provider"))
@@ -189,7 +189,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 
 	g.POST("/auth/signup", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		signUp := &api.SignUp{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, signUp); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sign up request").SetInternal(err)

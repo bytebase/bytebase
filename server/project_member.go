@@ -19,7 +19,7 @@ import (
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	// for now we only support sync project member from privately deployed GitLab
 	g.POST("/project/:projectID/sync-member", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -240,7 +240,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/member", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -295,7 +295,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectID/member/:memberID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -364,7 +364,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/project/:projectID/member/:memberID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)

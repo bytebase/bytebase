@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
@@ -11,7 +10,7 @@ import (
 
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		serverInfo := api.ServerInfo{
 			Version:  s.version,
 			Readonly: s.readonly,

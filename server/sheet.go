@@ -20,8 +20,8 @@ import (
 
 func (s *Server) registerSheetRoutes(g *echo.Group) {
 	g.POST("/sheet", func(c echo.Context) error {
-		ctx := context.Background()
-		sheetCreate := &api.SheetCreate{
+		ctx := c.Request().Context()
+    sheetCreate := &api.SheetCreate{
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
@@ -74,7 +74,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sheet/project/:projectID/sync", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -279,7 +279,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.GET("/sheet", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		sheetFind := &api.SheetFind{}
 
 		if rowStatusStr := c.QueryParam("rowStatus"); rowStatusStr != "" {
@@ -345,7 +345,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.GET("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -376,7 +376,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -411,7 +411,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/sheet/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
