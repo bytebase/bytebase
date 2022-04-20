@@ -90,6 +90,8 @@ p, DBA, /subscription, GET
 p, DBA, /subscription, PATCH
 p, DBA, /sheet, POST
 p, DBA, /sheet, GET
+p, DBA, /sheet/shared, GET
+p, DBA, /sheet/starred, GET
 p, DBA, /sheet/{id}, GET
 p, DBA, /sheet/{id}, PATCH
 p, DBA, /sheet/{id}, PATCH_SELF
