@@ -10,17 +10,19 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// SheetOrganizerRaw is the store model for SheetOrganizer.
-type SheetOrganizerRaw struct {
-	ID          int
+// sheetOrganizerRaw is the store model for SheetOrganizer.
+type sheetOrganizerRaw struct {
+	ID int
+
+	// Related fields
 	SheetID     int
 	PrincipalID int
 	Starred     bool
 	Pinned      bool
 }
 
-// toSheetOrganizer creates an instance of SheetOrganizer based on the SheetOrganizerRaw.
-func (raw *SheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
+// toSheetOrganizer creates an instance of SheetOrganizer based on the sheetOrganizerRaw.
+func (raw *sheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
 	return &api.SheetOrganizer{
 		ID:          raw.ID,
 		SheetID:     raw.SheetID,
@@ -30,15 +32,15 @@ func (raw *SheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
 	}
 }
 
-// CreateSheetOrganizer creates a new SheetOrganizer.
-func (s *Store) CreateSheetOrganizer(ctx context.Context, create *api.SheetOrganizerCreate) (*api.SheetOrganizer, error) {
+// UpsertSheetOrganizer upserts a new SheetOrganizer.
+func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrganizerUpsert) (*api.SheetOrganizer, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	sheetOrganizerRaw, err := createSheetOrganizer(ctx, tx.PTx, create)
+	sheetOrganizerRaw, err := upsertSheetOrganizer(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -97,43 +99,24 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 	return sheetOrganizer, nil
 }
 
-// PatchSheetOrganizer patch a SheetOrganizer.
-func (s *Store) PatchSheetOrganizer(ctx context.Context, patch *api.SheetOrganizerPatch) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	sheetOrganizerRaw, err := patchSheetOrganizer(ctx, tx.PTx, patch)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	sheetOrganizer := sheetOrganizerRaw.toSheetOrganizer()
-
-	return sheetOrganizer, nil
-}
-
-func createSheetOrganizer(ctx context.Context, tx *sql.Tx, create *api.SheetOrganizerCreate) (*SheetOrganizerRaw, error) {
+func upsertSheetOrganizer(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
 	row, err := tx.QueryContext(ctx, `
-	INSERT INTO sheet_organizer (
-		sheet_id,
-		principal_id,
-		starred,
-		pinned
-	)
-	VALUES ($1, $2, $3, $4)
-	RETURNING id, sheet_id, principal_id, starred, pinned
-`,
-		create.SheetID,
-		create.PrincipalID,
-		create.Starred,
-		create.Pinned,
+	  INSERT INTO sheet_organizer (
+			sheet_id,
+			principal_id,
+			starred,
+			pinned
+		)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT(sheet_id, principal_id) DO UPDATE SET
+			starred = EXCLUDED.starred,
+			pinned = EXCLUDED.pinned
+		RETURNING id, sheet_id, principal_id, starred, pinned
+	`,
+		upsert.SheetID,
+		upsert.PrincipalID,
+		upsert.Starred,
+		upsert.Pinned,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -141,7 +124,7 @@ func createSheetOrganizer(ctx context.Context, tx *sql.Tx, create *api.SheetOrga
 	defer row.Close()
 
 	row.Next()
-	var sheetOrganizerRaw SheetOrganizerRaw
+	var sheetOrganizerRaw sheetOrganizerRaw
 	if err := row.Scan(
 		&sheetOrganizerRaw.ID,
 		&sheetOrganizerRaw.SheetID,
@@ -155,7 +138,7 @@ func createSheetOrganizer(ctx context.Context, tx *sql.Tx, create *api.SheetOrga
 	return &sheetOrganizerRaw, nil
 }
 
-func findSheetOrganizerList(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*SheetOrganizerRaw, error) {
+func findSheetOrganizerList(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 
 	if v := find.SheetID; v != nil {
@@ -187,9 +170,9 @@ func findSheetOrganizerList(ctx context.Context, tx *sql.Tx, find *api.SheetOrga
 	}
 	defer rows.Close()
 
-	var sheetOrganizerRawList []*SheetOrganizerRaw
+	var sheetOrganizerRawList []*sheetOrganizerRaw
 	for rows.Next() {
-		var sheetOrganizerRaw SheetOrganizerRaw
+		var sheetOrganizerRaw sheetOrganizerRaw
 		if err := rows.Scan(
 			&sheetOrganizerRaw.ID,
 			&sheetOrganizerRaw.SheetID,
@@ -206,48 +189,4 @@ func findSheetOrganizerList(ctx context.Context, tx *sql.Tx, find *api.SheetOrga
 	}
 
 	return sheetOrganizerRawList, nil
-}
-
-func patchSheetOrganizer(ctx context.Context, tx *sql.Tx, patch *api.SheetOrganizerPatch) (*SheetOrganizerRaw, error) {
-	set, args := []string{"1 = 1"}, []interface{}{}
-
-	if v := patch.Starred; v != nil {
-		set, args = append(set, fmt.Sprintf("starred = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Pinned; v != nil {
-		set, args = append(set, fmt.Sprintf("pinned = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.ID)
-
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-	UPDATE sheet_organizer
-	SET `+strings.Join(set, ", ")+`
-	WHERE id = $%d
-	RETURNING id, sheet_id, principal_id, starred, pinned
-`, len(args)),
-		args...,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var sheetOrganizerRaw SheetOrganizerRaw
-		if err := row.Scan(
-			&sheetOrganizerRaw.ID,
-			&sheetOrganizerRaw.SheetID,
-			&sheetOrganizerRaw.PrincipalID,
-			&sheetOrganizerRaw.Starred,
-			&sheetOrganizerRaw.Pinned,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &sheetOrganizerRaw, nil
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet organizer ID not found: %d", patch.ID)}
 }
