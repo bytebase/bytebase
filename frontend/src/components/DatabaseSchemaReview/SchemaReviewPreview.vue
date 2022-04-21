@@ -74,24 +74,28 @@
           <div v-if="rule.payload" class="mt-1">
             <ul role="list" class="space-y-4 list-disc list-inside">
               <li
-                v-for="[key, obj] in Object.entries(rule.payload)"
-                :key="key"
+                v-for="(config, i) in rule.payload"
+                :key="i"
                 class="leading-8"
               >
-                {{ obj.title }}:
+                {{ config.title }}:
                 <span
-                  v-if="obj.type === 'STRING' || obj.type === 'TEMPLATE'"
+                  v-if="
+                    config.payload.type === 'STRING' ||
+                    config.payload.type === 'TEMPLATE'
+                  "
                   class="bg-gray-100 rounded text-sm font-semibold p-2"
                 >
-                  {{ obj.value ?? obj.default }}
+                  {{ config.payload.value ?? config.payload.default }}
                 </span>
                 <div
-                  v-else-if="obj.type === 'STRING_ARRAY'"
+                  v-else-if="config.payload.type === 'STRING_ARRAY'"
                   class="flex flex-wrap gap-3 ml-5 mt-3"
                 >
                   <span
-                    v-for="(val, i) in obj.value ?? obj.default"
-                    :key="i"
+                    v-for="(val, j) in config.payload.value ??
+                    config.payload.default"
+                    :key="`${i}-${j}`"
                     class="bg-gray-100 rounded text-sm font-semibold p-2"
                   >
                     {{ val }}

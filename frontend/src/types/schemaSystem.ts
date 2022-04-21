@@ -31,8 +31,6 @@ enum PayloadType {
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
 interface StringPayload {
-  title: string;
-  description?: string;
   type: PayloadType.STRING;
   default: string;
   value?: string;
@@ -41,8 +39,6 @@ interface StringPayload {
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
 interface StringArrayPayload {
-  title: string;
-  description?: string;
   type: PayloadType.STRING_ARRAY;
   default: string[];
   value?: string[];
@@ -51,8 +47,6 @@ interface StringArrayPayload {
 // TemplatePayload is the string template type payload configuration options and default value.
 // Used by the frontend.
 interface TemplatePayload {
-  title: string;
-  description?: string;
   type: PayloadType.TEMPLATE;
   default: string;
   templateList: { id: string; description?: string }[];
@@ -62,7 +56,9 @@ interface TemplatePayload {
 // RuleTemplatePayload is the rule configuration options and default value.
 // Used by the frontend.
 export interface RuleTemplatePayload {
-  format: StringPayload | TemplatePayload | StringArrayPayload;
+  title: string;
+  description: string;
+  payload: StringPayload | TemplatePayload | StringArrayPayload;
 }
 
 // The identifier for rule template
@@ -143,7 +139,7 @@ export interface RuleTemplate {
   category: CategoryType;
   engine: SchemaRuleEngineType;
   description: string;
-  payload?: RuleTemplatePayload;
+  payload?: RuleTemplatePayload[];
   level: RuleLevel;
 }
 
@@ -156,103 +152,121 @@ export interface SchemaReviewPolicyTemplate {
 
 // RULE_TEMPLATE_PAYLOAD_MAP is the relationship mapping for the rule type and payload.
 // Used by frontend to get different rule payload configurations.
-export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload> =
+export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
   new Map([
     [
       "naming.table",
-      {
-        format: {
+      [
+        {
           title: "Table name format",
-          type: PayloadType.STRING,
-          default: "^[a-z]+(_[a-z]+)?$",
+          description: "",
+          payload: {
+            type: PayloadType.STRING,
+            default: "^[a-z]+(_[a-z]+)?$",
+          },
         },
-      },
+      ],
     ],
     [
       "naming.column",
-      {
-        format: {
+      [
+        {
           title: "Column name format",
-          type: PayloadType.STRING,
-          default: "^[a-z]+(_[a-z]+)?$",
+          description: "",
+          payload: {
+            type: PayloadType.STRING,
+            default: "^[a-z]+(_[a-z]+)?$",
+          },
         },
-      },
+      ],
     ],
     [
       "naming.index.pk",
-      {
-        format: {
+      [
+        {
           title: "Primary key name format",
-          type: PayloadType.TEMPLATE,
-          default: "^pk_{{table}}_{{column_list}}$",
-          templateList: [
-            {
-              id: "table",
-              description: "The table name",
-            },
-            {
-              id: "column_list",
-              description: "Index column names, joined by _",
-            },
-          ],
+          description: "",
+          payload: {
+            type: PayloadType.TEMPLATE,
+            default: "^pk_{{table}}_{{column_list}}$",
+            templateList: [
+              {
+                id: "table",
+                description: "The table name",
+              },
+              {
+                id: "column_list",
+                description: "Index column names, joined by _",
+              },
+            ],
+          },
         },
-      },
+      ],
     ],
     [
       "naming.index.uk",
-      {
-        format: {
+      [
+        {
           title: "Unique key name format",
-          type: PayloadType.TEMPLATE,
-          default: "^uk_{{table}}_{{column_list}}$",
-          templateList: [
-            {
-              id: "table",
-              description: "The table name",
-            },
-            {
-              id: "column_list",
-              description: "Index column names, joined by _",
-            },
-          ],
+          description: "",
+          payload: {
+            type: PayloadType.TEMPLATE,
+            default: "^uk_{{table}}_{{column_list}}$",
+            templateList: [
+              {
+                id: "table",
+                description: "The table name",
+              },
+              {
+                id: "column_list",
+                description: "Index column names, joined by _",
+              },
+            ],
+          },
         },
-      },
+      ],
     ],
     [
       "naming.index.idx",
-      {
-        format: {
+      [
+        {
           title: "Index name format",
-          type: PayloadType.TEMPLATE,
-          default: "^idx_{{table}}_{{column_list}}$",
-          templateList: [
-            {
-              id: "table",
-              description: "The table name",
-            },
-            {
-              id: "column_list",
-              description: "Index column names, joined by _",
-            },
-          ],
+          description: "",
+          payload: {
+            type: PayloadType.TEMPLATE,
+            default: "^idx_{{table}}_{{column_list}}$",
+            templateList: [
+              {
+                id: "table",
+                description: "The table name",
+              },
+              {
+                id: "column_list",
+                description: "Index column names, joined by _",
+              },
+            ],
+          },
         },
-      },
+      ],
     ],
     [
       "column.required",
-      {
-        format: {
+      [
+        {
           title: "Required column names",
-          type: PayloadType.STRING_ARRAY,
-          default: [
-            "id",
-            "created_ts",
-            "updated_ts",
-            "creator_id",
-            "updater_id",
-          ],
+          description: "",
+          payload: {
+            type: PayloadType.STRING_ARRAY,
+            default: [
+              "id",
+              "created_ts",
+              "updated_ts",
+              "creator_id",
+              "updater_id",
+            ],
+          },
         },
-      },
+      ],
     ],
   ]);
 
@@ -408,26 +422,46 @@ export const convertPolicyRuleToRuleTemplate = (
 
   switch (ruleTemplate.type) {
     case "naming.column":
+    case "naming.table":
+      const stringPayload = ruleTemplate.payload[0];
+      const namingRulepayload = {
+        ...stringPayload.payload,
+        value: (policyRule.payload as NamingFormatPayload).format,
+      } as StringPayload;
+      return {
+        ...res,
+        payload: [
+          {
+            ...stringPayload,
+            payload: namingRulepayload,
+          },
+        ],
+      };
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
-    case "naming.table":
-      const namingPayload = ruleTemplate.payload;
-      namingPayload.format.value = (
-        policyRule.payload as NamingFormatPayload
-      ).format;
+      const templatePayload = ruleTemplate.payload[0];
+      const indexRulePayload = {
+        ...templatePayload.payload,
+        value: (policyRule.payload as NamingFormatPayload).format,
+      } as TemplatePayload;
       return {
         ...res,
-        payload: namingPayload,
+        payload: [
+          {
+            ...templatePayload,
+            payload: indexRulePayload,
+          },
+        ],
       };
     case "column.required":
-      const requiredColumnPayload = ruleTemplate.payload;
-      requiredColumnPayload.format.value = (
+      const requiredColumnPayload = ruleTemplate.payload[0];
+      requiredColumnPayload.payload.value = (
         policyRule.payload as RequiredColumnPayload
       ).columnList;
       return {
         ...res,
-        payload: requiredColumnPayload,
+        payload: [{ ...requiredColumnPayload }],
       };
   }
 
@@ -450,7 +484,7 @@ export const convertRuleTemplateToPolicyRule = (
   switch (rule.type) {
     case "naming.column":
     case "naming.table":
-      const stringPayload = rule.payload.format as StringPayload;
+      const stringPayload = rule.payload[0].payload as StringPayload;
       return {
         ...base,
         payload: {
@@ -460,7 +494,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
-      const templatePayload = rule.payload.format as TemplatePayload;
+      const templatePayload = rule.payload[0].payload as TemplatePayload;
       return {
         ...base,
         payload: {
@@ -468,7 +502,7 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "column.required":
-      const stringArrayPayload = rule.payload.format as StringArrayPayload;
+      const stringArrayPayload = rule.payload[0].payload as StringArrayPayload;
       return {
         ...base,
         payload: {

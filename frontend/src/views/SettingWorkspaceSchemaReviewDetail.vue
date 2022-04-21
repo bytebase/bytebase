@@ -117,8 +117,9 @@
         v-if="reviewPolicy.rowStatus === 'NORMAL'"
         :style="'ARCHIVE'"
         :button-text="$t('schema-review-policy.disable')"
-        :ok-text="$t('common.archive')"
-        :confirm-title="$t('common.archive') + ` '${reviewPolicy.name}'?`"
+        confirm-description=""
+        :ok-text="$t('common.disable')"
+        :confirm-title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
         @confirm="onArchive"
       />
@@ -126,8 +127,9 @@
         <BBButtonConfirm
           :style="'RESTORE'"
           :button-text="$t('schema-review-policy.enable')"
-          :ok-text="$t('common.restore')"
-          :confirm-title="$t('common.restore') + ` '${reviewPolicy.name}'?`"
+          confirm-description=""
+          :ok-text="$t('common.enable')"
+          :confirm-title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
           :require-confirm="true"
           @confirm="onRestore"
         />

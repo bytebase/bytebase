@@ -181,6 +181,8 @@ common:
   file-selector:
     type-limit: 仅支持 {extension} 类型的文件
     size-limit: 文件大小需小于 {size} MiB
+  enable: 开启
+  disable: 禁用
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心

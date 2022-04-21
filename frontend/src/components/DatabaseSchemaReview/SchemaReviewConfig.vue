@@ -51,6 +51,7 @@ import {
   RuleType,
   RuleLevel,
   RuleTemplate,
+  RuleTemplatePayload,
   SchemaReviewPolicyTemplate,
 } from "../../types/schemaSystem";
 
@@ -94,18 +95,23 @@ const onRuleActivate = (type: RuleType) => {
   }
 };
 
-const onPayloadChange = (rule: RuleTemplate, data: { [val: string]: any }) => {
+const onPayloadChange = (rule: RuleTemplate, data: any[]) => {
   if (!rule.payload) {
     return;
   }
 
   const newRule = {
     ...rule,
-    payload: Object.entries(rule.payload).reduce((dict, [key, val]) => {
-      dict[key] = { ...val };
-      dict[key].value = data[key];
-      return dict;
-    }, {} as any),
+    payload: rule.payload.reduce((list, config, index) => {
+      list.push({
+        ...config,
+        payload: {
+          ...config.payload,
+          value: data[index],
+        },
+      });
+      return list;
+    }, [] as RuleTemplatePayload[]),
   };
 
   emit("change", newRule);

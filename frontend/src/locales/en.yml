@@ -181,6 +181,8 @@ common:
   file-selector:
     type-limit: Only support {extension} file
     size-limit: File size should less than {size} MiB
+  enable: Enable
+  disable: Disable
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center

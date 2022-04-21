@@ -56,32 +56,32 @@
       </div>
       <div v-if="selectedRule.payload">
         <div
-          v-for="[key, payload] in Object.entries(selectedRule.payload)"
-          :key="key"
+          v-for="(config, index) in selectedRule.payload"
+          :key="index"
           class="mb-7"
         >
           <p class="mb-3">
-            {{ payload.title }}
+            {{ config.title }}
           </p>
           <input
-            v-if="payload.type == 'STRING'"
-            v-model="state.payload[key]"
+            v-if="config.payload.type == 'STRING'"
+            v-model="state.payload[index]"
             type="text"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            :placeholder="payload.default"
+            :placeholder="config.payload.default"
           />
           <div
             v-else-if="
-              payload.type == 'STRING_ARRAY' &&
-              Array.isArray(state.payload[key])
+              config.payload.type == 'STRING_ARRAY' &&
+              Array.isArray(state.payload[index])
             "
           >
             <div class="flex flex-wrap gap-4 mb-4">
               <BBBadge
-                v-for="(val, index) in state.payload[key]"
-                :key="index"
+                v-for="(val, i) in state.payload[index]"
+                :key="`${index}-${i}`"
                 :text="val"
-                @remove="() => removeFromList(key, val)"
+                @remove="() => removeFromList(index, val)"
               />
             </div>
             <input
@@ -89,14 +89,14 @@
               pattern="[a-z]+"
               class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
               placeholder="Input the value then press enter to add"
-              @keyup.enter="(e) => pushToList(key, e)"
+              @keyup.enter="(e) => pushToList(index, e)"
             />
           </div>
           <InputWithTemplate
-            v-else-if="payload.type == 'TEMPLATE'"
-            :template-list="payload.templateList"
-            :value="getStringPayload(key)"
-            @change="(val) => (state.payload[key] = val)"
+            v-else-if="config.payload.type == 'TEMPLATE'"
+            :template-list="config.payload.templateList"
+            :value="getStringPayload(index)"
+            @change="(val) => (state.payload[index] = val)"
           />
         </div>
       </div>
@@ -112,19 +112,18 @@ import {
   RuleTemplatePayload,
 } from "../../../types/schemaSystem";
 
+type PayloadValueList = (string | string[])[];
 interface LocalState {
-  payload: {
-    [val: string]: string | string[];
-  };
+  payload: PayloadValueList;
 }
 
 const initStatePayload = (
-  payload: RuleTemplatePayload | undefined
-): { [val: string]: any } => {
-  return Object.entries(payload ?? {}).reduce((res, [key, val]) => {
-    res[key] = val.value ?? val.default;
+  payload: RuleTemplatePayload[] | undefined
+): PayloadValueList => {
+  return (payload ?? []).reduce((res, obj) => {
+    res.push(obj.payload.value ?? obj.payload.default);
     return res;
-  }, {} as { [key: string]: any });
+  }, [] as PayloadValueList);
 };
 
 const props = defineProps({
@@ -150,32 +149,32 @@ watch(
   { deep: true }
 );
 
-const removeFromList = (key: string, val: any) => {
-  if (!Array.isArray(state.payload[key])) {
+const removeFromList = (i: number, val: any) => {
+  if (!Array.isArray(state.payload[i])) {
     return;
   }
 
-  const values = state.payload[key] as string[];
+  const values = state.payload[i] as string[];
   const index = values.indexOf(val);
   if (index < 0) {
     return;
   }
 
-  state.payload[key] = [...values.slice(0, index), ...values.slice(index + 1)];
+  state.payload[i] = [...values.slice(0, index), ...values.slice(index + 1)];
 };
 
-const pushToList = (key: string, e: any) => {
-  if (!Array.isArray(state.payload[key])) {
+const pushToList = (i: number, e: any) => {
+  if (!Array.isArray(state.payload[i])) {
     return;
   }
 
   const val = e.target.value.trim();
-  (state.payload[key] as string[]).push(val);
+  (state.payload[i] as string[]).push(val);
 
   e.target.value = "";
 };
 
-const getStringPayload = (key: string): string => {
-  return state.payload[key] as string;
+const getStringPayload = (i: number): string => {
+  return state.payload[i] as string;
 };
 </script>
