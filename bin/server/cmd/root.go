@@ -241,8 +241,10 @@ func start() {
 	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	// TODO(zp): childCtx used by NewMain() and m.Run(), I cannot generate it in NewMain() logic now.
+	childCtx, childCancel := context.WithCancel(ctx)
 
-	m, err := NewMain(ctx, activeProfile, logger, level)
+	m, err := NewMain(childCtx, childCancel, activeProfile, logger, level)
 	if err != nil {
 		logger.Error(err.Error())
 		cancel()
@@ -265,7 +267,7 @@ func start() {
 	}()
 
 	// Execute program.
-	if err := m.Run(ctx); err != nil {
+	if err := m.Run(childCtx); err != nil {
 		if err != http.ErrServerClosed {
 			m.l.Error(err.Error())
 			m.Close()
@@ -278,7 +280,7 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(ctx context.Context, activeProfile Profile, l *zap.Logger, logLevel *zap.AtomicLevel) (*Main, error) {
+func NewMain(ctx context.Context, cancelFunc context.CancelFunc, activeProfile Profile, l *zap.Logger, logLevel *zap.AtomicLevel) (*Main, error) {
 	/* <------- Configure directory -------> */
 	resourceDir := path.Join(activeProfile.dataDir, "resources")
 	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
@@ -330,15 +332,14 @@ func NewMain(ctx context.Context, activeProfile Profile, l *zap.Logger, logLevel
 	}
 
 	// Open the connection of `bb` in Postgres and setup migration if needed
-	cancelCtx, cancel := context.WithCancel(ctx)
-	if err := db.Open(cancelCtx); err != nil {
-		cancel()
+	if err := db.Open(ctx); err != nil {
+		cancelFunc()
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
 
 	s, err := setupService(ctx, l, logLevel, db, &activeProfile)
 	if err != nil {
-		cancel()
+		cancelFunc()
 		return nil, fmt.Errorf("cannot setupService: %w", err)
 	}
 	return &Main{
@@ -346,7 +347,7 @@ func NewMain(ctx context.Context, activeProfile Profile, l *zap.Logger, logLevel
 		l:            l,
 		lvl:          logLevel,
 		server:       s,
-		serverCancel: cancel,
+		serverCancel: cancelFunc,
 		pg:           pgInstance,
 		pgStarted:    pgStarted,
 		db:           db,
