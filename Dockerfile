@@ -74,4 +74,6 @@ RUN mkdir -p /var/opt/bytebase
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
 
+HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
+
 ENTRYPOINT ["bytebase"]
