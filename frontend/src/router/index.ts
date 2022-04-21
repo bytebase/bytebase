@@ -395,11 +395,11 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "schema-review-policy/:schemaReviewSlug",
+                path: "schema-review-policy/:schemaReviewPolicySlug",
                 name: "setting.workspace.schema-review-policy.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.schemaReviewSlug as string;
+                    const slug = route.params.schemaReviewPolicySlug as string;
                     return useSchemaSystemStore().getReviewPolicyById(
                       idFromSlug(slug)
                     ).name;
@@ -968,7 +968,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
-  const schemaReviewSlug = routerSlug.schemaReviewSlug;
+  const schemaReviewPolicySlug = routerSlug.schemaReviewPolicySlug;
 
   if (principalId) {
     usePrincipalStore()
@@ -1177,9 +1177,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (schemaReviewSlug) {
+  if (schemaReviewPolicySlug) {
     useSchemaSystemStore()
-      .fetchReviewPolicyById(idFromSlug(schemaReviewSlug))
+      .fetchReviewPolicyById(idFromSlug(schemaReviewPolicySlug))
       .then(() => {
         next();
       })

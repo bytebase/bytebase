@@ -78,7 +78,7 @@
                 :key="key"
                 class="leading-8"
               >
-                {{ key }}:
+                {{ obj.title }}:
                 <span
                   v-if="obj.type === 'STRING' || obj.type === 'TEMPLATE'"
                   class="bg-gray-100 rounded text-sm font-semibold p-2"

@@ -175,7 +175,7 @@ export const useRouterStore = defineStore("router", {
         ) || ["/", undefined];
         if (schemaReviewComponents[1]) {
           return {
-            schemaReviewSlug: schemaReviewComponents[1],
+            schemaReviewPolicySlug: schemaReviewComponents[1],
           };
         }
       }

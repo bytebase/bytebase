@@ -73,7 +73,7 @@ export type RouterSlug = {
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
-  schemaReviewSlug?: string;
+  schemaReviewPolicySlug?: string;
 };
 
 // Quick Action Type

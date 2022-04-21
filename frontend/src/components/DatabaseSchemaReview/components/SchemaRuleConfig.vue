@@ -61,7 +61,7 @@
           class="mb-7"
         >
           <p class="mb-3">
-            {{ `${key[0].toUpperCase()}${key.slice(1).toLowerCase()}` }}
+            {{ payload.title }}
           </p>
           <input
             v-if="payload.type == 'STRING'"
@@ -119,7 +119,7 @@ interface LocalState {
 }
 
 const initStatePayload = (
-  payload: RuleTemplatePayload
+  payload: RuleTemplatePayload | undefined
 ): { [val: string]: any } => {
   return Object.entries(payload ?? {}).reduce((res, [key, val]) => {
     res[key] = val.value ?? val.default;

@@ -33,7 +33,7 @@ import {
   useCurrentUser,
 } from "@/store";
 import { DatabaseSchemaReviewPolicy } from "../types/schemaSystem";
-import { schemaReviewSlug, isOwner, isDBA } from "../utils";
+import { schemaReviewPolicySlug, isOwner, isDBA } from "../utils";
 import { computed } from "vue";
 
 const router = useRouter();
@@ -64,7 +64,7 @@ const onClick = (review: DatabaseSchemaReviewPolicy) => {
   router.push({
     name: `${ROUTE_NAME}.detail`,
     params: {
-      schemaReviewSlug: schemaReviewSlug(review),
+      schemaReviewPolicySlug: schemaReviewPolicySlug(review),
     },
   });
 };

@@ -110,7 +110,7 @@ export default defineComponent({
       default: "",
       type: String,
     },
-    schemaReviewSlug: {
+    schemaReviewPolicySlug: {
       default: "",
       type: String,
     },

@@ -155,7 +155,7 @@ import {
 import { CategoryFilterItem } from "../components/DatabaseSchemaReview/components/SchemaReviewCategoryTabFilter.vue";
 
 const props = defineProps({
-  schemaReviewSlug: {
+  schemaReviewPolicySlug: {
     required: true,
     type: String,
   },
@@ -191,7 +191,7 @@ const hasPermission = computed(() => {
 });
 
 const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
-  return store.getReviewPolicyById(idFromSlug(props.schemaReviewSlug));
+  return store.getReviewPolicyById(idFromSlug(props.schemaReviewPolicySlug));
 });
 
 const environment = computed((): Environment | undefined => {
