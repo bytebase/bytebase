@@ -72,6 +72,8 @@ export default defineComponent({
     };
 
     const escHandler = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (!props.escClosable) {
         return;
       }
