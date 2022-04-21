@@ -127,6 +127,10 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 // createSheet creates a new sheet.
 func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode common.ReleaseMode) (*api.SheetRaw, error) {
 	if mode == common.ReleaseModeDev {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+
 		row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
