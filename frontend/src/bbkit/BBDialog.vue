@@ -67,10 +67,12 @@ const open = () => {
 };
 
 const goPositive = () => {
+  state.visible = false;
   state.defer?.resolve(true);
 };
 
 const goNegative = () => {
+  state.visible = false;
   state.defer?.resolve(false);
 };
 
