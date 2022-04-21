@@ -89,11 +89,14 @@ p, DBA, /label/{id}, PATCH
 p, DBA, /subscription, GET
 p, DBA, /subscription, PATCH
 p, DBA, /sheet, POST
-p, DBA, /sheet, GET
+p, DBA, /sheet/my, GET
+p, DBA, /sheet/shared, GET
+p, DBA, /sheet/starred, GET
 p, DBA, /sheet/{id}, GET
 p, DBA, /sheet/{id}, PATCH
 p, DBA, /sheet/{id}, PATCH_SELF
 p, DBA, /sheet/{id}, DELETE_SELF
-p, DBA, /sheet/project/:projectID/sync, POST
+p, DBA, /sheet/{id}/organizer, PATCH
+p, DBA, /sheet/project/{projectID}/sync, POST
 p, DBA, /debug, GET
 p, DBA, /debug, PATCH
