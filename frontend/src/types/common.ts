@@ -435,6 +435,7 @@ const makeUnknown = (type: ResourceType) => {
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -805,6 +806,7 @@ const makeEmpty = (type: ResourceType) => {
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: EMPTY_ID.toString(),
   };
 
