@@ -140,7 +140,11 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) 
 	defer logger.Sync()
 	datastorePort := port + 1
 	profile := cmd.GetTestProfile(dataDir, port, datastorePort)
-	ctl.main, err = cmd.NewMain(profile, logger)
+
+	// generate child context outside
+	ctx, cancel := context.WithCancel(ctx)
+	// Don't need logLevel in test
+	ctl.main, err = cmd.NewMain(ctx, cancel, profile, logger, nil)
 	if err != nil {
 		return err
 	}
