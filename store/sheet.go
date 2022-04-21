@@ -126,8 +126,11 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 
 // createSheet creates a new sheet.
 func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode common.ReleaseMode) (*api.SheetRaw, error) {
-	// TODO(Steven): remove the default value when developing the service logic for sheet.
 	if mode == common.ReleaseModeDev {
+		if create.Payload == "" {
+			create.Payload = "{}"
+		}
+
 		row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
@@ -151,9 +154,9 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 			create.Name,
 			create.Statement,
 			create.Visibility,
-			"BYTEBASE",
-			"SQL",
-			"{}",
+			create.Source,
+			create.Type,
+			create.Payload,
 		)
 
 		if err != nil {
@@ -392,6 +395,10 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if mode == common.ReleaseModeDev {
+		if v := find.OrganizerID; v != nil {
+			// For now, we only need the starred sheets.
+			where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+		}
 		if v := find.Source; v != nil {
 			where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
 		}
