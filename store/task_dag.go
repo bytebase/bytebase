@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 type taskDAGRaw struct {
@@ -44,6 +45,10 @@ func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*
 
 // FindTaskDAGList finds TaskDAG list by FromTaskID.
 func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
+	// TODO(xz): remove this release guard once the gh-ost feature is ready to release.
+	if s.db.mode != common.ReleaseModeDev {
+		return nil, nil
+	}
 	taskDAGRawList, err := s.findTaskDAGRawList(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find TaskDAG with TaskDAGFind[%+v], error[%w]", find, err)
