@@ -21,9 +21,6 @@ export const LEVEL_LIST = [
   RuleLevel.DISABLED,
 ];
 
-// The rule template payload
-type PayloadType = "STRING" | "STRING_ARRAY" | "TEMPLATE";
-
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
 interface StringPayload {
