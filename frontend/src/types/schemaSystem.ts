@@ -79,18 +79,14 @@ export type RuleType =
   | "query.where.require"
   | "query.where.no-leading-wildcard-like";
 
-// The naming format rule payload for the backend. Used by
-// naming.table
-// naming.column
-// naming.index.pk
-// naming.index.uk
-// naming.index.idk
+// The naming format rule payload.
+// Used by the backend.
 interface NamingFormatPayload {
   format: string;
 }
 
-// The naming format rule payload for the backend. Used by
-// column.required
+// The naming format rule payload.
+// Used by the backend.
 interface RequiredColumnPayload {
   columnList: string[];
 }
@@ -138,7 +134,7 @@ export type DatabaseSchemaReviewPolicyPatch = {
   environmentId?: number;
 };
 
-// RuleTemplate is the rule template for the frontend
+// RuleTemplate is the rule template. Used by the frontend
 export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
