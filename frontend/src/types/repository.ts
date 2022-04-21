@@ -28,6 +28,7 @@ export type Repository = {
   branchFilter: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
+  sheetPathTemplate: string;
   // e.g. In GitLab, this is the corresponding project id.
   externalId: string;
 };
@@ -44,6 +45,7 @@ export type RepositoryCreate = {
   baseDirectory: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
+  sheetPathTemplate: string;
   externalId: string;
   accessToken: string;
   expiresTs: number;
@@ -55,6 +57,7 @@ export type RepositoryPatch = {
   branchFilter?: string;
   filePathTemplate?: string;
   schemaPathTemplate?: string;
+  sheetPathTemplate?: string;
 };
 
 export type RepositoryConfig = {
@@ -62,6 +65,7 @@ export type RepositoryConfig = {
   branchFilter: string;
   filePathTemplate: string;
   schemaPathTemplate: string;
+  sheetPathTemplate: string;
 };
 
 export type ExternalRepositoryInfo = {
