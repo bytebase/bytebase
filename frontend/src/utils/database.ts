@@ -1,6 +1,7 @@
 import { Database, DataSourceType, Environment, Principal } from "../types";
 import { isDBAOrOwner } from "./role";
 import { isDev } from "./util";
+import semverCompare from "semver/functions/compare";
 
 export function allowDatabaseAccess(
   database: Database,
@@ -50,5 +51,19 @@ export function sortDatabaseList(
       }
     }
     return bEnvIndex - aEnvIndex;
+  });
+}
+
+const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
+
+export function allowGhostMigration(databaseList: Database[]): boolean {
+  return databaseList.every((db) => {
+    return (
+      db.instance.engine === "MYSQL" &&
+      semverCompare(
+        db.instance.engineVersion,
+        MIN_GHOST_SUPPORT_MYSQL_VERSION
+      ) >= 0
+    );
   });
 }
