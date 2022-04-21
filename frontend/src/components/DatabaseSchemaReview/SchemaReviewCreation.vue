@@ -19,7 +19,7 @@
           :is-edit="!!reviewId"
           @select-template="tryApplyTemplate"
           @name-change="(val) => (state.name = val)"
-          @toggle-env="(env) => onEnvToggle(env)"
+          @env-change="(env) => onEnvChange(env)"
           class="py-5"
         />
       </template>
@@ -93,7 +93,7 @@ import { isOwner, isDBA } from "../../utils";
 interface LocalState {
   currentStep: number;
   name: string;
-  selectedEnvironment?: Environment;
+  selectedEnvironment: Environment;
   selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
@@ -256,7 +256,11 @@ const onCancel = () => {
 const allowNext = computed((): boolean => {
   switch (state.currentStep) {
     case BASIC_INFO_STEP:
-      return !!state.name && state.selectedRuleList.length > 0;
+      return (
+        !!state.name &&
+        state.selectedRuleList.length > 0 &&
+        !!state.selectedEnvironment
+      );
     case CONFIGURE_RULE_STEP:
       return state.selectedRuleList.length > 0;
     case PREVIEW_STEP:
@@ -308,13 +312,8 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   onCancel();
 };
 
-const onEnvToggle = (env: Environment) => {
-  if (state.selectedEnvironment?.id === env.id) {
-    state.selectedEnvironment = undefined;
-  } else {
-    state.selectedEnvironment = env;
-  }
-  console.log(state.selectedEnvironment);
+const onEnvChange = (env: Environment) => {
+  state.selectedEnvironment = env;
 };
 
 const onTemplateApply = (index: number) => {

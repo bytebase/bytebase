@@ -18,6 +18,7 @@
     <div>
       <label class="textlabel">
         {{ $t("schema-review-policy.create.basic-info.environments") }}
+        <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel mb-5">
         {{ $t("schema-review-policy.create.basic-info.environments-label") }}
@@ -50,7 +51,7 @@
             :value="env.id"
             :disabled="env.disabled"
             :checked="env.id === selectedEnvironment?.id"
-            @click="$emit('toggle-env', env)"
+            @change="$emit('env-change', env)"
             class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
             :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
           />
@@ -144,7 +145,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["name-change", "toggle-env", "select-template"]);
+const emit = defineEmits(["name-change", "env-change", "select-template"]);
 
 const state = reactive<LocalState>({
   openTemplate: false,
@@ -164,13 +165,6 @@ const environmentList = computed((): LocalEnvironment[] => {
     displayName: environmentName(env),
   }));
 });
-
-// const selectedEnvIdSet = computed(() => {
-//   return new Set(props.selectedEnvironmentList.map((env) => env.id));
-// });
-// const isEnvSelected = (env: Environment): boolean => {
-//   return selectedEnvIdSet.value.has(env.id);
-// };
 
 const onNameChange = (event: Event) => {
   emit("name-change", (<HTMLInputElement>event.target).value);

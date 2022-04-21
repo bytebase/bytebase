@@ -113,18 +113,33 @@
         :selected-rule-list="filteredSelectedRuleList"
         class="py-5"
       />
-      <div v-if="environment" class="textinfolabel">
-        {{ $t("schema-review-policy.delete-attention") }}
-      </div>
       <BBButtonConfirm
-        v-else
-        :style="'DELETE'"
-        :button-text="$t('schema-review-policy.delete')"
-        :ok-text="$t('common.delete')"
-        :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
+        v-if="reviewPolicy.rowStatus === 'NORMAL'"
+        :style="'ARCHIVE'"
+        :button-text="$t('schema-review-policy.archive')"
+        :ok-text="$t('common.archive')"
+        :confirm-title="$t('common.archive') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
-        @confirm="onRemove"
+        @confirm="onArchive"
       />
+      <div class="flex gap-x-5" v-else>
+        <BBButtonConfirm
+          :style="'RESTORE'"
+          :button-text="$t('schema-review-policy.restore')"
+          :ok-text="$t('common.restore')"
+          :confirm-title="$t('common.restore') + ` '${reviewPolicy.name}'?`"
+          :require-confirm="true"
+          @confirm="onRestore"
+        />
+        <BBButtonConfirm
+          :style="'DELETE'"
+          :button-text="$t('schema-review-policy.delete')"
+          :ok-text="$t('common.delete')"
+          :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
+          :require-confirm="true"
+          @confirm="onRemove"
+        />
+      </div>
     </div>
   </transition>
 </template>
@@ -328,10 +343,19 @@ const onEdit = () => {
   state.selectedCategory = undefined;
 };
 
+const onArchive = () => {
+  store.updateReviewPolicy(reviewPolicy.value.id, {
+    rowStatus: "ARCHIVED",
+  });
+};
+
+const onRestore = () => {
+  store.updateReviewPolicy(reviewPolicy.value.id, {
+    rowStatus: "NORMAL",
+  });
+};
+
 const onRemove = () => {
-  if (reviewPolicy.value.environmentId) {
-    return;
-  }
   store.removeReviewPolicy(reviewPolicy.value.id);
   router.replace({
     name: ROUTE_NAME,

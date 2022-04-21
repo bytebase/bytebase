@@ -1388,9 +1388,10 @@ schema-review-policy:
   create-review: Successfully created the review policy.
   update-review: Successfully updated the review policy.
   filter: Filter
-  delete: Delete this schema review policy
   no-permission: Only DBA or Owner has permission to create or update review policy.
-  delete-attention: To delete this review policy, unlink the environment first.
+  archive: Archive schema review policy
+  restore: Restore schema review policy
+  delete: Delete schema review policy
   category:
     engine: Engine
     naming: Naming

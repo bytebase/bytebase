@@ -1221,9 +1221,10 @@ schema-review-policy:
   create-review: 审核策略已创建
   update-review: 审核策略已更新
   filter: 筛选
-  delete: 删除该 schema 审核策略
   no-permission: 仅 DBA 或所有者有权限创建或更新审核策略。
-  delete-attention: 删除审查前，需要先解除所有环境的关联。
+  archive: 归档审查策略
+  restore: 恢复审查策略
+  delete: 删除审核策略
   category:
     engine: 引擎
     naming: 命名

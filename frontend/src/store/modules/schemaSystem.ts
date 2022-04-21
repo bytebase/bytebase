@@ -50,6 +50,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         id: this.reviewPolicyList.length + 1,
         creator: user.value,
         updater: user.value,
+        rowStatus: "NORMAL",
         createdTs: new Date().getTime() / 1000,
         updatedTs: new Date().getTime() / 1000,
       });
