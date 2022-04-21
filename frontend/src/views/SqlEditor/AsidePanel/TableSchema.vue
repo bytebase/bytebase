@@ -67,7 +67,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
-import type { Database, DatabaseId } from "@/types";
+import { Database, DatabaseId, UNKNOWN_ID } from "@/types";
 import { useSQLEditorStore, useTableStore } from "@/store";
 
 const emit = defineEmits<{
@@ -82,7 +82,12 @@ const ctx = sqlEditorStore.connectionContext;
 const router = useRouter();
 
 const gotoAlterSchema = () => {
-  const databaseId = ctx.databaseId as DatabaseId;
+  let databaseId = ctx.databaseId as DatabaseId;
+  if (databaseId === UNKNOWN_ID) {
+    const option = ctx.option;
+    databaseId = option.parentId as number;
+  }
+
   const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
     sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId) as any;

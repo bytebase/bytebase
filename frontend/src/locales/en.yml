@@ -180,6 +180,7 @@ common:
   file-selector:
     type-limit: Only support {extension} file
     size-limit: File size should less than {size} MiB
+  no-data: No data
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1181,7 +1182,6 @@ sql-editor:
   search-sheets: Search Sheets
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
-    confirm-to-delete-this-sheet: Confirm to delete this sheet?
     confirm-to-close-unsaved-tab: Confirm to close unsaved tab?
   please-input-the-tab-label: Please input the tab label!
   copy-code: Copy code
@@ -1192,7 +1192,7 @@ sql-editor:
   view-all-tabs: View all Tabs
   sheet: Sheet
   sheets: Sheets
-  connection-holder: Select a connection or select a sheet from left panel to get started
+  connection-holder: Select a connection from left panel to get started
   link-access: Link access
   private: Private
   private-desc: Only you can access this sheet
@@ -1378,3 +1378,25 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
+sheet:
+  self: Sheets
+  my-sheets: My Sheets
+  shared-with-me: Shared with me
+  starred: Starred
+  data-table:
+    name: NAME
+    project: PROJECT
+    visibility: VISIBILITY
+    creator: CREATOR
+    updated: UPDATED
+  actions:
+    star: Star
+    unstar: Unstar
+    delete: Delete
+    fork: Fork
+    sync-from-vcs: Sync from VCS
+    clear-search: Clear search
+  hint-tips:
+    confirm-to-sync-sheet: Confirm to sync sheets?
+    confirm-to-delete-this-sheet: Confirm to delete this sheet?
+    confirm-to-fork-sheet: Confirm to fork this sheet?

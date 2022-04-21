@@ -180,6 +180,7 @@ common:
   file-selector:
     type-limit: 仅支持 {extension} 类型的文件
     size-limit: 文件大小需小于 {size} MiB
+  no-data: 无数据
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -1033,7 +1034,6 @@ sql-editor:
   search-sheets: 搜索工作表
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
-    confirm-to-delete-this-sheet: 确定删除这条查询语句?
     confirm-to-close-unsaved-tab: 确定关闭未保存的标签页？
   please-input-the-tab-label: 请输入标签页名称!
   copy-code: 复制代码
@@ -1044,7 +1044,7 @@ sql-editor:
   view-all-tabs: 查看所有标签页
   sheet: 工作表
   sheets: 工作表
-  connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
+  connection-holder: 选择一个数据连接以开始
   link-access: 链接访问权限
   private: 私有
   private-desc: 只有您自己可以访问此工作表
@@ -1210,3 +1210,25 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
+sheet:
+  self: 工作表
+  my-sheets: 我的工作表
+  shared-with-me: 与我共享
+  starred: 已加星标
+  data-table:
+    name: 名称
+    project: 项目
+    visibility: 权限
+    creator: 创建者
+    updated: 更新于
+  actions:
+    star: 添加星标
+    unstar: 取消星标
+    delete: 删除
+    fork: 拷贝副本
+    sync-from-vcs: 从 VCS 同步数据
+    clear-search: 清空搜索
+  hint-tips:
+    confirm-to-sync-sheet: 确定要同步工作表?
+    confirm-to-delete-this-sheet: 确定删除这条工作表?
+    confirm-to-fork-sheet: 确定要复制这条工作表?

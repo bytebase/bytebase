@@ -12,9 +12,18 @@
       </div>
       <div class="hidden sm:block">
         <div class="ml-6 flex items-baseline space-x-1">
-          <a href="#" class="bar-link px-2 py-2 rounded-md" @click="goBack">
-            {{ $t("sql-editor.go-back") }}
-          </a>
+          <router-link
+            to="/sql-editor"
+            class="text-base truncate mr-2"
+            exact-active-class="anchor-link"
+            >{{ $t("sql-editor.self") }}</router-link
+          >
+          <router-link
+            to="/sheets/my"
+            class="text-base ml-2 truncate"
+            exact-active-class="anchor-link"
+            >{{ $t("sheet.self") }}</router-link
+          >
         </div>
       </div>
     </div>
@@ -97,6 +106,7 @@ import { computed, reactive, watchEffect, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
+import { storeToRefs } from "pinia";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { UNKNOWN_ID } from "@/types";
 import { isDBAOrOwner, isDev } from "@/utils";
@@ -106,7 +116,6 @@ import {
   useInboxStore,
   useSubscriptionStore,
 } from "@/store";
-import { storeToRefs } from "pinia";
 
 interface LocalState {
   showMobileMenu: boolean;

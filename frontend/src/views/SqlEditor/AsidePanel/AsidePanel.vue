@@ -1,7 +1,7 @@
 <template>
   <div class="aside-panel h-full">
-    <NTabs type="segment" default-value="databases" class="h-full">
-      <NTabPane name="databases" :tab="$t('common.databases')">
+    <n-tabs type="segment" default-value="databases" class="h-full">
+      <n-tab-pane name="databases" :tab="$t('common.databases')">
         <Splitpanes
           horizontal
           class="default-theme"
@@ -16,14 +16,11 @@
             <TableSchema @close-pane="handleCloseTableSchemaPane" />
           </Pane>
         </Splitpanes>
-      </NTabPane>
-      <NTabPane name="sheets" :tab="$t('sql-editor.sheets')">
-        <SheetContainer />
-      </NTabPane>
-      <NTabPane name="history" :tab="$t('common.history')">
+      </n-tab-pane>
+      <n-tab-pane name="history" :tab="$t('common.history')">
         <QueryHistoryContainer />
-      </NTabPane>
-    </NTabs>
+      </n-tab-pane>
+    </n-tabs>
   </div>
 </template>
 
@@ -32,7 +29,6 @@ import { ref, watch } from "vue";
 
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
-import SheetContainer from "./SheetContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { useSQLEditorStore } from "@/store";
 
