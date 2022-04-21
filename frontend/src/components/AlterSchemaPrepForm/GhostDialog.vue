@@ -1,7 +1,7 @@
 <template>
   <BBDialog
     ref="dialog"
-    :title="'Migration mode'"
+    :title="$t('issue.migration-mode.title')"
     :positive-text="$t('common.next')"
   >
     <div class="w-[24rem] space-y-4 pl-8 pr-2 pb-4">
@@ -14,9 +14,11 @@
           value="normal"
         />
         <div @click="state.mode = 'normal'">
-          <div class="textlabel">Normal migration</div>
-          <div class="textinfolabel">
-            Perform schema change directly on target table.
+          <div class="textlabel">
+            {{ $t("issue.migration-mode.normal.title") }}
+          </div>
+          <div class="textinfolabel mt-1">
+            <i18n-t tag="p" keypath="issue.migration-mode.normal.description" />
           </div>
         </div>
       </div>
@@ -29,18 +31,17 @@
           value="online"
         />
         <div @click="state.mode = 'online'">
-          <div class="textlabel">Online migration</div>
-          <div class="textinfolabel">
-            <p>
-              Perform schema change on a duplicated table. Switch table names
-              after data synchronization.
-            </p>
-            <p>
-              <a href="#" class="normal-link inline-flex items-center"
-                >Learn more.
-                <heroicons-outline:external-link class="inline-block"
-              /></a>
-            </p>
+          <div class="textlabel">
+            {{ $t("issue.migration-mode.online.title") }}
+          </div>
+          <div class="textinfolabel mt-1">
+            <i18n-t tag="p" keypath="issue.migration-mode.online.description">
+              <template #link>
+                <LearnMoreLink
+                  url="https://github.com/bytebase/bytebase/blob/main/docs/design/gh-ost-integration.md"
+                />
+              </template>
+            </i18n-t>
           </div>
         </div>
       </div>
@@ -51,6 +52,7 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { BBDialog } from "@/bbkit";
+import LearnMoreLink from "../LearnMoreLink.vue";
 
 type Mode = "normal" | "online";
 

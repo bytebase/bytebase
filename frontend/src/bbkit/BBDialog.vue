@@ -3,8 +3,9 @@
     v-if="state.visible"
     :title="title"
     :subtitle="subtitle"
-    :show-close="false"
-    :esc-closable="false"
+    :show-close="closable"
+    :esc-closable="closable"
+    @close="goNegative"
   >
     <slot name="default"></slot>
 
@@ -37,8 +38,12 @@ defineProps({
     required: true,
   },
   subtitle: {
-    default: "",
     type: String,
+    default: "",
+  },
+  closable: {
+    type: Boolean,
+    default: false,
   },
   negativeText: {
     type: String,
