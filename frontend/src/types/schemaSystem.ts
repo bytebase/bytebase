@@ -22,16 +22,12 @@ export const LEVEL_LIST = [
 ];
 
 // The rule template payload
-enum PayloadType {
-  STRING = "STRING",
-  STRING_ARRAY = "STRING_ARRAY",
-  TEMPLATE = "TEMPLATE",
-}
+type PayloadType = "STRING" | "STRING_ARRAY" | "TEMPLATE";
 
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
 interface StringPayload {
-  type: PayloadType.STRING;
+  type: "STRING";
   default: string;
   value?: string;
 }
@@ -39,7 +35,7 @@ interface StringPayload {
 // StringArrayPayload is the string array type payload configuration options and default value.
 // Used by the frontend.
 interface StringArrayPayload {
-  type: PayloadType.STRING_ARRAY;
+  type: "STRING_ARRAY";
   default: string[];
   value?: string[];
 }
@@ -47,7 +43,7 @@ interface StringArrayPayload {
 // TemplatePayload is the string template type payload configuration options and default value.
 // Used by the frontend.
 interface TemplatePayload {
-  type: PayloadType.TEMPLATE;
+  type: "TEMPLATE";
   default: string;
   templateList: { id: string; description?: string }[];
   value?: string;
@@ -139,7 +135,7 @@ export interface RuleTemplate {
   category: CategoryType;
   engine: SchemaRuleEngineType;
   description: string;
-  payload?: RuleTemplatePayload[];
+  componentList: RuleTemplatePayload[];
   level: RuleLevel;
 }
 
@@ -161,7 +157,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Table name format",
           description: "",
           payload: {
-            type: PayloadType.STRING,
+            type: "STRING",
             default: "^[a-z]+(_[a-z]+)?$",
           },
         },
@@ -174,7 +170,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Column name format",
           description: "",
           payload: {
-            type: PayloadType.STRING,
+            type: "STRING",
             default: "^[a-z]+(_[a-z]+)?$",
           },
         },
@@ -187,7 +183,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Primary key name format",
           description: "",
           payload: {
-            type: PayloadType.TEMPLATE,
+            type: "TEMPLATE",
             default: "^pk_{{table}}_{{column_list}}$",
             templateList: [
               {
@@ -210,7 +206,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Unique key name format",
           description: "",
           payload: {
-            type: PayloadType.TEMPLATE,
+            type: "TEMPLATE",
             default: "^uk_{{table}}_{{column_list}}$",
             templateList: [
               {
@@ -233,7 +229,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Index name format",
           description: "",
           payload: {
-            type: PayloadType.TEMPLATE,
+            type: "TEMPLATE",
             default: "^idx_{{table}}_{{column_list}}$",
             templateList: [
               {
@@ -256,7 +252,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
           title: "Required column names",
           description: "",
           payload: {
-            type: PayloadType.STRING_ARRAY,
+            type: "STRING_ARRAY",
             default: [
               "id",
               "created_ts",
@@ -279,6 +275,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     engine: "MYSQL",
     description: "Require InnoDB as the storage engine.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
   {
     type: "table.require-pk",
@@ -286,13 +283,14 @@ export const ruleTemplateList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Require the table to have a primary key.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
   {
     type: "naming.table",
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the table name format. Default snake_lower_case.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.table"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.table") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -300,7 +298,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the column name format. Default snake_lower_case.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.column"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.column") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -308,7 +306,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the primary key name format.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.pk"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.pk") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -316,7 +314,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the unique key name format.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.uk"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.uk") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -324,7 +322,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     description: "Enforce the index name format.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.idx"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.idx") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -332,7 +330,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "COLUMN",
     engine: "COMMON",
     description: "Enforce the required columns in each table.",
-    payload: RULE_TEMPLATE_PAYLOAD_MAP.get("column.required"),
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("column.required") ?? [],
     level: RuleLevel.ERROR,
   },
   {
@@ -341,6 +339,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Columns cannot have NULL value.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
   {
     type: "query.select.no-select-all",
@@ -348,6 +347,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Disallow 'SELECT *'.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
   {
     type: "query.where.require",
@@ -355,6 +355,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     engine: "COMMON",
     description: "Require 'WHERE' clause.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
   {
     type: "query.where.no-leading-wildcard-like",
@@ -363,6 +364,7 @@ export const ruleTemplateList: RuleTemplate[] = [
     description:
       "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.",
     level: RuleLevel.ERROR,
+    componentList: [],
   },
 ];
 
@@ -416,23 +418,23 @@ export const convertPolicyRuleToRuleTemplate = (
 
   const res = { ...ruleTemplate, level: policyRule.level };
 
-  if (!ruleTemplate.payload) {
+  if (ruleTemplate.componentList.length === 0) {
     return res;
   }
 
   switch (ruleTemplate.type) {
     case "naming.column":
     case "naming.table":
-      const stringPayload = ruleTemplate.payload[0];
+      const stringComponent = ruleTemplate.componentList[0];
       const namingRulepayload = {
-        ...stringPayload.payload,
+        ...stringComponent.payload,
         value: (policyRule.payload as NamingFormatPayload).format,
       } as StringPayload;
       return {
         ...res,
-        payload: [
+        componentList: [
           {
-            ...stringPayload,
+            ...stringComponent,
             payload: namingRulepayload,
           },
         ],
@@ -440,28 +442,34 @@ export const convertPolicyRuleToRuleTemplate = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
-      const templatePayload = ruleTemplate.payload[0];
+      const templateComponent = ruleTemplate.componentList[0];
       const indexRulePayload = {
-        ...templatePayload.payload,
+        ...templateComponent.payload,
         value: (policyRule.payload as NamingFormatPayload).format,
       } as TemplatePayload;
       return {
         ...res,
-        payload: [
+        componentList: [
           {
-            ...templatePayload,
+            ...templateComponent,
             payload: indexRulePayload,
           },
         ],
       };
     case "column.required":
-      const requiredColumnPayload = ruleTemplate.payload[0];
-      requiredColumnPayload.payload.value = (
-        policyRule.payload as RequiredColumnPayload
-      ).columnList;
+      const requiredColumnComponent = ruleTemplate.componentList[0];
+      const requiredColumnPayload = {
+        ...requiredColumnComponent.payload,
+        value: (policyRule.payload as RequiredColumnPayload).columnList,
+      } as StringArrayPayload;
       return {
         ...res,
-        payload: [{ ...requiredColumnPayload }],
+        componentList: [
+          {
+            ...requiredColumnComponent,
+            payload: requiredColumnPayload,
+          },
+        ],
       };
   }
 
@@ -477,14 +485,14 @@ export const convertRuleTemplateToPolicyRule = (
     type: rule.type,
     level: rule.level,
   };
-  if (!rule.payload) {
+  if (rule.componentList.length === 0) {
     return base;
   }
 
   switch (rule.type) {
     case "naming.column":
     case "naming.table":
-      const stringPayload = rule.payload[0].payload as StringPayload;
+      const stringPayload = rule.componentList[0].payload as StringPayload;
       return {
         ...base,
         payload: {
@@ -494,7 +502,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
-      const templatePayload = rule.payload[0].payload as TemplatePayload;
+      const templatePayload = rule.componentList[0].payload as TemplatePayload;
       return {
         ...base,
         payload: {
@@ -502,7 +510,8 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "column.required":
-      const stringArrayPayload = rule.payload[0].payload as StringArrayPayload;
+      const stringArrayPayload = rule.componentList[0]
+        .payload as StringArrayPayload;
       return {
         ...base,
         payload: {

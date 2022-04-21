@@ -58,7 +58,7 @@
             <a
               :href="`#${rule.type.replace(/\./g, '-')}`"
               :id="rule.type.replace(/\./g, '-')"
-              class="text-left text-xl text-gray-600 hover:underline whitespace-nowrap"
+              class="text-left text-xl hover:underline whitespace-nowrap"
             >
               {{ rule.type }}
             </a>
@@ -71,39 +71,37 @@
             </div>
           </div>
           <p class="py-2 text-gray-400">{{ rule.description }}</p>
-          <div v-if="rule.payload" class="mt-1">
-            <ul role="list" class="space-y-4 list-disc list-inside">
-              <li
-                v-for="(config, i) in rule.payload"
-                :key="i"
-                class="leading-8"
+          <ul role="list" class="space-y-4 list-disc list-inside">
+            <li
+              v-for="(component, i) in rule.componentList"
+              :key="i"
+              class="leading-8"
+            >
+              {{ component.title }}:
+              <span
+                v-if="
+                  component.payload.type === 'STRING' ||
+                  component.payload.type === 'TEMPLATE'
+                "
+                class="bg-gray-100 rounded text-sm font-semibold p-2"
               >
-                {{ config.title }}:
+                {{ component.payload.value ?? component.payload.default }}
+              </span>
+              <div
+                v-else-if="component.payload.type === 'STRING_ARRAY'"
+                class="flex flex-wrap gap-3 ml-5 mt-3"
+              >
                 <span
-                  v-if="
-                    config.payload.type === 'STRING' ||
-                    config.payload.type === 'TEMPLATE'
-                  "
+                  v-for="(val, j) in component.payload.value ??
+                  component.payload.default"
+                  :key="`${i}-${j}`"
                   class="bg-gray-100 rounded text-sm font-semibold p-2"
                 >
-                  {{ config.payload.value ?? config.payload.default }}
+                  {{ val }}
                 </span>
-                <div
-                  v-else-if="config.payload.type === 'STRING_ARRAY'"
-                  class="flex flex-wrap gap-3 ml-5 mt-3"
-                >
-                  <span
-                    v-for="(val, j) in config.payload.value ??
-                    config.payload.default"
-                    :key="`${i}-${j}`"
-                    class="bg-gray-100 rounded text-sm font-semibold p-2"
-                  >
-                    {{ val }}
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

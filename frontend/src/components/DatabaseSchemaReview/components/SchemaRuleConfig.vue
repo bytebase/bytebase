@@ -54,51 +54,49 @@
           </div>
         </div>
       </div>
-      <div v-if="selectedRule.payload">
+      <div
+        v-for="(config, index) in selectedRule.componentList"
+        :key="index"
+        class="mb-7"
+      >
+        <p class="mb-3">
+          {{ config.title }}
+        </p>
+        <input
+          v-if="config.payload.type == 'STRING'"
+          v-model="state.payload[index]"
+          type="text"
+          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+          :placeholder="config.payload.default"
+        />
         <div
-          v-for="(config, index) in selectedRule.payload"
-          :key="index"
-          class="mb-7"
+          v-else-if="
+            config.payload.type == 'STRING_ARRAY' &&
+            Array.isArray(state.payload[index])
+          "
         >
-          <p class="mb-3">
-            {{ config.title }}
-          </p>
-          <input
-            v-if="config.payload.type == 'STRING'"
-            v-model="state.payload[index]"
-            type="text"
-            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            :placeholder="config.payload.default"
-          />
-          <div
-            v-else-if="
-              config.payload.type == 'STRING_ARRAY' &&
-              Array.isArray(state.payload[index])
-            "
-          >
-            <div class="flex flex-wrap gap-4 mb-4">
-              <BBBadge
-                v-for="(val, i) in state.payload[index]"
-                :key="`${index}-${i}`"
-                :text="val"
-                @remove="() => removeFromList(index, val)"
-              />
-            </div>
-            <input
-              type="text"
-              pattern="[a-z]+"
-              class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-              placeholder="Input the value then press enter to add"
-              @keyup.enter="(e) => pushToList(index, e)"
+          <div class="flex flex-wrap gap-4 mb-4">
+            <BBBadge
+              v-for="(val, i) in state.payload[index]"
+              :key="`${index}-${i}`"
+              :text="val"
+              @remove="() => removeFromList(index, val)"
             />
           </div>
-          <InputWithTemplate
-            v-else-if="config.payload.type == 'TEMPLATE'"
-            :template-list="config.payload.templateList"
-            :value="getStringPayload(index)"
-            @change="(val) => (state.payload[index] = val)"
+          <input
+            type="text"
+            pattern="[a-z]+"
+            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+            placeholder="Input the value then press enter to add"
+            @keyup.enter="(e) => pushToList(index, e)"
           />
         </div>
+        <InputWithTemplate
+          v-else-if="config.payload.type == 'TEMPLATE'"
+          :template-list="config.payload.templateList"
+          :value="getStringPayload(index)"
+          @change="(val) => (state.payload[index] = val)"
+        />
       </div>
     </div>
   </div>
@@ -118,10 +116,10 @@ interface LocalState {
 }
 
 const initStatePayload = (
-  payload: RuleTemplatePayload[] | undefined
+  componentList: RuleTemplatePayload[] | undefined
 ): PayloadValueList => {
-  return (payload ?? []).reduce((res, obj) => {
-    res.push(obj.payload.value ?? obj.payload.default);
+  return (componentList ?? []).reduce((res, component) => {
+    res.push(component.payload.value ?? component.payload.default);
     return res;
   }, [] as PayloadValueList);
 };
@@ -140,7 +138,7 @@ const props = defineProps({
 const emit = defineEmits(["activate", "payload-change", "level-change"]);
 
 const state = reactive<LocalState>({
-  payload: initStatePayload(props.selectedRule.payload),
+  payload: initStatePayload(props.selectedRule.componentList),
 });
 
 watch(

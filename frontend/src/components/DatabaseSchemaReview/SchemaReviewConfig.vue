@@ -95,21 +95,35 @@ const onRuleActivate = (type: RuleType) => {
   }
 };
 
-const onPayloadChange = (rule: RuleTemplate, data: any[]) => {
-  if (!rule.payload) {
+const onPayloadChange = (rule: RuleTemplate, data: (string | string[])[]) => {
+  if (!rule.componentList) {
     return;
   }
 
-  const newRule = {
+  const newRule: RuleTemplate = {
     ...rule,
-    payload: rule.payload.reduce((list, config, index) => {
-      list.push({
-        ...config,
-        payload: {
-          ...config.payload,
-          value: data[index],
-        },
-      });
+    componentList: rule.componentList.reduce((list, component, index) => {
+      let val = data[index];
+      switch (component.payload.type) {
+        case "STRING_ARRAY":
+          list.push({
+            ...component,
+            payload: {
+              ...component.payload,
+              value: data[index] as string[],
+            },
+          });
+          break;
+        default:
+          list.push({
+            ...component,
+            payload: {
+              ...component.payload,
+              value: data[index] as string,
+            },
+          });
+          break;
+      }
       return list;
     }, [] as RuleTemplatePayload[]),
   };
