@@ -817,6 +817,9 @@ repository:
     to push to that protected branch.
   if-specified: If specified
   schema-path-example: Schema path example
+  sheet-path-template: Sheet path template
+  sheet-path-template-description: >-
+    Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.
   git-provider: Git provider
   version-control-status: "@.capitalize:common.version-control is {status}"
   version-control-description-file-path: >-
