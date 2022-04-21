@@ -61,8 +61,9 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		sheetCreate.Source = api.SheetFromBytebase
 		sheetCreate.Type = api.SheetForSQL
-		// No need to save data for Bytebase sheet right now.
-		sheetCreate.Payload = "{}"
+		if sheetCreate.Payload == "" {
+			sheetCreate.Payload = "{}"
+		}
 		sheetRaw, err := s.SheetService.CreateSheet(ctx, sheetCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
