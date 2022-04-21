@@ -1222,8 +1222,8 @@ schema-review-policy:
   update-review: 审核策略已更新
   filter: 筛选
   no-permission: 仅 DBA 或所有者有权限创建或更新审核策略。
-  archive: 归档审查策略
-  restore: 恢复审查策略
+  disable: 停用审查策略
+  enable: 开启审查策略
   delete: 删除审核策略
   category:
     engine: 引擎

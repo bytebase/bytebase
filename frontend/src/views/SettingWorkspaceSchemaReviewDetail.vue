@@ -116,7 +116,7 @@
       <BBButtonConfirm
         v-if="reviewPolicy.rowStatus === 'NORMAL'"
         :style="'ARCHIVE'"
-        :button-text="$t('schema-review-policy.archive')"
+        :button-text="$t('schema-review-policy.disable')"
         :ok-text="$t('common.archive')"
         :confirm-title="$t('common.archive') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
@@ -125,7 +125,7 @@
       <div class="flex gap-x-5" v-else>
         <BBButtonConfirm
           :style="'RESTORE'"
-          :button-text="$t('schema-review-policy.restore')"
+          :button-text="$t('schema-review-policy.enable')"
           :ok-text="$t('common.restore')"
           :confirm-title="$t('common.restore') + ` '${reviewPolicy.name}'?`"
           :require-confirm="true"
