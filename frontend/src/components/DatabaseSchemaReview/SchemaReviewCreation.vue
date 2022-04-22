@@ -295,7 +295,10 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   };
 
   if (props.reviewId) {
-    store.updateReviewPolicy(props.reviewId, review);
+    store.updateReviewPolicy({
+      id: props.reviewId,
+      ...review,
+    });
   } else {
     store.addReviewPolicy(review);
   }

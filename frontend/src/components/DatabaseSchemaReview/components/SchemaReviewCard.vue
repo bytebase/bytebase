@@ -3,15 +3,21 @@
     class="divide-y divide-block-border border border-block-border rounded-sm"
   >
     <div class="flex py-2 px-4 justify-between">
-      <div class="flex flex-row space-x-2 items-center">
+      <div class="flex flex-row space-x-3 items-center">
         <h3 class="text-lg leading-6 font-medium text-main">
-          {{ review.name }}
+          {{ reviewPolicy.name }}
         </h3>
+        <BBBadge
+          v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
+          :text="$t('common.disable')"
+          :can-remove="false"
+          :style="'WARN'"
+        />
       </div>
       <button
         type="button"
         class="btn-normal py-2 px-4"
-        @click.prevent="emit('click', review)"
+        @click.prevent="emit('click', reviewPolicy)"
       >
         {{ $t("common.view") }}
       </button>
@@ -24,8 +30,8 @@
           </dt>
           <dd class="mt-1 flex gap-x-2 text-sm text-main col-span-2">
             <BBBadge
-              v-if="review.environmentId"
-              :text="envStore.getEnvironmentNameById(review.environmentId)"
+              v-if="reviewPolicy.environment"
+              :text="environmentName(reviewPolicy.environment)"
               :can-remove="false"
             />
             <span class="text-yellow-700" v-else>
@@ -42,7 +48,7 @@
             {{ $t("common.created-at") }}
           </dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ humanizeTs(review.createdTs) }}
+            {{ humanizeTs(reviewPolicy.createdTs) }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
@@ -50,7 +56,7 @@
             {{ $t("common.updated-at") }}
           </dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ humanizeTs(review.updatedTs) }}
+            {{ humanizeTs(reviewPolicy.updatedTs) }}
           </dd>
         </div>
         <div class="grid grid-cols-4 gap-4 px-4 py-2 items-center">
@@ -58,7 +64,7 @@
             {{ $t("common.creator") }}
           </dt>
           <dd class="mt-1 flex text-sm text-main col-span-2">
-            {{ review.creator.name }}
+            {{ reviewPolicy.creator.name }}
           </dd>
         </div>
       </dl>
@@ -71,9 +77,10 @@ import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { DatabaseSchemaReviewPolicy } from "../../../types/schemaSystem";
 import { useEnvironmentStore } from "@/store";
+import { environmentName } from "../../../utils";
 
 const props = defineProps({
-  review: {
+  reviewPolicy: {
     required: true,
     type: Object as PropType<DatabaseSchemaReviewPolicy>,
   },

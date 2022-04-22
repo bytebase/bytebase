@@ -104,6 +104,7 @@
 
 <script lang="ts" setup>
 import { reactive, PropType, watch } from "vue";
+import { pullAt } from "lodash-es";
 import {
   LEVEL_LIST,
   RuleTemplate,
@@ -154,11 +155,7 @@ const removeFromList = (i: number, val: any) => {
 
   const values = state.payload[i] as string[];
   const index = values.indexOf(val);
-  if (index < 0) {
-    return;
-  }
-
-  state.payload[i] = [...values.slice(0, index), ...values.slice(index + 1)];
+  pullAt(state.payload[i], index);
 };
 
 const pushToList = (i: number, e: any) => {

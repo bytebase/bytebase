@@ -38,12 +38,7 @@
         <div
           v-for="env in environmentList"
           :key="env.id"
-          :class="[
-            'flex items-center',
-            env.disabled
-              ? 'cursor-not-allowed text-gray-400'
-              : 'cursor-pointer text-gray-600',
-          ]"
+          class="flex items-center"
         >
           <input
             type="radio"

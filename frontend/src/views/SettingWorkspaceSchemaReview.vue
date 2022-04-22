@@ -15,7 +15,7 @@
         </div>
       </div>
       <template v-for="review in store.reviewPolicyList" :key="review.id">
-        <SchemaReviewCard :review="review" @click="onClick" />
+        <SchemaReviewCard :review-policy="review" @click="onClick" />
       </template>
     </div>
     <template v-else>
@@ -25,6 +25,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -34,13 +35,16 @@ import {
 } from "@/store";
 import { DatabaseSchemaReviewPolicy } from "../types/schemaSystem";
 import { schemaReviewPolicySlug, isOwner, isDBA } from "../utils";
-import { computed } from "vue";
 
 const router = useRouter();
 const store = useSchemaSystemStore();
 const ROUTE_NAME = "setting.workspace.schema-review-policy";
 const currentUser = useCurrentUser();
 const { t } = useI18n();
+
+watchEffect(() => {
+  store.fetchReviewPolicyList();
+});
 
 const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);

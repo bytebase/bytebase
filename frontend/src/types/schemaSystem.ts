@@ -1,6 +1,7 @@
-import { SchemaReviewPolicyId } from "./id";
+import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
+import { Environment } from "./environment";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
@@ -92,7 +93,7 @@ export interface SchemaPolicyRule {
 // The API for schema review policy in backend.
 // TODO: just use the existed Policy entity
 export interface DatabaseSchemaReviewPolicy {
-  id: SchemaReviewPolicyId;
+  id: PolicyId;
 
   // Standard fields
   creator: Principal;
@@ -104,27 +105,8 @@ export interface DatabaseSchemaReviewPolicy {
   // Domain specific fields
   name: string;
   ruleList: SchemaPolicyRule[];
-  environmentId: number;
+  environment: Environment;
 }
-
-// DatabaseSchemaReviewPolicyCreate is the API message for create review policy.
-// TODO: just use the existed PolicyUpsert entity
-export interface DatabaseSchemaReviewPolicyCreate {
-  // Domain specific fields
-  name: string;
-  ruleList: SchemaPolicyRule[];
-  environmentId: number;
-}
-
-// DatabaseSchemaReviewPolicyPatch is the API message for patch review policy.
-// TODO: just use the existed PolicyUpsert entity
-export type DatabaseSchemaReviewPolicyPatch = {
-  // Domain specific fields
-  name?: string;
-  ruleList?: SchemaPolicyRule[];
-  environmentId?: number;
-  rowStatus?: RowStatus;
-};
 
 // RuleTemplate is the rule template. Used by the frontend
 export interface RuleTemplate {
@@ -132,6 +114,7 @@ export interface RuleTemplate {
   category: CategoryType;
   engine: SchemaRuleEngineType;
   description: string;
+  // TODO: rename componentList to RuleConfigComponent
   componentList: RuleTemplatePayload[];
   level: RuleLevel;
 }

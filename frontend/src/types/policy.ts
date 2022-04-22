@@ -1,8 +1,16 @@
-import { Environment, PolicyId, Principal } from ".";
+import {
+  RowStatus,
+  Environment,
+  PolicyId,
+  Principal,
+  RuleType,
+  RuleLevel,
+} from ".";
 
 export type PolicyType =
   | "bb.policy.pipeline-approval"
-  | "bb.policy.backup-plan";
+  | "bb.policy.backup-plan"
+  | "bb.policy.schema-review";
 
 export type PipelineApprovalPolicyValue =
   | "MANUAL_APPROVAL_NEVER"
@@ -23,9 +31,20 @@ export type PolicyBackupPlanPolicyPayload = {
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
+// PolicySchemaReviewPayload is the payload for schema review policy in the backend.
+export type PolicySchemaReviewPayload = {
+  name: string;
+  ruleList: {
+    type: RuleType;
+    level: RuleLevel;
+    payload: string;
+  }[];
+};
+
 export type PolicyPayload =
   | PipelineApporvalPolicyPayload
-  | PolicyBackupPlanPolicyPayload;
+  | PolicyBackupPlanPolicyPayload
+  | PolicySchemaReviewPayload;
 
 export type Policy = {
   id: PolicyId;
@@ -35,6 +54,7 @@ export type Policy = {
   createdTs: number;
   updater: Principal;
   updatedTs: number;
+  rowStatus: RowStatus;
 
   // Related fields
   environment: Environment;
@@ -45,6 +65,17 @@ export type Policy = {
 };
 
 export type PolicyUpsert = {
+  // Domain specific fields
+  payload?: PolicyPayload;
+};
+
+export type PolicyPatch = {
+  // Standard fields
+  rowStatus?: RowStatus;
+
+  // Related fields
+  environmentId?: number;
+
   // Domain specific fields
   payload?: PolicyPayload;
 };
