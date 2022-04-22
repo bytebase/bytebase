@@ -414,7 +414,7 @@ issue:
   migration-mode:
     title: 迁移模式
     normal:
-      title: 普通迁移
+      title: 普通变更 (适用于正常大小的表)
       description: 直接在目标表上执行 schema 变更。
     online:
       title: 在线迁移
