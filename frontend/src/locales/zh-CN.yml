@@ -411,6 +411,14 @@ issue:
   stage-select:
     active: "{name}（活动中）"
   not-allowed-to-single-database-in-tenant-mode: 在多租户模式下无法对单个数据库{operation}
+  migration-mode:
+    title: 迁移模式
+    normal:
+      title: 普通变更 (适用于正常大小的表)
+      description: 直接在目标表上执行 schema 变更。
+    online:
+      title: 在线变更 (适用于数据量大的表)
+      description: 在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。
