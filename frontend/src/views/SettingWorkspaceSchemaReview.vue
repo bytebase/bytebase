@@ -33,8 +33,8 @@ import {
   useSchemaSystemStore,
   useCurrentUser,
 } from "@/store";
-import { DatabaseSchemaReviewPolicy } from "../types/schemaSystem";
-import { schemaReviewPolicySlug, isOwner, isDBA } from "../utils";
+import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
+import { schemaReviewPolicySlug, isOwner, isDBA } from "@/utils";
 
 const router = useRouter();
 const store = useSchemaSystemStore();

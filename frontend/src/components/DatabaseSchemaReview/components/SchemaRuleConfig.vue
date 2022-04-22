@@ -109,7 +109,7 @@ import {
   LEVEL_LIST,
   RuleTemplate,
   RuleTemplatePayload,
-} from "../../../types/schemaSystem";
+} from "@/types/schemaSystem";
 
 type PayloadValueList = (string | string[])[];
 interface LocalState {

@@ -100,8 +100,8 @@
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import { useSchemaSystemStore, useEnvironmentList } from "@/store";
-import { Environment, SchemaReviewPolicyTemplate } from "../../types";
-import { environmentName } from "../../utils";
+import { Environment, SchemaReviewPolicyTemplate } from "@/types";
+import { environmentName } from "@/utils";
 
 interface LocalEnvironment extends Environment {
   disabled: boolean;

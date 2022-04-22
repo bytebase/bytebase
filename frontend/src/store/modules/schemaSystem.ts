@@ -11,7 +11,7 @@ import {
   SchemaPolicyRule,
   PolicySchemaReviewPayload,
   DatabaseSchemaReviewPolicy,
-} from "../../types";
+} from "@/types";
 import { defineStore } from "pinia";
 import { usePolicyStore } from "./policy";
 

@@ -72,7 +72,7 @@
 import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTabItem } from "../../bbkit/types";
+import { BBStepTabItem } from "@/bbkit/types";
 import {
   RuleType,
   ruleTemplateList,
@@ -81,14 +81,14 @@ import {
   RuleTemplate,
   SchemaReviewPolicyTemplate,
   convertRuleTemplateToPolicyRule,
-} from "../../types";
+} from "@/types";
 import {
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
   useSchemaSystemStore,
 } from "@/store";
-import { isOwner, isDBA } from "../../utils";
+import { isOwner, isDBA } from "@/utils";
 
 interface LocalState {
   currentStep: number;

@@ -162,7 +162,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
+import { idFromSlug, environmentName, isOwner, isDBA } from "@/utils";
 import {
   RuleType,
   LEVEL_LIST,
@@ -173,7 +173,7 @@ import {
   convertToCategoryList,
   ruleTemplateList,
   convertPolicyRuleToRuleTemplate,
-} from "../types";
+} from "@/types";
 import {
   useCurrentUser,
   pushNotification,

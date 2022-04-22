@@ -75,9 +75,9 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { DatabaseSchemaReviewPolicy } from "../../../types/schemaSystem";
+import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
 import { useEnvironmentStore } from "@/store";
-import { environmentName } from "../../../utils";
+import { environmentName } from "@/utils";
 
 const props = defineProps({
   reviewPolicy: {
