@@ -154,3 +154,17 @@ export function getStringCookie(name: string): string {
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
 }
+
+export type Defer<T> = {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: any) => void;
+};
+export function defer<T = any>() {
+  const d = {} as Defer<T>;
+  d.promise = new Promise<T>((resolve, reject) => {
+    d.resolve = resolve;
+    d.reject = reject;
+  });
+  return d;
+}
