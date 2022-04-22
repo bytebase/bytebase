@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -236,6 +237,11 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	s.registerLabelRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
+	s.registerSheetOrganizerRoutes(apiGroup)
+	// Register healthz endpoint.
+	e.GET("/healthz", func(c echo.Context) error {
+		return c.String(http.StatusOK, "OK!\n")
+	})
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
