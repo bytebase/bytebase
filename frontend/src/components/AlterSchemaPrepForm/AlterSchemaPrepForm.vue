@@ -92,6 +92,9 @@
 <script lang="ts">
 import { computed, reactive, PropType, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
+import { NTabs, NTabPane } from "naive-ui";
+import { useEventListener } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -103,7 +106,6 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import { allowGhostMigration, isDev, sortDatabaseList } from "@/utils";
-import { cloneDeep } from "lodash-es";
 import VCSTipsInfo from "./VCSTipsInfo.vue";
 import ProjectStandardView, {
   State as ProjectStandardState,
@@ -115,8 +117,6 @@ import CommonTenantView, {
   State as CommonTenantState,
 } from "./CommonTenantView.vue";
 import GhostDialog from "./GhostDialog.vue";
-import { NTabs, NTabPane } from "naive-ui";
-import { useEventListener } from "@vueuse/core";
 import {
   hasFeature,
   useCurrentUser,
