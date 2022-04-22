@@ -2,7 +2,7 @@
   <div class="border border-gray-300 rounded">
     <div class="flex flex-wrap gap-4 p-3 bg-gray-50 rounded">
       <div
-        v-for="template in templates"
+        v-for="template in templateList"
         :key="template.id"
         class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer tooltip-wrapper"
         @click="() => onTemplateAdd(template)"
@@ -66,7 +66,7 @@ const props = defineProps({
     default: "",
     type: String,
   },
-  templates: {
+  templateList: {
     require: true,
     default: () => [],
     type: Array as PropType<Template[]>,
@@ -75,7 +75,7 @@ const props = defineProps({
 
 const emit = defineEmits(["change"]);
 
-const templateInputs = getTemplateInputs(props.value, props.templates);
+const templateInputs = getTemplateInputs(props.value, props.templateList);
 let inputData = "";
 
 if (

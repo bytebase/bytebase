@@ -15,6 +15,7 @@ import {
 } from "@/types";
 import { usePolicyStore } from "./policy";
 import { getPrincipalFromIncludedList } from "./principal";
+import { environmentName } from "../../utils";
 
 function convert(
   environment: ResourceObject,
@@ -67,6 +68,10 @@ export const useEnvironmentStore = defineStore("environment", {
         }
       }
       return unknown("ENVIRONMENT") as Environment;
+    },
+    getEnvironmentNameById(environmentId: EnvironmentId): string {
+      const env = this.getEnvironmentById(environmentId);
+      return environmentName(env);
     },
     upsertEnvironmentList(environmentList: Environment[]) {
       for (const environment of environmentList) {

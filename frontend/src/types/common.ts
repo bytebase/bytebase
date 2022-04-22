@@ -24,6 +24,7 @@ import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
 import { Sheet } from "./sheet";
+import { DatabaseSchemaReviewPolicy } from "./schemaSystem";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -72,6 +73,7 @@ export type RouterSlug = {
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
+  schemaReviewPolicySlug?: string;
 };
 
 // Quick Action Type
@@ -135,7 +137,8 @@ export type ResourceType =
   | "REPOSITORY"
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
-  | "SHEET";
+  | "SHEET"
+  | "SCHEMA_REVIEW";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -161,6 +164,7 @@ interface ResourceMaker {
   (type: "ANOMALY"): Anomaly;
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
+  (type: "SCHEMA_REVIEW"): DatabaseSchemaReviewPolicy;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -485,6 +489,16 @@ const makeUnknown = (type: ResourceType) => {
     visibility: "PRIVATE",
   };
 
+  const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+    id: UNKNOWN_ID,
+    name: "",
+    creator: UNKNOWN_PRINCIPAL,
+    updater: UNKNOWN_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    ruleList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -532,6 +546,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
+    case "SCHEMA_REVIEW":
+      return UNKNOWN_SCHEMA_REVIEW_POLICY;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -856,6 +872,16 @@ const makeEmpty = (type: ResourceType) => {
     visibility: "PRIVATE",
   };
 
+  const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+    id: EMPTY_ID,
+    name: "",
+    creator: EMPTY_PRINCIPAL,
+    updater: EMPTY_PRINCIPAL,
+    createdTs: 0,
+    updatedTs: 0,
+    ruleList: [],
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return EMPTY_PRINCIPAL;
@@ -903,6 +929,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
+    case "SCHEMA_REVIEW":
+      return EMPTY_SCHEMA_REVIEW_POLICY;
   }
 };
 export const empty = makeEmpty as ResourceMaker;

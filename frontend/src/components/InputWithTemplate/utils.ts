@@ -11,12 +11,12 @@ const TEMPLATE_BRACKET_RIGHT = "}}";
 // "{{abc{{}}{{template}}}}" -> [{value: "{{abc{{}}", type: "string"}, {value: "template", type: "template"}, {value: "}}", type: "string"}]
 export const getTemplateInputs = (
   value: string,
-  templates: Template[]
+  templateList: Template[]
 ): TemplateInput[] => {
   let start = 0;
   let end = 0;
   const res: TemplateInput[] = [];
-  const templateSet = new Set<string>(templates.map((t) => t.id));
+  const templateSet = new Set<string>(templateList.map((t) => t.id));
 
   while (end <= value.length - 1) {
     if (
