@@ -45,7 +45,7 @@
               text
               @click="handleClearSearchBtnClick"
             >
-              {{ $t("sheet.actions.clear-search") }}
+              {{ $t("common.clear-search") }}
             </n-button>
           </div>
         </div>
@@ -159,7 +159,7 @@ const navigationList = computed(() => {
     },
     {
       path: "/sheets/starred",
-      label: t("sheet.starred"),
+      label: t("common.starred"),
     },
   ];
 });
@@ -204,7 +204,12 @@ const selectedProject = computed(() => {
 });
 
 const projectSelectOptions = computed(() => {
-  return [{ label: "All", value: "" }].concat(
+  return [
+    {
+      label: t("common.all"),
+      value: "",
+    },
+  ].concat(
     projectList.value.map((project) => {
       return {
         label: project.name,
@@ -316,9 +321,9 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
 
     await sheetStore.upsertSheetOrganizer(sheetOrganizerUpsert);
     await fetchSheetData();
-  } else if (key === "fork") {
+  } else if (key === "duplicate") {
     const dialogInstance = dialog.create({
-      title: t("sheet.hint-tips.confirm-to-fork-sheet"),
+      title: t("sheet.hint-tips.confirm-to-duplicate-sheet"),
       type: "info",
       async onPositiveClick() {
         const sheetCreate: SheetCreate = {
@@ -349,24 +354,24 @@ const getSheetDropDownOptions = (sheet: Sheet) => {
   if (sheet.starred) {
     options.push({
       key: "unstar",
-      label: t("sheet.actions.unstar"),
+      label: t("common.unstar"),
     });
   } else {
     options.push({
       key: "star",
-      label: t("sheet.actions.star"),
+      label: t("common.star"),
     });
   }
 
   if (currentSubPath.value === "my" || currentSubPath.value === "starred") {
     options.push({
       key: "delete",
-      label: t("sheet.actions.delete"),
+      label: t("common.delete"),
     });
   } else if (currentSubPath.value === "shared") {
     options.push({
-      key: "fork",
-      label: t("sheet.actions.fork"),
+      key: "duplicate",
+      label: t("common.duplicate"),
     });
   }
 
@@ -377,28 +382,28 @@ const getSheetTableHeaderLabelList = () => {
   const labelList = [
     {
       key: "name",
-      label: t("sheet.data-table.name"),
+      label: t("common.name").toUpperCase(),
     },
     {
       key: "project",
-      label: t("sheet.data-table.project"),
+      label: t("common.project").toUpperCase(),
     },
     {
       key: "visibility",
-      label: t("sheet.data-table.visibility"),
+      label: t("common.visibility").toUpperCase(),
     },
   ];
 
   if (currentSubPath.value === "shared" || currentSubPath.value === "starred") {
     labelList.push({
       key: "creator",
-      label: t("sheet.data-table.creator"),
+      label: t("common.creator").toUpperCase(),
     });
   }
 
   labelList.push({
     key: "updated",
-    label: t("sheet.data-table.updated"),
+    label: t("common.updated-at").toUpperCase(),
   });
 
   return labelList;

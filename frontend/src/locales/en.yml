@@ -181,6 +181,12 @@ common:
     type-limit: Only support {extension} file
     size-limit: File size should less than {size} MiB
   no-data: No data
+  visibility: Visibility
+  star: Star
+  unstar: Unstar
+  starred: Starred
+  duplicate: Duplicate
+  clear-search: Clear search
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1382,21 +1388,9 @@ sheet:
   self: Sheets
   my-sheets: My Sheets
   shared-with-me: Shared with me
-  starred: Starred
-  data-table:
-    name: NAME
-    project: PROJECT
-    visibility: VISIBILITY
-    creator: CREATOR
-    updated: UPDATED
   actions:
-    star: Star
-    unstar: Unstar
-    delete: Delete
-    fork: Fork
     sync-from-vcs: Sync from VCS
-    clear-search: Clear search
   hint-tips:
     confirm-to-sync-sheet: Confirm to sync sheets?
     confirm-to-delete-this-sheet: Confirm to delete this sheet?
-    confirm-to-fork-sheet: Confirm to fork this sheet?
+    confirm-to-duplicate-sheet: Confirm to duplicate this sheet?

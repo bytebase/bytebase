@@ -181,6 +181,12 @@ common:
     type-limit: 仅支持 {extension} 类型的文件
     size-limit: 文件大小需小于 {size} MiB
   no-data: 无数据
+  visibility: 可见性
+  star: 添加收藏
+  unstar: 取消收藏
+  starred: 已收藏
+  duplicate: 拷贝
+  clear-search: 清空搜索
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -1215,20 +1221,9 @@ sheet:
   my-sheets: 我的工作表
   shared-with-me: 与我共享
   starred: 已加星标
-  data-table:
-    name: 名称
-    project: 项目
-    visibility: 权限
-    creator: 创建者
-    updated: 更新于
   actions:
-    star: 添加星标
-    unstar: 取消星标
-    delete: 删除
-    fork: 拷贝副本
     sync-from-vcs: 从 VCS 同步数据
-    clear-search: 清空搜索
   hint-tips:
     confirm-to-sync-sheet: 确定要同步工作表?
     confirm-to-delete-this-sheet: 确定删除这条工作表?
-    confirm-to-fork-sheet: 确定要复制这条工作表?
+    confirm-to-duplicate-sheet: 确定要复制这条工作表?
