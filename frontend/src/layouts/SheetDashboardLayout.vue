@@ -53,7 +53,7 @@ const ping = () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: String(info),
+      title: JSON.stringify(info, null, 4),
     });
   });
 };

@@ -158,9 +158,9 @@ export const useSheetStore = defineStore("sheet", {
 
       if (hasSheet) {
         return this.patchSheetById(sheet);
-      } else {
-        return this.createSheetByTab(currentTab);
       }
+
+      return this.createSheetByTab(currentTab);
     },
     async createSheetByTab(currentTab: TabInfo): Promise<Sheet> {
       const sqlEditorStore = useSQLEditorStore();

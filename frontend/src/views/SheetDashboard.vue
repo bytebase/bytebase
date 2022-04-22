@@ -118,14 +118,14 @@
 </template>
 
 <script lang="ts" setup>
-import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
+import { last } from "lodash";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { last } from "lodash";
 import dayjs from "@/plugins/dayjs";
+import { useCurrentUser, useProjectStore, useSheetStore } from "@/store";
+import { Sheet, SheetCreate, SheetOrganizerUpsert } from "@/types";
 import { isDev } from "@/utils";
 
 interface LocalState {
