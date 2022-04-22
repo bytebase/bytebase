@@ -56,10 +56,14 @@ import LearnMoreLink from "../LearnMoreLink.vue";
 
 type Mode = "normal" | "online";
 
+type LocalState = {
+  mode: Mode;
+};
+
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 
-const state = reactive({
-  mode: "normal" as Mode,
+const state = reactive<LocalState>({
+  mode: "normal",
 });
 
 const open = (): Promise<{ result: boolean; mode: Mode }> => {
