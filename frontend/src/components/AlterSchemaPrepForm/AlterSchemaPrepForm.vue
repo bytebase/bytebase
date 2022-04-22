@@ -101,8 +101,8 @@ import {
   ProjectId,
   Repository,
   UNKNOWN_ID,
-} from "../../types";
-import { allowGhostMigration, isDev, sortDatabaseList } from "../../utils";
+} from "@/types";
+import { allowGhostMigration, isDev, sortDatabaseList } from "@/utils";
 import { cloneDeep } from "lodash-es";
 import VCSTipsInfo from "./VCSTipsInfo.vue";
 import ProjectStandardView, {
