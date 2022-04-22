@@ -100,6 +100,7 @@ common:
   new: 创建
   add: 添加
   confirm-and-add: 确认并添加
+  confirm-and-update: 确认并更新
   query: 查询
   transfer: 转移
   migration: 迁移
@@ -180,6 +181,8 @@ common:
   file-selector:
     type-limit: 仅支持 {extension} 类型的文件
     size-limit: 文件大小需小于 {size} MiB
+  enable: 开启
+  disable: 禁用
 error-page:
   go-back-home: 回到主页
 anomaly-center: 异常中心
@@ -1218,3 +1221,51 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
+engine:
+  mysql: MySQL
+  common: 通用
+schema-review-policy:
+  title: Schema 审核策略
+  no-policy-set: 没有 schema 审核策略
+  add-review: 新增审核策略
+  search-rule-name: 搜索规则名称
+  remove-review: 审核策略已删除
+  create-review: 审核策略已创建
+  update-review: 审核策略已更新
+  filter: 筛选
+  no-permission: 仅 DBA 或所有者有权限创建或更新审核策略。
+  disable: 停用审查策略
+  enable: 开启审查策略
+  delete: 删除审核策略
+  category:
+    engine: 引擎
+    naming: 命名
+    query: 查询
+    table: 表
+    column: 列
+  error-level:
+    name: 错误等级
+    error: 错误
+    warning: 警告
+    disabled: 禁用
+  create:
+    breadcrumb: 创建审核策略
+    basic-info:
+      name: 基本信息
+      display-name: 名称
+      display-name-label: 用以区分不同审核策略的名称。
+      display-name-default: Schema 审核策略
+      environments: 环境
+      environments-label: 将该审核策略应用于哪些环境。一个环境只能关联一个审核策略。
+      environments-select: 选择环境
+      no-linked-environments: 没有选择环境
+      no-available-environment: 没有可供选择的环境
+      no-available-environment-desc: 没有可供选择的环境。一个环境只能关联一个审核策略。
+      choose-template: 选择模板
+    configure-rule:
+      name: 配置规则
+      change-template: 更改模板
+      confirm-override-title: 规则变更
+      confirm-override-description: 之前的规则将会被覆盖
+    preview:
+      name: 预览
