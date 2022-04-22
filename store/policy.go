@@ -105,7 +105,23 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	}
 	defer tx.PTx.Rollback()
 
-	if err := s.deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
+	find := &api.PolicyFind{
+		ID:   &delete.ID,
+		Type: &delete.Type,
+	}
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return fmt.Errorf("Failed to list policy with PolicyFind[%+v], error[%w]", find, err)
+	}
+	if len(policyRawList) != 1 {
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("Failed to found policy with filter %+v, expect 1. ", find)}
+	}
+	policyRaw := policyRawList[0]
+	if policyRaw.RowStatus != "ARCHIVED" {
+		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("Failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
+	}
+
+	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -130,7 +146,7 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 	}
 	defer tx.PTx.Rollback()
 
-	policyRawList, err := s.findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to list policy with PolicyFind[%+v], error[%w]", find, err)
 	}
@@ -216,7 +232,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	}
 	defer tx.PTx.Rollback()
 
-	policyRawList, err := s.findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	var ret *policyRaw
 	if err != nil {
 		return nil, err
@@ -246,7 +262,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	return ret, nil
 }
 
-func (s *Store) findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*policyRaw, error) {
+func findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*policyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -320,7 +336,7 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 	}
 	defer tx.PTx.Rollback()
 
-	policy, err := s.upsertPolicyImpl(ctx, tx.PTx, upsert)
+	policy, err := upsertPolicyImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +370,7 @@ func (s *Store) patchPolicyRaw(ctx context.Context, patch *api.PolicyPatch) (*po
 	}
 	defer tx.PTx.Rollback()
 
-	policy, err := s.patchPolicyImpl(ctx, tx.PTx, patch)
+	policy, err := patchPolicyImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +383,7 @@ func (s *Store) patchPolicyRaw(ctx context.Context, patch *api.PolicyPatch) (*po
 }
 
 // upsertPolicyImpl updates an existing policy by environment id and type.
-func (s *Store) upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
+func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Upsert row into policy.
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
@@ -417,7 +433,7 @@ func (s *Store) upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.Po
 }
 
 // patchPolicyImpl updates an existing policy by id and type.
-func (s *Store) patchPolicyImpl(ctx context.Context, tx *sql.Tx, patch *api.PolicyPatch) (*policyRaw, error) {
+func patchPolicyImpl(ctx context.Context, tx *sql.Tx, patch *api.PolicyPatch) (*policyRaw, error) {
 	set, args := []string{}, []interface{}{}
 
 	if v := patch.RowStatus; v != nil {
@@ -469,7 +485,7 @@ func (s *Store) patchPolicyImpl(ctx context.Context, tx *sql.Tx, patch *api.Poli
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
-func (s *Store) deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
+func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
 	// Remove row from policy.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM policy WHERE id = $1 AND type = $2 AND row_status = $3`, delete.ID, delete.Type, "ARCHIVED"); err != nil {
 		return FormatError(err)

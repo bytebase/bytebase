@@ -30,9 +30,9 @@ p, OWNER, /environment, POST
 p, OWNER, /environment, GET
 p, OWNER, /environment/{id}, PATCH
 p, OWNER, /policy, GET
-p, OWNER, /policy/{policyID}, GET
-p, OWNER, /policy/{policyID}, PATCH
-p, OWNER, /policy/{policyID}, DELETE
+p, OWNER, /policy/{id}, GET
+p, OWNER, /policy/{id}, PATCH
+p, OWNER, /policy/{id}, DELETE
 p, OWNER, /policy/environment/{environmentID}, GET
 p, OWNER, /policy/environment/{environmentID}, PATCH
 p, OWNER, /instance, POST

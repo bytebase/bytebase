@@ -24,7 +24,7 @@ p, DEVELOPER, /project/{projectID}/webhook/{webhookID}, DELETE
 p, DEVELOPER, /project/{projectID}/webhook/{webhookID}/test, GET
 p, DEVELOPER, /environment, GET
 p, DEVELOPER, /policy, GET
-p, DEVELOPER, /policy/{policyID}, GET
+p, DEVELOPER, /policy/{id}, GET
 p, DEVELOPER, /policy/environment/{environmentID}, GET
 p, DEVELOPER, /instance, GET
 p, DEVELOPER, /instance/{id}, GET

@@ -101,7 +101,7 @@ type PolicyPatch struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	// CreatorID is the ID of the creator.
 	UpdaterID int
-	RowStatus *string `jsonapi:"attr,rowStatus"`
+	RowStatus *RowStatus `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	EnvironmentID *int `jsonapi:"attr,environmentId"`
