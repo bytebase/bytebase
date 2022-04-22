@@ -5,7 +5,7 @@
     :subtitle="subtitle"
     :show-close="closable"
     :esc-closable="closable"
-    @close="goNegative"
+    @close="onNegativeClick"
   >
     <slot name="default"></slot>
 
@@ -13,14 +13,14 @@
       <button
         type="button"
         class="btn-normal py-2 px-4"
-        @click.prevent="goNegative"
+        @click.prevent="onNegativeClick"
       >
         {{ negativeText || $t("common.cancel") }}
       </button>
       <button
         type="button"
         class="btn-primary py-2 px-4"
-        @click.prevent="goPositive"
+        @click.prevent="onPositiveClick"
       >
         {{ positiveText || $t("common.confirm") }}
       </button>
@@ -71,12 +71,12 @@ const open = () => {
   return state.defer.promise;
 };
 
-const goPositive = () => {
+const onPositiveClick = () => {
   state.visible = false;
   state.defer?.resolve(true);
 };
 
-const goNegative = () => {
+const onNegativeClick = () => {
   state.visible = false;
   state.defer?.resolve(false);
 };
