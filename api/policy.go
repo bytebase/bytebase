@@ -107,6 +107,8 @@ type PolicyPatch struct {
 	EnvironmentID *int `jsonapi:"attr,environmentId"`
 
 	// Domain specific fields
+	// Type is the policy type.
+	// Currently we only support patch operation for "bb.policy.schema-review", need it here for validation and update query.
 	Type    PolicyType
 	Payload *string `jsonapi:"attr,payload"`
 }
@@ -120,6 +122,8 @@ type PolicyDelete struct {
 	DeleterID int
 
 	// Domain specific fields
+	// Type is the policy type.
+	// Currently we only support delete operation for "bb.policy.schema-review", need it here for validation and update query.
 	Type PolicyType
 }
 

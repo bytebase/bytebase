@@ -51,16 +51,6 @@ const (
 	SchemaRuleQueryNoLeadingWildcardLike SchemaReviewRuleType = "query.where.no-leading-wildcard-like"
 )
 
-// NamingRulePayload is the payload for naming rule.
-type NamingRulePayload struct {
-	Format string `json:"format"`
-}
-
-// RequiredColumnRulePayload is the payload for required column rule.
-type RequiredColumnRulePayload struct {
-	ColumnList []string `json:"columnList"`
-}
-
 // SchemaReviewPolicy is the policy configuration for schema review.
 type SchemaReviewPolicy struct {
 	Name     string              `json:"name"`
@@ -69,7 +59,19 @@ type SchemaReviewPolicy struct {
 
 // SchemaReviewRule is the rule for schema review policy.
 type SchemaReviewRule struct {
-	Type    SchemaReviewRuleType  `json:"type"`
-	Level   SchemaReviewRuleLevel `json:"level"`
-	Payload *string               `json:"payload"`
+	Type  SchemaReviewRuleType  `json:"type"`
+	Level SchemaReviewRuleLevel `json:"level"`
+	// Payload is the stringify value for NamingRulePayload or RequiredColumnRulePayload
+	// If the rule doesn't have any payload configuration, the payload would be "{}"
+	Payload string `json:"payload"`
+}
+
+// NamingRulePayload is the payload for naming rule.
+type NamingRulePayload struct {
+	Format string `json:"format"`
+}
+
+// RequiredColumnRulePayload is the payload for required column rule.
+type RequiredColumnRulePayload struct {
+	ColumnList []string `json:"columnList"`
 }

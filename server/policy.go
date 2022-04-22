@@ -132,19 +132,20 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 		policyPatch := &api.PolicyPatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch policy request").SetInternal(err)
 		}
-		policyPatch.ID = id
-		policyPatch.Type = api.PolicyType(c.QueryParam("type"))
-		policyPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-
+		pType := api.PolicyType(c.QueryParam("type"))
 		payload := ""
 		if policyPatch.Payload != nil {
 			payload = *policyPatch.Payload
 		}
-		if err := s.hasAccessToUpsertPolicy(policyPatch.Type, payload); err != nil {
+		if err := s.hasAccessToUpsertPolicy(pType, payload); err != nil {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
+
+		policyPatch.ID = id
+		policyPatch.Type = pType
+		policyPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
 		ctx := c.Request().Context()
 		policy, err := s.store.PatchPolicy(ctx, policyPatch)
@@ -157,7 +158,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create set policy response").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch policy response").SetInternal(err)
 		}
 		return nil
 	})
@@ -168,13 +169,15 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
 		}
 
+		pType := api.PolicyType(c.QueryParam("type"))
+		if err := s.hasAccessToUpsertPolicy(pType, ""); err != nil {
+			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+		}
+
 		policyDelete := &api.PolicyDelete{
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-			Type:      api.PolicyType(c.QueryParam("type")),
-		}
-		if err := s.hasAccessToUpsertPolicy(policyDelete.Type, ""); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+			Type:      pType,
 		}
 
 		ctx := c.Request().Context()
