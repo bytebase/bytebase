@@ -358,7 +358,8 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			return nil, nil, err
 		}
 
-		if table.Type == baseTableType {
+		switch table.Type {
+		case baseTableType:
 			if tableCollation.Valid {
 				table.Collation = tableCollation.String
 			}
@@ -372,7 +373,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			} else {
 				tableMap[dbName] = []db.Table{table}
 			}
-		} else if table.Type == viewTableType {
+		case viewTableType:
 			viewInfoMap[fmt.Sprintf("%s/%s", dbName, table.Name)] = ViewInfo{
 				createdTs: table.CreatedTs,
 				updatedTs: table.UpdatedTs,
@@ -920,14 +921,14 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	f := func(stmt string) error {
+	fnExecuteStmt := func(stmt string) error {
 		if _, err := txn.Exec(stmt); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
+	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
 		return err
 	}
 

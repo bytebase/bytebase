@@ -280,10 +280,19 @@
       </div>
     </BBModal>
   </div>
+
+  <GhostDialog ref="ghostDialog" />
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, watch, defineComponent } from "vue";
+import {
+  computed,
+  onMounted,
+  reactive,
+  watch,
+  defineComponent,
+  ref,
+} from "vue";
 import { useRouter } from "vue-router";
 import ProjectSelect from "../components/ProjectSelect.vue";
 import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
@@ -292,7 +301,14 @@ import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { DatabaseLabelProps } from "../components/DatabaseLabels";
 import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
-import { idFromSlug, isDBAOrOwner, connectionSlug, hidePrefix } from "../utils";
+import {
+  idFromSlug,
+  isDBAOrOwner,
+  connectionSlug,
+  hidePrefix,
+  isDev,
+  allowGhostMigration,
+} from "../utils";
 import {
   ProjectId,
   UNKNOWN_ID,
@@ -304,6 +320,7 @@ import {
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import { GhostDialog } from "@/components/AlterSchemaPrepForm";
 import {
   pushNotification,
   useCurrentUser,
@@ -337,6 +354,7 @@ export default defineComponent({
     InstanceEngineIcon,
     DatabaseLabelProps,
     SelectDatabaseLabel,
+    GhostDialog,
   },
   props: {
     databaseSlug: {
@@ -349,6 +367,7 @@ export default defineComponent({
     const repositoryStore = useRepositoryStore();
     const router = useRouter();
     const { t } = useI18n();
+    const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
     const databaseTabItemList: DatabaseTabItem[] = [
       { name: t("common.overview"), hash: "overview" },
@@ -482,19 +501,47 @@ export default defineComponent({
       state.showTransferDatabaseModal = true;
     };
 
-    const alterSchema = () => {
+    // 'normal' -> normal migration
+    // 'online' -> online migration
+    // false -> user clicked cancel button
+    const isUsingGhostMigration = async (databaseList: Database[]) => {
+      if (!isDev()) {
+        return "normal";
+      }
+
+      // check if all selected databases supports gh-ost
+      if (allowGhostMigration(databaseList)) {
+        // open the dialog to ask the user
+        const { result, mode } = await ghostDialog.value!.open();
+        if (!result) {
+          return false; // return false when user clicked the cancel button
+        }
+        return mode;
+      }
+
+      // fallback to normal
+      return "normal";
+    };
+
+    const alterSchema = async () => {
       if (database.value.project.workflowType == "UI") {
+        const mode = await isUsingGhostMigration([database.value]);
+        if (mode === false) return;
+        const query: Record<string, any> = {
+          template: "bb.issue.database.schema.update",
+          name: `[${database.value.name}] Alter schema`,
+          project: database.value.project.id,
+          databaseList: database.value.id,
+        };
+        if (mode === "online") {
+          query.ghost = "1";
+        }
         router.push({
           name: "workspace.issue.detail",
           params: {
             issueSlug: "new",
           },
-          query: {
-            template: "bb.issue.database.schema.update",
-            name: `[${database.value.name}] Alter schema`,
-            project: database.value.project.id,
-            databaseList: database.value.id,
-          },
+          query,
         });
       } else if (database.value.project.workflowType == "VCS") {
         repositoryStore
@@ -622,6 +669,7 @@ export default defineComponent({
       MIGRATION_HISTORY_TAB,
       BACKUP_TAB,
       state,
+      ghostDialog,
       isTenantProject,
       database,
       allowChangeProject,

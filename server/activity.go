@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.POST("/activity", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		activityCreate := &api.ActivityCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
@@ -65,7 +64,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.GET("/activity", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		activityFind := &api.ActivityFind{}
 		if creatorIDStr := c.QueryParams().Get("user"); creatorIDStr != "" {
 			creatorID, err := strconv.Atoi(creatorIDStr)
@@ -108,7 +107,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/activity/:activityID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
@@ -138,7 +137,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/activity/:activityID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)

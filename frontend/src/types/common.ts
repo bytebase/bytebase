@@ -137,32 +137,33 @@ export type ResourceType =
   | "DEPLOYMENT_CONFIG"
   | "SHEET";
 
-export const unknown = (
-  type: ResourceType
-):
-  | Principal
-  | Member
-  | Environment
-  | Project
-  | ProjectWebhook
-  | ProjectMember
-  | Instance
-  | Database
-  | DataSource
-  | BackupSetting
-  | Issue
-  | Pipeline
-  | Policy
-  | Stage
-  | Task
-  | Activity
-  | Inbox
-  | Bookmark
-  | VCS
-  | Repository
-  | Anomaly
-  | DeploymentConfig
-  | Sheet => {
+interface ResourceMaker {
+  (type: "PRINCIPAL"): Principal;
+  (type: "MEMBER"): Member;
+  (type: "ENVIRONMENT"): Environment;
+  (type: "PROJECT"): Project;
+  (type: "PROJECT_HOOK"): ProjectWebhook;
+  (type: "PROJECT_MEMBER"): ProjectMember;
+  (type: "INSTANCE"): Instance;
+  (type: "DATABASE"): Database;
+  (type: "DATA_SOURCE"): DataSource;
+  (type: "BACKUP_SETTING"): BackupSetting;
+  (type: "ISSUE"): Issue;
+  (type: "PIPELINE"): Pipeline;
+  (type: "POLICY"): Policy;
+  (type: "STAGE"): Stage;
+  (type: "TASK"): Task;
+  (type: "ACTIVITY"): Activity;
+  (type: "INBOX"): Inbox;
+  (type: "BOOKMARK"): Bookmark;
+  (type: "VCS"): VCS;
+  (type: "REPOSITORY"): Repository;
+  (type: "ANOMALY"): Anomaly;
+  (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
+  (type: "SHEET"): Sheet;
+}
+
+const makeUnknown = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const UNKNOWN_PRINCIPAL: Principal = {
     id: UNKNOWN_ID,
@@ -373,6 +374,7 @@ export const unknown = (
     earliestAllowedTs: 0,
     taskRunList: [],
     taskCheckRunList: [],
+    blockedBy: [],
   };
 
   const UNKNOWN_ACTIVITY: Activity = {
@@ -418,7 +420,7 @@ export const unknown = (
     secret: "",
   };
 
-  const UNKONWN_REPOSITORY: Repository = {
+  const UNKNOWN_REPOSITORY: Repository = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
@@ -433,6 +435,7 @@ export const unknown = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: UNKNOWN_ID.toString(),
   };
 
@@ -522,7 +525,7 @@ export const unknown = (
     case "VCS":
       return UNKNOWN_VCS;
     case "REPOSITORY":
-      return UNKONWN_REPOSITORY;
+      return UNKNOWN_REPOSITORY;
     case "ANOMALY":
       return UNKNOWN_ANOMALY;
     case "DEPLOYMENT_CONFIG":
@@ -531,34 +534,9 @@ export const unknown = (
       return UNKNOWN_SHEET;
   }
 };
+export const unknown = makeUnknown as ResourceMaker;
 
-// empty represents an expected behavior.
-export const empty = (
-  type: ResourceType
-):
-  | Principal
-  | Member
-  | Environment
-  | Project
-  | ProjectWebhook
-  | ProjectMember
-  | Instance
-  | Database
-  | DataSource
-  | BackupSetting
-  | Issue
-  | Pipeline
-  | Policy
-  | Stage
-  | Task
-  | Activity
-  | Inbox
-  | Bookmark
-  | VCS
-  | Repository
-  | Anomaly
-  | DeploymentConfig
-  | Sheet => {
+const makeEmpty = (type: ResourceType) => {
   // Have to omit creator and updater to avoid recursion.
   const EMPTY_PRINCIPAL: Principal = {
     id: EMPTY_ID,
@@ -767,6 +745,7 @@ export const empty = (
     taskRunList: [],
     taskCheckRunList: [],
     earliestAllowedTs: 0,
+    blockedBy: [],
   };
 
   const EMPTY_ACTIVITY: Activity = {
@@ -827,6 +806,7 @@ export const empty = (
     branchFilter: "",
     filePathTemplate: "",
     schemaPathTemplate: "",
+    sheetPathTemplate: "",
     externalId: EMPTY_ID.toString(),
   };
 
@@ -925,3 +905,4 @@ export const empty = (
       return EMPTY_SHEET;
   }
 };
+export const empty = makeEmpty as ResourceMaker;

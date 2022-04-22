@@ -18,7 +18,7 @@ import (
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	g.POST("/database", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		databaseCreate := &api.DatabaseCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
@@ -81,7 +81,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		databaseFind := new(api.DatabaseFind)
 		if instanceIDStr := c.QueryParam("instance"); instanceIDStr != "" {
 			instanceID, err := strconv.Atoi(instanceIDStr)
@@ -137,7 +137,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -167,7 +167,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/database/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -359,7 +359,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/table", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -423,7 +423,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/table/:tableName", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -487,7 +487,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/view", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -532,7 +532,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.POST("/database/:id/backup", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -629,7 +629,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/backup", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -662,7 +662,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/database/:id/backup-setting", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -699,7 +699,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/backup-setting", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -735,7 +735,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.GET("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -779,7 +779,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.POST("/database/:id/data-source", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -817,7 +817,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/database/:id/data-source/:dataSourceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		databaseID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)

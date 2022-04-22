@@ -118,8 +118,14 @@ func getTestPort(testName string) int {
 		return 1246
 	case "TestTenantDatabaseNameTemplate":
 		return 1249
-	case "TestTenantVCSDatabaseNameTemplate":
+	case "TestGhostSimpleNoop":
 		return 1252
+	case "TestBackupRestoreBasic":
+		return 1255
+	case "TestPITR":
+		return 1258
+	case "TestTenantVCSDatabaseNameTemplate":
+		return 1261
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -1086,7 +1092,7 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 
 // listSheets lists sheets for a database.
 func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
-	body, err := ctl.get(fmt.Sprintf("/sheet?databaseId=%d", databaseID), nil)
+	body, err := ctl.get(fmt.Sprintf("/sheet/my?databaseId=%d", databaseID), nil)
 	if err != nil {
 		return nil, err
 	}

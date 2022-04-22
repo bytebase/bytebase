@@ -224,6 +224,10 @@ task:
     warn: 警告
     error: 错误
   earliest-allowed-time-no-modify: 您无法修改此字段因为您不是该工单的审核人或者它不在待执行状态。
+  type:
+    bb-task-database-schema-update-ghost-sync: 同步数据
+    bb-task-database-schema-update-ghost-cutover: 切换表
+    bb-task-database-schema-update-ghost-drop-original-table: 删除原始表
 banner:
   demo-intro: 这是 Bytebase 的演示版本。
   demo-intro-readonly: 这是 Bytebase 的只读演示版本
@@ -407,6 +411,14 @@ issue:
   stage-select:
     active: "{name}（活动中）"
   not-allowed-to-single-database-in-tenant-mode: 在多租户模式下无法对单个数据库{operation}
+  migration-mode:
+    title: 迁移模式
+    normal:
+      title: 普通变更 (适用于正常大小的表)
+      description: 直接在目标表上执行 schema 变更。
+    online:
+      title: 在线变更 (适用于数据量大的表)
+      description: 在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。
 alter-schema:
   vcs-enabled: 该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。
   vcs-info: 代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。
@@ -731,6 +743,8 @@ repository:
   schema-writeback-protected-branch: 请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。
   if-specified: 如果指定
   schema-path-example: Schema 路径样例
+  sheet-path-template: 工作表路径模板
+  sheet-path-template-description: Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。
   git-provider: Git 提供方
   version-control-status: "@.capitalize:common.version-control 已{status}"
   version-control-description-file-path: 数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。
