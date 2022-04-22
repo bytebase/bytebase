@@ -434,8 +434,9 @@ issue:
     online:
       title: Online migration (for large-sized table)
       description: >-
-        Perform schema change on a duplicated table. Switch table names after
-        data synchronization. {link}
+        Perform schema change on a duplicated empty table. Sync the data and
+        swap the table name after sync finishes. Applying migration on a large
+        table directly would cause long-time unavailability {link}.
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
