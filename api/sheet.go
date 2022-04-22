@@ -169,12 +169,13 @@ type Sheet struct {
 	Source     SheetSource     `jsonapi:"attr,source"`
 	Type       SheetType       `jsonapi:"attr,type"`
 	Payload    string          `jsonapi:"attr,payload"`
+	Starred    bool            `jsonapi:"attr,starred"`
+	Pinned     bool            `jsonapi:"attr,pinned"`
 }
 
 // SheetCreate is the API message for creating a sheet.
 type SheetCreate struct {
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID int
 
 	// Related fields
@@ -196,7 +197,6 @@ type SheetPatch struct {
 
 	// Standard fields
 	RowStatus *string `jsonapi:"attr,rowStatus"`
-	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
 
 	// Related fields
@@ -215,6 +215,8 @@ type SheetFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+	// Used to find the creator's sheet list.
+	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	CreatorID *int
 
 	// Related fields
@@ -227,7 +229,11 @@ type SheetFind struct {
 	Source     *SheetSource
 	Type       *SheetType
 	Payload    *string
-	// If present, will only find sheet which related project containing PrincipalID as an active member.
+	// Used to find starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// For now, we only need the starred sheets.
+	OrganizerID *int
+	// Used to find a constraint sheet list with related projects containing PrincipalID as an active member.
+	// When finding a shared PROJECT/PROJECT sheet, the value should have value.
 	PrincipalID *int
 }
 
@@ -244,7 +250,6 @@ type SheetDelete struct {
 	ID int
 
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
 }
 

@@ -1092,7 +1092,7 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 
 // listSheets lists sheets for a database.
 func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
-	body, err := ctl.get(fmt.Sprintf("/sheet?databaseId=%d", databaseID), nil)
+	body, err := ctl.get(fmt.Sprintf("/sheet/my?databaseId=%d", databaseID), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBCheckbox from "./BBCheckbox.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
+import BBDialog from "./BBDialog.vue";
 import BBNotification from "./BBNotification.vue";
 import BBOutline from "./BBOutline.vue";
 import BBSelect from "./BBSelect.vue";
@@ -37,6 +38,7 @@ export {
   BBCheckbox,
   BBContextMenu,
   BBModal,
+  BBDialog,
   BBNotification,
   BBOutline,
   BBSelect,
