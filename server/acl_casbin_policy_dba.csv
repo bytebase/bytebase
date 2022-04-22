@@ -25,6 +25,10 @@ p, DBA, /project/{projectID}/webhook/{webhookID}/test, GET
 p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
+p, DBA, /policy, GET
+p, DBA, /policy/{policyID}, GET
+p, DBA, /policy/{policyID}, PATCH
+p, DBA, /policy/{policyID}, DELETE
 p, DBA, /policy/environment/{environmentID}, GET
 p, DBA, /policy/environment/{environmentID}, PATCH
 p, DBA, /instance, POST
