@@ -432,7 +432,7 @@ issue:
       title: Normal migration (for normal-sized table)
       description: Perform schema change directly on the target table.
     online:
-      title: Online migration
+      title: Online migration (for large-sized table)
       description: >-
         Perform schema change on a duplicated table. Switch table names after
         data synchronization. {link}
