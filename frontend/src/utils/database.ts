@@ -1,7 +1,7 @@
+import semverCompare from "semver/functions/compare";
 import { Database, DataSourceType, Environment, Principal } from "../types";
 import { isDBAOrOwner } from "./role";
 import { isDev } from "./util";
-import semverCompare from "semver/functions/compare";
 
 export function allowDatabaseAccess(
   database: Database,
