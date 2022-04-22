@@ -12,6 +12,7 @@ specifiers:
   '@types/node': ^16.11.9
   '@types/papaparse': ^5.3.1
   '@types/prettier': ^2.4.2
+  '@types/semver': ^7.3.9
   '@types/slug': ^0.9.1
   '@types/splitpanes': ^2.2.1
   '@types/uuid': ^8.3.0
@@ -39,6 +40,7 @@ specifiers:
   pinia: ^2.0.12
   postcss: ^8.4.12
   prettier: ^2.4.1
+  semver: ^7.3.7
   slug: ^4.0.2
   splitpanes: ^3.0.6
   sql-formatter: ^4.0.2
@@ -71,6 +73,7 @@ dependencies:
   node-sql-parser: 4.1.1
   papaparse: 5.3.1
   pinia: 2.0.12_typescript@4.6.2+vue@3.2.31
+  semver: 7.3.7
   slug: 4.1.0
   splitpanes: 3.1.1
   sql-formatter: 4.0.2
@@ -91,6 +94,7 @@ devDependencies:
   '@types/node': 16.11.26
   '@types/papaparse': 5.3.2
   '@types/prettier': 2.4.4
+  '@types/semver': 7.3.9
   '@types/slug': 0.9.1
   '@types/splitpanes': 2.2.1
   '@types/uuid': 8.3.4
@@ -492,6 +496,10 @@ packages:
     resolution: {integrity: sha512-ReVR2rLTV1kvtlWFyuot+d1pkpG2Fw/XKE3PDAdj57rbM97ttSp9JZ2UsP+2EHTylra9cUf6JA7tGwW1INzUrA==}
     dev: true
 
+  /@types/semver/7.3.9:
+    resolution: {integrity: sha512-L/TMpyURfBkf+o/526Zb6kd/tchUP3iBDEPjqjb+U2MAJhVRxxrmr2fwpe08E7QsV7YLcpq0tUaQ9O9x97ZIxQ==}
+    dev: true
+
   /@types/slug/0.9.1:
     resolution: {integrity: sha512-zR/u8WFQ4/6uCIikjI00a5uB084XjgEGNRAvM4a1BL39Bw9yEiDQFiPS2DgJ8lPDkR2Qd/vZ26dCR9XqlKbDqQ==}
     dev: true
@@ -530,7 +538,7 @@ packages:
       functional-red-black-tree: 1.0.1
       ignore: 5.2.0
       regexpp: 3.2.0
-      semver: 7.3.5
+      semver: 7.3.7
       tsutils: 3.21.0_typescript@4.6.2
       typescript: 4.6.2
     transitivePeerDependencies:
@@ -603,7 +611,7 @@ packages:
       debug: 4.3.3
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.3.5
+      semver: 7.3.7
       tsutils: 3.21.0_typescript@4.6.2
       typescript: 4.6.2
     transitivePeerDependencies:
@@ -1592,7 +1600,7 @@ packages:
       eslint: 8.11.0
       eslint-utils: 3.0.0_eslint@8.11.0
       natural-compare: 1.4.0
-      semver: 7.3.5
+      semver: 7.3.7
       vue-eslint-parser: 8.3.0_eslint@8.11.0
     transitivePeerDependencies:
       - supports-color
@@ -2229,7 +2237,6 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       yallist: 4.0.0
-    dev: true
 
   /magic-string/0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
@@ -2765,13 +2772,12 @@ packages:
     hasBin: true
     dev: true
 
-  /semver/7.3.5:
-    resolution: {integrity: sha512-PoeGJYh8HK4BTO/a9Tf6ZG3veo/A7ZVsYrSA6J8ny9nb3B1VrpkuN+z9OE5wfE5p6H4LchYZsegiQgbJD94ZFQ==}
+  /semver/7.3.7:
+    resolution: {integrity: sha512-QlYTucUYOews+WeEujDoEGziz4K6c47V/Bd+LjSSYcA94p+DmINdf7ncaUinThfvZyu13lN9OY1XDxt8C0Tw0g==}
     engines: {node: '>=10'}
     hasBin: true
     dependencies:
       lru-cache: 6.0.0
-    dev: true
 
   /shebang-command/2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
@@ -3277,7 +3283,7 @@ packages:
     resolution: {integrity: sha512-eecDqHk4WjEvy6VHQ6teHczppQ9yJO2wExCy7yu7WiFj35qbw0h4G6Erv46MvP3ClL8FggFzD7s1qM6vdqJUfw==}
     dependencies:
       '@volar/shared': 0.29.8
-      semver: 7.3.5
+      semver: 7.3.7
       upath: 2.0.1
       vscode-languageserver: 8.0.0-next.9
       vscode-languageserver-textdocument: 1.0.4
@@ -3372,7 +3378,7 @@ packages:
       espree: 9.3.1
       esquery: 1.4.0
       lodash: 4.17.21
-      semver: 7.3.5
+      semver: 7.3.7
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -3477,7 +3483,6 @@ packages:
 
   /yallist/4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
-    dev: true
 
   /yaml-eslint-parser/0.3.2:
     resolution: {integrity: sha512-32kYO6kJUuZzqte82t4M/gB6/+11WAuHiEnK7FreMo20xsCKPeFH5tDBU7iWxR7zeJpNnMXfJyXwne48D0hGrg==}
