@@ -430,7 +430,7 @@ issue:
     title: Migration mode
     normal:
       title: Normal migration
-      description: Perform schema change directly on target table.
+      description: Perform schema change directly on the target table.
     online:
       title: Online migration
       description: >-
