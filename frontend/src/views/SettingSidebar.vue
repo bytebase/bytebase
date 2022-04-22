@@ -68,6 +68,12 @@
             >{{ $t("settings.sidebar.version-control") }}</router-link
           >
           <router-link
+            v-if="isDev()"
+            to="/setting/schema-review-policy"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("schema-review-policy.title") }}</router-link
+          >
+          <router-link
             to="/setting/subscription"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.subscription") }}</router-link
@@ -101,6 +107,10 @@ export default defineComponent({
   name: "SettingSidebar",
   props: {
     vcsSlug: {
+      default: "",
+      type: String,
+    },
+    schemaReviewPolicySlug: {
       default: "",
       type: String,
     },

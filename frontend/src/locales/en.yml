@@ -1,6 +1,6 @@
 common:
   when: When
-  view: view
+  view: View
   you: you
   general: General
   slack: Slack
@@ -100,6 +100,7 @@ common:
   new: New
   add: Add
   confirm-and-add: Confirm and add
+  confirm-and-update: Confirm and update
   query: Query
   transfer: Transfer
   migration: Migration
@@ -180,6 +181,8 @@ common:
   file-selector:
     type-limit: Only support {extension} file
     size-limit: File size should less than {size} MiB
+  enable: Enable
+  disable: Disable
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -1389,3 +1392,52 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
+engine:
+  mysql: MySQL
+  common: Common
+schema-review-policy:
+  title: Schema Review
+  no-policy-set: No schema review policy
+  add-review: Add policy
+  search-rule-name: Search rule name
+  remove-review: Successfully removed the review policy.
+  create-review: Successfully created the review policy.
+  update-review: Successfully updated the review policy.
+  filter: Filter
+  no-permission: Only DBA or Owner has permission to create or update review policy.
+  disable: Disable schema review policy
+  enable: Enable schema review policy
+  delete: Delete schema review policy
+  category:
+    engine: Engine
+    naming: Naming
+    query: Query
+    table: Table
+    column: Column
+  error-level:
+    name: Error Level
+    error: Error
+    warning: Warning
+    disabled: Disabled
+  create:
+    breadcrumb: Create schema review policy
+    basic-info:
+      name: Basic info
+      display-name: Display name
+      display-name-default: Schema review policy
+      display-name-label: >-
+        A display name to help identifying among different review policies.
+      environments: Environments
+      environments-label: Apply the review policy to the selected environments. One environment can only link one policy.
+      environments-select: Select environments
+      no-linked-environments: No linked environment
+      no-available-environment: No available environment
+      no-available-environment-desc: No available environment. One environment can only link one schema review policy.
+      choose-template: Choose template
+    configure-rule:
+      name: Configure rule
+      change-template: Change the template
+      confirm-override-title: Confirm change
+      confirm-override-description: Your rules will be overridden
+    preview:
+      name: Preview

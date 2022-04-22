@@ -103,6 +103,7 @@ export default defineComponent({
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
+      const schemaReviewPolicySlug = routeSlug.schemaReviewPolicySlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -153,6 +154,11 @@ export default defineComponent({
         list.push({
           name: t("common.version-control"),
           path: "/setting/version-control",
+        });
+      } else if (schemaReviewPolicySlug) {
+        list.push({
+          name: t("schema-review-policy.title"),
+          path: "/setting/schema-review-policy",
         });
       }
 
