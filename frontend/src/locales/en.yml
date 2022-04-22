@@ -426,6 +426,17 @@ issue:
   stage-select:
     active: "{name} (active)"
   not-allowed-to-single-database-in-tenant-mode: Can't {operation} to single database in tenant mode
+  migration-mode:
+    title: Migration mode
+    normal:
+      title: Normal migration (for normal-sized table)
+      description: Perform schema change directly on the target table.
+    online:
+      title: Online migration (for large-sized table)
+      description: >-
+        Perform schema change on a duplicated empty table. Sync the data and
+        swap the table name after sync finishes. Applying migration on a large
+        table directly would cause long-time unavailability {link}.
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
