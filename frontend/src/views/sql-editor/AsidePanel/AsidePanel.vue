@@ -26,11 +26,11 @@
 
 <script lang="ts" setup>
 import { ref, watch } from "vue";
-
+import { useSQLEditorStore } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
-import { useSQLEditorStore } from "@/store";
+import { Splitpanes, Pane } from "splitpanes";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;

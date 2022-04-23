@@ -34,16 +34,16 @@
 </template>
 
 <script lang="ts" setup>
-import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
-import BannerDemo from "@/views/BannerDemo.vue";
-import BannerTrial from "@/views/BannerTrial.vue";
-import { ServerInfo } from "../types";
+import { storeToRefs } from "pinia";
 import {
   pushNotification,
   useActuatorStore,
   useSubscriptionStore,
 } from "@/store";
-import { storeToRefs } from "pinia";
+import { ServerInfo } from "@/types";
+import BannerDemo from "@/views/BannerDemo.vue";
+import BannerTrial from "@/views/BannerTrial.vue";
+import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 
 const actuatorStore = useActuatorStore();
 const subscriptionStore = useSubscriptionStore();

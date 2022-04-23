@@ -3,6 +3,8 @@
 </template>
 
 <script lang="ts" setup>
+import { reactive, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
   useCurrentUser,
@@ -14,8 +16,6 @@ import {
   useTabStore,
   useSheetStore,
 } from "@/store";
-import { reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
 import {
   Instance,
   Database,
@@ -26,7 +26,7 @@ import {
   InstanceId,
   DatabaseId,
   Project,
-} from "../types";
+} from "@/types";
 
 const route = useRoute();
 
@@ -140,7 +140,7 @@ const prepareSheetFromQuery = async () => {
       isSaved: true,
     });
     setConnectionContextFromCurrentTab();
-    useSQLEditorStore().setSqlEditorState({
+    useSQLEditorStore().setSQLEditorState({
       sharedSheet: sheet,
       shouldSetContent: true,
     });
