@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import ProvideSqlEditorContext from "@/components/ProvideSqlEditorContext.vue";
-import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
+import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";
