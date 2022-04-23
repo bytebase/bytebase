@@ -66,7 +66,7 @@ const prepareAccessibleConnectionByProject = async () => {
   await Promise.all(promises);
 };
 
-const prepareSqlEditorContext = async () => {
+const prepareSQLEditorContext = async () => {
   sqlEditorStore.setConnectionContext({ isLoadingTree: true });
   let connectionTree = [];
 
@@ -125,6 +125,6 @@ const prepareSqlEditorContext = async () => {
 
 onMounted(async () => {
   await prepareAccessibleConnectionByProject();
-  await prepareSqlEditorContext();
+  await prepareSQLEditorContext();
 });
 </script>
