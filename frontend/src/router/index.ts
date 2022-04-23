@@ -1215,7 +1215,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              useSQLEditorStore().setSqlEditorState({
+              useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });
 
