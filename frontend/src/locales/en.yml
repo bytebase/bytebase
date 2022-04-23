@@ -1157,6 +1157,8 @@ datasource:
   connection-name-string-copied-to-clipboard: "{0} string copied to clipboard."
   jdbc-cant-connect-to-socket-database-value-instance-host: "JDBC can't connect to socket {0} "
 setting:
+  project:
+    description: This is the Admin project panel listting all projects in Bytebase.
   label:
     key: Key
     values: Values

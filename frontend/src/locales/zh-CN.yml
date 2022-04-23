@@ -1008,6 +1008,8 @@ datasource:
   connection-name-string-copied-to-clipboard: "{0} 字符串已复制到剪贴板。"
   jdbc-cant-connect-to-socket-database-value-instance-host: "JDBC 无法连接到 socket {0} "
 setting:
+  project:
+    description: 这里是项目管理员界面，列出了 Bytebase 上的所有项目。
   label:
     key: Key
     values: 值

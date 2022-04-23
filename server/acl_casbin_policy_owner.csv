@@ -8,6 +8,7 @@ p, OWNER, /member, GET
 p, OWNER, /member/{id}, PATCH
 p, OWNER, /project, POST
 p, OWNER, /project, GET
+p, OWNER, /project/all, GET
 p, OWNER, /project/{id}, GET
 p, OWNER, /project/{id}, PATCH
 p, OWNER, /project/{id}/repository, GET

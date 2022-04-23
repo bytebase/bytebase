@@ -122,6 +122,37 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		return nil
 	})
 
+	// Create a dedicated endpoint for fetching all projects.
+	// This is only used by Owner and DBA and we can thus enforce ACL on casbin.
+	g.GET("/project/all", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		role := c.Get(getRoleContextKey()).(api.Role)
+		// Defence in depth. The casbin ACL rule should have already rejected non Owner / DBA callers.
+		if role != api.Owner && role != api.DBA {
+			return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch all project list")
+		}
+		projectFind := &api.ProjectFind{}
+		projectRawList, err := s.ProjectService.FindProjectList(ctx, projectFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch all project list").SetInternal(err)
+		}
+
+		var projectList []*api.Project
+		for _, projectRaw := range projectRawList {
+			project, err := s.composeProjectRelationship(ctx, projectRaw)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
+			}
+			projectList = append(projectList, project)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, projectList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal project list response").SetInternal(err)
+		}
+		return nil
+	})
+
 	g.GET("/project/:projectID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("projectID"))

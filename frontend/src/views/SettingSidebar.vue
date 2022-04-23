@@ -48,6 +48,12 @@
             Agents
           </router-link>-->
           <router-link
+            v-if="showOwnerOrDBAItem"
+            to="/setting/project"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("common.projects") }}</router-link
+          >
+          <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.members") }}</router-link
@@ -90,7 +96,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { isOwner, isDev } from "../utils";
+import { isOwner, isDBAOrOwner } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
 interface LocalState {
@@ -119,6 +125,10 @@ export default defineComponent({
       return isOwner(currentUser.value.role);
     });
 
+    const showOwnerOrDBAItem = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
+
     const goBack = () => {
       router.push(routerStore.backPath());
     };
@@ -136,9 +146,9 @@ export default defineComponent({
 
     return {
       state,
-      isDev,
       integrationList,
       showOwnerItem,
+      showOwnerOrDBAItem,
       goBack,
       toggleCollapse,
     };
