@@ -23,7 +23,7 @@ export type QueryInfo = {
   limit?: number;
 };
 
-export type SqlResultSet = {
+export type SQLResultSet = {
   data: string;
   error: string;
 };

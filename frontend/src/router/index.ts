@@ -10,7 +10,7 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
-import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
+import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
 import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
 import { t } from "../plugins/i18n";
 import {
@@ -777,27 +777,27 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/sql-editor",
     name: "sql-editor",
-    component: SqlEditorLayout,
+    component: SQLEditorLayout,
     children: [
       {
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
     ],
@@ -1242,7 +1242,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              useSQLEditorStore().setSqlEditorState({
+              useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });
 

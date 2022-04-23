@@ -151,7 +151,7 @@ import {
   Instance,
   InstanceMigration,
   MigrationSchemaStatus,
-  SqlResultSet,
+  SQLResultSet,
 } from "../types";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
@@ -367,7 +367,7 @@ const doCreateMigrationSchema = () => {
   state.creatingMigrationSchema = true;
   instanceStore
     .createMigrationSetup(instance.value.id)
-    .then((resultSet: SqlResultSet) => {
+    .then((resultSet: SQLResultSet) => {
       state.creatingMigrationSchema = false;
       if (resultSet.error) {
         pushNotification({
@@ -398,7 +398,7 @@ const syncSchema = () => {
   state.syncingSchema = true;
   sqlStore
     .syncSchema(instance.value.id)
-    .then((resultSet: SqlResultSet) => {
+    .then((resultSet: SQLResultSet) => {
       state.syncingSchema = false;
       if (resultSet.error) {
         pushNotification({
