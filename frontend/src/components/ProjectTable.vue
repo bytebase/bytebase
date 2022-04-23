@@ -26,9 +26,7 @@
         <span class="flex flex-row items-center"
           >{{ project.key }}
           <template v-if="project.rowStatus == 'ARCHIVED'">
-            <heroicons-outline:archive
-              class="ml-1 w-4 h-4 text-control hover:text-control-hover"
-            />
+            <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
           </template>
         </span>
       </BBTableCell>
