@@ -10,7 +10,7 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
-import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
+import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
 import { t } from "../plugins/i18n";
 import {
   useAuthStore,
@@ -40,6 +40,7 @@ import {
   useVCSStore,
   useProjectWebhookStore,
   useDataSourceStore,
+  useSchemaSystemStore,
   useProjectStore,
   useTableStore,
   useSQLEditorStore,
@@ -405,6 +406,41 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("common.slack") },
                 component: () =>
                   import("../views/SettingWorkspaceIntegrationSlack.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy",
+                name: "setting.workspace.schema-review-policy",
+                meta: {
+                  title: () => t("schema-review-policy.title"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReview.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy/new",
+                name: "setting.workspace.schema-review-policy.create",
+                meta: {
+                  title: () => t("schema-review-policy.create.breadcrumb"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy/:schemaReviewPolicySlug",
+                name: "setting.workspace.schema-review-policy.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.schemaReviewPolicySlug as string;
+                    return useSchemaSystemStore().getReviewPolicyById(
+                      idFromSlug(slug)
+                    ).name;
+                  },
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReviewDetail.vue"),
                 props: true,
               },
             ],
@@ -780,27 +816,27 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/sql-editor",
     name: "sql-editor",
-    component: SqlEditorLayout,
+    component: SQLEditorLayout,
     children: [
       {
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
     ],
@@ -949,7 +985,8 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
     (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.version-control.detail")
+      to.name?.toString() != "setting.workspace.version-control.detail" &&
+      to.name?.toString() != "setting.workspace.schema-review-policy.detail")
   ) {
     next();
     return;
@@ -976,6 +1013,7 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
+  const schemaReviewPolicySlug = routerSlug.schemaReviewPolicySlug;
 
   if (principalId) {
     usePrincipalStore()
@@ -1184,6 +1222,22 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  if (schemaReviewPolicySlug) {
+    useSchemaSystemStore()
+      .fetchReviewPolicyById(idFromSlug(schemaReviewPolicySlug))
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
   if (connectionSlug) {
     const [, instanceId, , databaseId] = connectionSlug.split("_");
     useSQLEditorStore()
@@ -1206,7 +1260,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              useSQLEditorStore().setSqlEditorState({
+              useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });
 
