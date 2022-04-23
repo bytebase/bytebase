@@ -71,7 +71,7 @@
               <span class="ml-2 textlabel">
                 {{ $t("sql-editor.self") }}
               </span>
-              <button class="ml-1 btn-icon" @click.prevent="gotoSqlEditor">
+              <button class="ml-1 btn-icon" @click.prevent="gotoSQLEditor">
                 <heroicons-outline:terminal class="w-4 h-4" />
               </button>
             </dd>
@@ -241,7 +241,7 @@ export default defineComponent({
       return table.value.database;
     });
 
-    const gotoSqlEditor = () => {
+    const gotoSQLEditor = () => {
       router.push({
         name: "sql-editor.detail",
         params: {
@@ -253,7 +253,7 @@ export default defineComponent({
     return {
       table,
       database,
-      gotoSqlEditor,
+      gotoSQLEditor,
       bytesToString,
     };
   },
