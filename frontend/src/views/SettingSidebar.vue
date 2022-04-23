@@ -102,7 +102,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { isOwner, isDBAOrOwner } from "../utils";
+import { isOwner, isDBAOrOwner, isDev } from "../utils";
 import { useCurrentUser, useRouterStore } from "@/store";
 
 interface LocalState {
@@ -156,6 +156,7 @@ export default defineComponent({
 
     return {
       state,
+      isDev,
       integrationList,
       showOwnerItem,
       showOwnerOrDBAItem,
