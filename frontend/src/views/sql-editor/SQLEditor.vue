@@ -26,12 +26,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useTabStore, useSQLEditorStore } from "@/store";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import TabListContainer from "./TabListContainer.vue";
 import TablePanel from "./TablePanel/TablePanel.vue";
 import GettingStarted from "./GettingStarted.vue";
-import { useTabStore, useSQLEditorStore } from "@/store";
+import { Splitpanes, Pane } from "splitpanes";
+import "splitpanes/dist/splitpanes.css";
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();

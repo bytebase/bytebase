@@ -44,7 +44,7 @@ const sheetStore = useSheetStore();
 const isShowSaveSheetModal = ref(false);
 
 const handleClose = () => {
-  sqlEditorStore.setSqlEditorState({
+  sqlEditorStore.setSQLEditorState({
     isShowExecutingHint: false,
   });
 };
