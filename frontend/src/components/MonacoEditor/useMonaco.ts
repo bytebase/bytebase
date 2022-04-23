@@ -3,7 +3,7 @@ import * as monaco from "monaco-editor";
 import type { editor as Editor } from "monaco-editor";
 
 import AutoCompletion from "./AutoCompletion";
-import { Database, Table, CompletionItems, SqlDialect } from "../../types";
+import { Database, Table, CompletionItems, SQLDialect } from "../../types";
 import sqlFormatter from "./sqlFormatter";
 import {
   useDatabaseStore,
@@ -200,7 +200,7 @@ const useMonaco = async (lang: string) => {
 
   const formatContent = (
     editorInstance: Editor.IStandaloneCodeEditor,
-    language: SqlDialect
+    language: SQLDialect
   ) => {
     if (editorInstance) {
       const sql = editorInstance.getValue();

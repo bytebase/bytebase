@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 import {
-  SqlEditorState,
+  SQLEditorState,
   ConnectionAtom,
   QueryInfo,
   ConnectionContext,
@@ -38,7 +38,7 @@ export const getDefaultConnectionContext = () => ({
 });
 
 export const useSQLEditorStore = defineStore("sqlEditor", {
-  state: (): SqlEditorState => ({
+  state: (): SQLEditorState => ({
     connectionTree: [],
     connectionContext: getDefaultConnectionContext(),
     isExecuting: false,
@@ -140,7 +140,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
   },
 
   actions: {
-    setSqlEditorState(payload: Partial<SqlEditorState>) {
+    setSQLEditorState(payload: Partial<SQLEditorState>) {
       Object.assign(this, payload);
     },
     setConnectionTree(payload: ConnectionAtom[]) {
@@ -176,7 +176,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
     async fetchConnectionByInstanceIdAndDatabaseId({
       instanceId,
       databaseId,
-    }: Pick<SqlEditorState["connectionContext"], "instanceId" | "databaseId">) {
+    }: Pick<SQLEditorState["connectionContext"], "instanceId" | "databaseId">) {
       const instance = await useInstanceStore().fetchInstanceById(instanceId);
       const database = await useDatabaseStore().fetchDatabaseById(databaseId);
 
