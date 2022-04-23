@@ -6,12 +6,12 @@ import {
   INSTANCE_OPERATION_TIMEOUT,
   QueryInfo,
   ResourceObject,
-  SqlResultSet,
+  SQLResultSet,
 } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 
-function convert(resultSet: ResourceObject): SqlResultSet {
+function convert(resultSet: ResourceObject): SQLResultSet {
   return {
     data: JSON.parse((resultSet.attributes.data as string) || "{}"),
     error: resultSet.attributes.error as string,
@@ -20,7 +20,7 @@ function convert(resultSet: ResourceObject): SqlResultSet {
 
 export const useSQLStore = defineStore("sql", {
   actions: {
-    convert(resultSet: ResourceObject): SqlResultSet {
+    convert(resultSet: ResourceObject): SQLResultSet {
       return convert(resultSet);
     },
 

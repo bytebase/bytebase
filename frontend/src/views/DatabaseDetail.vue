@@ -83,7 +83,7 @@
             </template>
             <dd
               class="flex items-center text-sm md:mr-4 cursor-pointer textlabel hover:text-accent"
-              @click.prevent="gotoSqlEditor"
+              @click.prevent="gotoSQLEditor"
             >
               <span class="mr-1">{{ $t("sql-editor.self") }}</span>
               <heroicons-outline:terminal class="w-4 h-4" />
@@ -628,7 +628,7 @@ export default defineComponent({
       }
     };
 
-    const gotoSqlEditor = () => {
+    const gotoSQLEditor = () => {
       // SQL editors can only query databases in the projects available to the user.
       if (
         database.value.projectId === UNKNOWN_ID ||
@@ -686,7 +686,7 @@ export default defineComponent({
       updateProject,
       updateLabels,
       selectTab,
-      gotoSqlEditor,
+      gotoSQLEditor,
       doTransfer,
       hidePrefix,
     };

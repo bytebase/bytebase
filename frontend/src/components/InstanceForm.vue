@@ -284,7 +284,7 @@ import {
   InstancePatch,
   DataSourceType,
   Instance,
-  SqlResultSet,
+  SQLResultSet,
   ConnectionInfo,
   DataSource,
   UNKNOWN_ID,
@@ -627,7 +627,7 @@ const testConnection = () => {
     port: state.instance.port,
     instanceId: state.instance.id,
   };
-  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
         module: "bytebase",

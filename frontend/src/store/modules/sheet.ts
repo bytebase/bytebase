@@ -189,7 +189,7 @@ export const useSheetStore = defineStore("sheet", {
     // retrieve
     async fetchSheetList() {
       const sqlEditorStore = useSQLEditorStore();
-      sqlEditorStore.setSqlEditorState({ isFetchingSheet: true });
+      sqlEditorStore.setSQLEditorState({ isFetchingSheet: true });
       const data = (await axios.get(`/api/sheet`)).data;
       const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
         const sheet = convertSheet(rawData, data.included);
@@ -201,7 +201,7 @@ export const useSheetStore = defineStore("sheet", {
       });
 
       this.setSheetList(sheetList.sort((a, b) => b.createdTs - a.createdTs));
-      sqlEditorStore.setSqlEditorState({ isFetchingSheet: false });
+      sqlEditorStore.setSQLEditorState({ isFetchingSheet: false });
     },
     async fetchSheetById(sheetId: SheetId) {
       const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
