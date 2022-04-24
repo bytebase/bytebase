@@ -25,7 +25,7 @@
       <BBTableCell :left-padding="4" class="table-cell text-gray-500">
         <span class="flex flex-row items-center"
           >{{ project.key }}
-          <template v-if="project.rowStatus == 'ARCHIVED'">
+          <template v-if="project.rowStatus === 'ARCHIVED'">
             <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
           </template>
         </span>
