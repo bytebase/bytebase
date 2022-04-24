@@ -947,8 +947,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				TaskList:      taskCreateList,
 				TaskDAGList:   taskDAGCreateList,
 			})
-
 		}
+		pipelineCreate = pc
 
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
