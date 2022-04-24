@@ -123,10 +123,10 @@
 <script lang="ts">
 import { computed, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
-import PrincipalAvatar from "./PrincipalAvatar.vue";
-import { ServerInfo } from "../types";
-import { isDBAOrOwner } from "../utils";
-import { useLanguage } from "../composables/useLanguage";
+import { storeToRefs } from "pinia";
+import { ServerInfo } from "@/types";
+import { isDBAOrOwner } from "@/utils";
+import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
   useActuatorStore,
@@ -134,12 +134,11 @@ import {
   useDebugStore,
   useUIStateStore,
 } from "@/store";
-import { storeToRefs } from "pinia";
+import PrincipalAvatar from "./PrincipalAvatar.vue";
 
 export default defineComponent({
   name: "ProfileDropdown",
   components: { PrincipalAvatar },
-  props: {},
   setup() {
     const actuatorStore = useActuatorStore();
     const authStore = useAuthStore();
@@ -233,7 +232,7 @@ export default defineComponent({
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
-          title: info,
+          title: JSON.stringify(info, null, 4),
         });
       });
     };
