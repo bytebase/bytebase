@@ -514,16 +514,20 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
 		}
-		blockedByMap := make(map[int][]int)
+		// We don't know IDs before inserting, so we use array index instead.
+		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
+		indexBlockedByIndex := make(map[int][]int)
 		for _, taskDAG := range sc.TaskDAGList {
-			blockedByMap[taskDAG.ToTaskID] = append(blockedByMap[taskDAG.ToTaskID], taskDAG.FromTaskID)
+			indexBlockedByIndex[taskDAG.ToTaskID] = append(indexBlockedByIndex[taskDAG.ToTaskID], taskDAG.FromTaskID)
 		}
 		idOffset := id + 1
+		// The ID of sc.TaskList[index].ID equals index + idOffset.
 		for index, tc := range sc.TaskList {
 			id++
 			var blockedBy []string
-			for _, block := range blockedByMap[index] {
-				blockedBy = append(blockedBy, strconv.Itoa(block+idOffset))
+			for _, blockedByIndex := range indexBlockedByIndex[index] {
+				// Convert array index to ID.
+				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
 			}
 			taskRaw := &api.TaskRaw{
 				ID:                id,
@@ -540,9 +544,10 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 				StageID:           stage.ID,
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
-				BlockedBy:         blockedBy,
 			}
 			task, err := s.composeTaskRelationship(ctx, taskRaw)
+			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
+			task.BlockedBy = blockedBy
 			if err != nil {
 				return nil, err
 			}
@@ -1089,12 +1094,13 @@ func getUpdateGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent,
 			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
 		}
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabaseSchemaUpdateGhostCutover,
-			Payload:    string(bytes),
+			Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
+			InstanceID:        database.InstanceID,
+			DatabaseID:        &database.ID,
+			Status:            taskStatus,
+			Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
+			EarliestAllowedTs: d.EarliestAllowedTs,
+			Payload:           string(bytes),
 		})
 	}
 	{
@@ -1122,6 +1128,7 @@ func getUpdateGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent,
 		})
 	}
 	// ID is actually the taskCreateList array index here because we don't know task ID before inserting.
+	// So the below list means that taskCreateList[0] blocks taskCreateList[1], taskCreateList[1] blocks taskCreateList[2], which makes sense because the "sync" task blocks the "cutover" task, and the "drop original table" task can only be done after "cutover".
 	taskDAGCreateList := []api.TaskDAGCreate{
 		{
 			FromTaskID: 0,
