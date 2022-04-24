@@ -22,6 +22,7 @@ import {
   NTag,
   NTooltip,
   NTree,
+  NSelect,
   NUpload,
   NUploadDragger,
 } from "naive-ui";
@@ -49,6 +50,7 @@ const naive = create({
     NTag,
     NTooltip,
     NTree,
+    NSelect,
     NUpload,
     NUploadDragger,
   ],

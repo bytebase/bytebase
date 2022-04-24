@@ -11,6 +11,7 @@ import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
 import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
+import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
 import { t } from "../plugins/i18n";
 import {
   useAuthStore,
@@ -21,13 +22,7 @@ import {
   usePrincipalStore,
   useRouterStore,
 } from "../store";
-import {
-  Database,
-  QuickActionType,
-  Sheet,
-  UNKNOWN_ID,
-  SheetId,
-} from "../types";
+import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -400,7 +395,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewPolicySlug as string;
-                    return useSchemaSystemStore().getReviewPolicyById(
+                    return useSchemaSystemStore().getReviewPolicyByEnvironmentId(
                       idFromSlug(slug)
                     ).name;
                   },
@@ -807,6 +802,37 @@ const routes: Array<RouteRecordRaw> = [
       },
     ],
   },
+  {
+    path: "/sheets",
+    name: "sheets",
+    component: SheetDashboardLayout,
+    children: [
+      {
+        path: "",
+        name: "sheets.dashboard",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "my",
+        name: "sheets.my",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "shared",
+        name: "sheets.shared",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "starred",
+        name: "sheets.starred",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+    ],
+  },
 ];
 
 export const router = createRouter({
@@ -939,6 +965,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
+    to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.version-control.detail" &&
       to.name?.toString() != "setting.workspace.schema-review-policy.detail")
@@ -1179,7 +1206,7 @@ router.beforeEach((to, from, next) => {
 
   if (schemaReviewPolicySlug) {
     useSchemaSystemStore()
-      .fetchReviewPolicyById(idFromSlug(schemaReviewPolicySlug))
+      .fetchReviewPolicyByEnvironmentId(idFromSlug(schemaReviewPolicySlug))
       .then(() => {
         next();
       })

@@ -8,8 +8,8 @@
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
-import { RuleLevel } from "../../../types/schemaSystem";
-import { BBAttentionStyle } from "../../../bbkit/types";
+import { RuleLevel } from "@/types/schemaSystem";
+import { BBAttentionStyle } from "@/bbkit/types";
 
 const props = defineProps({
   level: {

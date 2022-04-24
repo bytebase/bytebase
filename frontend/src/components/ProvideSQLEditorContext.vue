@@ -3,6 +3,9 @@
 </template>
 
 <script lang="ts" setup>
+import { reactive, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useSQLEditorConnection } from "@/composables/useSQLEditorConnection";
 import {
   useCurrentUser,
   useDatabaseStore,
@@ -10,9 +13,9 @@ import {
   useProjectStore,
   useTableStore,
   useSQLEditorStore,
+  useTabStore,
   useSheetStore,
 } from "@/store";
-import { reactive, onMounted } from "vue";
 import {
   Instance,
   Database,
@@ -23,10 +26,9 @@ import {
   InstanceId,
   DatabaseId,
   Project,
-} from "../types";
+} from "@/types";
 
-const databaseStore = useDatabaseStore();
-const sheetStore = useSheetStore();
+const route = useRoute();
 
 const state = reactive<{
   projectList: Project[];
@@ -40,8 +42,12 @@ const state = reactive<{
 
 const currentUser = useCurrentUser();
 const projectStore = useProjectStore();
+const databaseStore = useDatabaseStore();
 const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
+const tabStore = useTabStore();
+const sheetStore = useSheetStore();
+const { setConnectionContextFromCurrentTab } = useSQLEditorConnection();
 
 const prepareAccessibleConnectionByProject = async () => {
   // It will also be called when user logout
@@ -120,11 +126,30 @@ const prepareSQLEditorContext = async () => {
   sqlEditorStore.setConnectionTree(connectionTree);
   sqlEditorStore.setConnectionContext({ isLoadingTree: false });
   sqlEditorStore.fetchQueryHistoryList();
-  sheetStore.fetchSheetList();
+};
+
+// Get sheetId from query.
+const prepareSheetFromQuery = async () => {
+  const sheetId = Number(route.query.sheetId);
+  if (!Number.isNaN(sheetId)) {
+    const sheet = await sheetStore.fetchSheetById(sheetId);
+    tabStore.updateCurrentTab({
+      sheetId: sheet.id,
+      name: sheet.name,
+      statement: sheet.statement,
+      isSaved: true,
+    });
+    setConnectionContextFromCurrentTab();
+    useSQLEditorStore().setSQLEditorState({
+      sharedSheet: sheet,
+      shouldSetContent: true,
+    });
+  }
 };
 
 onMounted(async () => {
   await prepareAccessibleConnectionByProject();
   await prepareSQLEditorContext();
+  await prepareSheetFromQuery();
 });
 </script>

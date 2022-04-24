@@ -39,4 +39,5 @@ export * from "./sqlEditor";
 export * from "./tab";
 export * from "./subscription";
 export * from "./sheet";
+export * from "./sheetOrganizer";
 export * from "./schemaSystem";
