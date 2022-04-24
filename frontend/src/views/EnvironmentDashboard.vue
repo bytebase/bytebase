@@ -89,7 +89,7 @@ import {
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
   PipelineApporvalPolicyPayload,
-  PolicyBackupPlanPolicyPayload,
+  BackupPlanPolicyPayload,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
 import {
@@ -242,7 +242,7 @@ export default defineComponent({
         return;
       }
       if (
-        (backupPolicy.payload as PolicyBackupPlanPolicyPayload).schedule !==
+        (backupPolicy.payload as BackupPlanPolicyPayload).schedule !==
           DefaultSchedulePolicy &&
         !hasFeature("bb.feature.backup-policy")
       ) {

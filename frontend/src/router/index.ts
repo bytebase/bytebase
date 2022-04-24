@@ -395,7 +395,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewPolicySlug as string;
-                    return useSchemaSystemStore().getReviewPolicyById(
+                    return useSchemaSystemStore().getReviewPolicyByEnvironmentId(
                       idFromSlug(slug)
                     ).name;
                   },
@@ -1206,7 +1206,7 @@ router.beforeEach((to, from, next) => {
 
   if (schemaReviewPolicySlug) {
     useSchemaSystemStore()
-      .fetchReviewPolicyById(idFromSlug(schemaReviewPolicySlug))
+      .fetchReviewPolicyByEnvironmentId(idFromSlug(schemaReviewPolicySlug))
       .then(() => {
         next();
       })

@@ -148,7 +148,7 @@ import {
   BackupSettingUpsert,
   Database,
   NORMAL_POLL_INTERVAL,
-  PolicyBackupPlanPolicyPayload,
+  BackupPlanPolicyPayload,
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   UNKNOWN_ID,
@@ -300,7 +300,7 @@ export default defineComponent({
         "bb.policy.backup-plan"
       );
       const payload = policy?.payload;
-      return (payload as PolicyBackupPlanPolicyPayload | undefined)?.schedule;
+      return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
     });
 
     const allowDisableAutoBackup = computed(() => {
