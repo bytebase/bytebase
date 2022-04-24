@@ -4,7 +4,6 @@ import { createApp } from "vue";
 
 import App from "./App.vue";
 import i18n from "./plugins/i18n";
-import splitpanes from "./plugins/splitpanes";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import "./assets/css/inter.css";
@@ -135,7 +134,6 @@ app
   .use(pinia)
   .use(router)
   .use(i18n)
-  .use(splitpanes)
   .use(NaiveUI);
 
 // We need to restore the basic info in order to perform route authentication.
