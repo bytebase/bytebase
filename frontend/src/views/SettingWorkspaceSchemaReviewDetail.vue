@@ -4,15 +4,24 @@
       v-if="state.editMode"
       :review-id="reviewPolicy.id"
       :name="reviewPolicy.name"
-      :selected-environment="environment"
+      :selected-environment="reviewPolicy.environment"
       :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
     />
     <div class="my-5" v-else>
       <div class="flex flex-col items-center justify-center md:flex-row">
-        <h1 class="text-xl md:text-3xl font-semibold flex-1">
-          {{ reviewPolicy.name }}
-        </h1>
+        <div class="flex-1 flex space-x-3 items-center justify-start">
+          <h1 class="text-xl md:text-3xl font-semibold">
+            {{ reviewPolicy.name }}
+          </h1>
+          <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
+            <BBBadge
+              :text="$t('common.disable')"
+              :can-remove="false"
+              :style="'WARN'"
+            />
+          </div>
+        </div>
         <button
           v-if="hasPermission"
           type="button"
@@ -22,9 +31,12 @@
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5" v-if="environment">
+      <div class="flex flex-wrap gap-x-3 my-5" v-if="reviewPolicy.environment">
         <span class="font-semibold">{{ $t("common.environment") }}</span>
-        <BBBadge :text="environment.name" :can-remove="false" />
+        <BBBadge
+          :text="environmentName(reviewPolicy.environment)"
+          :can-remove="false"
+        />
       </div>
       <BBAttention
         v-else
@@ -150,7 +162,7 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, isOwner, isDBA } from "../utils";
+import { idFromSlug, environmentName, isOwner, isDBA } from "@/utils";
 import {
   RuleType,
   LEVEL_LIST,
@@ -160,13 +172,11 @@ import {
   SchemaRuleEngineType,
   convertToCategoryList,
   ruleTemplateList,
-  Environment,
   convertPolicyRuleToRuleTemplate,
-} from "../types";
+} from "@/types";
 import {
   useCurrentUser,
   pushNotification,
-  useEnvironmentStore,
   useSchemaSystemStore,
 } from "@/store";
 import { CategoryFilterItem } from "../components/DatabaseSchemaReview/components/SchemaReviewCategoryTabFilter.vue";
@@ -188,7 +198,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const store = useSchemaSystemStore();
-const envStore = useEnvironmentStore();
 const router = useRouter();
 const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.schema-review-policy";
@@ -208,18 +217,9 @@ const hasPermission = computed(() => {
 });
 
 const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
-  return store.getReviewPolicyById(idFromSlug(props.schemaReviewPolicySlug));
-});
-
-const environment = computed((): Environment | undefined => {
-  if (!reviewPolicy.value.environmentId) {
-    return;
-  }
-  const env = envStore.getEnvironmentById(reviewPolicy.value.environmentId);
-  return {
-    ...env,
-    name: environmentName(env),
-  };
+  return store.getReviewPolicyByEnvironmentId(
+    idFromSlug(props.schemaReviewPolicySlug)
+  );
 });
 
 const ruleMap = ruleTemplateList.reduce((map, rule) => {
@@ -346,13 +346,15 @@ const onEdit = () => {
 };
 
 const onArchive = () => {
-  store.updateReviewPolicy(reviewPolicy.value.id, {
+  store.updateReviewPolicy({
+    id: reviewPolicy.value.id,
     rowStatus: "ARCHIVED",
   });
 };
 
 const onRestore = () => {
-  store.updateReviewPolicy(reviewPolicy.value.id, {
+  store.updateReviewPolicy({
+    id: reviewPolicy.value.id,
     rowStatus: "NORMAL",
   });
 };

@@ -72,7 +72,7 @@
 import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTabItem } from "../../bbkit/types";
+import { BBStepTabItem } from "@/bbkit/types";
 import {
   RuleType,
   ruleTemplateList,
@@ -81,14 +81,14 @@ import {
   RuleTemplate,
   SchemaReviewPolicyTemplate,
   convertRuleTemplateToPolicyRule,
-} from "../../types";
+} from "@/types";
 import {
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
   useSchemaSystemStore,
 } from "@/store";
-import { isOwner, isDBA } from "../../utils";
+import { isOwner, isDBA } from "@/utils";
 
 interface LocalState {
   currentStep: number;
@@ -286,18 +286,23 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       title: t("schema-review-policy.no-permission"),
     });
   }
-  const review = {
+  const upsert = {
     name: state.name,
-    environmentId: state.selectedEnvironment?.id,
     ruleList: state.selectedRuleList.map((rule) =>
       convertRuleTemplateToPolicyRule(rule)
     ),
   };
 
   if (props.reviewId) {
-    store.updateReviewPolicy(props.reviewId, review);
+    store.updateReviewPolicy({
+      id: props.reviewId,
+      ...upsert,
+    });
   } else {
-    store.addReviewPolicy(review);
+    store.addReviewPolicy({
+      ...upsert,
+      environmentId: state.selectedEnvironment?.id,
+    });
   }
 
   pushNotification({

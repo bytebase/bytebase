@@ -110,8 +110,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { RuleTemplate, convertToCategoryList, Environment } from "../../types";
-import { environmentName } from "../../utils";
+import { RuleTemplate, convertToCategoryList, Environment } from "@/types";
+import { environmentName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
