@@ -544,7 +544,6 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 				StageID:           stage.ID,
 				InstanceID:        tc.InstanceID,
 				DatabaseID:        tc.DatabaseID,
-				BlockedBy:         blockedBy,
 			}
 			task, err := s.composeTaskRelationship(ctx, taskRaw)
 			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
