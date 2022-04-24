@@ -312,6 +312,34 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "project",
+                name: "setting.workspace.project",
+                meta: {
+                  title: () => t("common.projects"),
+                  quickActionListByRole: () => {
+                    return new Map([
+                      [
+                        "OWNER",
+                        [
+                          "quickaction.bb.project.create",
+                          "quickaction.bb.project.default",
+                        ],
+                      ],
+                      [
+                        "DBA",
+                        [
+                          "quickaction.bb.project.create",
+                          "quickaction.bb.project.default",
+                        ],
+                      ],
+                      ["DEVELOPER", []],
+                    ]);
+                  },
+                },
+                component: () => import("../views/SettingWorkspaceProject.vue"),
+                props: true,
+              },
+              {
                 path: "member",
                 name: "setting.workspace.member",
                 meta: { title: () => t("settings.sidebar.members") },
@@ -916,6 +944,17 @@ router.beforeEach((to, from, next) => {
   if (to.name?.toString().startsWith("setting.workspace.version-control")) {
     // Returns 403 immediately if not Owner. Otherwise, we may need to fetch the VCS detail
     if (!isOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
+  if (to.name?.toString().startsWith("setting.workspace.project")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
       next({
         name: "error.403",
         replace: false,
