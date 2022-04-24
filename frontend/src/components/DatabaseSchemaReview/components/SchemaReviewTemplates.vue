@@ -31,7 +31,7 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { SchemaReviewPolicyTemplate } from "../../../types/schemaSystem";
+import { SchemaReviewPolicyTemplate } from "@/types/schemaSystem";
 
 const props = defineProps({
   templateList: {
