@@ -337,13 +337,7 @@ const routes: Array<RouteRecordRaw> = [
                           "quickaction.bb.project.default",
                         ],
                       ],
-                      [
-                        "DEVELOPER",
-                        [
-                          "quickaction.bb.project.create",
-                          "quickaction.bb.project.default",
-                        ],
-                      ],
+                      ["DEVELOPER", []],
                     ]);
                   },
                 },

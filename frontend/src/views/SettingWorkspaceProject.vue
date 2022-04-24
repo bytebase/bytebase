@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <BBAttention :style="`INFO`" :title="$t('setting.project.description')" />
+    <BBAttention :style="INFO" :title="$t('setting.project.description')" />
     <div class="px-2 py-2 flex justify-end items-center">
       <BBTableSearch
         ref="searchField"
