@@ -70,8 +70,6 @@ export type CommandRegisterId = string;
 
 export type SheetId = IdType;
 
-export type SchemaReviewPolicyId = IdType;
-
 // This references to the object id, which can be used as a container.
 // Currently, only issue can be used a container.
 // The type is used by Activity and Message

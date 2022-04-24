@@ -4,17 +4,17 @@
     class="databases-tree p-2 space-y-2 h-full"
   >
     <div class="databases-tree--input">
-      <NInput
+      <n-input
         v-model:value="searchPattern"
         :placeholder="$t('sql-editor.search-databases')"
       >
         <template #prefix>
           <heroicons-outline:search class="h-5 w-5 text-gray-300" />
         </template>
-      </NInput>
+      </n-input>
     </div>
     <div class="databases-tree--tree overflow-y-auto">
-      <NTree
+      <n-tree
         block-line
         :data="treeData"
         :pattern="searchPattern"
@@ -29,7 +29,7 @@
         trigger="manual"
         placement="bottom-start"
         :show="showDropdown"
-        :options="(dropdownOptions as any)"
+        :options="dropdownOptions"
         :x="x"
         :y="y"
         @select="handleSelect"
@@ -54,17 +54,17 @@ import {
   Database,
   UNKNOWN_ID,
 } from "@/types";
-import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
-import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
-import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
-import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
-import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
 import {
   useDatabaseStore,
   useInstanceStore,
   useTabStore,
   useSQLEditorStore,
 } from "@/store";
+import { connectionSlug, getHighlightHTMLByKeyWords } from "@/utils";
+import InstanceEngineIconVue from "@/components/InstanceEngineIcon.vue";
+import HeroiconsOutlineDatabase from "~icons/heroicons-outline/database.vue";
+import HeroiconsOutlineTable from "~icons/heroicons-outline/table.vue";
+import HeroiconsSolidDotsHorizontal from "~icons/heroicons-solid/dots-horizontal.vue";
 
 const router = useRouter();
 const instanceStore = useInstanceStore();
@@ -77,55 +77,53 @@ const x = ref(0);
 const y = ref(0);
 const selectedKeys = ref<string[] | number[]>([]);
 const sheetContext = ref<DropdownOption>();
+
 const dropdownOptions = computed(() => {
   if (!sheetContext.value) {
     return [];
-  }
-  if (sheetContext.value.type === "table") {
+  } else if (sheetContext.value.type === "table") {
     return [
       {
         label: "Alter table",
         key: "editor.sheet.alter-table",
         item: sheetContext.value,
       },
-      // TODO Just a thought
-      // {
-      //   label: "Copy name",
-      //   key: "editor.sheet.copy-name",
-      //   item: sheetContext.value,
-      // },
+    ];
+  } else {
+    return [
+      {
+        label: "Open in new tab",
+        key: "editor.sheet.new",
+        item: sheetContext.value,
+      },
+      {
+        label: "Set as context",
+        key: "editor.sheet.set-context",
+        item: sheetContext.value,
+      },
     ];
   }
-  return [
-    {
-      label: "Open in new tab",
-      key: "editor.sheet.new",
-      item: sheetContext.value,
-    },
-    {
-      label: "Set as context",
-      key: "editor.sheet.set-context",
-      item: sheetContext.value,
-    },
-  ];
 });
 
 const treeData = computed(() => {
   const tree = cloneDeep(sqlEditorStore.connectionTree);
 
-  // mapping the prefix icons
   return tree.map((instanceItem) => {
     const instance = instanceStore.getInstanceById(instanceItem.id);
 
     return {
       ...instanceItem,
-      children: instanceItem?.children?.map((databaseItem) => {
+      children: instanceItem.children?.map((databaseItem) => {
         return {
           ...databaseItem,
-          children: databaseItem?.children?.map((tableItem) => {
+          children: databaseItem.children?.map((tableItem) => {
             return {
               ...tableItem,
-              prefix: () => h(HeroiconsOutlineTable, { class: "h-4 w-4" }),
+              isLeaf: true,
+              prefix: () =>
+                h(HeroiconsOutlineTable, {
+                  class: "h-4 w-4",
+                }),
             };
           }),
           prefix: () =>
@@ -134,7 +132,10 @@ const treeData = computed(() => {
             }),
         };
       }),
-      prefix: () => h(InstanceEngineIconVue, { instance }),
+      prefix: () =>
+        h(InstanceEngineIconVue, {
+          instance,
+        }),
     };
   });
 });
@@ -192,7 +193,7 @@ const getFlattenConnectionTree = () => {
 
 const setSheetContext = (option: any) => {
   if (option) {
-    let ctx: ConnectionContext = cloneDeep(sqlEditorStore.connectionContext);
+    let ctx = cloneDeep(sqlEditorStore.connectionContext) as ConnectionContext;
     const { instanceList, databaseList } = getFlattenConnectionTree();
 
     const getInstanceNameByInstanceId = (id: number) => {
@@ -213,10 +214,8 @@ const setSheetContext = (option: any) => {
       ctx.databaseType = getInstanceEngineByInstanceId(option.id);
       ctx.tableId = UNKNOWN_ID;
       ctx.tableName = "";
-    }
-
-    // If selected item is database node
-    if (option.type === "database") {
+    } else if (option.type === "database") {
+      // If selected item is database node
       const instanceId = option.parentId;
       ctx.instanceId = instanceId;
       ctx.instanceName = getInstanceNameByInstanceId(instanceId);
@@ -225,10 +224,8 @@ const setSheetContext = (option: any) => {
       ctx.databaseType = getInstanceEngineByInstanceId(instanceId);
       ctx.tableId = UNKNOWN_ID;
       ctx.tableName = "";
-    }
-
-    // If selected item is table node
-    if (option.type === "table") {
+    } else if (option.type === "table") {
+      // If selected item is table node
       const databaseId = option.parentId;
       const databaseInfo = databaseList?.find((item) => item.id === databaseId);
       const databaseName = databaseInfo?.label || "";
@@ -294,15 +291,18 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
 };
 
 const gotoAlterSchema = (option: any) => {
-  console.log(option);
   const databaseId = option.parentId;
   const projectId = sqlEditorStore.findProjectIdByDatabaseId(databaseId);
   const databaseList =
     sqlEditorStore.connectionInfo.databaseListByProjectId.get(projectId);
-  const databaseName = databaseList.find(
+  const database = databaseList?.find(
     (database: Database) => database.id === databaseId
-  ).name;
+  );
+  if (!database) {
+    return;
+  }
 
+  const databaseName = database.name;
   router.push({
     name: "workspace.issue.detail",
     params: {
@@ -322,18 +322,18 @@ const handleSelect = (key: string) => {
   const option = dropdownOptions.value.find(
     (item) => item.key === key
   ) as DropdownOption;
+
   if (key === "editor.sheet.alter-table") {
     gotoAlterSchema(option.item);
-  }
-  if (key === "editor.sheet.set-context") {
+  } else if (key === "editor.sheet.set-context") {
     setSheetContext(option.item);
-  }
-  if (key === "editor.sheet.new") {
+  } else if (key === "editor.sheet.new") {
     // set the sheet context first
     setSheetContext(option.item);
     // and then create a new tab
     tabStore.addTab();
   }
+
   showDropdown.value = false;
 };
 
@@ -341,14 +341,16 @@ const handleClickoutside = () => {
   showDropdown.value = false;
 };
 
-const nodeProps = ({ option }: { option: TreeOption }) => {
+const nodeProps = (info: { option: TreeOption }) => {
+  const { option } = info;
+
   return {
-    onClick: (e: any) => {
-      if (e?.target?.id === "tree-node-suffix") return;
-      if (option) {
-        let ctx: ConnectionContext = cloneDeep(
+    onClick: (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement;
+      if (option && targetEl.className === "n-tree-node-content__text") {
+        let ctx = cloneDeep(
           sqlEditorStore.connectionContext
-        );
+        ) as ConnectionContext;
         ctx.option = option;
         sqlEditorStore.setConnectionContext(ctx);
       }

@@ -14,6 +14,10 @@ import {
   ProjectMember,
   unknown,
   UNKNOWN_ID,
+  SheetFind,
+  SheetCreate,
+  SheetOrganizerUpsert,
+  ProjectId,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
@@ -69,7 +73,9 @@ export const useSheetStore = defineStore("sheet", {
     currentSheet(state) {
       const currentTab = useTabStore().currentTab;
 
-      if (!currentTab || isEmpty(currentTab)) return unknown("SHEET") as Sheet;
+      if (!currentTab || isEmpty(currentTab)) {
+        return unknown("SHEET");
+      }
 
       const sheetId = currentTab.sheetId || UNKNOWN_ID;
 
@@ -85,9 +91,9 @@ export const useSheetStore = defineStore("sheet", {
     },
     /**
      * Check the sheet whether is read-only.
-     * 1、If the sheet is not created yet, it can not be edited.
-     * 2、If the sheet is created by the current user, it can be edited.
-     * 3、If the sheet is created by other user, will be checked the visibility of the sheet.
+     * 1. If the sheet is not created yet, it can not be edited.
+     * 2. If the sheet is created by the current user, it can be edited.
+     * 3. If the sheet is created by other user, will be checked the visibility of the sheet.
      *   a) If the sheet's visibility is private or public, it can be edited only if the current user is the creator of the sheet.
      *   b) If the sheet's visibility is project, will be checked whether the current user is the `OWNER` of the project, only the current user is the `OWNER` of the project, it can be edited.
      */
@@ -133,9 +139,6 @@ export const useSheetStore = defineStore("sheet", {
   },
 
   actions: {
-    setSheetState(payload: Partial<SheetState>) {
-      Object.assign(this, payload);
-    },
     setSheetList(payload: Sheet[]) {
       this.sheetList = payload;
     },
@@ -146,16 +149,20 @@ export const useSheetStore = defineStore("sheet", {
       }
       this.sheetById.set(sheetId, sheet);
     },
-    deleteSheetById(sheetId: SheetId) {
-      const idx = this.sheetList.findIndex((sheet) => sheet.id === sheetId);
-      if (idx !== -1) this.sheetList.splice(idx, 1);
+    upsertSheet(payload: {
+      sheet: Pick<Sheet, "id" | "name" | "statement">;
+      currentTab: TabInfo;
+    }): Promise<Sheet> {
+      const { sheet, currentTab } = payload;
+      const hasSheet = this.sheetById.has(sheet.id);
 
-      if (this.sheetById.has(sheetId)) {
-        this.sheetById.delete(sheetId);
+      if (hasSheet) {
+        return this.patchSheetById(sheet);
       }
+
+      return this.createSheetByTab(currentTab);
     },
-    // create
-    async createSheet(currentTab: TabInfo): Promise<Sheet> {
+    async createSheetByTab(currentTab: TabInfo): Promise<Sheet> {
       const sqlEditorStore = useSQLEditorStore();
       const ctx = sqlEditorStore.connectionContext;
 
@@ -186,13 +193,39 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    // retrieve
-    async fetchSheetList() {
-      const sqlEditorStore = useSQLEditorStore();
-      sqlEditorStore.setSQLEditorState({ isFetchingSheet: true });
-      const data = (await axios.get(`/api/sheet`)).data;
-      const sheetList: Sheet[] = data.data.map((rawData: ResourceObject) => {
-        const sheet = convertSheet(rawData, data.included);
+    async createSheet(sheetCreate: SheetCreate): Promise<Sheet> {
+      const resData = (
+        await axios.post(`/api/sheet`, {
+          data: {
+            type: "createSheet",
+            attributes: sheetCreate,
+          },
+        })
+      ).data;
+      const sheet = convertSheet(resData.data, resData.included);
+
+      this.setSheetList(
+        this.sheetList.concat(sheet).sort((a, b) => b.createdTs - a.createdTs)
+      );
+      this.setSheetById({
+        sheetId: sheet.id,
+        sheet: sheet,
+      });
+
+      return sheet;
+    },
+    async fetchMySheetList(sheetFind?: SheetFind) {
+      const queryList = [];
+      if (sheetFind?.projectId) {
+        queryList.push(`projectId=${sheetFind.projectId}`);
+      }
+      if (sheetFind?.databaseId) {
+        queryList.push(`databaseId=${sheetFind.databaseId}`);
+      }
+      const resData = (await axios.get(`/api/sheet/my?${queryList.join("&")}`))
+        .data;
+      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
+        const sheet = convertSheet(rawData, resData.included);
         this.setSheetById({
           sheetId: sheet.id,
           sheet: sheet,
@@ -200,8 +233,60 @@ export const useSheetStore = defineStore("sheet", {
         return sheet;
       });
 
-      this.setSheetList(sheetList.sort((a, b) => b.createdTs - a.createdTs));
-      sqlEditorStore.setSQLEditorState({ isFetchingSheet: false });
+      sheetList.sort((a, b) => b.createdTs - a.createdTs);
+      this.setSheetList(sheetList);
+
+      return sheetList;
+    },
+    async fetchSharedSheetList(sheetFind?: SheetFind) {
+      const queryList = [];
+      if (sheetFind?.projectId) {
+        queryList.push(`projectId=${sheetFind.projectId}`);
+      }
+      if (sheetFind?.databaseId) {
+        queryList.push(`databaseId=${sheetFind.databaseId}`);
+      }
+      const resData = (
+        await axios.get(`/api/sheet/shared?${queryList.join("&")}`)
+      ).data;
+      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
+        const sheet = convertSheet(rawData, resData.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
+        return sheet;
+      });
+
+      sheetList.sort((a, b) => b.createdTs - a.createdTs);
+      this.setSheetList(sheetList);
+
+      return sheetList;
+    },
+    async fetchStarredSheetList(sheetFind?: SheetFind) {
+      const queryList = [];
+      if (sheetFind?.projectId) {
+        queryList.push(`projectId=${sheetFind.projectId}`);
+      }
+      if (sheetFind?.databaseId) {
+        queryList.push(`databaseId=${sheetFind.databaseId}`);
+      }
+      const resData = (
+        await axios.get(`/api/sheet/starred?${queryList.join("&")}`)
+      ).data;
+      const sheetList: Sheet[] = resData.data.map((rawData: ResourceObject) => {
+        const sheet = convertSheet(rawData, resData.included);
+        this.setSheetById({
+          sheetId: sheet.id,
+          sheet: sheet,
+        });
+        return sheet;
+      });
+
+      sheetList.sort((a, b) => b.createdTs - a.createdTs);
+      this.setSheetList(sheetList);
+
+      return sheetList;
     },
     async fetchSheetById(sheetId: SheetId) {
       const data = (await axios.get(`/api/sheet/${sheetId}`)).data;
@@ -213,34 +298,17 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    // update
-    async patchSheetById({
-      id,
-      name,
-      statement,
-      visibility,
-    }: SheetPatch): Promise<Sheet> {
-      const attributes: Omit<SheetPatch, "id"> = {};
-      if (name) {
-        attributes.name = name;
-      }
-      if (statement) {
-        attributes.statement = statement;
-      }
-      if (visibility) {
-        attributes.visibility = visibility;
-      }
-
-      const result = (
-        await axios.patch(`/api/sheet/${id}`, {
+    async patchSheetById(sheetPatch: SheetPatch): Promise<Sheet> {
+      const resData = (
+        await axios.patch(`/api/sheet/${sheetPatch.id}`, {
           data: {
             type: "sheetPatch",
-            attributes,
+            attributes: sheetPatch,
           },
         })
       ).data;
 
-      const sheet = convertSheet(result.data, result.included);
+      const sheet = convertSheet(resData.data, resData.included);
 
       this.setSheetById({
         sheetId: sheet.id,
@@ -249,25 +317,28 @@ export const useSheetStore = defineStore("sheet", {
 
       return sheet;
     },
-    // delete
-    async deleteSheet(id: number) {
-      await axios.delete(`/api/sheet/${id}`);
-
-      this.deleteSheetById(id);
+    async upsertSheetOrganizer(sheetOrganizerUpsert: SheetOrganizerUpsert) {
+      await axios.patch(`/api/sheet/${sheetOrganizerUpsert.sheeId}/organizer`, {
+        data: {
+          type: "sheetOrganizerUpsert",
+          attributes: sheetOrganizerUpsert,
+        },
+      });
     },
-    // upsert
-    async upsertSheet(payload: {
-      sheet: Pick<Sheet, "id" | "name" | "statement">;
-      currentTab: TabInfo;
-    }): Promise<Sheet> {
-      const { sheet, currentTab } = payload;
-      const hasSheet = this.sheetById.has(sheet.id);
+    async deleteSheetById(sheetId: SheetId) {
+      await axios.delete(`/api/sheet/${sheetId}`);
 
-      if (hasSheet) {
-        return this.patchSheetById(sheet);
-      } else {
-        return this.createSheet(currentTab);
+      const idx = this.sheetList.findIndex((sheet) => sheet.id === sheetId);
+      if (idx !== -1) {
+        this.sheetList.splice(idx, 1);
       }
+
+      if (this.sheetById.has(sheetId)) {
+        this.sheetById.delete(sheetId);
+      }
+    },
+    async syncSheetFromVCS(projectId: ProjectId) {
+      await axios.post(`/api/sheet/project/${projectId}/sync`);
     },
   },
 });
