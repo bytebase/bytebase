@@ -10,7 +10,7 @@ import {
   Environment,
   PolicyUpsert,
   SchemaPolicyRule,
-  PolicySchemaReviewPayload,
+  SchemaReviewPolicyPayload,
   DatabaseSchemaReviewPolicy,
 } from "@/types";
 import { defineStore } from "pinia";
@@ -22,7 +22,7 @@ const convertToSchemaReviewPolicy = (
   if (policy.type !== "bb.policy.schema-review") {
     return;
   }
-  const payload = policy.payload as PolicySchemaReviewPayload;
+  const payload = policy.payload as SchemaReviewPolicyPayload;
   const ruleList = payload.ruleList.map((r) => {
     const rule: SchemaPolicyRule = {
       type: r.type,
@@ -105,7 +105,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       environmentId: number;
       ruleList: SchemaPolicyRule[];
     }) {
-      const payload: PolicySchemaReviewPayload = {
+      const payload: SchemaReviewPolicyPayload = {
         name,
         ruleList: ruleList.map((r) => ({
           ...r,
@@ -165,7 +165,7 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         policyUpsert.rowStatus = rowStatus;
       }
       if (name && ruleList) {
-        const payload: PolicySchemaReviewPayload = {
+        const payload: SchemaReviewPolicyPayload = {
           name,
           ruleList: ruleList.map((r) => ({
             ...r,

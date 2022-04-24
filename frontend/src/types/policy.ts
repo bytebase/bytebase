@@ -25,14 +25,14 @@ export const DefaultApporvalPolicy: PipelineApprovalPolicyValue =
 
 export type BackupPlanPolicySchedule = "UNSET" | "DAILY" | "WEEKLY";
 
-export type PolicyBackupPlanPolicyPayload = {
+export type BackupPlanPolicyPayload = {
   schedule: BackupPlanPolicySchedule;
 };
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
-// PolicySchemaReviewPayload is the payload for schema review policy in the backend.
-export type PolicySchemaReviewPayload = {
+// SchemaReviewPolicyPayload is the payload for schema review policy in the backend.
+export type SchemaReviewPolicyPayload = {
   name: string;
   ruleList: {
     type: RuleType;
@@ -43,8 +43,8 @@ export type PolicySchemaReviewPayload = {
 
 export type PolicyPayload =
   | PipelineApporvalPolicyPayload
-  | PolicyBackupPlanPolicyPayload
-  | PolicySchemaReviewPayload;
+  | BackupPlanPolicyPayload
+  | SchemaReviewPolicyPayload;
 
 export type Policy = {
   id: PolicyId;
