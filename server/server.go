@@ -145,6 +145,15 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
 
+		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostSync), schemaUpdateGhostSyncExecutor)
+
+		schemaUpdateTaskGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateTaskGhostCutoverExecutor)
+
+		schemaUpdateTaskGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateTaskGhostDropOriginalTableExecutor)
+
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
