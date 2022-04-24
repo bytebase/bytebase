@@ -343,7 +343,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		upsert.Payload = &emptyPayload
 	}
 
-	set := []string{}
+	var set []string
 	if v := upsert.Payload; v != nil {
 		set = append(set, "payload = excluded.payload")
 	}
