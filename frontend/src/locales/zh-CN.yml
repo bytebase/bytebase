@@ -181,6 +181,13 @@ common:
   file-selector:
     type-limit: 仅支持 {extension} 类型的文件
     size-limit: 文件大小需小于 {size} MiB
+  no-data: 无数据
+  visibility: 可见性
+  star: 添加收藏
+  unstar: 取消收藏
+  starred: 已收藏
+  duplicate: 拷贝
+  clear-search: 清空搜索
   enable: 开启
   disable: 禁用
 error-page:
@@ -1044,7 +1051,6 @@ sql-editor:
   search-sheets: 搜索工作表
   hint-tips:
     confirm-to-delete-this-history: 确定删除这条记录？
-    confirm-to-delete-this-sheet: 确定删除这条查询语句?
     confirm-to-close-unsaved-tab: 确定关闭未保存的标签页？
   please-input-the-tab-label: 请输入标签页名称!
   copy-code: 复制代码
@@ -1055,7 +1061,7 @@ sql-editor:
   view-all-tabs: 查看所有标签页
   sheet: 工作表
   sheets: 工作表
-  connection-holder: 选择一个数据连接或者从左侧面板选择一个工作表以开始
+  connection-holder: 选择一个数据连接以开始
   link-access: 链接访问权限
   private: 私有
   private-desc: 只有您自己可以访问此工作表
@@ -1221,6 +1227,17 @@ subscription:
       title: 企业版
       label: 预览版
       desc: 大型组织，有专属 DBA 团队来管理数据库
+sheet:
+  self: 工作表
+  my-sheets: 我的工作表
+  shared-with-me: 与我共享
+  starred: 已加星标
+  actions:
+    sync-from-vcs: 从 VCS 同步数据
+  hint-tips:
+    confirm-to-sync-sheet: 确定要同步工作表?
+    confirm-to-delete-this-sheet: 确定删除这条工作表?
+    confirm-to-duplicate-sheet: 确定要复制这条工作表?
 engine:
   mysql: MySQL
   common: 通用
