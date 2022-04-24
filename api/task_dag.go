@@ -28,3 +28,10 @@ type TaskDAGCreate struct {
 type TaskDAGFind struct {
 	ToTaskID int
 }
+
+// TaskIndexDAG describes task dependency relationship using array index to represent task.
+// It is needed because we don't know task id before insertion.
+type TaskIndexDAG struct {
+	FromIndex int
+	ToIndex   int
+}
