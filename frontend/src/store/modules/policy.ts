@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import {
-  PolicyId,
   Environment,
   EnvironmentId,
   PolicyState,
@@ -9,7 +8,7 @@ import {
   ResourceObject,
   unknown,
 } from "@/types";
-import { Policy, PolicyType, PolicyUpsert, PolicyPatch } from "@/types/policy";
+import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useEnvironmentStore } from "./environment";
 
@@ -85,25 +84,12 @@ export const usePolicyStore = defineStore("policy", {
         );
       }
     },
-    async fetchPolicyByType(type: PolicyType): Promise<Policy[]> {
+    async fetchPolicyListByType(type: PolicyType): Promise<Policy[]> {
       const data: { data: ResourceObject[]; included: ResourceObject[] } = (
         await axios.get(`/api/policy?type=${type}`)
       ).data;
 
       return data.data.map((d) => convert(d, data.included));
-    },
-    async fetchPolicyById(id: PolicyId): Promise<Policy> {
-      const data: { data: ResourceObject; included: ResourceObject[] } = (
-        await axios.get(`/api/policy/${id}`)
-      ).data;
-
-      const policy = convert(data.data, data.included);
-      this.setPolicyByEnvironmentId({
-        environmentId: policy.environment.id,
-        policy,
-      });
-
-      return policy;
     },
     async fetchPolicyByEnvironmentAndType({
       environmentId,
@@ -136,7 +122,10 @@ export const usePolicyStore = defineStore("policy", {
             data: {
               type: "policyUpsert",
               attributes: {
-                payload: JSON.stringify(policyUpsert.payload),
+                rowStatus: policyUpsert.rowStatus,
+                payload: policyUpsert.payload
+                  ? JSON.stringify(policyUpsert.payload)
+                  : undefined,
               },
             },
           }
@@ -148,38 +137,16 @@ export const usePolicyStore = defineStore("policy", {
 
       return policy;
     },
-    async patchPolicyByIdAndType({
-      id,
-      type,
-      policyPatch,
-    }: {
-      id: PolicyId;
-      type: PolicyType;
-      policyPatch: PolicyPatch;
-    }): Promise<Policy> {
-      const data = (
-        await axios.patch(`/api/policy/${id}?type=${type}`, {
-          data: {
-            type: "policyPatch",
-            attributes: {
-              ...policyPatch,
-              payload: JSON.stringify(policyPatch.payload),
-            },
-          },
-        })
-      ).data;
-      const policy = convert(data.data, data.included);
-
-      return policy;
-    },
-    async deletePolicyByIdAndType({
-      id,
+    async deletePolicyByEnvironmentAndType({
+      environmentId,
       type,
     }: {
-      id: PolicyId;
+      environmentId: EnvironmentId;
       type: PolicyType;
     }) {
-      await axios.delete(`/api/policy/${id}?type=${type}`);
+      await axios.delete(
+        `/api/policy/environment/${environmentId}?type=${type}`
+      );
     },
   },
 });

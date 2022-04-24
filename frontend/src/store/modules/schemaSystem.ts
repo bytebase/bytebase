@@ -4,10 +4,11 @@ import {
   unknown,
   Policy,
   PolicyId,
+  EnvironmentId,
   RowStatus,
   EMPTY_ID,
   Environment,
-  PolicyPatch,
+  PolicyUpsert,
   SchemaPolicyRule,
   PolicySchemaReviewPayload,
   DatabaseSchemaReviewPolicy,
@@ -132,9 +133,10 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         return;
       }
 
+      const targetPolicy = this.reviewPolicyList[index];
       const policyStore = usePolicyStore();
-      await policyStore.deletePolicyByIdAndType({
-        id,
+      await policyStore.deletePolicyByEnvironmentAndType({
+        environmentId: targetPolicy.environment.id,
         type: "bb.policy.schema-review",
       });
 
@@ -144,13 +146,11 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       id,
       name,
       rowStatus,
-      environmentId,
       ruleList,
     }: {
       id: PolicyId;
       name?: string;
       rowStatus?: RowStatus;
-      environmentId?: number;
       ruleList?: SchemaPolicyRule[];
     }) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
@@ -158,14 +158,12 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         return;
       }
 
-      const policyPatch: PolicyPatch = {};
-      if (rowStatus) {
-        policyPatch.rowStatus = rowStatus;
-      }
-      if (environmentId) {
-        policyPatch.environmentId = environmentId;
-      }
+      const targetPolicy = this.reviewPolicyList[index];
 
+      const policyUpsert: PolicyUpsert = {};
+      if (rowStatus) {
+        policyUpsert.rowStatus = rowStatus;
+      }
       if (name && ruleList) {
         const payload: PolicySchemaReviewPayload = {
           name,
@@ -174,14 +172,14 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
           })),
         };
-        policyPatch.payload = payload;
+        policyUpsert.payload = payload;
       }
 
       const policyStore = usePolicyStore();
-      const policy = await policyStore.patchPolicyByIdAndType({
-        id,
+      const policy = await policyStore.upsertPolicyByEnvironmentAndType({
+        environmentId: targetPolicy.environment.id,
         type: "bb.policy.schema-review",
-        policyPatch,
+        policyUpsert,
       });
 
       const reviewPolicy = convertToSchemaReviewPolicy(policy);
@@ -194,20 +192,22 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         ...this.reviewPolicyList.slice(index + 1),
       ];
     },
-    getReviewPolicyById(id: PolicyId): DatabaseSchemaReviewPolicy {
-      if (id === EMPTY_ID) {
+    getReviewPolicyByEnvironmentId(
+      environmentId: EnvironmentId
+    ): DatabaseSchemaReviewPolicy {
+      if (environmentId === EMPTY_ID) {
         return empty("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy;
       }
 
       return (
-        this.reviewPolicyList.find((g) => g.id === id) ||
+        this.reviewPolicyList.find((g) => g.environment.id === environmentId) ||
         (unknown("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy)
       );
     },
 
     async fetchReviewPolicyList(): Promise<DatabaseSchemaReviewPolicy[]> {
       const policyStore = usePolicyStore();
-      const policyList = await policyStore.fetchPolicyByType(
+      const policyList = await policyStore.fetchPolicyListByType(
         "bb.policy.schema-review"
       );
 
@@ -221,11 +221,14 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
       this.reviewPolicyList = reviewPolicyList;
       return reviewPolicyList;
     },
-    async fetchReviewPolicyById(
-      id: PolicyId
+    async fetchReviewPolicyByEnvironmentId(
+      environmentId: EnvironmentId
     ): Promise<DatabaseSchemaReviewPolicy | undefined> {
       const policyStore = usePolicyStore();
-      const policy = await policyStore.fetchPolicyById(id);
+      const policy = await policyStore.fetchPolicyByEnvironmentAndType({
+        environmentId: environmentId,
+        type: "bb.policy.schema-review",
+      });
 
       const reviewPolicy = convertToSchemaReviewPolicy(policy);
       if (reviewPolicy) {

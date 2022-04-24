@@ -34,7 +34,7 @@
         "
         class="mb-5"
       />
-      <div class="flex flex-wrap gap-x-3">
+      <div class="flex flex-wrap gap-x-3" v-if="!isEdit">
         <div
           v-for="env in environmentList"
           :key="env.id"
@@ -59,6 +59,11 @@
           </label>
         </div>
       </div>
+      <BBBadge
+        v-else-if="isEdit && selectedEnvironment"
+        :text="environmentName(selectedEnvironment)"
+        :can-remove="false"
+      />
     </div>
     <div>
       <div class="mt-5" v-if="isEdit">

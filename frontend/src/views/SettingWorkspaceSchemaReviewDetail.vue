@@ -217,7 +217,9 @@ const hasPermission = computed(() => {
 });
 
 const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
-  return store.getReviewPolicyById(idFromSlug(props.schemaReviewPolicySlug));
+  return store.getReviewPolicyByEnvironmentId(
+    idFromSlug(props.schemaReviewPolicySlug)
+  );
 });
 
 const ruleMap = ruleTemplateList.reduce((map, rule) => {

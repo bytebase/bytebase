@@ -286,9 +286,8 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       title: t("schema-review-policy.no-permission"),
     });
   }
-  const review = {
+  const upsert = {
     name: state.name,
-    environmentId: state.selectedEnvironment?.id,
     ruleList: state.selectedRuleList.map((rule) =>
       convertRuleTemplateToPolicyRule(rule)
     ),
@@ -297,10 +296,13 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   if (props.reviewId) {
     store.updateReviewPolicy({
       id: props.reviewId,
-      ...review,
+      ...upsert,
     });
   } else {
-    store.addReviewPolicy(review);
+    store.addReviewPolicy({
+      ...upsert,
+      environmentId: state.selectedEnvironment?.id,
+    });
   }
 
   pushNotification({

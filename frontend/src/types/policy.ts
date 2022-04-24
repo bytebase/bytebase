@@ -65,16 +65,8 @@ export type Policy = {
 };
 
 export type PolicyUpsert = {
-  // Domain specific fields
-  payload?: PolicyPayload;
-};
-
-export type PolicyPatch = {
   // Standard fields
   rowStatus?: RowStatus;
-
-  // Related fields
-  environmentId?: number;
 
   // Domain specific fields
   payload?: PolicyPayload;
