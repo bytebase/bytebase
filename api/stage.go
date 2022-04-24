@@ -75,9 +75,10 @@ type StageCreate struct {
 	CreatorID int
 
 	// Related fields
-	EnvironmentID int `jsonapi:"attr,environmentId"`
-	PipelineID    int
-	TaskList      []TaskCreate `jsonapi:"attr,taskList"`
+	EnvironmentID    int `jsonapi:"attr,environmentId"`
+	PipelineID       int
+	TaskList         []TaskCreate   `jsonapi:"attr,taskList"`
+	TaskIndexDAGList []TaskIndexDAG `jsonapi:"attr,taskDAGList"`
 
 	// Domain specific fields
 	Name string `jsonapi:"attr,name"`
