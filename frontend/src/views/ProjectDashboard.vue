@@ -78,6 +78,7 @@ export default defineComponent({
         projectStore
           .fetchProjectListByUser({
             userId: currentUser.value.id,
+            rowStatusList: ["NORMAL"],
           })
           .then((projectList: Project[]) => {
             state.projectList = projectList;
