@@ -78,19 +78,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Polic
 	return policy, nil
 }
 
-// PatchPolicy patchs an instance of Policy by PolicyPatch.
-func (s *Store) PatchPolicy(ctx context.Context, patch *api.PolicyPatch) (*api.Policy, error) {
-	policyRaw, err := s.patchPolicyRaw(ctx, patch)
-	if err != nil {
-		return nil, fmt.Errorf("failed to patch policy with PolicyPatch[%+v], error[%w]", patch, err)
-	}
-	policy, err := s.composePolicy(ctx, policyRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
-	}
-	return policy, nil
-}
-
 // DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
 func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) error {
 	// Validate policy.
@@ -325,8 +312,8 @@ func findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*p
 // upsertPolicyRaw sets a policy for an environment.
 func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Validate policy.
-	if upsert.Type != "" {
-		if err := api.ValidatePolicy(upsert.Type, upsert.Payload); err != nil {
+	if upsert.Type != "" && upsert.Payload != nil {
+		if err := api.ValidatePolicy(upsert.Type, *upsert.Payload); err != nil {
 			return nil, &common.Error{Code: common.Invalid, Err: err}
 		}
 	}
@@ -348,47 +335,27 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 	return policy, nil
 }
 
-// patchPolicyRaw sets a policy by id.
-func (s *Store) patchPolicyRaw(ctx context.Context, patch *api.PolicyPatch) (*policyRaw, error) {
-	// Validate policy.
-	// Currently we only support PolicyTypeSchemaReview type policy to patch by id
-	if patch.Type != api.PolicyTypeSchemaReview {
-		return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("Invalid policy type")}
-	}
-	if patch.Payload != nil {
-		if *patch.Payload == "" {
-			return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("Invalid policy payload")}
-		}
-		if err := api.ValidatePolicy(patch.Type, *patch.Payload); err != nil {
-			return nil, &common.Error{Code: common.Invalid, Err: err}
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	policy, err := patchPolicyImpl(ctx, tx.PTx, patch)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return policy, nil
-}
-
 // upsertPolicyImpl updates an existing policy by environment id and type.
 func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Upsert row into policy.
-	if upsert.Payload == "" {
-		upsert.Payload = "{}"
+	if upsert.Payload != nil && *upsert.Payload == "" {
+		emptyPayload := "{}"
+		upsert.Payload = &emptyPayload
 	}
-	row, err := tx.QueryContext(ctx, `
+
+	set := []string{}
+	if v := upsert.Payload; v != nil {
+		set = append(set, "payload = excluded.payload")
+	}
+	if v := upsert.RowStatus; v != nil {
+		set = append(set, "row_status = excluded.row_status")
+	}
+
+	if len(set) == 0 {
+		return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy upsert %+v", upsert)}
+	}
+
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
@@ -398,9 +365,9 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
-			payload = excluded.payload
+			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
-		`,
+		`, strings.Join(set, ",")),
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
@@ -432,62 +399,17 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 	return &policyRaw, nil
 }
 
-// patchPolicyImpl updates an existing policy by id and type.
-func patchPolicyImpl(ctx context.Context, tx *sql.Tx, patch *api.PolicyPatch) (*policyRaw, error) {
-	set, args := []string{}, []interface{}{}
-
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-
-	where := []string{}
-	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, patch.ID)
-	where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, patch.Type)
-
-	// Update the policy.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		UPDATE policy
-		SET %s
-		WHERE %s
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
-	`, strings.Join(set, ", "), strings.Join(where, " AND ")),
-		args...,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var policyRaw policyRaw
-	if err := row.Scan(
-		&policyRaw.ID,
-		&policyRaw.CreatorID,
-		&policyRaw.CreatedTs,
-		&policyRaw.UpdaterID,
-		&policyRaw.UpdatedTs,
-		&policyRaw.RowStatus,
-		&policyRaw.EnvironmentID,
-		&policyRaw.Type,
-		&policyRaw.Payload,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return &policyRaw, nil
-}
-
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
 func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
 	// Remove row from policy.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM policy WHERE id = $1 AND type = $2 AND row_status = $3`, delete.ID, delete.Type, "ARCHIVED"); err != nil {
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM policy
+			WHERE id = $1 AND type = $2 AND row_status = $3
+		`,
+		delete.ID,
+		delete.Type,
+		"ARCHIVED",
+	); err != nil {
 		return FormatError(err)
 	}
 	return nil

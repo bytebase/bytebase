@@ -13,12 +13,16 @@ import (
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
 // return nil if user has access.
-func (s *Server) hasAccessToUpsertPolicy(policyType api.PolicyType, payload string) error {
+func (s *Server) hasAccessToUpsertPolicy(policyType api.PolicyType, payload *string) error {
 	defaultPolicy, err := api.GetDefaultPolicy(policyType)
 	if err != nil {
 		return err
 	}
-	if defaultPolicy == payload {
+	// nil payload means user doesn't update the payload field
+	if payload == nil {
+		return nil
+	}
+	if defaultPolicy == *payload {
 		return nil
 	}
 	switch policyType {
@@ -75,6 +79,36 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.DELETE("/policy/environment/:environmentID", func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("policyID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
+		}
+
+		pType := api.PolicyType(c.QueryParam("type"))
+		if err := s.hasAccessToUpsertPolicy(pType, nil); err != nil {
+			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
+		}
+
+		policyDelete := &api.PolicyDelete{
+			ID:        id,
+			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
+			Type:      pType,
+		}
+
+		ctx := c.Request().Context()
+		if err := s.store.DeletePolicy(ctx, policyDelete); err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete policy by ID %d", id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		c.Response().WriteHeader(http.StatusOK)
+		return nil
+	})
+
 	g.GET("/policy/environment/:environmentID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		environmentID, err := strconv.Atoi(c.Param("environmentID"))
@@ -120,101 +154,6 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, policyList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal list policy response: %v", pType)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.PATCH("/policy/:policyID", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("policyID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
-		}
-
-		policyPatch := &api.PolicyPatch{}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch policy request").SetInternal(err)
-		}
-		pType := api.PolicyType(c.QueryParam("type"))
-		payload := ""
-		if policyPatch.Payload != nil {
-			payload = *policyPatch.Payload
-		}
-		if err := s.hasAccessToUpsertPolicy(pType, payload); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
-		}
-
-		policyPatch.ID = id
-		policyPatch.Type = pType
-		policyPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
-
-		ctx := c.Request().Context()
-		policy, err := s.store.PatchPolicy(ctx, policyPatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch policy for type %q", policyPatch.Type)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal patch policy response").SetInternal(err)
-		}
-		return nil
-	})
-
-	g.DELETE("/policy/:policyID", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("policyID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
-		}
-
-		pType := api.PolicyType(c.QueryParam("type"))
-		if err := s.hasAccessToUpsertPolicy(pType, ""); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
-		}
-
-		policyDelete := &api.PolicyDelete{
-			ID:        id,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-			Type:      pType,
-		}
-
-		ctx := c.Request().Context()
-		if err := s.store.DeletePolicy(ctx, policyDelete); err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete policy by ID %d", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
-		return nil
-	})
-
-	g.GET("/policy/:policyID", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("policyID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Policy ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
-		}
-
-		policyFind := &api.PolicyFind{
-			ID: &id,
-		}
-
-		ctx := c.Request().Context()
-		policy, err := s.store.GetPolicy(ctx, policyFind)
-		if err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get policy by ID %d", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, policy); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal get policy response").SetInternal(err)
 		}
 		return nil
 	})

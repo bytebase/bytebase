@@ -84,31 +84,12 @@ type PolicyUpsert struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	// CreatorID is the ID of the creator.
 	UpdaterID int
+	RowStatus *RowStatus `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	EnvironmentID int
 
 	// Domain specific fields
-	Type    PolicyType
-	Payload string `jsonapi:"attr,payload"`
-}
-
-// PolicyPatch is the message to patch a policy.
-type PolicyPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	// CreatorID is the ID of the creator.
-	UpdaterID int
-	RowStatus *RowStatus `jsonapi:"attr,rowStatus"`
-
-	// Related fields
-	EnvironmentID *int `jsonapi:"attr,environmentId"`
-
-	// Domain specific fields
-	// Type is the policy type.
-	// Currently we only support patch operation for "bb.policy.schema-review", need it here for validation and update query.
 	Type    PolicyType
 	Payload *string `jsonapi:"attr,payload"`
 }
@@ -230,6 +211,9 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
+	case PolicyTypeSchemaReview:
+		// TODO(ed): we may need to define the default schema review policy payload in the PR of policy data migration.
+		return "{}", nil
 	}
 	return "", nil
 }
