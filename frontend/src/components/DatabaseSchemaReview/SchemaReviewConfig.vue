@@ -53,7 +53,7 @@ import {
   RuleTemplate,
   RuleTemplatePayload,
   SchemaReviewPolicyTemplate,
-} from "../../types/schemaSystem";
+} from "@/types/schemaSystem";
 
 interface LocalState {
   activeRuleType: RuleType | null;
