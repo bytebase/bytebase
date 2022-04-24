@@ -26,11 +26,9 @@ p, DBA, /environment, POST
 p, DBA, /environment, GET
 p, DBA, /environment/{id}, PATCH
 p, DBA, /policy, GET
-p, DBA, /policy/{id}, GET
-p, DBA, /policy/{id}, PATCH
-p, DBA, /policy/{id}, DELETE
 p, DBA, /policy/environment/{environmentID}, GET
 p, DBA, /policy/environment/{environmentID}, PATCH
+p, DBA, /policy/environment/{environmentID}, DELETE
 p, DBA, /instance, POST
 p, DBA, /instance, GET
 p, DBA, /instance/{id}, GET

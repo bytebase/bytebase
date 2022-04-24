@@ -69,6 +69,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 		policy, err := s.store.UpsertPolicy(ctx, policyUpsert)
 		if err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set policy for type %q", pType)).SetInternal(err)
 		}
 
