@@ -23,11 +23,20 @@
     </template>
     <template #body="{ rowData: project }">
       <BBTableCell :left-padding="4" class="table-cell text-gray-500">
-        <span class="flex flex-row items-center"
-          >{{ project.key }}
-          <template v-if="project.rowStatus === 'ARCHIVED'">
+        <span class="flex flex-row items-center space-x-1">
+          <span>{{ project.key }}</span>
+          <div v-if="project.rowStatus === 'ARCHIVED'" class="tooltip-wrapper">
             <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
-          </template>
+            <span class="tooltip whitespace-nowrap">
+              {{ $t("archive.archived") }}
+            </span>
+          </div>
+          <div v-if="project.workflowType === 'VCS'" class="tooltip-wrapper">
+            <heroicons-outline:collection class="ml-1 w-4 h-4 text-control" />
+            <span class="tooltip whitespace-nowrap">
+              {{ $t("database.version-control-enabled") }}
+            </span>
+          </div>
         </span>
       </BBTableCell>
       <BBTableCell class="truncate">
