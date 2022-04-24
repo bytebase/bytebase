@@ -24,7 +24,7 @@ import {
   useSQLEditorStore,
   useSheetStore,
 } from "@/store";
-import { SqlDialect } from "../../types";
+import { SQLDialect } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -150,7 +150,7 @@ const init = async () => {
         });
         return;
       }
-      formatContent(editorInstance, language.value as SqlDialect);
+      formatContent(editorInstance, language.value as SQLDialect);
       nextTick(() => setPositionAtEndOfLine(editorInstance));
     },
   });
@@ -230,7 +230,7 @@ watch(
   () => sqlEditorStore.shouldFormatContent,
   () => {
     if (sqlEditorStore.shouldFormatContent) {
-      formatContent(editorInstance, language.value as SqlDialect);
+      formatContent(editorInstance, language.value as SQLDialect);
       nextTick(() => {
         setPositionAtEndOfLine(editorInstance);
         editorInstance.focus();

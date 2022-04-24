@@ -15,9 +15,9 @@
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense>
       <template #default>
-        <ProvideSqlEditorContext>
+        <ProvideSQLEditorContext>
           <router-view />
-        </ProvideSqlEditorContext>
+        </ProvideSQLEditorContext>
       </template>
       <template #fallback>
         <div class="flex flex-row justify-between p-4 space-x-2">
@@ -35,8 +35,8 @@
 </template>
 
 <script lang="ts" setup>
-import ProvideSqlEditorContext from "@/components/ProvideSqlEditorContext.vue";
-import EditorHeader from "@/views/SqlEditor/EditorHeader.vue";
+import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
+import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerTrial from "@/views/BannerTrial.vue";
 import { ServerInfo } from "../types";

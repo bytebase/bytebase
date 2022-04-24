@@ -16,7 +16,7 @@ export type EditorPosition = monaco.Position;
 export type CompletionItems = monaco.languages.CompletionItem[];
 
 export type ConnectionAtomType = "instance" | "database" | "table" | "view";
-export type SqlDialect = "mysql" | "postgresql";
+export type SQLDialect = "mysql" | "postgresql";
 
 export interface ConnectionAtom {
   parentId: InstanceId | DatabaseId | TableId | ViewId;

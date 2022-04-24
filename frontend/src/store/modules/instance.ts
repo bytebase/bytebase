@@ -20,7 +20,7 @@ import {
   ResourceIdentifier,
   ResourceObject,
   RowStatus,
-  SqlResultSet,
+  SQLResultSet,
   unknown,
 } from "@/types";
 import { InstanceUser } from "@/types/InstanceUser";
@@ -387,14 +387,14 @@ export const useInstanceStore = defineStore("instance", {
         error: data.attributes.error,
       };
     },
-    async createMigrationSetup(instanceId: InstanceId): Promise<SqlResultSet> {
+    async createMigrationSetup(instanceId: InstanceId): Promise<SQLResultSet> {
       const data = (
         await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
           timeout: INSTANCE_OPERATION_TIMEOUT,
         })
       ).data.data;
 
-      return useSQLStore().convert(data) as SqlResultSet;
+      return useSQLStore().convert(data) as SQLResultSet;
     },
     async fetchMigrationHistoryById({
       instanceId,

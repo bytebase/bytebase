@@ -184,8 +184,7 @@ export interface LabelState {
   labelList: Label[];
 }
 
-// type for vuex
-export interface SqlEditorState {
+export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
   shouldSetContent: boolean;

@@ -237,7 +237,7 @@ import {
   InstanceCreate,
   UNKNOWN_ID,
   ConnectionInfo,
-  SqlResultSet,
+  SQLResultSet,
   EngineType,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
@@ -391,7 +391,7 @@ const tryCreate = () => {
     host: state.instance.host,
     port: state.instance.port,
   };
-  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       doCreate();
     } else {
@@ -438,7 +438,7 @@ const testConnection = () => {
     useEmptyPassword: false,
     instanceId: undefined,
   };
-  sqlStore.ping(connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
         module: "bytebase",

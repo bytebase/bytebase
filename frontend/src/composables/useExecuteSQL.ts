@@ -80,7 +80,7 @@ const useExecuteSQL = () => {
       }
       // only DDL and DML statements are allowed
       if (isDDLStatement(data) || isDMLStatement(data)) {
-        sqlEditorStore.setSqlEditorState({
+        sqlEditorStore.setSQLEditorState({
           isShowExecutingHint: true,
         });
         return;
