@@ -32,7 +32,7 @@ import {
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
   PipelineApporvalPolicyPayload,
-  PolicyBackupPlanPolicyPayload,
+  BackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
 import { hasFeature, useEnvironmentStore, usePolicyStore } from "@/store";
@@ -151,7 +151,7 @@ export default defineComponent({
       }
       if (
         type === "bb.policy.backup-plan" &&
-        (policy.payload as PolicyBackupPlanPolicyPayload).schedule !==
+        (policy.payload as BackupPlanPolicyPayload).schedule !==
           DefaultSchedulePolicy &&
         !hasFeature("bb.feature.backup-policy")
       ) {

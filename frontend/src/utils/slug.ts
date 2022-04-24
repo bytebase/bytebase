@@ -88,7 +88,7 @@ export function vcsSlug(vcs: VCS): string {
 export function schemaReviewPolicySlug(
   reviewPolicy: DatabaseSchemaReviewPolicy
 ): string {
-  return [slug(reviewPolicy.name), reviewPolicy.id].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.id].join("-");
 }
 
 export function connectionSlug(database: Database): string {

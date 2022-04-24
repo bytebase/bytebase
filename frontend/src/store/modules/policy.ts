@@ -84,6 +84,13 @@ export const usePolicyStore = defineStore("policy", {
         );
       }
     },
+    async fetchPolicyListByType(type: PolicyType): Promise<Policy[]> {
+      const data: { data: ResourceObject[]; included: ResourceObject[] } = (
+        await axios.get(`/api/policy?type=${type}`)
+      ).data;
+
+      return data.data.map((d) => convert(d, data.included));
+    },
     async fetchPolicyByEnvironmentAndType({
       environmentId,
       type,
@@ -115,7 +122,10 @@ export const usePolicyStore = defineStore("policy", {
             data: {
               type: "policyUpsert",
               attributes: {
-                payload: JSON.stringify(policyUpsert.payload),
+                rowStatus: policyUpsert.rowStatus,
+                payload: policyUpsert.payload
+                  ? JSON.stringify(policyUpsert.payload)
+                  : undefined,
               },
             },
           }
@@ -126,6 +136,17 @@ export const usePolicyStore = defineStore("policy", {
       this.setPolicyByEnvironmentId({ environmentId, policy });
 
       return policy;
+    },
+    async deletePolicyByEnvironmentAndType({
+      environmentId,
+      type,
+    }: {
+      environmentId: EnvironmentId;
+      type: PolicyType;
+    }) {
+      await axios.delete(
+        `/api/policy/environment/${environmentId}?type=${type}`
+      );
     },
   },
 });
