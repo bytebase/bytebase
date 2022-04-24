@@ -79,6 +79,15 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 			projectFind.PrincipalID = &userID
 		}
+
+		// Only Owner and DBA can fetch all projects from all users.
+		if projectFind.PrincipalID == nil {
+			role := c.Get(getRoleContextKey()).(api.Role)
+			if role != api.Owner && role != api.DBA {
+				return echo.NewHTTPError(http.StatusForbidden, "Not allowed to fetch all project list")
+			}
+		}
+
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
