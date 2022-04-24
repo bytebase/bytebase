@@ -93,8 +93,8 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	defer tx.PTx.Rollback()
 
 	find := &api.PolicyFind{
-		ID:   &delete.ID,
-		Type: &delete.Type,
+		EnvironmentID: &delete.EnvironmentID,
+		Type:          &delete.Type,
 	}
 	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("Failed to found policy with filter %+v, expect 1. ", find)}
 	}
 	policyRaw := policyRawList[0]
-	if policyRaw.RowStatus != "ARCHIVED" {
+	if policyRaw.RowStatus != api.Archived {
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("Failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
@@ -404,11 +404,11 @@ func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete)
 	// Remove row from policy.
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM policy
-			WHERE id = $1 AND type = $2 AND row_status = $3
+			WHERE environment_id = $1 AND type = $2 AND row_status = $3
 		`,
-		delete.ID,
+		delete.EnvironmentID,
 		delete.Type,
-		"ARCHIVED",
+		api.Archived,
 	); err != nil {
 		return FormatError(err)
 	}

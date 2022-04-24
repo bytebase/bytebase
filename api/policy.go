@@ -96,11 +96,12 @@ type PolicyUpsert struct {
 
 // PolicyDelete is the message to delete a policy.
 type PolicyDelete struct {
-	ID int
-
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
+
+	// Related fields
+	EnvironmentID int
 
 	// Domain specific fields
 	// Type is the policy type.

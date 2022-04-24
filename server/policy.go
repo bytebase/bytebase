@@ -83,9 +83,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/policy/environment/:environmentID", func(c echo.Context) error {
-		id, err := strconv.Atoi(c.Param("policyID"))
+		environmentID, err := strconv.Atoi(c.Param("environmentID"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("policyID"))).SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 		}
 
 		pType := api.PolicyType(c.QueryParam("type"))
@@ -94,9 +94,9 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		}
 
 		policyDelete := &api.PolicyDelete{
-			ID:        id,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-			Type:      pType,
+			EnvironmentID: environmentID,
+			DeleterID:     c.Get(getPrincipalIDContextKey()).(int),
+			Type:          pType,
 		}
 
 		ctx := c.Request().Context()
@@ -104,7 +104,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete policy by ID %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete policy by environment ID %d", environmentID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
