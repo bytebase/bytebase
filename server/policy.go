@@ -13,19 +13,21 @@ import (
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
 // return nil if user has access.
-func (s *Server) hasAccessToUpsertPolicy(policyType api.PolicyType, payload *string) error {
-	defaultPolicy, err := api.GetDefaultPolicy(policyType)
+func (s *Server) hasAccessToUpsertPolicy(policyUpsert *api.PolicyUpsert) error {
+	// nil payload means user doesn't update the payload field
+	if policyUpsert.Payload == nil {
+		return nil
+	}
+
+	defaultPolicy, err := api.GetDefaultPolicy(policyUpsert.Type)
 	if err != nil {
 		return err
 	}
-	// nil payload means user doesn't update the payload field
-	if payload == nil {
+
+	if defaultPolicy == *policyUpsert.Payload {
 		return nil
 	}
-	if defaultPolicy == *payload {
-		return nil
-	}
-	switch policyType {
+	switch policyUpsert.Type {
 	case api.PolicyTypePipelineApproval:
 		if !s.feature(api.FeatureApprovalPolicy) {
 			return fmt.Errorf(api.FeatureApprovalPolicy.AccessErrorMessage())
@@ -63,7 +65,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 		policyUpsert.Type = pType
 		policyUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := s.hasAccessToUpsertPolicy(policyUpsert.Type, policyUpsert.Payload); err != nil {
+		if err := s.hasAccessToUpsertPolicy(policyUpsert); err != nil {
 			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
 		}
 
@@ -88,15 +90,10 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("environmentID"))).SetInternal(err)
 		}
 
-		pType := api.PolicyType(c.QueryParam("type"))
-		if err := s.hasAccessToUpsertPolicy(pType, nil); err != nil {
-			return echo.NewHTTPError(http.StatusForbidden, err.Error()).SetInternal(err)
-		}
-
 		policyDelete := &api.PolicyDelete{
 			EnvironmentID: environmentID,
 			DeleterID:     c.Get(getPrincipalIDContextKey()).(int),
-			Type:          pType,
+			Type:          api.PolicyType(c.QueryParam("type")),
 		}
 
 		ctx := c.Request().Context()
