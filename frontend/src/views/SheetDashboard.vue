@@ -120,7 +120,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { last } from "lodash";
+import { last } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import dayjs from "@/plugins/dayjs";
