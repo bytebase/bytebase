@@ -157,7 +157,7 @@ export const useProjectStore = defineStore("project", {
       return this.projectById.get(projectId) || (unknown("PROJECT") as Project);
     },
     async fetchAllProjectList() {
-      const data = (await axios.get(`/api/project/all`)).data;
+      const data = (await axios.get(`/api/project`)).data;
       const projectList = data.data.map((project: ResourceObject) => {
         return convert(project, data.included);
       });

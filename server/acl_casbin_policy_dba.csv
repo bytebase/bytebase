@@ -4,7 +4,6 @@ p, DBA, /principal/{id}, PATCH_SELF
 p, DBA, /member, GET
 p, DBA, /project, POST
 p, DBA, /project, GET
-p, DBA, /project/all, GET
 p, DBA, /project/{id}, GET
 p, DBA, /project/{id}, PATCH
 p, DBA, /project/{id}/repository, GET
