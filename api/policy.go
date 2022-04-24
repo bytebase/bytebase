@@ -84,7 +84,7 @@ type PolicyUpsert struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	// CreatorID is the ID of the creator.
 	UpdaterID int
-	RowStatus *RowStatus `jsonapi:"attr,rowStatus"`
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	EnvironmentID int

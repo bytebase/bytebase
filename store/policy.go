@@ -338,21 +338,25 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 // upsertPolicyImpl updates an existing policy by environment id and type.
 func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Upsert row into policy.
-	if upsert.Payload != nil && *upsert.Payload == "" {
-		emptyPayload := "{}"
-		upsert.Payload = &emptyPayload
-	}
-
 	var set []string
 	if v := upsert.Payload; v != nil {
-		set = append(set, "payload = excluded.payload")
+		set = append(set, "payload = EXCLUDED.payload")
 	}
 	if v := upsert.RowStatus; v != nil {
-		set = append(set, "row_status = excluded.row_status")
+		set = append(set, "row_status = EXCLUDED.row_status")
 	}
 
 	if len(set) == 0 {
 		return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy upsert %+v", upsert)}
+	}
+
+	if upsert.Payload == nil || *upsert.Payload == "" {
+		emptyPayload := "{}"
+		upsert.Payload = &emptyPayload
+	}
+	if upsert.RowStatus == nil {
+		rowStatus := api.Normal.String()
+		upsert.RowStatus = &rowStatus
 	}
 
 	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -361,9 +365,10 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 			updater_id,
 			environment_id,
 			type,
-			payload
+			payload,
+			row_status
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
@@ -373,6 +378,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
+		upsert.RowStatus,
 	)
 
 	if err != nil {
