@@ -8,8 +8,8 @@
         @click="() => onTemplateAdd(template)"
       >
         {{ template.id }}
-        <span class="tooltip whitespace-nowrap">{{
-          template.description
+        <span class="tooltip whitespace-nowrap" v-if="template.description">{{
+          $t(template.description)
         }}</span>
       </div>
     </div>
