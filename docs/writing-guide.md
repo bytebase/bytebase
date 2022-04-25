@@ -18,9 +18,9 @@ Most aritcles fall into this category. The formatting gets tricky because we nee
 
 # Example
 
-> ❌ Github是一个代码版本控制系统（Version Control Sytem）,它的吉祥物是一只章鱼猫，英文叫 “Octocat”.
+> ❌ Github是一个代码版本控制系统（Version Control System）,它的吉祥物是一只章鱼猫，英文叫 “Octocat”.
 >
-> ✅ GitHub 是一个代码版本控制系统 (Version Control Sytem)，它的吉祥物是一只章鱼猫，英文叫「Octocat」。
+> ✅ GitHub 是一个代码版本控制系统 (Version Control System)，它的吉祥物是一只章鱼猫，英文叫「Octocat」。
 
 Let's go over the issues one by one:
 
