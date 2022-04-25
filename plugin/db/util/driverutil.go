@@ -16,11 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// Our own migration_history store in bytebase Database default if user give instance.
-	bytebaseDatabase = "bytebase"
-)
-
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
