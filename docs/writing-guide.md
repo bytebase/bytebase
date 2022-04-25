@@ -33,7 +33,7 @@ Let's go over the issues one by one:
    >
    > ✅ `GitHub 是一个`
 1. Parentheses
-   > ❌ `（Version Control Sytem）`
+   > ❌ `（Version Control System）`
    >
    > ✅ `(Version Control System)`
 1. Comma
