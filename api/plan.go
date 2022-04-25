@@ -81,6 +81,10 @@ const (
 	// e.g. One can configure to NOT require backup for dev environment while require
 	//      weekly backup for staging and daily backup for production.
 	FeatureBackupPolicy FeatureType = "bb.feature.backup-policy"
+	// FeatureSchemaReviewPolicy allows user to specify schema policy for the environment
+	//
+	// e.g. One can configure rules for database schema or SQL query.
+	FeatureSchemaReviewPolicy FeatureType = "bb.feature.schema-review-policy"
 
 	// Admin & Security
 
@@ -121,6 +125,8 @@ func (e FeatureType) String() string {
 		return "bb.feature.approval-policy"
 	case FeatureBackupPolicy:
 		return "bb.feature.backup-policy"
+	case FeatureSchemaReviewPolicy:
+		return "bb.feature.schema-review-policy"
 	case FeatureRBAC:
 		return "bb.feature.rbac"
 	case Feature3rdPartyAuth:
@@ -150,6 +156,8 @@ func (e FeatureType) Name() string {
 		return "Approval policy"
 	case FeatureBackupPolicy:
 		return "Backup policy"
+	case FeatureSchemaReviewPolicy:
+		return "Schema review policy"
 	case FeatureRBAC:
 		return "RBAC"
 	case Feature3rdPartyAuth:
@@ -187,6 +195,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.data-source":            {false, false, false},
 	"bb.feature.approval-policy":        {false, true, true},
 	"bb.feature.backup-policy":          {false, true, true},
+	"bb.feature.schema-review-policy":   {false, true, true},
 	"bb.feature.rbac":                   {false, true, true},
 	"bb.feature.3rd-party-auth":         {false, true, true},
 	"bb.feature.branding":               {false, true, true},
