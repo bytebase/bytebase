@@ -1,19 +1,17 @@
 <template>
   <div class="save-sheet-modal w-80">
-    <NInput
+    <n-input
       ref="sheetNameInputRef"
       v-model:value="sheetName"
       :placeholder="$t('sql-editor.save-sheet-input-placeholder')"
-      @keyup.enter="(e: Event) => emit('save-sheet', sheetName)"
+      @keyup.enter="handleSaveSheet"
     />
   </div>
   <div class="mt-4 flex justify-end space-x-2">
-    <NButton @click="(e: Event) => emit('close')">{{
-      $t("common.close")
-    }}</NButton>
-    <NButton type="primary" @click="emit('save-sheet', sheetName)">
+    <n-button @click="emit('close')">{{ $t("common.close") }}</n-button>
+    <n-button type="primary" @click="handleSaveSheet">
       {{ $t("common.save") }}
-    </NButton>
+    </n-button>
   </div>
 </template>
 
@@ -31,6 +29,10 @@ const tabStore = useTabStore();
 
 const sheetName = ref(tabStore.currentTab.name);
 const sheetNameInputRef = ref();
+
+const handleSaveSheet = () => {
+  emit("save-sheet", sheetName.value);
+};
 
 nextTick(() => {
   sheetNameInputRef.value?.focus();
