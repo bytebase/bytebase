@@ -9,7 +9,7 @@
     >
       <div
         v-for="(template, index) in templateList"
-        :key="template.name"
+        :key="index"
         class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
         :class="
           index == selectedTemplateIndex
@@ -19,7 +19,7 @@
         @click="$emit('select', index)"
       >
         <img class="h-24" :src="template.imagePath" alt="" />
-        <span class="text-lg lg:text-xl mt-4">{{ template.name }}</span>
+        <span class="text-lg lg:text-xl mt-4">{{ template.title }}</span>
         <heroicons-solid:check-circle
           v-if="index == selectedTemplateIndex"
           class="w-7 h-7 text-gray-500 absolute top-3 left-3"
