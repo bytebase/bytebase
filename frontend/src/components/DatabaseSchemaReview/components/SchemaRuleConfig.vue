@@ -108,7 +108,7 @@ import { pullAt } from "lodash-es";
 import {
   LEVEL_LIST,
   RuleTemplate,
-  RuleTemplatePayload,
+  RuleConfigComponent,
   getRuleLocalization,
 } from "@/types/schemaSystem";
 
@@ -118,7 +118,7 @@ interface LocalState {
 }
 
 const initStatePayload = (
-  componentList: RuleTemplatePayload[] | undefined
+  componentList: RuleConfigComponent[] | undefined
 ): PayloadValueList => {
   return (componentList ?? []).reduce((res, component) => {
     res.push(component.payload.value ?? component.payload.default);

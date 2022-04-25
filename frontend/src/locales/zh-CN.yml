@@ -1251,6 +1251,7 @@ schema-review-policy:
   remove-review: 审核策略已删除
   create-review: 审核策略已创建
   update-review: 审核策略已更新
+  rules: 规则
   filter: 筛选
   no-permission: 仅 DBA 或所有者有权限创建或更新审核策略。
   disable: 停用审查策略
@@ -1331,6 +1332,7 @@ schema-review-policy:
     basic-info:
       name: 基本信息
       display-name: 名称
+      display-name-placeholder: 审核策略名称
       display-name-label: 用以区分不同审核策略的名称。
       display-name-default: Schema 审核策略
       environments: 环境

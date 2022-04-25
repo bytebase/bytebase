@@ -1421,6 +1421,7 @@ schema-review-policy:
   remove-review: Successfully removed the review policy.
   create-review: Successfully created the review policy.
   update-review: Successfully updated the review policy.
+  rules: Rules
   filter: Filter
   no-permission: Only DBA or Owner has permission to create or update review policy.
   disable: Disable schema review policy
@@ -1501,6 +1502,7 @@ schema-review-policy:
     basic-info:
       name: Basic info
       display-name: Display name
+      display-name-placeholder: The review policy name
       display-name-default: Schema review policy
       display-name-label: >-
         A display name to help identifying among different review policies.

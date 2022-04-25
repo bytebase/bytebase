@@ -145,7 +145,6 @@ const getRuleListWithLevel = (
   }, [] as RuleTemplate[]);
 };
 
-// TODO: i18n
 const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
   {
     title: t("schema-review-policy.template.policy-for-prod.title"),

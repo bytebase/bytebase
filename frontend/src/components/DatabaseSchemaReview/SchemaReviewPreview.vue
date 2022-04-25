@@ -2,7 +2,9 @@
   <div class="flex gap-x-20">
     <aside class="hidden lg:block">
       <div class="space-y-6">
-        <h1 class="text-left text-2xl font-semibold">Rules</h1>
+        <h1 class="text-left text-2xl font-semibold">
+          {{ $t("schema-review-policy.rules") }}
+        </h1>
         <fieldset v-for="(category, index) in categoryList" :key="index">
           <div class="block text-sm font-medium text-gray-900">
             {{
@@ -18,7 +20,7 @@
               :href="`#${rule.type.replace(/\./g, '-')}`"
               class="text-gray-600 hover:underline cursor-pointer"
             >
-              {{ rule.type }}
+              {{ getRuleLocalization(rule.type).title }}
             </a>
           </div>
         </fieldset>

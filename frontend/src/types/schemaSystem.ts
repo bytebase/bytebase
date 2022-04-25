@@ -53,9 +53,9 @@ interface TemplatePayload {
   value?: string;
 }
 
-// RuleTemplatePayload is the rule configuration options and default value.
+// RuleConfigComponent is the rule configuration options and default value.
 // Used by the frontend.
-export interface RuleTemplatePayload {
+export interface RuleConfigComponent {
   title: string;
   description: string;
   payload: StringPayload | TemplatePayload | StringArrayPayload;
@@ -119,8 +119,7 @@ export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
   engine: SchemaRuleEngineType;
-  // TODO: rename componentList to RuleConfigComponent
-  componentList: RuleTemplatePayload[];
+  componentList: RuleConfigComponent[];
   level: RuleLevel;
 }
 
@@ -133,7 +132,7 @@ export interface SchemaReviewPolicyTemplate {
 
 // RULE_TEMPLATE_PAYLOAD_MAP is the relationship mapping for the rule type and payload.
 // Used by frontend to get different rule payload configurations.
-export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
+export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
   new Map([
     [
       "naming.table",
@@ -294,7 +293,6 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
   ]);
 
 // ruleTemplateList stores the default value for each rule template
-// TODO: i18n
 export const ruleTemplateList: RuleTemplate[] = [
   {
     type: "engine.mysql.use-innodb",
@@ -463,6 +461,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
+    case "naming.index.fk":
       const templateComponent = ruleTemplate.componentList[0];
       const indexRulePayload = {
         ...templateComponent.payload,
@@ -523,6 +522,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
+    case "naming.index.fk":
       const templatePayload = rule.componentList[0].payload as TemplatePayload;
       return {
         ...base,
