@@ -389,9 +389,11 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 
 	// By default, follow the PG convention to use user name as the database name
 	connCfg.Database = connCfg.Username
-	if u.Path != "" {
-		connCfg.Database = u.Path[1:]
+
+	if u.Path == "" {
+		return nil, fmt.Errorf("missing database in the --pg connection string")
 	}
+	connCfg.Database = u.Path[1:]
 
 	q := u.Query()
 	connCfg.TLSConfig = dbdriver.TLSConfig{
