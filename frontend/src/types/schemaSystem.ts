@@ -1,3 +1,4 @@
+import { useI18n } from "vue-i18n";
 import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
@@ -7,7 +8,12 @@ import { Environment } from "./environment";
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
 
 // The category type for rule template
-export type CategoryType = "ENGINE" | "NAMING" | "QUERY" | "TABLE" | "COLUMN";
+export type CategoryType =
+  | "ENGINE"
+  | "NAMING"
+  | "STATEMENT"
+  | "TABLE"
+  | "COLUMN";
 
 // The rule level
 export enum RuleLevel {
@@ -47,9 +53,9 @@ interface TemplatePayload {
   value?: string;
 }
 
-// RuleTemplatePayload is the rule configuration options and default value.
+// RuleConfigComponent is the rule configuration options and default value.
 // Used by the frontend.
-export interface RuleTemplatePayload {
+export interface RuleConfigComponent {
   title: string;
   description: string;
   payload: StringPayload | TemplatePayload | StringArrayPayload;
@@ -63,12 +69,13 @@ export type RuleType =
   | "naming.column"
   | "naming.index.pk"
   | "naming.index.uk"
+  | "naming.index.fk"
   | "naming.index.idx"
   | "column.required"
   | "column.no-null"
-  | "query.select.no-select-all"
-  | "query.where.require"
-  | "query.where.no-leading-wildcard-like";
+  | "statement.select.no-select-all"
+  | "statement.where.require"
+  | "statement.where.no-leading-wildcard-like";
 
 // The naming format rule payload.
 // Used by the backend.
@@ -91,7 +98,6 @@ export interface SchemaPolicyRule {
 }
 
 // The API for schema review policy in backend.
-// TODO: just use the existed Policy entity
 export interface DatabaseSchemaReviewPolicy {
   id: PolicyId;
 
@@ -113,28 +119,26 @@ export interface RuleTemplate {
   type: RuleType;
   category: CategoryType;
   engine: SchemaRuleEngineType;
-  description: string;
-  // TODO: rename componentList to RuleConfigComponent
-  componentList: RuleTemplatePayload[];
+  componentList: RuleConfigComponent[];
   level: RuleLevel;
 }
 
 // SchemaReviewPolicyTemplate is the rule template set
 export interface SchemaReviewPolicyTemplate {
-  name: string;
+  title: string;
   imagePath: string;
   ruleList: RuleTemplate[];
 }
 
 // RULE_TEMPLATE_PAYLOAD_MAP is the relationship mapping for the rule type and payload.
 // Used by frontend to get different rule payload configurations.
-export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
+export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
   new Map([
     [
       "naming.table",
       [
         {
-          title: "Table name format",
+          title: "table-name-format",
           description: "",
           payload: {
             type: "STRING",
@@ -147,7 +151,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       "naming.column",
       [
         {
-          title: "Column name format",
+          title: "column-name-format",
           description: "",
           payload: {
             type: "STRING",
@@ -160,7 +164,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       "naming.index.pk",
       [
         {
-          title: "Primary key name format",
+          title: "pk-name-format",
           description: "",
           payload: {
             type: "TEMPLATE",
@@ -168,11 +172,13 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
             templateList: [
               {
                 id: "table",
-                description: "The table name",
+                description:
+                  "schema-review-policy.payload-config.template.table-name",
               },
               {
                 id: "column_list",
-                description: "Index column names, joined by _",
+                description:
+                  "schema-review-policy.payload-config.template.column-list",
               },
             ],
           },
@@ -183,7 +189,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       "naming.index.uk",
       [
         {
-          title: "Unique key name format",
+          title: "uk-name-format",
           description: "",
           payload: {
             type: "TEMPLATE",
@@ -191,11 +197,49 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
             templateList: [
               {
                 id: "table",
-                description: "The table name",
+                description:
+                  "schema-review-policy.payload-config.template.table-name",
               },
               {
                 id: "column_list",
-                description: "Index column names, joined by _",
+                description:
+                  "schema-review-policy.payload-config.template.column-list",
+              },
+            ],
+          },
+        },
+      ],
+    ],
+    [
+      "naming.index.fk",
+      [
+        {
+          title: "fk-name-format",
+          description: "",
+          payload: {
+            type: "TEMPLATE",
+            default:
+              "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+            templateList: [
+              {
+                id: "referencing_table",
+                description:
+                  "schema-review-policy.payload-config.template.referencing-table",
+              },
+              {
+                id: "referencing_column",
+                description:
+                  "schema-review-policy.payload-config.template.referencing-column",
+              },
+              {
+                id: "referenced_table",
+                description:
+                  "schema-review-policy.payload-config.template.referenced-table",
+              },
+              {
+                id: "referenced_column",
+                description:
+                  "schema-review-policy.payload-config.template.referenced-column",
               },
             ],
           },
@@ -206,7 +250,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       "naming.index.idx",
       [
         {
-          title: "Index name format",
+          title: "idx-name-format",
           description: "",
           payload: {
             type: "TEMPLATE",
@@ -214,11 +258,13 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
             templateList: [
               {
                 id: "table",
-                description: "The table name",
+                description:
+                  "schema-review-policy.payload-config.template.table-name",
               },
               {
                 id: "column_list",
-                description: "Index column names, joined by _",
+                description:
+                  "schema-review-policy.payload-config.template.column-list",
               },
             ],
           },
@@ -229,7 +275,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       "column.required",
       [
         {
-          title: "Required column names",
+          title: "required-column",
           description: "",
           payload: {
             type: "STRING_ARRAY",
@@ -247,13 +293,11 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
   ]);
 
 // ruleTemplateList stores the default value for each rule template
-// TODO: i18n
 export const ruleTemplateList: RuleTemplate[] = [
   {
     type: "engine.mysql.use-innodb",
     category: "ENGINE",
     engine: "MYSQL",
-    description: "Require InnoDB as the storage engine.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
@@ -261,7 +305,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "table.require-pk",
     category: "TABLE",
     engine: "COMMON",
-    description: "Require the table to have a primary key.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
@@ -269,7 +312,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "naming.table",
     category: "NAMING",
     engine: "COMMON",
-    description: "Enforce the table name format. Default snake_lower_case.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.table") ?? [],
     level: RuleLevel.ERROR,
   },
@@ -277,7 +319,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "naming.column",
     category: "NAMING",
     engine: "COMMON",
-    description: "Enforce the column name format. Default snake_lower_case.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.column") ?? [],
     level: RuleLevel.ERROR,
   },
@@ -285,7 +326,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "naming.index.pk",
     category: "NAMING",
     engine: "COMMON",
-    description: "Enforce the primary key name format.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.pk") ?? [],
     level: RuleLevel.ERROR,
   },
@@ -293,15 +333,20 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "naming.index.uk",
     category: "NAMING",
     engine: "COMMON",
-    description: "Enforce the unique key name format.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.uk") ?? [],
+    level: RuleLevel.ERROR,
+  },
+  {
+    type: "naming.index.fk",
+    category: "NAMING",
+    engine: "COMMON",
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.fk") ?? [],
     level: RuleLevel.ERROR,
   },
   {
     type: "naming.index.idx",
     category: "NAMING",
     engine: "COMMON",
-    description: "Enforce the index name format.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.idx") ?? [],
     level: RuleLevel.ERROR,
   },
@@ -309,7 +354,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "column.required",
     category: "COLUMN",
     engine: "COMMON",
-    description: "Enforce the required columns in each table.",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("column.required") ?? [],
     level: RuleLevel.ERROR,
   },
@@ -317,32 +361,27 @@ export const ruleTemplateList: RuleTemplate[] = [
     type: "column.no-null",
     category: "COLUMN",
     engine: "COMMON",
-    description: "Columns cannot have NULL value.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
   {
-    type: "query.select.no-select-all",
-    category: "QUERY",
+    type: "statement.select.no-select-all",
+    category: "STATEMENT",
     engine: "COMMON",
-    description: "Disallow 'SELECT *'.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
   {
-    type: "query.where.require",
-    category: "QUERY",
+    type: "statement.where.require",
+    category: "STATEMENT",
     engine: "COMMON",
-    description: "Require 'WHERE' clause.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
   {
-    type: "query.where.no-leading-wildcard-like",
-    category: "QUERY",
+    type: "statement.where.no-leading-wildcard-like",
+    category: "STATEMENT",
     engine: "COMMON",
-    description:
-      "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.",
     level: RuleLevel.ERROR,
     componentList: [],
   },
@@ -360,7 +399,7 @@ export const convertToCategoryList = (
   const categoryOrder: Map<CategoryType, number> = new Map([
     ["ENGINE", 5],
     ["NAMING", 4],
-    ["QUERY", 3],
+    ["STATEMENT", 3],
     ["TABLE", 2],
     ["COLUMN", 1],
   ]);
@@ -422,6 +461,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
+    case "naming.index.fk":
       const templateComponent = ruleTemplate.componentList[0];
       const indexRulePayload = {
         ...templateComponent.payload,
@@ -482,6 +522,7 @@ export const convertRuleTemplateToPolicyRule = (
     case "naming.index.idx":
     case "naming.index.pk":
     case "naming.index.uk":
+    case "naming.index.fk":
       const templatePayload = rule.componentList[0].payload as TemplatePayload;
       return {
         ...base,
@@ -501,4 +542,19 @@ export const convertRuleTemplateToPolicyRule = (
   }
 
   throw new Error(`Invalid rule ${rule.type}`);
+};
+
+export const getRuleLocalization = (
+  type: RuleType
+): { title: string; description: string } => {
+  const { t } = useI18n();
+  const key = type.split(".").join("-");
+
+  const title = t(`schema-review-policy.rule.${key}.title`);
+  const description = t(`schema-review-policy.rule.${key}.description`);
+
+  return {
+    title,
+    description,
+  };
 };
