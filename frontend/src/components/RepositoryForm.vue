@@ -127,7 +127,7 @@
         }}
       </div>
     </div>
-    <!-- TODO(Steven): remove the isDev flag when release v1.1.0 -->
+    <!-- TODO(steven): remove this release guard once ready to release. -->
     <div v-if="isDev()">
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
