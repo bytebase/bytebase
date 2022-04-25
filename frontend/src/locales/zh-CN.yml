@@ -1259,9 +1259,61 @@ schema-review-policy:
   category:
     engine: 引擎
     naming: 命名
-    query: 查询
+    statement: 语句
     table: 表
     column: 列
+  template:
+    policy-for-prod:
+      title: 针对生产环境的审核策略
+    policy-for-dev:
+      title: 针对开发环境的审核策略
+  rule:
+    engine-mysql-use-innodb:
+      title: 使用 InnoDB 作为储存引擎
+      description: 强制要求使用 InnoDB 作为 MySQL 的储存引擎。
+    table-require-pk:
+      title: 强制主键
+      description: 要求每张表必须有一个主键。
+    naming-table:
+      title: 表名命名检查
+      description: 限制表名命名风格，默认为小写字母_下划线。
+    naming-column:
+      title: 列名命名检查
+      description: 限制列名命名风格，默认为小写字母_下划线。
+    naming-index-pk:
+      title: 主键命名检查
+      description: 限制主键命名风格，默认为 pk_表名_主键包含的字段名组合。
+    naming-index-uk:
+      title: 唯一键命名检查
+      description: 限制唯一键命名风格，默认为 uk_表名_主键包含的字段名组合。
+    naming-index-idx:
+      title: 索引命名检查
+      description: 限制索引命名风格，默认为 idx_表名_主键包含的字段名组合。
+    column-required:
+      title: 必须包含的字段
+      description: 强制要求表中必须包含某些字段。
+    column-no-null:
+      title: 禁止字段为 NULL
+      description: 表中的字段不允许存在 NULL 值。
+    statement-select-no-select-all:
+      title: 禁止 "SELECT *"
+      description: 不允许使用 "SELECT *" 语句
+    statement-where-require:
+      title: 强制 "WHERE"
+      description: 必须使用 "WHERE" 语句
+    statement-where-no-leading-wildcard-like:
+      title: 禁止左模糊
+      description: WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。
+  payload-config:
+    table-name-format: 表命名规则（正则）
+    column-name-format: 列命名规则（正则）
+    pk-name-format: 主键命名规则
+    uk-name-format: 唯一键命名规则
+    idx-name-format: 索引命名规则
+    required-column: 必须包含的字段名
+    template:
+      table-name: 表名
+      column-list: 索引包含的字段名，通过 _ 连接
   error-level:
     name: 错误等级
     error: 错误

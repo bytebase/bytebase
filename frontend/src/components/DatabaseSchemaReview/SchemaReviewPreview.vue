@@ -60,7 +60,7 @@
               :id="rule.type.replace(/\./g, '-')"
               class="text-left text-xl hover:underline whitespace-nowrap"
             >
-              {{ rule.type }}
+              {{ getRuleLocalization(rule.type).title }}
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
@@ -70,7 +70,9 @@
               />
             </div>
           </div>
-          <p class="py-2 text-gray-400">{{ rule.description }}</p>
+          <p class="py-2 text-gray-400">
+            {{ getRuleLocalization(rule.type).description }}
+          </p>
           <ul role="list" class="space-y-4 list-disc list-inside">
             <li
               v-for="(component, i) in rule.componentList"
@@ -110,7 +112,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { RuleTemplate, convertToCategoryList, Environment } from "@/types";
+import {
+  RuleTemplate,
+  getRuleLocalization,
+  convertToCategoryList,
+  Environment,
+} from "@/types";
 import { environmentName } from "@/utils";
 
 const props = withDefaults(
