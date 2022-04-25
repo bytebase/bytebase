@@ -59,9 +59,8 @@ type Driver struct {
 
 	db      *sql.DB
 	baseDSN string
-	// True if user give only database instead of instance
-	strictUseDb bool
-	// Only use if user give only database instead of instance
+
+	// Only non-empty if user give only database instead of instance.
 	strictDatabase string
 }
 
@@ -96,8 +95,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	}
 	driver.baseDSN = dsn
 	driver.connectionCtx = connCtx
-	driver.strictUseDb = config.StrictUseDb
-	if driver.strictUseDb {
+	if config.StrictUseDb {
 		driver.strictDatabase = config.Database
 	}
 
@@ -427,7 +425,7 @@ func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([
 // NeedsSetupMigration returns whether it needs to setup migration.
 func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	// Don't use `bytebase` when user gives database instead of instance.
-	if !driver.strictUseDb {
+	if !driver.strictUseDb() {
 		exist, err := driver.hasBytebaseDatabase(ctx)
 		if err != nil {
 			return false, err
@@ -479,7 +477,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		)
 
 		// Only try to create `bytebase` db when user provide an instance
-		if !driver.strictUseDb {
+		if !driver.strictUseDb() {
 			exist, err := driver.hasBytebaseDatabase(ctx)
 			if err != nil {
 				driver.l.Error("Failed to find bytebase database.",
@@ -670,7 +668,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	if driver.strictUseDb {
+	if driver.strictUseDb() {
 		return util.ExecuteMigration(ctx, driver.l, driver, m, statement, driver.strictDatabase)
 	}
 	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
@@ -727,7 +725,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 
 	var history []*db.MigrationHistory
 	var err error
-	if driver.strictUseDb {
+	if driver.strictUseDb() {
 		history, err = util.FindMigrationHistoryList(ctx, query, params, driver, driver.strictDatabase, find, baseQuery)
 	} else {
 		history, err = util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
@@ -750,7 +748,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
 	var sqldb *sql.DB
 	var err error
-	if driver.strictUseDb {
+	if driver.strictUseDb() {
 		sqldb, err = driver.GetDbConnection(ctx, driver.strictDatabase)
 	} else {
 		sqldb, err = driver.GetDbConnection(ctx, bytebaseDatabase)
@@ -1037,6 +1035,10 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 		dbs = append(dbs, &d)
 	}
 	return dbs, nil
+}
+
+func (driver *Driver) strictUseDb() bool {
+	return len(driver.strictDatabase) != 0
 }
 
 // pgDatabaseSchema describes a pg database schema.
