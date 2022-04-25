@@ -60,7 +60,7 @@ type Driver struct {
 	db      *sql.DB
 	baseDSN string
 
-	// Only non-empty if user give only database instead of instance.
+	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
 }
 
