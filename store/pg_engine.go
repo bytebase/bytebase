@@ -322,7 +322,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		var createDb bool
 		if strictDb {
 			// User gives only database instead of instance, we cannot create database again.
-			stmt = fmt.Sprintf("\\connect \"%s\";\n%s\n%s", databaseName, buf, dataBuf)
+			stmt = fmt.Sprintf("%s\n%s", buf, dataBuf)
 			createDb = false
 		} else {
 			// We will create the database together with initial schema and data migration.
