@@ -132,7 +132,7 @@ func init() {
 	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
 	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
 	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
