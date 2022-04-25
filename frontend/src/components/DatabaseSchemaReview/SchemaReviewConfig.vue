@@ -51,7 +51,7 @@ import {
   RuleType,
   RuleLevel,
   RuleTemplate,
-  RuleTemplatePayload,
+  RuleConfigComponent,
   SchemaReviewPolicyTemplate,
 } from "@/types/schemaSystem";
 
@@ -125,7 +125,7 @@ const onPayloadChange = (rule: RuleTemplate, data: (string | string[])[]) => {
           break;
       }
       return list;
-    }, [] as RuleTemplatePayload[]),
+    }, [] as RuleConfigComponent[]),
   };
 
   emit("change", newRule);
