@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/store"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -515,7 +516,7 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 		}
 		for _, tc := range sc.TaskList {
 			id++
-			taskRaw := &api.TaskRaw{
+			taskRaw := &store.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
