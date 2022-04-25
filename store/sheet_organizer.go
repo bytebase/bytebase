@@ -34,6 +34,11 @@ func (raw *sheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
 
 // UpsertSheetOrganizer upserts a new SheetOrganizer.
 func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrganizerUpsert) (*api.SheetOrganizer, error) {
+	// TODO(steven): remove this release guard once ready to release.
+	if s.db.mode != common.ReleaseModeDev {
+		return nil, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -56,6 +61,11 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 
 // FindSheetOrganizer retrieves a SheetOrganizer.
 func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
+	// TODO(steven): remove this release guard once ready to release.
+	if s.db.mode != common.ReleaseModeDev {
+		return nil, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
