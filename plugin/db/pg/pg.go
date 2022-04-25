@@ -723,13 +723,11 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
-	var history []*db.MigrationHistory
-	var err error
+	database := bytebaseDatabase
 	if driver.strictUseDb() {
-		history, err = util.FindMigrationHistoryList(ctx, query, params, driver, driver.strictDatabase, find, baseQuery)
-	} else {
-		history, err = util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
+		database = driver.strictDatabase
 	}
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, database, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	// Skip this backfill for bytebase's database "bb" with user "bb". We will use the one in pg_engine.go instead.
 	isBytebaseDatabase := strings.Contains(driver.baseDSN, "user=bb") && strings.Contains(driver.baseDSN, "host=/tmp")
