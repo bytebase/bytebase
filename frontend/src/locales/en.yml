@@ -1421,6 +1421,7 @@ schema-review-policy:
   remove-review: Successfully removed the review policy.
   create-review: Successfully created the review policy.
   update-review: Successfully updated the review policy.
+  rules: Rules
   filter: Filter
   no-permission: Only DBA or Owner has permission to create or update review policy.
   disable: Disable schema review policy
@@ -1429,9 +1430,68 @@ schema-review-policy:
   category:
     engine: Engine
     naming: Naming
-    query: Query
+    statement: Statement
     table: Table
     column: Column
+  template:
+    policy-for-prod:
+      title: Schema review for Prod
+    policy-for-dev:
+      title: Schema review for Dev
+  rule:
+    engine-mysql-use-innodb:
+      title: Use Innodb
+      description: Require InnoDB as the storage engine for MySQL.
+    table-require-pk:
+      title: Require primary key
+      description: Require the table to have a primary key.
+    naming-table:
+      title: Table naming check
+      description: Enforce the table name format. Default snake_lower_case.
+    naming-column:
+      title: Column naming check
+      description: Enforce the column name format. Default snake_lower_case.
+    naming-index-pk:
+      title: Primary key naming check
+      description: Enforce the primary key name format. Default pk_{table_name}_{column_name}.
+    naming-index-uk:
+      title: Unique key naming check
+      description: Enforce the unique key name format. Default uk_{table_name}_{column_name}.
+    naming-index-fk:
+      title: Foreign key naming check
+      description: Enforce the foreign key name format. Default fk_{referencing_table}_{referencing_column}_{referenced_table}_{referenced_column}.
+    naming-index-idx:
+      title: Index naming check
+      description: Enforce the index name format. Default idx_{table_name}_{column_name}.
+    column-required:
+      title: Required columns
+      description: Enforce the required columns in each table.
+    column-no-null:
+      title: Disallow NULL
+      description: Columns cannot have NULL value.
+    statement-select-no-select-all:
+      title: Disallow "SELECT *"
+      description: Disallow 'SELECT *' statement.
+    statement-where-require:
+      title: Require "WHERE"
+      description: Require 'WHERE' clause.
+    statement-where-no-leading-wildcard-like:
+      title: Disallow leading wildcard like
+      description: Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+  payload-config:
+    table-name-format: Table name format (regex)
+    column-name-format: Column name format (regex)
+    pk-name-format: Primary key name format
+    uk-name-format: Unique key name format
+    idx-name-format: Index name format
+    required-column: Required column names
+    template:
+      table-name: The table name
+      column-list: Index column names, joined by _
+      referencing-table: The referencing table name
+      referencing-column: The referencing column name
+      referenced-table: The referenced table name
+      referenced-column: The referenced column name
   error-level:
     name: Error Level
     error: Error
@@ -1442,6 +1502,7 @@ schema-review-policy:
     basic-info:
       name: Basic info
       display-name: Display name
+      display-name-placeholder: The review policy name
       display-name-default: Schema review policy
       display-name-label: >-
         A display name to help identifying among different review policies.
