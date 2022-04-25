@@ -746,9 +746,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
 	var sqldb *sql.DB
 	var err error
-	if driver.strictUseDb() {
-		sqldb, err = driver.GetDbConnection(ctx, driver.strictDatabase)
-	} else {
+	if !driver.strictUseDb() {
 		sqldb, err = driver.GetDbConnection(ctx, bytebaseDatabase)
 	}
 	if err != nil {
