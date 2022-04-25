@@ -58,9 +58,12 @@ execute() {
     install "${tmpdir}/bb" "/usr/local/bin"
     echo "Installed bb to /usr/local/bin"
 
-    echo "Start cleaning up..."
-    rm -rf "${tmpdir}"
-    echo "Completed cleaning up"
+    echo ""
+    echo "Check the usage with"
+    echo "  bb --help"
+    echo ""
+    echo "You can clean up temp files with"
+    echo "  rm -rf ${tmpdir}"
 }
 
 execute
