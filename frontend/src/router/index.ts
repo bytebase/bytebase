@@ -318,20 +318,8 @@ const routes: Array<RouteRecordRaw> = [
                   title: () => t("common.projects"),
                   quickActionListByRole: () => {
                     return new Map([
-                      [
-                        "OWNER",
-                        [
-                          "quickaction.bb.project.create",
-                          "quickaction.bb.project.default",
-                        ],
-                      ],
-                      [
-                        "DBA",
-                        [
-                          "quickaction.bb.project.create",
-                          "quickaction.bb.project.default",
-                        ],
-                      ],
+                      ["OWNER", ["quickaction.bb.project.create"]],
+                      ["DBA", ["quickaction.bb.project.create"]],
                       ["DEVELOPER", []],
                     ]);
                   },
@@ -501,27 +489,9 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.project"),
               quickActionListByRole: () => {
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DEVELOPER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
+                  ["OWNER", ["quickaction.bb.project.create"]],
+                  ["DBA", ["quickaction.bb.project.create"]],
+                  ["DEVELOPER", ["quickaction.bb.project.create"]],
                 ]);
               },
             },

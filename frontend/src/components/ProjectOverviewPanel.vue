@@ -39,11 +39,6 @@
           </div>
         </div>
       </div>
-      <BBAttention
-        v-if="project.id == DEFAULT_PROJECT_ID"
-        :style="`INFO`"
-        :title="$t('project.overview.info-slot-content')"
-      />
 
       <YAxisRadioGroup
         v-if="isTenantProject && state.yAxisLabel"
@@ -123,14 +118,7 @@ import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
-import {
-  Activity,
-  Database,
-  Issue,
-  Project,
-  DEFAULT_PROJECT_ID,
-  LabelKeyType,
-} from "../types";
+import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import { NSpin } from "naive-ui";
 import { useActivityStore, useIssueStore, useLabelStore } from "@/store";
@@ -254,7 +242,6 @@ export default defineComponent({
     });
 
     return {
-      DEFAULT_PROJECT_ID,
       state,
       isTenantProject,
       filteredDatabaseList,

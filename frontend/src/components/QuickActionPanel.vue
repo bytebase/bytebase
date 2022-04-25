@@ -161,18 +161,6 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.project.default'"
-        class="flex flex-col items-center w-28"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="goDefaultProject">
-          <heroicons-outline:cube class="w-6 h-6" />
-        </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t("quick-action.default-project") }}
-        </h3>
-      </div>
-
-      <div
         v-if="quickAction == 'quickaction.bb.project.database.transfer'"
         class="flex flex-col items-center w-28"
       >
@@ -263,7 +251,7 @@ import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
+import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
@@ -324,15 +312,6 @@ export default defineComponent({
       state.modalSubtitle = "";
       state.quickActionType = "quickaction.bb.project.create";
       state.showModal = true;
-    };
-
-    const goDefaultProject = () => {
-      router.push({
-        name: "workspace.project.detail",
-        params: {
-          projectSlug: DEFAULT_PROJECT_ID,
-        },
-      });
     };
 
     const transferDatabase = () => {
@@ -428,10 +407,6 @@ export default defineComponent({
         name: t("quick-action.new-project"),
         perform: () => createProject(),
       },
-      "quickaction.bb.project.default": {
-        name: t("quick-action.default-project"),
-        perform: () => goDefaultProject(),
-      },
       "quickaction.bb.project.database.transfer": {
         name: t("quick-action.transfer-in-db"),
         perform: () => transferDatabase(),
@@ -460,7 +435,6 @@ export default defineComponent({
       state,
       projectId,
       createProject,
-      goDefaultProject,
       transferDatabase,
       createInstance,
       alterSchema,
