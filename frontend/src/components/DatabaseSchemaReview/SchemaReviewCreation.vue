@@ -159,6 +159,7 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
         ],
         RuleLevel.WARNING
@@ -189,6 +190,7 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
           "statement.select.no-select-all",
           "statement.where.require",

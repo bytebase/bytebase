@@ -1286,6 +1286,9 @@ schema-review-policy:
     naming-index-uk:
       title: 唯一键命名检查
       description: 限制唯一键命名风格，默认为 uk_表名_主键包含的字段名组合。
+    naming-index-fk:
+      title: 外键命名检查
+      description: 限制外键命名风格，默认为 fk_目标表名_目标字段名_被引用表名_被引用字段名。
     naming-index-idx:
       title: 索引命名检查
       description: 限制索引命名风格，默认为 idx_表名_主键包含的字段名组合。
@@ -1314,6 +1317,10 @@ schema-review-policy:
     template:
       table-name: 表名
       column-list: 索引包含的字段名，通过 _ 连接
+      referencing-table: 目标表名
+      referencing-column: 目标字段名
+      referenced-table: 被引用的表名
+      referenced-column: 被引用的字段名
   error-level:
     name: 错误等级
     error: 错误

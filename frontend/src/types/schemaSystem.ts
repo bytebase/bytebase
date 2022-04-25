@@ -69,6 +69,7 @@ export type RuleType =
   | "naming.column"
   | "naming.index.pk"
   | "naming.index.uk"
+  | "naming.index.fk"
   | "naming.index.idx"
   | "column.required"
   | "column.no-null"
@@ -211,6 +212,42 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleTemplatePayload[]> =
       ],
     ],
     [
+      "naming.index.fk",
+      [
+        {
+          title: "fk-name-format",
+          description: "",
+          payload: {
+            type: "TEMPLATE",
+            default:
+              "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+            templateList: [
+              {
+                id: "referencing_table",
+                description:
+                  "schema-review-policy.payload-config.template.referencing-table",
+              },
+              {
+                id: "referencing_column",
+                description:
+                  "schema-review-policy.payload-config.template.referencing-column",
+              },
+              {
+                id: "referenced_table",
+                description:
+                  "schema-review-policy.payload-config.template.referenced-table",
+              },
+              {
+                id: "referenced_column",
+                description:
+                  "schema-review-policy.payload-config.template.referenced-column",
+              },
+            ],
+          },
+        },
+      ],
+    ],
+    [
       "naming.index.idx",
       [
         {
@@ -299,6 +336,13 @@ export const ruleTemplateList: RuleTemplate[] = [
     category: "NAMING",
     engine: "COMMON",
     componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.uk") ?? [],
+    level: RuleLevel.ERROR,
+  },
+  {
+    type: "naming.index.fk",
+    category: "NAMING",
+    engine: "COMMON",
+    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.fk") ?? [],
     level: RuleLevel.ERROR,
   },
   {

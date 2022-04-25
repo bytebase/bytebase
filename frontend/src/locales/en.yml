@@ -1455,10 +1455,13 @@ schema-review-policy:
       description: Enforce the primary key name format. Default pk_{table_name}_{column_name}.
     naming-index-uk:
       title: Unique key naming check
-      description: Enforce the unique key name format. Default pk_{table_name}_{column_name}.
+      description: Enforce the unique key name format. Default uk_{table_name}_{column_name}.
+    naming-index-fk:
+      title: Foreign key naming check
+      description: Enforce the foreign key name format. Default fk_{referencing_table}_{referencing_column}_{referenced_table}_{referenced_column}.
     naming-index-idx:
       title: Index naming check
-      description: Enforce the index name format. Default pk_{table_name}_{column_name}.
+      description: Enforce the index name format. Default idx_{table_name}_{column_name}.
     column-required:
       title: Required columns
       description: Enforce the required columns in each table.
@@ -1484,6 +1487,10 @@ schema-review-policy:
     template:
       table-name: The table name
       column-list: Index column names, joined by _
+      referencing-table: The referencing table name
+      referencing-column: The referencing column name
+      referenced-table: The referenced table name
+      referenced-column: The referenced column name
   error-level:
     name: Error Level
     error: Error
