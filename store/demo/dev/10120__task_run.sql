@@ -370,7 +370,7 @@ VALUES
         'DONE',
         'bb.task.database.schema.update.ghost.sync',
         0,
-        '{"detail":"Copy: 2/2 100.0%; Applied: 0; Backlog: 0/1000; Time: 2s(total), 1s(copy); streamer: binlog.000001:81343; Lag: 0.01s, HeartbeatLag: 0.02s, State: migrating; ETA: due","migrationId":1,"version":"20210830011437.11014"}',
+        '{"detail":{"copy":"2/2","applied":"0","backlog":"0/1000","timeTotal":"2s","timeCopy":"1s","streamer":"binlog.000001:81343","lag":"0.01s","heartbeatLag":"0.02s","state":"migrating","eta":"due"},"migrationId":1,"version":"20210830011437.11014"}',
         '{"migrationType":"MIGRATE","statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
     );
 ALTER SEQUENCE task_run_id_seq RESTART WITH 12013;
