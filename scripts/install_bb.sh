@@ -32,7 +32,7 @@ http_download() {
 
     code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
     if [ "$code" != "200" ]; then
-        abort "Fail to download $source_url, status code: $code"
+        abort "Failed to download $source_url, status code: $code"
     fi
 
     echo "Completed downloading $source_url"
