@@ -105,7 +105,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	databaseName := db.connCfg.Username
+	databaseName := db.connCfg.Database
 
 	if db.readonly {
 		db.l.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
@@ -123,28 +123,31 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := d.SetupMigrationIfNeeded(ctx); err != nil {
 		return err
 	}
+
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
-	if _, err := getLatestVersion(ctx, d, databaseName); err != nil {
-		// Convert existing record to semantic versioning format.
-		if !strings.Contains(err.Error(), "invalid stored version") {
-			return err
-		}
-		db.l.Info("Migrating migration history version storage format to semantic version.")
-		db, err := d.GetDbConnection(ctx, "bytebase")
-		if err != nil {
-			return err
-		}
-		// This migrates the CREATE DATABASE record to semantic version format.
-		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L251
-		// This 1.0.0 should correspond to 1.0/0000__initial_schema.sql.
-		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000000' WHERE id = 1 AND version = '10000';"); err != nil {
-			return err
-		}
-		// This migrates the initial schema migration to semantic version format.
-		// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L295
-		// This 1.0.1 should correspond to 1.0/0001__initial_data.sql.
-		if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0001-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
-			return err
+	if !db.connCfg.StrictUseDb {
+		if _, err := getLatestVersion(ctx, d, databaseName); err != nil {
+			// Convert existing record to semantic versioning format.
+			if !strings.Contains(err.Error(), "invalid stored version") {
+				return err
+			}
+			db.l.Info("Migrating migration history version storage format to semantic version.")
+			db, err := d.GetDbConnection(ctx, "bytebase")
+			if err != nil {
+				return err
+			}
+			// This migrates the CREATE DATABASE record to semantic version format.
+			// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L251
+			// This 1.0.0 should correspond to 1.0/0000__initial_schema.sql.
+			if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0000-20210113000000' WHERE id = 1 AND version = '10000';"); err != nil {
+				return err
+			}
+			// This migrates the initial schema migration to semantic version format.
+			// https://github.com/bytebase/bytebase/blob/release/v1.0.2/store/pg_engine.go#L295
+			// This 1.0.1 should correspond to 1.0/0001__initial_data.sql.
+			if _, err := db.ExecContext(ctx, "UPDATE migration_history SET version = '0001.0000.0001-20210113000001' WHERE id = 2 AND version = '10001';"); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -153,7 +156,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	if err := migrate(ctx, d, verBefore, db.mode, db.serverVersion, databaseName, db.l); err != nil {
+	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName, db.l); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
@@ -264,7 +267,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, serverVersion, databaseName string, l *zap.Logger) error {
+func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string, l *zap.Logger) error {
 	l.Info("Apply database migration if needed...")
 	if curVer == nil {
 		l.Info("The database schema has not been setup.")
@@ -308,8 +311,19 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		if err != nil {
 			return fmt.Errorf("failed to read latest data %q, error %w", latestSchemaPath, err)
 		}
-		// We will create the database together with initial schema and data migration.
-		stmt := fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
+
+		var stmt string
+		var createDb bool
+		if strictDb {
+			// User gives only database instead of instance, we cannot create database again.
+			stmt = fmt.Sprintf("\\connect \"%s\";\n%s\n%s", databaseName, buf, dataBuf)
+			createDb = false
+		} else {
+			// We will create the database together with initial schema and data migration.
+			stmt = fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
+			createDb = true
+		}
+
 		if _, _, err := d.ExecuteMigration(
 			ctx,
 			&dbdriver.MigrationInfo{
@@ -323,7 +337,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
-				CreateDatabase:        true,
+				CreateDatabase:        createDb,
 			},
 			stmt,
 		); err != nil {

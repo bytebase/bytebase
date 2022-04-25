@@ -373,6 +373,8 @@ type ConnectionConfig struct {
 	TLSConfig TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
+	// StrictUseDb will set as true if only db given instead of instance
+	StrictUseDb bool
 }
 
 // ConnectionContext is the context for connection.
