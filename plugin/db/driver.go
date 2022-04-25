@@ -51,7 +51,7 @@ type View struct {
 // Index is the database index.
 type Index struct {
 	Name string
-	// This could refer to a column or an expression
+	// This could refer to a column or an expression.
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
@@ -373,7 +373,7 @@ type ConnectionConfig struct {
 	TLSConfig TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
-	// StrictUseDb will set as true if only db given instead of instance
+	// StrictUseDb will set as true if only db given instead of instance.
 	StrictUseDb bool
 }
 
