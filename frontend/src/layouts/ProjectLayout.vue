@@ -12,9 +12,9 @@
     </span>
   </h1>
   <BBAttention
-    v-if="project.id == DEFAULT_PROJECT_ID"
+    v-if="project.id === DEFAULT_PROJECT_ID"
     class="mx-6 mb-4"
-    :style="`INFO`"
+    :style="'INFO'"
     :title="$t('project.overview.info-slot-content')"
   />
   <BBTabFilter
