@@ -42,6 +42,15 @@ export interface Sheet {
   pinned: boolean;
 }
 
+export interface SheetUpsert {
+  id?: SheetId;
+  projectId: ProjectId;
+  databaseId?: DatabaseId;
+  name: string;
+  statement: string;
+  visibility?: SheetVisibility;
+}
+
 export interface SheetCreate {
   projectId: ProjectId;
   databaseId?: DatabaseId;
