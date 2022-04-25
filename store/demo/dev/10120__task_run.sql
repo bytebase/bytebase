@@ -342,4 +342,35 @@ VALUES
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_staging.tbl2 (name TEXT)"}'
     );
 
+-- Successful task run for task xxxx gh-ost sync
+INSERT INTO
+    task_run (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        task_id,
+        name,
+        status,
+        type,
+        code,
+        result,
+        payload
+    )
+VALUES
+    (
+        12012,
+        1,
+        1624879944,
+        1,
+        1624879944,
+        11017,
+        'Update testdb_dev gh-ost sync task run',
+        'DONE',
+        'bb.task.database.schema.update.ghost.sync',
+        0,
+        '{"detail":"Copy: 2/2 100.0%; Applied: 0; Backlog: 0/1000; Time: 2s(total), 1s(copy); streamer: binlog.000001:81343; Lag: 0.01s, HeartbeatLag: 0.02s, State: migrating; ETA: due","migrationId":1,"version":"20210830011437.11014"}',
+        '{"migrationType":"MIGRATE","statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
+    );
 ALTER SEQUENCE task_run_id_seq RESTART WITH 12012;

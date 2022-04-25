@@ -545,7 +545,7 @@ VALUES
         7002,
         'Update testdb_dev gh-ost sync',
         'bb.task.database.schema.update.ghost.sync',
-        'PENDING_APPROVAL',
+        'DONE',
         '{"statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
     );
 
