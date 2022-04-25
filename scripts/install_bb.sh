@@ -13,14 +13,14 @@ BB_VERSION="1.0.3"
 
 OS="$(uname -s)"
 if [[ "${OS}" != "Darwin" && "${OS}" != "Linux" ]]; then
-    abort "bb is only supported on Linux and MacOS"
+    abort "OS ${OS} is not support, bb is only supported on Linux and MacOS"
 fi
 
 ARCH=$(uname -m)
-if [[ "${ARCH}" == "amd64" ]]; then
+if [[ "${ARCH}" == "amd64" || "${ARCH}" == "x86_64" ]]; then
     ARCH="x86_64"
 elif [[ "${ARCH}" != "arm64" ]]; then
-    abort "bb is only supported on amd64 and arm64"
+    abort "Arch ${ARCH} is not support, bb is only supported on x86_64, amd64 and arm64"
 fi
 
 download_tar() {
@@ -40,5 +40,5 @@ download_tar
 extract_tar
 install_bb_binary
 cd $PREV_WD && rm -rf .bytebase
-bb version &> /dev/null
+bb version &>/dev/null
 exit $@
