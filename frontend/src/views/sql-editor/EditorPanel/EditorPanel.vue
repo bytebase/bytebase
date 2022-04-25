@@ -57,20 +57,23 @@ const handleSaveSheet = async (sheetName?: string) => {
   isShowSaveSheetModal.value = false;
 
   const { name, statement, sheetId } = tabStore.currentTab;
+  sheetName = sheetName ? sheetName : name;
 
-  const sheet = await sheetStore.upsertSheet({
-    sheet: {
-      id: sheetId as number,
-      name: sheetName ? sheetName : name,
-      statement,
-    },
-    currentTab: tabStore.currentTab,
-  });
+  const ctx = sqlEditorStore.connectionContext;
+  const sheetUpsert = {
+    id: sheetId,
+    projectId: ctx.projectId,
+    databaseId: ctx.databaseId,
+    name: sheetName,
+    statement: statement,
+  };
+
+  const sheet = await sheetStore.upsertSheet(sheetUpsert);
 
   tabStore.updateCurrentTab({
     sheetId: sheet.id,
     isSaved: true,
-    name: sheetName ? sheetName : name,
+    name: sheetName,
   });
 };
 
