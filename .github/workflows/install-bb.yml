@@ -1,0 +1,20 @@
+name: install bb
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: run install script
+        run: ./script/install_bb.sh
+      - name: check bb version
+        run: bb version
