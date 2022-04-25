@@ -49,6 +49,6 @@ Let's go over the issues one by one:
    >
    > ✅ `。`
 
-# Recommended readings
+# Readings
 
 - [Docs for Developers](https://docsfordevelopers.com)
