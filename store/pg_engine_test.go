@@ -35,7 +35,7 @@ func TestGetMinorMigrationVersions(t *testing.T) {
 		},
 		{
 			names:          names,
-			currentVersion: semver.MustParse("1.0.3"),
+			currentVersion: semver.MustParse("1.0.4"),
 			want:           []semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.2.0"), semver.MustParse("1.3.0"), semver.MustParse("1.4.0")},
 		},
 		{
