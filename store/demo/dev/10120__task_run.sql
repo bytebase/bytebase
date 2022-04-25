@@ -373,4 +373,4 @@ VALUES
         '{"detail":"Copy: 2/2 100.0%; Applied: 0; Backlog: 0/1000; Time: 2s(total), 1s(copy); streamer: binlog.000001:81343; Lag: 0.01s, HeartbeatLag: 0.02s, State: migrating; ETA: due","migrationId":1,"version":"20210830011437.11014"}',
         '{"migrationType":"MIGRATE","statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
     );
-ALTER SEQUENCE task_run_id_seq RESTART WITH 12012;
+ALTER SEQUENCE task_run_id_seq RESTART WITH 12013;
