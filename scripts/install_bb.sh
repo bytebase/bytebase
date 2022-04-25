@@ -62,7 +62,7 @@ execute() {
     echo "Check the usage with"
     echo "  bb --help"
     echo ""
-    echo "You can clean up temp files with"
+    echo "You can clean up the installation files with"
     echo "  rm -rf ${tmpdir}"
 }
 
