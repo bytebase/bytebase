@@ -319,15 +319,12 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		}
 
 		var stmt string
-		var createDb bool
 		if strictDb {
 			// User gives only database instead of instance, we cannot create database again.
 			stmt = fmt.Sprintf("%s\n%s", buf, dataBuf)
-			createDb = false
 		} else {
 			// We will create the database together with initial schema and data migration.
 			stmt = fmt.Sprintf("CREATE DATABASE %s;\n\\connect \"%s\";\n%s\n%s", databaseName, databaseName, buf, dataBuf)
-			createDb = true
 		}
 
 		if _, _, err := d.ExecuteMigration(
@@ -343,7 +340,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
-				CreateDatabase:        createDb,
+				CreateDatabase:        !strictDb,
 			},
 			stmt,
 		); err != nil {
