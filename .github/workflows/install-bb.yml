@@ -1,3 +1,4 @@
+# This workflow tests if scripts/install_bb.sh is working correctly.
 name: install bb
 
 on:
