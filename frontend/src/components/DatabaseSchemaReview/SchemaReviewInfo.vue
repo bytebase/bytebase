@@ -10,7 +10,9 @@
       </p>
       <BBTextField
         class="mt-2 w-full"
-        placeholder="Database review name"
+        :placeholder="
+          $t('schema-review-policy.create.basic-info.display-name-placeholder')
+        "
         :value="name"
         @input="(e) => onNameChange(e)"
       />

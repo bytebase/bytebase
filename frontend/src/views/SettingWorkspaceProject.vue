@@ -1,5 +1,6 @@
 <template>
   <div class="flex flex-col">
+    <BBAttention :style="INFO" :title="$t('setting.project.description')" />
     <div class="px-2 py-2 flex justify-end items-center">
       <BBTableSearch
         ref="searchField"
@@ -9,95 +10,49 @@
     </div>
     <ProjectTable :project-list="filteredList(state.projectList)" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('project.dashboard.modal.confirm')"
-    :cancel-text="$t('project.dashboard.modal.cancel')"
-    :title="$t('project.dashboard.modal.title')"
-    :description="$t('project.dashboard.modal.content')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
-import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
+import { useProjectStore } from "@/store";
 import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID } from "../types";
+import { Project } from "../types";
 
 interface LocalState {
   projectList: Project[];
   searchText: string;
-  showGuide: boolean;
 }
 
 export default defineComponent({
-  name: "ProjectDashboard",
+  name: "SettingWorkspaceMember",
   components: {
     ProjectTable,
   },
   setup() {
     const searchField = ref();
 
-    const uiStateStore = useUIStateStore();
-    const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
-      showGuide: false,
     });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
-
-      if (!uiStateStore.getIntroStateByKey("guide.project")) {
-        setTimeout(() => {
-          state.showGuide = true;
-          uiStateStore.saveIntroStateByKey({
-            key: "project.visit",
-            newState: true,
-          });
-        }, 1000);
-      }
     });
 
     const prepareProjectList = () => {
-      // It will also be called when user logout
-      if (currentUser.value.id != UNKNOWN_ID) {
-        projectStore
-          .fetchProjectListByUser({
-            userId: currentUser.value.id,
-            rowStatusList: ["NORMAL"],
-          })
-          .then((projectList: Project[]) => {
-            state.projectList = projectList;
-          });
-      }
+      projectStore.fetchAllProjectList().then((projectList: Project[]) => {
+        state.projectList = projectList;
+      });
     };
 
     watchEffect(prepareProjectList);
 
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
-    };
-
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.project",
-        newState: true,
-      });
-      state.showGuide = false;
     };
 
     const filteredList = (list: Project[]) => {
@@ -117,7 +72,6 @@ export default defineComponent({
       searchField,
       state,
       filteredList,
-      doDismissGuide,
       changeSearchText,
     };
   },
