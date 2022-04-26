@@ -52,6 +52,8 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 			Logger:    exec.l,
 			Charset:   payload.Charset,
 			Collation: payload.Collation,
+			Level:     payload.Level,
+			Payload:   payload.Payload,
 		},
 		payload.Statement,
 	)

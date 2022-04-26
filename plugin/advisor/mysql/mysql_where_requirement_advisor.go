@@ -38,7 +38,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 		}, nil
 	}
 
-	we := &whereRequirementChecker{}
+	we := &whereRequirementChecker{level: advisor.NewStatusBySchemaReviewRuleLevel(ctx.Level)}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(we)
 	}
@@ -56,6 +56,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 
 type whereRequirementChecker struct {
 	advisorList []advisor.Advice
+	level       advisor.Status
 }
 
 func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -75,7 +76,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != common.Ok {
 		v.advisorList = append(v.advisorList, advisor.Advice{
-			Status:  advisor.Warn,
+			Status:  v.level,
 			Code:    code,
 			Title:   "Require WHERE clause",
 			Content: fmt.Sprintf("%q requires WHERE clause", in.Text()),

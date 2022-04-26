@@ -176,6 +176,19 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
 
+// GetSchemaReviewPolicyByEnvID will get the schema review policy for an environment.
+func (s *Store) GetSchemaReviewPolicyByEnvID(ctx context.Context, environmentID int) (*api.SchemaReviewPolicy, error) {
+	pType := api.PolicyTypeSchemaReview
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		EnvironmentID: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+}
+
 //
 // private functions
 //

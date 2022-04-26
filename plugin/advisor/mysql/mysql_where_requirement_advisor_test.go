@@ -13,7 +13,7 @@ func TestWhereRequirement(t *testing.T) {
 			statement: "DELETE FROM t1",
 			want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
+					Status:  advisor.Error,
 					Code:    common.StatementNoWhere,
 					Title:   "Require WHERE clause",
 					Content: "\"DELETE FROM t1\" requires WHERE clause",
@@ -24,7 +24,7 @@ func TestWhereRequirement(t *testing.T) {
 			statement: "UPDATE t1 SET a = 1",
 			want: []advisor.Advice{
 				{
-					Status:  advisor.Warn,
+					Status:  advisor.Error,
 					Code:    common.StatementNoWhere,
 					Title:   "Require WHERE clause",
 					Content: "\"UPDATE t1 SET a = 1\" requires WHERE clause",

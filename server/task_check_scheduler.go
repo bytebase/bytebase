@@ -338,6 +338,24 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
+		if s.server.feature(api.FeatureSchemaReviewPolicy) {
+			err = s.server.createTaskCheckRunIfNeededBySchemaReviewPolicy(
+				ctx,
+				creatorID,
+				task.ID,
+				task.Instance.EnvironmentID,
+				api.TaskCheckDatabaseStatementAdvisePayload{
+					Statement: statement,
+					DbType:    database.Instance.Engine,
+					Charset:   database.CharacterSet,
+					Collation: database.Collation,
+				},
+				skipIfAlreadyTerminated)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}
@@ -355,6 +373,45 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, err
 	}
 	return task, nil
+}
+
+// createTaskCheckRunIfNeededBySchemaReviewPolicy gets the corresponding SchemaReviewPolicy
+// and generates specific TaskCheckRuns based on it.
+func (s *Server) createTaskCheckRunIfNeededBySchemaReviewPolicy(
+	ctx context.Context,
+	creatotID int,
+	taskID int,
+	environmentID int,
+	basePayload api.TaskCheckDatabaseStatementAdvisePayload,
+	skipIfAlreadyTerminated bool,
+) error {
+	policy, err := s.store.GetSchemaReviewPolicyByEnvID(ctx, environmentID)
+	if err != nil {
+		return err
+	}
+	for _, rule := range policy.RuleList {
+		if rule.Level == api.SchemaRuleLevelDisabled {
+			continue
+		}
+		taskCheckType, payload, err := getTaskCheckTypeAndPayloadByRule(rule, basePayload)
+		if err != nil {
+			s.l.Warn(err.Error())
+			continue
+		}
+		fmt.Println("taskCheckType: ", taskCheckType)
+		_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			CreatorID:               creatotID,
+			TaskID:                  taskID,
+			Type:                    taskCheckType,
+			Payload:                 payload,
+			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+		})
+		if err != nil {
+			fmt.Println("Why?", err)
+			return err
+		}
+	}
+	return nil
 }
 
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.

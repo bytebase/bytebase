@@ -94,6 +94,12 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	DbType    db.Type `json:"dbType,omitempty"`
 	Charset   string  `json:"charset,omitempty"`
 	Collation string  `json:"collation,omitempty"`
+
+	// Schema review rule special fields.
+	// Level is the alert level for this schem review rule level.
+	Level SchemaReviewRuleLevel `json:"level,omitempty"`
+	// Payload is the payload for this schema review rule.
+	Payload string `json:"payload,omitempty"`
 }
 
 // TaskCheckResult is the result of task checks.

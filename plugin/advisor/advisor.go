@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
@@ -35,6 +36,18 @@ func (e Status) String() string {
 	return "UNKNOWN"
 }
 
+// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
+// Default return Error.
+func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) Status {
+	switch level {
+	case api.SchemaRuleLevelError:
+		return Error
+	case api.SchemaRuleLevelWarning:
+		return Warn
+	}
+	return Error
+}
+
 // Type is the type of advisor.
 type Type string
 
@@ -62,6 +75,13 @@ type Context struct {
 	Logger    *zap.Logger
 	Charset   string
 	Collation string
+
+	// Schema review rule special fields.
+	// Level is the alert level for this schem review rule level.
+	// Default "Error", see advisor.NewStatusBySchemaReviewRuleLevel().
+	Level api.SchemaReviewRuleLevel
+	// Payload is the payload for this schema review rule.
+	Payload string
 }
 
 // Advisor is the interface for advisor.
