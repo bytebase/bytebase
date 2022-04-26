@@ -132,7 +132,7 @@
         <label class="textlabel">
           {{ $t("schema-review-policy.title") }}
         </label>
-        <div class="mt-4">
+        <div class="mt-3">
           <button
             v-if="schemaReviewPolicy"
             type="button"
