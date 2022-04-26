@@ -116,9 +116,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		"password": password,
 	}
 
-	if sslCA == "" {
-		m["sslmode"] = "disable"
-	} else {
+	if sslCA != "" {
 		m["sslmode"] = "verify-ca"
 		m["sslrootcert"] = sslCA
 		if sslCert != "" && sslKey != "" {
