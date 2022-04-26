@@ -411,9 +411,11 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewPolicySlug as string;
-                    return useSchemaSystemStore().getReviewPolicyByEnvironmentId(
-                      idFromSlug(slug)
-                    ).name;
+                    return (
+                      useSchemaSystemStore().getReviewPolicyByEnvironmentId(
+                        idFromSlug(slug)
+                      )?.name ?? ""
+                    );
                   },
                 },
                 component: () =>
