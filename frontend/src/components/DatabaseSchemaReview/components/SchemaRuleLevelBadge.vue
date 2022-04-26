@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
 import { RuleLevel } from "@/types/schemaSystem";
-import { BBAttentionStyle } from "@/bbkit/types";
+import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 
 const props = defineProps({
   level: {
@@ -18,14 +18,14 @@ const props = defineProps({
   },
 });
 
-const style = computed((): BBAttentionStyle => {
+const style = computed((): BBBadgeStyle => {
   switch (props.level) {
     case RuleLevel.ERROR:
       return "CRITICAL";
     case RuleLevel.WARNING:
       return "WARN";
     default:
-      return "INFO";
+      return "DISABLED";
   }
 });
 </script>
