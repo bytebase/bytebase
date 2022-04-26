@@ -395,7 +395,7 @@ func (s *Server) createTaskCheckRunIfNeededBySchemaReviewPolicy(
 		}
 		taskCheckType, payload, err := getTaskCheckTypeAndPayloadByRule(rule, basePayload)
 		if err != nil {
-			s.l.Warn(err.Error())
+			s.l.Debug("rule not support", zap.Error(err))
 			continue
 		}
 		_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
