@@ -34,7 +34,7 @@ import {
   useCurrentUser,
 } from "@/store";
 import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
-import { schemaReviewPolicySlug, isOwner, isDBA } from "@/utils";
+import { schemaReviewPolicySlug, isDBAOrOwner } from "@/utils";
 
 const router = useRouter();
 const store = useSchemaSystemStore();
@@ -47,7 +47,7 @@ watchEffect(() => {
 });
 
 const hasPermission = computed(() => {
-  return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
+  return isDBAOrOwner(currentUser.value.role);
 });
 
 const goToCreationView = () => {
