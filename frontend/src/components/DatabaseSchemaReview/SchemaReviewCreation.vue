@@ -4,7 +4,7 @@
       class="my-4"
       :step-item-list="STEP_LIST"
       :allow-next="allowNext"
-      :finish-title="$t(`common.confirm-and-${reviewId ? 'update' : 'add'}`)"
+      :finish-title="$t(`common.confirm-and-${policyId ? 'update' : 'add'}`)"
       @try-change-step="tryChangeStep"
       @try-finish="tryFinishSetup"
       @cancel="onCancel"
@@ -16,7 +16,7 @@
           :available-environment-list="availableEnvironmentList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
-          :is-edit="!!reviewId"
+          :is-edit="!!policyId"
           @select-template="tryApplyTemplate"
           @name-change="(val) => (state.name = val)"
           @env-change="(env) => onEnvChange(env)"
@@ -103,13 +103,13 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    reviewId?: number;
+    policyId?: number;
     name?: string;
     selectedEnvironment?: Environment;
     selectedRuleList?: RuleTemplate[];
   }>(),
   {
-    reviewId: undefined,
+    policyId: undefined,
     name: "",
     selectedEnvironment: undefined,
     selectedRuleList: () => [],
@@ -176,6 +176,10 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
         ["column.required", "column.no-null"],
         RuleLevel.WARNING
       ),
+      ...getRuleListWithLevel(
+        ["schema.backward-compatibility"],
+        RuleLevel.ERROR
+      ),
     ],
   },
   {
@@ -199,7 +203,7 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
       ),
       ...getRuleListWithLevel(["table.require-pk"], RuleLevel.ERROR),
       ...getRuleListWithLevel(
-        ["column.required", "column.no-null"],
+        ["column.required", "column.no-null", "schema.backward-compatibility"],
         RuleLevel.WARNING
       ),
     ],
@@ -229,7 +233,7 @@ const state = reactive<LocalState>({
     : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
   ruleUpdated: false,
   showAlertModal: false,
-  templateIndex: props.reviewId ? -1 : DEFAULT_TEMPLATE_INDEX,
+  templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
 
@@ -238,14 +242,14 @@ const availableEnvironmentList = computed((): Environment[] => {
 
   const filteredList = store.availableEnvironments(
     environmentList.value,
-    props.reviewId
+    props.policyId
   );
 
   return filteredList;
 });
 
 const onCancel = () => {
-  if (props.reviewId) {
+  if (props.policyId) {
     emit("cancel");
   } else {
     router.push({
@@ -294,9 +298,9 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     ),
   };
 
-  if (props.reviewId) {
+  if (props.policyId) {
     store.updateReviewPolicy({
-      id: props.reviewId,
+      id: props.policyId,
       ...upsert,
     });
   } else {
@@ -310,7 +314,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t(
-      `schema-review-policy.${props.reviewId ? "update" : "create"}-review`
+      `schema-review-policy.${props.policyId ? "update" : "create"}-review`
     ),
   });
 
@@ -332,7 +336,7 @@ const onTemplateApply = (index: number) => {
 };
 
 const tryApplyTemplate = (index: number) => {
-  if (state.ruleUpdated || props.reviewId) {
+  if (state.ruleUpdated || props.policyId) {
     state.showAlertModal = true;
     state.pendingApplyTemplateIndex = index;
     return;
