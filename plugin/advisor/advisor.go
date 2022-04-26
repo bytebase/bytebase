@@ -77,7 +77,7 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	// Level is the alert level for this schem review rule level.
+	// Level is the alert level for this schema review rule level.
 	// Default "Error", see advisor.NewStatusBySchemaReviewRuleLevel().
 	Level api.SchemaReviewRuleLevel
 	// Payload is the payload for this schema review rule.
