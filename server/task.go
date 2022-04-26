@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/store"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -191,7 +192,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					if err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
 					}
-					_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+					_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 						CreatorID:               api.SystemBotID,
 						TaskID:                  task.ID,
 						Type:                    api.TaskCheckDatabaseStatementSyntax,
@@ -208,7 +209,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 
 					if s.feature(api.FeatureBackwardCompatibility) {
-						_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+						_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 							CreatorID:               api.SystemBotID,
 							TaskID:                  task.ID,
 							Type:                    api.TaskCheckDatabaseStatementCompatibility,
@@ -267,7 +268,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err))
 			}
-			_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               api.SystemBotID,
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckGeneralEarliestAllowedTime,
@@ -418,7 +419,7 @@ func (s *Server) composeTaskListByPipelineAndStageID(ctx context.Context, pipeli
 	return taskList, nil
 }
 
-func (s *Server) composeTaskRelationship(ctx context.Context, raw *api.TaskRaw) (*api.Task, error) {
+func (s *Server) composeTaskRelationship(ctx context.Context, raw *store.TaskRaw) (*api.Task, error) {
 	task := raw.ToTask()
 
 	creator, err := s.store.GetPrincipalByID(ctx, task.CreatorID)
