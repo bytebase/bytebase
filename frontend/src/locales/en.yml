@@ -34,6 +34,8 @@ common:
   settings: Settings
   project: Project
   projects: Projects
+  default-project: Default Project
+  visit-default-project: "@:common.visit @:common.default-project"
   help: Help
   database: Database
   databases: Databases
@@ -469,7 +471,6 @@ quick-action:
   add-instance: "@:common.add @:common.instance"
   create-instance: "@:common.create @:common.instance"
   manage-user: Manage User
-  default-project: Default Project
   add-environment: "@:common.add @:common.environment"
   create-environment: "@:common.create @:common.environment"
   new-project: "@:common.new @:common.project"
@@ -481,7 +482,7 @@ quick-action:
   from-default-project: From Default project
   from-other-projects: From other projects
   transfer-in-db-title: Transfer in database from other projects
-  transfer-in-db-hint: >-
+  default-db-hint: >-
     Bytebase periodically syncs the instance schema. Newly synced databases are
     first placed in this default project.
   transfer-in-db-alert: Are you sure to transfer "{ dbName }" into our project?
