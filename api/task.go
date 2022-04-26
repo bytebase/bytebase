@@ -107,8 +107,8 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
 	// SocketFileName is the socket file that gh-ost listens on.
 	// The name follows this template,
-	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.{{TIMESTAMP}}.sock`
-	SocketFileName string
+	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
+	// SocketFileName will be composed when needed. We don't store it explicitly.
 }
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.

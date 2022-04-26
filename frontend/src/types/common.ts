@@ -88,7 +88,6 @@ export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.reorder";
 export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
-  | "quickaction.bb.project.default"
   | "quickaction.bb.project.database.transfer";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type UserQuickActionType = "quickaction.bb.user.manage";
@@ -326,6 +325,7 @@ const makeUnknown = (type: ResourceType) => {
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
+    rowStatus: "NORMAL",
     environment: UNKNOWN_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
@@ -491,11 +491,13 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: UNKNOWN_ID,
-    name: "",
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    rowStatus: "NORMAL",
+    environment: UNKNOWN_ENVIRONMENT,
+    name: "",
     ruleList: [],
   };
 
@@ -709,6 +711,7 @@ const makeEmpty = (type: ResourceType) => {
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
+    rowStatus: "NORMAL",
     environment: EMPTY_ENVIRONMENT,
     type: "bb.policy.pipeline-approval",
     payload: {
@@ -874,11 +877,13 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
     id: EMPTY_ID,
-    name: "",
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
     createdTs: 0,
     updatedTs: 0,
+    rowStatus: "NORMAL",
+    environment: EMPTY_ENVIRONMENT,
+    name: "",
     ruleList: [],
   };
 

@@ -312,6 +312,22 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "project",
+                name: "setting.workspace.project",
+                meta: {
+                  title: () => t("common.projects"),
+                  quickActionListByRole: () => {
+                    return new Map([
+                      ["OWNER", ["quickaction.bb.project.create"]],
+                      ["DBA", ["quickaction.bb.project.create"]],
+                      ["DEVELOPER", []],
+                    ]);
+                  },
+                },
+                component: () => import("../views/SettingWorkspaceProject.vue"),
+                props: true,
+              },
+              {
                 path: "member",
                 name: "setting.workspace.member",
                 meta: { title: () => t("settings.sidebar.members") },
@@ -395,7 +411,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.schemaReviewPolicySlug as string;
-                    return useSchemaSystemStore().getReviewPolicyById(
+                    return useSchemaSystemStore().getReviewPolicyByEnvironmentId(
                       idFromSlug(slug)
                     ).name;
                   },
@@ -473,27 +489,9 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.project"),
               quickActionListByRole: () => {
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DEVELOPER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
+                  ["OWNER", ["quickaction.bb.project.create"]],
+                  ["DBA", ["quickaction.bb.project.create"]],
+                  ["DEVELOPER", ["quickaction.bb.project.create"]],
                 ]);
               },
             },
@@ -924,6 +922,17 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  if (to.name?.toString().startsWith("setting.workspace.project")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   if (to.name === "workspace.instance") {
     if (
       !hasFeature("bb.feature.dba-workflow") ||
@@ -1206,7 +1215,7 @@ router.beforeEach((to, from, next) => {
 
   if (schemaReviewPolicySlug) {
     useSchemaSystemStore()
-      .fetchReviewPolicyById(idFromSlug(schemaReviewPolicySlug))
+      .fetchReviewPolicyByEnvironmentId(idFromSlug(schemaReviewPolicySlug))
       .then(() => {
         next();
       })

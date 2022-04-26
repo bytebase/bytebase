@@ -72,7 +72,7 @@
 import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTabItem } from "../../bbkit/types";
+import { BBStepTabItem } from "@/bbkit/types";
 import {
   RuleType,
   ruleTemplateList,
@@ -81,14 +81,14 @@ import {
   RuleTemplate,
   SchemaReviewPolicyTemplate,
   convertRuleTemplateToPolicyRule,
-} from "../../types";
+} from "@/types";
 import {
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
   useSchemaSystemStore,
 } from "@/store";
-import { isOwner, isDBA } from "../../utils";
+import { isOwner, isDBA } from "@/utils";
 
 interface LocalState {
   currentStep: number;
@@ -145,10 +145,9 @@ const getRuleListWithLevel = (
   }, [] as RuleTemplate[]);
 };
 
-// TODO: i18n
 const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
   {
-    name: "Schema review for Prod",
+    title: t("schema-review-policy.template.policy-for-prod.title"),
     imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)
       .href,
     ruleList: [
@@ -159,15 +158,16 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
         ],
         RuleLevel.WARNING
       ),
       ...getRuleListWithLevel(
         [
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
+          "statement.select.no-select-all",
+          "statement.where.require",
+          "statement.where.no-leading-wildcard-like",
           "table.require-pk",
         ],
         RuleLevel.ERROR
@@ -179,7 +179,7 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
     ],
   },
   {
-    name: "Schema review for Dev",
+    title: t("schema-review-policy.template.policy-for-dev.title"),
     imagePath: new URL("../../assets/plan-free.png", import.meta.url).href,
     ruleList: [
       ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
@@ -189,10 +189,11 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
+          "statement.select.no-select-all",
+          "statement.where.require",
+          "statement.where.no-leading-wildcard-like",
         ],
         RuleLevel.WARNING
       ),
@@ -286,18 +287,23 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       title: t("schema-review-policy.no-permission"),
     });
   }
-  const review = {
+  const upsert = {
     name: state.name,
-    environmentId: state.selectedEnvironment?.id,
     ruleList: state.selectedRuleList.map((rule) =>
       convertRuleTemplateToPolicyRule(rule)
     ),
   };
 
   if (props.reviewId) {
-    store.updateReviewPolicy(props.reviewId, review);
+    store.updateReviewPolicy({
+      id: props.reviewId,
+      ...upsert,
+    });
   } else {
-    store.addReviewPolicy(review);
+    store.addReviewPolicy({
+      ...upsert,
+      environmentId: state.selectedEnvironment?.id,
+    });
   }
 
   pushNotification({

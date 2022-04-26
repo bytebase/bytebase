@@ -2,7 +2,9 @@
   <div class="flex gap-x-20">
     <aside class="hidden lg:block">
       <div class="space-y-6">
-        <h1 class="text-left text-2xl font-semibold">Rules</h1>
+        <h1 class="text-left text-2xl font-semibold">
+          {{ $t("schema-review-policy.rules") }}
+        </h1>
         <fieldset v-for="(category, index) in categoryList" :key="index">
           <div class="block text-sm font-medium text-gray-900">
             {{
@@ -18,7 +20,7 @@
               :href="`#${rule.type.replace(/\./g, '-')}`"
               class="text-gray-600 hover:underline cursor-pointer"
             >
-              {{ rule.type }}
+              {{ getRuleLocalization(rule.type).title }}
             </a>
           </div>
         </fieldset>
@@ -60,7 +62,7 @@
               :id="rule.type.replace(/\./g, '-')"
               class="text-left text-xl hover:underline whitespace-nowrap"
             >
-              {{ rule.type }}
+              {{ getRuleLocalization(rule.type).title }}
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
@@ -70,7 +72,9 @@
               />
             </div>
           </div>
-          <p class="py-2 text-gray-400">{{ rule.description }}</p>
+          <p class="py-2 text-gray-400">
+            {{ getRuleLocalization(rule.type).description }}
+          </p>
           <ul role="list" class="space-y-4 list-disc list-inside">
             <li
               v-for="(component, i) in rule.componentList"
@@ -110,8 +114,13 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { RuleTemplate, convertToCategoryList, Environment } from "../../types";
-import { environmentName } from "../../utils";
+import {
+  RuleTemplate,
+  getRuleLocalization,
+  convertToCategoryList,
+  Environment,
+} from "@/types";
+import { environmentName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{

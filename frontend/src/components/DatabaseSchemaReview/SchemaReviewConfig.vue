@@ -51,9 +51,9 @@ import {
   RuleType,
   RuleLevel,
   RuleTemplate,
-  RuleTemplatePayload,
+  RuleConfigComponent,
   SchemaReviewPolicyTemplate,
-} from "../../types/schemaSystem";
+} from "@/types/schemaSystem";
 
 interface LocalState {
   activeRuleType: RuleType | null;
@@ -125,7 +125,7 @@ const onPayloadChange = (rule: RuleTemplate, data: (string | string[])[]) => {
           break;
       }
       return list;
-    }, [] as RuleTemplatePayload[]),
+    }, [] as RuleConfigComponent[]),
   };
 
   emit("change", newRule);

@@ -10,7 +10,9 @@
       </p>
       <BBTextField
         class="mt-2 w-full"
-        placeholder="Database review name"
+        :placeholder="
+          $t('schema-review-policy.create.basic-info.display-name-placeholder')
+        "
         :value="name"
         @input="(e) => onNameChange(e)"
       />
@@ -34,16 +36,11 @@
         "
         class="mb-5"
       />
-      <div class="flex flex-wrap gap-x-3">
+      <div class="flex flex-wrap gap-x-3" v-if="!isEdit">
         <div
           v-for="env in environmentList"
           :key="env.id"
-          :class="[
-            'flex items-center',
-            env.disabled
-              ? 'cursor-not-allowed text-gray-400'
-              : 'cursor-pointer text-gray-600',
-          ]"
+          class="flex items-center"
         >
           <input
             type="radio"
@@ -64,6 +61,11 @@
           </label>
         </div>
       </div>
+      <BBBadge
+        v-else-if="isEdit && selectedEnvironment"
+        :text="environmentName(selectedEnvironment)"
+        :can-remove="false"
+      />
     </div>
     <div>
       <div class="mt-5" v-if="isEdit">
@@ -105,8 +107,8 @@
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
 import { useSchemaSystemStore, useEnvironmentList } from "@/store";
-import { Environment, SchemaReviewPolicyTemplate } from "../../types";
-import { environmentName } from "../../utils";
+import { Environment, SchemaReviewPolicyTemplate } from "@/types";
+import { environmentName } from "@/utils";
 
 interface LocalEnvironment extends Environment {
   disabled: boolean;

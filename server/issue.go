@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/store"
+	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 )
@@ -514,8 +515,21 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 			PipelineID:    sc.PipelineID,
 			EnvironmentID: sc.EnvironmentID,
 		}
-		for _, tc := range sc.TaskList {
+		// We don't know IDs before inserting, so we use array index instead.
+		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
+		indexBlockedByIndex := make(map[int][]int)
+		for _, indexDAG := range sc.TaskIndexDAGList {
+			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
+		}
+		idOffset := id + 1
+		// The ID of sc.TaskList[index].ID equals index + idOffset.
+		for index, tc := range sc.TaskList {
 			id++
+			var blockedBy []string
+			for _, blockedByIndex := range indexBlockedByIndex[index] {
+				// Convert array index to ID.
+				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
+			}
 			taskRaw := &store.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
@@ -533,6 +547,8 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 				DatabaseID:        tc.DatabaseID,
 			}
 			task, err := s.composeTaskRelationship(ctx, taskRaw)
+			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
+			task.BlockedBy = blockedBy
 			if err != nil {
 				return nil, err
 			}
@@ -883,6 +899,63 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			}
 			pipelineCreate = pc
 		}
+	case api.IssueDatabaseSchemaUpdateGhost:
+		m := api.UpdateSchemaGhostContext{}
+		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &m); err != nil {
+			return nil, err
+		}
+		if !s.feature(api.FeatureTaskScheduleTime) {
+			for _, detail := range m.UpdateSchemaDetailList {
+				if detail.EarliestAllowedTs != 0 {
+					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+				}
+			}
+		}
+		pc := &api.PipelineCreate{}
+		pc.Name = "Update database schema (gh-ost) pipeline"
+		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+		}
+		schemaVersion := common.DefaultMigrationVersion()
+		if project.TenantMode == api.TenantModeTenant {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
+		}
+		for _, d := range m.UpdateSchemaDetailList {
+			if d.Statement == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
+			}
+			databaseFind := &api.DatabaseFind{
+				ID: &d.DatabaseID,
+			}
+			database, err := s.composeDatabaseByFind(ctx, databaseFind)
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+			}
+			if database == nil {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", d.DatabaseID))
+			}
+			taskStatus := api.TaskPendingApproval
+			policy, err := s.store.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %w", database.Instance.EnvironmentID, err)
+			}
+			if policy.Value == api.PipelineApprovalValueManualNever {
+				taskStatus = api.TaskPending
+			}
+			taskCreateList, taskIndexDAGList, err := getUpdateGhostTaskList(database, m.VCSPushEvent, d, schemaVersion, taskStatus)
+			if err != nil {
+				return nil, err
+			}
+			pc.StageList = append(pc.StageList, api.StageCreate{
+				Name:             fmt.Sprintf("%s%s", database.Instance.Environment.Name, database.Name),
+				EnvironmentID:    database.Instance.Environment.ID,
+				TaskList:         taskCreateList,
+				TaskIndexDAGList: taskIndexDAGList,
+			})
+		}
+		pipelineCreate = pc
+
 	default:
 		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
@@ -919,14 +992,30 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
 		}
 
-		for _, taskCreate := range stageCreate.TaskList {
+		taskID := make(map[int]int)
+
+		for index, taskCreate := range stageCreate.TaskList {
 			taskCreate.CreatorID = creatorID
 			taskCreate.PipelineID = pipelineRawCreated.ID
 			taskCreate.StageID = createdStage.ID
-			if _, err = s.TaskService.CreateTask(ctx, &taskCreate); err != nil {
+			task, err := s.TaskService.CreateTask(ctx, &taskCreate)
+			if err != nil {
 				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
 			}
+			taskID[index] = task.ID
 		}
+
+		for _, indexDAG := range stageCreate.TaskIndexDAGList {
+			taskDAGCreate := api.TaskDAGCreate{
+				FromTaskID: taskID[indexDAG.FromIndex],
+				ToTaskID:   taskID[indexDAG.ToIndex],
+				Payload:    "{}",
+			}
+			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
+				return nil, fmt.Errorf("failed to create task DAG for issue, error %w", err)
+			}
+		}
+
 	}
 
 	pipelineCreated, err := s.composePipelineRelationship(ctx, pipelineRawCreated)
@@ -975,6 +1064,85 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		MigrationType:     migrationType,
 		Payload:           string(bytes),
 	}, nil
+}
+
+func getUpdateGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	var taskCreateList []api.TaskCreate
+	{
+		payload := api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+		payload.Statement = d.Statement
+		payload.SchemaVersion = schemaVersion
+		if vcsPushEvent != nil {
+			payload.VCSPushEvent = vcsPushEvent
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
+		}
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
+			InstanceID:        database.InstanceID,
+			DatabaseID:        &database.ID,
+			Status:            taskStatus,
+			Type:              api.TaskDatabaseSchemaUpdateGhostSync,
+			Statement:         d.Statement,
+			EarliestAllowedTs: d.EarliestAllowedTs,
+			MigrationType:     db.Migrate,
+			Payload:           string(bytes),
+		})
+	}
+	{
+		payload := api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
+		}
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
+			InstanceID:        database.InstanceID,
+			DatabaseID:        &database.ID,
+			Status:            taskStatus,
+			Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
+			EarliestAllowedTs: d.EarliestAllowedTs,
+			Payload:           string(bytes),
+		})
+	}
+	{
+		parser := ghostsql.NewParserFromAlterStatement(d.Statement)
+		tableName := ""
+		if parser.HasExplicitTable() {
+			tableName = fmt.Sprintf("_%v_del", parser.GetExplicitTable())
+		}
+		payload := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
+			DatabaseName: database.Name,
+			TableName:    tableName,
+		}
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost drop original table payload, error: %v", err))
+		}
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:              "Update %q schema gh-ost drop original table",
+			InstanceID:        database.Instance.ID,
+			DatabaseID:        &database.ID,
+			Status:            taskStatus,
+			Type:              api.TaskDatabaseSchemaUpdateGhostDropOriginalTable,
+			EarliestAllowedTs: d.EarliestAllowedTs,
+			Payload:           string(bytes),
+		})
+	}
+	// The below list means that taskCreateList[0] blocks taskCreateList[1], taskCreateList[1] blocks taskCreateList[2], which makes sense because the "sync" task blocks the "cutover" task, and the "drop original table" task can only be done after "cutover".
+	taskIndexDAGList := []api.TaskIndexDAG{
+		{
+			FromIndex: 0,
+			ToIndex:   1,
+		},
+		{
+			FromIndex: 1,
+			ToIndex:   2,
+		},
+	}
+	return taskCreateList, taskIndexDAGList, nil
 }
 
 func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, schema string) (string, string) {
