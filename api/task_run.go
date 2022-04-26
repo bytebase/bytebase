@@ -40,21 +40,17 @@ func (e TaskRunStatus) String() string {
 
 // TaskRunResultPayload is the result payload for a task run.
 type TaskRunResultPayload struct {
-	Detail      string `json:"detail,omitempty"`
-	MigrationID int64  `json:"migrationId,omitempty"`
-	Version     string `json:"version,omitempty"`
+	Detail      string          `json:"detail,omitempty"`
+	Progress    TaskRunProgress `json:"progress,omitempty"`
+	MigrationID int64           `json:"migrationId,omitempty"`
+	Version     string          `json:"version,omitempty"`
 }
 
-// TaskSchemaUpdateGhostSyncRunResultDetail is the detail for a gh-ost sync task.
-type TaskSchemaUpdateGhostSyncRunResultDetail struct {
-	Progress TaskSchemaUpdateGhostSyncRunProgress `json:"progress,omitempty"`
-}
-
-// TaskSchemaUpdateGhostSyncRunProgress describes gh-ost sync task progress.
-type TaskSchemaUpdateGhostSyncRunProgress struct {
-	RowsCopied   int64  `json:"rowsCopied"`
-	RowsEstimate int64  `json:"rowsEstimate"`
-	ETA          string `json:"eta"`
+// TaskRunProgress describes gh-ost sync task progress.
+type TaskRunProgress struct {
+	ProgressPercent float64 `json:"progressPercent"`
+	// ETA is the time estimated before completion in seconds
+	ETA int64 `json:"eta"`
 }
 
 // TaskRunRaw is the store model for an TaskRun.

@@ -370,7 +370,8 @@ VALUES
         'DONE',
         'bb.task.database.schema.update.ghost.sync',
         0,
-        '{"detail":{"progress":{"rowsCopied":"2","rowsEstimate":"2","eta":"due"}},"migrationId":1,"version":"20210830011437.11014"}',
+        '{"detail":"Applied migration version 20210830011437.11014 to database \"testdb_dev\"","progress":{"progressPercent":1,"eta":0},"migrationId":1,"version":"20210830011437.11014"}',
         '{"migrationType":"MIGRATE","statement":"ALTER TABLE tbl1 ENGINE=InnoDB;"}'
     );
+
 ALTER SEQUENCE task_run_id_seq RESTART WITH 12013;
