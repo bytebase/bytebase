@@ -8,26 +8,60 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.TaskRunService = (*TaskRunService)(nil)
-)
+// taskRunRaw is the store model for an TaskRun.
+// Fields have exactly the same meanings as TaskRun.
+type taskRunRaw struct {
+	ID int
 
-// TaskRunService represents a service for managing taskRun.
-type TaskRunService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	TaskID int
+
+	// Domain specific fields
+	Name    string
+	Status  api.TaskRunStatus
+	Type    api.TaskType
+	Code    common.Code
+	Comment string
+	Result  string
+	Payload string
 }
 
-// NewTaskRunService returns a new TaskRunService.
-func NewTaskRunService(logger *zap.Logger, db *DB) *TaskRunService {
-	return &TaskRunService{l: logger, db: db}
+// toTaskRun creates an instance of TaskRun based on the taskRunRaw.
+// This is intended to be called when we need to compose an TaskRun relationship.
+func (raw *taskRunRaw) toTaskRun() *api.TaskRun {
+	return &api.TaskRun{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		TaskID: raw.TaskID,
+
+		// Domain specific fields
+		Name:    raw.Name,
+		Status:  raw.Status,
+		Type:    raw.Type,
+		Code:    raw.Code,
+		Comment: raw.Comment,
+		Result:  raw.Result,
+		Payload: raw.Payload,
+	}
 }
 
-// CreateTaskRunTx creates a new taskRun.
-func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*api.TaskRunRaw, error) {
+// createTaskRunImpl creates a new taskRun.
+func (s *Store) createTaskRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskRunCreate) (*taskRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -58,7 +92,7 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 	defer row.Close()
 
 	row.Next()
-	var taskRunRaw api.TaskRunRaw
+	var taskRunRaw taskRunRaw
 	if err := row.Scan(
 		&taskRunRaw.ID,
 		&taskRunRaw.CreatorID,
@@ -80,20 +114,10 @@ func (s *TaskRunService) CreateTaskRunTx(ctx context.Context, tx *sql.Tx, create
 	return &taskRunRaw, nil
 }
 
-// FindTaskRunListTx retrieves a list of taskRuns based on find.
-func (s *TaskRunService) FindTaskRunListTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRunRaw, error) {
-	taskRunRawList, err := s.findTaskRunList(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	return taskRunRawList, nil
-}
-
-// FindTaskRunTx retrieves a single taskRun based on find.
+// getTaskRunRawTx retrieves a single taskRun based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*api.TaskRunRaw, error) {
-	taskRunRawList, err := s.findTaskRunList(ctx, tx, find)
+func (s *Store) getTaskRunRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) (*taskRunRaw, error) {
+	taskRunRawList, err := s.findTaskRunImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +129,8 @@ func (s *TaskRunService) FindTaskRunTx(ctx context.Context, tx *sql.Tx, find *ap
 	return taskRunRawList[0], nil
 }
 
-// PatchTaskRunStatusTx updates a taskRun status. Returns the new state of the taskRun after update.
-func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*api.TaskRunRaw, error) {
+// patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
+func (s *Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskRunStatusPatch) (*taskRunRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -148,7 +172,7 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	defer row.Close()
 
 	row.Next()
-	var taskRunRaw api.TaskRunRaw
+	var taskRunRaw taskRunRaw
 	if err := row.Scan(
 		&taskRunRaw.ID,
 		&taskRunRaw.CreatorID,
@@ -170,7 +194,7 @@ func (s *TaskRunService) PatchTaskRunStatusTx(ctx context.Context, tx *sql.Tx, p
 	return &taskRunRaw, nil
 }
 
-func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*api.TaskRunRaw, error) {
+func (s *Store) findTaskRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskRunFind) ([]*taskRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -214,9 +238,9 @@ func (s *TaskRunService) findTaskRunList(ctx context.Context, tx *sql.Tx, find *
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into taskRunRawList.
-	var taskRunRawList []*api.TaskRunRaw
+	var taskRunRawList []*taskRunRaw
 	for rows.Next() {
-		var taskRunRaw api.TaskRunRaw
+		var taskRunRaw taskRunRaw
 		if err := rows.Scan(
 			&taskRunRaw.ID,
 			&taskRunRaw.CreatorID,

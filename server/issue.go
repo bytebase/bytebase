@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/store"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -529,7 +530,7 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 				// Convert array index to ID.
 				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
 			}
-			taskRaw := &api.TaskRaw{
+			taskRaw := &store.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
