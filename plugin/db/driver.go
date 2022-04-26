@@ -30,6 +30,8 @@ const (
 	SQLite Type = "SQLITE"
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
+
+	BytebaseDatabase = "bytebase"
 )
 
 // User is the database user.
@@ -51,7 +53,7 @@ type View struct {
 // Index is the database index.
 type Index struct {
 	Name string
-	// This could refer to a column or an expression
+	// This could refer to a column or an expression.
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
@@ -373,6 +375,8 @@ type ConnectionConfig struct {
 	TLSConfig TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
+	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.
+	StrictUseDb bool
 }
 
 // ConnectionContext is the context for connection.

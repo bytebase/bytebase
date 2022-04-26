@@ -748,7 +748,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
 	}
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -799,7 +799,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	// TODO(zp):  modified param `bytebaseDatabase` of `util.FindMigrationHistoryList` when we support *snowflake* database level.
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	if err != nil {
 		if !strings.Contains(err.Error(), "invalid stored version") {
@@ -808,7 +809,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
 	}
 	return history, err
 }

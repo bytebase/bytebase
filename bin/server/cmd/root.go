@@ -132,7 +132,7 @@ func init() {
 	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
 	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
 	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
-	// rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url; for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -367,7 +367,9 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
-	connCfg := dbdriver.ConnectionConfig{}
+	connCfg := dbdriver.ConnectionConfig{
+		StrictUseDb: true,
+	}
 
 	if u.User != nil {
 		connCfg.Username = u.User.Username()
@@ -387,9 +389,11 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 
 	// By default, follow the PG convention to use user name as the database name
 	connCfg.Database = connCfg.Username
-	if u.Path != "" {
-		connCfg.Database = u.Path[1:]
+
+	if u.Path == "" {
+		return nil, fmt.Errorf("missing database in the --pg connection string")
 	}
+	connCfg.Database = u.Path[1:]
 
 	q := u.Query()
 	connCfg.TLSConfig = dbdriver.TLSConfig{
@@ -410,10 +414,11 @@ func (m *Main) newEmbeddedDB() (*store.DB, error) {
 
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	connCfg := dbdriver.ConnectionConfig{
-		Username: m.profile.pgUser,
-		Password: "",
-		Host:     common.GetPostgresSocketDir(),
-		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
+		Username:    m.profile.pgUser,
+		Password:    "",
+		Host:        common.GetPostgresSocketDir(),
+		Port:        fmt.Sprintf("%d", m.profile.datastorePort),
+		StrictUseDb: false,
 	}
 	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
 	return db, nil

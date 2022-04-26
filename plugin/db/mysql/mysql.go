@@ -728,7 +728,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -779,7 +779,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	// TODO(zp):  modified param database of `util.FindMigrationHistoryList` when we support *mysql* database level.
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	if err != nil {
 		if !strings.Contains(err.Error(), "invalid stored version") {
@@ -788,13 +789,13 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
 	}
 	return history, err
 }
 
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDbConnection(ctx, "bytebase")
+	sqldb, err := driver.GetDbConnection(ctx, db.BytebaseDatabase)
 	if err != nil {
 		return err
 	}
