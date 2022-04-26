@@ -1433,6 +1433,7 @@ schema-review-policy:
     statement: Statement
     table: Table
     column: Column
+    schema: Schema
   template:
     policy-for-prod:
       title: Schema review for Prod
@@ -1478,6 +1479,9 @@ schema-review-policy:
     statement-where-no-leading-wildcard-like:
       title: Disallow leading wildcard like
       description: Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+    schema-backward-compatibility:
+      title: Backward compatibility
+      description: MySQL and TiDB support checking whether the schema change is backward compatible.
   payload-config:
     table-name-format: Table name format (regex)
     column-name-format: Column name format (regex)
@@ -1485,6 +1489,7 @@ schema-review-policy:
     uk-name-format: Unique key name format
     idx-name-format: Index name format
     required-column: Required column names
+    input-then-press-enter: Input the value then press enter to add
     template:
       table-name: The table name
       column-list: Index column names, joined by _
