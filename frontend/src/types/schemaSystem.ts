@@ -13,7 +13,8 @@ export type CategoryType =
   | "NAMING"
   | "STATEMENT"
   | "TABLE"
-  | "COLUMN";
+  | "COLUMN"
+  | "SCHEMA";
 
 // The rule level
 export enum RuleLevel {
@@ -75,7 +76,8 @@ export type RuleType =
   | "column.no-null"
   | "statement.select.no-select-all"
   | "statement.where.require"
-  | "statement.where.no-leading-wildcard-like";
+  | "statement.where.no-leading-wildcard-like"
+  | "schema.backward-compatibility";
 
 // The naming format rule payload.
 // Used by the backend.
@@ -385,6 +387,13 @@ export const ruleTemplateList: RuleTemplate[] = [
     level: RuleLevel.ERROR,
     componentList: [],
   },
+  {
+    type: "schema.backward-compatibility",
+    category: "SCHEMA",
+    engine: "MYSQL",
+    level: RuleLevel.ERROR,
+    componentList: [],
+  },
 ];
 
 interface RuleCategory {
@@ -397,10 +406,11 @@ export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
   const categoryOrder: Map<CategoryType, number> = new Map([
-    ["ENGINE", 5],
-    ["NAMING", 4],
-    ["STATEMENT", 3],
-    ["TABLE", 2],
+    ["ENGINE", 6],
+    ["NAMING", 5],
+    ["STATEMENT", 4],
+    ["TABLE", 3],
+    ["SCHEMA", 2],
     ["COLUMN", 1],
   ]);
 

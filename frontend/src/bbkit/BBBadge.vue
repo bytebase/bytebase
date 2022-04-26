@@ -25,11 +25,13 @@
 import { computed, withDefaults } from "vue";
 import { BBAttentionStyle } from "./types";
 
+export type BBBadgeStyle = BBAttentionStyle | "DISABLED";
+
 const props = withDefaults(
   defineProps<{
     text: string;
     canRemove?: boolean;
-    style?: BBAttentionStyle;
+    style?: BBBadgeStyle;
   }>(),
   {
     style: "INFO",
@@ -38,7 +40,6 @@ const props = withDefaults(
   }
 );
 
-// eslint-disable-next-line vue/return-in-computed-property
 const color = computed(() => {
   switch (props.style) {
     case "INFO":
@@ -47,6 +48,8 @@ const color = computed(() => {
       return "yellow";
     case "CRITICAL":
       return "red";
+    case "DISABLED":
+      return "gray";
   }
 });
 const emit = defineEmits(["remove"]);
