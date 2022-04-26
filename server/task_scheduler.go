@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -130,6 +131,17 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.String("name", taskRaw.Name),
 							zap.String("type", string(taskRaw.Type)),
 						)
+						continue
+					}
+					// Skip execution if has any dependency not finished.
+					isBlocked, err := s.isTaskBlocked(ctx, task)
+					if err != nil {
+						s.l.Error("failed to check if task is blocked",
+							zap.Int("id", task.ID),
+							zap.Error(err))
+						continue
+					}
+					if isBlocked {
 						continue
 					}
 
@@ -305,4 +317,24 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	}
 
 	return updatedTask, nil
+}
+
+func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
+	for _, blockingTaskIDString := range task.BlockedBy {
+		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
+		if err != nil {
+			return true, fmt.Errorf("failed to convert id string to int, id string: %v, error: %w", blockingTaskIDString, err)
+		}
+		taskFind := api.TaskFind{
+			ID: &blockingTaskID,
+		}
+		blockingTask, err := s.server.TaskService.FindTask(ctx, &taskFind)
+		if err != nil {
+			return true, fmt.Errorf("failed to fetch the blocking task, id: %v, error: %w", blockingTaskID, err)
+		}
+		if blockingTask.Status != api.TaskDone {
+			return true, nil
+		}
+	}
+	return false, nil
 }
