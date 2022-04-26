@@ -116,7 +116,12 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		"password": password,
 	}
 
-	if sslCA != "" {
+	if sslCA == "" {
+		// We should use the default connection dsn without setting sslmode.
+		// Some provider might still perform default SSL check at the server side so we
+		// shouldn't disable sslmode at the client side.
+		// m["sslmode"] = "disable"
+	} else {
 		m["sslmode"] = "verify-ca"
 		m["sslrootcert"] = sslCA
 		if sslCert != "" && sslKey != "" {
