@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
@@ -143,71 +142,6 @@ type TaskDatabaseRestorePayload struct {
 	BackupID     int    `json:"backupId,omitempty"`
 }
 
-// TaskRaw is the store model for an Task.
-// Fields have exactly the same meanings as Task.
-type TaskRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	PipelineID int
-	StageID    int
-	InstanceID int
-	// Could be empty for creating database task when the task isn't yet completed successfully.
-	DatabaseID          *int
-	TaskRunRawList      []*TaskRunRaw
-	TaskCheckRunRawList []*TaskCheckRunRaw
-
-	// Domain specific fields
-	Name              string
-	Status            TaskStatus
-	Type              TaskType
-	Payload           string
-	EarliestAllowedTs int64
-	BlockedBy         []string
-}
-
-// ToTask creates an instance of Task based on the TaskRaw.
-// This is intended to be called when we need to compose an Task relationship.
-func (raw *TaskRaw) ToTask() *Task {
-	task := &Task{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		PipelineID: raw.PipelineID,
-		StageID:    raw.StageID,
-		InstanceID: raw.InstanceID,
-		// Could be empty for creating database task when the task isn't yet completed successfully.
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:              raw.Name,
-		Status:            raw.Status,
-		Type:              raw.Type,
-		Payload:           raw.Payload,
-		EarliestAllowedTs: raw.EarliestAllowedTs,
-		BlockedBy:         raw.BlockedBy,
-	}
-	for _, taskRunRaw := range raw.TaskRunRawList {
-		task.TaskRunList = append(task.TaskRunList, taskRunRaw.ToTaskRun())
-	}
-	for _, taskCheckRunRaw := range raw.TaskCheckRunRawList {
-		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRunRaw.ToTaskCheckRun())
-	}
-	return task
-}
-
 // Task is the API message for a task.
 type Task struct {
 	ID int `jsonapi:"primary,task"`
@@ -241,34 +175,6 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
-}
-
-// ToRaw converts a Task to TaskRaw.
-// TODO(dragonly): This is a hack for function `createIssue`. We MUST review the code and remove this hack.
-func (task *Task) ToRaw() *TaskRaw {
-	return &TaskRaw{
-		ID: task.ID,
-
-		// Standard fields
-		CreatorID: task.CreatorID,
-		CreatedTs: task.CreatedTs,
-		UpdaterID: task.UpdaterID,
-		UpdatedTs: task.UpdatedTs,
-
-		// Related fields
-		PipelineID: task.PipelineID,
-		StageID:    task.StageID,
-		InstanceID: task.InstanceID,
-		DatabaseID: task.DatabaseID,
-
-		// Domain specific fields
-		Name:              task.Name,
-		Status:            task.Status,
-		Type:              task.Type,
-		Payload:           task.Payload,
-		EarliestAllowedTs: task.EarliestAllowedTs,
-		BlockedBy:         task.BlockedBy,
-	}
 }
 
 // TaskCreate is the API message for creating a task.
@@ -349,13 +255,4 @@ type TaskStatusPatch struct {
 	Code    *common.Code
 	Comment *string `jsonapi:"attr,comment"`
 	Result  *string
-}
-
-// TaskService is the service for tasks.
-type TaskService interface {
-	CreateTask(ctx context.Context, create *TaskCreate) (*TaskRaw, error)
-	FindTaskList(ctx context.Context, find *TaskFind) ([]*TaskRaw, error)
-	FindTask(ctx context.Context, find *TaskFind) (*TaskRaw, error)
-	PatchTask(ctx context.Context, patch *TaskPatch) (*TaskRaw, error)
-	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*TaskRaw, error)
 }
