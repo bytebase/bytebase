@@ -30,6 +30,8 @@ const (
 	SQLite Type = "SQLITE"
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
+
+	BytebaseDatabase = "bytebase"
 )
 
 // User is the database user.

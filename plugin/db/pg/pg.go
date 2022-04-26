@@ -38,7 +38,6 @@ var (
 		"-- PostgreSQL database structure for %s\n" +
 		"--\n"
 	useDatabaseFmt             = "\\connect %s;\n\n"
-	bytebaseDatabase           = "bytebase"
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
@@ -433,7 +432,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		if !exist {
 			return true, nil
 		}
-		if err := driver.switchDatabase(bytebaseDatabase); err != nil {
+		if err := driver.switchDatabase(db.BytebaseDatabase); err != nil {
 			return false, err
 		}
 	}
@@ -455,7 +454,7 @@ func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
 	}
 	exist := false
 	for _, database := range databases {
-		if database.name == bytebaseDatabase {
+		if database.name == db.BytebaseDatabase {
 			exist = true
 			break
 		}
@@ -500,7 +499,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 				}
 			}
 
-			if err := driver.switchDatabase(bytebaseDatabase); err != nil {
+			if err := driver.switchDatabase(db.BytebaseDatabase); err != nil {
 				driver.l.Error("Failed to switch to bytebase database.",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -671,7 +670,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if driver.strictUseDb() {
 		return util.ExecuteMigration(ctx, driver.l, driver, m, statement, driver.strictDatabase)
 	}
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -723,7 +722,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
-	database := bytebaseDatabase
+	database := db.BytebaseDatabase
 	if driver.strictUseDb() {
 		database = driver.strictDatabase
 	}
@@ -738,7 +737,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
 	}
 	return history, err
 }
@@ -747,7 +746,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	var sqldb *sql.DB
 	var err error
 	if !driver.strictUseDb() {
-		sqldb, err = driver.GetDbConnection(ctx, bytebaseDatabase)
+		sqldb, err = driver.GetDbConnection(ctx, db.BytebaseDatabase)
 	}
 	if err != nil {
 		return err
