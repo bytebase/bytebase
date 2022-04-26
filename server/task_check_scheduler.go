@@ -398,7 +398,6 @@ func (s *Server) createTaskCheckRunIfNeededBySchemaReviewPolicy(
 			s.l.Warn(err.Error())
 			continue
 		}
-		fmt.Println("taskCheckType: ", taskCheckType)
 		_, err = s.TaskCheckRunService.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 			CreatorID:               creatotID,
 			TaskID:                  taskID,
@@ -407,7 +406,6 @@ func (s *Server) createTaskCheckRunIfNeededBySchemaReviewPolicy(
 			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
 		})
 		if err != nil {
-			fmt.Println("Why?", err)
 			return err
 		}
 	}
