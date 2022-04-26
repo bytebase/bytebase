@@ -133,8 +133,8 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						)
 						continue
 					}
-					// Skip execution if not all dependencies are done.
-					if !s.isBlockingTaskDone(ctx, task.BlockedBy) {
+					// Skip execution if has any dependency not finished.
+					if s.hasBlockingTask(ctx, task.BlockedBy) {
 						continue
 					}
 
@@ -312,12 +312,12 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	return updatedTask, nil
 }
 
-func (s *TaskScheduler) isBlockingTaskDone(ctx context.Context, blockingTaskList []string) bool {
+func (s *TaskScheduler) hasBlockingTask(ctx context.Context, blockingTaskList []string) bool {
 	for _, blockingTaskIDString := range blockingTaskList {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
 		if err != nil {
 			s.l.Error("failed to convert id string to int", zap.String("id string", blockingTaskIDString), zap.Error(err))
-			return false
+			return true
 		}
 		taskFind := api.TaskFind{
 			ID: &blockingTaskID,
@@ -327,11 +327,11 @@ func (s *TaskScheduler) isBlockingTaskDone(ctx context.Context, blockingTaskList
 			s.l.Error("failed to fetch the blocking task",
 				zap.Int("id", blockingTaskID),
 				zap.Error(err))
-			return false
+			return true
 		}
 		if blockingTask.Status != api.TaskDone {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
