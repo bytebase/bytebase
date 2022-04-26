@@ -94,7 +94,7 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	Collation string  `json:"collation,omitempty"`
 
 	// Schema review rule special fields.
-	// Level is the alert level for this schem review rule level.
+	// Level is the alert level for this schema review rule level.
 	Level SchemaReviewRuleLevel `json:"level,omitempty"`
 	// Payload is the payload for this schema review rule.
 	Payload string `json:"payload,omitempty"`
