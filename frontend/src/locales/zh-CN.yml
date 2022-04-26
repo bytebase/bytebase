@@ -34,6 +34,8 @@ common:
   settings: 设置
   project: 项目
   projects: 项目
+  default-project: 默认项目
+  visit-default-project: "@:common.visit@:common.default-project"
   help: 帮助
   database: 数据库
   databases: 数据库
@@ -442,7 +444,6 @@ quick-action:
   add-instance: "@:common.add@:common.instance"
   create-instance: "@:common.create@:common.instance"
   manage-user: 成员管理
-  default-project: 默认项目
   add-environment: "@:common.add@:common.environment"
   create-environment: "@:common.create@:common.environment"
   new-project: "@:common.new@:common.project"
@@ -454,7 +455,7 @@ quick-action:
   from-default-project: 从默认项目
   from-other-projects: 从其他项目
   transfer-in-db-title: 从其他项目转移数据库
-  transfer-in-db-hint: Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。
+  default-db-hint: Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。
   transfer-in-db-alert: 您确定要转移 "{ dbName }" 到我们的项目中吗？
 create-db:
   new-database-name: 新数据库名称
