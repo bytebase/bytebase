@@ -23,6 +23,10 @@ const convertToSchemaReviewPolicy = (
     return;
   }
   const payload = policy.payload as SchemaReviewPolicyPayload;
+  if (!Array.isArray(payload.ruleList) || !payload.name) {
+    return;
+  }
+
   const ruleList = payload.ruleList.map((r) => {
     const rule: SchemaPolicyRule = {
       type: r.type,
@@ -194,14 +198,13 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
     },
     getReviewPolicyByEnvironmentId(
       environmentId: EnvironmentId
-    ): DatabaseSchemaReviewPolicy {
+    ): DatabaseSchemaReviewPolicy | undefined {
       if (environmentId === EMPTY_ID) {
         return empty("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy;
       }
 
-      return (
-        this.reviewPolicyList.find((g) => g.environment.id === environmentId) ||
-        (unknown("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy)
+      return this.reviewPolicyList.find(
+        (g) => g.environment.id === environmentId
       );
     },
 
@@ -230,6 +233,9 @@ export const useSchemaSystemStore = defineStore("schemaSystem", {
         type: "bb.policy.schema-review",
       });
 
+      if (!policy) {
+        return;
+      }
       const reviewPolicy = convertToSchemaReviewPolicy(policy);
       if (reviewPolicy) {
         this.setReviewPolicy(reviewPolicy);
