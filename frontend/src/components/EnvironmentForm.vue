@@ -128,6 +128,33 @@
           </div>
         </div>
       </div>
+      <div class="col-span-1" v-if="!create && isDev()">
+        <label class="textlabel">
+          {{ $t("schema-review-policy.title") }}
+        </label>
+        <div class="mt-4">
+          <button
+            v-if="schemaReviewPolicy"
+            type="button"
+            class="text-sm font-medium text-accent hover:underline"
+            @click.prevent="onSchemaReviewPolicyClick"
+          >
+            {{ schemaReviewPolicy.name }}
+          </button>
+          <button
+            v-else-if="hasPermission"
+            type="button"
+            class="btn-normal py-2 px-4 gap-x-1 items-center"
+            @click.prevent="onSchemaReviewPolicyClick"
+          >
+            <heroicons-solid:plus class="h-4 w-4" />
+            {{ $t("schema-review-policy.add-review") }}
+          </button>
+          <span v-else class="textinfolabel">
+            {{ $t("schema-review-policy.no-policy-set") }}
+          </span>
+        </div>
+      </div>
     </div>
     <!-- Create button group -->
     <div v-if="create" class="flex justify-end pt-5">
@@ -201,22 +228,37 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch, defineComponent } from "vue";
+import {
+  computed,
+  reactive,
+  PropType,
+  watch,
+  watchEffect,
+  defineComponent,
+} from "vue";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
+import { useRouter } from "vue-router";
 import {
   Environment,
   EnvironmentCreate,
   EnvironmentPatch,
   Policy,
+  DatabaseSchemaReviewPolicy,
 } from "../types";
-import { isDBAOrOwner } from "../utils";
-import { useCurrentUser, useEnvironmentList } from "@/store";
+import { isDev, isDBAOrOwner, schemaReviewPolicySlug } from "../utils";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  useSchemaSystemStore,
+} from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
   approvalPolicy: Policy;
   backupPolicy: Policy;
 }
+
+const ROUTE_NAME = "setting.workspace.schema-review-policy";
 
 export default defineComponent({
   name: "EnvironmentForm",
@@ -246,6 +288,57 @@ export default defineComponent({
       backupPolicy: cloneDeep(props.backupPolicy),
     });
 
+    const router = useRouter();
+    const schemaSystemStore = useSchemaSystemStore();
+
+    const environmentId = computed(() => {
+      if (props.create) {
+        return;
+      }
+      return (props.environment as Environment).id;
+    });
+
+    const prepareSchemaReviewPolicy = () => {
+      if (!environmentId.value) {
+        return;
+      }
+      return schemaSystemStore.fetchReviewPolicyByEnvironmentId(
+        environmentId.value
+      );
+    };
+    watchEffect(prepareSchemaReviewPolicy);
+
+    const schemaReviewPolicy = computed(
+      (): DatabaseSchemaReviewPolicy | undefined => {
+        if (!environmentId.value) {
+          return;
+        }
+        return schemaSystemStore.getReviewPolicyByEnvironmentId(
+          environmentId.value
+        );
+      }
+    );
+
+    const onSchemaReviewPolicyClick = () => {
+      if (schemaReviewPolicy.value) {
+        router.push({
+          name: `${ROUTE_NAME}.detail`,
+          params: {
+            schemaReviewPolicySlug: schemaReviewPolicySlug(
+              schemaReviewPolicy.value
+            ),
+          },
+        });
+      } else {
+        router.push({
+          name: `${ROUTE_NAME}.create`,
+          query: {
+            environmentId: environmentId.value,
+          },
+        });
+      }
+    };
+
     watch(
       () => props.environment,
       (cur: Environment | EnvironmentCreate) => {
@@ -271,19 +364,23 @@ export default defineComponent({
 
     const environmentList = useEnvironmentList();
 
+    const hasPermission = computed(() => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
+
     const allowArchive = computed(() => {
       return allowEdit.value && environmentList.value.length > 1;
     });
 
     const allowRestore = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
+      return hasPermission.value;
     });
 
     const allowEdit = computed(() => {
       return (
         props.create ||
         ((state.environment as Environment).rowStatus == "NORMAL" &&
-          isDBAOrOwner(currentUser.value.role))
+          hasPermission.value)
       );
     });
 
@@ -348,17 +445,21 @@ export default defineComponent({
     };
 
     return {
+      isDev,
       state,
       allowArchive,
       allowRestore,
       allowEdit,
       valueChanged,
       allowCreate,
+      hasPermission,
       revertEnvironment,
       createEnvironment,
       updateEnvironment,
       archiveEnvironment,
       restoreEnvironment,
+      schemaReviewPolicy,
+      onSchemaReviewPolicyClick,
     };
   },
 });
