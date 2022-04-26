@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -130,6 +131,10 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.String("name", taskRaw.Name),
 							zap.String("type", string(taskRaw.Type)),
 						)
+						continue
+					}
+					// Skip execution if not all dependencies are done.
+					if !s.isBlockingTaskDone(ctx, task.BlockedBy) {
 						continue
 					}
 
@@ -305,4 +310,28 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	}
 
 	return updatedTask, nil
+}
+
+func (s *TaskScheduler) isBlockingTaskDone(ctx context.Context, blockingTaskList []string) bool {
+	for _, blockingTaskIDString := range blockingTaskList {
+		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
+		if err != nil {
+			s.l.Error("failed to convert id string to int", zap.String("id string", blockingTaskIDString), zap.Error(err))
+			return false
+		}
+		taskFind := api.TaskFind{
+			ID: &blockingTaskID,
+		}
+		blockingTask, err := s.server.TaskService.FindTask(ctx, &taskFind)
+		if err != nil {
+			s.l.Error("failed to fetch the blocking task",
+				zap.Int("id", blockingTaskID),
+				zap.Error(err))
+			return false
+		}
+		if blockingTask.Status != api.TaskDone {
+			return false
+		}
+	}
+	return true
 }
