@@ -134,7 +134,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					// Skip execution if has any dependency not finished.
-					if s.hasBlockingTask(ctx, task.BlockedBy) {
+					isBlocked, err := s.isTaskBlocked(ctx, task)
+					if err != nil {
+						s.l.Error("failed to check if task is blocked",
+							zap.Int("id", task.ID),
+							zap.Error(err))
+						continue
+					}
+					if isBlocked {
 						continue
 					}
 
@@ -312,26 +319,22 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	return updatedTask, nil
 }
 
-func (s *TaskScheduler) hasBlockingTask(ctx context.Context, blockingTaskList []string) bool {
-	for _, blockingTaskIDString := range blockingTaskList {
+func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool, error) {
+	for _, blockingTaskIDString := range task.BlockedBy {
 		blockingTaskID, err := strconv.Atoi(blockingTaskIDString)
 		if err != nil {
-			s.l.Error("failed to convert id string to int", zap.String("id string", blockingTaskIDString), zap.Error(err))
-			return true
+			return true, fmt.Errorf("failed to convert id string to int, id string: %v, error: %w", blockingTaskIDString, err)
 		}
 		taskFind := api.TaskFind{
 			ID: &blockingTaskID,
 		}
 		blockingTask, err := s.server.TaskService.FindTask(ctx, &taskFind)
 		if err != nil {
-			s.l.Error("failed to fetch the blocking task",
-				zap.Int("id", blockingTaskID),
-				zap.Error(err))
-			return true
+			return true, fmt.Errorf("failed to fetch the blocking task, id: %v, error: %w", blockingTaskID, err)
 		}
 		if blockingTask.Status != api.TaskDone {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
