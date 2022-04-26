@@ -10,12 +10,12 @@ import (
 
 // Schema review policy consists of a list of schema review rules.
 // There is such a logical mapping in bytebase backend:
-//                     this file     server/task_check_executor_statement_advisor.go
-//                        |                       |
+//                    this file     server/task_check_executor_statement_advisor.go
+//                        |                        |
 // schema review rule ----------> TaskCheckType ------> plugin.AdvisorType --+
-// 							        										 +----> advisors
+//                                                                           +----> advisors
 // DB type ------------------------------------------------------------------+  |
-//																			plugin/advisor.go
+//                                                                        plugin/advisor.go
 //
 // But for unimplemented advisors, we should not generate corresponding TaskChecks.
 // So we should also check DB type here.
