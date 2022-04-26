@@ -23,7 +23,7 @@ import (
 // getTaskCheckTypeAndPayloadByRule gets the corresponding TaskCheckType and payload for each specific SchemaReviewRule.
 func getTaskCheckTypeAndPayloadByRule(rule *api.SchemaReviewRule, base api.TaskCheckDatabaseStatementAdvisePayload) (api.TaskCheckType, string, error) {
 	switch rule.Type {
-	case api.SchemaRuleQueryRequireWhere:
+	case api.SchemaRuleStatementRequireWhere:
 		if base.DbType != db.MySQL && base.DbType != db.TiDB {
 			return "", "", fmt.Errorf("schema review rule %v dosen't support %v", rule.Type, base.DbType)
 		}

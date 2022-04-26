@@ -13,7 +13,7 @@
       <div class="flex-1 flex flex-col ml-3">
         <div class="flex mb-2 items-center space-x-2">
           <h1 class="text-base font-semibold text-gray-900">
-            {{ selectedRule.type }}
+            {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
           <BBBadge
             :text="$t(`engine.${selectedRule.engine.toLowerCase()}`)"
@@ -22,7 +22,7 @@
           <SchemaRuleLevelBadge :level="selectedRule.level" />
         </div>
         <div class="text-sm text-gray-400">
-          {{ selectedRule.description }}
+          {{ getRuleLocalization(selectedRule.type).description }}
         </div>
       </div>
     </div>
@@ -60,7 +60,7 @@
         class="mb-7"
       >
         <p class="mb-3">
-          {{ config.title }}
+          {{ $t(`schema-review-policy.payload-config.${config.title}`) }}
         </p>
         <input
           v-if="config.payload.type == 'STRING'"
@@ -108,7 +108,8 @@ import { pullAt } from "lodash-es";
 import {
   LEVEL_LIST,
   RuleTemplate,
-  RuleTemplatePayload,
+  RuleConfigComponent,
+  getRuleLocalization,
 } from "@/types/schemaSystem";
 
 type PayloadValueList = (string | string[])[];
@@ -117,7 +118,7 @@ interface LocalState {
 }
 
 const initStatePayload = (
-  componentList: RuleTemplatePayload[] | undefined
+  componentList: RuleConfigComponent[] | undefined
 ): PayloadValueList => {
   return (componentList ?? []).reduce((res, component) => {
     res.push(component.payload.value ?? component.payload.default);

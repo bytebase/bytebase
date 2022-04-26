@@ -25,15 +25,17 @@ const (
 	SchemaRulePKNaming SchemaReviewRuleType = "naming.index.pk"
 	// SchemaRuleUKNaming enforce the unique key name format.
 	SchemaRuleUKNaming SchemaReviewRuleType = "naming.index.uk"
+	// SchemaRuleFKNaming enforce the foreign key name format.
+	SchemaRuleFKNaming SchemaReviewRuleType = "naming.index.fk"
 	// SchemaRuleIDXNaming enforce the index name format.
 	SchemaRuleIDXNaming SchemaReviewRuleType = "naming.index.idx"
 
-	// SchemaRuleQueryNoSelectAll disallow 'SELECT *'.
-	SchemaRuleQueryNoSelectAll SchemaReviewRuleType = "query.select.no-select-all"
-	// SchemaRuleQueryRequireWhere require 'WHERE' clause.
-	SchemaRuleQueryRequireWhere SchemaReviewRuleType = "query.where.require"
-	// SchemaRuleQueryNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
-	SchemaRuleQueryNoLeadingWildcardLike SchemaReviewRuleType = "query.where.no-leading-wildcard-like"
+	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
+	SchemaRuleStatementNoSelectAll SchemaReviewRuleType = "statement.select.no-select-all"
+	// SchemaRuleStatementRequireWhere require 'WHERE' clause.
+	SchemaRuleStatementRequireWhere SchemaReviewRuleType = "statement.where.require"
+	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+	SchemaRuleStatementNoLeadingWildcardLike SchemaReviewRuleType = "statement.where.no-leading-wildcard-like"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SchemaReviewRuleType = "table.require-pk"

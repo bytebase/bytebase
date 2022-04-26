@@ -145,10 +145,9 @@ const getRuleListWithLevel = (
   }, [] as RuleTemplate[]);
 };
 
-// TODO: i18n
 const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
   {
-    name: "Schema review for Prod",
+    title: t("schema-review-policy.template.policy-for-prod.title"),
     imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)
       .href,
     ruleList: [
@@ -159,15 +158,16 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
         ],
         RuleLevel.WARNING
       ),
       ...getRuleListWithLevel(
         [
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
+          "statement.select.no-select-all",
+          "statement.where.require",
+          "statement.where.no-leading-wildcard-like",
           "table.require-pk",
         ],
         RuleLevel.ERROR
@@ -179,7 +179,7 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
     ],
   },
   {
-    name: "Schema review for Dev",
+    title: t("schema-review-policy.template.policy-for-dev.title"),
     imagePath: new URL("../../assets/plan-free.png", import.meta.url).href,
     ruleList: [
       ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
@@ -189,10 +189,11 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
           "naming.column",
           "naming.index.pk",
           "naming.index.uk",
+          "naming.index.fk",
           "naming.index.idx",
-          "query.select.no-select-all",
-          "query.where.require",
-          "query.where.no-leading-wildcard-like",
+          "statement.select.no-select-all",
+          "statement.where.require",
+          "statement.where.no-leading-wildcard-like",
         ],
         RuleLevel.WARNING
       ),

@@ -50,8 +50,7 @@ type Server struct {
 	IssueService            api.IssueService
 	PipelineService         api.PipelineService
 	StageService            api.StageService
-	TaskService             api.TaskService
-	TaskCheckRunService     api.TaskCheckRunService
+	TaskService             store.TaskService
 	RepositoryService       api.RepositoryService
 	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
