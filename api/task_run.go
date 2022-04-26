@@ -45,6 +45,18 @@ type TaskRunResultPayload struct {
 	Version     string `json:"version,omitempty"`
 }
 
+// TaskSchemaUpdateGhostSyncRunResultDetail is the detail for a gh-ost sync task.
+type TaskSchemaUpdateGhostSyncRunResultDetail struct {
+	Progress TaskSchemaUpdateGhostSyncRunProgress `json:"progress,omitempty"`
+}
+
+// TaskSchemaUpdateGhostSyncRunProgress describes gh-ost sync task progress.
+type TaskSchemaUpdateGhostSyncRunProgress struct {
+	RowsCopied   int64  `json:"rowsCopied"`
+	RowsEstimate int64  `json:"rowsEstimate"`
+	ETA          string `json:"eta"`
+}
+
 // TaskRunRaw is the store model for an TaskRun.
 // Fields have exactly the same meanings as TaskRun.
 type TaskRunRaw struct {
