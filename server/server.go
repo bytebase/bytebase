@@ -52,7 +52,6 @@ type Server struct {
 	StageService            api.StageService
 	TaskService             store.TaskService
 	RepositoryService       api.RepositoryService
-	LabelService            api.LabelService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
 	SheetService            api.SheetService
