@@ -7,11 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/xo/dburl"
-
-	// install mysql driver.
-	_ "github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/spf13/cobra"
+	"github.com/xo/dburl"
 )
 
 func newDumpCmd() *cobra.Command {
