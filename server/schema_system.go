@@ -1,11 +1,10 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 // Schema review policy consists of a list of schema review rules.
@@ -20,19 +19,10 @@ import (
 // But for unimplemented advisors, we should not generate corresponding TaskChecks.
 // So we should also check DB type here.
 
-// getTaskCheckTypeAndPayloadByRule gets the corresponding TaskCheckType and payload for each specific SchemaReviewRule.
-func getTaskCheckTypeAndPayloadByRule(rule *api.SchemaReviewRule, base api.TaskCheckDatabaseStatementAdvisePayload) (api.TaskCheckType, string, error) {
-	switch rule.Type {
+func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType) (advisor.Type, error) {
+	switch ruleType {
 	case api.SchemaRuleStatementRequireWhere:
-		if base.DbType != db.MySQL && base.DbType != db.TiDB {
-			return "", "", fmt.Errorf("schema review rule %v dosen't support %v", rule.Type, base.DbType)
-		}
-		base.Level = rule.Level
-		payload, err := json.Marshal(base)
-		if err != nil {
-			return "", "", fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", api.TaskCheckDatabaseStatementRequireWhere, err)
-		}
-		return api.TaskCheckDatabaseStatementRequireWhere, string(payload), nil
+		return advisor.MySQLWhereRequirement, nil
 	}
-	return "", "", fmt.Errorf("unknown schema review rule type %v", rule.Type)
+	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v", ruleType)
 }

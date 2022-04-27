@@ -37,8 +37,11 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 			},
 		}, nil
 	}
-
-	we := &whereRequirementChecker{level: advisor.NewStatusBySchemaReviewRuleLevel(ctx.Level)}
+	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	if err != nil {
+		return []advisor.Advice{}, err
+	}
+	we := &whereRequirementChecker{level: level}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(we)
 	}

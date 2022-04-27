@@ -37,15 +37,14 @@ func (e Status) String() string {
 }
 
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-// Default return Error.
-func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) Status {
+func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
 	switch level {
 	case api.SchemaRuleLevelError:
-		return Error
+		return Error, nil
 	case api.SchemaRuleLevelWarning:
-		return Warn
+		return Warn, nil
 	}
-	return Error
+	return "", fmt.Errorf("unexpected rule level type: %s", level)
 }
 
 // Type is the type of advisor.
@@ -77,11 +76,7 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	// Level is the alert level for this schema review rule level.
-	// Default "Error", see advisor.NewStatusBySchemaReviewRuleLevel().
-	Level api.SchemaReviewRuleLevel
-	// Payload is the payload for this schema review rule.
-	Payload string
+	Rule *api.SchemaReviewRule
 }
 
 // Advisor is the interface for advisor.

@@ -176,6 +176,8 @@ export default defineComponent({
               return 3;
             case "bb.task-check.instance.migration-schema":
               return 4;
+            case "bb.task-check.database.statement.schema-review":
+              return 5;
             case "bb.task-check.database.statement.fake-advise":
               return 100;
           }
@@ -207,6 +209,8 @@ export default defineComponent({
           return t("task.check-type.syntax");
         case "bb.task-check.database.statement.compatibility":
           return t("task.check-type.compatibility");
+        case "bb.task-check.database.statement.schema-review":
+          return t("task.check-type.schema-review");
         case "bb.task-check.database.connect":
           return t("task.check-type.connection");
         case "bb.task-check.instance.migration-schema":

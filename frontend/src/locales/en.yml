@@ -219,6 +219,7 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    schema-review: Schema review
     earliest-allowed-time: Earliest allowed time
   earliest-allowed-time-hint: >-
     '@:{'common.when'}' specifies the expected execution timing for this task.

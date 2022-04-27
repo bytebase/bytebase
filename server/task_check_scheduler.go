@@ -333,19 +333,26 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) {
-			err = s.server.createTaskCheckRunIfNeededBySchemaReviewPolicy(
-				ctx,
-				creatorID,
-				task.ID,
-				task.Instance.EnvironmentID,
-				api.TaskCheckDatabaseStatementAdvisePayload{
-					Statement: statement,
-					DbType:    database.Instance.Engine,
-					Charset:   database.CharacterSet,
-					Collation: database.Collation,
-				},
-				skipIfAlreadyTerminated)
+		if s.server.feature(api.FeatureSchemaReviewPolicy) &&
+			// For now we only supported MySQL dialect sschema review check.
+			(database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB) {
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement:     statement,
+				DbType:        database.Instance.Engine,
+				Charset:       database.CharacterSet,
+				Collation:     database.Collation,
+				EnvironmentID: task.Instance.EnvironmentID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+			}
+			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementSchemaReview,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -363,43 +370,6 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		return task, err
 	}
 	return task, nil
-}
-
-// createTaskCheckRunIfNeededBySchemaReviewPolicy gets the corresponding SchemaReviewPolicy
-// and generates specific TaskCheckRuns based on it.
-func (s *Server) createTaskCheckRunIfNeededBySchemaReviewPolicy(
-	ctx context.Context,
-	creatotID int,
-	taskID int,
-	environmentID int,
-	basePayload api.TaskCheckDatabaseStatementAdvisePayload,
-	skipIfAlreadyTerminated bool,
-) error {
-	policy, err := s.store.GetSchemaReviewPolicyByEnvID(ctx, environmentID)
-	if err != nil {
-		return err
-	}
-	for _, rule := range policy.RuleList {
-		if rule.Level == api.SchemaRuleLevelDisabled {
-			continue
-		}
-		taskCheckType, payload, err := getTaskCheckTypeAndPayloadByRule(rule, basePayload)
-		if err != nil {
-			s.l.Debug("rule not support", zap.Error(err))
-			continue
-		}
-		_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-			CreatorID:               creatotID,
-			TaskID:                  taskID,
-			Type:                    taskCheckType,
-			Payload:                 payload,
-			SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.

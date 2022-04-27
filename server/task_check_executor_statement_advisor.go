@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -25,11 +26,6 @@ type TaskCheckStatementAdvisorExecutor struct {
 
 // Run will run the task check statement advisor executor once.
 func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
-	}
-
 	var advisorType advisor.Type
 	switch taskCheckRun.Type {
 	case api.TaskCheckDatabaseStatementFakeAdvise:
@@ -41,8 +37,16 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
 		}
 		advisorType = advisor.MySQLMigrationCompatibility
-	case api.TaskCheckDatabaseStatementRequireWhere:
-		advisorType = advisor.MySQLWhereRequirement
+	case api.TaskCheckDatabaseStatementSchemaReview:
+		if !server.feature(api.FeatureSchemaReviewPolicy) {
+			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
+		}
+		return exec.RunSchemaReview(ctx, server, taskCheckRun)
+	}
+
+	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
+	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
+		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
 	adviceList, err := advisor.Check(
@@ -52,8 +56,6 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 			Logger:    exec.l,
 			Charset:   payload.Charset,
 			Collation: payload.Collation,
-			Level:     payload.Level,
-			Payload:   payload.Payload,
 		},
 		payload.Statement,
 	)
@@ -61,7 +63,56 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
 	}
 
+	return generateResultList(adviceList), nil
+}
+
+// RunSchemaReview will run the schema review check according to schema review policy.
+func (exec *TaskCheckStatementAdvisorExecutor) RunSchemaReview(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
+	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
+		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+	}
+
+	if payload.DbType != db.MySQL && payload.DbType != db.TiDB {
+		return []api.TaskCheckResult{}, common.Errorf(common.NotImplemented, fmt.Errorf("not implemented schema review for %s yet", payload.DbType))
+	}
+
+	policy, err := server.store.GetSchemaReviewPolicyByEnvID(ctx, payload.EnvironmentID)
+	if err != nil {
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
+	}
+
 	result = []api.TaskCheckResult{}
+	for _, rule := range policy.RuleList {
+		if rule.Level == api.SchemaRuleLevelDisabled {
+			continue
+		}
+		advisorType, err := getAdvisorTypeByRule(rule.Type)
+		if err != nil {
+			exec.l.Debug("rule not support", zap.Error(err))
+			continue
+		}
+		adviceList, err := advisor.Check(
+			payload.DbType,
+			advisorType,
+			advisor.Context{
+				Logger:    exec.l,
+				Charset:   payload.Charset,
+				Collation: payload.Collation,
+				Rule:      rule,
+			},
+			payload.Statement,
+		)
+		if err != nil {
+			return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+		}
+		result = append(result, generateResultList(adviceList)...)
+	}
+	return result, nil
+}
+
+func generateResultList(adviceList []advisor.Advice) []api.TaskCheckResult {
+	result := []api.TaskCheckResult{}
 	for _, advice := range adviceList {
 		status := api.TaskCheckStatusSuccess
 		switch advice.Status {
@@ -80,6 +131,5 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 			Content: advice.Content,
 		})
 	}
-
-	return result, nil
+	return result
 }
