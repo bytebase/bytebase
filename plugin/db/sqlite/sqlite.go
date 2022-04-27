@@ -577,7 +577,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -628,7 +628,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
 }
 
 // Dump dumps the database.

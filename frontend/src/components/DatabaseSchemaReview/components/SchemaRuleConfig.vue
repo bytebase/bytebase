@@ -87,7 +87,9 @@
             type="text"
             pattern="[a-z]+"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            placeholder="Input the value then press enter to add"
+            :placeholder="
+              $t('schema-review-policy.payload-config.input-then-press-enter')
+            "
             @keyup.enter="(e) => pushToList(index, e)"
           />
         </div>

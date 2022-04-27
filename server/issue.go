@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/store"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -317,7 +318,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
-	project, err := s.composeProjectByID(ctx, issue.ProjectID)
+	project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +363,7 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
 	}
 
-	project, err := s.composeProjectByID(ctx, issue.ProjectID)
+	project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -529,7 +530,7 @@ func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.Pipelin
 				// Convert array index to ID.
 				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
 			}
-			taskRaw := &api.TaskRaw{
+			taskRaw := &store.TaskRaw{
 				ID:                id,
 				Name:              tc.Name,
 				Status:            tc.Status,
@@ -579,9 +580,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, fmt.Errorf("instance ID not found %v", m.InstanceID)
 		}
 		// Find project
-		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
@@ -775,9 +776,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		default:
 			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", m.MigrationType))
 		}
-		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
 		}
 
 		schemaVersion := common.DefaultMigrationVersion()
@@ -912,9 +913,9 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		}
 		pc := &api.PipelineCreate{}
 		pc.Name = "Update database schema (gh-ost) pipeline"
-		project, err := s.composeProjectByID(ctx, issueCreate.ProjectID)
+		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
 		}
 		schemaVersion := common.DefaultMigrationVersion()
 		if project.TenantMode == api.TenantModeTenant {

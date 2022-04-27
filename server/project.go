@@ -38,7 +38,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
 		}
-		projectRaw, err := s.ProjectService.CreateProject(ctx, projectCreate)
+		project, err := s.store.CreateProject(ctx, projectCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Project name already exists: %s", projectCreate.Name))
@@ -48,18 +48,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		projectMember := &api.ProjectMemberCreate{
 			CreatorID:   projectCreate.CreatorID,
-			ProjectID:   projectRaw.ID,
+			ProjectID:   project.ID,
 			Role:        common.ProjectOwner,
 			PrincipalID: projectCreate.CreatorID,
 		}
 
-		if _, err = s.ProjectMemberService.CreateProjectMember(ctx, projectMember); err != nil {
+		if _, err = s.store.CreateProjectMember(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
-		}
-
-		project, err := s.composeProjectRelationship(ctx, projectRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch relationship after creating project").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -92,18 +87,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			rowStatus := api.RowStatus(rowStatusStr)
 			projectFind.RowStatus = &rowStatus
 		}
-		projectRawList, err := s.ProjectService.FindProjectList(ctx, projectFind)
+		projectList, err := s.store.FindProject(ctx, projectFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch project list").SetInternal(err)
 		}
 
 		var activeProjectList []*api.Project
-		var projectList []*api.Project
-		for _, projectRaw := range projectRawList {
-			project, err := s.composeProjectRelationship(ctx, projectRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project relationship: %v", project.Name)).SetInternal(err)
-			}
+		for _, project := range projectList {
 			projectList = append(projectList, project)
 			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
 			// TODO(dragonly): move this if-branch out of the for loop to optimize access pattern
@@ -138,12 +128,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.composeProjectByID(ctx, id)
+		project, err := s.store.GetProjectByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -168,17 +158,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
 		}
 
-		projectRaw, err := s.ProjectService.PatchProject(ctx, projectPatch)
+		project, err := s.store.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
-		}
-
-		project, err := s.composeProjectRelationship(ctx, projectRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated project relationship: %v", project.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -203,12 +188,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
 		}
 
-		project, err := s.composeProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", projectID))
 		}
 
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
@@ -339,12 +324,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
 		}
-		project, err := s.composeProjectByID(ctx, projectID)
+		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", projectID))
 		}
 
 		if repoPatch.FilePathTemplate != nil {
@@ -524,11 +509,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if _, err := s.composeProjectByID(ctx, id); err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
-			}
+		project, err := s.store.GetProjectByID(ctx, id)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
 		}
 		deploymentConfigUpsert.ProjectID = id
 
@@ -554,11 +540,12 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		if _, err := s.composeProjectByID(ctx, id); err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", id))
-			}
+		project, err := s.store.GetProjectByID(ctx, id)
+		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
+		}
+		if project == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
 		}
 
 		deploymentConfigFind := &api.DeploymentConfigFind{
@@ -586,50 +573,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeProjectByID(ctx context.Context, id int) (*api.Project, error) {
-	projectFind := &api.ProjectFind{
-		ID: &id,
-	}
-	projectRaw, err := s.ProjectService.FindProject(ctx, projectFind)
-	if err != nil {
-		return nil, err
-	}
-	if projectRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project not found with ID %d", id)}
-	}
-
-	project, err := s.composeProjectRelationship(ctx, projectRaw)
-	if err != nil {
-		return nil, err
-	}
-
-	return project, nil
-}
-
-func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.ProjectRaw) (*api.Project, error) {
-	project := raw.ToProject()
-
-	creator, err := s.store.GetPrincipalByID(ctx, project.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	project.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, project.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	project.Updater = updater
-
-	memberList, err := s.composeProjectMemberListByProjectID(ctx, project.ID)
-	if err != nil {
-		return nil, err
-	}
-	project.ProjectMemberList = memberList
-
-	return project, nil
-}
-
 func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploymentConfig *api.DeploymentConfig) error {
 	var err error
 	deploymentConfig.Creator, err = s.store.GetPrincipalByID(ctx, deploymentConfig.CreatorID)
@@ -640,7 +583,7 @@ func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploy
 	if err != nil {
 		return err
 	}
-	deploymentConfig.Project, err = s.composeProjectByID(ctx, deploymentConfig.ProjectID)
+	deploymentConfig.Project, err = s.store.GetProjectByID(ctx, deploymentConfig.ProjectID)
 	if err != nil {
 		return err
 	}

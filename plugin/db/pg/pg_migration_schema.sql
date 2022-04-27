@@ -12,7 +12,7 @@ CREATE TABLE migration_history (
     updated_by TEXT NOT NULL,
     updated_ts BIGINT NOT NULL,
     -- Record the client version creating this migration history. For Bytebase, we use its binary release version. Different Bytebase release might
-    -- record different history info and thie field helps to handle such situation properly. Moreover, it helps debugging.
+    -- record different history info and this field helps to handle such situation properly. Moreover, it helps debugging.
     release_version TEXT NOT NULL,
     -- Allows granular tracking of migration history (e.g If an application manages schemas for a multi-tenant service and each tenant has its own schema, that application can use namespace to record the tenant name to track the per-tenant schema migration)
     -- Since bytebase also manages different application databases from an instance, it leverages this field to track each database migration history.

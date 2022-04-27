@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -63,50 +61,6 @@ const (
 	// TenantModeTenant is the TENANT value for ProjectTenantMode.
 	TenantModeTenant ProjectTenantMode = "TENANT"
 )
-
-// ProjectRaw is the store model for a Project.
-// Fields have exactly the same meanings as Project.
-type ProjectRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name           string
-	Key            string
-	WorkflowType   ProjectWorkflowType
-	Visibility     ProjectVisibility
-	TenantMode     ProjectTenantMode
-	DBNameTemplate string
-	RoleProvider   ProjectRoleProvider
-}
-
-// ToProject creates an instance of Project based on the ProjectRaw.
-// This is intended to be called when we need to compose a Project relationship.
-func (raw *ProjectRaw) ToProject() *Project {
-	return &Project{
-		ID: raw.ID,
-
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		Name:           raw.Name,
-		Key:            raw.Key,
-		WorkflowType:   raw.WorkflowType,
-		Visibility:     raw.Visibility,
-		TenantMode:     raw.TenantMode,
-		DBNameTemplate: raw.DBNameTemplate,
-		RoleProvider:   raw.RoleProvider,
-	}
-}
 
 // Project is the API message for a project.
 type Project struct {
@@ -348,14 +302,4 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 func getTemplateTokens(template string) []string {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
 	return r.FindAllString(template, -1)
-}
-
-// ProjectService is the storage access service for projects.
-type ProjectService interface {
-	CreateProject(ctx context.Context, create *ProjectCreate) (*ProjectRaw, error)
-	FindProjectList(ctx context.Context, find *ProjectFind) ([]*ProjectRaw, error)
-	FindProject(ctx context.Context, find *ProjectFind) (*ProjectRaw, error)
-	PatchProject(ctx context.Context, patch *ProjectPatch) (*ProjectRaw, error)
-	// This is specifically used to update the ProjectWorkflowType when linking/unlinking the repository.
-	PatchProjectTx(ctx context.Context, tx *sql.Tx, patch *ProjectPatch) (*ProjectRaw, error)
 }
