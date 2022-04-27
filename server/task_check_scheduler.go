@@ -346,7 +346,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 			}
-			if _, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 				CreatorID:               creatorID,
 				TaskID:                  task.ID,
 				Type:                    api.TaskCheckDatabaseStatementAdvise,
