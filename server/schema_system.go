@@ -9,15 +9,14 @@ import (
 
 // Schema review policy consists of a list of schema review rules.
 // There is such a logical mapping in bytebase backend:
-//                    this file     server/task_check_executor_statement_advisor.go
-//                        |                        |
-// schema review rule ----------> TaskCheckType ------> plugin.AdvisorType --+
-//                                                                           +----> advisors
-// DB type ------------------------------------------------------------------+  |
-//                                                                        plugin/advisor.go
+//   1. One schema review policy maps a TaskCheckRun.
+//   2. Each schema reivew rule type maps an advisor.Type.
+//   3. Each [db.Type][AdvisorType] maps an advisor.
 //
-// But for unimplemented advisors, we should not generate corresponding TaskChecks.
-// So we should also check DB type here.
+// How to add a schema review rule:
+//   1. Implement an advisor.(plugin/xxx)
+//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
+//   3. Map SchemaReviewRuleType to advisor.Type in this file.
 
 func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType) (advisor.Type, error) {
 	switch ruleType {
