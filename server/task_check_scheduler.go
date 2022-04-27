@@ -334,7 +334,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 
 		if s.server.feature(api.FeatureSchemaReviewPolicy) &&
-			// For now we only supported MySQL dialect sschema review check.
+			// For now we only supported MySQL dialect schema review check.
 			(database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement:     statement,
