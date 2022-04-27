@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
@@ -31,50 +30,6 @@ func (e ProjectRoleProvider) String() string {
 type ProjectRoleProviderPayload struct {
 	VCSRole    string `json:"vcsRole"`
 	LastSyncTs int64  `json:"lastSyncTs"`
-}
-
-// ProjectMemberRaw is the store model for an ProjectMember.
-// Fields have exactly the same meanings as ProjectMember.
-type ProjectMemberRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID int
-
-	// Domain specific fields
-	Role         string
-	PrincipalID  int
-	RoleProvider ProjectRoleProvider
-	Payload      string
-}
-
-// ToProjectMember creates an instance of ProjectMember based on the ProjectMemberRaw.
-// This is intended to be called when we need to compose an ProjectMember relationship.
-func (raw *ProjectMemberRaw) ToProjectMember() *ProjectMember {
-	return &ProjectMember{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID: raw.PrincipalID,
-
-		// Domain specific fields
-		Role:         raw.Role,
-		PrincipalID:  raw.PrincipalID,
-		RoleProvider: raw.RoleProvider,
-		Payload:      raw.Payload,
-	}
 }
 
 // ProjectMember is the API message for project members.
@@ -168,14 +123,4 @@ type ProjectMemberBatchUpdate struct {
 	// All the Member to be update should have the same role provider as this field
 	RoleProvider ProjectRoleProvider
 	List         []*ProjectMemberCreate
-}
-
-// ProjectMemberService is the service for project members.
-type ProjectMemberService interface {
-	CreateProjectMember(ctx context.Context, create *ProjectMemberCreate) (*ProjectMemberRaw, error)
-	FindProjectMemberList(ctx context.Context, find *ProjectMemberFind) ([]*ProjectMemberRaw, error)
-	FindProjectMember(ctx context.Context, find *ProjectMemberFind) (*ProjectMemberRaw, error)
-	PatchProjectMember(ctx context.Context, patch *ProjectMemberPatch) (*ProjectMemberRaw, error)
-	DeleteProjectMember(ctx context.Context, delete *ProjectMemberDelete) error
-	BatchUpdateProjectMember(ctx context.Context, set *ProjectMemberBatchUpdate) (createdMember, deletedMember []*ProjectMemberRaw, err error)
 }
