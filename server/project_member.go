@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -122,25 +121,9 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			RoleProvider: api.ProjectRoleProviderGitLabSelfHost, /* we only support gitlab for now */
 			List:         createList,
 		}
-		createdMemberRawList, deletedMemberRawList, err := s.ProjectMemberService.BatchUpdateProjectMember(ctx, batchUpdateProjectMember)
+		createdMemberList, deletedMemberList, err := s.store.BatchUpdateProjectMember(ctx, batchUpdateProjectMember)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sync project member from VCS").SetInternal(err)
-		}
-		var createdMemberList []*api.ProjectMember
-		var deletedMemberList []*api.ProjectMember
-		for _, raw := range createdMemberRawList {
-			createdMember, err := s.composeProjectMemberRelationship(ctx, raw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose project member relationship with ID %d", raw.ID)).SetInternal(err)
-			}
-			createdMemberList = append(createdMemberList, createdMember)
-		}
-		for _, raw := range deletedMemberRawList {
-			deletedMember, err := s.composeProjectMemberRelationship(ctx, raw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose project member relationship with ID %d", raw.ID)).SetInternal(err)
-			}
-			deletedMemberList = append(deletedMemberList, deletedMember)
 		}
 
 		createdIDMemberMap := make(map[int]*api.ProjectMember)
@@ -254,17 +237,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
 		}
 
-		projectMemberRaw, err := s.ProjectMemberService.CreateProjectMember(ctx, projectMemberCreate)
+		projectMember, err := s.store.CreateProjectMember(ctx, projectMemberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, "User is already a project member")
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project member").SetInternal(err)
-		}
-
-		projectMember, err := s.composeProjectMemberRelationship(ctx, projectMemberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch created project membership relationship").SetInternal(err)
 		}
 
 		{
@@ -306,7 +284,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
-		existingProjectMember, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
+		existingProjectMember, err := s.store.GetProjectMemberByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
@@ -322,17 +300,12 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
 		}
 
-		projectMemberRaw, err := s.ProjectMemberService.PatchProjectMember(ctx, projectMemberPatch)
+		projectMember, err := s.store.PatchProjectMember(ctx, projectMemberPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project membership ID: %v", id)).SetInternal(err)
-		}
-
-		projectMember, err := s.composeProjectMemberRelationship(ctx, projectMemberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project membership relationship").SetInternal(err)
 		}
 
 		{
@@ -375,23 +348,19 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("memberID"))).SetInternal(err)
 		}
 
-		projectMemberRaw, err := s.ProjectMemberService.FindProjectMember(ctx, &api.ProjectMemberFind{ID: &id})
+		projectMember, err := s.store.GetProjectMemberByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
-		if projectMemberRaw == nil {
+		if projectMember == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project member ID not found: %d", id))
-		}
-		projectMember, err := s.composeProjectMemberRelationship(ctx, projectMemberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose project member relationship with ID %d", id)).SetInternal(err)
 		}
 
 		projectMemberDelete := &api.ProjectMemberDelete{
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := s.ProjectMemberService.DeleteProjectMember(ctx, projectMemberDelete); err != nil {
+		if err := s.store.DeleteProjectMember(ctx, projectMemberDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project member ID: %v", id)).SetInternal(err)
 		}
 
@@ -422,48 +391,4 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-func (s *Server) composeProjectMemberListByProjectID(ctx context.Context, projectID int) ([]*api.ProjectMember, error) {
-	projectMemberFind := &api.ProjectMemberFind{
-		ProjectID: &projectID,
-	}
-	projectMemberRawList, err := s.ProjectMemberService.FindProjectMemberList(ctx, projectMemberFind)
-	if err != nil {
-		return nil, err
-	}
-	var projectMemberList []*api.ProjectMember
-
-	for _, projectMemberRaw := range projectMemberRawList {
-		projectMember, err := s.composeProjectMemberRelationship(ctx, projectMemberRaw)
-		if err != nil {
-			return nil, err
-		}
-		projectMemberList = append(projectMemberList, projectMember)
-	}
-	return projectMemberList, nil
-}
-
-func (s *Server) composeProjectMemberRelationship(ctx context.Context, raw *api.ProjectMemberRaw) (*api.ProjectMember, error) {
-	projectMember := raw.ToProjectMember()
-
-	creator, err := s.store.GetPrincipalByID(ctx, projectMember.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	projectMember.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, projectMember.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	projectMember.Updater = updater
-
-	principal, err := s.store.GetPrincipalByID(ctx, projectMember.PrincipalID)
-	if err != nil {
-		return nil, err
-	}
-	projectMember.Principal = principal
-
-	return projectMember, nil
 }
