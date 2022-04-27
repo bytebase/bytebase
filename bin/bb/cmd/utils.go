@@ -5,6 +5,10 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	// install mysql driver.
+	_ "github.com/bytebase/bytebase/plugin/db/mysql"
+	// install pg driver.
+	_ "github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/xo/dburl"
 	"go.uber.org/zap"
 )
@@ -21,7 +25,9 @@ func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, err
 	switch u.Driver {
 	case "mysql":
 		dbType = db.MySQL
-	case "pg":
+	// dburl.Parse() do the job of parsing 'pg', 'postgresql' and 'pgsql' to 'postgres'.
+	// https://pkg.go.dev/github.com/xo/dburl@v0.9.1#hdr-Protocol_Schemes_and_Aliases
+	case "postgres":
 		dbType = db.Postgres
 	default:
 		return nil, fmt.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
