@@ -1,6 +1,6 @@
 <template>
   <div class="w-full">
-    <div class="lg:flex divide-y lg:divide-y-0 border-b">
+    <div class="lg:flex lg:items-center divide-y lg:divide-y-0 border-b">
       <div
         v-for="(stage, i) in pipeline.stageList"
         :key="i"
@@ -15,17 +15,22 @@
             />
             <div
               class="text cursor-pointer hover:underline hidden lg:ml-4 lg:flex lg:flex-col"
+              @click.prevent="onClickStage(stage, i)"
             >
               <span class="text-xs">{{ stage.name }}</span>
               <span class="text-sm">{{ taskNameOfStage(stage) }}</span>
             </div>
             <div
               class="text ml-4 cursor-pointer flex items-center space-x-2 lg:hidden"
+              @click.prevent="onClickStage(stage, i)"
             >
               <span class="text-sm min-w-32">{{ stage.name }}</span>
               <span class="text-sm flex-1">{{ taskNameOfStage(stage) }}</span>
             </div>
-            <div class="tooltip-wrapper">
+            <div
+              class="tooltip-wrapper"
+              @click.prevent="onClickStage(stage, i)"
+            >
               <span class="tooltip whitespace-nowrap">
                 Missing SQL statement
               </span>
@@ -175,6 +180,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "select-task", stageIdOrIndex: number, taskSlug: string): void;
+  (e: "select-stage", stageIdOrIndex: number): void;
 }>();
 
 const { t } = useI18n();
@@ -279,8 +285,16 @@ const getTaskProgress = (task: Task | TaskCreate) => {
     return 0;
   }
   if (task.type !== "bb.task.database.schema.update.ghost.sync") return 0;
-  const progress = 66.6; // TODO(jim): not implemented yet
-  return progress;
+  const taskRun = (task as Task).taskRunList.find((run) => {
+    // TODO(Jim): find the correct taskRun which indicates the sync progress.
+    return false;
+  });
+  if (taskRun) {
+    // TODO(Jim): get progress from taskRun.result.detail
+  }
+
+  // nothing found
+  return 0;
 };
 
 const stageClass = (stage: Stage | StageCreate): string[] => {
@@ -301,6 +315,15 @@ const taskClass = (task: Task | TaskCreate): string[] => {
   if (props.create) classes.push("create");
   classes.push(`status_${task.status.toLowerCase()}`);
   return classes;
+};
+
+const onClickStage = (stage: Stage | StageCreate, index: number) => {
+  if (props.create) {
+    emit("select-stage", index);
+    return;
+  }
+  const { id } = stage as Stage;
+  emit("select-stage", id);
 };
 
 const onClickTask = (stageId: number, taskName: string, taskId: number) => {
