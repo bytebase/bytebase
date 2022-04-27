@@ -61,7 +61,7 @@
           :selected-stage="selectedStage"
           :selected-task="selectedTask"
           class="border-t border-b"
-          @select-stage-id="selectStageId"
+          @select-stage="selectStageId"
           @select-task="selectTask"
         />
       </template>
@@ -305,6 +305,7 @@ import {
   UpdateSchemaContext,
   UpdateSchemaDetail,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
+  UpdateSchemaGhostContext,
 } from "../../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -483,7 +484,18 @@ export default defineComponent({
 
     const updateEarliestAllowedTime = (newEarliestAllowedTsMs: number) => {
       if (props.create) {
-        selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
+        if (isGhostMode.value) {
+          // In gh-ost mode, when creating an issue, all sub-tasks in a stage
+          // share the same earliestAllowedTs.
+          // So updates on any one of them will be applied to others.
+          // (They can be updated independently after creation)
+          const taskList = selectedStage.value.taskList as TaskCreate[];
+          taskList.forEach((task) => {
+            task.earliestAllowedTs = newEarliestAllowedTsMs;
+          });
+        } else {
+          selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
+        }
       } else {
         const taskPatch: TaskPatch = {
           earliestAllowedTs: newEarliestAllowedTsMs,
@@ -540,11 +552,27 @@ export default defineComponent({
           migrationType: taskList[0].migrationType!,
           updateSchemaDetailList: detailList,
         };
+      } else if (isGhostMode.value) {
+        // for gh-ost mode, copy user edited tasks back to issue.createContext
+        // only the first subtask (bb.task.database.schema.update.ghost.sync) has statement
+        const stageList = issue.pipeline!.stageList;
+        const createContext = issue.createContext as UpdateSchemaGhostContext;
+        const detailList = createContext.updateSchemaDetailList;
+        stageList.forEach((stage, i) => {
+          const detail = detailList[i];
+          const syncTask = stage.taskList[0];
+
+          detail.databaseId = syncTask.databaseId!;
+          detail.databaseName = syncTask.databaseName!;
+          detail.statement = syncTask.statement;
+          detail.earliestAllowedTs = syncTask.earliestAllowedTs;
+        });
       } else {
         // for multi-tenancy issue pipeline (M * N)
         // createContext is up-to-date already
         // so nothing to do
       }
+
       // then empty issue.pipeline and issue.payload
       // because we are no longer passing parameters via issue.pipeline
       // we are using issue.createContext instead
