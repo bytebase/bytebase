@@ -16,18 +16,8 @@ func ProjectSlug(project *Project) string {
 	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
 }
 
-// ProjectRawSlug is the slug formatter for ProjectRaw.
-func ProjectRawSlug(project *ProjectRaw) string {
-	return fmt.Sprintf("%s-%d", slug.Make(project.Name), project.ID)
-}
-
 // ProjectShortSlug is the slug short formatter for Project.
 func ProjectShortSlug(project *Project) string {
-	return slug.Make(project.Name)
-}
-
-// ProjectRawShortSlug is the slug short formatter for ProjectRaw.
-func ProjectRawShortSlug(project *ProjectRaw) string {
 	return slug.Make(project.Name)
 }
 

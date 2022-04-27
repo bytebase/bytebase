@@ -24,8 +24,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		projectFind := &api.ProjectFind{ID: &projectID}
-		project, err := s.ProjectService.FindProject(ctx, projectFind)
+		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project not found: %s", c.Param("projectID"))).SetInternal(err)
 		}
