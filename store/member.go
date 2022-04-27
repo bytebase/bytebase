@@ -28,9 +28,9 @@ type memberRaw struct {
 	PrincipalID int
 }
 
-// ToMember creates an instance of Member based on the memberRaw.
+// toMember creates an instance of Member based on the memberRaw.
 // This is intended to be called when we need to compose an Member relationship.
-func (raw *memberRaw) ToMember() *api.Member {
+func (raw *memberRaw) toMember() *api.Member {
 	return &api.Member{
 		ID: raw.ID,
 
@@ -238,7 +238,7 @@ func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*me
 
 // composeMember composes an instance of Member by memberRaw
 func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member, error) {
-	member := raw.ToMember()
+	member := raw.toMember()
 
 	creator, err := s.GetPrincipalByID(ctx, member.CreatorID)
 	if err != nil {

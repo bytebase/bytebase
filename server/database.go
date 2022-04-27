@@ -895,14 +895,9 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	rowStatus := api.Normal
-	labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
+	labelKeyList, err := s.store.FindLabelKey(ctx, &api.LabelKeyFind{RowStatus: &rowStatus})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find label key list").SetInternal(err)
-	}
-	// TODO(dragonly): implement composeLabelKeyRelationship
-	var labelKeyList []*api.LabelKey
-	for _, raw := range labelKeyRawList {
-		labelKeyList = append(labelKeyList, raw.ToLabelKey())
 	}
 
 	if err = validateDatabaseLabelList(labels, labelKeyList, database.Instance.Environment.Name); err != nil {
@@ -926,7 +921,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 	}
 
 	if !validateOnly {
-		if _, err = s.LabelService.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
+		if _, err = s.store.SetDatabaseLabelList(ctx, labels, database.ID, updaterID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to set database labels, database ID: %v", database.ID)).SetInternal(err)
 		}
 	}
@@ -1018,18 +1013,12 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	db.AnomalyList = anomalyList
 
 	rowStatus = api.Normal
-	labelRawList, err := s.LabelService.FindDatabaseLabelList(ctx, &api.DatabaseLabelFind{
+	labelList, err := s.store.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
 		DatabaseID: &db.ID,
 		RowStatus:  &rowStatus,
 	})
 	if err != nil {
 		return nil, err
-	}
-	// TODO(dragonly): seems like we do not need to composed this.
-	// need redesign, e.g., extract the kv part which is only in memory, and the relations which are in the database.
-	var labelList []*api.DatabaseLabel
-	for _, raw := range labelRawList {
-		labelList = append(labelList, raw.ToDatabaseLabel())
 	}
 
 	// Since tenants are identified by labels in deployment config, we need an environment
@@ -1039,6 +1028,8 @@ func (s *Server) composeDatabaseRelationship(ctx context.Context, raw *api.Datab
 	// Each database instance is created under a particular environment.
 	// The value of bb.environment is identical to the name of the environment.
 
+	// TODO(dragonly): seems like we do not need to composed this.
+	// need redesign, e.g., extract the kv part which is only in memory, and the relations which are in the database.
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentKeyName,
 		Value: db.Instance.Environment.Name,
