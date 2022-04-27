@@ -38,7 +38,6 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	SettingService          api.SettingService
-	ProjectService          api.ProjectService
 	ProjectWebhookService   api.ProjectWebhookService
 	InstanceUserService     api.InstanceUserService
 	DatabaseService         api.DatabaseService
