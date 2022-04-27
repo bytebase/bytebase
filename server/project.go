@@ -53,7 +53,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			PrincipalID: projectCreate.CreatorID,
 		}
 
-		if _, err = s.ProjectMemberService.CreateProjectMember(ctx, projectMember); err != nil {
+		if _, err = s.store.CreateProjectMember(ctx, projectMember); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add owner after creating project").SetInternal(err)
 		}
 
@@ -621,11 +621,11 @@ func (s *Server) composeProjectRelationship(ctx context.Context, raw *api.Projec
 	}
 	project.Updater = updater
 
-	memberList, err := s.composeProjectMemberListByProjectID(ctx, project.ID)
+	projectMemberList, err := s.store.FindProjectMember(ctx, &api.ProjectMemberFind{ProjectID: &project.ID})
 	if err != nil {
 		return nil, err
 	}
-	project.ProjectMemberList = memberList
+	project.ProjectMemberList = projectMemberList
 
 	return project, nil
 }
