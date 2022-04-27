@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -27,6 +29,77 @@ type IssueService struct {
 // NewIssueService returns a new instance of IssueService.
 func NewIssueService(logger *zap.Logger, db *DB, cache api.CacheService) *IssueService {
 	return &IssueService{l: logger, db: db, cache: cache}
+}
+
+// CreatePipelineValidateOnly creates a pipeline for validation purpose
+func (s *Store) CreatePipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
+	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
+	// jsonapi resource relationships will collide different resources into the same bucket.
+	id := 0
+	ts := time.Now().Unix()
+	pipeline := &api.Pipeline{
+		ID:        id,
+		Name:      pc.Name,
+		Status:    api.PipelineOpen,
+		CreatorID: creatorID,
+		CreatedTs: ts,
+		UpdaterID: creatorID,
+		UpdatedTs: ts,
+	}
+	for _, sc := range pc.StageList {
+		id++
+		stage := &api.Stage{
+			ID:            id,
+			Name:          sc.Name,
+			CreatorID:     creatorID,
+			CreatedTs:     ts,
+			UpdaterID:     creatorID,
+			UpdatedTs:     ts,
+			PipelineID:    sc.PipelineID,
+			EnvironmentID: sc.EnvironmentID,
+		}
+		// We don't know IDs before inserting, so we use array index instead.
+		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
+		indexBlockedByIndex := make(map[int][]int)
+		for _, indexDAG := range sc.TaskIndexDAGList {
+			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
+		}
+		idOffset := id + 1
+		// The ID of sc.TaskList[index].ID equals index + idOffset.
+		for index, tc := range sc.TaskList {
+			id++
+			var blockedBy []string
+			for _, blockedByIndex := range indexBlockedByIndex[index] {
+				// Convert array index to ID.
+				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
+			}
+			taskRaw := &taskRaw{
+				ID:                id,
+				Name:              tc.Name,
+				Status:            tc.Status,
+				CreatorID:         creatorID,
+				CreatedTs:         ts,
+				UpdaterID:         creatorID,
+				UpdatedTs:         ts,
+				Type:              tc.Type,
+				Payload:           tc.Payload,
+				EarliestAllowedTs: tc.EarliestAllowedTs,
+				PipelineID:        pipeline.ID,
+				StageID:           stage.ID,
+				InstanceID:        tc.InstanceID,
+				DatabaseID:        tc.DatabaseID,
+			}
+			task, err := s.composeTask(ctx, taskRaw)
+			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
+			task.BlockedBy = blockedBy
+			if err != nil {
+				return nil, err
+			}
+			stage.TaskList = append(stage.TaskList, task)
+		}
+		pipeline.StageList = append(pipeline.StageList, stage)
+	}
+	return pipeline, nil
 }
 
 // CreateIssue creates a new issue.

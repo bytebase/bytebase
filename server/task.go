@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/store"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -56,10 +55,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 
-		taskFind := &api.TaskFind{
-			ID: &taskID,
-		}
-		task, err := s.TaskService.FindTask(ctx, taskFind)
+		task, err := s.store.GetTaskByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task").SetInternal(err)
 		}
@@ -135,17 +131,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		taskPatchedRaw, err := s.TaskService.PatchTask(ctx, taskPatch)
+		taskPatched, err := s.store.PatchTask(ctx, taskPatch)
 		if err != nil {
+			// TODO(dragonly): double check whether this should be common.Invalid or not
 			if common.ErrorCode(err) == common.Invalid {
 				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
-		}
-
-		taskPatched, err := s.composeTaskRelationship(ctx, taskPatchedRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated task \"%v\" relationship", taskPatchedRaw.Name)).SetInternal(err)
 		}
 
 		// create an activity and trigger task check for statement update
@@ -287,7 +279,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatched); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskPatchedRaw.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskPatched.Name)).SetInternal(err)
 		}
 		return nil
 	})
@@ -308,23 +300,16 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
 		}
 
-		taskFind := &api.TaskFind{
-			ID: &taskID,
-		}
-		taskRaw, err := s.TaskService.FindTask(ctx, taskFind)
+		task, err := s.store.GetTaskByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
-		if taskRaw == nil {
+		if task == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
-		}
-		task, err := s.composeTaskRelationship(ctx, taskRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose task relationship with ID %d", taskID)).SetInternal(err)
 		}
 
 		issue, err := s.IssueService.FindIssue(ctx, &api.IssueFind{
-			PipelineID: &taskRaw.PipelineID,
+			PipelineID: &task.PipelineID,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
@@ -368,25 +353,18 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Task ID is not a number: %s", c.Param("taskID"))).SetInternal(err)
 		}
 
-		taskFind := &api.TaskFind{
-			ID: &taskID,
-		}
-		taskRaw, err := s.TaskService.FindTask(ctx, taskFind)
+		task, err := s.store.GetTaskByID(ctx, taskID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update task status").SetInternal(err)
 		}
-		if taskRaw == nil {
+		if task == nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task not found with ID %d", taskID))
-		}
-		task, err := s.composeTaskRelationship(ctx, taskRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose task %v(%v) relationship", taskRaw.ID, taskRaw.Name)).SetInternal(err)
 		}
 
 		skipIfAlreadyTerminated := false
 		taskUpdated, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, task, c.Get(getPrincipalIDContextKey()).(int), skipIfAlreadyTerminated)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", taskRaw.Name)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to run task check \"%v\"", task.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -395,101 +373,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composeTaskListByPipelineAndStageID(ctx context.Context, pipelineID int, stageID int) ([]*api.Task, error) {
-	taskFind := &api.TaskFind{
-		PipelineID: &pipelineID,
-		StageID:    &stageID,
-	}
-	taskRawList, err := s.TaskService.FindTaskList(ctx, taskFind)
-	if err != nil {
-		return nil, err
-	}
-
-	var taskList []*api.Task
-	for _, taskRaw := range taskRawList {
-		task, err := s.composeTaskRelationship(ctx, taskRaw)
-		if err != nil {
-			return nil, err
-		}
-		taskList = append(taskList, task)
-	}
-
-	return taskList, nil
-}
-
-func (s *Server) composeTaskRelationship(ctx context.Context, raw *store.TaskRaw) (*api.Task, error) {
-	task := raw.ToTask()
-
-	creator, err := s.store.GetPrincipalByID(ctx, task.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	task.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, task.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	task.Updater = updater
-
-	for _, taskRun := range task.TaskRunList {
-		creator, err := s.store.GetPrincipalByID(ctx, taskRun.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		taskRun.Creator = creator
-
-		updater, err := s.store.GetPrincipalByID(ctx, taskRun.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		taskRun.Updater = updater
-	}
-
-	for _, taskCheckRun := range task.TaskCheckRunList {
-		creator, err := s.store.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
-		if err != nil {
-			return nil, err
-		}
-		taskCheckRun.Creator = creator
-
-		updater, err := s.store.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		taskCheckRun.Updater = updater
-	}
-
-	blockedBy := []string{}
-	taskDAGList, err := s.store.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: raw.ID})
-	if err != nil {
-		return nil, err
-	}
-	for _, taskDAG := range taskDAGList {
-		blockedBy = append(blockedBy, strconv.Itoa(taskDAG.FromTaskID))
-	}
-	task.BlockedBy = blockedBy
-
-	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-	task.Instance = instance
-
-	if task.DatabaseID != nil {
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-		if err != nil {
-			return nil, err
-		}
-		if database == nil {
-			return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
-		}
-		task.Database = database
-	}
-
-	return task, nil
 }
 
 // TODO(dragonly): remove this hack
@@ -576,14 +459,9 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			Err:  fmt.Errorf("invalid task status transition from %v to %v. Applicable transition(s) %v", task.Status, taskStatusPatch.Status, applicableTaskStatusTransition[task.Status])}
 	}
 
-	taskPatchedRaw, err := s.TaskService.PatchTaskStatus(ctx, taskStatusPatch)
+	taskPatched, err := s.store.PatchTaskStatus(ctx, taskStatusPatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to change task %v(%v) status: %w", task.ID, task.Name, err)
-	}
-
-	taskPatched, err := s.composeTaskRelationship(ctx, taskPatchedRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose task %v(%v) relationship: %w", task.ID, task.Name, err)
 	}
 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
