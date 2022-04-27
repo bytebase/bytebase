@@ -34,6 +34,8 @@ common:
   settings: 设置
   project: 项目
   projects: 项目
+  default-project: 默认项目
+  visit-default-project: "@:common.visit@:common.default-project"
   help: 帮助
   database: 数据库
   databases: 数据库
@@ -442,7 +444,6 @@ quick-action:
   add-instance: "@:common.add@:common.instance"
   create-instance: "@:common.create@:common.instance"
   manage-user: 成员管理
-  default-project: 默认项目
   add-environment: "@:common.add@:common.environment"
   create-environment: "@:common.create@:common.environment"
   new-project: "@:common.new@:common.project"
@@ -454,7 +455,7 @@ quick-action:
   from-default-project: 从默认项目
   from-other-projects: 从其他项目
   transfer-in-db-title: 从其他项目转移数据库
-  transfer-in-db-hint: Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。
+  default-db-hint: Bytebase 会定期同步实例的 Schema。新同步的数据库会放在默认项目中。
   transfer-in-db-alert: 您确定要转移 "{ dbName }" 到我们的项目中吗？
 create-db:
   new-database-name: 新数据库名称
@@ -1251,6 +1252,7 @@ schema-review-policy:
   remove-review: 审核策略已删除
   create-review: 审核策略已创建
   update-review: 审核策略已更新
+  rules: 规则
   filter: 筛选
   no-permission: 仅 DBA 或所有者有权限创建或更新审核策略。
   disable: 停用审查策略
@@ -1259,9 +1261,73 @@ schema-review-policy:
   category:
     engine: 引擎
     naming: 命名
-    query: 查询
+    statement: 语句
     table: 表
     column: 列
+    schema: Schema
+  template:
+    policy-for-prod:
+      title: 针对生产环境的审核策略
+    policy-for-dev:
+      title: 针对开发环境的审核策略
+  rule:
+    engine-mysql-use-innodb:
+      title: 使用 InnoDB 作为储存引擎
+      description: 强制要求使用 InnoDB 作为 MySQL 的储存引擎。
+    table-require-pk:
+      title: 强制主键
+      description: 要求每张表必须有一个主键。
+    naming-table:
+      title: 表名命名检查
+      description: 限制表名命名风格，默认为小写字母_下划线。
+    naming-column:
+      title: 列名命名检查
+      description: 限制列名命名风格，默认为小写字母_下划线。
+    naming-index-pk:
+      title: 主键命名检查
+      description: 限制主键命名风格，默认为 pk_表名_主键包含的字段名组合。
+    naming-index-uk:
+      title: 唯一键命名检查
+      description: 限制唯一键命名风格，默认为 uk_表名_主键包含的字段名组合。
+    naming-index-fk:
+      title: 外键命名检查
+      description: 限制外键命名风格，默认为 fk_目标表名_目标字段名_被引用表名_被引用字段名。
+    naming-index-idx:
+      title: 索引命名检查
+      description: 限制索引命名风格，默认为 idx_表名_主键包含的字段名组合。
+    column-required:
+      title: 必须包含的字段
+      description: 强制要求表中必须包含某些字段。
+    column-no-null:
+      title: 禁止字段为 NULL
+      description: 表中的字段不允许存在 NULL 值。
+    statement-select-no-select-all:
+      title: 禁止 "SELECT *"
+      description: 不允许使用 "SELECT *" 语句
+    statement-where-require:
+      title: 强制 "WHERE"
+      description: 必须使用 "WHERE" 语句
+    statement-where-no-leading-wildcard-like:
+      title: 禁止左模糊
+      description: WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。
+    schema-backward-compatibility:
+      title: 向后兼容
+      description: MySQL 和 TiDB 支持检测 schema 变更是否向后兼容
+  payload-config:
+    table-name-format: 表命名规则（正则）
+    column-name-format: 列命名规则（正则）
+    pk-name-format: 主键命名规则
+    uk-name-format: 唯一键命名规则
+    idx-name-format: 索引命名规则
+    required-column: 必须包含的字段名
+    input-then-press-enter: 输入后按下回车来添加
+    template:
+      table-name: 表名
+      column-list: 索引包含的字段名，通过 _ 连接
+      referencing-table: 目标表名
+      referencing-column: 目标字段名
+      referenced-table: 被引用的表名
+      referenced-column: 被引用的字段名
   error-level:
     name: 错误等级
     error: 错误
@@ -1272,6 +1338,7 @@ schema-review-policy:
     basic-info:
       name: 基本信息
       display-name: 名称
+      display-name-placeholder: 审核策略名称
       display-name-label: 用以区分不同审核策略的名称。
       display-name-default: Schema 审核策略
       environments: 环境

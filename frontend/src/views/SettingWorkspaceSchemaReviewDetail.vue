@@ -2,7 +2,7 @@
   <transition appear name="slide-from-bottom" mode="out-in">
     <SchemaReviewCreation
       v-if="state.editMode"
-      :review-id="reviewPolicy.id"
+      :policy-id="reviewPolicy.id"
       :name="reviewPolicy.name"
       :selected-environment="reviewPolicy.environment"
       :selected-rule-list="selectedRuleList"
@@ -162,8 +162,9 @@
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { idFromSlug, environmentName, isOwner, isDBA } from "@/utils";
+import { idFromSlug, environmentName, isDBAOrOwner } from "@/utils";
 import {
+  unknown,
   RuleType,
   LEVEL_LIST,
   RuleLevel,
@@ -213,12 +214,14 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() => {
-  return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
+  return isDBAOrOwner(currentUser.value.role);
 });
 
 const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
-  return store.getReviewPolicyByEnvironmentId(
-    idFromSlug(props.schemaReviewPolicySlug)
+  return (
+    store.getReviewPolicyByEnvironmentId(
+      idFromSlug(props.schemaReviewPolicySlug)
+    ) || (unknown("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy)
   );
 });
 

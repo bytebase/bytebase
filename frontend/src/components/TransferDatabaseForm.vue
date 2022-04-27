@@ -9,7 +9,7 @@
           v-if="state.transferSource == 'DEFAULT'"
           class="textinfolabel mb-2"
         >
-          {{ $t("quick-action.transfer-in-db-hint") }}
+          {{ $t("quick-action.default-db-hint") }}
         </div>
         <div class="radio-set-row">
           <div class="flex flex-row">

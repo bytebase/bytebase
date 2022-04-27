@@ -8,7 +8,6 @@ import {
   SheetPatch,
   Principal,
   ResourceObject,
-  TabInfo,
   Database,
   Project,
   ProjectMember,
@@ -18,6 +17,7 @@ import {
   SheetCreate,
   SheetOrganizerUpsert,
   ProjectId,
+  SheetUpsert,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useAuthStore } from "./auth";
@@ -149,49 +149,19 @@ export const useSheetStore = defineStore("sheet", {
       }
       this.sheetById.set(sheetId, sheet);
     },
-    upsertSheet(payload: {
-      sheet: Pick<Sheet, "id" | "name" | "statement">;
-      currentTab: TabInfo;
-    }): Promise<Sheet> {
-      const { sheet, currentTab } = payload;
-      const hasSheet = this.sheetById.has(sheet.id);
-
-      if (hasSheet) {
-        return this.patchSheetById(sheet);
+    upsertSheet(sheetUpsert: SheetUpsert): Promise<Sheet> {
+      if (sheetUpsert.id) {
+        return this.patchSheetById({
+          id: sheetUpsert.id,
+          name: sheetUpsert.name,
+          statement: sheetUpsert.statement,
+        });
       }
 
-      return this.createSheetByTab(currentTab);
-    },
-    async createSheetByTab(currentTab: TabInfo): Promise<Sheet> {
-      const sqlEditorStore = useSQLEditorStore();
-      const ctx = sqlEditorStore.connectionContext;
-
-      const result = (
-        await axios.post(`/api/sheet`, {
-          data: {
-            type: "createSheet",
-            attributes: {
-              projectId: ctx.projectId,
-              databaseId: ctx.databaseId,
-              name: currentTab.name,
-              statement: currentTab.statement,
-              visibility: "PRIVATE",
-            },
-          },
-        })
-      ).data;
-      const sheet = convertSheet(result.data, result.included);
-
-      this.setSheetList(
-        this.sheetList.concat(sheet).sort((a, b) => b.createdTs - a.createdTs)
-      );
-
-      this.setSheetById({
-        sheetId: sheet.id,
-        sheet: sheet,
+      return this.createSheet({
+        ...sheetUpsert,
+        visibility: "PRIVATE",
       });
-
-      return sheet;
     },
     async createSheet(sheetCreate: SheetCreate): Promise<Sheet> {
       const resData = (

@@ -72,16 +72,17 @@ export default defineComponent({
     };
 
     const escHandler = (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!props.escClosable) {
-        return;
-      }
-      if (!active.value) {
-        // only to close the topmost modal when pressing ESC
-        return;
-      }
       if (e.code == "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!props.escClosable) {
+          return;
+        }
+        if (!active.value) {
+          // only to close the topmost modal when pressing ESC
+          return;
+        }
         close();
       }
     };
