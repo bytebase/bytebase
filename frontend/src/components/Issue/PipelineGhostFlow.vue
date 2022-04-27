@@ -287,9 +287,14 @@ const getTaskProgress = (task: Task | TaskCreate) => {
   if (task.type !== "bb.task.database.schema.update.ghost.sync") return 0;
   const taskRun = (task as Task).taskRunList.find((run) => {
     // TODO(Jim): find the correct taskRun which indicates the sync progress.
+    return false;
   });
-  const progress = 66.6; // TODO(jim): not implemented yet
-  return progress;
+  if (taskRun) {
+    // TODO(Jim): get progress from taskRun.result.detail
+  }
+
+  // nothing found
+  return 0;
 };
 
 const stageClass = (stage: Stage | StageCreate): string[] => {
