@@ -284,10 +284,10 @@ export default defineComponent({
     };
 
     const maybeBuildTenantDeployIssue = async (): Promise<
-      IssueCreate | false
+      IssueCreate | undefined
     > => {
       if (route.query.mode !== "tenant") {
-        return false;
+        return undefined;
       }
 
       const project = await findProject();
@@ -298,16 +298,16 @@ export default defineComponent({
       if (project.tenantMode === "TENANT" && isMigrate) {
         return buildNewTenantSchemaUpdateIssue();
       }
-      return false;
+      return undefined;
     };
 
-    const maybeBuildGhostIssue = async (): Promise<IssueCreate | false> => {
+    const maybeBuildGhostIssue = async (): Promise<IssueCreate | undefined> => {
       if (parseInt(route.query.ghost as string, 10) !== 1) {
-        return false;
+        return undefined;
       }
       const issueType = route.query.template as IssueType;
       if (issueType !== "bb.issue.database.schema.update") {
-        return false;
+        return undefined;
       }
       return buildNewGhostIssue();
     };
