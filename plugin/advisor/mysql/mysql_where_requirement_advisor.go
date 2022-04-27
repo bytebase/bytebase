@@ -51,7 +51,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: "Pass rule: statements require 'WHERE' clause",
+			Content: "",
 		})
 	}
 	return we.advisorList, nil

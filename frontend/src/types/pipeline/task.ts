@@ -180,7 +180,7 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.fake-advise"
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
-  | "bb.task-check.database.statement.schema-review"
+  | "bb.task-check.database.statement.advise"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
   | "bb.task-check.general.earliest-allowed-time"

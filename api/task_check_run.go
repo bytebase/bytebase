@@ -71,8 +71,8 @@ const (
 	TaskCheckDatabaseStatementSyntax TaskCheckType = "bb.task-check.database.statement.syntax"
 	// TaskCheckDatabaseStatementCompatibility is the task check type for statement compatibility.
 	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
-	// TaskCheckDatabaseStatementSchemaReview is the task check type for schema system review policy.
-	TaskCheckDatabaseStatementSchemaReview TaskCheckType = "bb.task-check.database.statement.schema-review"
+	// TaskCheckDatabaseStatementAdvise is the task check type for schema system review policy.
+	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.

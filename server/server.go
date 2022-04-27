@@ -162,7 +162,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSchemaReview), statementExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementExecutor)
 
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)

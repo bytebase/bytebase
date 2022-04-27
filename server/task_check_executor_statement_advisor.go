@@ -8,7 +8,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
@@ -34,19 +33,19 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		advisorType = advisor.MySQLSyntax
 	case api.TaskCheckDatabaseStatementCompatibility:
 		if !server.feature(api.FeatureBackwardCompatibility) {
-			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
+			return nil, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
 		}
 		advisorType = advisor.MySQLMigrationCompatibility
-	case api.TaskCheckDatabaseStatementSchemaReview:
+	case api.TaskCheckDatabaseStatementAdvise:
 		if !server.feature(api.FeatureSchemaReviewPolicy) {
-			return []api.TaskCheckResult{}, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
+			return nil, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureSchemaReviewPolicy.AccessErrorMessage()))
 		}
 		return exec.RunSchemaReview(ctx, server, taskCheckRun)
 	}
 
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
 	adviceList, err := advisor.Check(
@@ -60,26 +59,22 @@ func (exec *TaskCheckStatementAdvisorExecutor) Run(ctx context.Context, server *
 		payload.Statement,
 	)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
 	}
 
-	return generateResultList(adviceList), nil
+	return generateResultList(adviceList, false), nil
 }
 
 // RunSchemaReview will run the schema review check according to schema review policy.
 func (exec *TaskCheckStatementAdvisorExecutor) RunSchemaReview(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
-	}
-
-	if payload.DbType != db.MySQL && payload.DbType != db.TiDB {
-		return []api.TaskCheckResult{}, common.Errorf(common.NotImplemented, fmt.Errorf("not implemented schema review for %s yet", payload.DbType))
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
 	policy, err := server.store.GetSchemaReviewPolicyByEnvID(ctx, payload.EnvironmentID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
+		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
 	}
 
 	result = []api.TaskCheckResult{}
@@ -87,9 +82,9 @@ func (exec *TaskCheckStatementAdvisorExecutor) RunSchemaReview(ctx context.Conte
 		if rule.Level == api.SchemaRuleLevelDisabled {
 			continue
 		}
-		advisorType, err := getAdvisorTypeByRule(rule.Type)
+		advisorType, err := getAdvisorTypeByRule(rule.Type, payload.DbType)
 		if err != nil {
-			exec.l.Debug("rule not support", zap.Error(err))
+			exec.l.Debug("not supported rule", zap.Error(err))
 			continue
 		}
 		adviceList, err := advisor.Check(
@@ -104,14 +99,24 @@ func (exec *TaskCheckStatementAdvisorExecutor) RunSchemaReview(ctx context.Conte
 			payload.Statement,
 		)
 		if err != nil {
-			return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+			return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
 		}
-		result = append(result, generateResultList(adviceList)...)
+		result = append(result, generateResultList(adviceList, true)...)
+	}
+	if len(result) == 0 {
+		result = append(result, api.TaskCheckResult{
+			Status:  api.TaskCheckStatusSuccess,
+			Code:    common.Ok,
+			Title:   "OK",
+			Content: "",
+		})
 	}
 	return result, nil
 }
 
-func generateResultList(adviceList []advisor.Advice) []api.TaskCheckResult {
+// generateResultList will generate TaskCheckResult list by advice list.
+// It will filter success advice if withoutSuccess is true.
+func generateResultList(adviceList []advisor.Advice, withoutSuccess bool) []api.TaskCheckResult {
 	result := []api.TaskCheckResult{}
 	for _, advice := range adviceList {
 		status := api.TaskCheckStatusSuccess
@@ -122,6 +127,10 @@ func generateResultList(adviceList []advisor.Advice) []api.TaskCheckResult {
 			status = api.TaskCheckStatusWarn
 		case advisor.Error:
 			status = api.TaskCheckStatusError
+		}
+
+		if withoutSuccess && status == api.TaskCheckStatusSuccess {
+			continue
 		}
 
 		result = append(result, api.TaskCheckResult{

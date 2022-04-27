@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // Schema review policy consists of a list of schema review rules.
@@ -18,10 +19,14 @@ import (
 //   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
 //   3. Map SchemaReviewRuleType to advisor.Type in this file.
 
-func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType) (advisor.Type, error) {
+func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (advisor.Type, error) {
 	switch ruleType {
 	case api.SchemaRuleStatementRequireWhere:
-		return advisor.MySQLWhereRequirement, nil
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLWhereRequirement, nil
+		}
+		return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 	}
-	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v", ruleType)
+	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 }
