@@ -49,9 +49,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			sheetCreate.ProjectID = database.ProjectID
 		}
 
-		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{
-			ID: &sheetCreate.ProjectID,
-		})
+		project, err := s.store.GetProjectByID(ctx, sheetCreate.ProjectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %d", sheetCreate.ProjectID)).SetInternal(err)
 		}
@@ -84,7 +82,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		project, err := s.ProjectService.FindProject(ctx, &api.ProjectFind{ID: &projectID})
+		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Project not found: %d", projectID)).SetInternal(err)
 		}
@@ -501,7 +499,7 @@ func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw
 	}
 	sheet.Updater = updater
 
-	project, err := s.composeProjectByID(ctx, sheet.ProjectID)
+	project, err := s.store.GetProjectByID(ctx, sheet.ProjectID)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func (s *Server) composeRepositoryRelationship(ctx context.Context, raw *api.Rep
 	}
 	repository.VCS = vcs
 
-	project, err := s.composeProjectByID(ctx, repository.ProjectID)
+	project, err := s.store.GetProjectByID(ctx, repository.ProjectID)
 	if err != nil {
 		return nil, err
 	}

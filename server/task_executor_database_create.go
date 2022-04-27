@@ -156,12 +156,12 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	if payload.Labels != "" {
-		project, err := server.composeProjectByID(ctx, payload.ProjectID)
+		project, err := server.store.GetProjectByID(ctx, payload.ProjectID)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to find project: %v", payload.ProjectID)
+			return true, nil, fmt.Errorf("failed to find project with ID[%d]", payload.ProjectID)
 		}
 		if project == nil {
-			return true, nil, fmt.Errorf("project ID not found %v", payload.ProjectID)
+			return true, nil, fmt.Errorf("project not found with ID[%d]", payload.ProjectID)
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
