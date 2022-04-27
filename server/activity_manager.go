@@ -69,18 +69,15 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	// If we need to post webhook event, then we need to make sure the project info exists since we will include
 	// the project name in the webhook event.
 	if meta.issue.Project == nil {
-		projectFind := &api.ProjectFind{
-			ID: &meta.issue.ProjectID,
-		}
-		projectRaw, err := m.s.ProjectService.FindProject(ctx, projectFind)
+		project, err := m.s.store.GetProjectByID(ctx, meta.issue.ProjectID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
-		if projectRaw == nil {
+		if project == nil {
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		meta.issue.Project = projectRaw.ToProject()
+		meta.issue.Project = project
 	}
 
 	principalFind := &api.PrincipalFind{
