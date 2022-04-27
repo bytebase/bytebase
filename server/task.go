@@ -479,7 +479,7 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *store.TaskRaw
 	task.Instance = instance
 
 	if task.DatabaseID != nil {
-		database, err := s.store.GetDatabaseByID(ctx, *task.DatabaseID)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 		if err != nil {
 			return nil, err
 		}
@@ -537,7 +537,7 @@ func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *
 	task.Instance = instance
 
 	if task.DatabaseID != nil {
-		task.Database, err = s.store.GetDatabaseByID(ctx, *task.DatabaseID)
+		task.Database, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 		if err != nil {
 			return err
 		}

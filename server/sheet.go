@@ -36,7 +36,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
 		if sheetCreate.DatabaseID != nil {
-			database, err := s.store.GetDatabaseByID(ctx, *sheetCreate.DatabaseID)
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sheetCreate.DatabaseID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %d", *sheetCreate.DatabaseID)).SetInternal(err)
 			}
@@ -504,7 +504,7 @@ func (s *Server) composeSheetRelationship(ctx context.Context, raw *api.SheetRaw
 	sheet.Project = project
 
 	if sheet.DatabaseID != nil {
-		database, err := s.store.GetDatabaseByID(ctx, *sheet.DatabaseID)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sheet.DatabaseID})
 		if err != nil {
 			return nil, err
 		}

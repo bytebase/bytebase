@@ -55,7 +55,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("backup with ID[%d] not found", payload.BackupID)
 	}
 
-	sourceDatabase, err := server.store.GetDatabaseByID(ctx, backup.DatabaseID)
+	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
@@ -67,7 +67,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		InstanceID: &task.InstanceID,
 		Name:       &payload.DatabaseName,
 	}
-	targetDatabase, err := server.store.GetDatabaseByFind(ctx, targetDatabaseFind)
+	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}

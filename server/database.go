@@ -139,7 +139,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID[%d]", id)).SetInternal(err)
 		}
@@ -174,7 +174,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
 		}
@@ -263,7 +263,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// the old project and new project.
 		var dbExisting *api.Database
 		if dbPatch.ProjectID != nil {
-			dbExisting, err = s.store.GetDatabaseByID(ctx, dbPatch.ID)
+			dbExisting, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &dbPatch.ID})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
 			}
@@ -345,7 +345,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -406,7 +406,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -467,7 +467,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -515,7 +515,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -603,7 +603,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -639,7 +639,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		backupSettingUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		db, err := s.store.GetDatabaseByID(ctx, id)
+		db, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -667,7 +667,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, id)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
 		}
@@ -705,7 +705,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Data source ID is not a number: %s", c.Param("dataSourceID"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, databaseID)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -741,7 +741,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabaseByID(ctx, databaseID)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}
@@ -783,7 +783,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		// Because data source could use a wildcard database "*" as its database,
 		// so we need to include wildcard databases when check if relevant database exists.
-		database, err := s.store.GetDatabaseByIDIncludeAll(ctx, databaseID)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &databaseID, IncludeAllDatabase: true})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", databaseID)).SetInternal(err)
 		}

@@ -94,19 +94,20 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 	return databaseList, nil
 }
 
-// GetDatabaseByID gets an instance of Database
-func (s *Store) GetDatabaseByID(ctx context.Context, id int) (*api.Database, error) {
-	return s.getDatabaseRawWrapped(ctx, &api.DatabaseFind{ID: &id})
-}
-
-// GetDatabaseByIDIncludeAll gets an instance of Database
-func (s *Store) GetDatabaseByIDIncludeAll(ctx context.Context, id int) (*api.Database, error) {
-	return s.getDatabaseRawWrapped(ctx, &api.DatabaseFind{ID: &id, IncludeAllDatabase: true})
-}
-
-// GetDatabaseByFind gets an instance of Database
-func (s *Store) GetDatabaseByFind(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	return s.getDatabaseRawWrapped(ctx, find)
+// GetDatabase gets an instance of Database
+func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
+	databaseRaw, err := s.getDatabaseRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Database with DatabaseFind[%+v], error[%w]", find, err)
+	}
+	if databaseRaw == nil {
+		return nil, nil
+	}
+	database, err := s.composeDatabase(ctx, databaseRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+	}
+	return database, nil
 }
 
 // PatchDatabase patches an instance of Database
@@ -288,21 +289,6 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 	}
 
 	return list, nil
-}
-
-func (s *Store) getDatabaseRawWrapped(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
-	databaseRaw, err := s.getDatabaseRaw(ctx, find)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Database with DatabaseFind[%+v], error[%w]", find, err)
-	}
-	if databaseRaw == nil {
-		return nil, nil
-	}
-	database, err := s.composeDatabase(ctx, databaseRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
-	}
-	return database, nil
 }
 
 // getDatabaseRaw retrieves a single database based on find.

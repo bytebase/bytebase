@@ -249,7 +249,7 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 	}
 	backupSetting.Updater = updater
 
-	database, err := s.GetDatabaseByID(ctx, backupSetting.DatabaseID)
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 	if err != nil {
 		return nil, err
 	}

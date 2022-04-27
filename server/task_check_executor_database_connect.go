@@ -41,7 +41,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		}, nil
 	}
 
-	database, err := server.store.GetDatabaseByID(ctx, *task.DatabaseID)
+	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}

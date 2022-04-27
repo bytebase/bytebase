@@ -266,7 +266,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			statement = taskPayload.Statement
 		}
 
-		database, err := s.server.store.GetDatabaseByID(ctx, *task.DatabaseID)
+		database, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 		if err != nil {
 			return nil, err
 		}

@@ -857,7 +857,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				if m.MigrationType == db.Migrate && d.Statement == "" {
 					return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 				}
-				database, err := s.store.GetDatabaseByID(ctx, d.DatabaseID)
+				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 				}
@@ -913,7 +913,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
 			}
-			database, err := s.store.GetDatabaseByID(ctx, d.DatabaseID)
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 			}
