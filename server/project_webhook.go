@@ -223,6 +223,8 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			webhook.Type,
 			webhookPlugin.Context{
 				URL:          webhook.URL,
+				EventType:    webhookPlugin.IssueCreated,
+				ObjectKind:   webhookPlugin.Issue,
 				Level:        webhookPlugin.WebhookInfo,
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",

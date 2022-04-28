@@ -9,6 +9,7 @@ common:
   dingtalk: DingTalk
   feishu: Feishu
   wecom: WeCom
+  custom: Custom
   overview: Overview
   migration-history: Migration History
   webhook: Webhook

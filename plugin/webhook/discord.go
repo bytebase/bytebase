@@ -59,11 +59,12 @@ func (receiver *DiscordReceiver) post(context Context) error {
 	}
 
 	status := ""
-	if context.Level == WebhookSuccess {
+	switch context.Level {
+	case WebhookSuccess:
 		status = ":white_check_mark: "
-	} else if context.Level == WebhookWarn {
+	case WebhookWarn:
 		status = ":warning: "
-	} else if context.Level == WebhookError {
+	case WebhookError:
 		status = ":exclamation: "
 	}
 	embedList = append(embedList, DiscordWebhookEmbed{

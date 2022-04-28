@@ -44,11 +44,12 @@ func (receiver *WeComReceiver) post(context Context) error {
 	metaStrList = append(metaStrList, fmt.Sprintf("At: <font color=\"comment\">%s</font>", time.Unix(context.CreatedTs, 0).Format(timeFormat)))
 
 	status := ""
-	if context.Level == WebhookSuccess {
+	switch context.Level {
+	case WebhookSuccess:
 		status = "<font color=\"green\">Success</font> "
-	} else if context.Level == WebhookWarn {
+	case WebhookWarn:
 		status = "<font color=\"yellow\">Warn</font> "
-	} else if context.Level == WebhookError {
+	case WebhookError:
 		status = "<font color=\"red\">Error</font> "
 	}
 	content := fmt.Sprintf("# %s%s\n\n%s\n[View in Bytebase](%s)", status, context.Title, strings.Join(metaStrList, "\n"), context.Link)

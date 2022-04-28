@@ -34,17 +34,66 @@ const (
 	WebhookError Level = "ERROR"
 )
 
+// EventType is eventType of webhook.
+type EventType string
+
+const (
+	IssueCreated                   EventType = "issue_created"
+	IssueUpdated                   EventType = "issue_updated"
+	IssueStatusUpdated             EventType = "issue_status_updated"
+	IssueCommentCreated            EventType = "issue_comment_created"
+	IssuePipelineTaskStatusUpdated EventType = "issue_pipeline_task_status_updated"
+)
+
+// ObjectKind kind of object. for now, only Issue.
+type ObjectKind string
+
+// Issue object kind
+const Issue ObjectKind = "issue"
+
+// IssueObject object of issue
+type IssueObject struct {
+	ID          int
+	Name        string
+	Status      string
+	Type        string
+	Description string
+	AssigneeID  int
+	ProjectID   int
+}
+
+// Attributes return Attributes map
+func (i IssueObject) Attributes() map[string]interface{} {
+	return map[string]interface{}{
+		"id":          i.ID,
+		"name":        i.Name,
+		"status":      i.Status,
+		"type":        i.Type,
+		"description": i.Description,
+		"assignee_id": i.AssigneeID,
+		"project_id":  i.ProjectID,
+	}
+}
+
+// Attributer inferface of Attributes
+type Attributer interface {
+	Attributes() map[string]interface{}
+}
+
 // Context is the context of webhook.
 type Context struct {
-	URL          string
-	Level        Level
-	Title        string
-	Description  string
-	Link         string
-	CreatorName  string
-	CreatorEmail string
-	CreatedTs    int64
-	MetaList     []Meta
+	URL              string
+	ObjectKind       ObjectKind
+	ObjectAttributes Attributer
+	EventType        EventType
+	Level            Level
+	Title            string
+	Description      string
+	Link             string
+	CreatorName      string
+	CreatorEmail     string
+	CreatedTs        int64
+	MetaList         []Meta
 }
 
 // Receiver is the webhook receiver.

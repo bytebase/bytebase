@@ -4,7 +4,7 @@
       <label class="textlabel">
         {{ $t("project.webhook.destination") }}
       </label>
-      <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-6">
+      <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-7">
         <template
           v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST()"
           :key="index"
@@ -33,6 +33,9 @@
               </template>
               <template v-else-if="item.type == 'bb.plugin.webhook.wecom'">
                 <img class="h-10 w-10" src="../assets/wecom-logo.png" />
+              </template>
+              <template v-else-if="item.type == 'bb.plugin.webhook.custom'">
+                <img class="h-10 w-10" src="../assets/custom-logo.svg" />
               </template>
               <p class="mt-1 text-center textlabel">
                 {{ item.name }}
@@ -166,6 +169,14 @@
           {{
             $t("project.webhook.creation.desc", {
               destination: $t("common.wecom"),
+            })
+          }}
+        </template>
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.custom'">
+          <!-- TODO: need provide api document link -->
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.custom"),
             })
           }}
         </template>
@@ -314,6 +325,8 @@ export default defineComponent({
         return `${t("common.feishu")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
         return `${t("common.wecom")} Webhook`;
+      } else if (state.webhook.type == "bb.plugin.webhook.custom") {
+        return `${t("common.custom")} Webhook`;
       }
 
       return "My Webhook";
@@ -332,6 +345,8 @@ export default defineComponent({
         return "https://open.feishu.cn/open-apis/bot/v2/hook/...";
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
         return "https://qyapi.weixin.qq.com/cgi-bin/webhook/...";
+      } else if (state.webhook.type == "bb.plugin.webhook.custom") {
+        return "https://example.com/...";
       }
 
       return "Webhook URL";

@@ -26,6 +26,9 @@
         <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.wecom'">
           <img class="h-6 w-6" src="../assets/wecom-logo.png" />
         </template>
+        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.custom'">
+          <img class="h-6 w-6" src="../assets/custom-logo.svg" />
+        </template>
         <h3 class="text-xl leading-6 font-medium text-main">
           {{ projectWebhook.name }}
         </h3>

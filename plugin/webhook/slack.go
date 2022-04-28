@@ -53,11 +53,12 @@ func (receiver *SlackReceiver) post(context Context) error {
 	blockList := []SlackWebhookBlock{}
 
 	status := ""
-	if context.Level == WebhookSuccess {
+	switch context.Level {
+	case WebhookSuccess:
 		status = ":white_check_mark: "
-	} else if context.Level == WebhookWarn {
+	case WebhookWarn:
 		status = ":warning: "
-	} else if context.Level == WebhookError {
+	case WebhookError:
 		status = ":exclamation: "
 	}
 	blockList = append(blockList, SlackWebhookBlock{

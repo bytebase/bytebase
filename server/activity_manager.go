@@ -117,14 +117,19 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 }
 
 func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.Activity, meta *ActivityMeta, updater *api.Principal) (webhook.Context, error) {
-	var webhookCtx webhook.Context
+	var (
+		webhookCtx webhook.Context
+		eventType  webhook.EventType
+	)
 	level := webhook.WebhookInfo
 	title := ""
 	link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = "Issue created - " + meta.issue.Name
+		eventType = webhook.IssueCreated
 	case api.ActivityIssueStatusUpdate:
+		eventType = webhook.IssueStatusUpdated
 		switch meta.issue.Status {
 		case "OPEN":
 			title = "Issue reopened - " + meta.issue.Name
@@ -135,9 +140,11 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			title = "Issue canceled - " + meta.issue.Name
 		}
 	case api.ActivityIssueCommentCreate:
+		eventType = webhook.IssueCommentCreated
 		title = "Comment created"
 		link += fmt.Sprintf("#activity%d", activity.ID)
 	case api.ActivityIssueFieldUpdate:
+		eventType = webhook.IssueUpdated
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 			m.s.l.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
@@ -225,6 +232,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			title = "Updated issue"
 		}
 	case api.ActivityPipelineTaskStatusUpdate:
+		eventType = webhook.IssuePipelineTaskStatusUpdated
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
 			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
@@ -281,8 +289,20 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		},
 	}
 	webhookCtx = webhook.Context{
-		Level:        level,
-		Title:        title,
+		Level: level,
+		Title: title,
+		// for now, only Issue
+		ObjectKind: webhook.Issue,
+		ObjectAttributes: webhook.IssueObject{
+			ID:          meta.issue.ID,
+			Name:        meta.issue.Name,
+			Status:      string(meta.issue.Status),
+			Type:        string(meta.issue.Type),
+			Description: meta.issue.Description,
+			AssigneeID:  meta.issue.AssigneeID,
+			ProjectID:   meta.issue.ProjectID,
+		},
+		EventType:    eventType,
 		Description:  activity.Comment,
 		Link:         link,
 		CreatorName:  updater.Name,
