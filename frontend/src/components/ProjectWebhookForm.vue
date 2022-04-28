@@ -173,12 +173,21 @@
           }}
         </template>
         <template v-else-if="state.webhook.type == 'bb.plugin.webhook.custom'">
-          <!-- TODO: need provide api document link -->
           {{
             $t("project.webhook.creation.desc", {
               destination: $t("common.custom"),
             })
           }}
+          <a
+            href="https://www.bytebase.com/docs/use-bytebase/webhook-integration/project-webhook#custom"
+            target="__blank"
+            class="normal-link"
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.custom"),
+              })
+            }}</a
+          >.
         </template>
       </div>
       <input
