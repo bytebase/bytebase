@@ -44,7 +44,8 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: () => ProjectWebhookTypeItem[] =
     {
       type: "bb.plugin.webhook.custom",
       name: t("common.custom"),
-      urlPrefix: "https://example.com",
+      urlPrefix:
+        "https://www.bytebase.com/docs/use-bytebase/webhook-integration/project-webhook#custom",
     },
   ];
 
