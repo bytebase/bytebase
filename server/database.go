@@ -574,7 +574,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
 		}
 
-		_, err = s.TaskService.CreateTask(ctx, &api.TaskCreate{
+		_, err = s.store.CreateTask(ctx, &api.TaskCreate{
 			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
 			PipelineID: createdPipeline.ID,
 			StageID:    createdStage.ID,

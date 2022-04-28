@@ -200,7 +200,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create stage: %w", err)
 	}
 
-	_, err = s.server.TaskService.CreateTask(ctx, &api.TaskCreate{
+	_, err = s.server.store.CreateTask(ctx, &api.TaskCreate{
 		Name:       backupName,
 		PipelineID: createdPipeline.ID,
 		StageID:    createdStage.ID,
