@@ -101,38 +101,29 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				taskFind := &api.TaskFind{
 					StatusList: &taskStatusList,
 				}
-				taskRawList, err := s.server.TaskService.FindTaskList(ctx, taskFind)
+				// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
+				// We may optimize this in the future since only some relationship info is needed by the executor
+				taskList, err := s.server.store.FindTask(ctx, taskFind, false)
 				if err != nil {
 					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
 
-				for _, taskRaw := range taskRawList {
-					if taskRaw.ID == api.OnboardingTaskID1 || taskRaw.ID == api.OnboardingTaskID2 {
+				for _, task := range taskList {
+					if task.ID == api.OnboardingTaskID1 || task.ID == api.OnboardingTaskID2 {
 						continue
 					}
 
-					executor, ok := s.executors[string(taskRaw.Type)]
+					executor, ok := s.executors[string(task.Type)]
 					if !ok {
 						s.l.Error("Skip running task with unknown type",
-							zap.Int("id", taskRaw.ID),
-							zap.String("name", taskRaw.Name),
-							zap.String("type", string(taskRaw.Type)),
+							zap.Int("id", task.ID),
+							zap.String("name", task.Name),
+							zap.String("type", string(task.Type)),
 						)
 						continue
 					}
 
-					// This fetches quite a bit info and may cause performance issue if we have many ongoing tasks
-					// We may optimize this in the future since only some relationship info is needed by the executor
-					task, err := s.server.composeTaskRelationship(ctx, taskRaw)
-					if err != nil {
-						s.l.Error("Failed to fetch task relationship",
-							zap.Int("id", taskRaw.ID),
-							zap.String("name", taskRaw.Name),
-							zap.String("type", string(taskRaw.Type)),
-						)
-						continue
-					}
 					// Skip execution if has any dependency not finished.
 					isBlocked, err := s.isTaskBlocked(ctx, task)
 					if err != nil {
@@ -325,10 +316,7 @@ func (s *TaskScheduler) isTaskBlocked(ctx context.Context, task *api.Task) (bool
 		if err != nil {
 			return true, fmt.Errorf("failed to convert id string to int, id string: %v, error: %w", blockingTaskIDString, err)
 		}
-		taskFind := api.TaskFind{
-			ID: &blockingTaskID,
-		}
-		blockingTask, err := s.server.TaskService.FindTask(ctx, &taskFind)
+		blockingTask, err := s.server.store.GetTaskByID(ctx, blockingTaskID)
 		if err != nil {
 			return true, fmt.Errorf("failed to fetch the blocking task, id: %v, error: %w", blockingTaskID, err)
 		}
