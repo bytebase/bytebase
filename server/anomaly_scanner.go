@@ -124,18 +124,16 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						databaseFind := &api.DatabaseFind{
 							InstanceID: &instance.ID,
 						}
-						dbRawList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
+						dbList, err := s.server.store.FindDatabase(ctx, databaseFind)
 						if err != nil {
 							s.l.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
 								zap.Error(err))
 							return
 						}
-						for _, dbRaw := range dbRawList {
-							// TODO(dragonly): compose Database
-							db := dbRaw.ToDatabase()
-							s.checkDatabaseAnomaly(ctx, instance, db)
-							s.checkBackupAnomaly(ctx, instance, db, backupPlanPolicyMap)
+						for _, database := range dbList {
+							s.checkDatabaseAnomaly(ctx, instance, database)
+							s.checkBackupAnomaly(ctx, instance, database, backupPlanPolicyMap)
 						}
 					}(instance)
 

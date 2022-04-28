@@ -73,10 +73,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					runningTasks[backupSetting.ID] = true
 					mu.Unlock()
 
-					dbFind := &api.DatabaseFind{
-						ID: &backupSetting.DatabaseID,
-					}
-					db, err := s.server.composeDatabaseByFind(ctx, dbFind)
+					db, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),

@@ -40,7 +40,6 @@ type Server struct {
 	SettingService          api.SettingService
 	ProjectWebhookService   api.ProjectWebhookService
 	InstanceUserService     api.InstanceUserService
-	DatabaseService         api.DatabaseService
 	TableService            api.TableService
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
