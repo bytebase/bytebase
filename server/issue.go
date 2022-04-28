@@ -901,7 +901,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	for _, stageCreate := range pipelineCreate.StageList {
 		stageCreate.CreatorID = creatorID
 		stageCreate.PipelineID = pipelineRawCreated.ID
-		createdStage, err := s.StageService.CreateStage(ctx, &stageCreate)
+		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
 		}
