@@ -463,7 +463,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
 	s.RepositoryService = store.NewRepositoryService(m.l, db, storeInstance)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)

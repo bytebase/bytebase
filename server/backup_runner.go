@@ -182,7 +182,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create task payload: %w", err)
 	}
 
-	createdPipeline, err := s.server.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
+	createdPipeline, err := s.server.store.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      backupName,
 		CreatorID: backupCreate.CreatorID,
 	})
