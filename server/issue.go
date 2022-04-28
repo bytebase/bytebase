@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/bytebase/bytebase/store"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -489,76 +488,6 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	return issue, nil
 }
 
-func (s *Server) createPipelineValidateOnly(ctx context.Context, pc *api.PipelineCreate, creatorID int) (*api.Pipeline, error) {
-	// We cannot emit ID or use default zero by following https://google.aip.dev/163, otherwise
-	// jsonapi resource relationships will collide different resources into the same bucket.
-	id := 0
-	ts := time.Now().Unix()
-	pipeline := &api.Pipeline{
-		ID:        id,
-		Name:      pc.Name,
-		Status:    api.PipelineOpen,
-		CreatorID: creatorID,
-		CreatedTs: ts,
-		UpdaterID: creatorID,
-		UpdatedTs: ts,
-	}
-	for _, sc := range pc.StageList {
-		id++
-		stage := &api.Stage{
-			ID:            id,
-			Name:          sc.Name,
-			CreatorID:     creatorID,
-			CreatedTs:     ts,
-			UpdaterID:     creatorID,
-			UpdatedTs:     ts,
-			PipelineID:    sc.PipelineID,
-			EnvironmentID: sc.EnvironmentID,
-		}
-		// We don't know IDs before inserting, so we use array index instead.
-		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
-		indexBlockedByIndex := make(map[int][]int)
-		for _, indexDAG := range sc.TaskIndexDAGList {
-			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
-		}
-		idOffset := id + 1
-		// The ID of sc.TaskList[index].ID equals index + idOffset.
-		for index, tc := range sc.TaskList {
-			id++
-			var blockedBy []string
-			for _, blockedByIndex := range indexBlockedByIndex[index] {
-				// Convert array index to ID.
-				blockedBy = append(blockedBy, strconv.Itoa(blockedByIndex+idOffset))
-			}
-			taskRaw := &store.TaskRaw{
-				ID:                id,
-				Name:              tc.Name,
-				Status:            tc.Status,
-				CreatorID:         creatorID,
-				CreatedTs:         ts,
-				UpdaterID:         creatorID,
-				UpdatedTs:         ts,
-				Type:              tc.Type,
-				Payload:           tc.Payload,
-				EarliestAllowedTs: tc.EarliestAllowedTs,
-				PipelineID:        pipeline.ID,
-				StageID:           stage.ID,
-				InstanceID:        tc.InstanceID,
-				DatabaseID:        tc.DatabaseID,
-			}
-			task, err := s.composeTaskRelationship(ctx, taskRaw)
-			// We need to compose task.BlockedBy here because task and taskDAG are not inserted yet.
-			task.BlockedBy = blockedBy
-			if err != nil {
-				return nil, err
-			}
-			stage.TaskList = append(stage.TaskList, task)
-		}
-		pipeline.StageList = append(pipeline.StageList, stage)
-	}
-	return pipeline, nil
-}
-
 func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.IssueCreate, creatorID int, validateOnly bool) (*api.Pipeline, error) {
 	var pipelineCreate *api.PipelineCreate
 	switch issueCreate.Type {
@@ -960,7 +889,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	// Create the pipeline, stages, and tasks.
 	if validateOnly {
-		return s.createPipelineValidateOnly(ctx, pipelineCreate, creatorID)
+		return s.store.CreatePipelineValidateOnly(ctx, pipelineCreate, creatorID)
 	}
 
 	pipelineCreate.CreatorID = creatorID
@@ -983,7 +912,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			taskCreate.CreatorID = creatorID
 			taskCreate.PipelineID = pipelineRawCreated.ID
 			taskCreate.StageID = createdStage.ID
-			task, err := s.TaskService.CreateTask(ctx, &taskCreate)
+			task, err := s.store.CreateTask(ctx, &taskCreate)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create task for issue, error %v", err)
 			}

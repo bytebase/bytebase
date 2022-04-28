@@ -146,7 +146,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		UpdaterID:  api.SystemBotID,
 		DatabaseID: &database.ID,
 	}
-	_, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
+	_, err = server.store.PatchTask(ctx, taskDatabaseIDPatch)
 	if err != nil {
 		return true, nil, err
 	}
