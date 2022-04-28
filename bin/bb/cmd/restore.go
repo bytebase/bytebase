@@ -18,7 +18,7 @@ func newRestoreCmd() *cobra.Command {
 	)
 	restoreCmd := &cobra.Command{
 		Use:   "restore",
-		Short: "restores the schema of a database instance",
+		Short: "Restores schema and data of a database.",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
@@ -27,7 +27,7 @@ func newRestoreCmd() *cobra.Command {
 			return restoreDatabase(context.Background(), u, file)
 		},
 	}
-	restoreCmd.Flags().StringVar(&dsn, "dsn", "", "Database connection string. e.g. mysql://username:password@host:port/dbname?ssl-ca=value1&ssl-cert=value2&ssl-key=value3")
+	restoreCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)
 	restoreCmd.Flags().StringVar(&file, "file", "", "File to store the dump.")
 	if err := restoreCmd.MarkFlagRequired("file"); err != nil {
 		panic(err)
