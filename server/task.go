@@ -555,7 +555,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
 	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
-		pipeline, err := s.composePipelineByID(ctx, taskPatched.PipelineID)
+		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
 		}
@@ -571,7 +571,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 					UpdaterID: taskStatusPatch.UpdaterID,
 					Status:    &status,
 				}
-				if _, err := s.PipelineService.PatchPipeline(ctx, pipelinePatch); err != nil {
+				if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
 					return nil, fmt.Errorf("failed to mark pipeline %v as DONE after completing task %v: %w", pipeline.Name, taskPatched.Name, err)
 				}
 			} else {
