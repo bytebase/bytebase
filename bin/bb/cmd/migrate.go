@@ -25,7 +25,7 @@ func newMigrateCmd() *cobra.Command {
 	)
 	migrateCmd := &cobra.Command{
 		Use:   "migrate",
-		Short: "Migrate the database schema",
+		Short: "Migrate the database schema.",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
@@ -52,7 +52,7 @@ func newMigrateCmd() *cobra.Command {
 			return migrateDatabase(context.Background(), u, description, issueID, false /*createDatabase*/, sqlReader)
 		}}
 
-	migrateCmd.Flags().StringVar(&dsn, "dsn", "", "Database connection string. e.g. mysql://username:password@host:port/dbname?ssl-ca=value1&ssl-cert=value2&ssl-key=value3")
+	migrateCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)
 	migrateCmd.Flags().StringSliceVarP(&fileList, "file", "f", []string{}, "SQL file to execute.")
 	migrateCmd.Flags().StringSliceVarP(&commandList, "command", "c", []string{}, "SQL command to execute.")
 	migrateCmd.Flags().StringVar(&description, "description", "", "Description of migration.")
