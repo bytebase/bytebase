@@ -297,6 +297,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		},
 		Description:  activity.Comment,
 		Link:         link,
+		CreatorID:    updater.ID,
 		CreatorName:  updater.Name,
 		CreatorEmail: updater.Email,
 		MetaList:     metaList,

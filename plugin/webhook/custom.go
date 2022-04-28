@@ -23,6 +23,7 @@ type CustomWebhookRequest struct {
 	Project      Project `json:"project"`
 	Description  string  `json:"description"`
 	Link         string  `json:"link"`
+	CreatorID    int     `json:"creator_id"`
 	CreatorName  string  `json:"creator_name"`
 	CreatorEmail string  `json:"creator_email"`
 	CreatedTS    int64   `json:"created_ts"`
@@ -45,6 +46,7 @@ func (receiver *CustomReceiver) post(context Context) error {
 		Project:      context.Project,
 		Description:  context.Description,
 		Link:         context.Link,
+		CreatorID:    context.CreatorID,
 		CreatorName:  context.CreatorName,
 		CreatorEmail: context.CreatorEmail,
 		CreatedTS:    context.CreatedTs,

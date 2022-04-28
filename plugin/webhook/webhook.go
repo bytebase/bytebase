@@ -59,6 +59,7 @@ type Context struct {
 	Title        string
 	Description  string
 	Link         string
+	CreatorID    int
 	CreatorName  string
 	CreatorEmail string
 	CreatedTs    int64
