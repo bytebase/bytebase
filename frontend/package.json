@@ -1,6 +1,6 @@
 {
   "name": "bytebase",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "vite --mode dev",
