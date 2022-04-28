@@ -16,29 +16,42 @@
             v-if="showDBAItem"
             to="/issue"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/issue')"
             >{{ $t("common.issues") }}</router-link
           >
 
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
+          <router-link
+            to="/project"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/project')"
+          >
             {{ $t("common.projects") }}
           </router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
-            $t("common.databases")
-          }}</router-link>
+          <router-link
+            to="/db"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/db')"
+            >{{ $t("common.databases") }}</router-link
+          >
 
-          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md">{{
-            $t("common.instances")
-          }}</router-link>
+          <router-link
+            to="/instance"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/instance')"
+            >{{ $t("common.instances") }}</router-link
+          >
 
           <router-link
             to="/environment"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/environment')"
             >{{ $t("common.environments") }}</router-link
           >
           <router-link
             to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/setting')"
             >{{ $t("common.settings") }}</router-link
           >
         </div>
@@ -190,7 +203,7 @@
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect, defineComponent } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -221,6 +234,7 @@ export default defineComponent({
     const settingStore = useSettingStore();
     const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
+    const route = useRoute();
     const { setLocale, toggleLocales } = useLanguage();
 
     const state = reactive<LocalState>({
@@ -230,6 +244,16 @@ export default defineComponent({
     const currentUser = useCurrentUser();
 
     const { currentPlan } = storeToRefs(subscriptionStore);
+
+    const getRouteLinkClass = (prefix: string): string[] => {
+      const { path } = route;
+      const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+      const classes: string[] = [];
+      if (isActiveRoute) {
+        classes.push("router-link-active", "bg-link-hover");
+      }
+      return classes;
+    };
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -382,6 +406,7 @@ export default defineComponent({
 
     return {
       state,
+      getRouteLinkClass,
       logoUrl,
       currentUser,
       currentPlan,
