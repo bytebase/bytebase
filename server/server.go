@@ -46,7 +46,6 @@ type Server struct {
 	IndexService            api.IndexService
 	IssueService            api.IssueService
 	PipelineService         api.PipelineService
-	StageService            api.StageService
 	RepositoryService       api.RepositoryService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService

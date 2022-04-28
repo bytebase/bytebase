@@ -564,7 +564,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
 		}
 
-		createdStage, err := s.StageService.CreateStage(ctx, &api.StageCreate{
+		createdStage, err := s.store.CreateStage(ctx, &api.StageCreate{
 			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
 			EnvironmentID: database.Instance.EnvironmentID,
 			PipelineID:    createdPipeline.ID,
