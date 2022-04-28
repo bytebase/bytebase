@@ -190,7 +190,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create pipeline: %w", err)
 	}
 
-	createdStage, err := s.server.StageService.CreateStage(ctx, &api.StageCreate{
+	createdStage, err := s.server.store.CreateStage(ctx, &api.StageCreate{
 		Name:          backupName,
 		EnvironmentID: database.Instance.EnvironmentID,
 		PipelineID:    createdPipeline.ID,

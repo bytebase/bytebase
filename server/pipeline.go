@@ -42,7 +42,7 @@ func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.Pipel
 	}
 	pipeline.Updater = updater
 
-	stageList, err := s.composeStageListByPipelineID(ctx, pipeline.ID)
+	stageList, err := s.store.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
 	if err != nil {
 		return nil, err
 	}
