@@ -249,12 +249,11 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 	}
 	backupSetting.Updater = updater
 
-	databaseRaw, err := s.DatabaseService.FindDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
-	// TODO(dragonly): compose Database
-	backupSetting.Database = databaseRaw.ToDatabase()
+	backupSetting.Database = database
 
 	return backupSetting, nil
 }

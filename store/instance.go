@@ -230,7 +230,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		CharacterSet:  api.DefaultCharactorSetName,
 		Collation:     api.DefaultCollationName,
 	}
-	allDatabase, err := s.DatabaseService.CreateDatabaseTx(ctx, tx.PTx, databaseCreate)
+	allDatabase, err := s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)
 	if err != nil {
 		return nil, err
 	}

@@ -798,20 +798,11 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 
-			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+			dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 				ProjectID: &issueCreate.ProjectID,
 			})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-
-			var dbList []*api.Database
-			for _, dbRaw := range dbRawList {
-				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose databases relation for ID %v", dbRaw.ID)).SetInternal(err)
-				}
-				dbList = append(dbList, db)
 			}
 
 			baseDBName := d.DatabaseName
@@ -866,10 +857,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 				if m.MigrationType == db.Migrate && d.Statement == "" {
 					return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 				}
-				databaseFind := &api.DatabaseFind{
-					ID: &d.DatabaseID,
-				}
-				database, err := s.composeDatabaseByFind(ctx, databaseFind)
+				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 				if err != nil {
 					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 				}
@@ -925,10 +913,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
 			}
-			databaseFind := &api.DatabaseFind{
-				ID: &d.DatabaseID,
-			}
-			database, err := s.composeDatabaseByFind(ctx, databaseFind)
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 			if err != nil {
 				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 			}
@@ -1338,20 +1323,11 @@ func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbN
 // Otherwise, we will create a blank database without schema.
 func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *api.Instance, project *api.Project, projectID int, baseDatabaseName string) (string, string, error) {
 	// Find all databases in the project.
-	dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, &api.DatabaseFind{
+	dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", projectID)).SetInternal(err)
-	}
-
-	var dbList []*api.Database
-	for _, dbRaw := range dbRawList {
-		db, err := s.composeDatabaseRelationship(ctx, dbRaw)
-		if err != nil {
-			return "", "", echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose databases relation for ID %v", dbRaw.ID)).SetInternal(err)
-		}
-		dbList = append(dbList, db)
 	}
 
 	_, matrix, err := s.getTenantDatabaseMatrix(ctx, projectID, project.DBNameTemplate, dbList, baseDatabaseName)
