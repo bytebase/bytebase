@@ -335,7 +335,7 @@ func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.PrincipalID; v != nil {
-		where, args = append(where, fmt.Sprintf("id IN (SELECT project_id FROM project_project WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
