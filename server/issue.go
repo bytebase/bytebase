@@ -323,7 +323,7 @@ func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw
 	}
 	issue.Project = project
 
-	pipeline, err := s.composePipelineByID(ctx, issue.PipelineID)
+	pipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineID)
 	if err != nil {
 		return nil, err
 	}
@@ -893,14 +893,14 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	}
 
 	pipelineCreate.CreatorID = creatorID
-	pipelineRawCreated, err := s.PipelineService.CreatePipeline(ctx, pipelineCreate)
+	pipelineCreated, err := s.store.CreatePipeline(ctx, pipelineCreate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pipeline for issue, error %v", err)
 	}
 
 	for _, stageCreate := range pipelineCreate.StageList {
 		stageCreate.CreatorID = creatorID
-		stageCreate.PipelineID = pipelineRawCreated.ID
+		stageCreate.PipelineID = pipelineCreated.ID
 		createdStage, err := s.store.CreateStage(ctx, &stageCreate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stage for issue, error %v", err)
@@ -910,7 +910,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		for index, taskCreate := range stageCreate.TaskList {
 			taskCreate.CreatorID = creatorID
-			taskCreate.PipelineID = pipelineRawCreated.ID
+			taskCreate.PipelineID = pipelineCreated.ID
 			taskCreate.StageID = createdStage.ID
 			task, err := s.store.CreateTask(ctx, &taskCreate)
 			if err != nil {
@@ -932,10 +932,6 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 	}
 
-	pipelineCreated, err := s.composePipelineRelationship(ctx, pipelineRawCreated)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose pipeline relation, error %w", err)
-	}
 	return pipelineCreated, nil
 }
 
@@ -1139,7 +1135,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		UpdaterID: updaterID,
 		Status:    &pipelineStatus,
 	}
-	if _, err := s.PipelineService.PatchPipeline(ctx, pipelinePatch); err != nil {
+	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
 		return nil, fmt.Errorf("failed to update issue(%v) status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
 	}
 

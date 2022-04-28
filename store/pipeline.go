@@ -11,32 +11,144 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	_ api.PipelineService = (*PipelineService)(nil)
-)
+// pipelineRaw is the store model for an Pipeline.
+// Fields have exactly the same meanings as Pipeline.
+type pipelineRaw struct {
+	ID int
 
-// PipelineService represents a service for managing pipeline.
-type PipelineService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
 
-	cache api.CacheService
+	// Domain specific fields
+	Name   string
+	Status api.PipelineStatus
 }
 
-// NewPipelineService returns a new instance of PipelineService.
-func NewPipelineService(logger *zap.Logger, db *DB, cache api.CacheService) *PipelineService {
-	return &PipelineService{l: logger, db: db, cache: cache}
+// toPipeline creates an instance of Pipeline based on the pipelineRaw.
+// This is intended to be called when we need to compose an Pipeline relationship.
+func (raw *pipelineRaw) toPipeline() *api.Pipeline {
+	return &api.Pipeline{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Domain specific fields
+		Name:   raw.Name,
+		Status: raw.Status,
+	}
 }
 
-// CreatePipeline creates a new pipeline.
-func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.PipelineRaw, error) {
+// CreatePipeline creates an instance of Pipeline
+func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
+	pipelineRaw, err := s.createPipelineRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Pipeline with PipelineCreate[%+v], error[%w]", create, err)
+	}
+	pipeline, err := s.composePipeline(ctx, pipelineRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+	}
+	return pipeline, nil
+}
+
+// GetPipelineByID gets an instance of Pipeline
+func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
+	find := &api.PipelineFind{ID: &id}
+	pipelineRaw, err := s.getPipelineRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Pipeline with ID[%d], error[%w]", id, err)
+	}
+	if pipelineRaw == nil {
+		return nil, nil
+	}
+	pipeline, err := s.composePipeline(ctx, pipelineRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+	}
+	return pipeline, nil
+}
+
+// FindPipeline finds a list of Pipeline instances
+func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, returnOnErr bool) ([]*api.Pipeline, error) {
+	pipelineRawList, err := s.findPipelineRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Pipeline list, error[%w]", err)
+	}
+	var pipelineList []*api.Pipeline
+	for _, raw := range pipelineRawList {
+		pipeline, err := s.composePipeline(ctx, raw)
+		if err != nil {
+			if returnOnErr {
+				return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", raw, err)
+			}
+			s.l.Error("failed to compose pipeline",
+				zap.Any("pipelineRaw", raw),
+				zap.Error(err),
+			)
+			continue
+		}
+		pipelineList = append(pipelineList, pipeline)
+	}
+	return pipelineList, nil
+}
+
+// PatchPipeline patches an instance of Pipeline
+func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
+	pipelineRaw, err := s.patchPipelineRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Pipeline with PipelinePatch[%+v], error[%w]", patch, err)
+	}
+	pipeline, err := s.composePipeline(ctx, pipelineRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+	}
+	return pipeline, nil
+}
+
+//
+// private function
+//
+
+func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pipeline, error) {
+	pipeline := raw.toPipeline()
+
+	creator, err := s.GetPrincipalByID(ctx, pipeline.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	pipeline.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, pipeline.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	pipeline.Updater = updater
+
+	stageList, err := s.FindStage(ctx, &api.StageFind{PipelineID: &pipeline.ID})
+	if err != nil {
+		return nil, err
+	}
+	pipeline.StageList = stageList
+
+	return pipeline, nil
+}
+
+// createPipelineRaw creates a new pipeline.
+func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreate) (*pipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.createPipeline(ctx, tx.PTx, create)
+	pipeline, err := s.createPipelineImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +164,15 @@ func (s *PipelineService) CreatePipeline(ctx context.Context, create *api.Pipeli
 	return pipeline, nil
 }
 
-// FindPipelineList retrieves a list of pipelines based on find.
-func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.PipelineFind) ([]*api.PipelineRaw, error) {
+// findPipelineRaw retrieves a list of pipelines based on find.
+func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPipelineList(ctx, tx.PTx, find)
+	list, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -76,11 +188,11 @@ func (s *PipelineService) FindPipelineList(ctx context.Context, find *api.Pipeli
 	return list, nil
 }
 
-// FindPipeline retrieves a single pipeline based on find.
+// getPipelineRaw retrieves a single pipeline based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFind) (*api.PipelineRaw, error) {
+func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pipelineRaw, error) {
 	if find.ID != nil {
-		pipelineRaw := &api.PipelineRaw{}
+		pipelineRaw := &pipelineRaw{}
 		has, err := s.cache.FindCache(api.PipelineCache, *find.ID, pipelineRaw)
 		if err != nil {
 			return nil, err
@@ -96,7 +208,7 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRawList, err := s.findPipelineList(ctx, tx.PTx, find)
+	pipelineRawList, err := s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -112,16 +224,16 @@ func (s *PipelineService) FindPipeline(ctx context.Context, find *api.PipelineFi
 	return pipelineRawList[0], nil
 }
 
-// PatchPipeline updates an existing pipeline by ID.
+// patchPipelineRaw updates an existing pipeline by ID.
 // Returns ENOTFOUND if pipeline does not exist.
-func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.PipelineRaw, error) {
+func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) (*pipelineRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRaw, err := s.patchPipeline(ctx, tx.PTx, patch)
+	pipelineRaw, err := s.patchPipelineImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -137,8 +249,8 @@ func (s *PipelineService) PatchPipeline(ctx context.Context, patch *api.Pipeline
 	return pipelineRaw, nil
 }
 
-// createPipeline creates a new pipeline.
-func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*api.PipelineRaw, error) {
+// createPipelineImpl creates a new pipeline.
+func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO pipeline (
 			creator_id,
@@ -160,7 +272,7 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create
 	defer row.Close()
 
 	row.Next()
-	var pipelineRaw api.PipelineRaw
+	var pipelineRaw pipelineRaw
 	if err := row.Scan(
 		&pipelineRaw.ID,
 		&pipelineRaw.CreatorID,
@@ -176,7 +288,7 @@ func (s *PipelineService) createPipeline(ctx context.Context, tx *sql.Tx, create
 	return &pipelineRaw, nil
 }
 
-func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*api.PipelineRaw, error) {
+func (s *Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -205,9 +317,9 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into pipelineRawList.
-	var pipelineRawList []*api.PipelineRaw
+	var pipelineRawList []*pipelineRaw
 	for rows.Next() {
-		var pipelineRaw api.PipelineRaw
+		var pipelineRaw pipelineRaw
 		if err := rows.Scan(
 			&pipelineRaw.ID,
 			&pipelineRaw.CreatorID,
@@ -229,8 +341,8 @@ func (s *PipelineService) findPipelineList(ctx context.Context, tx *sql.Tx, find
 	return pipelineRawList, nil
 }
 
-// patchPipeline updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*api.PipelineRaw, error) {
+// patchPipelineImpl updates a pipeline by ID. Returns the new state of the pipeline after update.
+func (s *Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {
@@ -254,7 +366,7 @@ func (s *PipelineService) patchPipeline(ctx context.Context, tx *sql.Tx, patch *
 	defer row.Close()
 
 	if row.Next() {
-		var pipelineRaw api.PipelineRaw
+		var pipelineRaw pipelineRaw
 		if err := row.Scan(
 			&pipelineRaw.ID,
 			&pipelineRaw.CreatorID,

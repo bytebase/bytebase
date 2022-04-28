@@ -45,7 +45,6 @@ type Server struct {
 	ViewService             api.ViewService
 	IndexService            api.IndexService
 	IssueService            api.IssueService
-	PipelineService         api.PipelineService
 	RepositoryService       api.RepositoryService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService

@@ -556,7 +556,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task payload").SetInternal(err)
 		}
 
-		createdPipeline, err := s.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
+		createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
 			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
 			CreatorID: backupCreate.CreatorID,
 		})
