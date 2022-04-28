@@ -48,7 +48,11 @@ func (s *Server) composeStageRelationship(ctx context.Context, raw *api.StageRaw
 	}
 	stage.Environment = env
 
-	taskList, err := s.composeTaskListByPipelineAndStageID(ctx, stage.PipelineID, stage.ID)
+	taskFind := &api.TaskFind{
+		PipelineID: &stage.PipelineID,
+		StageID:    &stage.ID,
+	}
+	taskList, err := s.store.FindTask(ctx, taskFind, true)
 	if err != nil {
 		return nil, err
 	}
