@@ -27,13 +27,13 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
-func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*api.RepositoryRaw, *api.Issue, *db.MigrationInfo, error) {
+func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
 			msg = "missing database when updating data"
 		}
-		return nil, nil, nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf(msg)
 	}
 	databaseName := task.Database.Name
 
@@ -64,10 +64,10 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
+			return nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
 		if repoRawInner == nil {
-			return nil, nil, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+			return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 		}
 		repoRawOutter = repoRawInner
 
@@ -77,7 +77,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to start migration, error: %w", err)
+			return nil, fmt.Errorf("failed to start migration, error: %w", err)
 		}
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
 
@@ -86,7 +86,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to start migration, unable to marshal vcs push event payload %w", err)
+			return nil, fmt.Errorf("failed to start migration, unable to marshal vcs push event payload %w", err)
 		}
 		mi.Payload = string(bytes)
 	}
@@ -115,7 +115,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	} else {
 		issue, err = server.composeIssueRelationship(ctx, issueRaw)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		mi.IssueID = strconv.Itoa(issue.ID)
 	}
@@ -123,10 +123,10 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	statement = strings.TrimSpace(statement)
 	// Only baseline can have empty sql statement, which indicates empty database.
 	if mi.Type != db.Baseline && statement == "" {
-		return nil, nil, nil, fmt.Errorf("empty statement")
+		return nil, fmt.Errorf("empty statement")
 	}
 
-	return repoRawOutter, issue, mi, nil
+	return mi, nil
 }
 
 func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statement string, mi *db.MigrationInfo) ( /*migrationID*/ int64 /*schema*/, string, error) {
@@ -163,7 +163,46 @@ func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statem
 	return migrationID, schema, nil
 }
 
-func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, repoRawOutter *api.RepositoryRaw, issue *api.Issue, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, vcsPushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, migrationID int64, schema string) (bool, *api.TaskRunResultPayload, error) {
+	databaseName := task.Database.Name
+	issueFind := &api.IssueFind{
+		PipelineID: &task.PipelineID,
+	}
+	issueRaw, err := server.IssueService.FindIssue(ctx, issueFind)
+	if err != nil {
+		// If somehow we cannot find the issue, emit the error since it's not fatal.
+		l.Error("failed to fetch containing issue for composing the migration info",
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	}
+	var issue *api.Issue
+	if issueRaw == nil {
+		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
+		l.Error(err.Error(),
+			zap.Int("task_id", task.ID),
+			zap.Error(err),
+		)
+	} else {
+		issue, err = server.composeIssueRelationship(ctx, issueRaw)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+	var repoRawOutter *api.RepositoryRaw
+	if vcsPushEvent != nil {
+		repoFind := &api.RepositoryFind{
+			ProjectID: &task.Database.ProjectID,
+		}
+		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
+		if err != nil {
+			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
+		}
+		if repoRawInner == nil {
+			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+		}
+		repoRawOutter = repoRawInner
+	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
@@ -171,7 +210,6 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	if err != nil {
 		return true, nil, err
 	}
-	databaseName := task.Database.Name
 	if writeBack && issue != nil {
 		if project.TenantMode == api.TenantModeTenant {
 			var lastTask *api.Task
@@ -285,7 +323,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 }
 
 func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) ( /*terminated*/ bool /*result*/, *api.TaskRunResultPayload, error) {
-	repoRawOutter, issue, mi, err := preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+	mi, err := preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
@@ -293,7 +331,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, l, server, task, vcsPushEvent, repoRawOutter, issue, mi, migrationID, schema)
+	return postMigration(ctx, l, server, task, vcsPushEvent, mi, migrationID, schema)
 }
 
 // Writes back the latest schema to the repository after migration
