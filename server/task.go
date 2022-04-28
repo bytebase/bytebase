@@ -479,17 +479,14 @@ func (s *Server) composeTaskRelationship(ctx context.Context, raw *store.TaskRaw
 	task.Instance = instance
 
 	if task.DatabaseID != nil {
-		databaseFind := &api.DatabaseFind{
-			ID: task.DatabaseID,
-		}
-		db, err := s.composeDatabaseByFind(ctx, databaseFind)
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 		if err != nil {
 			return nil, err
 		}
-		if db == nil {
+		if database == nil {
 			return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
 		}
-		task.Database = db
+		task.Database = database
 	}
 
 	return task, nil
@@ -540,10 +537,7 @@ func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *
 	task.Instance = instance
 
 	if task.DatabaseID != nil {
-		databaseFind := &api.DatabaseFind{
-			ID: task.DatabaseID,
-		}
-		task.Database, err = s.composeDatabaseByFind(ctx, databaseFind)
+		task.Database, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 		if err != nil {
 			return err
 		}
