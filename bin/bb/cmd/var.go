@@ -17,7 +17,8 @@ Drivers:
   postgresql
 
 Examples:
-  mysql://user:pass@localhost:3306/dbname?ssl-key=a
-  postgresql://user:pass@localhost:5432/dbname?ssl-ca=a&ssl-cert=b
-  postgresql://user@localhost/dbname
+  mysql://root@localhost:3306/
+  mysql://user:pass@localhost:3306/dbname
+  postgresql://$(whoami)@localhost:5432/postgres
+  postgresql://user:pass@localhost:5432/dbname?ssl-key=a&ssl-ca=b&ssl-cert=c
 `
