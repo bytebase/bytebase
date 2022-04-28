@@ -27,7 +27,16 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
-func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) ( /*terminated*/ bool /*result*/, *api.TaskRunResultPayload, error) {
+type migrationExecutorContext struct {
+	databaseName  string
+	repoRawOutter *api.RepositoryRaw
+	mi            *db.MigrationInfo
+	issue         *api.Issue
+	migrationID   int64
+	schema        string
+}
+
+func (mc *migrationExecutorContext) preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (bool, *api.TaskRunResultPayload, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
 		if migrationType == db.Data {
@@ -126,6 +135,17 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		return true, nil, fmt.Errorf("empty statement")
 	}
 
+	mc.repoRawOutter = repoRawOutter
+	mc.databaseName = databaseName
+	mc.issue = issue
+	mc.mi = mi
+	return false, nil, nil
+}
+
+func (mc *migrationExecutorContext) executeMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (bool, *api.TaskRunResultPayload, error) {
+	databaseName := mc.databaseName
+	mi := mc.mi
+
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, l)
 	if err != nil {
 		return true, nil, err
@@ -152,6 +172,18 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	if err != nil {
 		return true, nil, err
 	}
+	mc.migrationID = migrationID
+	mc.schema = schema
+	return false, nil, nil
+}
+
+func (mc *migrationExecutorContext) postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (bool, *api.TaskRunResultPayload, error) {
+	repoRawOutter := mc.repoRawOutter
+	issue := mc.issue
+	mi := mc.mi
+	databaseName := mc.databaseName
+	schema := mc.schema
+	migrationID := mc.migrationID
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
 	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
@@ -270,6 +302,19 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		MigrationID: migrationID,
 		Version:     mi.Version,
 	}, nil
+}
+
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) ( /*terminated*/ bool /*result*/, *api.TaskRunResultPayload, error) {
+	var mc migrationExecutorContext
+	if terminated, result, err :=
+		mc.preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent); terminated {
+		return terminated, result, err
+	}
+	if terminated, result, err :=
+		mc.executeMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent); terminated {
+		return terminated, result, err
+	}
+	return mc.postMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
 }
 
 // Writes back the latest schema to the repository after migration
