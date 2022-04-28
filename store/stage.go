@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 // stageRaw is the store model for an Stage.
@@ -152,28 +151,6 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 	}
 
 	return stageRawList, nil
-}
-
-// getStageRaw retrieves a single stage based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) getStageRaw(ctx context.Context, find *api.StageFind) (*stageRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	stageRawList, err := s.findStageImpl(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(stageRawList) == 0 {
-		return nil, nil
-	} else if len(stageRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d stages with filter %+v, expect 1", len(stageRawList), find)}
-	}
-	return stageRawList[0], nil
 }
 
 // createStageImpl creates a new stage.
