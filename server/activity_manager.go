@@ -233,10 +233,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
-		taskFind := &api.TaskFind{
-			ID: &update.TaskID,
-		}
-		task, err := m.s.TaskService.FindTask(ctx, taskFind)
+		task, err := m.s.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
 			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				zap.String("issue_name", meta.issue.Name),
