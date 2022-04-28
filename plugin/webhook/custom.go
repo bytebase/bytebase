@@ -14,19 +14,18 @@ type CustomWebhookResponse struct {
 	Message string `json:"message"`
 }
 
+// CustomWebhookRequest is the API message for Custom webhook request.
 type CustomWebhookRequest struct {
-	Level            Level                  `json:"level"`
-	Title            string                 `json:"title"`
-	EventType        EventType              `json:"event_type"`
-	ObjectKind       ObjectKind             `json:"object_kind"`
-	ObjectAttributes map[string]interface{} `json:"object_attributes"`
-	Description      string                 `json:"description"`
-	Link             string                 `json:"link"`
-	CreatorName      string                 `json:"creator_name"`
-	CreatorEmail     string                 `json:"creator_email"`
-	CreatedTS        int64                  `json:"created_ts"`
-	IssueStatus      string                 `json:"issue_status"`
-	Metadata         []Meta                 `json:"metadata"`
+	Level        Level   `json:"level"`
+	Title        string  `json:"title"`
+	ActivityType string  `json:"activity_type"`
+	Issue        Issue   `json:"issue"`
+	Project      Project `json:"project"`
+	Description  string  `json:"description"`
+	Link         string  `json:"link"`
+	CreatorName  string  `json:"creator_name"`
+	CreatorEmail string  `json:"creator_email"`
+	CreatedTS    int64   `json:"created_ts"`
 }
 
 func init() {
@@ -39,17 +38,16 @@ type CustomReceiver struct {
 
 func (receiver *CustomReceiver) post(context Context) error {
 	payload := CustomWebhookRequest{
-		Level:            context.Level,
-		Title:            context.Title,
-		EventType:        context.EventType,
-		ObjectKind:       context.ObjectKind,
-		ObjectAttributes: context.ObjectAttributes.Attributes(),
-		Description:      context.Description,
-		Link:             context.Link,
-		CreatorName:      context.CreatorName,
-		CreatorEmail:     context.CreatorEmail,
-		CreatedTS:        context.CreatedTs,
-		Metadata:         context.MetaList,
+		Level:        context.Level,
+		Title:        context.Title,
+		ActivityType: context.ActivityType,
+		Issue:        context.Issue,
+		Project:      context.Project,
+		Description:  context.Description,
+		Link:         context.Link,
+		CreatorName:  context.CreatorName,
+		CreatorEmail: context.CreatorEmail,
+		CreatedTS:    context.CreatedTs,
 	}
 
 	body, err := json.Marshal(&payload)
