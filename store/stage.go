@@ -7,34 +7,125 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.StageService = (*StageService)(nil)
-)
+// stageRaw is the store model for an Stage.
+// Fields have exactly the same meanings as Stage.
+type stageRaw struct {
+	ID int
 
-// StageService represents a service for managing stage.
-type StageService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	PipelineID    int
+	EnvironmentID int
+
+	// Domain specific fields
+	Name string
 }
 
-// NewStageService returns a new instance of StageService.
-func NewStageService(logger *zap.Logger, db *DB) *StageService {
-	return &StageService{l: logger, db: db}
+// toStage creates an instance of Stage based on the stageRaw.
+// This is intended to be called when we need to compose an Stage relationship.
+func (raw *stageRaw) toStage() *api.Stage {
+	return &api.Stage{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		PipelineID:    raw.PipelineID,
+		EnvironmentID: raw.EnvironmentID,
+
+		// Domain specific fields
+		Name: raw.Name,
+	}
 }
 
-// CreateStage creates a new stage.
-func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate) (*api.StageRaw, error) {
+// CreateStage creates an instance of Stage
+func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.Stage, error) {
+	stageRaw, err := s.createStageRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Stage with StageCreate[%+v], error[%w]", create, err)
+	}
+	stage, err := s.composeStage(ctx, stageRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Stage with stageRaw[%+v], error[%w]", stageRaw, err)
+	}
+	return stage, nil
+}
+
+// FindStage finds a list of Stage instances
+func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
+	stageRawList, err := s.findStageRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Stage list, error[%w]", err)
+	}
+	var stageList []*api.Stage
+	for _, raw := range stageRawList {
+		stage, err := s.composeStage(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Stage with stageRaw[%+v], error[%w]", raw, err)
+		}
+		stageList = append(stageList, stage)
+	}
+	return stageList, nil
+}
+
+//
+// private functions
+//
+
+func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
+	stage := raw.toStage()
+
+	creator, err := s.GetPrincipalByID(ctx, stage.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	stage.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, stage.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	stage.Updater = updater
+
+	env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+	stage.Environment = env
+
+	taskFind := &api.TaskFind{
+		PipelineID: &stage.PipelineID,
+		StageID:    &stage.ID,
+	}
+	taskList, err := s.FindTask(ctx, taskFind, true)
+	if err != nil {
+		return nil, err
+	}
+	stage.TaskList = taskList
+
+	return stage, nil
+}
+
+// createStageRaw creates a new stage.
+func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*stageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	stage, err := s.createStage(ctx, tx.PTx, create)
+	stage, err := s.createStageImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +137,15 @@ func (s *StageService) CreateStage(ctx context.Context, create *api.StageCreate)
 	return stage, nil
 }
 
-// FindStageList retrieves a list of stages based on find.
-func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) ([]*api.StageRaw, error) {
+// findStageRaw retrieves a list of stages based on find.
+func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stageRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	stageRawList, err := s.findStageList(ctx, tx.PTx, find)
+	stageRawList, err := s.findStageImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,30 +153,8 @@ func (s *StageService) FindStageList(ctx context.Context, find *api.StageFind) (
 	return stageRawList, nil
 }
 
-// FindStage retrieves a single stage based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *StageService) FindStage(ctx context.Context, find *api.StageFind) (*api.StageRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	stageRawList, err := s.findStageList(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(stageRawList) == 0 {
-		return nil, nil
-	} else if len(stageRawList) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d stages with filter %+v, expect 1", len(stageRawList), find)}
-	}
-	return stageRawList[0], nil
-}
-
-// createStage creates a new stage.
-func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*api.StageRaw, error) {
+// createStageImpl creates a new stage.
+func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO stage (
 			creator_id,
@@ -110,7 +179,7 @@ func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.
 	defer row.Close()
 
 	row.Next()
-	var stageRaw api.StageRaw
+	var stageRaw stageRaw
 	if err := row.Scan(
 		&stageRaw.ID,
 		&stageRaw.CreatorID,
@@ -127,7 +196,7 @@ func (s *StageService) createStage(ctx context.Context, tx *sql.Tx, create *api.
 	return &stageRaw, nil
 }
 
-func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*api.StageRaw, error) {
+func (s *Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -157,9 +226,9 @@ func (s *StageService) findStageList(ctx context.Context, tx *sql.Tx, find *api.
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into stageRawList.
-	var stageRawList []*api.StageRaw
+	var stageRawList []*stageRaw
 	for rows.Next() {
-		var stageRaw api.StageRaw
+		var stageRaw stageRaw
 		if err := rows.Scan(
 			&stageRaw.ID,
 			&stageRaw.CreatorID,
