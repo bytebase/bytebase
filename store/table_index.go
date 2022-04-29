@@ -8,33 +8,17 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
-
-var (
-	_ api.IndexService = (*IndexService)(nil)
-)
-
-// IndexService represents a service for managing index.
-type IndexService struct {
-	l  *zap.Logger
-	db *DB
-}
-
-// NewIndexService returns a new instance of IndexService.
-func NewIndexService(logger *zap.Logger, db *DB) *IndexService {
-	return &IndexService{l: logger, db: db}
-}
 
 // CreateIndex creates a new index.
-func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate) (*api.Index, error) {
+func (s *Store) CreateIndex(ctx context.Context, create *api.IndexCreate) (*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	index, err := s.createIndex(ctx, tx.PTx, create)
+	index, err := s.createIndexImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +30,15 @@ func (s *IndexService) CreateIndex(ctx context.Context, create *api.IndexCreate)
 	return index, nil
 }
 
-// FindIndexList retrieves a list of indexes based on find.
-func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
+// FindIndex retrieves a list of indexes based on find.
+func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIndexList(ctx, tx.PTx, find)
+	list, err := s.findIndexImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,16 +46,16 @@ func (s *IndexService) FindIndexList(ctx context.Context, find *api.IndexFind) (
 	return list, nil
 }
 
-// FindIndex retrieves a single index based on find.
+// GetIndex retrieves a single index based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api.Index, error) {
+func (s *Store) GetIndex(ctx context.Context, find *api.IndexFind) (*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIndexList(ctx, tx.PTx, find)
+	list, err := s.findIndexImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +68,8 @@ func (s *IndexService) FindIndex(ctx context.Context, find *api.IndexFind) (*api
 	return list[0], nil
 }
 
-// createIndex creates a new index.
-func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
+// createIndexImpl creates a new index.
+func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
 	// Insert row into index.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO idx (
@@ -146,7 +130,7 @@ func (s *IndexService) createIndex(ctx context.Context, tx *sql.Tx, create *api.
 	return &index, nil
 }
 
-func (s *IndexService) findIndexList(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {
+func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
