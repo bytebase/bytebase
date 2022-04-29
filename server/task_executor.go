@@ -37,7 +37,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	databaseName := task.Database.Name
 
-	var repoRawOutter *api.RepositoryRaw
+	var repoOutter *api.Repository
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Type:           migrationType,
@@ -59,15 +59,15 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
 	} else {
-		repoRawInner, err := findRepositoryRawByTask(ctx, server, task)
+		repoInner, err := findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return nil, err
 		}
-		repoRawOutter = repoRawInner
+		repoOutter = repoInner
 
 		mi, err = db.ParseMigrationInfo(
 			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repoRawOutter.FilePathTemplate),
+			filepath.Join(vcsPushEvent.BaseDirectory, repoOutter.FilePathTemplate),
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -145,16 +145,16 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	if err != nil {
 		l.Error("failed to find containing issue", zap.Error(err))
 	}
-	var repoRawOutter *api.RepositoryRaw
+	var repoOutter *api.Repository
 	if vcsPushEvent != nil {
-		repoRawInner, err := findRepositoryRawByTask(ctx, server, task)
+		repoInner, err := findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return true, nil, err
 		}
-		repoRawOutter = repoRawInner
+		repoOutter = repoInner
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repoOutter.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
@@ -182,18 +182,17 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
 		}
-		latestSchemaFile := filepath.Join(repoRawOutter.BaseDirectory, repoRawOutter.SchemaPathTemplate)
+		latestSchemaFile := filepath.Join(repoOutter.BaseDirectory, repoOutter.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
 
-		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
-		repo := repoRawOutter.ToRepository()
-		vcs, err := server.store.GetVCSByID(ctx, repoRawOutter.VCSID)
+		repo := repoOutter
+		vcs, err := server.store.GetVCSByID(ctx, repoOutter.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 		if vcs == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repoRawOutter.VCSID)
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repoOutter.VCSID)
 		}
 		repo.VCS = vcs
 
@@ -226,7 +225,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 			if err != nil {
 				l.Error("Failed to marshal file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRawOutter.WebURL),
+					zap.String("repository", repoOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -252,7 +251,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 			if err != nil {
 				l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRawOutter.WebURL),
+					zap.String("repository", repoOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -299,18 +298,18 @@ func findIssueByTask(ctx context.Context, l *zap.Logger, server *Server, task *a
 	return issue, nil
 }
 
-func findRepositoryRawByTask(ctx context.Context, server *Server, task *api.Task) (*api.RepositoryRaw, error) {
+func findRepositoryByTask(ctx context.Context, server *Server, task *api.Task) (*api.Repository, error) {
 	repoFind := &api.RepositoryFind{
 		ProjectID: &task.Database.ProjectID,
 	}
-	repoRaw, err := server.RepositoryService.FindRepository(ctx, repoFind)
+	repo, err := server.store.GetRepository(ctx, repoFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find linked repository for database %q", task.Database.Name)
 	}
-	if repoRaw == nil {
+	if repo == nil {
 		return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 	}
-	return repoRaw, nil
+	return repo, nil
 }
 
 // Writes back the latest schema to the repository after migration
