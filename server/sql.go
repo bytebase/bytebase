@@ -257,18 +257,14 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTableRaw, err := s.TableService.CreateTable(ctx, tableCreate)
+				table, err := s.store.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
 				}
-				createTable, err := s.composeTableRelationship(ctx, createTableRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose table with ID %d, error: %v", createTable.ID, err)
-				}
-				return createTable, nil
+				return table, nil
 			}
 
 			var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
@@ -510,7 +506,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					tableDelete := &api.TableDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.TableService.DeleteTable(ctx, tableDelete); err != nil {
+					if err := s.store.DeleteTable(ctx, tableDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 

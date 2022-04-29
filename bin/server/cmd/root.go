@@ -453,7 +453,6 @@ func (m *Main) Run(ctx context.Context) error {
 
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
-	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
