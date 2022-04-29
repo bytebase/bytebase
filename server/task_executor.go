@@ -90,7 +90,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 
 	issue, err := findIssueByTask(ctx, l, server, task)
 	if err != nil {
-		return nil, err
+		l.Error("failed to find containing issue", zap.Error(err))
 	}
 	if issue != nil {
 		mi.IssueID = strconv.Itoa(issue.ID)
@@ -143,7 +143,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	databaseName := task.Database.Name
 	issue, err := findIssueByTask(ctx, l, server, task)
 	if err != nil {
-		return true, nil, err
+		l.Error("failed to find containing issue", zap.Error(err))
 	}
 	var repoRawOutter *api.RepositoryRaw
 	if vcsPushEvent != nil {
@@ -288,26 +288,13 @@ func findIssueByTask(ctx context.Context, l *zap.Logger, server *Server, task *a
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issueRaw, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
-		l.Error("failed to fetch containing issue for composing the migration info",
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
-		)
+		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, task_id: %v, error: %w", task.ID, err)
 	}
-	var issue *api.Issue
-	if issueRaw == nil {
-		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		l.Error(err.Error(),
-			zap.Int("task_id", task.ID),
-			zap.Error(err),
-		)
-	} else {
-		issue, err = server.composeIssueRelationship(ctx, issueRaw)
-		if err != nil {
-			return nil, err
-		}
+	if issue == nil {
+		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found, pipeline ID: %v, task_id: %v, error: %w", task.PipelineID, task.ID, err)
 	}
 	return issue, nil
 }

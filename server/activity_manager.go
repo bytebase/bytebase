@@ -58,7 +58,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	webhookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
+	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
@@ -282,9 +282,22 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	}
 	webhookCtx = webhook.Context{
 		Level:        level,
+		ActivityType: string(activity.Type),
 		Title:        title,
+		Issue: webhook.Issue{
+			ID:          meta.issue.ID,
+			Name:        meta.issue.Name,
+			Status:      string(meta.issue.Status),
+			Type:        string(meta.issue.Type),
+			Description: meta.issue.Description,
+		},
+		Project: webhook.Project{
+			ID:   meta.issue.ProjectID,
+			Name: meta.issue.Project.Name,
+		},
 		Description:  activity.Comment,
 		Link:         link,
+		CreatorID:    updater.ID,
 		CreatorName:  updater.Name,
 		CreatorEmail: updater.Email,
 		MetaList:     metaList,

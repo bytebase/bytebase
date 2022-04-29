@@ -158,7 +158,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 	}
