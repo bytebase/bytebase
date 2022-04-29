@@ -269,11 +269,6 @@ func start() {
 
 // NewMain creates a main server based on profile.
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
-	metadataDBMgr, err := createMetadataDBManager(&activeProfile, logger)
-	if err != nil {
-		return nil, err
-	}
-
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
@@ -284,6 +279,11 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
+
+	metadataDBMgr, err := createMetadataDBManager(&activeProfile, logger)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Main{
 		profile:       &activeProfile,
