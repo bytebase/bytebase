@@ -279,7 +279,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
-				_, err := s.ColumnService.CreateColumn(ctx, columnCreate)
+				_, err := s.store.CreateColumn(ctx, columnCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
@@ -290,7 +290,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-				_, err := s.IndexService.CreateIndex(ctx, indexCreate)
+				_, err := s.store.CreateIndex(ctx, indexCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
@@ -330,7 +330,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						TableID:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
-					col, err := s.ColumnService.FindColumn(ctx, columnFind)
+					col, err := s.store.GetColumn(ctx, columnFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -363,7 +363,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					idx, err := s.IndexService.FindIndex(ctx, indexFind)
+					idx, err := s.store.GetIndex(ctx, indexFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -407,10 +407,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			instanceUserFind := &api.InstanceUserFind{
-				InstanceID: instance.ID,
-			}
-			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
 			}
@@ -423,7 +420,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					Name:       user.Name,
 					Grant:      user.Grant,
 				}
-				_, err := s.InstanceUserService.UpsertInstanceUser(ctx, userUpsert)
+				_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
 				if err != nil {
 					return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
 				}
@@ -443,7 +440,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					userDelete := &api.InstanceUserDelete{
 						ID: user.ID,
 					}
-					err := s.InstanceUserService.DeleteInstanceUser(ctx, userDelete)
+					err := s.store.DeleteInstanceUser(ctx, userDelete)
 					if err != nil {
 						return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
 					}

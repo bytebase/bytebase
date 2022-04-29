@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -78,12 +77,4 @@ type ColumnPatch struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	UpdaterID int
-}
-
-// ColumnService is the service for columns.
-type ColumnService interface {
-	CreateColumn(ctx context.Context, create *ColumnCreate) (*Column, error)
-	FindColumnList(ctx context.Context, find *ColumnFind) ([]*Column, error)
-	FindColumn(ctx context.Context, find *ColumnFind) (*Column, error)
-	PatchColumn(ctx context.Context, patch *ColumnPatch) (*Column, error)
 }
