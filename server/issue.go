@@ -73,17 +73,9 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			issueFind.PrincipalID = &userID
 		}
 
-		issueRawList, err := s.IssueService.FindIssueList(ctx, issueFind)
+		issueList, err := s.store.FindIssue(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
-		}
-		var issueList []*api.Issue
-		for _, issueRaw := range issueRawList {
-			issue, err := s.composeIssueRelationship(ctx, issueRaw)
-			if err != nil {
-				return err
-			}
-			issueList = append(issueList, issue)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -100,7 +92,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		issue, err := s.composeIssueByID(ctx, id)
+		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -136,28 +128,17 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		issueFind := &api.IssueFind{
-			ID: &id,
-		}
-		issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
+		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
-		if issueRaw == nil {
+		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Unable to find issue ID to update: %d", id))
 		}
-		issue, err := s.composeIssueRelationship(ctx, issueRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relationship with ID %v", id)).SetInternal(err)
-		}
 
-		updatedIssueRaw, err := s.IssueService.PatchIssue(ctx, issuePatch)
+		updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update issue with ID %d", id)).SetInternal(err)
-		}
-		updatedIssue, err := s.composeIssueRelationship(ctx, updatedIssueRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relationship with ID %v", id)).SetInternal(err)
 		}
 
 		payloadList := [][]byte{}
@@ -236,7 +217,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.composeIssueByID(ctx, id)
+		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -260,76 +241,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composeIssueByID(ctx context.Context, id int) (*api.Issue, error) {
-	issueFind := &api.IssueFind{
-		ID: &id,
-	}
-	issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
-	if err != nil {
-		return nil, err
-	}
-	if id > 0 && issueRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("issue not found with ID %v", id)}
-	}
-
-	if issueRaw == nil {
-		return nil, nil
-	}
-
-	issue, err := s.composeIssueRelationship(ctx, issueRaw)
-	if err != nil {
-		return nil, err
-	}
-	return issue, nil
-}
-
-func (s *Server) composeIssueRelationship(ctx context.Context, raw *api.IssueRaw) (*api.Issue, error) {
-	issue := raw.ToIssue()
-
-	creator, err := s.store.GetPrincipalByID(ctx, issue.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, issue.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Updater = updater
-
-	assignee, err := s.store.GetPrincipalByID(ctx, issue.AssigneeID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Assignee = assignee
-
-	issueSubscriberFind := &api.IssueSubscriberFind{
-		IssueID: &issue.ID,
-	}
-	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
-	}
-	for _, issueSub := range issueSubscriberList {
-		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
-	}
-
-	project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Project = project
-
-	pipeline, err := s.store.GetPipelineByID(ctx, issue.PipelineID)
-	if err != nil {
-		return nil, err
-	}
-	issue.Pipeline = pipeline
-
-	return issue, nil
 }
 
 // TODO(dragonly): refactor validate only code path
@@ -434,13 +345,9 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 	} else {
 		issueCreate.CreatorID = creatorID
 		issueCreate.PipelineID = pipeline.ID
-		issueCreatedRaw, err := s.IssueService.CreateIssue(ctx, issueCreate)
+		issue, err = s.store.CreateIssue(ctx, issueCreate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create issue with IssueCreate %v, error %w", issueCreate, err)
-		}
-		issue, err = s.composeIssueRelationship(ctx, issueCreatedRaw)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compose issue")
+			return nil, err
 		}
 		// Create issue subscribers.
 		for _, subscriberID := range issueCreate.SubscriberIDList {
@@ -1136,7 +1043,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, fmt.Errorf("failed to update issue(%v) status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
+		return nil, fmt.Errorf("failed to update issue[%s] status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
 	}
 
 	issuePatch := &api.IssuePatch{
@@ -1144,13 +1051,9 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		UpdaterID: updaterID,
 		Status:    &newStatus,
 	}
-	updatedIssueRaw, err := s.IssueService.PatchIssue(ctx, issuePatch)
+	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update issue(%v) status with patch %v, error: %w", issue.Name, issuePatch, err)
-	}
-	updatedIssue, err := s.composeIssueRelationship(ctx, updatedIssueRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose issue(%v) relationship with IssueRaw %v, error: %v", issue.Name, updatedIssueRaw, err)
+		return nil, fmt.Errorf("failed to update issue[%s] status with patch %v, error: %w", issue.Name, issuePatch, err)
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{

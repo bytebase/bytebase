@@ -97,7 +97,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issueRaw, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		l.Error("Failed to fetch containing issue for composing the migration info",
@@ -105,18 +105,13 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			zap.Error(err),
 		)
 	}
-	var issue *api.Issue
-	if issueRaw == nil {
+	if issue == nil {
 		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
 		l.Error(err.Error(),
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
 	} else {
-		issue, err = server.composeIssueRelationship(ctx, issueRaw)
-		if err != nil {
-			return true, nil, err
-		}
 		mi.IssueID = strconv.Itoa(issue.ID)
 	}
 
