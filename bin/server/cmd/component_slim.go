@@ -20,7 +20,7 @@ func createEmbeddedPgMgr(_ Profile, _ *zap.Logger) (*embeddedPgMgr, error) {
 }
 
 func (m *embeddedPgMgr) newEmbeddedDB() (*store.DB, error) {
-	return nil, fmt.Errorf("slim build doesn't support newEmbeddedDB")
+	return nil, fmt.Errorf("slim build doesn't embed the PostgreSQL binary. Please either use --pg to specify an external PostgreSQL instance or use the full build embedding the PostgreSQL binary.")
 }
 
 func (m *embeddedPgMgr) stopEmbeddedDB() error {
