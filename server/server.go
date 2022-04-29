@@ -38,7 +38,6 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	LicenseService enterprise.LicenseService
-	SheetService   api.SheetService
 
 	e *echo.Echo
 
