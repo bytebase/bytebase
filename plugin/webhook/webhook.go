@@ -52,8 +52,8 @@ type Project struct {
 // Context is the context of webhook.
 type Context struct {
 	URL          string
-	ActivityType string
 	Level        Level
+	ActivityType string
 	Title        string
 	Description  string
 	Link         string

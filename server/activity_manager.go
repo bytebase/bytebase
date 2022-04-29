@@ -282,8 +282,8 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	}
 	webhookCtx = webhook.Context{
 		Level:        level,
-		Title:        title,
 		ActivityType: string(activity.Type),
+		Title:        title,
 		Issue: webhook.Issue{
 			ID:          meta.issue.ID,
 			Name:        meta.issue.Name,
