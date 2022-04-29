@@ -310,7 +310,7 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	}, nil
 }
 
-func initSetting(ctx context.Context, settingService api.SettingService) (*config, error) {
+func initSetting(ctx context.Context, store *store.Store) (*config, error) {
 	result := &config{}
 	{
 		configCreate := &api.SettingCreate{
@@ -319,7 +319,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 			Value:       common.RandomString(secretLength),
 			Description: "Random string used to sign the JWT auth token.",
 		}
-		config, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+		config, err := store.CreateSettingIfNotExist(ctx, configCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -329,14 +329,14 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
-func initBranding(ctx context.Context, settingService api.SettingService) error {
+func initBranding(ctx context.Context, store *store.Store) error {
 	configCreate := &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
 	}
-	_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
 	if err != nil {
 		return err
 	}
@@ -433,29 +433,25 @@ func (m *Main) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot new db: %w", err)
 	}
-
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
-
-	settingService := store.NewSettingService(m.l, db)
-	config, err := initSetting(ctx, settingService)
-	if err != nil {
-		return fmt.Errorf("failed to init config: %w", err)
-	}
-
-	err = initBranding(ctx, settingService)
-	if err != nil {
-		return fmt.Errorf("failed to init branding: %w", err)
-	}
-
 	m.db = db
 
 	cacheService := server.NewCacheService(m.l)
 	storeInstance := store.New(m.l, db, cacheService)
 
+	config, err := initSetting(ctx, storeInstance)
+	if err != nil {
+		return fmt.Errorf("failed to init config: %w", err)
+	}
+
+	err = initBranding(ctx, storeInstance)
+	if err != nil {
+		return fmt.Errorf("failed to init branding: %w", err)
+	}
+
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
-	s.SettingService = settingService
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
