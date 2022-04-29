@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -79,65 +78,6 @@ type SheetVCSPayload struct {
 	Author       string `json:"author"`
 	LastCommitID string `json:"lastCommitId"`
 	LastSyncTs   int64  `json:"lastSyncTs"`
-}
-
-// SheetRaw is the store model for an Sheet.
-// Fields have exactly the same meanings as Sheet.
-type SheetRaw struct {
-	ID int
-
-	// Standard fields
-	RowStatus RowStatus
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID int
-	// The DatabaseID is optional.
-	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
-	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-	DatabaseID *int
-
-	// Domain specific fields
-	Name       string
-	Statement  string
-	Visibility SheetVisibility
-	Source     SheetSource
-	Type       SheetType
-	// Payload is in the json string format of SheetVCSPayload.
-	Payload string
-}
-
-// ToSheet creates an instance of Sheet based on the SheetRaw.
-// This is intended to be called when we need to compose an Sheet relationship.
-func (raw *SheetRaw) ToSheet() *Sheet {
-	return &Sheet{
-		ID: raw.ID,
-
-		// Standard fields
-		RowStatus: raw.RowStatus,
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID: raw.ProjectID,
-		// The DatabaseID is optional.
-		// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
-		// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:       raw.Name,
-		Statement:  raw.Statement,
-		Visibility: raw.Visibility,
-		Source:     raw.Source,
-		Type:       raw.Type,
-		Payload:    raw.Payload,
-	}
 }
 
 // Sheet is the API message for a sheet.
@@ -251,13 +191,4 @@ type SheetDelete struct {
 
 	// Standard fields
 	DeleterID int
-}
-
-// SheetService is the service for sheet.
-type SheetService interface {
-	CreateSheet(ctx context.Context, create *SheetCreate) (*SheetRaw, error)
-	PatchSheet(ctx context.Context, patch *SheetPatch) (*SheetRaw, error)
-	FindSheetList(ctx context.Context, find *SheetFind) ([]*SheetRaw, error)
-	FindSheet(ctx context.Context, find *SheetFind) (*SheetRaw, error)
-	DeleteSheet(ctx context.Context, delete *SheetDelete) error
 }

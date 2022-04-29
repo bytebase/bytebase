@@ -190,7 +190,7 @@ func isUpdatingSelf(ctx context.Context, c echo.Context, s *Server, curPrincipal
 			sheetFind := &api.SheetFind{
 				ID: &id,
 			}
-			sheet, err := s.SheetService.FindSheet(ctx, sheetFind)
+			sheet, err := s.store.GetSheet(ctx, sheetFind, curPrincipalID)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusInternalServerError, defaultErrMsg).SetInternal(err)
 			}
