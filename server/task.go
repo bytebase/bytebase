@@ -63,7 +63,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
+		issueFind := &api.IssueFind{
+			PipelineID: &task.PipelineID,
+		}
+		issue, err := s.store.GetIssue(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
 		}
@@ -301,7 +304,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
+		issueFind := &api.IssueFind{
+			PipelineID: &task.PipelineID,
+		}
+		issue, err := s.store.GetIssue(ctx, issueFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
 		}
@@ -458,7 +464,10 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
-	issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
+	issueFind := &api.IssueFind{
+		PipelineID: &task.PipelineID,
+	}
+	issue, err := s.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)

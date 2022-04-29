@@ -94,7 +94,10 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	mi.Database = databaseName
 	mi.Namespace = databaseName
 
-	issue, err := server.store.GetIssueByID(ctx, task.PipelineID)
+	issueFind := &api.IssueFind{
+		PipelineID: &task.PipelineID,
+	}
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		l.Error("Failed to fetch containing issue for composing the migration info",

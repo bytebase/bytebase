@@ -24,7 +24,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		activityCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		var foundIssue *api.Issue
 		if activityCreate.Type == api.ActivityIssueCommentCreate {
-			issue, err := s.store.GetIssueByID(ctx, activityCreate.ContainerID)
+			issueFind := &api.IssueFind{
+				ID: &activityCreate.ContainerID,
+			}
+			issue, err := s.store.GetIssue(ctx, issueFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
 			}
