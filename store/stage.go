@@ -66,7 +66,7 @@ func (s *Store) CreateStage(ctx context.Context, create *api.StageCreate) (*api.
 func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stage, error) {
 	stageRawList, err := s.findStageRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Stage list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Stage list with StageFind[%+v], error[%w]", find, err)
 	}
 	var stageList []*api.Stage
 	for _, raw := range stageRawList {

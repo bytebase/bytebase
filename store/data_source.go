@@ -89,7 +89,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	DataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find DataSource list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find DataSource list with DataSourceFind[%+v], error[%w]", find, err)
 	}
 	var DataSourceList []*api.DataSource
 	for _, raw := range DataSourceRawList {

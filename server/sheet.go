@@ -533,14 +533,14 @@ func composeCommonSheetFindByQueryParams(queryParams url.Values) (*api.SheetFind
 	if projectIDStr := queryParams.Get("projectId"); projectIDStr != "" {
 		projectID, err := strconv.Atoi(projectIDStr)
 		if err != nil {
-			return nil, fmt.Errorf("Project ID is not a number: %s", queryParams.Get("projectId"))
+			return nil, fmt.Errorf("project ID is not a number: %s", queryParams.Get("projectId"))
 		}
 		sheetFind.ProjectID = &projectID
 	}
 	if databaseIDStr := queryParams.Get("databaseId"); databaseIDStr != "" {
 		databaseID, err := strconv.Atoi(databaseIDStr)
 		if err != nil {
-			return nil, fmt.Errorf("Database ID is not a number: %s", queryParams.Get("databaseId"))
+			return nil, fmt.Errorf("database ID is not a number: %s", queryParams.Get("databaseId"))
 		}
 		sheetFind.DatabaseID = &databaseID
 	}
