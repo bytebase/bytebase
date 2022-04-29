@@ -129,7 +129,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statement string, mi *db.MigrationInfo) ( /*migrationID*/ int64 /*schema*/, string, error) {
+func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
@@ -156,7 +156,7 @@ func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statem
 		return 0, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
-	migrationID, schema, err := driver.ExecuteMigration(ctx, mi, statement)
+	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
 	if err != nil {
 		return 0, "", err
 	}
@@ -322,7 +322,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	}, nil
 }
 
-func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) ( /*terminated*/ bool /*result*/, *api.TaskRunResultPayload, error) {
+func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
