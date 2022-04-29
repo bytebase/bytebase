@@ -55,10 +55,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("backup with ID[%d] not found", payload.BackupID)
 	}
 
-	sourceDatabaseFind := &api.DatabaseFind{
-		ID: &backup.DatabaseID,
-	}
-	sourceDatabase, err := server.composeDatabaseByFind(ctx, sourceDatabaseFind)
+	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
@@ -70,7 +67,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		InstanceID: &task.InstanceID,
 		Name:       &payload.DatabaseName,
 	}
-	targetDatabase, err := server.composeDatabaseByFind(ctx, targetDatabaseFind)
+	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}
@@ -107,8 +104,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		UpdaterID:      api.SystemBotID,
 		SourceBackupID: &backup.ID,
 	}
-	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {
-		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
+	if _, err = server.store.PatchDatabase(ctx, databasePatch); err != nil {
+		return true, nil, fmt.Errorf("failed to patch database source with ID[%d] and backup ID[%d] after restore, error[%w]", targetDatabase.ID, backup.ID, err)
 	}
 
 	// Sync database schema after restore is completed.
@@ -161,7 +158,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 	}

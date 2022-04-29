@@ -58,7 +58,7 @@ func (receiver *DingTalkReceiver) post(context Context) error {
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
+		return fmt.Errorf("failed to marshal webhook POST request: %v (%w)", context.URL, err)
 	}
 	req, err := http.NewRequest("POST",
 		context.URL, bytes.NewBuffer(body))
@@ -80,6 +80,10 @@ func (receiver *DingTalkReceiver) post(context Context) error {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+	}
 
 	webhookResponse := &DingTalkWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {

@@ -9,6 +9,7 @@ common:
   dingtalk: DingTalk
   feishu: Feishu
   wecom: WeCom
+  custom: Custom
   overview: Overview
   migration-history: Migration History
   webhook: Webhook
@@ -219,6 +220,7 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    sql-review: SQL review
     earliest-allowed-time: Earliest allowed time
   earliest-allowed-time-hint: >-
     '@:{'common.when'}' specifies the expected execution timing for this task.

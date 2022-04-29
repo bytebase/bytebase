@@ -89,7 +89,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
@@ -131,11 +131,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Labels:        &payload.Labels,
 		SchemaVersion: payload.SchemaVersion,
 	}
-	dbRaw, err := server.DatabaseService.CreateDatabase(ctx, databaseCreate)
-	if err != nil {
-		return true, nil, err
-	}
-	db, err := server.composeDatabaseRelationship(ctx, dbRaw)
+	database, err := server.store.CreateDatabase(ctx, databaseCreate)
 	if err != nil {
 		return true, nil, err
 	}
@@ -148,9 +144,9 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	taskDatabaseIDPatch := &api.TaskPatch{
 		ID:         task.ID,
 		UpdaterID:  api.SystemBotID,
-		DatabaseID: &db.ID,
+		DatabaseID: &database.ID,
 	}
-	_, err = server.TaskService.PatchTask(ctx, taskDatabaseIDPatch)
+	_, err = server.store.PatchTask(ctx, taskDatabaseIDPatch)
 	if err != nil {
 		return true, nil, err
 	}
@@ -165,9 +161,9 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		}
 
 		// Set database labels, except bb.environment is immutable and must match instance environment.
-		err = server.setDatabaseLabels(ctx, payload.Labels, db, project, db.CreatorID, false)
+		err = server.setDatabaseLabels(ctx, payload.Labels, database, project, database.CreatorID, false)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", db.ID)
+			return true, nil, fmt.Errorf("failed to record database labels after creating database %v", database.ID)
 		}
 	}
 

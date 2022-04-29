@@ -37,7 +37,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	databaseName := task.Database.Name
 
-	var repoRawOutter *api.RepositoryRaw
+	var repoOutter *api.Repository
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Type:           migrationType,
@@ -62,18 +62,18 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		repoFind := &api.RepositoryFind{
 			ProjectID: &task.Database.ProjectID,
 		}
-		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
+		repoInner, err := server.store.GetRepository(ctx, repoFind)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
 		}
-		if repoRawInner == nil {
+		if repoInner == nil {
 			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
 		}
-		repoRawOutter = repoRawInner
+		repoOutter = repoInner
 
 		mi, err = db.ParseMigrationInfo(
 			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repoRawOutter.FilePathTemplate),
+			filepath.Join(vcsPushEvent.BaseDirectory, repoOutter.FilePathTemplate),
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -97,7 +97,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issueRaw, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		l.Error("Failed to fetch containing issue for composing the migration info",
@@ -105,18 +105,13 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			zap.Error(err),
 		)
 	}
-	var issue *api.Issue
-	if issueRaw == nil {
+	if issue == nil {
 		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
 		l.Error(err.Error(),
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
 	} else {
-		issue, err = server.composeIssueRelationship(ctx, issueRaw)
-		if err != nil {
-			return true, nil, err
-		}
 		mi.IssueID = strconv.Itoa(issue.ID)
 	}
 
@@ -154,7 +149,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repoRawOutter.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repoOutter.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
@@ -182,18 +177,17 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
 		}
-		latestSchemaFile := filepath.Join(repoRawOutter.BaseDirectory, repoRawOutter.SchemaPathTemplate)
+		latestSchemaFile := filepath.Join(repoOutter.BaseDirectory, repoOutter.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
 
-		// TODO(dragonly): revisit the usage of a not-fully-composed Repository here
-		repo := repoRawOutter.ToRepository()
-		vcs, err := server.store.GetVCSByID(ctx, repoRawOutter.VCSID)
+		repo := repoOutter
+		vcs, err := server.store.GetVCSByID(ctx, repoOutter.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 		if vcs == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repoRawOutter.VCSID)
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repoOutter.VCSID)
 		}
 		repo.VCS = vcs
 
@@ -226,7 +220,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to marshal file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRawOutter.WebURL),
+					zap.String("repository", repoOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -252,7 +246,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 			if err != nil {
 				l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoRawOutter.WebURL),
+					zap.String("repository", repoOutter.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)

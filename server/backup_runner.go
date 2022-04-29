@@ -73,10 +73,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					runningTasks[backupSetting.ID] = true
 					mu.Unlock()
 
-					dbFind := &api.DatabaseFind{
-						ID: &backupSetting.DatabaseID,
-					}
-					db, err := s.server.composeDatabaseByFind(ctx, dbFind)
+					db, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
@@ -185,7 +182,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create task payload: %w", err)
 	}
 
-	createdPipeline, err := s.server.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
+	createdPipeline, err := s.server.store.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      backupName,
 		CreatorID: backupCreate.CreatorID,
 	})
@@ -193,7 +190,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create pipeline: %w", err)
 	}
 
-	createdStage, err := s.server.StageService.CreateStage(ctx, &api.StageCreate{
+	createdStage, err := s.server.store.CreateStage(ctx, &api.StageCreate{
 		Name:          backupName,
 		EnvironmentID: database.Instance.EnvironmentID,
 		PipelineID:    createdPipeline.ID,
@@ -203,7 +200,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create stage: %w", err)
 	}
 
-	_, err = s.server.TaskService.CreateTask(ctx, &api.TaskCreate{
+	_, err = s.server.store.CreateTask(ctx, &api.TaskCreate{
 		Name:       backupName,
 		PipelineID: createdPipeline.ID,
 		StageID:    createdStage.ID,

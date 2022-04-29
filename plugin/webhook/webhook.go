@@ -34,17 +34,36 @@ const (
 	WebhookError Level = "ERROR"
 )
 
+// Issue object of issue
+type Issue struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+// Project object of project
+type Project struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 // Context is the context of webhook.
 type Context struct {
 	URL          string
 	Level        Level
+	ActivityType string
 	Title        string
 	Description  string
 	Link         string
+	CreatorID    int
 	CreatorName  string
 	CreatorEmail string
 	CreatedTs    int64
 	MetaList     []Meta
+	Issue        Issue
+	Project      Project
 }
 
 // Receiver is the webhook receiver.

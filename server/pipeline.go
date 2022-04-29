@@ -2,54 +2,9 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
-
-func (s *Server) composePipelineByID(ctx context.Context, id int) (*api.Pipeline, error) {
-	pipelineFind := &api.PipelineFind{
-		ID: &id,
-	}
-	pipelineRaw, err := s.PipelineService.FindPipeline(ctx, pipelineFind)
-	if err != nil {
-		return nil, err
-	}
-	if pipelineRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline not found with ID %v", id)}
-	}
-
-	pipeline, err := s.composePipelineRelationship(ctx, pipelineRaw)
-	if err != nil {
-		return nil, err
-	}
-	return pipeline, nil
-}
-
-func (s *Server) composePipelineRelationship(ctx context.Context, raw *api.PipelineRaw) (*api.Pipeline, error) {
-	pipeline := raw.ToPipeline()
-
-	creator, err := s.store.GetPrincipalByID(ctx, pipeline.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	pipeline.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, pipeline.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	pipeline.Updater = updater
-
-	stageList, err := s.composeStageListByPipelineID(ctx, pipeline.ID)
-	if err != nil {
-		return nil, err
-	}
-	pipeline.StageList = stageList
-
-	return pipeline, nil
-}
 
 // TODO(dragonly): remove this hack.
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {

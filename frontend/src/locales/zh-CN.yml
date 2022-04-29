@@ -9,6 +9,7 @@ common:
   dingtalk: 钉钉
   feishu: 飞书
   wecom: 企业微信
+  custom: 自定义
   overview: 概览
   migration-history: 迁移历史
   webhook: Webhook
@@ -219,6 +220,7 @@ task:
     compatibility: 兼容性
     connection: 连接
     migration-schema: 迁移 schema
+    sql-review: SQL 审查
     earliest-allowed-time: 最早执行时间
   earliest-allowed-time-hint: "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。"
   comment: 评论

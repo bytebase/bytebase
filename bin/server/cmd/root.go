@@ -456,20 +456,11 @@ func (m *Main) Run(ctx context.Context) error {
 
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
 	s.SettingService = settingService
-	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance)
-	// TODO(dragonly): remove this hack
-	storeInstance.DatabaseService = s.DatabaseService
 	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
 	s.TableService = store.NewTableService(m.l, db)
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
-	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
-	s.StageService = store.NewStageService(m.l, db)
-	s.TaskService = store.NewTaskService(m.l, db, storeInstance)
-	s.RepositoryService = store.NewRepositoryService(m.l, db, storeInstance)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 

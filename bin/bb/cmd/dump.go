@@ -21,7 +21,7 @@ func newDumpCmd() *cobra.Command {
 	)
 	dumpCmd := &cobra.Command{
 		Use:   "dump",
-		Short: "Exports the schema of a database instance",
+		Short: "Exports schema and data of a database.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			u, err := dburl.Parse(dsn)
 			if err != nil {
@@ -40,7 +40,7 @@ func newDumpCmd() *cobra.Command {
 		},
 	}
 
-	dumpCmd.Flags().StringVar(&dsn, "dsn", "", "Database connection string. e.g. mysql://username:password@host:port/dbname?ssl-ca=value1&ssl-cert=value2&ssl-key=value3")
+	dumpCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)
 	dumpCmd.Flags().StringVar(&file, "file", "", "File to store the dump. Output to stdout if unspecified")
 	dumpCmd.Flags().BoolVar(&schemaOnly, "schema-only", false, "Schema only dump.")
 	return dumpCmd

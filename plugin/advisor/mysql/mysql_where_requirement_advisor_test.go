@@ -3,9 +3,28 @@ package mysql
 import (
 	"testing"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
+
+func runSchemaReviewRuleTests(t *testing.T, tests []test, adv advisor.Advisor, rule *api.SchemaReviewRule) {
+	logger, _ := zap.NewDevelopmentConfig().Build()
+	ctx := advisor.Context{
+		Logger:    logger,
+		Charset:   "",
+		Collation: "",
+		Rule:      rule,
+	}
+	for _, tc := range tests {
+		adviceList, err := adv.Check(ctx, tc.statement)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, adviceList)
+	}
+}
 
 func TestWhereRequirement(t *testing.T) {
 	tests := []test{
@@ -55,5 +74,9 @@ func TestWhereRequirement(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests, &WhereRequirementAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleStatementRequireWhere,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	})
 }
