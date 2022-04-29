@@ -47,7 +47,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
-			// TODO(dragonly): compose Instance
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
 				return err
 			}

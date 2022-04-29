@@ -80,9 +80,9 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 	return principalList, nil
 }
 
-// FindPrincipal finds an instance of Principal
-// TODO(dragonly): refactor to GetPrincipalByEmail, and redirect callers using ID to GetPrincipalByID
-func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
+// GetPrincipalByEmail gets an instance of Principal
+func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
+	find := &api.PrincipalFind{Email: &email}
 	principalRaw, err := s.getPrincipalRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
@@ -112,9 +112,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 
 // GetPrincipalByID gets an instance of Principal by ID
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	principalFind := &api.PrincipalFind{
-		ID: &id,
-	}
+	principalFind := &api.PrincipalFind{ID: &id}
 	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
 	if err != nil {
 		return nil, err
