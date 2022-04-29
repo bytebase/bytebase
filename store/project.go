@@ -75,7 +75,7 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
 	projectRawList, err := s.findProjectRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Project list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Project list with ProjectFind[%+v], error[%w]", find, err)
 	}
 	var projectList []*api.Project
 	for _, raw := range projectRawList {

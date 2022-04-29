@@ -79,7 +79,7 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, returnOnErr bool) ([]*api.Pipeline, error) {
 	pipelineRawList, err := s.findPipelineRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Pipeline list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Pipeline list with PipelineFind[%+v], error[%w]", find, err)
 	}
 	var pipelineList []*api.Pipeline
 	for _, raw := range pipelineRawList {

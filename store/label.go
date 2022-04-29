@@ -161,7 +161,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	labelKeyRawList, err := s.findLabelKeyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find LabelKey list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find LabelKey list with LabelKeyFind[%+v], error[%w]", find, err)
 	}
 	var labelKeyList []*api.LabelKey
 	for _, raw := range labelKeyRawList {
@@ -191,7 +191,7 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	labelKeyRawList, err := s.findDatabaseLabelRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find DatabaseLabel list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find DatabaseLabel list with DatabaseLabelFind[%+v], error[%w]", find, err)
 	}
 	var labelKeyList []*api.DatabaseLabel
 	for _, raw := range labelKeyRawList {
