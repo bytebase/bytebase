@@ -54,7 +54,7 @@ func (receiver *CustomReceiver) post(context Context) error {
 
 	body, err := json.Marshal(&payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
+		return fmt.Errorf("failed to marshal webhook POST request: %v (%w)", context.URL, err)
 	}
 	req, err := http.NewRequest("POST",
 		context.URL, bytes.NewBuffer(body))
@@ -69,6 +69,10 @@ func (receiver *CustomReceiver) post(context Context) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to POST webhook %+v, http status_code: %d", context.URL, resp.StatusCode)
 	}
 
 	b, err := io.ReadAll(resp.Body)
