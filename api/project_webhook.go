@@ -1,54 +1,8 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
-
-// ProjectWebhookRaw is the store model for an ProjectWebhook.
-// Fields have exactly the same meanings as ProjectWebhook.
-type ProjectWebhookRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID int
-
-	// Domain specific fields
-	Type         string
-	Name         string
-	URL          string
-	ActivityList []string
-}
-
-// ToProjectWebhook creates an instance of ProjectWebhook based on the ProjectWebhookRaw.
-// This is intended to be called when we need to compose an ProjectWebhook relationship.
-func (raw *ProjectWebhookRaw) ToProjectWebhook() *ProjectWebhook {
-	projectWebhook := ProjectWebhook{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID: raw.ProjectID,
-
-		// Domain specific fields
-		Type: raw.Type,
-		Name: raw.Name,
-		URL:  raw.URL,
-	}
-	projectWebhook.ActivityList = append(projectWebhook.ActivityList, raw.ActivityList...)
-	return &projectWebhook
-}
 
 // ProjectWebhook is the API message for project webhooks.
 type ProjectWebhook struct {
@@ -132,13 +86,4 @@ type ProjectWebhookDelete struct {
 // ProjectWebhookTestResult is the test result of a project webhook.
 type ProjectWebhookTestResult struct {
 	Error string `jsonapi:"attr,error"`
-}
-
-// ProjectWebhookService is the service for project webhooks.
-type ProjectWebhookService interface {
-	CreateProjectWebhook(ctx context.Context, create *ProjectWebhookCreate) (*ProjectWebhookRaw, error)
-	FindProjectWebhookList(ctx context.Context, find *ProjectWebhookFind) ([]*ProjectWebhookRaw, error)
-	FindProjectWebhook(ctx context.Context, find *ProjectWebhookFind) (*ProjectWebhookRaw, error)
-	PatchProjectWebhook(ctx context.Context, patch *ProjectWebhookPatch) (*ProjectWebhookRaw, error)
-	DeleteProjectWebhook(ctx context.Context, delete *ProjectWebhookDelete) error
 }
