@@ -80,10 +80,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		meta.issue.Project = project
 	}
 
-	principalFind := &api.PrincipalFind{
-		ID: &create.CreatorID,
-	}
-	updater, err := m.s.store.FindPrincipal(ctx, principalFind)
+	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
@@ -158,10 +155,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					principalFind := &api.PrincipalFind{
-						ID: &oldID,
-					}
-					oldAssignee, err = m.s.store.FindPrincipal(ctx, principalFind)
+					oldAssignee, err = m.s.store.GetPrincipalByID(ctx, oldID)
 					if err != nil {
 						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -188,10 +182,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					principalFind := &api.PrincipalFind{
-						ID: &newID,
-					}
-					newAssignee, err = m.s.store.FindPrincipal(ctx, principalFind)
+					newAssignee, err = m.s.store.GetPrincipalByID(ctx, newID)
 					if err != nil {
 						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.issue.Name),
