@@ -1124,9 +1124,7 @@ func (s *Server) postInboxIssueActivity(ctx context.Context, issue *api.Issue, a
 }
 
 func (s *Server) getTenantDatabaseMatrix(ctx context.Context, projectID int, dbNameTemplate string, dbList []*api.Database, baseDatabaseName string) ([]*api.Deployment, [][]*api.Database, error) {
-	deployConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, &api.DeploymentConfigFind{
-		ProjectID: &projectID,
-	})
+	deployConfig, err := s.store.GetDeploymentConfig(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
 		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch deployment config for project ID: %v", projectID)).SetInternal(err)
 	}

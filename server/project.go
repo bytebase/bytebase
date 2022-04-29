@@ -499,12 +499,9 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		deploymentConfigUpsert.ProjectID = id
 
-		deploymentConfig, err := s.DeploymentConfigService.UpsertDeploymentConfig(ctx, deploymentConfigUpsert)
+		deploymentConfig, err := s.store.UpsertDeploymentConfig(ctx, deploymentConfigUpsert)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set deployment configuration").SetInternal(err)
-		}
-		if err := s.composeDeploymentConfigRelationship(ctx, deploymentConfig); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose deployment configuration relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -532,7 +529,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		deploymentConfigFind := &api.DeploymentConfigFind{
 			ProjectID: &id,
 		}
-		deploymentConfig, err := s.DeploymentConfigService.FindDeploymentConfig(ctx, deploymentConfigFind)
+		deploymentConfig, err := s.store.GetDeploymentConfig(ctx, deploymentConfigFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", id)).SetInternal(err)
 		}
@@ -540,10 +537,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// We should return empty deployment config when it doesn't exist.
 		if deploymentConfig == nil {
 			deploymentConfig = &api.DeploymentConfig{}
-		} else {
-			if err := s.composeDeploymentConfigRelationship(ctx, deploymentConfig); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to compose deployment configuration relationship").SetInternal(err)
-			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -552,23 +545,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composeDeploymentConfigRelationship(ctx context.Context, deploymentConfig *api.DeploymentConfig) error {
-	var err error
-	deploymentConfig.Creator, err = s.store.GetPrincipalByID(ctx, deploymentConfig.CreatorID)
-	if err != nil {
-		return err
-	}
-	deploymentConfig.Updater, err = s.store.GetPrincipalByID(ctx, deploymentConfig.UpdaterID)
-	if err != nil {
-		return err
-	}
-	deploymentConfig.Project, err = s.store.GetProjectByID(ctx, deploymentConfig.ProjectID)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // refreshToken is a token refresher that stores the latest access token configuration to repository.

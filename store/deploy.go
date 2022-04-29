@@ -8,26 +8,132 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.DeploymentConfigService = (*DeploymentConfigService)(nil)
-)
+// deploymentConfigRaw is the store model for an DeploymentConfig.
+// Fields have exactly the same meanings as DeploymentConfig.
+type deploymentConfigRaw struct {
+	ID int
 
-// DeploymentConfigService represents a service for managing deployment configurations.
-type DeploymentConfigService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	ProjectID int
+
+	// Domain specific fields
+	Name    string
+	Payload string
 }
 
-// NewDeploymentConfigService returns a new instance of DeploymentConfigService.
-func NewDeploymentConfigService(logger *zap.Logger, db *DB) *DeploymentConfigService {
-	return &DeploymentConfigService{l: logger, db: db}
+// toDeploymentConfig creates an instance of DeploymentConfig based on the deploymentConfigRaw.
+// This is intended to be called when we need to compose an DeploymentConfig relationship.
+func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
+	return &api.DeploymentConfig{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		ProjectID: raw.ProjectID,
+
+		// Domain specific fields
+		Name:    raw.Name,
+		Payload: raw.Payload,
+	}
 }
 
-// FindDeploymentConfig finds the deployment configuration in a project.
-func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find *api.DeploymentConfigFind) (*api.DeploymentConfig, error) {
+// GetDeploymentConfig gets an instance of DeploymentConfig
+func (s *Store) GetDeploymentConfig(ctx context.Context, find *api.DeploymentConfigFind) (*api.DeploymentConfig, error) {
+	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DeploymentConfig with DeploymentConfigFind[%+v], error[%w]", find, err)
+	}
+	if deploymentConfigRaw == nil {
+		return nil, nil
+	}
+	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error[%w]", deploymentConfigRaw, err)
+	}
+	return deploymentConfig, nil
+}
+
+// UpsertDeploymentConfig upserts an instance of DeploymentConfig
+func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
+	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert deployment config with DeploymentConfigUpsert[%+v], error[%w]", upsert, err)
+	}
+	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error[%w]", deploymentConfigRaw, err)
+	}
+	return deploymentConfig, nil
+}
+
+//
+// private functions
+//
+
+func (s *Store) composeDeploymentConfig(ctx context.Context, raw *deploymentConfigRaw) (*api.DeploymentConfig, error) {
+	deploymentConfig := raw.toDeploymentConfig()
+
+	creator, err := s.GetPrincipalByID(ctx, deploymentConfig.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	deploymentConfig.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, deploymentConfig.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	deploymentConfig.Updater = updater
+
+	project, err := s.GetProjectByID(ctx, deploymentConfig.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	deploymentConfig.Project = project
+
+	return deploymentConfig, nil
+}
+
+// upsertDeploymentConfigRaw upserts a deployment configuration to a project.
+func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
+	// Validate the deployment configuration.
+	if _, err := api.ValidateAndGetDeploymentSchedule(upsert.Payload); err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return cfg, nil
+}
+
+// getDeploymentConfigImpl finds the deployment configuration in a project.
+func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.DeploymentConfigFind) (*deploymentConfigRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -63,9 +169,9 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into list.
-	var ret []*api.DeploymentConfig
+	var ret []*deploymentConfigRaw
 	for rows.Next() {
-		var cfg api.DeploymentConfig
+		var cfg deploymentConfigRaw
 		if err := rows.Scan(
 			&cfg.ID,
 			&cfg.CreatorID,
@@ -95,32 +201,7 @@ func (s *DeploymentConfigService) FindDeploymentConfig(ctx context.Context, find
 	}
 }
 
-// UpsertDeploymentConfig upserts a deployment configuration to a project.
-func (s *DeploymentConfigService) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
-	// Validate the deployment configuration.
-	if _, err := api.ValidateAndGetDeploymentSchedule(upsert.Payload); err != nil {
-		return nil, err
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	cfg, err := s.upsertDeploymentConfig(ctx, tx.PTx, upsert)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return cfg, nil
-}
-
-func (s *DeploymentConfigService) upsertDeploymentConfig(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
+func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upsert *api.DeploymentConfigUpsert) (*deploymentConfigRaw, error) {
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}
@@ -153,7 +234,7 @@ func (s *DeploymentConfigService) upsertDeploymentConfig(ctx context.Context, tx
 	defer row.Close()
 
 	row.Next()
-	var cfg api.DeploymentConfig
+	var cfg deploymentConfigRaw
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.CreatorID,
