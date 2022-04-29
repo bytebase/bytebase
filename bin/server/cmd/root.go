@@ -172,7 +172,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	metadataDBMgr *MetadataDBManager
+	metadataDB *metadataDB
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
@@ -280,15 +280,15 @@ func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	metadataDBMgr, err := createMetadataDBManager(&activeProfile, logger)
+	metadataDB, err := createMetadataDB(&activeProfile, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Main{
-		profile:       &activeProfile,
-		l:             logger,
-		metadataDBMgr: metadataDBMgr,
+		profile:    &activeProfile,
+		l:          logger,
+		metadataDB: metadataDB,
 	}, nil
 }
 
@@ -331,7 +331,7 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	db, err := m.metadataDBMgr.newDB()
+	db, err := m.metadataDB.connect()
 	if err != nil {
 		return fmt.Errorf("cannot new db: %w", err)
 	}
@@ -406,7 +406,7 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if err := m.metadataDBMgr.close(); err != nil {
+	if err := m.metadataDB.close(); err != nil {
 		return err
 	}
 
