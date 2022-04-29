@@ -50,11 +50,11 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 	}
 }
 
-// GetDeploymentConfig gets an instance of DeploymentConfig
-func (s *Store) GetDeploymentConfig(ctx context.Context, find *api.DeploymentConfigFind) (*api.DeploymentConfig, error) {
-	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, find)
+// GetDeploymentConfigByProjectID gets an instance of DeploymentConfig
+func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
+	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DeploymentConfig with DeploymentConfigFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get DeploymentConfig with projectID[%d], error[%w]", projectID, err)
 	}
 	if deploymentConfigRaw == nil {
 		return nil, nil

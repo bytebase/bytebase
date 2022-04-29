@@ -526,10 +526,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
 		}
 
-		deploymentConfigFind := &api.DeploymentConfigFind{
-			ProjectID: &id,
-		}
-		deploymentConfig, err := s.store.GetDeploymentConfig(ctx, deploymentConfigFind)
+		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get deployment configuration for project id: %d", id)).SetInternal(err)
 		}
