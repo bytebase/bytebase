@@ -330,6 +330,34 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
+		if s.server.feature(api.FeatureSchemaReviewPolicy) &&
+			// For now we only supported MySQL dialect schema review check.
+			(database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB) {
+			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
+			}
+			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+				Statement: statement,
+				DbType:    database.Instance.Engine,
+				Charset:   database.CharacterSet,
+				Collation: database.Collation,
+				PolicyID:  policyID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+			}
+			if _, err := s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckDatabaseStatementAdvise,
+				Payload:                 string(payload),
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			}); err != nil {
+				return nil, err
+			}
+		}
+
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &task.ID,
 		}

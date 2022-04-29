@@ -151,10 +151,13 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 		// Task check scheduler
 		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
 
-		statementExecutor := NewTaskCheckStatementAdvisorExecutor(logger)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementExecutor)
+		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementSimpleExecutor)
+
+		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
 
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
