@@ -58,7 +58,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	webhookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
+	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
