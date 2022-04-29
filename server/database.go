@@ -161,6 +161,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 	g.PATCH("/database/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database ID is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -185,9 +186,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		targetProject := database.Project
 		if dbPatch.ProjectID != nil && *dbPatch.ProjectID != database.ProjectID {
 			// Before updating the database projectID, we first need to check if there are still bound sheets.
-			sheetList, err := s.SheetService.FindSheetList(ctx, &api.SheetFind{
-				DatabaseID: &database.ID,
-			})
+			sheetList, err := s.store.FindSheet(ctx, &api.SheetFind{DatabaseID: &database.ID}, currentPrincipalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find sheets by database ID: %d", database.ID)).SetInternal(err)
 			}

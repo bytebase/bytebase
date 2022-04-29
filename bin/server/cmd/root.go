@@ -458,7 +458,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
-	s.SheetService = store.NewSheetService(m.l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 

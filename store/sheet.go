@@ -8,105 +8,129 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.SheetService = (*SheetService)(nil)
-)
+// sheetRaw is the store model for an Sheet.
+// Fields have exactly the same meanings as Sheet.
+type sheetRaw struct {
+	ID int
 
-// SheetService represents a service for managing sheet.
-type SheetService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	RowStatus api.RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	ProjectID int
+	// The DatabaseID is optional.
+	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
+	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
+	DatabaseID *int
+
+	// Domain specific fields
+	Name       string
+	Statement  string
+	Visibility api.SheetVisibility
+	Source     api.SheetSource
+	Type       api.SheetType
+	// Payload is in the json string format of SheetVCSPayload.
+	Payload string
 }
 
-// NewSheetService returns a new sheet of SheetService.
-func NewSheetService(logger *zap.Logger, db *DB) *SheetService {
-	return &SheetService{l: logger, db: db}
+// toSheet creates an instance of Sheet based on the sheetRaw.
+// This is intended to be called when we need to compose an Sheet relationship.
+func (raw *sheetRaw) toSheet() *api.Sheet {
+	return &api.Sheet{
+		ID: raw.ID,
+
+		// Standard fields
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		ProjectID: raw.ProjectID,
+		// The DatabaseID is optional.
+		// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
+		// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:       raw.Name,
+		Statement:  raw.Statement,
+		Visibility: raw.Visibility,
+		Source:     raw.Source,
+		Type:       raw.Type,
+		Payload:    raw.Payload,
+	}
 }
 
-// CreateSheet creates a new sheet.
-func (s *SheetService) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.SheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// CreateSheet creates an instance of Sheet
+func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate, currentPrincipalID int) (*api.Sheet, error) {
+	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("failed to create Sheet with SheetCreate[%+v], error[%w]", create, err)
 	}
-	defer tx.PTx.Rollback()
-
-	sheet, err := createSheet(ctx, tx.PTx, create, s.db.mode)
+	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
 	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
 	return sheet, nil
 }
 
-// PatchSheet updates an existing sheet by ID.
-func (s *SheetService) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.SheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// GetSheet gets an instance of Sheet
+func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
+	sheetRaw, err := s.getSheetRaw(ctx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("failed to get Sheet with SheetFind[%+v], error[%w]", find, err)
 	}
-	defer tx.PTx.Rollback()
-
-	sheet, err := patchSheet(ctx, tx.PTx, patch, s.db.mode)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return sheet, nil
-}
-
-// FindSheetList retrieves a list of sheet based on find.
-func (s *SheetService) FindSheetList(ctx context.Context, find *api.SheetFind) ([]*api.SheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	list, err := findSheetList(ctx, tx.PTx, find, s.db.mode)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// FindSheet retrieves a single sheet based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *SheetService) FindSheet(ctx context.Context, find *api.SheetFind) (*api.SheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	list, err := findSheetList(ctx, tx.PTx, find, s.db.mode)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
+	if sheetRaw == nil {
 		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
 	}
-	return list[0], nil
+	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
+	}
+	return sheet, nil
+}
+
+// FindSheet finds a list of Sheet instances
+func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) ([]*api.Sheet, error) {
+	sheetRawList, err := s.findSheetRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Sheet list, error[%w]", err)
+	}
+	var sheetList []*api.Sheet
+	for _, raw := range sheetRawList {
+		sheet, err := s.composeSheet(ctx, raw, currentPrincipalID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", raw, err)
+		}
+		sheetList = append(sheetList, sheet)
+	}
+	return sheetList, nil
+}
+
+// PatchSheet patches an instance of Sheet
+func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch, currentPrincipalID int) (*api.Sheet, error) {
+	sheetRaw, err := s.patchSheetRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Sheet with SheetPatch[%+v], error[%w]", patch, err)
+	}
+	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
+	}
+	return sheet, nil
 }
 
 // DeleteSheet deletes an existing sheet by ID.
 // Returns ENOTFOUND if sheet does not exist.
-func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error {
+func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -124,8 +148,135 @@ func (s *SheetService) DeleteSheet(ctx context.Context, delete *api.SheetDelete)
 	return nil
 }
 
-// createSheet creates a new sheet.
-func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode common.ReleaseMode) (*api.SheetRaw, error) {
+//
+// private functions
+//
+
+// composeSheet composes sheet relationships.
+func (s *Store) composeSheet(ctx context.Context, raw *sheetRaw, currentPrincipalID int) (*api.Sheet, error) {
+	sheet := raw.toSheet()
+
+	creator, err := s.GetPrincipalByID(ctx, sheet.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	sheet.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, sheet.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	sheet.Updater = updater
+
+	project, err := s.GetProjectByID(ctx, sheet.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	sheet.Project = project
+
+	if sheet.DatabaseID != nil {
+		database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: sheet.DatabaseID})
+		if err != nil {
+			return nil, err
+		}
+		sheet.Database = database
+	}
+
+	sheetOrganizer, err := s.FindSheetOrganizer(ctx, &api.SheetOrganizerFind{
+		SheetID:     sheet.ID,
+		PrincipalID: currentPrincipalID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if sheetOrganizer != nil {
+		sheet.Starred = sheetOrganizer.Starred
+		sheet.Pinned = sheetOrganizer.Pinned
+	}
+
+	return sheet, nil
+}
+
+// createSheetRaw creates a new sheet.
+func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*sheetRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	sheet, err := createSheetImpl(ctx, tx.PTx, create, s.db.mode)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return sheet, nil
+}
+
+// patchSheetRaw updates an existing sheet by ID.
+func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*sheetRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	sheet, err := patchSheetImpl(ctx, tx.PTx, patch, s.db.mode)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return sheet, nil
+}
+
+// findSheetRaw retrieves a list of sheet based on find.
+func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheetRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findSheetImpl(ctx, tx.PTx, find, s.db.mode)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// getSheetRaw retrieves a single sheet based on find.
+// Returns ECONFLICT if finding more than 1 matching records.
+func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findSheetImpl(ctx, tx.PTx, find, s.db.mode)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) == 0 {
+		return nil, nil
+	} else if len(list) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d sheet with filter %+v, expect 1. ", len(list), find)}
+	}
+	return list[0], nil
+}
+
+// createSheetImpl creates a new sheet.
+func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode common.ReleaseMode) (*sheetRaw, error) {
 	if mode == common.ReleaseModeDev {
 		if create.Payload == "" {
 			create.Payload = "{}"
@@ -165,7 +316,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 		defer row.Close()
 
 		row.Next()
-		var sheetRaw api.SheetRaw
+		var sheetRaw sheetRaw
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheetRaw.ID,
@@ -221,7 +372,7 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 	defer row.Close()
 
 	row.Next()
-	var sheetRaw api.SheetRaw
+	var sheetRaw sheetRaw
 	databaseID := sql.NullInt32{}
 	if err := row.Scan(
 		&sheetRaw.ID,
@@ -247,8 +398,8 @@ func createSheet(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode 
 	return &sheetRaw, nil
 }
 
-// patchSheet updates a sheet's name/statement/visibility.
-func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode common.ReleaseMode) (*api.SheetRaw, error) {
+// patchSheetImpl updates a sheet's name/statement/visibility.
+func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode common.ReleaseMode) (*sheetRaw, error) {
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
 		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
@@ -289,7 +440,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 		defer row.Close()
 
 		if row.Next() {
-			var sheetRaw api.SheetRaw
+			var sheetRaw sheetRaw
 			databaseID := sql.NullInt32{}
 			if err := row.Scan(
 				&sheetRaw.ID,
@@ -335,7 +486,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 	defer row.Close()
 
 	if row.Next() {
-		var sheetRaw api.SheetRaw
+		var sheetRaw sheetRaw
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
 			&sheetRaw.ID,
@@ -364,7 +515,7 @@ func patchSheet(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode com
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
 }
 
-func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode common.ReleaseMode) ([]*api.SheetRaw, error) {
+func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode common.ReleaseMode) ([]*sheetRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 
 	if v := find.ID; v != nil {
@@ -430,9 +581,9 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 		}
 		defer rows.Close()
 
-		var sheetRawList []*api.SheetRaw
+		var sheetRawList []*sheetRaw
 		for rows.Next() {
-			var sheetRaw api.SheetRaw
+			var sheetRaw sheetRaw
 			databaseID := sql.NullInt32{}
 			if err := rows.Scan(
 				&sheetRaw.ID,
@@ -489,9 +640,9 @@ func findSheetList(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 	}
 	defer rows.Close()
 
-	var sheetRawList []*api.SheetRaw
+	var sheetRawList []*sheetRaw
 	for rows.Next() {
-		var sheetRaw api.SheetRaw
+		var sheetRaw sheetRaw
 		databaseID := sql.NullInt32{}
 		if err := rows.Scan(
 			&sheetRaw.ID,
