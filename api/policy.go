@@ -15,6 +15,9 @@ type PipelineApprovalValue string
 type BackupPlanPolicySchedule string
 
 const (
+	// DefaultPolicyID is the ID of the default policy.
+	DefaultPolicyID int = 0
+
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.

@@ -71,8 +71,8 @@ const (
 	TaskCheckDatabaseStatementSyntax TaskCheckType = "bb.task-check.database.statement.syntax"
 	// TaskCheckDatabaseStatementCompatibility is the task check type for statement compatibility.
 	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
-	// TaskCheckDatabaseStatementRequireWhere is the task check type for the WHRER clause requirement for UPDATE/DELETE.
-	TaskCheckDatabaseStatementRequireWhere TaskCheckType = "bb.task-check.database.statement.where.require"
+	// TaskCheckDatabaseStatementAdvise is the task check type for schema system review policy.
+	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
@@ -92,6 +92,9 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	DbType    db.Type `json:"dbType,omitempty"`
 	Charset   string  `json:"charset,omitempty"`
 	Collation string  `json:"collation,omitempty"`
+
+	// Schema review special fields.
+	PolicyID int `json:"policyID,omitempty"`
 }
 
 // TaskCheckResult is the result of task checks.
