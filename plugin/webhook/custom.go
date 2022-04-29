@@ -68,11 +68,7 @@ func (receiver *CustomReceiver) post(context Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to POST webhook %+v, http status_code: %d", context.URL, resp.StatusCode)
+		return fmt.Errorf("failed to POST webhook %v (%w)", context.URL, err)
 	}
 
 	b, err := io.ReadAll(resp.Body)
@@ -80,6 +76,10 @@ func (receiver *CustomReceiver) post(context Context) error {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+	}
 
 	webhookResponse := &CustomWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
