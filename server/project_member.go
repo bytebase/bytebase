@@ -72,8 +72,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid role provider, expected: %v, got: %v", vcs.Type, projectMember.RoleProvider)).SetInternal(err)
 			}
 
-			findPrincipal := &api.PrincipalFind{Email: &projectMember.Email}
-			principal, err := s.store.FindPrincipal(ctx, findPrincipal)
+			principal, err := s.store.GetPrincipalByEmail(ctx, projectMember.Email)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal info").SetInternal(err)
 			}
@@ -164,8 +163,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				}
 			} else {
 				// elsewise, we will create a MEMBER CREATE activity
-				principalFind := &api.PrincipalFind{ID: &createdMember.PrincipalID}
-				principal, err := s.store.FindPrincipal(ctx, principalFind)
+				principal, err := s.store.GetPrincipalByID(ctx, createdMember.PrincipalID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Fail to find the relevant principal of the member relation, principal ID: %v", principal.ID)).SetInternal(err)
 				}

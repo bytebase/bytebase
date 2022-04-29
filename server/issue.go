@@ -288,9 +288,7 @@ func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue
 
 // Only allow Bot/Owner/DBA as the assignee, not Developer.
 func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
-	assignee, err := s.store.FindPrincipal(ctx, &api.PrincipalFind{
-		ID: &assigneeID,
-	})
+	assignee, err := s.store.GetPrincipalByID(ctx, assigneeID)
 	if err != nil {
 		return err
 	}
