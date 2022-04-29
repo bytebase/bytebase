@@ -61,7 +61,7 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	EnvironmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Environment list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Environment list with EnvironmentFind[%+v], error[%w]", find, err)
 	}
 	var EnvironmentList []*api.Environment
 	for _, raw := range EnvironmentRawList {

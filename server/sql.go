@@ -257,37 +257,29 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTableRaw, err := s.TableService.CreateTable(ctx, tableCreate)
+				table, err := s.store.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
 				}
-				createTable, err := s.composeTableRelationship(ctx, createTableRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose table with ID %d, error: %v", createTable.ID, err)
-				}
-				return createTable, nil
+				return table, nil
 			}
 
 			var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
-				createViewRaw, err := s.ViewService.CreateView(ctx, viewCreate)
+				createView, err := s.store.CreateView(ctx, viewCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", instance.Name, database.Name, viewCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
 				}
-				createView, err := s.composeViewRelationship(ctx, createViewRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose view relationship for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
-				}
 				return createView, nil
 			}
 
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
-				_, err := s.ColumnService.CreateColumn(ctx, columnCreate)
+				_, err := s.store.CreateColumn(ctx, columnCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
@@ -298,7 +290,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-				_, err := s.IndexService.CreateIndex(ctx, indexCreate)
+				_, err := s.store.CreateIndex(ctx, indexCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
@@ -338,7 +330,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						TableID:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
-					col, err := s.ColumnService.FindColumn(ctx, columnFind)
+					col, err := s.store.GetColumn(ctx, columnFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -371,7 +363,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					idx, err := s.IndexService.FindIndex(ctx, indexFind)
+					idx, err := s.store.GetIndex(ctx, indexFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -415,10 +407,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			instanceUserFind := &api.InstanceUserFind{
-				InstanceID: instance.ID,
-			}
-			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
 			}
@@ -431,7 +420,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					Name:       user.Name,
 					Grant:      user.Grant,
 				}
-				_, err := s.InstanceUserService.UpsertInstanceUser(ctx, userUpsert)
+				_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
 				if err != nil {
 					return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
 				}
@@ -451,7 +440,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					userDelete := &api.InstanceUserDelete{
 						ID: user.ID,
 					}
-					err := s.InstanceUserService.DeleteInstanceUser(ctx, userDelete)
+					err := s.store.DeleteInstanceUser(ctx, userDelete)
 					if err != nil {
 						return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
 					}
@@ -514,7 +503,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					tableDelete := &api.TableDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.TableService.DeleteTable(ctx, tableDelete); err != nil {
+					if err := s.store.DeleteTable(ctx, tableDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
@@ -528,7 +517,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					viewDelete := &api.ViewDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.ViewService.DeleteView(ctx, viewDelete); err != nil {
+					if err := s.store.DeleteView(ctx, viewDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 

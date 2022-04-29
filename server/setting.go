@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -22,17 +21,9 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 	g.GET("/setting", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		find := &api.SettingFind{}
-		settingRawList, err := s.SettingService.FindSettingList(ctx, find)
+		settingList, err := s.store.FindSetting(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch setting list").SetInternal(err)
-		}
-		var settingList []*api.Setting
-		for _, raw := range settingRawList {
-			setting, err := s.composeSettingRelationship(ctx, raw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose setting relationship for ID %d", raw.ID)).SetInternal(err)
-			}
-			settingList = append(settingList, setting)
 		}
 
 		filteredList := []*api.Setting{}
@@ -67,7 +58,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
 		}
 
-		setting, err := s.SettingService.PatchSetting(ctx, settingPatch)
+		setting, err := s.store.PatchSetting(ctx, settingPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Setting name not found: %s", settingPatch.Name))
@@ -76,27 +67,9 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, setting.ToSetting()); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, setting); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal setting response").SetInternal(err)
 		}
 		return nil
 	})
-}
-
-func (s *Server) composeSettingRelationship(ctx context.Context, raw *api.SettingRaw) (*api.Setting, error) {
-	setting := raw.ToSetting()
-
-	creator, err := s.store.GetPrincipalByID(ctx, setting.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	setting.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, setting.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	setting.Updater = updater
-
-	return setting, nil
 }

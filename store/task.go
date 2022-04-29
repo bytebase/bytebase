@@ -112,7 +112,7 @@ func (s *Store) GetTaskByID(ctx context.Context, id int) (*api.Task, error) {
 func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bool) ([]*api.Task, error) {
 	taskRawList, err := s.findTaskRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Task list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Task list with TaskFind[%+v], error[%w]", find, err)
 	}
 	var taskList []*api.Task
 	for _, raw := range taskRawList {

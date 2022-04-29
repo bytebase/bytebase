@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -46,12 +45,4 @@ func (find *InstanceUserFind) String() string {
 // InstanceUserDelete is the API message for deleting an instance user.
 type InstanceUserDelete struct {
 	ID int
-}
-
-// InstanceUserService is the service for instance users.
-type InstanceUserService interface {
-	// UpsertInstanceUser would update the existing user if name matches.
-	UpsertInstanceUser(ctx context.Context, upsert *InstanceUserUpsert) (*InstanceUser, error)
-	FindInstanceUserList(ctx context.Context, find *InstanceUserFind) ([]*InstanceUser, error)
-	DeleteInstanceUser(ctx context.Context, delete *InstanceUserDelete) error
 }
