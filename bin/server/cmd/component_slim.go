@@ -1,5 +1,5 @@
-//go:build slim
-// +build slim
+//go:build !omni
+// +build !omni
 
 package cmd
 

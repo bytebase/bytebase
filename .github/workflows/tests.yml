@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        tags: ['', 'slim']
+        tags: ['', 'omni']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
