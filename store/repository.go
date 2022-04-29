@@ -110,7 +110,7 @@ func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*a
 func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
 	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Repository list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Repository list with RepositoryFind[%+v], error[%w]", find, err)
 	}
 	var repositoryList []*api.Repository
 	for _, raw := range repositoryRawList {

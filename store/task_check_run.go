@@ -76,7 +76,7 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRunRawList, err := s.findTaskCheckRunRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find TaskCheckRun list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find TaskCheckRun list with TaskCheckRunFind[%+v], error[%w]", find, err)
 	}
 	var taskCheckRunList []*api.TaskCheckRun
 	for _, raw := range taskCheckRunRawList {
