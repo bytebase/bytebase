@@ -70,12 +70,12 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 }
 
 // CreateSheet creates an instance of Sheet
-func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate, currentPrincipalID int) (*api.Sheet, error) {
+func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
 	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sheet with SheetCreate[%+v], error[%w]", create, err)
 	}
-	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
+	sheet, err := s.composeSheet(ctx, sheetRaw, create.CreatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
 	}
@@ -116,12 +116,12 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 }
 
 // PatchSheet patches an instance of Sheet
-func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch, currentPrincipalID int) (*api.Sheet, error) {
+func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
 	sheetRaw, err := s.patchSheetRaw(ctx, patch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to patch Sheet with SheetPatch[%+v], error[%w]", patch, err)
 	}
-	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
+	sheet, err := s.composeSheet(ctx, sheetRaw, patch.UpdaterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
 	}

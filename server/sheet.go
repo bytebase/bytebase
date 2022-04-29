@@ -56,7 +56,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		sheetCreate.Source = api.SheetFromBytebase
 		sheetCreate.Type = api.SheetForSQL
-		sheet, err := s.store.CreateSheet(ctx, sheetCreate, currentPrincipalID)
+		sheet, err := s.store.CreateSheet(ctx, sheetCreate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet").SetInternal(err)
 		}
@@ -250,7 +250,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					sheetCreate.DatabaseID = databaseID
 				}
 
-				if _, err := s.store.CreateSheet(ctx, &sheetCreate, currentPrincipalID); err != nil {
+				if _, err := s.store.CreateSheet(ctx, &sheetCreate); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create sheet from VCS").SetInternal(err)
 				}
 			} else {
@@ -265,7 +265,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					sheetPatch.DatabaseID = databaseID
 				}
 
-				if _, err := s.store.PatchSheet(ctx, &sheetPatch, currentPrincipalID); err != nil {
+				if _, err := s.store.PatchSheet(ctx, &sheetPatch); err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to patch sheet from VCS").SetInternal(err)
 				}
 			}
@@ -405,7 +405,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch sheet request").SetInternal(err)
 		}
 
-		sheet, err := s.store.PatchSheet(ctx, sheetPatch, currentPrincipalID)
+		sheet, err := s.store.PatchSheet(ctx, sheetPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("sheet ID not found: %d", id))
