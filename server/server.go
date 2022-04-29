@@ -37,10 +37,7 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	InstanceUserService api.InstanceUserService
-	ColumnService       api.ColumnService
-	IndexService        api.IndexService
-	LicenseService      enterprise.LicenseService
+	LicenseService enterprise.LicenseService
 
 	e *echo.Echo
 
