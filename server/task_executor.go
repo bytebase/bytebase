@@ -59,15 +59,9 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
 	} else {
-		repoFind := &api.RepositoryFind{
-			ProjectID: &task.Database.ProjectID,
-		}
-		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
+		repoRawInner, err := findRepositoryRawByTask(ctx, server, task)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
-		}
-		if repoRawInner == nil {
-			return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+			return nil, err
 		}
 		repoRawOutter = repoRawInner
 
@@ -153,15 +147,9 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	}
 	var repoRawOutter *api.RepositoryRaw
 	if vcsPushEvent != nil {
-		repoFind := &api.RepositoryFind{
-			ProjectID: &task.Database.ProjectID,
-		}
-		repoRawInner, err := server.RepositoryService.FindRepository(ctx, repoFind)
+		repoRawInner, err := findRepositoryRawByTask(ctx, server, task)
 		if err != nil {
-			return true, nil, fmt.Errorf("failed to find linked repository for database %q", databaseName)
-		}
-		if repoRawInner == nil {
-			return true, nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+			return true, nil, err
 		}
 		repoRawOutter = repoRawInner
 	}
@@ -322,6 +310,20 @@ func findIssueByTask(ctx context.Context, l *zap.Logger, server *Server, task *a
 		}
 	}
 	return issue, nil
+}
+
+func findRepositoryRawByTask(ctx context.Context, server *Server, task *api.Task) (*api.RepositoryRaw, error) {
+	repoFind := &api.RepositoryFind{
+		ProjectID: &task.Database.ProjectID,
+	}
+	repoRaw, err := server.RepositoryService.FindRepository(ctx, repoFind)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find linked repository for database %q", task.Database.Name)
+	}
+	if repoRaw == nil {
+		return nil, fmt.Errorf("repository not found with project ID %v", task.Database.ProjectID)
+	}
+	return repoRaw, nil
 }
 
 // Writes back the latest schema to the repository after migration
