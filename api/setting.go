@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -14,42 +13,6 @@ const (
 	// SettingBrandingLogo is the setting name for branding logo.
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 )
-
-// SettingRaw is the store model for an Setting.
-// Fields have exactly the same meanings as Setting.
-type SettingRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Domain specific fields
-	Name        SettingName
-	Value       string
-	Description string
-}
-
-// ToSetting creates an instance of Setting based on the SettingRaw.
-// This is intended to be called when we need to compose an Setting relationship.
-func (raw *SettingRaw) ToSetting() *Setting {
-	return &Setting{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Domain specific fields
-		Name:        raw.Name,
-		Value:       raw.Value,
-		Description: raw.Description,
-	}
-}
 
 // Setting is the API message for a setting.
 type Setting struct {
@@ -98,13 +61,4 @@ func (find *SettingFind) String() string {
 		return err.Error()
 	}
 	return string(str)
-}
-
-// SettingService is the service for settings.
-type SettingService interface {
-	// Creates new setting and returns if not exist, returns the existing one otherwise.
-	CreateSettingIfNotExist(ctx context.Context, create *SettingCreate) (*SettingRaw, error)
-	FindSettingList(ctx context.Context, find *SettingFind) ([]*SettingRaw, error)
-	FindSetting(ctx context.Context, find *SettingFind) (*SettingRaw, error)
-	PatchSetting(ctx context.Context, patch *SettingPatch) (*SettingRaw, error)
 }
