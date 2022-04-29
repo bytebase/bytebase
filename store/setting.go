@@ -63,7 +63,7 @@ func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.Setting
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
 	settingRawList, err := s.findSettingRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Setting list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Setting list with SettingFind[%+v], error[%w]", find, err)
 	}
 	var settingList []*api.Setting
 	for _, raw := range settingRawList {

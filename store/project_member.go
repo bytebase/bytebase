@@ -71,7 +71,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find ProjectMember list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find ProjectMember list with ProjectMemberFind[%+v], error[%w]", find, err)
 	}
 	var projectMemberList []*api.ProjectMember
 	for _, raw := range projectMemberRawList {

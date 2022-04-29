@@ -42,7 +42,7 @@ func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubs
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find IssueSubscriber list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find IssueSubscriber list with IssueSubscriberFind[%+v], error[%w]", find, err)
 	}
 	var issueSubList []*api.IssueSubscriber
 	for _, raw := range issueSubRawList {
