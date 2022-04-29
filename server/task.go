@@ -63,16 +63,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
-		issueFind := &api.IssueFind{
-			PipelineID: &task.PipelineID,
-		}
-		issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
+		issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
-		}
-		issue, err := s.composeIssueRelationship(ctx, issueRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relationship with pipeline ID %v", task.PipelineID)).SetInternal(err)
 		}
 
 		oldStatement := ""
@@ -308,9 +301,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issue, err := s.IssueService.FindIssue(ctx, &api.IssueFind{
-			PipelineID: &task.PipelineID,
-		})
+		issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
 		}
@@ -467,20 +458,13 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
-	issueFind := &api.IssueFind{
-		PipelineID: &task.PipelineID,
-	}
-	issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
+	issue, err := s.store.GetIssueByID(ctx, task.PipelineID)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 	}
-	if issueRaw == nil {
+	if issue == nil {
 		return nil, fmt.Errorf("failed to find issue with pipeline ID %d, task: %s", task.PipelineID, task.Name)
-	}
-	issue, err := s.composeIssueRelationship(ctx, issueRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose issue relationship with ID %d, err: %w", issueRaw.ID, err)
 	}
 
 	// Create an activity

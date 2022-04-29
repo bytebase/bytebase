@@ -86,10 +86,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		mi.Creator = creator.Name
 	}
 
-	issueFind := &api.IssueFind{
-		PipelineID: &task.PipelineID,
-	}
-	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssueByID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
