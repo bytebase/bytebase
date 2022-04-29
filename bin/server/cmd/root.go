@@ -461,7 +461,6 @@ func (m *Main) Run(ctx context.Context) error {
 	s.ColumnService = store.NewColumnService(m.l, db)
 	s.ViewService = store.NewViewService(m.l, db)
 	s.IndexService = store.NewIndexService(m.l, db)
-	s.RepositoryService = store.NewRepositoryService(m.l, db, storeInstance)
 	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 

@@ -32,9 +32,9 @@ type projectRaw struct {
 	RoleProvider   api.ProjectRoleProvider
 }
 
-// ToProject creates an instance of Project based on the projectRaw.
+// toProject creates an instance of Project based on the projectRaw.
 // This is intended to be called when we need to compose a Project relationship.
-func (raw *projectRaw) ToProject() *api.Project {
+func (raw *projectRaw) toProject() *api.Project {
 	return &api.Project{
 		ID: raw.ID,
 
@@ -119,7 +119,7 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 //
 
 func (s *Store) composeProject(ctx context.Context, raw *projectRaw) (*api.Project, error) {
-	project := raw.ToProject()
+	project := raw.toProject()
 
 	creator, err := s.GetPrincipalByID(ctx, project.CreatorID)
 	if err != nil {

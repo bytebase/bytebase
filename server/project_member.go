@@ -36,8 +36,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		}
 
 		// fetch project member from VCS
-		repoFind := &api.RepositoryFind{ProjectID: &projectID}
-		repo, err := s.RepositoryService.FindRepository(ctx, repoFind)
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch relevant VCS repo, Project ID: %s", c.Param("projectID"))).SetInternal(err)
 		}
