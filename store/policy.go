@@ -176,6 +176,41 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
 
+// GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
+func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
+	pType := api.PolicyTypeSchemaReview
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		EnvironmentID: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return policy.ID, nil
+}
+
+// GetSchemaReviewPolicyByID will get the schema review policy for an environment.
+func (s *Store) GetSchemaReviewPolicyByID(ctx context.Context, id int) (*api.SchemaReviewPolicy, error) {
+	pType := api.PolicyTypeSchemaReview
+
+	if id == api.DefaultPolicyID {
+		defaultPolicy, err := api.GetDefaultPolicy(pType)
+		if err != nil {
+			return nil, err
+		}
+		return api.UnmarshalSchemaReviewPolicy(defaultPolicy)
+	}
+
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		ID:   &id,
+		Type: &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+}
+
 //
 // private functions
 //
@@ -245,6 +280,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			return nil, &common.Error{Code: common.Internal, Err: err}
 		}
 		ret.Payload = payload
+		ret.ID = api.DefaultPolicyID
 	}
 	return ret, nil
 }
