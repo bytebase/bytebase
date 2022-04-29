@@ -41,6 +41,12 @@ export const PROJECT_HOOK_TYPE_ITEM_LIST: () => ProjectWebhookTypeItem[] =
       name: t("common.wecom"),
       urlPrefix: "https://qyapi.weixin.qq.com",
     },
+    {
+      type: "bb.plugin.webhook.custom",
+      name: t("common.custom"),
+      urlPrefix:
+        "https://www.bytebase.com/docs/use-bytebase/webhook-integration/project-webhook#custom",
+    },
   ];
 
 type ProjectWebhookActivityItem = {
