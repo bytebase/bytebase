@@ -37,7 +37,6 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	}
 	databaseName := task.Database.Name
 
-	var repoOutter *api.Repository
 	mi := &db.MigrationInfo{
 		ReleaseVersion: server.version,
 		Type:           migrationType,
@@ -59,15 +58,13 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 		mi.Version = schemaVersion
 		mi.Description = task.Name
 	} else {
-		repoInner, err := findRepositoryByTask(ctx, server, task)
+		repo, err := findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return nil, err
 		}
-		repoOutter = repoInner
-
 		mi, err = db.ParseMigrationInfo(
 			vcsPushEvent.FileCommit.Added,
-			filepath.Join(vcsPushEvent.BaseDirectory, repoOutter.FilePathTemplate),
+			filepath.Join(vcsPushEvent.BaseDirectory, repo.FilePathTemplate),
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
@@ -145,16 +142,15 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 	if err != nil {
 		l.Error("failed to find containing issue", zap.Error(err))
 	}
-	var repoOutter *api.Repository
+	var repo *api.Repository
 	if vcsPushEvent != nil {
-		repoInner, err := findRepositoryByTask(ctx, server, task)
+		repo, err = findRepositoryByTask(ctx, server, task)
 		if err != nil {
 			return true, nil, err
 		}
-		repoOutter = repoInner
 	}
 	// If VCS based and schema path template is specified, then we will write back the latest schema file after migration.
-	writeBack := (vcsPushEvent != nil) && (repoOutter.SchemaPathTemplate != "")
+	writeBack := (vcsPushEvent != nil) && (repo.SchemaPathTemplate != "")
 	// For tenant mode project, we will only write back latest schema file on the last task.
 	project, err := server.store.GetProjectByID(ctx, task.Database.ProjectID)
 	if err != nil {
@@ -182,17 +178,16 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to get BaseDatabaseName for instance %q, database %q: %w", task.Instance.Name, task.Database.Name, err)
 		}
-		latestSchemaFile := filepath.Join(repoOutter.BaseDirectory, repoOutter.SchemaPathTemplate)
+		latestSchemaFile := filepath.Join(repo.BaseDirectory, repo.SchemaPathTemplate)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{ENV_NAME}}", mi.Environment)
 		latestSchemaFile = strings.ReplaceAll(latestSchemaFile, "{{DB_NAME}}", dbName)
 
-		repo := repoOutter
-		vcs, err := server.store.GetVCSByID(ctx, repoOutter.VCSID)
+		vcs, err := server.store.GetVCSByID(ctx, repo.VCSID)
 		if err != nil {
 			return true, nil, fmt.Errorf("failed to sync schema file %s after applying migration %s to %q", latestSchemaFile, mi.Version, databaseName)
 		}
 		if vcs == nil {
-			return true, nil, fmt.Errorf("VCS ID not found: %d", repoOutter.VCSID)
+			return true, nil, fmt.Errorf("VCS ID not found: %d", repo.VCSID)
 		}
 		repo.VCS = vcs
 
@@ -225,7 +220,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 			if err != nil {
 				l.Error("Failed to marshal file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoOutter.WebURL),
+					zap.String("repository", repo.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
@@ -251,7 +246,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 			if err != nil {
 				l.Error("Failed to create file commit activity after writing back the latest schema",
 					zap.Int("task_id", task.ID),
-					zap.String("repository", repoOutter.WebURL),
+					zap.String("repository", repo.WebURL),
 					zap.String("file_path", latestSchemaFile),
 					zap.Error(err),
 				)
