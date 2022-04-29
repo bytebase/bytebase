@@ -190,9 +190,11 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			webhookPlugin.Context{
 				URL:          webhook.URL,
 				Level:        webhookPlugin.WebhookInfo,
+				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",
 				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(webhook)),
+				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
@@ -202,6 +204,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 						Value: project.Name,
 					},
 				},
+				Project: webhookPlugin.Project{Name: project.Name},
 			},
 		)
 
