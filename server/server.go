@@ -38,7 +38,6 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	InstanceUserService     api.InstanceUserService
-	TableService            api.TableService
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
 	IndexService            api.IndexService
