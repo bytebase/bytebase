@@ -356,17 +356,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		tableFind := &api.TableFind{
 			DatabaseID: &id,
 		}
-		tableRawList, err := s.TableService.FindTableList(ctx, tableFind)
+		tableList, err := s.store.FindTable(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table list for database id: %d", id)).SetInternal(err)
-		}
-		var tableList []*api.Table
-		for _, tableRaw := range tableRawList {
-			table, err := s.composeTableRelationship(ctx, tableRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableRaw.Name)).SetInternal(err)
-			}
-			tableList = append(tableList, table)
 		}
 
 		for _, table := range tableList {
@@ -419,18 +411,13 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			Name:       &tableName,
 		}
-		tableRaw, err := s.TableService.FindTable(ctx, tableFind)
+		table, err := s.store.GetTable(ctx, tableFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch table for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
-		if tableRaw == nil {
+		if table == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("table %q not found from database %v", tableName, id)).SetInternal(err)
 		}
-		table, err := s.composeTableRelationship(ctx, tableRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose table with ID %d and name %s", id, tableName)).SetInternal(err)
-		}
-
 		table.Database = database
 
 		columnFind := &api.ColumnFind{
@@ -875,24 +862,6 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 		}
 	}
 	return nil
-}
-
-func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw) (*api.Table, error) {
-	table := raw.ToTable()
-
-	creator, err := s.store.GetPrincipalByID(ctx, table.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	table.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, table.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	table.Updater = updater
-
-	return table, nil
 }
 
 func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) (*api.View, error) {
