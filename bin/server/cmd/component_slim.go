@@ -32,6 +32,6 @@ func (m *MetadataDBManager) newDB() (*store.DB, error) {
 	return newExternalDB(m.profile, m.l)
 }
 
-func (m *MetadataDBManager) stopIfEmbeddedDB() error {
+func (m *MetadataDBManager) close() error {
 	return nil
 }

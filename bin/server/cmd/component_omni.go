@@ -70,7 +70,7 @@ func (m *MetadataDBManager) newDB() (*store.DB, error) {
 	return newExternalDB(m.profile, m.l)
 }
 
-func (m *MetadataDBManager) stopIfEmbeddedDB() error {
+func (m *MetadataDBManager) close() error {
 	if m.pgStarted {
 		m.l.Info("Trying to shutdown postgresql server...")
 

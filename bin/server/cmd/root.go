@@ -406,7 +406,7 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if err := m.metadataDBMgr.stopIfEmbeddedDB(); err != nil {
+	if err := m.metadataDBMgr.close(); err != nil {
 		return err
 	}
 
