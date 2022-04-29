@@ -452,8 +452,6 @@ func (m *Main) Run(ctx context.Context) error {
 	}
 
 	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
-	s.ViewService = store.NewViewService(m.l, db)
-	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
 	s.SheetService = store.NewSheetService(m.l, db)
 
 	s.ActivityManager = server.NewActivityManager(s, storeInstance)

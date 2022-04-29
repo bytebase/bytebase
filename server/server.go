@@ -37,8 +37,6 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	ViewService             api.ViewService
-	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
 	SheetService            api.SheetService
 
