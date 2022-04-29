@@ -81,7 +81,7 @@ func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) 
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	databaseRawList, err := s.findDatabaseRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Database list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Database list with DatabaseFind[%+v], error[%w]", find, err)
 	}
 	var databaseList []*api.Database
 	for _, raw := range databaseRawList {

@@ -86,7 +86,7 @@ func (s *Store) GetActivityByID(ctx context.Context, id int) (*api.Activity, err
 func (s *Store) FindActivity(ctx context.Context, find *api.ActivityFind) ([]*api.Activity, error) {
 	activityRawList, err := s.findActivityRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Activity list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Activity list with ActivityFind[%+v], error[%w]", find, err)
 	}
 	var activityList []*api.Activity
 	for _, raw := range activityRawList {

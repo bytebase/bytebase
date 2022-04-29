@@ -95,7 +95,7 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
 	instanceRawList, err := s.findInstanceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Instance list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Instance list with InstanceFind[%+v], error[%w]", find, err)
 	}
 	var instanceList []*api.Instance
 	for _, raw := range instanceRawList {
