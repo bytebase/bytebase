@@ -367,7 +367,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseID: &id,
 				TableID:    &table.ID,
 			}
-			columnList, err := s.ColumnService.FindColumnList(ctx, columnFind)
+			columnList, err := s.store.FindColumn(ctx, columnFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
@@ -377,7 +377,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseID: &id,
 				TableID:    &table.ID,
 			}
-			indexList, err := s.IndexService.FindIndexList(ctx, indexFind)
+			indexList, err := s.store.FindIndex(ctx, indexFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
@@ -424,7 +424,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			TableID:    &table.ID,
 		}
-		columnList, err := s.ColumnService.FindColumnList(ctx, columnFind)
+		columnList, err := s.store.FindColumn(ctx, columnFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
@@ -434,7 +434,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			TableID:    &table.ID,
 		}
-		indexList, err := s.IndexService.FindIndexList(ctx, indexFind)
+		indexList, err := s.store.FindIndex(ctx, indexFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}

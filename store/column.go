@@ -8,33 +8,17 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
-
-var (
-	_ api.ColumnService = (*ColumnService)(nil)
-)
-
-// ColumnService represents a service for managing column.
-type ColumnService struct {
-	l  *zap.Logger
-	db *DB
-}
-
-// NewColumnService returns a new instance of ColumnService.
-func NewColumnService(logger *zap.Logger, db *DB) *ColumnService {
-	return &ColumnService{l: logger, db: db}
-}
 
 // CreateColumn creates a new column.
-func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCreate) (*api.Column, error) {
+func (s *Store) CreateColumn(ctx context.Context, create *api.ColumnCreate) (*api.Column, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	column, err := s.createColumn(ctx, tx.PTx, create)
+	column, err := s.createColumnImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +30,15 @@ func (s *ColumnService) CreateColumn(ctx context.Context, create *api.ColumnCrea
 	return column, nil
 }
 
-// FindColumnList retrieves a list of columns based on find.
-func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind) ([]*api.Column, error) {
+// FindColumn retrieves a list of columns based on find.
+func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Column, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findColumnList(ctx, tx.PTx, find)
+	list, err := s.findColumnImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -62,16 +46,16 @@ func (s *ColumnService) FindColumnList(ctx context.Context, find *api.ColumnFind
 	return list, nil
 }
 
-// FindColumn retrieves a single column based on find.
+// GetColumn retrieves a single column based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *ColumnService) FindColumn(ctx context.Context, find *api.ColumnFind) (*api.Column, error) {
+func (s *Store) GetColumn(ctx context.Context, find *api.ColumnFind) (*api.Column, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findColumnList(ctx, tx.PTx, find)
+	list, err := s.findColumnImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +70,7 @@ func (s *ColumnService) FindColumn(ctx context.Context, find *api.ColumnFind) (*
 
 // PatchColumn updates an existing column by ID.
 // Returns ENOTFOUND if column does not exist.
-func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch) (*api.Column, error) {
+func (s *Store) PatchColumn(ctx context.Context, patch *api.ColumnPatch) (*api.Column, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -105,8 +89,8 @@ func (s *ColumnService) PatchColumn(ctx context.Context, patch *api.ColumnPatch)
 	return column, nil
 }
 
-// createColumn creates a new column.
-func (s *ColumnService) createColumn(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
+// createColumnImpl creates a new column.
+func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
 	defaultStr := sql.NullString{}
 	if create.Default != nil {
 		defaultStr = sql.NullString{
@@ -182,7 +166,7 @@ func (s *ColumnService) createColumn(ctx context.Context, tx *sql.Tx, create *ap
 	return &column, nil
 }
 
-func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
+func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -264,7 +248,7 @@ func (s *ColumnService) findColumnList(ctx context.Context, tx *sql.Tx, find *ap
 }
 
 // patchColumn updates a column by ID. Returns the new state of the column after update.
-func (s *ColumnService) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
+func (s *Store) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 
