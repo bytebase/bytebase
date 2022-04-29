@@ -10,19 +10,28 @@ import (
 	"go.uber.org/zap"
 )
 
-type embeddedPgMgr struct{}
+type MetadataDBManager struct {
+	profile *Profile
+	l       *zap.Logger
+}
 
-func createEmbeddedPgMgr(_ Profile, _ *zap.Logger) (*embeddedPgMgr, error) {
+func createMetadataDBManager(profile *Profile, logger *zap.Logger) (*MetadataDBManager, error) {
 	if useEmbeddedDB() {
-		return nil, fmt.Errorf("slim build requires specifying an external PostgreSQL instance connection url by `--pg`")
+		return nil, fmt.Errorf("slim build requires using --pg to specify an external PostgreSQL instance ")
 	}
-	return new(embeddedPgMgr), nil
+	return &MetadataDBManager{
+		profile: profile,
+		l:       logger,
+	}, nil
 }
 
-func (m *embeddedPgMgr) newEmbeddedDB() (*store.DB, error) {
-	return nil, fmt.Errorf("slim build doesn't embed the PostgreSQL binary. Please either use --pg to specify an external PostgreSQL instance or use the full build embedding the PostgreSQL binary.")
+func (m *MetadataDBManager) newDB() (*store.DB, error) {
+	if useEmbeddedDB() {
+		return nil, fmt.Errorf("slim build doesn't embed the PostgreSQL binary. Please either use --pg to specify an external PostgreSQL instance or use the full build embedding the PostgreSQL binary")
+	}
+	return newExternalDB(m.profile, m.l)
 }
 
-func (m *embeddedPgMgr) stopEmbeddedDB() error {
+func (m *MetadataDBManager) stopIfEmbeddedDB() error {
 	return nil
 }
