@@ -68,7 +68,7 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
 	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find VCS list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find VCS list with VCSFind[%+v], error[%w]", find, err)
 	}
 	var vcsList []*api.VCS
 	for _, raw := range vcsRawList {

@@ -83,7 +83,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	// Validate policy.
 	// Currently we only support PolicyTypeSchemaReview type policy to delete by id
 	if delete.Type != api.PolicyTypeSchemaReview {
-		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("Invalid policy type")}
+		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy type")}
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -98,14 +98,14 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 	}
 	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
-		return fmt.Errorf("Failed to list policy with PolicyFind[%+v], error[%w]", find, err)
+		return fmt.Errorf("failed to list policy with PolicyFind[%+v], error[%w]", find, err)
 	}
 	if len(policyRawList) != 1 {
-		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("Failed to found policy with filter %+v, expect 1. ", find)}
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
 	}
 	policyRaw := policyRawList[0]
 	if policyRaw.RowStatus != api.Archived {
-		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("Failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
+		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
 	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
@@ -135,14 +135,14 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 
 	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list policy with PolicyFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to list policy with PolicyFind[%+v], error[%w]", find, err)
 	}
 
 	policyList := []*api.Policy{}
 	for _, raw := range policyRawList {
 		policy, err := s.composePolicy(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose policy with policyRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", raw, err)
 		}
 		policyList = append(policyList, policy)
 	}

@@ -31,6 +31,7 @@ const (
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
 
+	// BytebaseDatabase is the database installed in the controlled database server
 	BytebaseDatabase = "bytebase"
 )
 

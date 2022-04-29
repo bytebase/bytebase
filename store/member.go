@@ -65,7 +65,7 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Member list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Member list with MemberFind[%+v], error[%w]", find, err)
 	}
 	var memberList []*api.Member
 	for _, raw := range memberRawList {

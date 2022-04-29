@@ -66,7 +66,7 @@ func (s *Store) GetInboxByID(ctx context.Context, id int) (*api.Inbox, error) {
 func (s *Store) FindInbox(ctx context.Context, find *api.InboxFind) ([]*api.Inbox, error) {
 	inboxRawList, err := s.findInboxRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Inbox list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Inbox list with InboxFind[%+v], error[%w]", find, err)
 	}
 	var inboxList []*api.Inbox
 	for _, raw := range inboxRawList {

@@ -91,7 +91,7 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
 	projectWebhookRawList, err := s.findProjectWebhookRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find ProjectWebhook list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find ProjectWebhook list with ProjectWebhookFind[%+v], error[%w]", find, err)
 	}
 	var projectWebhookList []*api.ProjectWebhook
 	for _, raw := range projectWebhookRawList {

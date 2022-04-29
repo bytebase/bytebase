@@ -124,7 +124,7 @@ type MigrationExecutor interface {
 }
 
 // ExecuteMigration will execute the database migration.
-// Returns the created migraiton history id and the updated schema on success.
+// Returns the created migration history id and the updated schema on success.
 func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
@@ -181,7 +181,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
 func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
-	// Convert verion to stored version.
+	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
@@ -192,7 +192,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		Database: &m.Namespace,
 		Version:  &m.Version,
 	}); err != nil {
-		return -1, fmt.Errorf("Check duplicate version error: %q", err)
+		return -1, fmt.Errorf("check duplicate version error: %q", err)
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
@@ -264,7 +264,7 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
-		// Otherwise, update the migration history as 'FAILED', exeuction_duration.
+		// Otherwise, update the migration history as 'FAILED', execution_duration.
 		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
 	}
 

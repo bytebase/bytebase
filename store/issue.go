@@ -96,7 +96,7 @@ func (s *Store) GetIssue(ctx context.Context, find *api.IssueFind) (*api.Issue, 
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Issue list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Issue list with IssueFind[%+v], error[%w]", find, err)
 	}
 	var issueList []*api.Issue
 	for _, raw := range issueRawList {

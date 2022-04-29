@@ -78,7 +78,7 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Bookmark list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Bookmark list with BookmarkFind[%+v], error[%w]", find, err)
 	}
 	var bookmarkList []*api.Bookmark
 	for _, raw := range bookmarkRawList {
