@@ -35,7 +35,7 @@
                 <img class="h-10 w-10" src="../assets/wecom-logo.png" />
               </template>
               <template v-else-if="item.type == 'bb.plugin.webhook.custom'">
-                <img class="h-10 w-10" src="../assets/custom-logo.svg" />
+                <heroicons-outline:puzzle class="w-10 h-10" />
               </template>
               <p class="mt-1 text-center textlabel">
                 {{ item.name }}
@@ -355,7 +355,7 @@ export default defineComponent({
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
         return "https://qyapi.weixin.qq.com/cgi-bin/webhook/...";
       } else if (state.webhook.type == "bb.plugin.webhook.custom") {
-        return "https://example.com/...";
+        return "https://example.com/api/webhook/...";
       }
 
       return "Webhook URL";
