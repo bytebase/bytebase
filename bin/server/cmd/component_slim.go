@@ -13,7 +13,7 @@ import (
 type embeddedPgMgr struct{}
 
 func createEmbeddedPgMgr(_ Profile, _ *zap.Logger) (*embeddedPgMgr, error) {
-	if !useEmbeddedDB() {
+	if useEmbeddedDB() {
 		return nil, fmt.Errorf("slim build requires specifying an external PostgreSQL instance connection url by `--pg`")
 	}
 	return new(embeddedPgMgr), nil
