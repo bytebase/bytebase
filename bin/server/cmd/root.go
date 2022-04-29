@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -18,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -177,8 +175,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pg        *postgres.Instance
-	pgStarted bool
+	embeddedPgMgr *embeddedPgMgr
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
@@ -275,38 +272,26 @@ func start() {
 
 // NewMain creates a main server based on profile.
 func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
-	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
+	embeddedPgMgr, err := createEmbeddedPgMgr(activeProfile, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.mode)
 	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
 	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	if useEmbeddedDB() {
-		fmt.Printf("resourceDir=%s\n", resourceDir)
-		fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	}
 	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	var pgInstance *postgres.Instance
-	if useEmbeddedDB() {
-		logger.Info("Preparing embedded PostgreSQL instance...")
-		var err error
-		// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
-		// to store Bytebase's own metadata.
-		pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return &Main{
-		profile: &activeProfile,
-		l:       logger,
-		pg:      pgInstance,
+		profile:       &activeProfile,
+		l:             logger,
+		embeddedPgMgr: embeddedPgMgr,
 	}, nil
 }
 
@@ -350,7 +335,7 @@ func useEmbeddedDB() bool {
 
 func (m *Main) newDB() (*store.DB, error) {
 	if useEmbeddedDB() {
-		return m.newEmbeddedDB()
+		return m.embeddedPgMgr.newEmbeddedDB()
 	}
 	return m.newExternalDB()
 }
@@ -402,24 +387,6 @@ func (m *Main) newExternalDB() (*store.DB, error) {
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
-	return db, nil
-}
-
-func (m *Main) newEmbeddedDB() (*store.DB, error) {
-	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
-		return nil, err
-	}
-	m.pgStarted = true
-
-	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
-	connCfg := dbdriver.ConnectionConfig{
-		Username:    m.profile.pgUser,
-		Password:    "",
-		Host:        common.GetPostgresSocketDir(),
-		Port:        fmt.Sprintf("%d", m.profile.datastorePort),
-		StrictUseDb: false,
-	}
 	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
 	return db, nil
 }
@@ -504,14 +471,10 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if m.pgStarted {
-		m.l.Info("Trying to shutdown postgresql server...")
-
-		if err := m.pg.Stop(os.Stdout, os.Stderr); err != nil {
-			return err
-		}
-		m.pgStarted = false
+	if err := m.embeddedPgMgr.stopEmbeddedDB(); err != nil {
+		return err
 	}
+
 	m.l.Info("Bytebase stopped properly.")
 	return nil
 }
