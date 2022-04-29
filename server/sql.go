@@ -272,16 +272,12 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
-				createViewRaw, err := s.ViewService.CreateView(ctx, viewCreate)
+				createView, err := s.store.CreateView(ctx, viewCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", instance.Name, database.Name, viewCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
-				}
-				createView, err := s.composeViewRelationship(ctx, createViewRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose view relationship for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
 				}
 				return createView, nil
 			}
@@ -528,7 +524,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					viewDelete := &api.ViewDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.ViewService.DeleteView(ctx, viewDelete); err != nil {
+					if err := s.store.DeleteView(ctx, viewDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 

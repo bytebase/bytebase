@@ -478,19 +478,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		viewFind := &api.ViewFind{
 			DatabaseID: &id,
 		}
-		viewRawList, err := s.ViewService.FindViewList(ctx, viewFind)
+		viewList, err := s.store.FindView(ctx, viewFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database ID: %d", id)).SetInternal(err)
 		}
-		var viewList []*api.View
-		for _, raw := range viewRawList {
-			view, err := s.composeViewRelationship(ctx, raw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose view relationship with ID: %d", id)).SetInternal(err)
-			}
-			viewList = append(viewList, view)
-		}
-		// TODO(dragonly): should we do this in composeViewRelationship?
+		// TODO(dragonly): should we do this in composeView()?
 		for _, view := range viewList {
 			view.Database = database
 		}
@@ -893,23 +885,6 @@ func (s *Server) composeTableRelationship(ctx context.Context, raw *api.TableRaw
 	table.Updater = updater
 
 	return table, nil
-}
-
-func (s *Server) composeViewRelationship(ctx context.Context, raw *api.ViewRaw) (*api.View, error) {
-	view := raw.ToView()
-
-	creator, err := s.store.GetPrincipalByID(ctx, view.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	view.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, view.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	view.Updater = updater
-	return view, nil
 }
 
 // Try to get database driver using the instance's admin data source.
