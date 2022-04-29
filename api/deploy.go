@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -99,14 +98,6 @@ type DeploymentConfigUpsert struct {
 	Name string `jsonapi:"attr,name"`
 	// Payload is a json serialization of DeploymentSchedule.
 	Payload string `jsonapi:"attr,payload"`
-}
-
-// DeploymentConfigService is the service for deployment configurations.
-type DeploymentConfigService interface {
-	// FindDeploymentConfig finds the deployment configuration in a project.
-	FindDeploymentConfig(ctx context.Context, find *DeploymentConfigFind) (*DeploymentConfig, error)
-	// UpsertDeploymentConfig upserts a deployment configuration to a project.
-	UpsertDeploymentConfig(ctx context.Context, upsert *DeploymentConfigUpsert) (*DeploymentConfig, error)
 }
 
 // ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
