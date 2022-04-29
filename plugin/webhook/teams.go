@@ -92,7 +92,7 @@ func (receiver *TeamsReceiver) post(context Context) error {
 	}
 	body, err := json.Marshal(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook POST request: %v", context.URL)
+		return fmt.Errorf("failed to marshal webhook POST request: %v (%w)", context.URL, err)
 	}
 	req, err := http.NewRequest("POST",
 		context.URL, bytes.NewBuffer(body))
@@ -106,7 +106,7 @@ func (receiver *TeamsReceiver) post(context Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to POST webhook %+v (%w)", context.URL, err)
+		return fmt.Errorf("failed to POST webhook %v (%w)", context.URL, err)
 	}
 
 	b, err := io.ReadAll(resp.Body)
@@ -114,6 +114,10 @@ func (receiver *TeamsReceiver) post(context Context) error {
 		return fmt.Errorf("failed to read POST webhook response %v (%w)", context.URL, err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to POST webhook %v, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+	}
 
 	if string(b) != "1" {
 		return fmt.Errorf("%s", fmt.Sprintf("%.100s", string(b)))
