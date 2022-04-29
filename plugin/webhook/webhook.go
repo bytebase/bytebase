@@ -53,8 +53,6 @@ type Project struct {
 type Context struct {
 	URL          string
 	ActivityType string
-	Issue        Issue
-	Project      Project
 	Level        Level
 	Title        string
 	Description  string
@@ -64,6 +62,8 @@ type Context struct {
 	CreatorEmail string
 	CreatedTs    int64
 	MetaList     []Meta
+	Issue        Issue
+	Project      Project
 }
 
 // Receiver is the webhook receiver.
