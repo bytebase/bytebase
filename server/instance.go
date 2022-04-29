@@ -185,7 +185,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		instanceUserFind := &api.InstanceUserFind{
 			InstanceID: id,
 		}
-		instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+		instanceUserList, err := s.store.FindInstanceUser(ctx, instanceUserFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
 		}

@@ -6,33 +6,17 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"go.uber.org/zap"
 )
-
-var (
-	_ api.InstanceUserService = (*InstanceUserService)(nil)
-)
-
-// InstanceUserService represents a service for managing instanceUser.
-type InstanceUserService struct {
-	l  *zap.Logger
-	db *DB
-}
-
-// NewInstanceUserService returns a new instance of InstanceUserService.
-func NewInstanceUserService(logger *zap.Logger, db *DB) *InstanceUserService {
-	return &InstanceUserService{l: logger, db: db}
-}
 
 // UpsertInstanceUser would update the existing user if name matches.
-func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	instanceUser, err := upsertInstanceUser(ctx, tx.PTx, upsert)
+	instanceUser, err := upsertInstanceUserImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -44,15 +28,15 @@ func (s *InstanceUserService) UpsertInstanceUser(ctx context.Context, upsert *ap
 	return instanceUser, nil
 }
 
-// FindInstanceUserList retrieves a list of instanceUsers based on find.
-func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
+// FindInstanceUser retrieves a list of instanceUsers based on find.
+func (s *Store) FindInstanceUser(ctx context.Context, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findInstanceUserList(ctx, tx.PTx, find)
+	list, err := findInstanceUserImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +45,7 @@ func (s *InstanceUserService) FindInstanceUserList(ctx context.Context, find *ap
 }
 
 // DeleteInstanceUser deletes an existing instance user by ID.
-func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUserDelete) error {
+func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUserDelete) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -79,8 +63,8 @@ func (s *InstanceUserService) DeleteInstanceUser(ctx context.Context, delete *ap
 	return nil
 }
 
-// upsertInstanceUser upserts a new instanceUser.
-func upsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
+// upsertInstanceUserImpl upserts a new instanceUser.
+func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance_user (
@@ -122,7 +106,7 @@ func upsertInstanceUser(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUse
 	return nil, err
 }
 
-func findInstanceUserList(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
+func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	where, args = append(where, "instance_id = $1"), append(args, find.InstanceID)
