@@ -43,7 +43,6 @@ type Server struct {
 	ColumnService           api.ColumnService
 	ViewService             api.ViewService
 	IndexService            api.IndexService
-	RepositoryService       api.RepositoryService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
 	SheetService            api.SheetService
