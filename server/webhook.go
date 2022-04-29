@@ -45,21 +45,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		webhookEndpointID := c.Param("id")
-		repositoryFind := &api.RepositoryFind{
-			WebhookEndpointID: &webhookEndpointID,
-		}
-		repoRaw, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
-		if repoRaw == nil {
+		if repo == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
 		}
 
-		repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.Name)).SetInternal(err)
-		}
 		if repo.VCS == nil {
 			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
