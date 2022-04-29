@@ -39,7 +39,6 @@ type Server struct {
 
 	InstanceUserService     api.InstanceUserService
 	ColumnService           api.ColumnService
-	ViewService             api.ViewService
 	IndexService            api.IndexService
 	DeploymentConfigService api.DeploymentConfigService
 	LicenseService          enterprise.LicenseService
