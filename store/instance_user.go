@@ -28,8 +28,12 @@ func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUser
 	return instanceUser, nil
 }
 
-// FindInstanceUser retrieves a list of instanceUsers based on find.
-func (s *Store) FindInstanceUser(ctx context.Context, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {
+// FindInstanceUserByInstanceID retrieves a list of instanceUsers based on find.
+func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*api.InstanceUser, error) {
+	find := &api.InstanceUserFind{
+		InstanceID: id,
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

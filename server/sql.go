@@ -407,10 +407,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			instanceUserFind := &api.InstanceUserFind{
-				InstanceID: instance.ID,
-			}
-			instanceUserList, err := s.store.FindInstanceUser(ctx, instanceUserFind)
+			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
 			}
