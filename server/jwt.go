@@ -225,10 +225,7 @@ func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.Handler
 			}
 
 			// Even if there is no error, we still need to make sure the user still exists.
-			principalFind := &api.PrincipalFind{
-				ID: &principalID,
-			}
-			user, err := principalStore.FindPrincipal(ctx, principalFind)
+			user, err := principalStore.GetPrincipalByID(ctx, principalID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Server error to find user ID: %d", principalID)).SetInternal(err)
 			}

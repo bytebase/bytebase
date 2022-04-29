@@ -58,11 +58,8 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
 				}
 
-				principalFind := &api.PrincipalFind{
-					Email: &login.Email,
-				}
 				var err error
-				user, err = s.store.FindPrincipal(ctx, principalFind)
+				user, err = s.store.GetPrincipalByEmail(ctx, login.Email)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
@@ -124,10 +121,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via Gitlab, user is Archived")
 				}
 
-				principalFind := &api.PrincipalFind{
-					Email: &gitlabUserInfo.PublicEmail,
-				}
-				user, err = s.store.FindPrincipal(ctx, principalFind)
+				user, err = s.store.GetPrincipalByEmail(ctx, gitlabUserInfo.PublicEmail)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
