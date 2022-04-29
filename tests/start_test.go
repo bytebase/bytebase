@@ -1,6 +1,3 @@
-//go:build omni
-// +build omni
-
 package tests
 
 import (
