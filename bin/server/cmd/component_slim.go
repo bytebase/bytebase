@@ -17,7 +17,7 @@ type MetadataDBManager struct {
 
 func createMetadataDBManager(profile *Profile, logger *zap.Logger) (*MetadataDBManager, error) {
 	if useEmbeddedDB() {
-		return nil, fmt.Errorf("slim build requires using --pg to specify an external PostgreSQL instance ")
+		return nil, fmt.Errorf("slim build doesn't embed the PostgreSQL binary. Please either use --pg to specify an external PostgreSQL instance or use the full build embedding the PostgreSQL binary.")
 	}
 	return &MetadataDBManager{
 		profile: profile,
