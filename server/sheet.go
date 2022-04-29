@@ -91,7 +91,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid workflow type: %s, need %s to enable this function", project.WorkflowType, api.VCSWorkflow))
 		}
 
-		repo, err := s.RepositoryService.FindRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{ProjectID: &projectID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find relevant VCS repo, Project ID: %d", projectID)).SetInternal(err)
 		}

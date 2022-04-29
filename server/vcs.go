@@ -132,18 +132,9 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		repositoryFind := &api.RepositoryFind{
 			VCSID: &id,
 		}
-		repoRawList, err := s.RepositoryService.FindRepositoryList(ctx, repositoryFind)
+		repoList, err := s.store.FindRepository(ctx, repositoryFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository list for vcs ID: %v", id)).SetInternal(err)
-		}
-
-		var repoList []*api.Repository
-		for _, repoRaw := range repoRawList {
-			repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.ID)).SetInternal(err)
-			}
-			repoList = append(repoList, repo)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

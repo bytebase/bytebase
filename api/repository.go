@@ -1,76 +1,8 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
-
-// RepositoryRaw is the store model for a Repository.
-// Fields have exactly the same meanings as Repository.
-type RepositoryRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	VCSID     int
-	ProjectID int
-
-	// Domain specific fields
-	Name               string
-	FullPath           string
-	WebURL             string
-	BranchFilter       string
-	BaseDirectory      string
-	FilePathTemplate   string
-	SchemaPathTemplate string
-	SheetPathTemplate  string
-	ExternalID         string
-	ExternalWebhookID  string
-	WebhookURLHost     string
-	WebhookEndpointID  string
-	WebhookSecretToken string
-	AccessToken        string
-	ExpiresTs          int64
-	RefreshToken       string
-}
-
-// ToRepository creates an instance of Repository based on the RepositoryRaw.
-// This is intended to be called when we need to compose a Repository relationship.
-func (raw *RepositoryRaw) ToRepository() *Repository {
-	return &Repository{
-		ID: raw.ID,
-
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		VCSID:     raw.VCSID,
-		ProjectID: raw.ProjectID,
-
-		Name:               raw.Name,
-		FullPath:           raw.FullPath,
-		WebURL:             raw.WebURL,
-		BranchFilter:       raw.BranchFilter,
-		BaseDirectory:      raw.BaseDirectory,
-		FilePathTemplate:   raw.FilePathTemplate,
-		SchemaPathTemplate: raw.SchemaPathTemplate,
-		SheetPathTemplate:  raw.SheetPathTemplate,
-		ExternalID:         raw.ExternalID,
-		ExternalWebhookID:  raw.ExternalWebhookID,
-		WebhookURLHost:     raw.WebhookURLHost,
-		WebhookEndpointID:  raw.WebhookEndpointID,
-		WebhookSecretToken: raw.WebhookSecretToken,
-		AccessToken:        raw.AccessToken,
-		ExpiresTs:          raw.ExpiresTs,
-		RefreshToken:       raw.RefreshToken,
-	}
-}
 
 // Repository is the API message for a repository.
 type Repository struct {
@@ -195,13 +127,4 @@ type RepositoryDelete struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
-}
-
-// RepositoryService is the service for repositories.
-type RepositoryService interface {
-	CreateRepository(ctx context.Context, create *RepositoryCreate) (*RepositoryRaw, error)
-	FindRepositoryList(ctx context.Context, find *RepositoryFind) ([]*RepositoryRaw, error)
-	FindRepository(ctx context.Context, find *RepositoryFind) (*RepositoryRaw, error)
-	PatchRepository(ctx context.Context, patch *RepositoryPatch) (*RepositoryRaw, error)
-	DeleteRepository(ctx context.Context, delete *RepositoryDelete) error
 }
