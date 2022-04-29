@@ -8,8 +8,20 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
+
+// Schema review policy consists of a list of schema review rules.
+// There is such a logical mapping in bytebase backend:
+//   1. One schema review policy maps a TaskCheckRun.
+//   2. Each schema reivew rule type maps an advisor.Type.
+//   3. Each [db.Type][AdvisorType] maps an advisor.
+//
+// How to add a schema review rule:
+//   1. Implement an advisor.(plugin/xxx)
+//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
+//   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
 func NewTaskCheckStatementAdvisorCompositeExecutor(logger *zap.Logger) TaskCheckExecutor {
@@ -37,7 +49,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	policy, err := server.store.GetSchemaReviewPolicyByEnvID(ctx, payload.EnvironmentID)
+	policy, err := server.store.GetSchemaReviewPolicyByID(ctx, payload.PolicyID)
 	if err != nil {
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
 	}
@@ -97,4 +109,16 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 	}
 	return result, nil
 
+}
+
+func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (advisor.Type, error) {
+	switch ruleType {
+	case api.SchemaRuleStatementRequireWhere:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLWhereRequirement, nil
+		}
+		return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
+	}
+	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 }

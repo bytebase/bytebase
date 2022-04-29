@@ -94,7 +94,7 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	Collation string  `json:"collation,omitempty"`
 
 	// Schema review special fields.
-	EnvironmentID int `json:"environmentID,omitempty"`
+	PolicyID int `json:"policyID,omitempty"`
 }
 
 // TaskCheckResult is the result of task checks.
