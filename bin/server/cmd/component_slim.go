@@ -14,8 +14,9 @@ import (
 )
 
 type metadataDB struct {
-	profile *Profile
-	l       *zap.Logger
+	profile    *Profile
+	l          *zap.Logger
+	pgInstance *postgres.Instance
 }
 
 func createMetadataDB(profile *Profile, logger *zap.Logger) (*metadataDB, error) {
