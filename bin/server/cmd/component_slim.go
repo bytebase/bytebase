@@ -19,7 +19,7 @@ type metadataDB struct {
 }
 
 func createMetadataDB(profile *Profile, logger *zap.Logger) (*metadataDB, error) {
-	if len(pgURL) == 0 {
+	if useEmbedDB() {
 		return nil, fmt.Errorf("slim build doesn't embed the PostgreSQL binary. Please use --pg to specify an external PostgreSQL instance.")
 	}
 
