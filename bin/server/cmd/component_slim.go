@@ -5,18 +5,14 @@ package cmd
 
 import (
 	"fmt"
-	"net"
-	"net/url"
 
-	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 type metadataDB struct {
-	profile    *Profile
-	l          *zap.Logger
-	pgInstance *postgres.Instance
+	profile *Profile
+	l       *zap.Logger
 }
 
 func createMetadataDB(profile *Profile, logger *zap.Logger) (*metadataDB, error) {
@@ -28,6 +24,11 @@ func createMetadataDB(profile *Profile, logger *zap.Logger) (*metadataDB, error)
 		profile: profile,
 		l:       logger,
 	}, nil
+}
+
+// connect connects to the database that stores bytebase metadata.
+func (m *metadataDB) connect() (*store.DB, error) {
+	return m.connectExternalPostgres()
 }
 
 func (m *metadataDB) close() error {

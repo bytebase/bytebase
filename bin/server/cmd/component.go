@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 
-	"github.com/bytebase/bytebase/common"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
@@ -16,25 +14,8 @@ func useEmbedDB() bool {
 	return len(pgURL) == 0
 }
 
-func (m *metadataDB) connect() (*store.DB, error) {
-	if useEmbedDB() {
-		if err := m.pgInstance.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
-			return nil, err
-		}
-		m.pgStarted = true
-
-		// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
-		connCfg := dbdriver.ConnectionConfig{
-			Username:    m.profile.pgUser,
-			Password:    "",
-			Host:        common.GetPostgresSocketDir(),
-			Port:        fmt.Sprintf("%d", m.profile.datastorePort),
-			StrictUseDb: false,
-		}
-		db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
-		return db, nil
-	}
-
+// connectExternalPostgres connects to the external postgres database specified by user(i.e.: use --pg option).
+func (m *metadataDB) connectExternalPostgres() (*store.DB, error) {
 	u, err := url.Parse(pgURL)
 	if err != nil {
 		return nil, err

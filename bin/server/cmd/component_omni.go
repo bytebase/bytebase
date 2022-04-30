@@ -9,7 +9,9 @@ import (
 	"path"
 
 	"github.com/bytebase/bytebase/common"
+	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
@@ -60,4 +62,26 @@ func (m *metadataDB) close() error {
 	}
 	m.pgStarted = false
 	return nil
+}
+
+// connect connects to the database that stores bytebase metadata.
+func (m *metadataDB) connect() (*store.DB, error) {
+	if useEmbedDB() {
+		if err := m.pgInstance.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+			return nil, err
+		}
+		m.pgStarted = true
+
+		// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
+		connCfg := dbdriver.ConnectionConfig{
+			Username:    m.profile.pgUser,
+			Password:    "",
+			Host:        common.GetPostgresSocketDir(),
+			Port:        fmt.Sprintf("%d", m.profile.datastorePort),
+			StrictUseDb: false,
+		}
+		db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+		return db, nil
+	}
+	return m.connectExternalPostgres()
 }
