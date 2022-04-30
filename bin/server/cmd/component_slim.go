@@ -37,7 +37,7 @@ func (m *metadataDB) connect() (*store.DB, error) {
 
 	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
-	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+	if u.Scheme != "postgresql" {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
