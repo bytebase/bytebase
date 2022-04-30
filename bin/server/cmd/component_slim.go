@@ -61,9 +61,6 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		connCfg.Port = port
 	}
 
-	// By default, follow the PG convention to use user name as the database name
-	connCfg.Database = connCfg.Username
-
 	if u.Path == "" {
 		return nil, fmt.Errorf("missing database in the --pg connection string")
 	}
