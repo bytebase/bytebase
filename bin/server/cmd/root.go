@@ -177,10 +177,6 @@ type Main struct {
 	db *store.DB
 }
 
-func useEmbedDB() bool {
-	return len(pgURL) == 0
-}
-
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(dataDir) {

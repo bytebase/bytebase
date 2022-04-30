@@ -12,6 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
+func useEmbedDB() bool {
+	return len(pgURL) == 0
+}
+
 func (m *metadataDB) connect() (*store.DB, error) {
 	if useEmbedDB() {
 		if err := m.pgInstance.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
