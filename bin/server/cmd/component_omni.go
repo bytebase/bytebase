@@ -13,18 +13,19 @@ import (
 	"github.com/bytebase/bytebase/common"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
+	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 type metadataDB struct {
-	profile    *Profile
+	profile    *server.Profile
 	l          *zap.Logger
 	pgInstance *postgres.Instance
 	pgStarted  bool
 }
 
-func createMetadataDB(activeProfile *Profile, logger *zap.Logger) (*metadataDB, error) {
+func createMetadataDB(activeProfile *server.Profile, logger *zap.Logger) (*metadataDB, error) {
 	mgr := &metadataDB{
 		profile: activeProfile,
 		l:       logger,
@@ -34,8 +35,8 @@ func createMetadataDB(activeProfile *Profile, logger *zap.Logger) (*metadataDB, 
 		return mgr, nil
 	}
 
-	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
+	resourceDir := path.Join(activeProfile.DataDir, "resources")
+	pgDataDir := common.GetPostgresDataDir(activeProfile.DataDir)
 	fmt.Println("-----Embedded Postgres Config BEGIN-----")
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgDataDir)
@@ -45,7 +46,7 @@ func createMetadataDB(activeProfile *Profile, logger *zap.Logger) (*metadataDB, 
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	var err error
-	mgr.pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
+	mgr.pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.PgUser)
 	if err != nil {
 		return nil, err
 	}
@@ -55,20 +56,20 @@ func createMetadataDB(activeProfile *Profile, logger *zap.Logger) (*metadataDB, 
 
 func (m *metadataDB) connect() (*store.DB, error) {
 	if useEmbedDB() {
-		if err := m.pgInstance.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
+		if err := m.pgInstance.Start(m.profile.DatastorePort, os.Stderr, os.Stderr); err != nil {
 			return nil, err
 		}
 		m.pgStarted = true
 
 		// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 		connCfg := dbdriver.ConnectionConfig{
-			Username:    m.profile.pgUser,
+			Username:    m.profile.PgUser,
 			Password:    "",
 			Host:        common.GetPostgresSocketDir(),
-			Port:        fmt.Sprintf("%d", m.profile.datastorePort),
+			Port:        fmt.Sprintf("%d", m.profile.DatastorePort),
 			StrictUseDb: false,
 		}
-		db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+		db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
 		return db, nil
 	}
 
@@ -118,7 +119,7 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.mode)
+	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
 	return db, nil
 }
 

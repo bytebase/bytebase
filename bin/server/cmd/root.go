@@ -134,25 +134,6 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 
-// Profile is the configuration to start main server.
-type Profile struct {
-	// mode can be "prod" or "dev"
-	mode common.ReleaseMode
-	// port is the binding port for server.
-	port int
-	// datastorePort is the binding port for database instance for storing Bytebase data.
-	datastorePort int
-	// pgUser is the user we use to connect to bytebase's Postgres database.
-	// The name of the database storing metadata is the same as pgUser.
-	pgUser string
-	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
-	dataDir string
-	// demoDataDir points to where to populate the initial data.
-	demoDataDir string
-	// backupRunnerInterval is the interval for backup runner.
-	backupRunnerInterval time.Duration
-}
-
 // retrieved via the SettingService upon startup
 type config struct {
 	// secret used to sign the JWT auth token
@@ -161,7 +142,7 @@ type config struct {
 
 // Main is the main server for Bytebase.
 type Main struct {
-	profile *Profile
+	profile *server.Profile
 
 	l   *zap.Logger
 	lvl *zap.AtomicLevel
@@ -272,13 +253,13 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
+func NewMain(activeProfile server.Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", activeProfile.mode)
-	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
-	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
+	fmt.Printf("mode=%s\n", activeProfile.Mode)
+	fmt.Printf("server=%s:%d\n", host, activeProfile.Port)
+	fmt.Printf("datastore=%s:%d\n", host, activeProfile.DatastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
+	fmt.Printf("demoDataDir=%s\n", activeProfile.DemoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
@@ -357,11 +338,11 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to init branding: %w", err)
 	}
 
-	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.Port, frontendHost, frontendPort, m.profile.DatastorePort, m.profile.Mode, m.profile.DataDir, m.profile.BackupRunnerInterval, config.secret, readonly, demo, debug)
 
 	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
-	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
+	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.DataDir, m.profile.Mode)
 	if err != nil {
 		return err
 	}
@@ -370,7 +351,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.server = s
 
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.Port))
 
 	if err := s.Run(ctx); err != nil {
 		return err
