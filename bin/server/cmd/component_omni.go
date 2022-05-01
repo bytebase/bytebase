@@ -1,3 +1,6 @@
+//go:build !slim
+// +build !slim
+
 package cmd
 
 import (
