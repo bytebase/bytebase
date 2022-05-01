@@ -24,7 +24,7 @@ func (m *metadataDB) connectExternalPostgres() (*store.DB, error) {
 	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgresql" {
-		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
+		return nil, fmt.Errorf("invalid connection protocol: %s, expect 'postgres'", u.Scheme)
 	}
 
 	connCfg := dbdriver.ConnectionConfig{

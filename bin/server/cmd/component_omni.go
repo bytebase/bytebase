@@ -51,19 +51,6 @@ func createMetadataDB(activeProfile *Profile, logger *zap.Logger) (*metadataDB, 
 	return mgr, nil
 }
 
-func (m *metadataDB) close() error {
-	if !m.pgStarted {
-		return nil
-	}
-
-	m.l.Info("Trying to shutdown postgresql server...")
-	if err := m.pgInstance.Stop(os.Stdout, os.Stderr); err != nil {
-		return err
-	}
-	m.pgStarted = false
-	return nil
-}
-
 // connect connects to the database that stores bytebase metadata.
 func (m *metadataDB) connect() (*store.DB, error) {
 	if useEmbedDB() {
@@ -84,4 +71,17 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		return db, nil
 	}
 	return m.connectExternalPostgres()
+}
+
+func (m *metadataDB) close() error {
+	if !m.pgStarted {
+		return nil
+	}
+
+	m.l.Info("Trying to shutdown postgresql server...")
+	if err := m.pgInstance.Stop(os.Stdout, os.Stderr); err != nil {
+		return err
+	}
+	m.pgStarted = false
+	return nil
 }
