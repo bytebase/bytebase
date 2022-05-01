@@ -8,29 +8,30 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
-	return Profile{
-		mode:                 common.ReleaseModeDev,
-		port:                 port,
-		datastorePort:        datastorePort,
-		pgUser:               "bbdev",
-		dataDir:              dataDir,
-		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		backupRunnerInterval: 10 * time.Second,
+func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.Profile {
+	return server.Profile{
+		Mode:                 common.ReleaseModeDev,
+		Port:                 port,
+		DatastorePort:        datastorePort,
+		PgUser:               "bbdev",
+		DataDir:              dataDir,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
 	}
 }
 
 // GetTestProfile will return a profile for testing.
-func GetTestProfile(dataDir string, port, datastorePort int) Profile {
-	return Profile{
-		mode:                 common.ReleaseModeDev,
-		port:                 port,
-		datastorePort:        datastorePort,
-		pgUser:               "bbtest",
-		dataDir:              dataDir,
-		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		backupRunnerInterval: 10 * time.Second,
+func GetTestProfile(dataDir string, port, datastorePort int) server.Profile {
+	return server.Profile{
+		Mode:                 common.ReleaseModeDev,
+		Port:                 port,
+		DatastorePort:        datastorePort,
+		PgUser:               "bbtest",
+		DataDir:              dataDir,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
 	}
 }
