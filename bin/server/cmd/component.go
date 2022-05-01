@@ -1,6 +1,3 @@
-//go:build !slim
-// +build !slim
-
 package cmd
 
 import (
@@ -79,7 +76,7 @@ func (m *metadataDB) connect() (*store.DB, error) {
 
 	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
-	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+	if u.Scheme != "postgresql" {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
@@ -102,9 +99,6 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		connCfg.Host = host
 		connCfg.Port = port
 	}
-
-	// By default, follow the PG convention to use user name as the database name
-	connCfg.Database = connCfg.Username
 
 	if u.Path == "" {
 		return nil, fmt.Errorf("missing database in the --pg connection string")
