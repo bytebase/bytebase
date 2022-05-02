@@ -1,4 +1,4 @@
-package cmd
+package metadb
 
 import (
 	"fmt"
@@ -15,23 +15,25 @@ import (
 	"go.uber.org/zap"
 )
 
-type metadataDB struct {
-	profile    *server.Profile
-	l          *zap.Logger
+type MetadataDB struct {
+	profile *server.Profile
+	l       *zap.Logger
+
+	embed bool
+	// Only for external pg
+	pgURL string
+	// Only for embed postgres
 	pgInstance *postgres.Instance
 	pgStarted  bool
 }
 
-func createMetadataDB(activeProfile *server.Profile, logger *zap.Logger) (*metadataDB, error) {
-	mgr := &metadataDB{
+// NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
+func NewMetadataDBWithEmbedPg(activeProfile *server.Profile, logger *zap.Logger) (*MetadataDB, error) {
+	mgr := &MetadataDB{
 		profile: activeProfile,
 		l:       logger,
+		embed:   true,
 	}
-
-	if !useEmbedDB() {
-		return mgr, nil
-	}
-
 	resourceDir := path.Join(activeProfile.DataDir, "resources")
 	pgDataDir := common.GetPostgresDataDir(activeProfile.DataDir)
 	fmt.Println("-----Embedded Postgres Config BEGIN-----")
@@ -51,26 +53,46 @@ func createMetadataDB(activeProfile *server.Profile, logger *zap.Logger) (*metad
 	return mgr, nil
 }
 
-func (m *metadataDB) connect() (*store.DB, error) {
-	if useEmbedDB() {
-		if err := m.pgInstance.Start(m.profile.DatastorePort, os.Stderr, os.Stderr); err != nil {
-			return nil, err
-		}
-		m.pgStarted = true
+func NewMetadataDBWithExternalPg(activeProfile *server.Profile, logger *zap.Logger, pgURL string) (*MetadataDB, error) {
+	return &MetadataDB{
+		profile: activeProfile,
+		l:       logger,
+		embed:   false,
+		pgURL:   pgURL,
+	}, nil
+}
 
-		// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
-		connCfg := dbdriver.ConnectionConfig{
-			Username:    m.profile.PgUser,
-			Password:    "",
-			Host:        common.GetPostgresSocketDir(),
-			Port:        fmt.Sprintf("%d", m.profile.DatastorePort),
-			StrictUseDb: false,
-		}
-		db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, flagConf.readonly, version, m.profile.Mode)
-		return db, nil
+func (m *MetadataDB) Connect(readonly bool, version string) (*store.DB, error) {
+	if m.embed {
+		return m.connectEmbed(readonly, version)
 	}
+	return m.connectExternal(readonly, version)
 
-	u, err := url.Parse(flagConf.pgURL)
+}
+
+// connectEmbed starts the embed postgres server and returns an instance of store.DB
+func (m *MetadataDB) connectEmbed(readonly bool, version string) (*store.DB, error) {
+	if err := m.pgInstance.Start(m.profile.DatastorePort, os.Stderr, os.Stderr); err != nil {
+		return nil, err
+	}
+	// mark pgStarted if start successfully, used in Close()
+	m.pgStarted = true
+
+	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
+	connCfg := dbdriver.ConnectionConfig{
+		Username:    m.profile.PgUser,
+		Password:    "",
+		Host:        common.GetPostgresSocketDir(),
+		Port:        fmt.Sprintf("%d", m.profile.DatastorePort),
+		StrictUseDb: false,
+	}
+	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
+	return db, nil
+}
+
+// connectExternal returns an instance of store.DB
+func (m *MetadataDB) connectExternal(readonly bool, version string) (*store.DB, error) {
+	u, err := url.Parse(m.pgURL)
 	if err != nil {
 		return nil, err
 	}
@@ -113,11 +135,12 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, flagConf.readonly, version, m.profile.Mode)
+	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
 	return db, nil
 }
 
-func (m *metadataDB) close() error {
+// Close will stop postgres server if using embed postgres
+func (m *MetadataDB) Close() error {
 	if !m.pgStarted {
 		return nil
 	}

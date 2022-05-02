@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bytebase/bytebase/metadb"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
@@ -156,7 +158,7 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	metadataDB *metadataDB
+	metadataDB *metadb.MetadataDB
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
 }
@@ -269,7 +271,13 @@ func NewMain(activeProfile server.Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Printf("debug=%t\n", flagConf.debug)
 	fmt.Println("-----Config END-------")
 
-	metadataDB, err := createMetadataDB(&activeProfile, logger)
+	var metadataDB *metadb.MetadataDB
+	var err error
+	if useEmbedDB() {
+		metadataDB, err = metadb.NewMetadataDBWithEmbedPg(&activeProfile, logger)
+	} else {
+		metadataDB, err = metadb.NewMetadataDBWithExternalPg(&activeProfile, logger, flagConf.pgURL)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +328,7 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	db, err := m.metadataDB.connect()
+	db, err := m.metadataDB.Connect(flagConf.readonly, version)
 	if err != nil {
 		return fmt.Errorf("cannot new db: %w", err)
 	}
@@ -383,7 +391,7 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if err := m.metadataDB.close(); err != nil {
+	if err := m.metadataDB.Close(); err != nil {
 		return err
 	}
 
