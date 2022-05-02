@@ -39,24 +39,19 @@ type Server struct {
 
 	LicenseService enterprise.LicenseService
 
-	e *echo.Echo
-
-	store         *store.Store
-	l             *zap.Logger
-	lvl           *zap.AtomicLevel
-	version       string
-	mode          common.ReleaseMode
-	host          string
-	port          int
-	frontendHost  string
-	frontendPort  int
-	datastorePort int
-	startedTs     int64
-	secret        string
-	readonly      bool
-	demo          bool
-	dataDir       string
-	subscription  *enterprise.Subscription
+	e       *echo.Echo
+	profile *Profile
+	//metaDB       *metadb.MetadataDB
+	store        *store.Store
+	l            *zap.Logger
+	lvl          *zap.AtomicLevel
+	version      string
+	mode         common.ReleaseMode
+	startedTs    int64
+	secret       string
+	readonly     bool
+	demo         bool
+	subscription *enterprise.Subscription
 }
 
 //go:embed acl_casbin_model.conf
@@ -72,7 +67,41 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode common.ReleaseMode, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(prof *Profile, logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode common.ReleaseMode, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) (*Server, error) {
+	s := &Server{
+		profile:   prof,
+		store:     storeInstance,
+		l:         logger,
+		lvl:       loggerLevel,
+		version:   version,
+		mode:      mode,
+		startedTs: time.Now().Unix(),
+		secret:    secret,
+		readonly:  readonly,
+		demo:      demo,
+	}
+
+	fmt.Println("-----Config BEGIN-----")
+	fmt.Printf("mode=%s\n", mode)
+	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
+	fmt.Printf("datastore=%s:%d\n", prof.BackendHost, prof.DatastorePort)
+	fmt.Printf("frontend=%s:%d\n", prof.FrontendHost, prof.FrontendPort)
+	fmt.Printf("demoDataDir=%s\n", prof.DemoDataDir)
+	fmt.Printf("readonly=%t\n", readonly)
+	fmt.Printf("demo=%t\n", demo)
+	fmt.Printf("debug=%t\n", debug)
+	fmt.Println("-----Config END-------")
+
+	//var err error
+	//if prof.useEmbedDB() {
+	//	s.metaDB, err = metadb.NewMetadataDBWithEmbedPg(prof, logger)
+	//} else {
+	//	s.metaDB, err = metadb.NewMetadataDBWithExternalPg(prof, logger, prof.PgURL)
+	//}
+	//if err != nil {
+	//	return nil, err
+	//}
+
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
@@ -84,25 +113,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	}))
 
 	embedFrontend(logger, e)
-
-	s := &Server{
-		store:         storeInstance,
-		l:             logger,
-		lvl:           loggerLevel,
-		e:             e,
-		version:       version,
-		mode:          mode,
-		host:          host,
-		port:          port,
-		frontendHost:  frontendHost,
-		frontendPort:  frontendPort,
-		datastorePort: datastorePort,
-		startedTs:     time.Now().Unix(),
-		secret:        secret,
-		readonly:      readonly,
-		demo:          demo,
-		dataDir:       dataDir,
-	}
+	s.e = e
 
 	if !readonly {
 		// Task scheduler
@@ -243,7 +254,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 
-	return s
+	return s, nil
 }
 
 // InitSubscription will initial the subscription cache in memory
@@ -270,7 +281,7 @@ func (server *Server) Run(ctx context.Context) error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return server.e.Start(fmt.Sprintf(":%d", server.port))
+	return server.e.Start(fmt.Sprintf(":%d", server.profile.BackendPort))
 }
 
 // Shutdown will shut down the server.

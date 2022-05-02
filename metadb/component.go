@@ -10,32 +10,36 @@ import (
 	"github.com/bytebase/bytebase/common"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 type MetadataDB struct {
-	profile *server.Profile
-	l       *zap.Logger
+	l           *zap.Logger
+	mode        common.ReleaseMode
+	demoDataDir string
 
 	embed bool
+
 	// Only for external pg
 	pgURL string
 	// Only for embed postgres
+	pgUser     string
 	pgInstance *postgres.Instance
 	pgStarted  bool
 }
 
 // NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
-func NewMetadataDBWithEmbedPg(activeProfile *server.Profile, logger *zap.Logger) (*MetadataDB, error) {
+func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	mgr := &MetadataDB{
-		profile: activeProfile,
-		l:       logger,
-		embed:   true,
+		l:           logger,
+		mode:        mode,
+		demoDataDir: demoDataDir,
+		embed:       true,
+		pgUser:      pgUser,
 	}
-	resourceDir := path.Join(activeProfile.DataDir, "resources")
-	pgDataDir := common.GetPostgresDataDir(activeProfile.DataDir)
+	resourceDir := path.Join(dataDir, "resources")
+	pgDataDir := common.GetPostgresDataDir(dataDir)
 	fmt.Println("-----Embedded Postgres Config BEGIN-----")
 	fmt.Printf("resourceDir=%s\n", resourceDir)
 	fmt.Printf("pgdataDir=%s\n", pgDataDir)
@@ -45,7 +49,7 @@ func NewMetadataDBWithEmbedPg(activeProfile *server.Profile, logger *zap.Logger)
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	var err error
-	mgr.pgInstance, err = postgres.Install(resourceDir, pgDataDir, activeProfile.PgUser)
+	mgr.pgInstance, err = postgres.Install(resourceDir, pgDataDir, pgUser)
 	if err != nil {
 		return nil, err
 	}
@@ -53,26 +57,27 @@ func NewMetadataDBWithEmbedPg(activeProfile *server.Profile, logger *zap.Logger)
 	return mgr, nil
 }
 
-func NewMetadataDBWithExternalPg(activeProfile *server.Profile, logger *zap.Logger, pgURL string) (*MetadataDB, error) {
+func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	return &MetadataDB{
-		profile: activeProfile,
-		l:       logger,
-		embed:   false,
-		pgURL:   pgURL,
+		l:           logger,
+		mode:        mode,
+		demoDataDir: demoDataDir,
+		embed:       false,
+		pgURL:       pgURL,
 	}, nil
 }
 
-func (m *MetadataDB) Connect(readonly bool, version string) (*store.DB, error) {
+func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*store.DB, error) {
 	if m.embed {
-		return m.connectEmbed(readonly, version)
+		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
 	}
 	return m.connectExternal(readonly, version)
 
 }
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB
-func (m *MetadataDB) connectEmbed(readonly bool, version string) (*store.DB, error) {
-	if err := m.pgInstance.Start(m.profile.DatastorePort, os.Stderr, os.Stderr); err != nil {
+func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*store.DB, error) {
+	if err := m.pgInstance.Start(datastorePort, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
 	// mark pgStarted if start successfully, used in Close()
@@ -80,13 +85,13 @@ func (m *MetadataDB) connectEmbed(readonly bool, version string) (*store.DB, err
 
 	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
 	connCfg := dbdriver.ConnectionConfig{
-		Username:    m.profile.PgUser,
+		Username:    pgUser,
 		Password:    "",
 		Host:        common.GetPostgresSocketDir(),
-		Port:        fmt.Sprintf("%d", m.profile.DatastorePort),
+		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
+	db := store.NewDB(m.l, connCfg, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
@@ -135,7 +140,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*store.DB, 
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
+	db := store.NewDB(m.l, connCfg, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 

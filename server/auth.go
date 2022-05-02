@@ -95,7 +95,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         gitlabLogin.Code,
-						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort),
+						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort),
 					},
 				)
 				if err != nil {

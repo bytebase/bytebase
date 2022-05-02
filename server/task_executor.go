@@ -199,7 +199,7 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 
 		bytebaseURL := ""
 		if issue != nil {
-			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.frontendHost, server.frontendPort, api.IssueSlug(issue), task.StageID)
+			bytebaseURL = fmt.Sprintf("%s:%d/issue/%s?stage=%d", server.profile.FrontendHost, server.profile.FrontendPort, api.IssueSlug(issue), task.StageID)
 		}
 
 		commitID, err := writeBackLatestSchema(ctx, server, repo, vcsPushEvent, mi, branch, latestSchemaFile, schema, bytebaseURL)

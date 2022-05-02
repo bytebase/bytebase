@@ -15,8 +15,8 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 			Version:  s.version,
 			Readonly: s.readonly,
 			Demo:     s.demo,
-			Host:     s.host,
-			Port:     strconv.Itoa(s.port),
+			Host:     s.profile.BackendHost,
+			Port:     strconv.Itoa(s.profile.BackendPort),
 		}
 
 		findRole := api.Owner
