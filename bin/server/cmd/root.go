@@ -73,9 +73,8 @@ ________________________________________________________________________________
 
 // -----------------------------------Global constant END------------------------------------------
 
-// -----------------------------------Command Line Config BEGIN------------------------------------
-var (
-	// Used for flags.
+type FlagConf struct {
+	// Used for bytebase command line config
 	host         string
 	port         int
 	frontendHost string
@@ -91,16 +90,20 @@ var (
 	// pgURL must follow PostgreSQL connection URIs pattern.
 	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 	pgURL string
+}
 
-	rootCmd = &cobra.Command{
+// -----------------------------------Command Line Config BEGIN------------------------------------
+var (
+	flagConf FlagConf
+	rootCmd  = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
 		Run: func(_ *cobra.Command, _ []string) {
-			if frontendHost == "" {
-				frontendHost = host
+			if flagConf.frontendHost == "" {
+				flagConf.frontendHost = flagConf.host
 			}
-			if frontendPort == 0 {
-				frontendPort = port
+			if flagConf.frontendPort == 0 {
+				flagConf.frontendPort = flagConf.port
 			}
 
 			start()
@@ -116,18 +119,18 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().IntVar(&port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
-	rootCmd.PersistentFlags().StringVar(&frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
-	rootCmd.PersistentFlags().IntVar(&frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
-	rootCmd.PersistentFlags().StringVar(&dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
-	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
-	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
+	rootCmd.PersistentFlags().StringVar(&flagConf.host, "host", "http://localhost", "host where Bytebase backend is accessed from, must start with http:// or https://. This is used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().IntVar(&flagConf.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
+	rootCmd.PersistentFlags().StringVar(&flagConf.frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
+	rootCmd.PersistentFlags().IntVar(&flagConf.frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
+	rootCmd.PersistentFlags().StringVar(&flagConf.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
+	rootCmd.PersistentFlags().BoolVar(&flagConf.readonly, "readonly", false, "whether to run in read-only mode")
+	rootCmd.PersistentFlags().BoolVar(&flagConf.demo, "demo", false, "whether to run using demo data")
+	rootCmd.PersistentFlags().BoolVar(&flagConf.debug, "debug", false, "whether to enable debug level logging")
 	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
 	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
 	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
-	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().StringVar(&flagConf.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
@@ -159,24 +162,24 @@ type Main struct {
 }
 
 func useEmbedDB() bool {
-	return len(pgURL) == 0
+	return len(flagConf.pgURL) == 0
 }
 
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
-	if !filepath.IsAbs(dataDir) {
-		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + dataDir)
+	if !filepath.IsAbs(flagConf.dataDir) {
+		absDir, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/" + flagConf.dataDir)
 		if err != nil {
 			return err
 		}
-		dataDir = absDir
+		flagConf.dataDir = absDir
 	}
 
 	// Trim trailing / in case user supplies
-	dataDir = strings.TrimRight(dataDir, "/")
+	flagConf.dataDir = strings.TrimRight(flagConf.dataDir, "/")
 
-	if _, err := os.Stat(dataDir); err != nil {
-		error := fmt.Errorf("unable to access --data %s, %w", dataDir, err)
+	if _, err := os.Stat(flagConf.dataDir); err != nil {
+		error := fmt.Errorf("unable to access --data %s, %w", flagConf.dataDir, err)
 		return error
 	}
 
@@ -186,7 +189,7 @@ func checkDataDir() error {
 // GetLogger will return a logger.
 func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
 	atom := zap.NewAtomicLevelAt(zap.InfoLevel)
-	if debug {
+	if flagConf.debug {
 		atom.SetLevel(zap.DebugLevel)
 	}
 	logger := zap.New(zapcore.NewCore(
@@ -205,8 +208,8 @@ func start() {
 	defer logger.Sync()
 
 	// check flags
-	if !common.HasPrefixes(host, "http://", "https://") {
-		logger.Error(fmt.Sprintf("--host %s must start with http:// or https://", host))
+	if !common.HasPrefixes(flagConf.host, "http://", "https://") {
+		logger.Error(fmt.Sprintf("--host %s must start with http:// or https://", flagConf.host))
 		return
 	}
 	if err := checkDataDir(); err != nil {
@@ -215,8 +218,8 @@ func start() {
 	}
 
 	// We use port+1 for datastore port.
-	datastorePort := port + 1
-	activeProfile := activeProfile(dataDir, port, datastorePort, demo)
+	datastorePort := flagConf.port + 1
+	activeProfile := activeProfile(flagConf.dataDir, flagConf.port, datastorePort, flagConf.demo)
 	m, err := NewMain(activeProfile, logger)
 	if err != nil {
 		logger.Error(err.Error())
@@ -257,13 +260,13 @@ func start() {
 func NewMain(activeProfile server.Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Println("-----Config BEGIN-----")
 	fmt.Printf("mode=%s\n", activeProfile.Mode)
-	fmt.Printf("server=%s:%d\n", host, activeProfile.Port)
-	fmt.Printf("datastore=%s:%d\n", host, activeProfile.DatastorePort)
-	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
+	fmt.Printf("server=%s:%d\n", flagConf.host, activeProfile.Port)
+	fmt.Printf("datastore=%s:%d\n", flagConf.host, activeProfile.DatastorePort)
+	fmt.Printf("frontend=%s:%d\n", flagConf.frontendHost, flagConf.frontendPort)
 	fmt.Printf("demoDataDir=%s\n", activeProfile.DemoDataDir)
-	fmt.Printf("readonly=%t\n", readonly)
-	fmt.Printf("demo=%t\n", demo)
-	fmt.Printf("debug=%t\n", debug)
+	fmt.Printf("readonly=%t\n", flagConf.readonly)
+	fmt.Printf("demo=%t\n", flagConf.demo)
+	fmt.Printf("debug=%t\n", flagConf.debug)
 	fmt.Println("-----Config END-------")
 
 	metadataDB, err := createMetadataDB(&activeProfile, logger)
@@ -339,7 +342,7 @@ func (m *Main) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to init branding: %w", err)
 	}
 
-	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.Port, frontendHost, frontendPort, m.profile.DatastorePort, m.profile.Mode, m.profile.DataDir, m.profile.BackupRunnerInterval, config.secret, readonly, demo, debug)
+	s := server.NewServer(m.l, storeInstance, m.lvl, version, flagConf.host, m.profile.Port, flagConf.frontendHost, flagConf.frontendPort, m.profile.DatastorePort, m.profile.Mode, m.profile.DataDir, m.profile.BackupRunnerInterval, config.secret, flagConf.readonly, flagConf.demo, flagConf.debug)
 
 	s.ActivityManager = server.NewActivityManager(s, storeInstance)
 
@@ -352,7 +355,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.server = s
 
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.Port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, flagConf.host, m.profile.Port))
 
 	if err := s.Run(ctx); err != nil {
 		return err

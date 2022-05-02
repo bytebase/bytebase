@@ -66,11 +66,11 @@ func (m *metadataDB) connect() (*store.DB, error) {
 			Port:        fmt.Sprintf("%d", m.profile.DatastorePort),
 			StrictUseDb: false,
 		}
-		db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
+		db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, flagConf.readonly, version, m.profile.Mode)
 		return db, nil
 	}
 
-	u, err := url.Parse(pgURL)
+	u, err := url.Parse(flagConf.pgURL)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (m *metadataDB) connect() (*store.DB, error) {
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, readonly, version, m.profile.Mode)
+	db := store.NewDB(m.l, connCfg, m.profile.DemoDataDir, flagConf.readonly, version, m.profile.Mode)
 	return db, nil
 }
 
