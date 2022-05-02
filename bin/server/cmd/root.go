@@ -204,6 +204,7 @@ func start() {
 	}
 	defer logger.Sync()
 
+	// check flags
 	if !common.HasPrefixes(host, "http://", "https://") {
 		logger.Error(fmt.Sprintf("--host %s must start with http:// or https://", host))
 		return
