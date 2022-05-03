@@ -102,22 +102,10 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (state.config.type == "GITLAB_SELF_HOST") {
-          useOAuthStore()
-            .exchangeVCSToken({
-              vcsType: state.config.type,
-              instanceUrl: state.config.instanceUrl,
-              clientId: state.config.applicationId,
-              clientSecret: state.config.secret,
-              code: payload.code,
-            })
-            .then((token: OAuthToken) => {
-              state.oAuthResultCallback!(token);
-            })
-            .catch(() => {
-              state.oAuthResultCallback!(undefined);
-            });
-        } else if (state.config.type == "GITHUB_COM") {
+        if (
+          state.config.type == "GITLAB_SELF_HOST" ||
+          state.config.type == "GITHUB_COM"
+        ) {
           useOAuthStore()
             .exchangeVCSToken({
               vcsType: state.config.type,
