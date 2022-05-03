@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -116,9 +117,62 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
 }
 
-// ExchangeOAuthToken exchange oauth content with the provided authentication code.
-func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
-	return nil, errors.New("not implemented yet")
+// oauthResponse is a GitHub OAuth response.
+type oauthResponse struct {
+	AccessToken      string `json:"access_token" `
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
+	ErrorURI         string `json:"error_uri,omitempty"`
+}
+
+// toVCSOAuthToken converts the response to *vcs.OAuthToken.
+func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
+	oauthToken := &vcs.OAuthToken{
+		AccessToken: o.AccessToken,
+		// GitHub OAuth token never expires
+	}
+	return oauthToken
+}
+
+// ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
+func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
+	urlParams := &url.Values{}
+	urlParams.Set("client_id", oauthExchange.ClientID)
+	urlParams.Set("client_secret", oauthExchange.ClientSecret)
+	urlParams.Set("code", oauthExchange.Code)
+	urlParams.Set("redirect_uri", oauthExchange.RedirectURL)
+	url := fmt.Sprintf("https://github.com/login/oauth/access_token?%s", urlParams.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		urlParams.Set("client_secret", "**redacted**")
+		redactedURL := fmt.Sprintf("https://github.com/login/oauth/access_token?%s", urlParams.Encode())
+		return nil, errors.Wrapf(err, "construct POST %s", redactedURL)
+	}
+
+	// GitHub returns URL-encoded parameters as the response format by default,
+	// we need to ask for a JSON response explicitly.
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	oauthResp := new(oauthResponse)
+	if err := json.Unmarshal(body, oauthResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal OAuth response body, code %v, error: %v", resp.StatusCode, err)
+	}
+	if oauthResp.Error != "" {
+		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
+	}
+	return oauthResp.toVCSOAuthToken(), nil
 }
 
 // FetchRepositoryList fetched all repositories in which the authenticated user
