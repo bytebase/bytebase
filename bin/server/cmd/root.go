@@ -9,15 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
-	"github.com/bytebase/bytebase/metadb"
-
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	enterprise "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/server"
-	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -43,8 +37,6 @@ import (
 
 // -----------------------------------Global constant BEGIN----------------------------------------
 const (
-	// secretLength is the length for the secret used to sign the JWT auth token
-	secretLength = 32
 
 	// greetingBanner is the greeting banner.
 	// http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Bytebase
@@ -137,33 +129,23 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 
-// retrieved via the SettingService upon startup
-type config struct {
-	// secret used to sign the JWT auth token
-	secret string
-}
-
-// Main is the main server for Bytebase.
-type Main struct {
-	profile *server.Profile
-
-	l   *zap.Logger
-	lvl *zap.AtomicLevel
-
-	server *server.Server
-	// serverCancel cancels any runner on the server.
-	// Then the runnerWG waits for all runners to finish before we shutdown the server.
-	// Otherwise, we will get database is closed error from runner when we shutdown the server.
-	serverCancel context.CancelFunc
-
-	metadataDB *metadb.MetadataDB
-	// db is a connection to the database storing Bytebase data.
-	db *store.DB
-}
-
-func useEmbedDB() bool {
-	return len(flags.pgURL) == 0
-}
+//// Main is the main server for Bytebase.
+//type Main struct {
+//	profile *server.Profile
+//
+//	l   *zap.Logger
+//	lvl *zap.AtomicLevel
+//
+//	server *server.Server
+//	// serverCancel cancels any runner on the server.
+//	// Then the runnerWG waits for all runners to finish before we shutdown the server.
+//	// Otherwise, we will get database is closed error from runner when we shutdown the server.
+//	serverCancel context.CancelFunc
+//
+//	metadataDB *metadb.MetadataDB
+//	// db is a connection to the database storing Bytebase data.
+//	db *store.DB
+//}
 
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
@@ -220,13 +202,8 @@ func start() {
 	// We use port+1 for datastore port.
 	datastorePort := flags.port + 1
 	activeProfile := activeProfile(flags.dataDir, flags.port, datastorePort, flags.demo)
-	m, err := NewMain(activeProfile, logger)
-	if err != nil {
-		logger.Error(err.Error())
-		return
-	}
-	m.lvl = level
 
+	var s *server.Server
 	// Setup signal handlers.
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)
@@ -236,168 +213,34 @@ func start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		m.l.Info("SIGINT received.")
-		if err := m.Close(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		logger.Info("SIGINT received.")
+		if s != nil {
+			_ = s.Shutdown()
 		}
 		cancel()
 	}()
 
+	s, err = server.NewServer(ctx, &activeProfile, logger, level)
+	if err != nil {
+		fmt.Printf("cannot new server, error: %v\n", err)
+		if s != nil {
+			_ = s.Shutdown()
+		}
+		return
+	}
+
 	// Execute program.
-	if err := m.Run(ctx); err != nil {
+	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
-			m.l.Error(err.Error())
-			m.Close()
+			logger.Error(err.Error())
+			if s != nil {
+				_ = s.Shutdown()
+			}
 			cancel()
 		}
+
 	}
 
 	// Wait for CTRL-C.
 	<-ctx.Done()
-}
-
-// NewMain creates a main server based on profile.
-func NewMain(activeProfile server.Profile, logger *zap.Logger) (*Main, error) {
-	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", activeProfile.Mode)
-	fmt.Printf("server=%s:%d\n", flags.host, activeProfile.BackendPort)
-	fmt.Printf("datastore=%s:%d\n", flags.host, activeProfile.DatastorePort)
-	fmt.Printf("frontend=%s:%d\n", flags.frontendHost, flags.frontendPort)
-	fmt.Printf("demoDataDir=%s\n", activeProfile.DemoDataDir)
-	fmt.Printf("readonly=%t\n", flags.readonly)
-	fmt.Printf("demo=%t\n", flags.demo)
-	fmt.Printf("debug=%t\n", flags.debug)
-	fmt.Println("-----Config END-------")
-
-	var metadataDB *metadb.MetadataDB
-	var err error
-	if useEmbedDB() {
-		metadataDB, err = metadb.NewMetadataDBWithEmbedPg(logger, activeProfile.PgUser, activeProfile.DataDir, activeProfile.DemoDataDir, activeProfile.Mode)
-	} else {
-		metadataDB, err = metadb.NewMetadataDBWithExternalPg(logger, activeProfile.PgURL, activeProfile.DemoDataDir, activeProfile.Mode)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &Main{
-		profile:    &activeProfile,
-		l:          logger,
-		metadataDB: metadataDB,
-	}, nil
-}
-
-func initSetting(ctx context.Context, store *store.Store) (*config, error) {
-	result := &config{}
-	{
-		configCreate := &api.SettingCreate{
-			CreatorID:   api.SystemBotID,
-			Name:        api.SettingAuthSecret,
-			Value:       common.RandomString(secretLength),
-			Description: "Random string used to sign the JWT auth token.",
-		}
-		config, err := store.CreateSettingIfNotExist(ctx, configCreate)
-		if err != nil {
-			return nil, err
-		}
-		result.secret = config.Value
-	}
-
-	return result, nil
-}
-
-func initBranding(ctx context.Context, store *store.Store) error {
-	configCreate := &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
-		Name:        api.SettingBrandingLogo,
-		Value:       "",
-		Description: "The branding logo image in base64 string format.",
-	}
-	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Run will run the main server.
-func (m *Main) Run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	m.serverCancel = cancel
-
-	db, err := m.metadataDB.Connect(m.profile.DatastorePort, flags.readonly, version)
-	if err != nil {
-		return fmt.Errorf("cannot new db: %w", err)
-	}
-	if err := db.Open(ctx); err != nil {
-		return fmt.Errorf("cannot open db: %w", err)
-	}
-	m.db = db
-
-	cacheService := server.NewCacheService(m.l)
-	storeInstance := store.New(m.l, db, cacheService)
-
-	config, err := initSetting(ctx, storeInstance)
-	if err != nil {
-		return fmt.Errorf("failed to init config: %w", err)
-	}
-
-	err = initBranding(ctx, storeInstance)
-	if err != nil {
-		return fmt.Errorf("failed to init branding: %w", err)
-	}
-
-	s, _ := server.NewServer(m.profile, m.l, storeInstance, m.lvl, version, flags.host, m.profile.BackendPort, flags.frontendHost, flags.frontendPort, m.profile.DatastorePort, m.profile.Mode, m.profile.DataDir, m.profile.BackupRunnerInterval, config.secret, flags.readonly, flags.demo, flags.debug)
-
-	s.ActivityManager = server.NewActivityManager(s, storeInstance)
-
-	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.DataDir, m.profile.Mode)
-	if err != nil {
-		return err
-	}
-	s.LicenseService = licenseService
-	s.InitSubscription()
-
-	m.server = s
-
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, flags.host, m.profile.BackendPort))
-
-	if err := s.Run(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Close gracefully stops the program.
-func (m *Main) Close() error {
-	m.l.Info("Trying to stop Bytebase...")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if m.server != nil {
-		m.l.Info("Trying to gracefully shutdown server...")
-		m.serverCancel()
-		m.server.Shutdown(ctx)
-	}
-
-	if m.db != nil {
-		m.l.Info("Trying to close database connections...")
-		if err := m.db.Close(); err != nil {
-			return err
-		}
-	}
-
-	if err := m.metadataDB.Close(); err != nil {
-		return err
-	}
-
-	m.l.Info("Bytebase stopped properly.")
-	return nil
-}
-
-// GetServer returns the server in main.
-func (m *Main) GetServer() *server.Server {
-	return m.server
 }

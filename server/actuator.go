@@ -12,9 +12,9 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		serverInfo := api.ServerInfo{
-			Version:  s.version,
-			Readonly: s.readonly,
-			Demo:     s.demo,
+			Version:  s.profile.Version,
+			Readonly: s.profile.Readonly,
+			Demo:     s.profile.Demo,
 			Host:     s.profile.BackendHost,
 			Port:     strconv.Itoa(s.profile.BackendPort),
 		}

@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+
 	"io"
 	"io/fs"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/bin/server/cmd"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
 	"github.com/google/jsonapi"
 )
@@ -94,7 +96,7 @@ var (
 )
 
 type controller struct {
-	main      *cmd.Main
+	server    *server.Server
 	client    *http.Client
 	cookie    string
 	gitlab    *fake.GitLab
@@ -130,20 +132,22 @@ func getTestPort(testName string) int {
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
-// StartMain starts the main server.
-func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) error {
+// StartServer starts the main server.
+func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
-	logger, _, err := cmd.GetLogger()
+	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
+
 	datastorePort := port + 1
 	profile := cmd.GetTestProfile(dataDir, port, datastorePort)
-	ctl.main, err = cmd.NewMain(profile, logger)
+	ctl.server, err = server.NewServer(ctx, &profile, logger, lvl)
 	if err != nil {
 		return err
 	}
+
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// set up gitlab.
@@ -153,18 +157,20 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) 
 	ctl.gitAPIURL = fmt.Sprintf("%s/api/v4", ctl.gitURL)
 
 	errChan := make(chan error, 1)
+
 	go func() {
-		if err := ctl.main.Run(ctx); err != nil {
+		if err := ctl.server.Run(ctx); err != nil {
 			errChan <- fmt.Errorf("failed to run main server, error: %w", err)
 		}
 	}()
+
 	go func() {
 		if err := ctl.gitlab.Run(); err != nil {
 			errChan <- fmt.Errorf("failed to run gitlab server, error: %w", err)
 		}
 	}()
 
-	if err := waitForServerStart(ctl.main, errChan); err != nil {
+	if err := waitForServerStart(ctl.server, errChan); err != nil {
 		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
 	if err := waitForGitLabStart(ctl.gitlab, errChan); err != nil {
@@ -177,17 +183,17 @@ func (ctl *controller) StartMain(ctx context.Context, dataDir string, port int) 
 	return nil
 }
 
-func waitForServerStart(m *cmd.Main, errChan <-chan error) error {
+func waitForServerStart(s *server.Server, errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if m.GetServer() == nil {
+			if s == nil {
 				continue
 			}
-			e := m.GetServer().GetEcho()
+			e := s.GetEcho()
 			if e == nil {
 				continue
 			}
@@ -229,8 +235,8 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 
 func (ctl *controller) Close() error {
 	var e error
-	if ctl.main != nil {
-		e = ctl.main.Close()
+	if ctl.server != nil {
+		e = ctl.server.Shutdown()
 	}
 	if ctl.gitlab != nil {
 		if err := ctl.gitlab.Close(); err != nil {

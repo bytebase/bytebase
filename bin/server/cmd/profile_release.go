@@ -17,6 +17,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.
 		demoDataDir = fmt.Sprintf("demo/%s", common.ReleaseModeProd)
 	}
 	return server.Profile{
+		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeProd,
 		BackendHost:          flags.host,
 		BackendPort:          port,
@@ -25,6 +26,8 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.
 		DatastorePort:        datastorePort,
 		PgUser:               "bb",
 		Readonly:             flags.readonly,
+		Debug:                flags.debug,
+		Demo:                 flags.demo,
 		DataDir:              dataDir,
 		DemoDataDir:          demoDataDir,
 		BackupRunnerInterval: 10 * time.Minute,

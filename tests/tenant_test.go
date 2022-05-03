@@ -27,7 +27,7 @@ func TestTenant(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
 	defer ctl.Close()
 	err = ctl.Login()
@@ -204,7 +204,7 @@ func TestTenantVCS(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
 	defer ctl.Close()
 	err = ctl.Login()
@@ -426,7 +426,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
 	defer ctl.Close()
 	err = ctl.Login()
@@ -578,7 +578,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
 	defer ctl.Close()
 	err = ctl.Login()

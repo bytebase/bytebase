@@ -6,8 +6,20 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+const (
+	// secretLength is the length for the secret used to sign the JWT auto token
+	secreatLength = 32
+)
+
+// retrieved via the SettingService upon startup
+type config struct {
+	// secret used to sign the JWT auth token
+	secret string
+}
+
 // Profile is the configuration to start main server.
 type Profile struct {
+	GreetingBanner string
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
 	// BackendHost is the listening backend host for server
@@ -30,6 +42,10 @@ type Profile struct {
 	Readonly bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
+	// Debug decides the log level
+	Debug bool
+	// Demo decides that whether load demo data.
+	Demo bool
 	// DemoDataDir points to where to populate the initial data.
 	DemoDataDir string
 	// BackupRunnerInterval is the interval for backup runner.
@@ -40,6 +56,6 @@ type Profile struct {
 	PgURL string
 }
 
-//func (prof *Profile) useEmbedDB() bool {
-//	return len(prof.PgURL) == 0
-//}
+func (prof *Profile) useEmbedDB() bool {
+	return len(prof.PgURL) == 0
+}

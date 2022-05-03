@@ -38,7 +38,7 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	databaseName := task.Database.Name
 
 	mi := &db.MigrationInfo{
-		ReleaseVersion: server.version,
+		ReleaseVersion: server.profile.Version,
 		Type:           migrationType,
 	}
 	if vcsPushEvent == nil {

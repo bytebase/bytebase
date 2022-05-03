@@ -174,7 +174,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
-		ReleaseVersion: server.version,
+		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,

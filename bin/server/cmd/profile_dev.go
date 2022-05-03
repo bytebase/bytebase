@@ -13,6 +13,7 @@ import (
 
 func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.Profile {
 	return server.Profile{
+		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
 		BackendPort:          port,
@@ -32,6 +33,7 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.
 // GetTestProfile will return a profile for testing.
 func GetTestProfile(dataDir string, port, datastorePort int) server.Profile {
 	return server.Profile{
+		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeDev,
 		BackendPort:          port,
 		DatastorePort:        datastorePort,
