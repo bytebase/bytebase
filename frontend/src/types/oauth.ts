@@ -45,7 +45,7 @@ export function openWindowForOAuth(
   return window.open(
     `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
       redirectUrl()
-    )}&state=${stateQueryParameter}&response_type=code&scope=api`,
+    )}&state=${stateQueryParameter}&response_type=code&scope=api,repo`,
     "oauth",
     "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
   );
