@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
@@ -63,6 +62,12 @@ const (
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaUpdate is the task type for updating database schemas.
 	TaskDatabaseSchemaUpdate TaskType = "bb.task.database.schema.update"
+	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
+	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
+	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
+	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
+	// TaskDatabaseSchemaUpdateGhostDropOriginalTable is the task type for dropping the original table.
+	TaskDatabaseSchemaUpdateGhostDropOriginalTable TaskType = "bb.task.database.schema.update.ghost.drop-original-table"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
@@ -95,6 +100,28 @@ type TaskDatabaseSchemaUpdatePayload struct {
 	VCSPushEvent  *vcs.PushEvent   `json:"pushEvent,omitempty"`
 }
 
+// TaskDatabaseSchemaUpdateGhostSyncPayload is the task payload for gh-ost syncing ghost table.
+type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
+	Statement     string         `json:"statement,omitempty"`
+	SchemaVersion string         `json:"schemaVersion,omitempty"`
+	VCSPushEvent  *vcs.PushEvent `json:"pushEvent,omitempty"`
+	// SocketFileName is the socket file that gh-ost listens on.
+	// The name follows this template,
+	// `./tmp/gh-ost.{{ISSUE_ID}}.{{TASK_ID}}.{{DATABASE_ID}}.{{DATABASE_NAME}}.{{TABLE_NAME}}.sock`
+	// SocketFileName will be composed when needed. We don't store it explicitly.
+}
+
+// TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
+type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
+}
+
+// TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload is the task type for dropping the original table
+type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
+	DatabaseName string `json:"databaseName,omitempty"`
+	// TableName is like `_tablename_del`.
+	TableName string `json:"tableName,omitempty"`
+}
+
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
 type TaskDatabaseDataUpdatePayload struct {
 	Statement     string         `json:"statement,omitempty"`
@@ -113,69 +140,6 @@ type TaskDatabaseRestorePayload struct {
 	// and don't have the database id upon constructing the task yet.
 	DatabaseName string `json:"databaseName,omitempty"`
 	BackupID     int    `json:"backupId,omitempty"`
-}
-
-// TaskRaw is the store model for an Task.
-// Fields have exactly the same meanings as Task.
-type TaskRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	PipelineID int
-	StageID    int
-	InstanceID int
-	// Could be empty for creating database task when the task isn't yet completed successfully.
-	DatabaseID          *int
-	TaskRunRawList      []*TaskRunRaw
-	TaskCheckRunRawList []*TaskCheckRunRaw
-
-	// Domain specific fields
-	Name              string
-	Status            TaskStatus
-	Type              TaskType
-	Payload           string
-	EarliestAllowedTs int64
-}
-
-// ToTask creates an instance of Task based on the TaskRaw.
-// This is intended to be called when we need to compose an Task relationship.
-func (raw *TaskRaw) ToTask() *Task {
-	task := &Task{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		PipelineID: raw.PipelineID,
-		StageID:    raw.StageID,
-		InstanceID: raw.InstanceID,
-		// Could be empty for creating database task when the task isn't yet completed successfully.
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:              raw.Name,
-		Status:            raw.Status,
-		Type:              raw.Type,
-		Payload:           raw.Payload,
-		EarliestAllowedTs: raw.EarliestAllowedTs,
-	}
-	for _, taskRunRaw := range raw.TaskRunRawList {
-		task.TaskRunList = append(task.TaskRunList, taskRunRaw.ToTaskRun())
-	}
-	for _, taskCheckRunRaw := range raw.TaskCheckRunRawList {
-		task.TaskCheckRunList = append(task.TaskCheckRunList, taskCheckRunRaw.ToTaskCheckRun())
-	}
-	return task
 }
 
 // Task is the API message for a task.
@@ -208,33 +172,9 @@ type Task struct {
 	Type              TaskType   `jsonapi:"attr,type"`
 	Payload           string     `jsonapi:"attr,payload"`
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
-}
-
-// ToRaw converts a Task to TaskRaw.
-// TODO(dragonly): This is a hack for function `createIssue`. We MUST review the code and remove this hack.
-func (task *Task) ToRaw() *TaskRaw {
-	return &TaskRaw{
-		ID: task.ID,
-
-		// Standard fields
-		CreatorID: task.CreatorID,
-		CreatedTs: task.CreatedTs,
-		UpdaterID: task.UpdaterID,
-		UpdatedTs: task.UpdatedTs,
-
-		// Related fields
-		PipelineID: task.PipelineID,
-		StageID:    task.StageID,
-		InstanceID: task.InstanceID,
-		DatabaseID: task.DatabaseID,
-
-		// Domain specific fields
-		Name:              task.Name,
-		Status:            task.Status,
-		Type:              task.Type,
-		Payload:           task.Payload,
-		EarliestAllowedTs: task.EarliestAllowedTs,
-	}
+	// BlockedBy is an array of Task ID.
+	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
+	BlockedBy []string `jsonapi:"attr,blockedBy"`
 }
 
 // TaskCreate is the API message for creating a task.
@@ -315,13 +255,4 @@ type TaskStatusPatch struct {
 	Code    *common.Code
 	Comment *string `jsonapi:"attr,comment"`
 	Result  *string
-}
-
-// TaskService is the service for tasks.
-type TaskService interface {
-	CreateTask(ctx context.Context, create *TaskCreate) (*TaskRaw, error)
-	FindTaskList(ctx context.Context, find *TaskFind) ([]*TaskRaw, error)
-	FindTask(ctx context.Context, find *TaskFind) (*TaskRaw, error)
-	PatchTask(ctx context.Context, patch *TaskPatch) (*TaskRaw, error)
-	PatchTaskStatus(ctx context.Context, patch *TaskStatusPatch) (*TaskRaw, error)
 }

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 
 func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	g.GET("/project/:projectID/webhook", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -25,17 +24,9 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		find := &api.ProjectWebhookFind{
 			ProjectID: &projectID,
 		}
-		webhookRawList, err := s.ProjectWebhookService.FindProjectWebhookList(ctx, find)
+		webhookList, err := s.store.FindProjectWebhook(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch webhook list for project ID: %d", projectID)).SetInternal(err)
-		}
-		var webhookList []*api.ProjectWebhook
-		for _, raw := range webhookRawList {
-			webhook, err := s.composeProjectWebhookRelationship(ctx, raw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch webhook relationship: %v", raw.Name)).SetInternal(err)
-			}
-			webhookList = append(webhookList, webhook)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -46,7 +37,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.POST("/project/:projectID/webhook", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -60,17 +51,12 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project webhook request").SetInternal(err)
 		}
 
-		webhookRaw, err := s.ProjectWebhookService.CreateProjectWebhook(ctx, hookCreate)
+		webhook, err := s.store.CreateProjectWebhook(ctx, hookCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Webhook url already exists in the project: %s", hookCreate.URL))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create project webhook").SetInternal(err)
-		}
-
-		webhook, err := s.composeProjectWebhookRelationship(ctx, webhookRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch webhook relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -81,7 +67,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -92,20 +78,12 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project webhook ID is not a number: %s", c.Param("webhookID"))).SetInternal(err)
 		}
 
-		find := &api.ProjectWebhookFind{
-			ID: &id,
-		}
-		webhookRaw, err := s.ProjectWebhookService.FindProjectWebhook(ctx, find)
+		webhook, err := s.store.GetProjectWebhookByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
 		}
-		if webhookRaw == nil {
+		if webhook == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-		}
-
-		webhook, err := s.composeProjectWebhookRelationship(ctx, webhookRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch webhook relationship").SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -116,7 +94,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -135,7 +113,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project webhook").SetInternal(err)
 		}
 
-		webhookRaw, err := s.ProjectWebhookService.PatchProjectWebhook(ctx, hookPatch)
+		webhook, err := s.store.PatchProjectWebhook(ctx, hookPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
@@ -146,11 +124,6 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to change project webhook ID: %v", id)).SetInternal(err)
 		}
 
-		webhook, err := s.composeProjectWebhookRelationship(ctx, webhookRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch updated project webhook relationship").SetInternal(err)
-		}
-
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, webhook); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal project webhook change response: %v", id)).SetInternal(err)
@@ -159,7 +132,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/project/:projectID/webhook/:webhookID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		_, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
@@ -174,7 +147,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := s.ProjectWebhookService.DeleteProjectWebhook(ctx, hookDelete); err != nil {
+		if err := s.store.DeleteProjectWebhook(ctx, hookDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete project webhook ID: %v", id)).SetInternal(err)
 		}
 
@@ -184,20 +157,17 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 	})
 
 	g.GET("/project/:projectID/webhook/:webhookID/test", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		projectID, err := strconv.Atoi(c.Param("projectID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project ID is not a number: %s", c.Param("projectID"))).SetInternal(err)
 		}
 
-		projectFind := &api.ProjectFind{
-			ID: &projectID,
-		}
-		projectRaw, err := s.ProjectService.FindProject(ctx, projectFind)
+		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
-		if projectRaw == nil {
+		if project == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", projectID))
 		}
 
@@ -206,19 +176,12 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project webhook ID is not a number: %s", c.Param("webhookID"))).SetInternal(err)
 		}
 
-		find := &api.ProjectWebhookFind{
-			ID: &id,
-		}
-		webhookRaw, err := s.ProjectWebhookService.FindProjectWebhook(ctx, find)
+		webhook, err := s.store.GetProjectWebhookByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project webhook ID: %v", id)).SetInternal(err)
 		}
-		if webhookRaw == nil {
+		if webhook == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project webhook ID not found: %d", id))
-		}
-		webhook, err := s.composeProjectWebhookRelationship(ctx, webhookRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose project webhook relationship with ID %d", id)).SetInternal(err)
 		}
 
 		result := &api.ProjectWebhookTestResult{}
@@ -227,18 +190,21 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			webhookPlugin.Context{
 				URL:          webhook.URL,
 				Level:        webhookPlugin.WebhookInfo,
+				ActivityType: string(api.ActivityIssueCreate),
 				Title:        fmt.Sprintf("Test webhook %q", webhook.Name),
 				Description:  "This is a test",
-				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectRawSlug(projectRaw), api.ProjectWebhookSlug(webhook)),
+				Link:         fmt.Sprintf("%s:%d/project/%s/webhook/%s", s.frontendHost, s.frontendPort, api.ProjectSlug(project), api.ProjectWebhookSlug(webhook)),
+				CreatorID:    api.SystemBotID,
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
 				MetaList: []webhookPlugin.Meta{
 					{
 						Name:  "Project",
-						Value: projectRaw.Name,
+						Value: project.Name,
 					},
 				},
+				Project: webhookPlugin.Project{Name: project.Name},
 			},
 		)
 
@@ -252,22 +218,4 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) composeProjectWebhookRelationship(ctx context.Context, raw *api.ProjectWebhookRaw) (*api.ProjectWebhook, error) {
-	webhook := raw.ToProjectWebhook()
-
-	creator, err := s.store.GetPrincipalByID(ctx, webhook.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	webhook.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, webhook.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	webhook.Updater = updater
-
-	return webhook, nil
 }

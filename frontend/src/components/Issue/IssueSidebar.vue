@@ -275,7 +275,6 @@ import {
   watch,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import isEqual from "lodash-es/isEqual";
 import { NDatePicker } from "naive-ui";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
@@ -303,7 +302,6 @@ import {
   ONBOARDING_ISSUE_ID,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
-  Label,
 } from "../../types";
 import {
   allTaskList,
@@ -315,7 +313,14 @@ import {
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { useLabelStore } from "@/store";
+import {
+  hasFeature,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentStore,
+  useLabelStore,
+  useProjectStore,
+} from "@/store";
 import { storeToRefs } from "pinia";
 dayjs.extend(isSameOrAfter);
 
@@ -386,9 +391,9 @@ export default defineComponent({
     "select-task-id",
   ],
   setup(props, { emit }) {
-    const store = useStore();
-    const labelStore = useLabelStore();
     const router = useRouter();
+    const labelStore = useLabelStore();
+    const projectStore = useProjectStore();
 
     const now = new Date();
     const state = reactive<LocalState>({
@@ -404,7 +409,7 @@ export default defineComponent({
       }
     );
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const fieldValue = (field: InputField): string => {
       return props.issue.payload[field.id];
@@ -434,9 +439,7 @@ export default defineComponent({
     const environment = computed((): Environment => {
       if (props.create) {
         const stage = props.selectedStage as StageCreate;
-        return store.getters["environment/environmentById"](
-          stage.environmentId
-        );
+        return useEnvironmentStore().getEnvironmentById(stage.environmentId);
       }
       const stage = props.selectedStage as Stage;
       return stage.environment;
@@ -444,7 +447,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
+        return projectStore.getProjectById(
           (props.issue as IssueCreate).projectId
         );
       }
@@ -553,10 +556,10 @@ export default defineComponent({
           },
         });
       } else {
-        store
-          .dispatch("database/fetchDatabaseByInstanceIdAndName", {
+        useDatabaseStore()
+          .fetchDatabaseByInstanceIdAndName({
             instanceId: props.instance.id,
-            name: databaseName.value,
+            name: databaseName.value!, // guarded in template to ensure databaseName is not empty
           })
           .then((database: Database) => {
             router.push({
@@ -572,9 +575,7 @@ export default defineComponent({
     const isDayPassed = (ts: number) => !dayjs(ts).isSameOrAfter(now, "day");
 
     const updateEarliestAllowedTs = (newTimestampMiliSec: number) => {
-      if (
-        !store.getters["subscription/feature"]("bb.feature.task-schedule-time")
-      ) {
+      if (!hasFeature("bb.feature.task-schedule-time")) {
         state.showFeatureModal = true;
         return;
       }

@@ -119,8 +119,7 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import ProjectRoleSelect from "../components/ProjectRoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
@@ -134,11 +133,17 @@ import {
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useProjectStore,
+} from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "ProjectMemberTable",
   components: { ProjectRoleSelect, PrincipalAvatar },
   props: {
@@ -153,14 +158,12 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({});
 
@@ -288,7 +291,7 @@ export default {
         role,
         roleProvider: "BYTEBASE",
       };
-      store.dispatch("project/patchMember", {
+      projectStore.patchMember({
         projectId: props.project.id,
         memberId: id,
         projectMemberPatch,
@@ -296,8 +299,8 @@ export default {
     };
 
     const deleteRole = (member: ProjectMember) => {
-      store.dispatch("project/deleteMember", member).then(() => {
-        store.dispatch("notification/pushNotification", {
+      projectStore.deleteMember(member).then(() => {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: t("project.settings.success-member-deleted-prompt", {
@@ -319,5 +322,5 @@ export default {
       deleteRole,
     };
   },
-};
+});
 </script>

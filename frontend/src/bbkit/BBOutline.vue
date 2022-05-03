@@ -62,8 +62,8 @@
 
 <script lang="ts" setup>
 import { computed, reactive, withDefaults } from "vue";
-import { useStore } from "vuex";
 import { BBOutlineItem } from "./types";
+import { useUIStateStore } from "@/store";
 
 interface LocalState {
   hoverIndex: number;
@@ -94,7 +94,7 @@ defineEmits<{
   (event: "delete-index", index: number): void;
 }>();
 
-const store = useStore();
+const uiStateStore = useUIStateStore();
 
 const state = reactive<LocalState>({
   hoverIndex: -1,
@@ -104,7 +104,7 @@ const state = reactive<LocalState>({
 
 const collapseState = computed(() => {
   if (props.id) {
-    return store.getters["uistate/collapseStateByKey"](props.id);
+    return uiStateStore.getCollapseStateByKey(props.id);
   }
   return state.collapseState;
 });
@@ -113,7 +113,7 @@ const toggleCollapse = () => {
   if (props.allowCollapse) {
     if (props.id) {
       const newState = !collapseState.value;
-      store.dispatch("uistate/savecollapseStateByKey", {
+      uiStateStore.saveCollapseStateByKey({
         key: props.id,
         collapse: newState,
       });

@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   Database,
@@ -7,21 +8,19 @@ import {
   unknown,
   View,
   ViewState,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { useDatabaseStore } from "./database";
 
-function convert(
-  view: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
-): View {
+function convert(view: ResourceObject, includedList: ResourceObject[]): View {
   const databaseId = (view.relationships!.database.data as ResourceIdentifier)
     .id;
 
   let database: Database = unknown("DATABASE") as Database;
+  const databaseStore = useDatabaseStore();
   for (const item of includedList || []) {
     if (item.type == "database" && item.id == databaseId) {
-      database = rootGetters["database/convert"](item, includedList);
+      database = databaseStore.convert(item, includedList);
       break;
     }
   }
@@ -44,52 +43,24 @@ function convert(
   };
 }
 
-const state: () => ViewState = () => ({
-  viewListByDatabaseId: new Map(),
-});
+export const useViewStore = defineStore("view", {
+  state: (): ViewState => ({
+    viewListByDatabaseId: new Map(),
+  }),
 
-const getters = {
-  viewListByDatabaseId:
-    (state: ViewState) =>
-    (databaseId: DatabaseId): View[] => {
-      return state.viewListByDatabaseId.get(databaseId) || [];
+  actions: {
+    getViewListByDatabaseId(databaseId: DatabaseId): View[] {
+      return this.viewListByDatabaseId.get(databaseId) || [];
     },
-};
 
-const actions = {
-  async fetchViewListByDatabaseId(
-    { commit, rootGetters }: any,
-    databaseId: DatabaseId
-  ) {
-    const data = (await axios.get(`/api/database/${databaseId}/view`)).data;
-    const viewList = data.data.map((view: ResourceObject) => {
-      return convert(view, data.included, rootGetters);
-    });
+    async fetchViewListByDatabaseId(databaseId: DatabaseId) {
+      const data = (await axios.get(`/api/database/${databaseId}/view`)).data;
+      const viewList = data.data.map((view: ResourceObject) => {
+        return convert(view, data.included);
+      });
 
-    commit("setViewListByDatabaseId", { databaseId, viewList });
-    return viewList;
+      this.viewListByDatabaseId.set(databaseId, viewList);
+      return viewList;
+    },
   },
-};
-
-const mutations = {
-  setViewListByDatabaseId(
-    state: ViewState,
-    {
-      databaseId,
-      viewList,
-    }: {
-      databaseId: DatabaseId;
-      viewList: View[];
-    }
-  ) {
-    state.viewListByDatabaseId.set(databaseId, viewList);
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

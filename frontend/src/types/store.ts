@@ -46,10 +46,6 @@ import { VCS } from "./vcs";
 import { Label } from "./label";
 import { ConnectionAtom, ConnectionContext } from "./sqlEditor";
 import { TabInfo } from "./tab";
-import instanceStore from "../store/modules/instance";
-import sqlEditorStore from "../store/modules/sqlEditor";
-import tabStore from "../store/modules/tab";
-import sheetStore from "../store/modules/sheet";
 
 export interface ActuatorState {
   serverInfo?: ServerInfo;
@@ -77,7 +73,7 @@ export interface PrincipalState {
 }
 
 export interface BookmarkState {
-  bookmarkListByUser: Map<PrincipalId, Bookmark[]>;
+  bookmarkList: Map<PrincipalId, Bookmark[]>;
 }
 
 export interface ActivityState {
@@ -95,7 +91,7 @@ export interface IssueState {
 }
 
 export interface IssueSubscriberState {
-  subscriberListByIssue: Map<IssueId, IssueSubscriber[]>;
+  subscriberList: Map<IssueId, IssueSubscriber[]>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -116,7 +112,7 @@ export interface ProjectState {
 }
 
 export interface ProjectWebhookState {
-  projectWebhookListByProjectId: Map<ProjectId, ProjectWebhook[]>;
+  projectWebhookList: Map<ProjectId, ProjectWebhook[]>;
 }
 
 export interface EnvironmentState {
@@ -130,9 +126,6 @@ export interface InstanceState {
   // The key is a concatenation of instance id and database name
   migrationHistoryListByIdAndDatabaseName: Map<string, MigrationHistory[]>;
 }
-export type InstanceGetters = typeof instanceStore.getters;
-export type InstanceActions = typeof instanceStore.actions;
-export type InstanceMutations = typeof instanceStore.mutations;
 
 export interface DataSourceState {
   dataSourceById: Map<DataSourceId, DataSource>;
@@ -158,11 +151,11 @@ export interface ViewState {
 }
 
 export interface BackupState {
-  backupListByDatabaseId: Map<DatabaseId, Backup[]>;
+  backupList: Map<DatabaseId, Backup[]>;
 }
 
 export interface BackupSettingState {
-  backupSettingByDatabaseId: Map<DatabaseId, BackupSetting>;
+  backupSetting: Map<DatabaseId, BackupSetting>;
 }
 
 export interface VCSState {
@@ -191,8 +184,7 @@ export interface LabelState {
   labelList: Label[];
 }
 
-// type for vuex
-export interface SqlEditorState {
+export interface SQLEditorState {
   connectionTree: ConnectionAtom[];
   connectionContext: ConnectionContext;
   shouldSetContent: boolean;
@@ -204,17 +196,11 @@ export interface SqlEditorState {
   isShowExecutingHint: boolean;
   sharedSheet: Sheet;
 }
-export type SqlEditorGetters = typeof sqlEditorStore.getters;
-export type SqlEditorActions = typeof sqlEditorStore.actions;
-export type SqlEditorMutations = typeof sqlEditorStore.mutations;
 
 export interface TabState {
   tabList: TabInfo[];
   currentTabId: string;
 }
-export type TabGetters = typeof tabStore.getters;
-export type TabActions = typeof tabStore.actions;
-export type TabMutations = typeof tabStore.mutations;
 
 export interface DeploymentState {
   deploymentConfigByProjectId: Map<ProjectId, DeploymentConfig>;
@@ -224,9 +210,6 @@ export interface SheetState {
   sheetList: Sheet[];
   sheetById: Map<SheetId, Sheet>;
 }
-export type SheetGetters = typeof sheetStore.getters;
-export type SheetActions = typeof sheetStore.actions;
-export type SheetMutations = typeof sheetStore.mutations;
 
 export interface DebugState {
   isDebug: boolean;

@@ -118,6 +118,14 @@ func getTestPort(testName string) int {
 		return 1246
 	case "TestTenantDatabaseNameTemplate":
 		return 1249
+	case "TestGhostSimpleNoop":
+		return 1252
+	case "TestBackupRestoreBasic":
+		return 1255
+	case "TestPITR":
+		return 1258
+	case "TestTenantVCSDatabaseNameTemplate":
+		return 1261
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -405,7 +413,7 @@ func (ctl *controller) getEnvironments() ([]*api.Environment, error) {
 
 func findEnvironment(envs []*api.Environment, name string) (*api.Environment, error) {
 	for _, env := range envs {
-		if env.Name == "Prod" {
+		if env.Name == name {
 			return env, nil
 		}
 	}
@@ -676,6 +684,9 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
+	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
+	time.Sleep(2 * time.Second)
+
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -1081,7 +1092,7 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 
 // listSheets lists sheets for a database.
 func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
-	body, err := ctl.get(fmt.Sprintf("/sheet?databaseId=%d", databaseID), nil)
+	body, err := ctl.get(fmt.Sprintf("/sheet/my?databaseId=%d", databaseID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1107,7 +1118,7 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 		return fmt.Errorf("failed to marshal dataSourceCreate, error: %w", err)
 	}
 
-	body, err := ctl.post(fmt.Sprintf("/database/%d/datasource", dataSourceCreate.DatabaseID), buf)
+	body, err := ctl.post(fmt.Sprintf("/database/%d/data-source", dataSourceCreate.DatabaseID), buf)
 	if err != nil {
 		return err
 	}

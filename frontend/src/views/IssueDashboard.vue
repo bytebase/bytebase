@@ -41,15 +41,27 @@
 
 <script lang="ts">
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
 import { Environment, Issue, PrincipalId, ProjectId } from "../types";
-import { reactive, ref, computed, onMounted, watchEffect } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  onMounted,
+  watchEffect,
+  defineComponent,
+} from "vue";
 import { activeEnvironment, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import {
+  useCurrentUser,
+  useEnvironmentStore,
+  useIssueStore,
+  useProjectStore,
+} from "@/store";
 
 interface LocalState {
   showOpen: boolean;
@@ -62,17 +74,18 @@ interface LocalState {
   selectedProjectId?: ProjectId;
 }
 
-export default {
+export default defineComponent({
   name: "IssueDashboard",
   components: { EnvironmentTabFilter, IssueTable, MemberSelect },
   setup() {
     const { t } = useI18n();
     const searchField = ref();
 
-    const store = useStore();
+    const issueStore = useIssueStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const statusList: string[] = router.currentRoute.value.query.status
       ? (router.currentRoute.value.query.status as string).split(",")
@@ -96,8 +109,8 @@ export default {
       searchText: "",
       selectedPrincipalId: currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       selectedProjectId: router.currentRoute.value.query.project
@@ -112,7 +125,7 @@ export default {
 
     const project = computed(() => {
       if (state.selectedProjectId) {
-        return store.getters["project/projectById"](state.selectedProjectId);
+        return projectStore.getProjectById(state.selectedProjectId);
       }
       return undefined;
     });
@@ -121,8 +134,8 @@ export default {
       // We call open and close separately because normally the number of open issues is limited
       // while the closed issues could be a lot.
       if (state.showOpen) {
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["OPEN"],
             userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
@@ -133,8 +146,8 @@ export default {
       }
 
       if (state.showClosed) {
-        store
-          .dispatch("issue/fetchIssueList", {
+        issueStore
+          .fetchIssueList({
             issueStatusList: ["DONE", "CANCELED"],
             userId: scopeByPrincipal ? state.selectedPrincipalId : undefined,
             projectId: state.selectedProjectId,
@@ -241,5 +254,5 @@ export default {
       goProject,
     };
   },
-};
+});
 </script>

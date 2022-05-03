@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   ConnectionInfo,
@@ -5,102 +6,88 @@ import {
   INSTANCE_OPERATION_TIMEOUT,
   QueryInfo,
   ResourceObject,
-  SqlResultSet,
-} from "../../types";
+  SQLResultSet,
+} from "@/types";
+import { useDatabaseStore } from "./database";
+import { useInstanceStore } from "./instance";
 
-function convert(resultSet: ResourceObject): SqlResultSet {
+function convert(resultSet: ResourceObject): SQLResultSet {
   return {
     data: JSON.parse((resultSet.attributes.data as string) || "{}"),
     error: resultSet.attributes.error as string,
   };
 }
 
-const getters = {
-  convert:
-    () =>
-    (resultSet: ResourceObject): SqlResultSet => {
+export const useSQLStore = defineStore("sql", {
+  actions: {
+    convert(resultSet: ResourceObject): SQLResultSet {
       return convert(resultSet);
     },
-};
 
-const actions = {
-  async ping({ commit }: any, connectionInfo: ConnectionInfo) {
-    const data = (
-      await axios.post(`/api/sql/ping`, {
-        data: {
-          type: "connectionInfo",
-          attributes: connectionInfo,
-        },
-      })
-    ).data.data;
-
-    return convert(data);
-  },
-  async syncSchema({ dispatch }: any, instanceId: InstanceId) {
-    const data = (
-      await axios.post(
-        `/api/sql/syncschema`,
-        {
+    async ping(connectionInfo: ConnectionInfo) {
+      const data = (
+        await axios.post(`/api/sql/ping`, {
           data: {
-            type: "sqlSyncSchema",
-            attributes: {
-              instanceId,
+            type: "connectionInfo",
+            attributes: connectionInfo,
+          },
+        })
+      ).data.data;
+
+      return convert(data);
+    },
+    async syncSchema(instanceId: InstanceId) {
+      const data = (
+        await axios.post(
+          `/api/sql/sync-schema`,
+          {
+            data: {
+              type: "sqlSyncSchema",
+              attributes: {
+                instanceId,
+              },
             },
           },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data.data;
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data.data;
 
-    const resultSet = convert(data);
-    if (!resultSet.error) {
-      // Refresh the corresponding list.
-      dispatch("database/fetchDatabaseListByInstanceId", instanceId, {
-        root: true,
-      });
+      const resultSet = convert(data);
+      if (!resultSet.error) {
+        // Refresh the corresponding list.
+        useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
+        useInstanceStore().fetchInstanceUserListById(instanceId);
+      }
 
-      dispatch("instance/fetchInstanceUserListById", instanceId, {
-        root: true,
-      });
-    }
-
-    return resultSet;
-  },
-  async query({ dispatch }: any, queryInfo: QueryInfo) {
-    const data = (
-      await axios.post(
-        `/api/sql/execute`,
-        {
-          data: {
-            type: "sqlExecute",
-            attributes: {
-              ...queryInfo,
-              readonly: true,
+      return resultSet;
+    },
+    async query(queryInfo: QueryInfo) {
+      const data = (
+        await axios.post(
+          `/api/sql/execute`,
+          {
+            data: {
+              type: "sqlExecute",
+              attributes: {
+                ...queryInfo,
+                readonly: true,
+              },
             },
           },
-        },
-        {
-          timeout: INSTANCE_OPERATION_TIMEOUT,
-        }
-      )
-    ).data.data;
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data.data;
 
-    const resultSet = convert(data);
-    if (resultSet.error) {
-      throw new Error(resultSet.error);
-    }
+      const resultSet = convert(data);
+      if (resultSet.error) {
+        throw new Error(resultSet.error);
+      }
 
-    return resultSet.data;
+      return resultSet.data;
+    },
   },
-};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  getters,
-  actions,
-  mutations,
-};
+});

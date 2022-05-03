@@ -1,53 +1,53 @@
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 
-import { DEFAULT_PROJECT_ID, SheetState, UNKNOWN_ID } from "../types";
+import { DEFAULT_PROJECT_ID, Sheet, UNKNOWN_ID } from "../types";
 import { connectionSlug } from "../utils";
-import { getDefaultConnectionContext } from "../store/modules/sqlEditor";
-import { useTabStore } from "@/store";
+import { getDefaultConnectionContext } from "@/store";
+import {
+  useDatabaseStore,
+  useTabStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 
 const useSQLEditorConnection = () => {
   const router = useRouter();
-  const store = useStore();
   const tabStore = useTabStore();
+  const sqlEditorStore = useSQLEditorStore();
+  const sheetStore = useSheetStore();
 
   /**
    * Set the connection by tab info
-   * @param param
-   * @param payload
    */
   const setConnectionContextFromCurrentTab = () => {
     const currentTab = tabStore.currentTab;
-    const sheetById = store.state.sheet.sheetById as SheetState["sheetById"];
+    const sheetById = sheetStore.sheetById;
 
     if (currentTab.sheetId && sheetById.has(currentTab.sheetId)) {
-      const sheet = sheetById.get(currentTab.sheetId);
+      const sheet = sheetById.get(currentTab.sheetId) as Sheet;
 
-      store.dispatch("sqlEditor/setConnectionContext", {
+      sqlEditorStore.setConnectionContext({
         hasSlug: true,
-        projectId: sheet?.database?.projectId || DEFAULT_PROJECT_ID,
-        instanceId: sheet?.database?.instanceId || UNKNOWN_ID,
-        databaseId: sheet?.databaseId || UNKNOWN_ID,
+        projectId: sheet.database?.projectId || DEFAULT_PROJECT_ID,
+        instanceId: sheet.database?.instanceId || UNKNOWN_ID,
+        databaseId: sheet.databaseId || UNKNOWN_ID,
       });
 
-      // deal with the sheet is without databaseId
-      if (sheet?.databaseId) {
-        const database = store.getters["database/databaseById"](
-          sheet?.databaseId
-        );
+      if (sheet.databaseId) {
+        const database = useDatabaseStore().getDatabaseById(sheet.databaseId);
 
         router.replace({
           name: "sql-editor.detail",
           params: {
             connectionSlug: connectionSlug(database),
           },
+          query: {
+            sheetId: sheet.id,
+          },
         });
       }
     } else {
-      store.dispatch(
-        "sqlEditor/setConnectionContext",
-        getDefaultConnectionContext()
-      );
+      sqlEditorStore.setConnectionContext(getDefaultConnectionContext());
 
       router.push({
         path: "/sql-editor",

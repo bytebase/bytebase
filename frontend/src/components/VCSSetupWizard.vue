@@ -29,12 +29,11 @@
 import {
   reactive,
   computed,
-  defineComponent,
   onUnmounted,
   onMounted,
+  defineComponent,
 } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import isEmpty from "lodash-es/isEmpty";
 import { BBStepTabItem } from "../bbkit/types";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
@@ -47,12 +46,11 @@ import {
   VCS,
   openWindowForOAuth,
   OAuthWindowEventPayload,
-  OAuthConfig,
-  redirectUrl,
   OAuthToken,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useOAuthStore, useVCSStore } from "@/store";
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
@@ -73,8 +71,8 @@ export default defineComponent({
   },
   setup() {
     const { t } = useI18n();
-    const store = useStore();
     const router = useRouter();
+    const vcsStore = useVCSStore();
 
     const stepList: BBStepTabItem[] = [
       { title: t("version-control.setting.add-git-provider.basic-info.self") },
@@ -105,15 +103,12 @@ export default defineComponent({
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
         if (state.config.type == "GITLAB_SELF_HOST") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `${state.config.instanceUrl}/oauth/token`,
-            applicationId: state.config.applicationId,
-            secret: state.config.secret,
-            redirectUrl: redirectUrl(),
-          };
-          store
-            .dispatch("gitlab/exchangeToken", {
-              oAuthConfig,
+          useOAuthStore()
+            .exchangeVCSToken({
+              vcsType: state.config.type,
+              instanceUrl: state.config.instanceUrl,
+              clientId: state.config.applicationId,
+              clientSecret: state.config.secret,
               code: payload.code,
             })
             .then((token: OAuthToken) => {
@@ -123,15 +118,12 @@ export default defineComponent({
               state.oAuthResultCallback!(undefined);
             });
         } else if (state.config.type == "GITHUB_COM") {
-          const oAuthConfig: OAuthConfig = {
-            endpoint: `https://github.com/login/oauth/access_token`,
-            applicationId: state.config.applicationId,
-            secret: state.config.secret,
-            redirectUrl: redirectUrl(),
-          };
-          store
-            .dispatch("github/exchangeToken", {
-              oAuthConfig,
+          useOAuthStore()
+            .exchangeVCSToken({
+              vcsType: state.config.type,
+              instanceUrl: state.config.instanceUrl,
+              clientId: state.config.applicationId,
+              clientSecret: state.config.secret,
               code: payload.code,
             })
             .then((token: OAuthToken) => {
@@ -205,7 +197,7 @@ export default defineComponent({
             if (token) {
               state.currentStep = newStep;
               allowChangeCallback();
-              store.dispatch("notification/pushNotification", {
+              pushNotification({
                 module: "bytebase",
                 style: "SUCCESS",
                 title: t(
@@ -222,7 +214,7 @@ export default defineComponent({
                   "version-control.setting.add-git-provider.check-oauth-info-match"
                 );
               }
-              store.dispatch("notification/pushNotification", {
+              pushNotification({
                 module: "bytebase",
                 style: "CRITICAL",
                 title: "Failed to setup OAuth",
@@ -241,12 +233,12 @@ export default defineComponent({
       const vcsCreate: VCSCreate = {
         ...state.config,
       };
-      store.dispatch("vcs/createVCS", vcsCreate).then((vcs: VCS) => {
+      vcsStore.createVCS(vcsCreate).then((vcs: VCS) => {
         allowChangeCallback();
         router.push({
           name: "setting.workspace.version-control",
         });
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("version-control.setting.add-git-provider.add-success", {

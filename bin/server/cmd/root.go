@@ -6,18 +6,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterprise "github.com/bytebase/bytebase/enterprise/service"
-	dbdriver "github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/store"
 	"github.com/spf13/cobra"
@@ -92,11 +88,14 @@ var (
 	readonly bool
 	demo     bool
 	debug    bool
+	// pgURL must follow PostgreSQL connection URIs pattern.
+	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+	pgURL string
 
 	rootCmd = &cobra.Command{
 		Use:   "bytebase",
 		Short: "Bytebase is a database schema change and version control tool",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			if frontendHost == "" {
 				frontendHost = host
 			}
@@ -125,32 +124,15 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "whether to enable debug level logging")
+	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
+	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
+	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
+	rootCmd.PersistentFlags().StringVar(&pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
 
 // -----------------------------------Main Entry Point---------------------------------------------
-
-// Profile is the configuration to start main server.
-type Profile struct {
-	// mode can be "release" or "dev"
-	mode string
-	// port is the binding port for server.
-	port int
-	// datastorePort is the binding port for database instance for storing Bytebase data.
-	datastorePort int
-	// pgUser is the user we use to connect to bytebase's Postgres database.
-	// The name of the database storing metadata is the same as pgUser.
-	pgUser string
-	// dataDir is the directory stores the data including Bytebase's own database, backups, etc.
-	dataDir string
-	// demoDataDir points to where to populate the initial data.
-	demoDataDir string
-	// backupRunnerInterval is the interval for backup runner.
-	backupRunnerInterval time.Duration
-	// schemaVersion is the version of schema applied to.
-	schemaVersion semver.Version
-}
 
 // retrieved via the SettingService upon startup
 type config struct {
@@ -160,7 +142,7 @@ type config struct {
 
 // Main is the main server for Bytebase.
 type Main struct {
-	profile *Profile
+	profile *server.Profile
 
 	l   *zap.Logger
 	lvl *zap.AtomicLevel
@@ -171,10 +153,13 @@ type Main struct {
 	// Otherwise, we will get database is closed error from runner when we shutdown the server.
 	serverCancel context.CancelFunc
 
-	pg        *postgres.Instance
-	pgStarted bool
+	metadataDB *metadataDB
 	// db is a connection to the database storing Bytebase data.
 	db *store.DB
+}
+
+func useEmbedDB() bool {
+	return len(pgURL) == 0
 }
 
 func checkDataDir() error {
@@ -268,35 +253,31 @@ func start() {
 }
 
 // NewMain creates a main server based on profile.
-func NewMain(activeProfile Profile, logger *zap.Logger) (*Main, error) {
-	resourceDir := path.Join(activeProfile.dataDir, "resources")
-	pgDataDir := common.GetPostgresDataDir(activeProfile.dataDir)
+func NewMain(activeProfile server.Profile, logger *zap.Logger) (*Main, error) {
 	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", activeProfile.mode)
-	fmt.Printf("server=%s:%d\n", host, activeProfile.port)
-	fmt.Printf("datastore=%s:%d\n", host, activeProfile.datastorePort)
+	fmt.Printf("mode=%s\n", activeProfile.Mode)
+	fmt.Printf("server=%s:%d\n", host, activeProfile.Port)
+	fmt.Printf("datastore=%s:%d\n", host, activeProfile.DatastorePort)
 	fmt.Printf("frontend=%s:%d\n", frontendHost, frontendPort)
-	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	fmt.Printf("demoDataDir=%s\n", activeProfile.demoDataDir)
+	fmt.Printf("demoDataDir=%s\n", activeProfile.DemoDataDir)
 	fmt.Printf("readonly=%t\n", readonly)
 	fmt.Printf("demo=%t\n", demo)
 	fmt.Printf("debug=%t\n", debug)
 	fmt.Println("-----Config END-------")
 
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, activeProfile.pgUser)
+	metadataDB, err := createMetadataDB(&activeProfile, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Main{
-		profile: &activeProfile,
-		l:       logger,
-		pg:      pgInstance,
+		profile:    &activeProfile,
+		l:          logger,
+		metadataDB: metadataDB,
 	}, nil
 }
 
-func initSetting(ctx context.Context, settingService api.SettingService) (*config, error) {
+func initSetting(ctx context.Context, store *store.Store) (*config, error) {
 	result := &config{}
 	{
 		configCreate := &api.SettingCreate{
@@ -305,7 +286,7 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 			Value:       common.RandomString(secretLength),
 			Description: "Random string used to sign the JWT auth token.",
 		}
-		config, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+		config, err := store.CreateSettingIfNotExist(ctx, configCreate)
 		if err != nil {
 			return nil, err
 		}
@@ -315,14 +296,14 @@ func initSetting(ctx context.Context, settingService api.SettingService) (*confi
 	return result, nil
 }
 
-func initBranding(ctx context.Context, settingService api.SettingService) error {
+func initBranding(ctx context.Context, store *store.Store) error {
 	configCreate := &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
 	}
-	_, err := settingService.CreateSettingIfNotExist(ctx, configCreate)
+	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
 	if err != nil {
 		return err
 	}
@@ -335,69 +316,33 @@ func (m *Main) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	m.serverCancel = cancel
 
-	if err := m.pg.Start(m.profile.datastorePort, os.Stderr, os.Stderr); err != nil {
-		return err
+	db, err := m.metadataDB.connect()
+	if err != nil {
+		return fmt.Errorf("cannot new db: %w", err)
 	}
-	m.pgStarted = true
-
-	// Even when Postgres opens Unix domain socket only for connection, it still requires a port as ID to differentiate different Postgres instances.
-	connCfg := dbdriver.ConnectionConfig{
-		Username: m.profile.pgUser,
-		Password: "",
-		Host:     common.GetPostgresSocketDir(),
-		Port:     fmt.Sprintf("%d", m.profile.datastorePort),
-	}
-	db := store.NewDB(m.l, connCfg, m.profile.demoDataDir, readonly, version, m.profile.schemaVersion)
 	if err := db.Open(ctx); err != nil {
 		return fmt.Errorf("cannot open db: %w", err)
 	}
-
-	settingService := store.NewSettingService(m.l, db)
-	config, err := initSetting(ctx, settingService)
-	if err != nil {
-		return fmt.Errorf("failed to init config: %w", err)
-	}
-
-	err = initBranding(ctx, settingService)
-	if err != nil {
-		return fmt.Errorf("failed to init branding: %w", err)
-	}
-
 	m.db = db
 
 	cacheService := server.NewCacheService(m.l)
 	storeInstance := store.New(m.l, db, cacheService)
 
-	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.port, frontendHost, frontendPort, m.profile.datastorePort, m.profile.mode, m.profile.dataDir, m.profile.backupRunnerInterval, config.secret, readonly, demo, debug)
-	s.SettingService = settingService
-	s.ProjectService = store.NewProjectService(m.l, db, cacheService)
-	s.ProjectMemberService = store.NewProjectMemberService(m.l, db)
-	s.ProjectWebhookService = store.NewProjectWebhookService(m.l, db)
-	s.BackupService = store.NewBackupService(m.l, db, storeInstance)
-	s.DatabaseService = store.NewDatabaseService(m.l, db, cacheService, storeInstance, s.BackupService)
-	s.InstanceService = store.NewInstanceService(m.l, db, cacheService, s.DatabaseService, storeInstance)
-	s.InstanceUserService = store.NewInstanceUserService(m.l, db)
-	s.TableService = store.NewTableService(m.l, db)
-	s.ColumnService = store.NewColumnService(m.l, db)
-	s.ViewService = store.NewViewService(m.l, db)
-	s.IndexService = store.NewIndexService(m.l, db)
-	s.IssueService = store.NewIssueService(m.l, db, cacheService)
-	s.IssueSubscriberService = store.NewIssueSubscriberService(m.l, db)
-	s.PipelineService = store.NewPipelineService(m.l, db, cacheService)
-	s.StageService = store.NewStageService(m.l, db)
-	s.TaskCheckRunService = store.NewTaskCheckRunService(m.l, db)
-	s.TaskService = store.NewTaskService(m.l, db, store.NewTaskRunService(m.l, db), s.TaskCheckRunService)
-	s.ActivityService = store.NewActivityService(m.l, db)
-	s.InboxService = store.NewInboxService(m.l, db, s.ActivityService)
-	s.BookmarkService = store.NewBookmarkService(m.l, db)
-	s.RepositoryService = store.NewRepositoryService(m.l, db, s.ProjectService)
-	s.LabelService = store.NewLabelService(m.l, db)
-	s.DeploymentConfigService = store.NewDeploymentConfigService(m.l, db)
-	s.SheetService = store.NewSheetService(m.l, db)
+	config, err := initSetting(ctx, storeInstance)
+	if err != nil {
+		return fmt.Errorf("failed to init config: %w", err)
+	}
 
-	s.ActivityManager = server.NewActivityManager(s, s.ActivityService)
+	err = initBranding(ctx, storeInstance)
+	if err != nil {
+		return fmt.Errorf("failed to init branding: %w", err)
+	}
 
-	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.dataDir, m.profile.mode)
+	s := server.NewServer(m.l, storeInstance, m.lvl, version, host, m.profile.Port, frontendHost, frontendPort, m.profile.DatastorePort, m.profile.Mode, m.profile.DataDir, m.profile.BackupRunnerInterval, config.secret, readonly, demo, debug)
+
+	s.ActivityManager = server.NewActivityManager(s, storeInstance)
+
+	licenseService, err := enterprise.NewLicenseService(m.l, m.profile.DataDir, m.profile.Mode)
 	if err != nil {
 		return err
 	}
@@ -406,7 +351,7 @@ func (m *Main) Run(ctx context.Context) error {
 
 	m.server = s
 
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", version, host, m.profile.Port))
 
 	if err := s.Run(ctx); err != nil {
 		return err
@@ -434,14 +379,10 @@ func (m *Main) Close() error {
 		}
 	}
 
-	if m.pgStarted {
-		m.l.Info("Trying to shutdown postgresql server...")
-
-		if err := m.pg.Stop(os.Stdout, os.Stderr); err != nil {
-			return err
-		}
-		m.pgStarted = false
+	if err := m.metadataDB.close(); err != nil {
+		return err
 	}
+
 	m.l.Info("Bytebase stopped properly.")
 	return nil
 }

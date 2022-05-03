@@ -1,13 +1,50 @@
+import { defineStore } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import {
   Notification,
   NotificationCreate,
   NotificationFilter,
   NotificationState,
-} from "../../types";
+} from "@/types";
 
-const state: () => NotificationState = () => ({
-  notificationByModule: new Map(),
+export const useNotificationStore = defineStore("notification", {
+  state: (): NotificationState => ({
+    notificationByModule: new Map(),
+  }),
+  actions: {
+    appendNotification(notification: Notification) {
+      const list = this.notificationByModule.get(notification.module);
+      if (list) {
+        list.push(notification);
+      } else {
+        this.notificationByModule.set(notification.module, [notification]);
+      }
+    },
+    removeNotification(notification: Notification) {
+      const list = this.notificationByModule.get(notification.module);
+      if (list) {
+        const i = list.indexOf(notification);
+        if (i > -1) {
+          list.splice(i, 1);
+        }
+      }
+    },
+    pushNotification(notificationCreate: NotificationCreate) {
+      const notification: Notification = {
+        id: uuidv1(),
+        createdTs: Date.now() / 1000,
+        ...notificationCreate,
+      };
+      this.appendNotification(notification);
+    },
+    tryPopNotification(filter: NotificationFilter) {
+      const notification = findNotification(this.$state, filter);
+      if (notification) {
+        this.removeNotification(notification);
+      }
+      return notification;
+    },
+  },
 });
 
 function findNotification(
@@ -24,52 +61,7 @@ function findNotification(
   return undefined;
 }
 
-const getters = {};
-
-const actions = {
-  pushNotification({ commit }: any, NotificationCreate: NotificationCreate) {
-    const notification: Notification = {
-      id: uuidv1(),
-      createdTs: Date.now() / 1000,
-      ...NotificationCreate,
-    };
-    commit("appendNotification", notification);
-  },
-
-  tryPopNotification({ state, commit }: any, filter: NotificationFilter) {
-    const notification = findNotification(state, filter);
-    if (notification) {
-      commit("removeNotification", notification);
-    }
-    return notification;
-  },
-};
-
-const mutations = {
-  appendNotification(state: NotificationState, notification: Notification) {
-    const list = state.notificationByModule.get(notification.module);
-    if (list) {
-      list.push(notification);
-    } else {
-      state.notificationByModule.set(notification.module, [notification]);
-    }
-  },
-
-  removeNotification(state: NotificationState, notification: Notification) {
-    const list = state.notificationByModule.get(notification.module);
-    if (list) {
-      const i = list.indexOf(notification);
-      if (i > -1) {
-        list.splice(i, 1);
-      }
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
+export const pushNotification = (notificationCreate: NotificationCreate) => {
+  const store = useNotificationStore();
+  store.pushNotification(notificationCreate);
 };

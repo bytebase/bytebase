@@ -214,6 +214,34 @@ func (p *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
+// gitlab oauth response
+type oauthResponse struct {
+	AccessToken      string `json:"access_token" `
+	RefreshToken     string `json:"refresh_token"`
+	ExpiresIn        int64  `json:"expires_in"`
+	CreatedAt        int64  `json:"created_at"`
+	ExpiresTs        int64  `json:"expires_ts"`
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
+}
+
+// convert to *vcs.OAuthToken
+func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
+	oauthToken := &vcs.OAuthToken{
+		AccessToken:  o.AccessToken,
+		RefreshToken: o.RefreshToken,
+		ExpiresIn:    o.ExpiresIn,
+		CreatedAt:    o.CreatedAt,
+		ExpiresTs:    o.ExpiresTs,
+	}
+	// For GitLab, as of 13.12, the default config won't expire the access token,
+	// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
+	if oauthToken.ExpiresIn != 0 {
+		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
+	}
+	return oauthToken
+}
+
 // ExchangeOAuthToken exchange oauth content with the provided authentication code.
 func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
 	urlParams := &url.Values{}
@@ -234,25 +262,23 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange Oauth Token, code %v, error: %v", resp.StatusCode, err)
+		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v", err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
 	}
+	defer resp.Body.Close()
 
-	oauthToken := &vcs.OAuthToken{}
-	if err := json.Unmarshal(body, oauthToken); err != nil {
+	oauthResp := new(oauthResponse)
+	if err := json.Unmarshal(body, oauthResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
 	}
-
-	// For GitLab, as of 13.12, the default config won't expire the access token,
-	// thus this field is 0. See https://gitlab.com/gitlab-org/gitlab/-/issues/21745.
-	if oauthToken.ExpiresIn != 0 {
-		oauthToken.ExpiresTs = oauthToken.CreatedAt + oauthToken.ExpiresIn
+	if oauthResp.Error != "" {
+		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
 	}
-	return oauthToken, nil
+	return oauthResp.toVCSOAuthToken(), nil
 }
 
 // FetchRepositoryList fetched all repositories in which the authenticated user

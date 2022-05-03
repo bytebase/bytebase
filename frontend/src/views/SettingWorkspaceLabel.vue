@@ -66,14 +66,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
-import { useStore } from "vuex";
 import { isDBAOrOwner, hidePrefix } from "../utils";
-import { Principal, Label, LabelPatch } from "../types";
+import { Label, LabelPatch } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import { BBTable, BBTableCell } from "../bbkit";
 import { useI18n } from "vue-i18n";
 import AddLabelValue from "../components/AddLabelValue.vue";
-import { useLabelStore } from "@/store";
+import { useCurrentUser, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export default defineComponent({
@@ -85,11 +84,8 @@ export default defineComponent({
   },
   setup() {
     const { t } = useI18n();
-    const store = useStore();
     const labelStore = useLabelStore();
-    const currentUser = computed(
-      () => store.getters["auth/currentUser"]() as Principal
-    );
+    const currentUser = useCurrentUser();
 
     const prepareLabelList = () => {
       labelStore.fetchLabelList();

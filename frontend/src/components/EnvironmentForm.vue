@@ -49,7 +49,10 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.approval.auto") }}
-                <FeatureBadge feature="bb.feature.approval-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.approval-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.approval.auto-info") }}
@@ -91,7 +94,10 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.backup.daily") }}
-                <FeatureBadge feature="bb.feature.backup-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.backup-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.daily-info") }}
@@ -110,13 +116,43 @@
             <div class="-mt-0.5">
               <div class="textlabel flex">
                 {{ $t("policy.backup.weekly") }}
-                <FeatureBadge feature="bb.feature.backup-policy" class="text-accent" />
+                <FeatureBadge
+                  feature="bb.feature.backup-policy"
+                  class="text-accent"
+                />
               </div>
               <div class="mt-1 textinfolabel">
                 {{ $t("policy.backup.weekly-info") }}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="col-span-1" v-if="!create && isDev()">
+        <label class="textlabel">
+          {{ $t("schema-review-policy.title") }}
+        </label>
+        <div class="mt-3">
+          <button
+            v-if="schemaReviewPolicy"
+            type="button"
+            class="text-sm font-medium text-accent hover:underline"
+            @click.prevent="onSchemaReviewPolicyClick"
+          >
+            {{ schemaReviewPolicy.name }}
+          </button>
+          <button
+            v-else-if="hasPermission"
+            type="button"
+            class="btn-normal py-2 px-4 gap-x-1 items-center"
+            @click.prevent="onSchemaReviewPolicyClick"
+          >
+            <heroicons-solid:plus class="h-4 w-4" />
+            {{ $t("schema-review-policy.add-review") }}
+          </button>
+          <span v-else class="textinfolabel">
+            {{ $t("schema-review-policy.no-policy-set") }}
+          </span>
         </div>
       </div>
     </div>
@@ -192,18 +228,29 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, watch } from "vue";
-import { useStore } from "vuex";
-import cloneDeep from "lodash-es/cloneDeep";
-import isEqual from "lodash-es/isEqual";
-import isEmpty from "lodash-es/isEmpty";
+import {
+  computed,
+  reactive,
+  PropType,
+  watch,
+  watchEffect,
+  defineComponent,
+} from "vue";
+import { cloneDeep, isEqual, isEmpty } from "lodash-es";
+import { useRouter } from "vue-router";
 import {
   Environment,
   EnvironmentCreate,
   EnvironmentPatch,
   Policy,
+  DatabaseSchemaReviewPolicy,
 } from "../types";
-import { isDBAOrOwner } from "../utils";
+import { isDev, isDBAOrOwner, schemaReviewPolicySlug } from "../utils";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  useSchemaSystemStore,
+} from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -211,7 +258,9 @@ interface LocalState {
   backupPolicy: Policy;
 }
 
-export default {
+const ROUTE_NAME = "setting.workspace.schema-review-policy";
+
+export default defineComponent({
   name: "EnvironmentForm",
   props: {
     create: {
@@ -233,12 +282,62 @@ export default {
   },
   emits: ["create", "update", "cancel", "archive", "restore", "update-policy"],
   setup(props, { emit }) {
-    const store = useStore();
     const state = reactive<LocalState>({
       environment: cloneDeep(props.environment),
       approvalPolicy: cloneDeep(props.approvalPolicy),
       backupPolicy: cloneDeep(props.backupPolicy),
     });
+
+    const router = useRouter();
+    const schemaSystemStore = useSchemaSystemStore();
+
+    const environmentId = computed(() => {
+      if (props.create) {
+        return;
+      }
+      return (props.environment as Environment).id;
+    });
+
+    const prepareSchemaReviewPolicy = () => {
+      if (!environmentId.value) {
+        return;
+      }
+      return schemaSystemStore.fetchReviewPolicyByEnvironmentId(
+        environmentId.value
+      );
+    };
+    watchEffect(prepareSchemaReviewPolicy);
+
+    const schemaReviewPolicy = computed(
+      (): DatabaseSchemaReviewPolicy | undefined => {
+        if (!environmentId.value) {
+          return;
+        }
+        return schemaSystemStore.getReviewPolicyByEnvironmentId(
+          environmentId.value
+        );
+      }
+    );
+
+    const onSchemaReviewPolicyClick = () => {
+      if (schemaReviewPolicy.value) {
+        router.push({
+          name: `${ROUTE_NAME}.detail`,
+          params: {
+            schemaReviewPolicySlug: schemaReviewPolicySlug(
+              schemaReviewPolicy.value
+            ),
+          },
+        });
+      } else {
+        router.push({
+          name: `${ROUTE_NAME}.create`,
+          query: {
+            environmentId: environmentId.value,
+          },
+        });
+      }
+    };
 
     watch(
       () => props.environment,
@@ -261,10 +360,12 @@ export default {
       }
     );
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"]();
+    const environmentList = useEnvironmentList();
+
+    const hasPermission = computed(() => {
+      return isDBAOrOwner(currentUser.value.role);
     });
 
     const allowArchive = computed(() => {
@@ -272,14 +373,14 @@ export default {
     });
 
     const allowRestore = computed(() => {
-      return isDBAOrOwner(currentUser.value.role);
+      return hasPermission.value;
     });
 
     const allowEdit = computed(() => {
       return (
         props.create ||
         ((state.environment as Environment).rowStatus == "NORMAL" &&
-          isDBAOrOwner(currentUser.value.role))
+          hasPermission.value)
       );
     });
 
@@ -344,18 +445,22 @@ export default {
     };
 
     return {
+      isDev,
       state,
       allowArchive,
       allowRestore,
       allowEdit,
       valueChanged,
       allowCreate,
+      hasPermission,
       revertEnvironment,
       createEnvironment,
       updateEnvironment,
       archiveEnvironment,
       restoreEnvironment,
+      schemaReviewPolicy,
+      onSchemaReviewPolicyClick,
     };
   },
-};
+});
 </script>

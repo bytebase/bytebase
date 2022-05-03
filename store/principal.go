@@ -55,7 +55,7 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
 	principalRaw, err := s.createPrincipalRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Principal with PrincipalCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Principal with PrincipalCreate[%+v], error[%w]", create, err)
 	}
 	// NOTE: Currently the corresponding Member object is not created yet.
 	// YES, we are returning a Principal with empty Role field. OMG.
@@ -67,31 +67,32 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Principal list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Principal list, error[%w]", err)
 	}
 	var principalList []*api.Principal
 	for _, raw := range principalRawList {
 		principal, err := s.composePrincipal(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", raw, err)
 		}
 		principalList = append(principalList, principal)
 	}
 	return principalList, nil
 }
 
-// FindPrincipal finds an instance of Principal
-func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*api.Principal, error) {
-	principalRaw, err := s.findPrincipalRaw(ctx, find)
+// GetPrincipalByEmail gets an instance of Principal
+func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
+	find := &api.PrincipalFind{Email: &email}
+	principalRaw, err := s.getPrincipalRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
 	}
 	if principalRaw == nil {
 		return nil, nil
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 	return principal, nil
 }
@@ -100,31 +101,29 @@ func (s *Store) FindPrincipal(ctx context.Context, find *api.PrincipalFind) (*ap
 func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	principalRaw, err := s.patchPrincipalRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to patch Principal with PrincipalPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Principal with PrincipalPatch[%+v], error[%w]", patch, err)
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 	return principal, nil
 }
 
 // GetPrincipalByID gets an instance of Principal by ID
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
-	principalFind := &api.PrincipalFind{
-		ID: &id,
-	}
-	principalRaw, err := s.findPrincipalRaw(ctx, principalFind)
+	principalFind := &api.PrincipalFind{ID: &id}
+	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
 	if err != nil {
 		return nil, err
 	}
-	if id > 0 && principalRaw == nil {
-		return nil, fmt.Errorf("Principal not found with ID[%d], error[%w]", id, err)
+	if principalRaw == nil {
+		return nil, nil
 	}
 
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
 	}
 
 	return principal, nil
@@ -180,9 +179,9 @@ func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, erro
 	return list, nil
 }
 
-// findPrincipalRaw retrieves an instance of principalRaw based on find.
+// getPrincipalRaw retrieves an instance of principalRaw based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) findPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
+func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*principalRaw, error) {
 	if find.ID != nil {
 		principalRaw := &principalRaw{}
 		has, err := s.cache.FindCache(api.PrincipalCache, *find.ID, principalRaw)
@@ -249,18 +248,18 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 	if principal.ID == api.SystemBotID {
 		principal.Role = api.Owner
 	} else {
-		memberFind := &api.MemberFind{
-			PrincipalID: &principal.ID,
-		}
-		memberRaw, err := s.getMemberRaw(ctx, memberFind)
+		find := &api.MemberFind{PrincipalID: &principal.ID}
+		// NOTE: watch out for recursion here, because Member also contains pointers to Principal
+		memberRaw, err := s.getMemberRaw(ctx, find)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				s.l.Error("Principal has not been assigned a role.",
-					zap.Int("id", principal.ID),
-					zap.String("name", principal.Name),
-				)
-			}
 			return nil, err
+		}
+		if memberRaw == nil {
+			s.l.Error("Principal has not been assigned a role.",
+				zap.Int("id", principal.ID),
+				zap.String("name", principal.Name),
+			)
+			return nil, fmt.Errorf("member with PrincipalID[%d] not exist, error[%w]", principal.ID, err)
 		}
 		principal.Role = memberRaw.Role
 	}

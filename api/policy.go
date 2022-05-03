@@ -15,10 +15,15 @@ type PipelineApprovalValue string
 type BackupPlanPolicySchedule string
 
 const (
+	// DefaultPolicyID is the ID of the default policy.
+	DefaultPolicyID int = 0
+
 	// PolicyTypePipelineApproval is the approval policy type.
 	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeBackupPlan is the backup plan policy type.
 	PolicyTypeBackupPlan PolicyType = "bb.policy.backup-plan"
+	// PolicyTypeSchemaReview is the schema review policy type.
+	PolicyTypeSchemaReview PolicyType = "bb.policy.schema-review"
 
 	// PipelineApprovalValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
@@ -38,6 +43,7 @@ var (
 	PolicyTypes = map[PolicyType]bool{
 		PolicyTypePipelineApproval: true,
 		PolicyTypeBackupPlan:       true,
+		PolicyTypeSchemaReview:     true,
 	}
 )
 
@@ -81,13 +87,29 @@ type PolicyUpsert struct {
 	// Value is assigned from the jwt subject field passed by the client.
 	// CreatorID is the ID of the creator.
 	UpdaterID int
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 
 	// Related fields
 	EnvironmentID int
 
 	// Domain specific fields
 	Type    PolicyType
-	Payload string `jsonapi:"attr,payload"`
+	Payload *string `jsonapi:"attr,payload"`
+}
+
+// PolicyDelete is the message to delete a policy.
+type PolicyDelete struct {
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	DeleterID int
+
+	// Related fields
+	EnvironmentID int
+
+	// Domain specific fields
+	// Type is the policy type.
+	// Currently we only support delete operation for "bb.policy.schema-review", need it here for validation and update query.
+	Type PolicyType
 }
 
 // PipelineApprovalPolicy is the policy configuration for pipeline approval
@@ -134,6 +156,15 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	return &bp, nil
 }
 
+// UnmarshalSchemaReviewPolicy will unmarshal payload to schema review policy.
+func UnmarshalSchemaReviewPolicy(payload string) (*SchemaReviewPolicy, error) {
+	var sr SchemaReviewPolicy
+	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal schema review policy %q: %q", payload, err)
+	}
+	return &sr, nil
+}
+
 // ValidatePolicy will validate the policy type and payload values.
 func ValidatePolicy(pType PolicyType, payload string) error {
 	if !PolicyTypes[pType] {
@@ -160,6 +191,14 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if bp.Schedule != BackupPlanPolicyScheduleUnset && bp.Schedule != BackupPlanPolicyScheduleDaily && bp.Schedule != BackupPlanPolicyScheduleWeekly {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
+	case PolicyTypeSchemaReview:
+		sr, err := UnmarshalSchemaReviewPolicy(payload)
+		if err != nil {
+			return err
+		}
+		if sr.Name == "" || len(sr.RuleList) == 0 {
+			return fmt.Errorf("invalid payload for schema review policy, name or rule list cannot be empty")
+		}
 	}
 	return nil
 }
@@ -176,6 +215,9 @@ func GetDefaultPolicy(pType PolicyType) (string, error) {
 		return BackupPlanPolicy{
 			Schedule: BackupPlanPolicyScheduleUnset,
 		}.String()
+	case PolicyTypeSchemaReview:
+		// TODO(ed): we may need to define the default schema review policy payload in the PR of policy data migration.
+		return "{}", nil
 	}
 	return "", nil
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -19,7 +21,7 @@ import (
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		connectionInfo := &api.ConnectionInfo{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
@@ -75,14 +77,14 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.POST("/sql/syncschema", func(c echo.Context) error {
-		ctx := context.Background()
+	g.POST("/sql/sync-schema", func(c echo.Context) error {
+		ctx := c.Request().Context()
 		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, sync.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
@@ -100,7 +102,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 
 	g.POST("/sql/execute", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request").SetInternal(err)
@@ -119,7 +121,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
 		}
 
-		instance, err := s.composeInstanceByID(ctx, exec.InstanceID)
+		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
@@ -200,7 +202,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			)
 		} else {
 			resultSet.Error = err.Error()
-			if s.mode == "dev" {
+			if s.mode == common.ReleaseModeDev {
 				s.l.Error("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
@@ -238,7 +240,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
 		// to avoid changing the updated_ts
 		if version != instance.EngineVersion {
-			_, err := s.InstanceService.PatchInstance(ctx, &api.InstancePatch{
+			_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
 				ID:            instance.ID,
 				UpdaterID:     api.SystemBotID,
 				EngineVersion: &version,
@@ -252,41 +254,32 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Sync schema
 		userList, schemaList, err := driver.SyncSchema(ctx)
 		if err != nil {
-			fmt.Printf("sync schema error: %v\n", err)
 			resultSet.Error = err.Error()
 		} else {
 			var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-				createTableRaw, err := s.TableService.CreateTable(ctx, tableCreate)
+				table, err := s.store.CreateTable(ctx, tableCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
 				}
-				createTable, err := s.composeTableRelationship(ctx, createTableRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose table with ID %d, error: %v", createTable.ID, err)
-				}
-				return createTable, nil
+				return table, nil
 			}
 
 			var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
-				createViewRaw, err := s.ViewService.CreateView(ctx, viewCreate)
+				createView, err := s.store.CreateView(ctx, viewCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", instance.Name, database.Name, viewCreate.Name)
 					}
 					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
 				}
-				createView, err := s.composeViewRelationship(ctx, createViewRaw)
-				if err != nil {
-					return nil, fmt.Errorf("failed to compose view relationship for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
-				}
 				return createView, nil
 			}
 
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
-				_, err := s.ColumnService.CreateColumn(ctx, columnCreate)
+				_, err := s.store.CreateColumn(ctx, columnCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
@@ -297,7 +290,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			}
 
 			var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-				_, err := s.IndexService.CreateIndex(ctx, indexCreate)
+				_, err := s.store.CreateIndex(ctx, indexCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
@@ -337,7 +330,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						TableID:    &upsertedTable.ID,
 						Name:       &column.Name,
 					}
-					col, err := s.ColumnService.FindColumn(ctx, columnFind)
+					col, err := s.store.GetColumn(ctx, columnFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -370,7 +363,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Name:       &index.Name,
 						Expression: &index.Expression,
 					}
-					idx, err := s.IndexService.FindIndex(ctx, indexFind)
+					idx, err := s.store.GetIndex(ctx, indexFind)
 					if err != nil {
 						return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
 					}
@@ -414,10 +407,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			instanceUserFind := &api.InstanceUserFind{
-				InstanceID: instance.ID,
-			}
-			instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
 			}
@@ -430,7 +420,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					Name:       user.Name,
 					Grant:      user.Grant,
 				}
-				_, err := s.InstanceUserService.UpsertInstanceUser(ctx, userUpsert)
+				_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
 				if err != nil {
 					return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
 				}
@@ -450,7 +440,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					userDelete := &api.InstanceUserDelete{
 						ID: user.ID,
 					}
-					err := s.InstanceUserService.DeleteInstanceUser(ctx, userDelete)
+					err := s.store.DeleteInstanceUser(ctx, userDelete)
 					if err != nil {
 						return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
 					}
@@ -471,17 +461,9 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 			databaseFind := &api.DatabaseFind{
 				InstanceID: &instance.ID,
 			}
-			dbRawList, err := s.DatabaseService.FindDatabaseList(ctx, databaseFind)
+			dbList, err := s.store.FindDatabase(ctx, databaseFind)
 			if err != nil {
-				return fmt.Errorf("Failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
-			}
-			var dbList []*api.Database
-			for _, dbRaw := range dbRawList {
-				db, err := s.composeDatabaseRelationship(ctx, dbRaw)
-				if err != nil {
-					return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
-				}
-				dbList = append(dbList, db)
+				return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 			}
 
 			for _, schema := range schemaList {
@@ -510,22 +492,18 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						LastSuccessfulSyncTs: &ts,
 						SchemaVersion:        &schemaVersion,
 					}
-					dbRawPatched, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
+					dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
 					}
-					dbPatched, err := s.composeDatabaseRelationship(ctx, dbRawPatched)
-					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRawPatched.ID, err)
-					}
 
 					tableDelete := &api.TableDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.TableService.DeleteTable(ctx, tableDelete); err != nil {
+					if err := s.store.DeleteTable(ctx, tableDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
@@ -539,7 +517,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					viewDelete := &api.ViewDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.ViewService.DeleteView(ctx, viewDelete); err != nil {
+					if err := s.store.DeleteView(ctx, viewDelete); err != nil {
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
@@ -561,27 +539,23 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						Collation:     schema.Collation,
 						SchemaVersion: schemaVersion,
 					}
-					dbRaw, err := s.DatabaseService.CreateDatabase(ctx, databaseCreate)
+					database, err := s.store.CreateDatabase(ctx, databaseCreate)
 					if err != nil {
 						if common.ErrorCode(err) == common.Conflict {
 							return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 						}
 						return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
 					}
-					db, err := s.composeDatabaseRelationship(ctx, dbRaw)
-					if err != nil {
-						return fmt.Errorf("Failed to compose database relationship with ID %v, error: %v", dbRaw.ID, err)
-					}
 
 					for _, table := range schema.TableList {
-						err = recreateTableSchema(db, table)
+						err = recreateTableSchema(database, table)
 						if err != nil {
 							return err
 						}
 					}
 
 					for _, view := range schema.ViewList {
-						err = recreateViewSchema(db, view)
+						err = recreateViewSchema(database, view)
 						if err != nil {
 							return err
 						}
@@ -608,7 +582,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						LastSuccessfulSyncTs: &ts,
 						// SchemaVersion will not be over-written.
 					}
-					database, err := s.DatabaseService.PatchDatabase(ctx, databasePatch)
+					database, err := s.store.PatchDatabase(ctx, databasePatch)
 					if err != nil {
 						if common.ErrorCode(err) == common.NotFound {
 							return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
@@ -646,7 +620,21 @@ func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName 
 }
 
 func validateSQLSelectStatement(sqlStatement string) bool {
-	whiteListRegs := []string{`^SELECT$`, `^EXPLAIN\s+?SELECT$`, `^(EXPLAIN\s+?)?SELECT\s`}
+	// Check if the query has only one statement.
+	count := 0
+	sc := bufio.NewScanner(strings.NewReader(sqlStatement))
+	if err := util.ApplyMultiStatements(sc, func(_ string) error {
+		count++
+		return nil
+	}); err != nil {
+		return false
+	}
+	if count != 1 {
+		return false
+	}
+
+	// Allow SELECT and EXPLAIN queries only.
+	whiteListRegs := []string{`^SELECT\s+?`, `^EXPLAIN\s+?`}
 	formatedStr := strings.ToUpper(strings.TrimSpace(sqlStatement))
 	for _, reg := range whiteListRegs {
 		matchResult, _ := regexp.MatchString(reg, formatedStr)

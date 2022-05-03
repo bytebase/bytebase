@@ -572,7 +572,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement)
+	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -607,7 +607,12 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		paramNames, params = append(paramNames, "namespace"), append(params, *v)
 	}
 	if v := find.Version; v != nil {
-		paramNames, params = append(paramNames, "version"), append(params, *v)
+		// TODO(d): support semantic versioning.
+		storedVersion, err := util.ToStoredVersion(false, *v, "")
+		if err != nil {
+			return nil, err
+		}
+		paramNames, params = append(paramNames, "version"), append(params, storedVersion)
 	}
 	if v := find.Source; v != nil {
 		paramNames, params = append(paramNames, "source"), append(params, *v)
@@ -618,7 +623,8 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+	// TODO(zp):  modified param database of `util.FindMigrationHistoryList` when we support *clickhouse* database level.
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	if err != nil {
 		if !strings.Contains(err.Error(), "invalid stored version") {
@@ -627,7 +633,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
 	}
 	return history, err
 }

@@ -110,14 +110,14 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
+import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
 const COLUMN_LIST: BBTableColumn[] = [
   {
@@ -137,7 +137,7 @@ const COLUMN_LIST: BBTableColumn[] = [
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "MemberTable",
   components: { RoleSelect, PrincipalAvatar },
   props: {
@@ -148,13 +148,11 @@ export default {
   },
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
+    const memberStore = useMemberStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({});
 
@@ -240,7 +238,7 @@ export default {
       const memberPatch: MemberPatch = {
         role,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });
@@ -250,7 +248,7 @@ export default {
       const memberPatch: MemberPatch = {
         rowStatus,
       };
-      store.dispatch("member/patchMember", {
+      memberStore.patchMember({
         id,
         memberPatch,
       });
@@ -271,5 +269,5 @@ export default {
       changeRowStatus,
     };
   },
-};
+});
 </script>

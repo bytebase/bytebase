@@ -52,6 +52,19 @@
           @select-task="selectTask"
         />
       </template>
+      <template v-else-if="isGhostMode">
+        <PipelineGhostFlow
+          v-if="project"
+          :create="create"
+          :project="project"
+          :pipeline="issue.pipeline!"
+          :selected-stage="selectedStage"
+          :selected-task="selectedTask"
+          class="border-t border-b"
+          @select-stage="selectStageId"
+          @select-task="selectTask"
+        />
+      </template>
       <template v-else>
         <PipelineSimpleFlow
           :create="create"
@@ -60,11 +73,13 @@
           @select-stage-id="selectStageId"
         />
       </template>
+
       <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
         <IssueStagePanel
           :stage="selectedStage"
           :selected-task="selectedTask"
-          :single-mode="isTenantDeployMode"
+          :is-tenant-mode="isTenantDeployMode"
+          :is-ghost-mode="isGhostMode"
         />
       </div>
     </template>
@@ -142,6 +157,27 @@
                   @update-statement="updateStatement"
                 />
               </template>
+              <template v-else-if="isGhostMode">
+                <!--
+                  For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
+                  has a SQL statement.
+                  TODO(jim): When the other two tasks are selected we should show the SQL which will be internally
+                  executed (change table name and drop table).
+                -->
+                <template v-if="isGhostSyncTaskSelected">
+                  <IssueTaskStatementPanel
+                    :sql-hint="sqlHint()"
+                    :statement="selectedStatement"
+                    :create="create"
+                    :allow-edit="allowEditStatement"
+                    :show-apply-statement="showIssueTaskStatementApply"
+                    @update-statement="updateStatement"
+                    @apply-statement-to-other-stages="
+                      applyStatementToOtherStages
+                    "
+                  />
+                </template>
+              </template>
               <template v-else>
                 <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
                    The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
@@ -215,7 +251,6 @@ import {
   PropType,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEqual } from "lodash-es";
 import {
@@ -228,6 +263,7 @@ import {
   stageSlug,
   activeTask,
   taskSlug,
+  isDev,
 } from "../../utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -240,6 +276,7 @@ import IssueDescriptionPanel from "./IssueDescriptionPanel.vue";
 import IssueActivityPanel from "./IssueActivityPanel.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import PipelineTenantFlow from "./PipelineTenantFlow.vue";
+import PipelineGhostFlow from "./PipelineGhostFlow.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import {
   Issue,
@@ -267,6 +304,8 @@ import {
   TaskPatch,
   UpdateSchemaContext,
   UpdateSchemaDetail,
+  TaskDatabaseSchemaUpdateGhostSyncPayload,
+  UpdateSchemaGhostContext,
 } from "../../types";
 import {
   defaulTemplate as defaultTemplate,
@@ -274,7 +313,16 @@ import {
   InputField,
   OutputField,
 } from "../../plugins";
-import { isEmpty } from "lodash-es";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDatabaseStore,
+  useInstanceStore,
+  useIssueStore,
+  useIssueSubscriberStore,
+  useProjectStore,
+  useTaskStore,
+} from "@/store";
 
 export default defineComponent({
   name: "IssueDetailLayout",
@@ -290,6 +338,7 @@ export default defineComponent({
     IssueStatusTransitionButtonGroup,
     PipelineSimpleFlow,
     PipelineTenantFlow,
+    PipelineGhostFlow,
     TaskCheckBar,
   },
   props: {
@@ -306,18 +355,18 @@ export default defineComponent({
     "status-changed": (eager: boolean) => true,
   },
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
     const route = useRoute();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const issueStore = useIssueStore();
+    const issueSubscriberStore = useIssueSubscriberStore();
+    const taskStore = useTaskStore();
+    const projectStore = useProjectStore();
 
     watchEffect(function prepare() {
       if (props.create) {
-        store.dispatch(
-          "project/fetchProjectById",
-          (props.issue as IssueCreate).projectId
-        );
+        projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
       }
     });
 
@@ -327,7 +376,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (props.create) {
-        return store.getters["project/projectById"](
+        return projectStore.getProjectById(
           (props.issue as IssueCreate).projectId
         );
       }
@@ -398,6 +447,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             task.statement = newStatement;
@@ -434,7 +484,18 @@ export default defineComponent({
 
     const updateEarliestAllowedTime = (newEarliestAllowedTsMs: number) => {
       if (props.create) {
-        selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
+        if (isGhostMode.value) {
+          // In gh-ost mode, when creating an issue, all sub-tasks in a stage
+          // share the same earliestAllowedTs.
+          // So updates on any one of them will be applied to others.
+          // (They can be updated independently after creation)
+          const taskList = selectedStage.value.taskList as TaskCreate[];
+          taskList.forEach((task) => {
+            task.earliestAllowedTs = newEarliestAllowedTsMs;
+          });
+        } else {
+          selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
+        }
       } else {
         const taskPatch: TaskPatch = {
           earliestAllowedTs: newEarliestAllowedTsMs,
@@ -444,14 +505,14 @@ export default defineComponent({
     };
 
     const addSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/createSubscriber", {
+      issueSubscriberStore.createSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
     };
 
     const removeSubscriberId = (subscriberId: PrincipalId) => {
-      store.dispatch("issueSubscriber/deleteSubscriber", {
+      issueSubscriberStore.deleteSubscriber({
         issueId: (props.issue as Issue).id,
         subscriberId,
       });
@@ -491,18 +552,34 @@ export default defineComponent({
           migrationType: taskList[0].migrationType!,
           updateSchemaDetailList: detailList,
         };
+      } else if (isGhostMode.value) {
+        // for gh-ost mode, copy user edited tasks back to issue.createContext
+        // only the first subtask (bb.task.database.schema.update.ghost.sync) has statement
+        const stageList = issue.pipeline!.stageList;
+        const createContext = issue.createContext as UpdateSchemaGhostContext;
+        const detailList = createContext.updateSchemaDetailList;
+        stageList.forEach((stage, i) => {
+          const detail = detailList[i];
+          const syncTask = stage.taskList[0];
+
+          detail.databaseId = syncTask.databaseId!;
+          detail.databaseName = syncTask.databaseName!;
+          detail.statement = syncTask.statement;
+          detail.earliestAllowedTs = syncTask.earliestAllowedTs;
+        });
       } else {
         // for multi-tenancy issue pipeline (M * N)
         // createContext is up-to-date already
         // so nothing to do
       }
+
       // then empty issue.pipeline and issue.payload
       // because we are no longer passing parameters via issue.pipeline
       // we are using issue.createContext instead
       delete issue.pipeline;
       issue.payload = {};
 
-      store.dispatch("issue/createIssue", issue).then((createdIssue) => {
+      issueStore.createIssue(issue).then((createdIssue) => {
         // Use replace to omit the new issue url in the navigation history.
         router.replace(
           `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
@@ -515,9 +592,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("issue/updateIssueStatus", {
+      issueStore
+        .updateIssueStatus({
           issueId: (props.issue as Issue).id,
           issueStatusPatch,
         })
@@ -541,9 +617,8 @@ export default defineComponent({
         status: newStatus,
         comment: comment,
       };
-
-      store
-        .dispatch("task/updateStatus", {
+      taskStore
+        .updateStatus({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -556,8 +631,8 @@ export default defineComponent({
     };
 
     const runTaskChecks = (task: Task) => {
-      store
-        .dispatch("task/runChecks", {
+      taskStore
+        .runChecks({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId: task.id,
@@ -572,8 +647,8 @@ export default defineComponent({
       issuePatch: IssuePatch,
       postUpdated?: (updatedIssue: Issue) => void
     ) => {
-      store
-        .dispatch("issue/patchIssue", {
+      issueStore
+        .patchIssue({
           issueId: (props.issue as Issue).id,
           issuePatch,
         })
@@ -593,8 +668,8 @@ export default defineComponent({
       taskPatch: TaskPatch,
       postUpdated?: (updatedTask: Task) => void
     ) => {
-      store
-        .dispatch("task/patchTask", {
+      taskStore
+        .patchTask({
           issueId: (props.issue as Issue).id,
           pipelineId: (props.issue as Issue).pipeline.id,
           taskId,
@@ -725,18 +800,36 @@ export default defineComponent({
           );
         case "bb.task.database.restore":
           return "";
+        case "bb.task.database.schema.update.ghost.sync":
+        case "bb.task.database.schema.update.ghost.cutover":
+        case "bb.task.database.schema.update.ghost.drop-original-table":
+          return ""; // should never reach here
       }
     };
 
     const isTenantDeployMode = computed((): boolean => {
+      if (project.value.tenantMode !== "TENANT") return false;
       return (
-        props.issue.type === "bb.issue.database.schema.update" &&
-        project.value.tenantMode === "TENANT"
+        props.issue.type === "bb.issue.database.schema.update" ||
+        props.issue.type === "bb.issue.database.data.update"
+      );
+    });
+
+    const isGhostMode = computed((): boolean => {
+      if (!isDev()) return false;
+
+      return props.issue.type === "bb.issue.database.schema.update.ghost";
+    });
+
+    const isGhostSyncTaskSelected = computed((): boolean => {
+      return (
+        selectedTask.value.type === "bb.task.database.schema.update.ghost.sync"
       );
     });
 
     const selectedStatement = computed((): string => {
       if (isTenantDeployMode.value) {
+        // In tenant mode, the entire issue shares only one SQL statement
         if (props.create) {
           const issueCreate = props.issue as IssueCreate;
           const context = issueCreate.createContext as UpdateSchemaContext;
@@ -746,6 +839,21 @@ export default defineComponent({
           const task = issue.pipeline.stageList[0].taskList[0];
           const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
           return payload.statement;
+        }
+      } else if (isGhostMode.value) {
+        // In gh-ost mode, each stage can own its SQL statement
+        // But only for task.type === "bb.task.database.schema.update.ghost.sync"
+        const task = selectedTask.value;
+        if (task.type === "bb.task.database.schema.update.ghost.sync") {
+          if (props.create) {
+            return (task as TaskCreate).statement;
+          } else {
+            const payload = (task as Task)
+              .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
+            return payload.statement;
+          }
+        } else {
+          return "";
         }
       } else {
         if (router.currentRoute.value.query.sql) {
@@ -869,6 +977,7 @@ export default defineComponent({
         task.type == "bb.task.general" ||
         task.type == "bb.task.database.create" ||
         task.type == "bb.task.database.schema.update" ||
+        task.type == "bb.task.database.schema.update.ghost.sync" ||
         task.type == "bb.task.database.data.update"
       );
     });
@@ -887,6 +996,7 @@ export default defineComponent({
             task.type == "bb.task.general" ||
             task.type == "bb.task.database.create" ||
             task.type == "bb.task.database.schema.update" ||
+            task.type == "bb.task.database.schema.update.ghost.sync" ||
             task.type == "bb.task.database.data.update"
           ) {
             count++;
@@ -900,7 +1010,7 @@ export default defineComponent({
       if (props.create) {
         const databaseId = (selectedTask.value as TaskCreate).databaseId;
         if (databaseId) {
-          return store.getters["database/databaseById"](databaseId);
+          return useDatabaseStore().getDatabaseById(databaseId);
         }
         return undefined;
       }
@@ -913,7 +1023,7 @@ export default defineComponent({
         if (database.value) {
           return database.value.instance;
         }
-        return store.getters["instance/instanceById"](
+        return useInstanceStore().getInstanceById(
           (selectedTask.value as TaskCreate).instanceId
         );
       }
@@ -938,11 +1048,9 @@ export default defineComponent({
       document.getElementById("issue-detail-top")!.scrollIntoView();
     });
 
-    const hasBackwardCompatibilityFeature = computed((): boolean => {
-      return store.getters["subscription/feature"](
-        "bb.feature.backward-compatibility"
-      );
-    });
+    const hasBackwardCompatibilityFeature = featureToRef(
+      "bb.feature.backward-compatibility"
+    );
 
     const supportBackwardCompatibilityFeature = computed((): boolean => {
       const engine = database.value?.instance.engine;
@@ -970,6 +1078,8 @@ export default defineComponent({
       currentUser,
       project,
       isTenantDeployMode,
+      isGhostMode,
+      isGhostSyncTaskSelected,
       issueTemplate,
       selectedStage,
       selectedTask,

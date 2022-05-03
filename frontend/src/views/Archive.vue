@@ -39,21 +39,21 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, reactive, watchEffect } from "vue";
 import EnvironmentTable from "../components/EnvironmentTable.vue";
 import InstanceTable from "../components/InstanceTable.vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import {
-  Environment,
-  Instance,
-  Principal,
-  Project,
-  UNKNOWN_ID,
-} from "../types";
+import { Environment, Instance, Project, UNKNOWN_ID } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  useEnvironmentStore,
+  useInstanceStore,
+  useProjectStore,
+} from "@/store";
 
 const PROJECT_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -64,54 +64,50 @@ interface LocalState {
   searchText: string;
 }
 
-export default {
+export default defineComponent({
   name: "Archive",
   components: { EnvironmentTable, InstanceTable, ProjectTable },
   setup() {
     const { t } = useI18n();
+    const instanceStore = useInstanceStore();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       selectedIndex: PROJECT_TAB,
       searchText: "",
     });
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
-
-    const store = useStore();
+    const currentUser = useCurrentUser();
 
     const prepareList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("project/fetchProjectListByUser", {
+        projectStore.fetchProjectListByUser({
           userId: currentUser.value.id,
           rowStatusList: ["ARCHIVED"],
         });
       }
 
       if (isDBAOrOwner(currentUser.value.role)) {
-        store.dispatch("instance/fetchInstanceList", ["ARCHIVED"]);
+        instanceStore.fetchInstanceList(["ARCHIVED"]);
 
-        store.dispatch("environment/fetchEnvironmentList", ["ARCHIVED"]);
+        useEnvironmentStore().fetchEnvironmentList(["ARCHIVED"]);
       }
     };
 
     watchEffect(prepareList);
 
     const projectList = computed((): Project[] => {
-      return store.getters["project/projectListByUser"](currentUser.value.id, [
+      return projectStore.getProjectListByUser(currentUser.value.id, [
         "ARCHIVED",
       ]);
     });
 
     const instanceList = computed((): Instance[] => {
-      return store.getters["instance/instanceList"](["ARCHIVED"]);
+      return instanceStore.getInstanceList(["ARCHIVED"]);
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["ARCHIVED"]);
-    });
+    const environmentList = useEnvironmentList(["ARCHIVED"]);
 
     const tabItemList = computed((): BBTabFilterItem[] => {
       return isDBAOrOwner(currentUser.value.role)
@@ -175,5 +171,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

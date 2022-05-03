@@ -1,5 +1,6 @@
 <template>
   <teleport to="#bb-modal-stack">
+    <div class="fixed inset-0 bg-transparent" :style="style" />
     <div
       class="bb-modal"
       :style="style"
@@ -53,6 +54,10 @@ export default defineComponent({
       type: Boolean,
       default: true,
     },
+    escClosable: {
+      type: Boolean,
+      default: true,
+    },
   },
   emits: ["close"],
   setup(props, { emit }) {
@@ -67,11 +72,17 @@ export default defineComponent({
     };
 
     const escHandler = (e: KeyboardEvent) => {
-      if (!active.value) {
-        // only to close the topmost modal when pressing ESC
-        return;
-      }
       if (e.code == "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!props.escClosable) {
+          return;
+        }
+        if (!active.value) {
+          // only to close the topmost modal when pressing ESC
+          return;
+        }
         close();
       }
     };

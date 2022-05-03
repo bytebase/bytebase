@@ -105,8 +105,7 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, reactive } from "vue";
 import RoleSelect from "./RoleSelect.vue";
 import {
   Principal,
@@ -116,6 +115,13 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { isOwner, isValidEmail } from "../utils";
+import {
+  useUIStateStore,
+  featureToRef,
+  useCurrentUser,
+  usePrincipalStore,
+  useMemberStore,
+} from "@/store";
 
 type User = {
   email: string;
@@ -127,22 +133,20 @@ interface LocalState {
   errorList: string[];
 }
 
-export default {
+export default defineComponent({
   name: "MemberAddOrInvite",
   components: { RoleSelect },
   props: {},
   setup() {
-    const store = useStore();
+    const memberStore = useMemberStore();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const isAdd = computed(() => {
       return isOwner(currentUser.value.role);
     });
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const state = reactive<LocalState>({
       userList: [],
@@ -162,7 +166,7 @@ export default {
         if (!isValidEmail(user.email)) {
           return "Invalid email address";
         } else {
-          const member = store.getters["member/memberByEmail"](user.email);
+          const member = memberStore.memberByEmail(user.email);
           if (member.id != UNKNOWN_ID) {
             return "Already a member";
           }
@@ -219,8 +223,8 @@ export default {
             name: user.email.split("@")[0],
             email: user.email,
           };
-          store
-            .dispatch("principal/createPrincipal", newPrincipal)
+          usePrincipalStore()
+            .createPrincipal(newPrincipal)
             .then((principal: Principal) => {
               const newMember: MemberCreate = {
                 principalId: principal.id,
@@ -230,10 +234,10 @@ export default {
               // Note "principal/createdMember" would return the existing role mapping.
               // This could happen if another client has just created the role mapping with
               // this principal.
-              store.dispatch("member/createdMember", newMember);
+              memberStore.createdMember(newMember);
             });
 
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "member.addOrInvite",
             newState: true,
           });
@@ -257,5 +261,5 @@ export default {
       addOrInvite,
     };
   },
-};
+});
 </script>

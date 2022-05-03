@@ -64,7 +64,7 @@
         v-if="state.alterType == 'MULTI_DB'"
         class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
         :disabled="!allowGenerateMultiDb"
-        @click.prevent="generateMultDb"
+        @click.prevent="generateMultiDb"
       >
         {{ $t("common.next") }}
       </button>
@@ -85,25 +85,27 @@
     feature="bb.feature.multi-tenancy"
     @cancel="state.showFeatureModal = false"
   />
+
+  <GhostDialog ref="ghostDialog" />
 </template>
 
 <script lang="ts">
-import { computed, reactive, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
+import { computed, reactive, PropType, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
+import { NTabs, NTabPane } from "naive-ui";
+import { useEventListener } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
   Database,
   DatabaseId,
-  Principal,
   Project,
   ProjectId,
   Repository,
   UNKNOWN_ID,
-} from "../../types";
-import { sortDatabaseList } from "../../utils";
-import { cloneDeep } from "lodash-es";
+} from "@/types";
+import { allowGhostMigration, isDev, sortDatabaseList } from "@/utils";
 import VCSTipsInfo from "./VCSTipsInfo.vue";
 import ProjectStandardView, {
   State as ProjectStandardState,
@@ -114,8 +116,15 @@ import ProjectTenantView, {
 import CommonTenantView, {
   State as CommonTenantState,
 } from "./CommonTenantView.vue";
-import { NTabs, NTabPane } from "naive-ui";
-import { useEventListener } from "@vueuse/core";
+import GhostDialog from "./GhostDialog.vue";
+import {
+  hasFeature,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+  useProjectStore,
+  useRepositoryStore,
+} from "@/store";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -135,6 +144,7 @@ export default defineComponent({
     CommonTenantView,
     NTabs,
     NTabPane,
+    GhostDialog,
   },
   props: {
     projectId: {
@@ -150,12 +160,13 @@ export default defineComponent({
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
 
-    const currentUser = computed(
-      () => store.getters["auth/currentUser"]() as Principal
-    );
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
+    const repositoryStore = useRepositoryStore();
+
+    const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 
     useEventListener(window, "keydown", (e) => {
       if (e.code === "Escape") {
@@ -165,7 +176,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       project: props.projectId
-        ? store.getters["project/projectById"](props.projectId)
+        ? projectStore.getProjectById(props.projectId)
         : undefined,
       tab: "standard",
       alterType: "SINGLE_DB",
@@ -185,20 +196,15 @@ export default defineComponent({
       return state.project?.tenantMode === "TENANT";
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const databaseList = computed(() => {
+      const databaseStore = useDatabaseStore();
       var list;
       if (props.projectId) {
-        list = store.getters["database/databaseListByProjectId"](
-          props.projectId
-        );
+        list = databaseStore.getDatabaseListByProjectId(props.projectId);
       } else {
-        list = store.getters["database/databaseListByPrincipalId"](
-          currentUser.value.id
-        );
+        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
       }
 
       return sortDatabaseList(cloneDeep(list), environmentList.value);
@@ -220,32 +226,66 @@ export default defineComponent({
       return state.selectedDatabaseIdForEnvironment.size > 0;
     });
 
-    const generateMultDb = () => {
+    // 'normal' -> normal migration
+    // 'online' -> online migration
+    // false -> user clicked cancel button
+    const isUsingGhostMigration = async (databaseList: Database[]) => {
+      if (!isDev()) {
+        return "normal";
+      }
+
+      // never available for "bb.issue.database.data.update"
+      if (props.type === "bb.issue.database.data.update") {
+        return "normal";
+      }
+
+      // check if all selected databases supports gh-ost
+      if (allowGhostMigration(databaseList)) {
+        // open the dialog to ask the user
+        const { result, mode } = await ghostDialog.value!.open();
+        if (!result) {
+          return false; // return false when user clicked the cancel button
+        }
+        return mode;
+      }
+
+      // fallback to normal
+      return "normal";
+    };
+
+    const generateMultiDb = async () => {
       const databaseIdList: DatabaseId[] = [];
+      const selectedDatabaseList: Database[] = [];
       for (var i = 0; i < environmentList.value.length; i++) {
-        if (
-          state.selectedDatabaseIdForEnvironment.get(
-            environmentList.value[i].id
-          )
-        ) {
-          databaseIdList.push(
-            state.selectedDatabaseIdForEnvironment.get(
-              environmentList.value[i].id
-            )!
+        const envId = environmentList.value[i].id;
+        const databaseId = state.selectedDatabaseIdForEnvironment.get(envId);
+        if (databaseId) {
+          databaseIdList.push(databaseId);
+          selectedDatabaseList.push(
+            databaseList.value.find((db) => db.id === databaseId)!
           );
         }
+      }
+
+      const mode = await isUsingGhostMigration(selectedDatabaseList);
+      if (mode === false) {
+        return;
+      }
+      const query: Record<string, any> = {
+        template: props.type,
+        name: isAlterSchema.value ? `Alter schema` : `Change data`,
+        project: props.projectId,
+        databaseList: databaseIdList.join(","),
+      };
+      if (mode === "online") {
+        query.ghost = "1";
       }
       router.push({
         name: "workspace.issue.detail",
         params: {
           issueSlug: "new",
         },
-        query: {
-          template: props.type,
-          name: isAlterSchema.value ? `Alter schema` : `Change data`,
-          project: props.projectId,
-          databaseList: databaseIdList.join(","),
-        },
+        query,
       });
     };
 
@@ -260,7 +300,7 @@ export default defineComponent({
     });
 
     const generateTenant = async () => {
-      if (!store.getters["subscription/feature"]("bb.feature.multi-tenancy")) {
+      if (!hasFeature("bb.feature.multi-tenancy")) {
         state.showFeatureModal = true;
         return;
       }
@@ -270,9 +310,7 @@ export default defineComponent({
       const projectId = props.projectId || state.tenantProjectId;
       if (!projectId) return;
 
-      const project = store.getters["project/projectById"](
-        projectId
-      ) as Project;
+      const project = projectStore.getProjectById(projectId) as Project;
 
       if (project.id === UNKNOWN_ID) return;
 
@@ -293,41 +331,46 @@ export default defineComponent({
           },
         });
       } else if (project.workflowType === "VCS") {
-        store
-          .dispatch("repository/fetchRepositoryByProjectId", project.id)
+        repositoryStore
+          .fetchRepositoryByProjectId(project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });
       }
     };
 
-    const selectDatabase = (database: Database) => {
-      emit("dismiss");
-
+    const selectDatabase = async (database: Database) => {
       if (database.project.workflowType == "UI") {
+        const mode = await isUsingGhostMigration([database]);
+        if (mode === false) {
+          return;
+        }
+        emit("dismiss");
+        const query: Record<string, any> = {
+          template: props.type,
+          name: `[${database.name}] ${
+            isAlterSchema.value ? `Alter schema` : `Change data`
+          }`,
+          project: database.project.id,
+          databaseList: database.id,
+        };
+        if (mode === "online") {
+          query.ghost = "1";
+        }
         router.push({
           name: "workspace.issue.detail",
           params: {
             issueSlug: "new",
           },
-          query: {
-            template: props.type,
-            name: `[${database.name}] ${
-              isAlterSchema.value ? `Alter schema` : `Change data`
-            }`,
-            project: database.project.id,
-            databaseList: database.id,
-          },
+          query,
         });
       } else if (database.project.workflowType == "VCS") {
-        store
-          .dispatch(
-            "repository/fetchRepositoryByProjectId",
-            database.project.id
-          )
+        repositoryStore
+          .fetchRepositoryByProjectId(database.project.id)
           .then((repository: Repository) => {
             window.open(baseDirectoryWebUrl(repository), "_blank");
           });
+        emit("dismiss");
       }
     };
 
@@ -349,6 +392,7 @@ export default defineComponent({
     return {
       wrapperClass,
       state,
+      ghostDialog,
       isAlterSchema,
       isTenantProject,
       environmentList,
@@ -356,7 +400,7 @@ export default defineComponent({
       standardProjectDatabaseList,
       tenantProjectDatabaseList,
       allowGenerateMultiDb,
-      generateMultDb,
+      generateMultiDb,
       allowGenerateTenant,
       generateTenant,
       selectDatabase,

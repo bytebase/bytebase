@@ -27,7 +27,7 @@ var (
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	g.POST("/gitlab/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		var b []byte
 		b, err := io.ReadAll(c.Request().Body)
 		if err != nil {
@@ -45,21 +45,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		webhookEndpointID := c.Param("id")
-		repositoryFind := &api.RepositoryFind{
-			WebhookEndpointID: &webhookEndpointID,
-		}
-		repoRaw, err := s.RepositoryService.FindRepository(ctx, repositoryFind)
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
-		if repoRaw == nil {
+		if repo == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
 		}
 
-		repo, err := s.composeRepositoryRelationship(ctx, repoRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch repository relationship: %v", repoRaw.Name)).SetInternal(err)
-		}
 		if repo.VCS == nil {
 			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
@@ -233,11 +226,11 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		ProjectID: &repository.ProjectID,
 		Name:      &mi.Database,
 	}
-	databaseList, err := s.composeDatabaseListByFind(ctx, databaseFind)
+	databaseList, err := s.store.FindDatabase(ctx, databaseFind)
 	if err != nil {
 		return "", fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
 	} else if len(databaseList) == 0 {
-		return "", fmt.Errorf("project ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
+		return "", fmt.Errorf("project with ID[%d] does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
 	}
 
 	// We support 3 patterns on how to organize the schema files.
@@ -280,7 +273,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		}
 	}
 	if len(multipleDatabaseForSameEnv) > 0 {
-		return "", fmt.Errorf("Ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
+		return "", fmt.Errorf("ignored committed files with multiple ambiguous databases %s", strings.Join(multipleDatabaseForSameEnv, ", "))
 	}
 
 	// Compose the new issue
@@ -297,7 +290,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
 	}
 	return string(createContext), nil
 }
@@ -319,7 +312,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	}
 	createContext, err := json.Marshal(m)
 	if err != nil {
-		return "", fmt.Errorf("Failed to construct issue create context payload, error %v", err)
+		return "", fmt.Errorf("failed to construct issue create context payload, error %v", err)
 	}
 	return string(createContext), nil
 }

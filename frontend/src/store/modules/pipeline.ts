@@ -1,31 +1,32 @@
+import { defineStore } from "pinia";
 import {
   ResourceIdentifier,
   ResourceObject,
   Pipeline,
   PipelineState,
   Stage,
-} from "../../types";
+  TaskId,
+  Task,
+  Attributes,
+  unknown,
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-
-const state: () => PipelineState = () => ({});
+import { useStageStore } from "./stage";
 
 function convert(
   pipeline: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Pipeline {
   const stageList: Stage[] = [];
   const stageIdList = pipeline.relationships!.stage
     .data as ResourceIdentifier[];
+  const stageStore = useStageStore();
   // Needs to iterate through stageIdList to maintain the order
   for (const idItem of stageIdList) {
     for (const item of includedList || []) {
       if (item.type == "stage") {
         if (idItem.id == item.id) {
-          const stage: Stage = rootGetters["stage/convertPartial"](
-            item,
-            includedList
-          );
+          const stage: Stage = stageStore.convertPartial(item, includedList);
           stageList.push(stage);
         }
       }
@@ -58,25 +59,37 @@ function convert(
     }
   }
 
+  // Then we compose tasks' blockedBy since we have converted all tasks in this pipeline
+  const taskMapById = new Map<TaskId, Task>();
+  result.stageList.forEach((stage) =>
+    stage.taskList.forEach((task) => {
+      taskMapById.set(task.id, task);
+    })
+  );
+  result.stageList.forEach((stage) =>
+    stage.taskList.forEach((task) => {
+      // attributes.blockedBy is string[] since jsonapi's limitation
+      const blockedByTaskIdList = (task as Attributes).blockedBy as string[];
+      const blockedBy = (blockedByTaskIdList || []).map((blockedById) => {
+        return (
+          taskMapById.get(parseInt(blockedById, 10)) ||
+          (unknown("TASK") as Task)
+        );
+      });
+      task.blockedBy = blockedBy;
+    })
+  );
+
   return result;
 }
-
-const getters = {
-  convert:
-    (state: PipelineState, getters: any, rootState: any, rootGetters: any) =>
-    (pipeline: ResourceObject, includedList: ResourceObject[]): Pipeline => {
-      return convert(pipeline, includedList, rootGetters);
+export const usePipelineStore = defineStore("pipeline", {
+  state: (): PipelineState => ({}),
+  actions: {
+    convert(
+      pipeline: ResourceObject,
+      includedList: ResourceObject[]
+    ): Pipeline {
+      return convert(pipeline, includedList);
     },
-};
-
-const actions = {};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+  },
+});

@@ -48,38 +48,39 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef } from "vue";
-import { useStore } from "vuex";
+import { computed, ComputedRef, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  RouterSlug,
-  Bookmark,
-  UNKNOWN_ID,
-  Principal,
-  BookmarkCreate,
-} from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
+import {
+  useCurrentUser,
+  useRouterStore,
+  useUIStateStore,
+  useBookmarkStore,
+  useDatabaseStore,
+  useProjectStore,
+} from "@/store";
 
 interface BreadcrumbItem {
   name: string;
   path?: string;
 }
 
-export default {
+export default defineComponent({
   name: "Breadcrumb",
   components: {},
   setup() {
-    const store = useStore();
+    const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
+    const bookmarkStore = useBookmarkStore();
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
-      store.getters["bookmark/bookmarkByUserAndLink"](
+      bookmarkStore.bookmarkByUserAndLink(
         currentUser.value.id,
         currentRoute.value.path
       )
@@ -92,9 +93,7 @@ export default {
     const allowBookmark = computed(() => currentRoute.value.meta.allowBookmark);
 
     const breadcrumbList = computed(() => {
-      const routeSlug: RouterSlug = store.getters["router/routeSlug"](
-        currentRoute.value
-      );
+      const routeSlug = routerStore.routeSlug(currentRoute.value);
       const environmentSlug = routeSlug.environmentSlug;
       const projectSlug = routeSlug.projectSlug;
       const projectWebhookSlug = routeSlug.projectWebhookSlug;
@@ -104,6 +103,7 @@ export default {
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
+      const schemaReviewPolicySlug = routeSlug.schemaReviewPolicySlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -118,9 +118,7 @@ export default {
         });
 
         if (projectWebhookSlug) {
-          const project = store.getters["project/projectById"](
-            idFromSlug(projectSlug)
-          );
+          const project = projectStore.getProjectById(idFromSlug(projectSlug));
           list.push({
             name: `${project.name}`,
             path: `/project/${projectSlug}`,
@@ -138,7 +136,7 @@ export default {
         });
 
         if (tableName || dataSourceSlug || migrationHistory) {
-          const database = store.getters["database/databaseById"](
+          const database = useDatabaseStore().getDatabaseById(
             idFromSlug(databaseSlug)
           );
           list.push({
@@ -157,6 +155,11 @@ export default {
           name: t("common.version-control"),
           path: "/setting/version-control",
         });
+      } else if (schemaReviewPolicySlug) {
+        list.push({
+          name: t("schema-review-policy.title"),
+          path: "/setting/schema-review-policy",
+        });
       }
 
       if (currentRoute.value.meta.title) {
@@ -174,14 +177,14 @@ export default {
 
     const toggleBookmark = () => {
       if (isBookmarked.value) {
-        store.dispatch("bookmark/deleteBookmark", bookmark.value);
+        bookmarkStore.deleteBookmark(bookmark.value);
       } else {
         const newBookmark: BookmarkCreate = {
           name: breadcrumbList.value[breadcrumbList.value.length - 1].name,
           link: currentRoute.value.path,
         };
-        store.dispatch("bookmark/createBookmark", newBookmark).then(() => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+        bookmarkStore.createBookmark(newBookmark).then(() => {
+          useUIStateStore().saveIntroStateByKey({
             key: "bookmark.create",
             newState: true,
           });
@@ -197,5 +200,5 @@ export default {
       toggleBookmark,
     };
   },
-};
+});
 </script>

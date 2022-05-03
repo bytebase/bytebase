@@ -8,34 +8,265 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.BackupService = (*BackupService)(nil)
-)
+// backupRaw is the store model for an Backup.
+// Fields have exactly the same meanings as Backup.
+type backupRaw struct {
+	ID int
 
-// BackupService represents a service for managing backup.
-type BackupService struct {
-	l     *zap.Logger
-	db    *DB
-	store *Store
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+
+	// Domain specific fields
+	Name                    string
+	Status                  api.BackupStatus
+	Type                    api.BackupType
+	StorageBackend          api.BackupStorageBackend
+	MigrationHistoryVersion string
+	Path                    string
+	Comment                 string
 }
 
-// NewBackupService returns a new instance of BackupService.
-func NewBackupService(logger *zap.Logger, db *DB, store *Store) *BackupService {
-	return &BackupService{l: logger, db: db, store: store}
+// toBackup creates an instance of Backup based on the backupRaw.
+// This is intended to be called when we need to compose an Backup relationship.
+func (raw *backupRaw) toBackup() *api.Backup {
+	return &api.Backup{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Name:                    raw.Name,
+		Status:                  raw.Status,
+		Type:                    raw.Type,
+		StorageBackend:          raw.StorageBackend,
+		MigrationHistoryVersion: raw.MigrationHistoryVersion,
+		Path:                    raw.Path,
+		Comment:                 raw.Comment,
+	}
 }
 
-// CreateBackup creates a new backup.
-func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.BackupRaw, error) {
+// backupSettingRaw is the store model for an BackupSetting.
+// Fields have exactly the same meanings as BackupSetting.
+type backupSettingRaw struct {
+	ID int
+
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
+
+	// Related fields
+	DatabaseID int
+
+	// Domain specific fields
+	Enabled   bool
+	Hour      int
+	DayOfWeek int
+	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+	HookURL string
+}
+
+// toBackupSetting creates an instance of BackupSetting based on the backupSettingRaw.
+// This is intended to be called when we need to compose an BackupSetting relationship.
+func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
+	return &api.BackupSetting{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
+		// Domain specific fields
+		Enabled:   raw.Enabled,
+		Hour:      raw.Hour,
+		DayOfWeek: raw.DayOfWeek,
+		// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+		HookURL: raw.HookURL,
+	}
+}
+
+// CreateBackup creates an instance of Backup
+func (s *Store) CreateBackup(ctx context.Context, create *api.BackupCreate) (*api.Backup, error) {
+	backupRaw, err := s.createBackupRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Backup with BackupCreate[%+v], error[%w]", create, err)
+	}
+	backup, err := s.composeBackup(ctx, backupRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+	}
+	return backup, nil
+}
+
+// GetBackupByID gets an instance of Backup by ID
+func (s *Store) GetBackupByID(ctx context.Context, id int) (*api.Backup, error) {
+	backupRaw, err := s.getBackupRawByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup setting by ID[%d], error[%w]", id, err)
+	}
+	if backupRaw == nil {
+		return nil, nil
+	}
+	backupSetting, err := s.composeBackup(ctx, backupRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+	}
+	return backupSetting, nil
+}
+
+// FindBackup finds a list of Backup instances
+func (s *Store) FindBackup(ctx context.Context, find *api.BackupFind) ([]*api.Backup, error) {
+	backupRawList, err := s.findBackupRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Backup list with BackupFind[%+v], error[%w]", find, err)
+	}
+	var backupList []*api.Backup
+	for _, raw := range backupRawList {
+		backup, err := s.composeBackup(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
+		}
+		backupList = append(backupList, backup)
+	}
+	return backupList, nil
+}
+
+// PatchBackup patches an instance of Backup
+func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.Backup, error) {
+	backupRaw, err := s.patchBackupRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Backup with BackupPatch[%+v], error[%w]", patch, err)
+	}
+	backup, err := s.composeBackup(ctx, backupRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupRaw, err)
+	}
+	return backup, nil
+}
+
+// GetBackupSettingByDatabaseID gets an instance of BackupSetting by ID
+func (s *Store) GetBackupSettingByDatabaseID(ctx context.Context, id int) (*api.BackupSetting, error) {
+	backupSettingRaw, err := s.getBackupSettingRaw(ctx, &api.BackupSettingFind{DatabaseID: &id})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup setting by ID[%d], error[%w]", id, err)
+	}
+	if backupSettingRaw == nil {
+		return nil, nil
+	}
+	backupSetting, err := s.composeBackupSetting(ctx, backupSettingRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose BackupSetting with backupSettingRaw[%+v], error[%w]", backupSettingRaw, err)
+	}
+	return backupSetting, nil
+}
+
+// UpsertBackupSetting upserts an instance of backup setting
+func (s *Store) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSetting, error) {
+	backupSettingRaw, err := s.upsertBackupSettingRaw(ctx, upsert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert backup setting with BackupSettingUpsert[%+v], error[%w]", upsert, err)
+	}
+	backup, err := s.composeBackupSetting(ctx, backupSettingRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", backupSettingRaw, err)
+	}
+	return backup, nil
+}
+
+// FindBackupSettingsMatch finds a list of backup setting instances with match conditions
+func (s *Store) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSetting, error) {
+	backupSettingRawList, err := s.findBackupSettingsMatchImpl(ctx, match)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find matching backup setting list with BackupSettingsMatch[%+v], error[%w]", match, err)
+	}
+	var backupSettingList []*api.BackupSetting
+	for _, raw := range backupSettingRawList {
+		backupSetting, err := s.composeBackupSetting(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Backup with backupRaw[%+v], error[%w]", raw, err)
+		}
+		backupSettingList = append(backupSettingList, backupSetting)
+	}
+	return backupSettingList, nil
+}
+
+//
+// private functions
+//
+
+// composeBackup composes an instance of Backup by backupRaw
+func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup, error) {
+	backup := raw.toBackup()
+
+	creator, err := s.GetPrincipalByID(ctx, backup.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	backup.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, backup.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	backup.Updater = updater
+
+	return backup, nil
+}
+
+func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw) (*api.BackupSetting, error) {
+	backupSetting := raw.toBackupSetting()
+
+	creator, err := s.GetPrincipalByID(ctx, backupSetting.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	backupSetting.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, backupSetting.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	backupSetting.Updater = updater
+
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	backupSetting.Database = database
+
+	return backupSetting, nil
+}
+
+// createBackupRaw creates a new backup.
+func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (*backupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backupRaw, err := s.createBackup(ctx, tx.PTx, create)
+	backupRaw, err := s.createBackupImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -47,16 +278,17 @@ func (s *BackupService) CreateBackup(ctx context.Context, create *api.BackupCrea
 	return backupRaw, nil
 }
 
-// FindBackup retrieves a single backup based on find.
+// getBackupRawByID retrieves a single backup based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*api.BackupRaw, error) {
+func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error) {
+	find := &api.BackupFind{ID: &id}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backupRawList, err := s.findBackupList(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +301,15 @@ func (s *BackupService) FindBackup(ctx context.Context, find *api.BackupFind) (*
 	return backupRawList[0], nil
 }
 
-// FindBackupList retrieves a list of backups based on find.
-func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind) ([]*api.BackupRaw, error) {
+// findBackupRaw retrieves a list of backups based on find.
+func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*backupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backupRawList, err := s.findBackupList(ctx, tx.PTx, find)
+	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -85,16 +317,16 @@ func (s *BackupService) FindBackupList(ctx context.Context, find *api.BackupFind
 	return backupRawList, nil
 }
 
-// PatchBackup updates an existing backup by ID.
+// patchBackupRaw updates an existing backup by ID.
 // Returns ENOTFOUND if backup does not exist.
-func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.BackupRaw, error) {
+func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*backupRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	backupRaw, err := s.patchBackup(ctx, tx.PTx, patch)
+	backupRaw, err := s.patchBackupImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -106,8 +338,49 @@ func (s *BackupService) PatchBackup(ctx context.Context, patch *api.BackupPatch)
 	return backupRaw, nil
 }
 
-// createBackup creates a new backup.
-func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*api.BackupRaw, error) {
+// upsertBackupSettingRaw sets the backup settings for a database.
+func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
+	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+	// Backup plan policy check for backup setting mutation.
+	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
+		if !upsert.Enabled {
+			return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+		}
+		switch backupPlanPolicy.Schedule {
+		case api.BackupPlanPolicyScheduleDaily:
+			if upsert.DayOfWeek != -1 {
+				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		case api.BackupPlanPolicyScheduleWeekly:
+			if upsert.DayOfWeek == -1 {
+				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
+			}
+		}
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	backupRaw, err := s.upsertBackupSettingImpl(ctx, tx.PTx, upsert)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	return backupRaw, nil
+}
+
+// createBackupImpl creates a new backup.
+func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup (
@@ -140,7 +413,7 @@ func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *ap
 	defer row.Close()
 
 	row.Next()
-	var backupRaw api.BackupRaw
+	var backupRaw backupRaw
 	if err := row.Scan(
 		&backupRaw.ID,
 		&backupRaw.CreatorID,
@@ -162,7 +435,7 @@ func (s *BackupService) createBackup(ctx context.Context, tx *sql.Tx, create *ap
 	return &backupRaw, nil
 }
 
-func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*api.BackupRaw, error) {
+func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -203,9 +476,9 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into backupRawList.
-	var backupRawList []*api.BackupRaw
+	var backupRawList []*backupRaw
 	for rows.Next() {
-		var backupRaw api.BackupRaw
+		var backupRaw backupRaw
 		if err := rows.Scan(
 			&backupRaw.ID,
 			&backupRaw.CreatorID,
@@ -233,8 +506,8 @@ func (s *BackupService) findBackupList(ctx context.Context, tx *sql.Tx, find *ap
 	return backupRawList, nil
 }
 
-// patchBackup updates a backup by ID. Returns the new state of the backup after update.
-func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*api.BackupRaw, error) {
+// patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
+func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
@@ -257,7 +530,7 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.
 	defer row.Close()
 
 	if row.Next() {
-		var backupRaw api.BackupRaw
+		var backupRaw backupRaw
 		if err := row.Scan(
 			&backupRaw.ID,
 			&backupRaw.CreatorID,
@@ -281,16 +554,16 @@ func (s *BackupService) patchBackup(ctx context.Context, tx *sql.Tx, patch *api.
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
 }
 
-// FindBackupSetting finds the backup setting for a database.
+// getBackupSettingRaw finds the backup setting for a database.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupSettingFind) (*api.BackupSettingRaw, error) {
+func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSettingFind) (*backupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findBackupSetting(ctx, tx.PTx, find)
+	list, err := s.findBackupSettingImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +576,7 @@ func (s *BackupService) FindBackupSetting(ctx context.Context, find *api.BackupS
 	return list[0], nil
 }
 
-func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*api.BackupSettingRaw, error) {
+func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -335,9 +608,9 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into backupSettingRawList.
-	var backupSettingRawList []*api.BackupSettingRaw
+	var backupSettingRawList []*backupSettingRaw
 	for rows.Next() {
-		var backupSettingRaw api.BackupSettingRaw
+		var backupSettingRaw backupSettingRaw
 		if err := rows.Scan(
 			&backupSettingRaw.ID,
 			&backupSettingRaw.CreatorID,
@@ -362,49 +635,8 @@ func (s *BackupService) findBackupSetting(ctx context.Context, tx *sql.Tx, find 
 	return backupSettingRawList, nil
 }
 
-// UpsertBackupSetting sets the backup settings for a database.
-func (s *BackupService) UpsertBackupSetting(ctx context.Context, upsert *api.BackupSettingUpsert) (*api.BackupSettingRaw, error) {
-	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, upsert.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	// Backup plan policy check for backup setting mutation.
-	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
-		if !upsert.Enabled {
-			return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting should not be disabled for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-		}
-		switch backupPlanPolicy.Schedule {
-		case api.BackupPlanPolicyScheduleDaily:
-			if upsert.DayOfWeek != -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be unset for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		case api.BackupPlanPolicyScheduleWeekly:
-			if upsert.DayOfWeek == -1 {
-				return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("backup setting DayOfWeek should be set for backup plan policy schedule %q", backupPlanPolicy.Schedule)}
-			}
-		}
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	backupRaw, err := s.UpsertBackupSettingTx(ctx, tx.PTx, upsert)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return backupRaw, nil
-}
-
-// UpsertBackupSettingTx updates an existing backup setting.
-func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*api.BackupSettingRaw, error) {
+// upsertBackupSettingImpl updates an existing backup setting.
+func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	// Upsert row into backup_setting.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup_setting (
@@ -439,7 +671,7 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 	defer row.Close()
 
 	row.Next()
-	var backupSettingRaw api.BackupSettingRaw
+	var backupSettingRaw backupSettingRaw
 	if err := row.Scan(
 		&backupSettingRaw.ID,
 		&backupSettingRaw.CreatorID,
@@ -458,8 +690,8 @@ func (s *BackupService) UpsertBackupSettingTx(ctx context.Context, tx *sql.Tx, u
 	return &backupSettingRaw, nil
 }
 
-// FindBackupSettingsMatch retrieves a list of backup settings based on match condition.
-func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.BackupSettingsMatch) ([]*api.BackupSettingRaw, error) {
+// findBackupSettingsMatchImpl retrieves a list of backup settings based on match condition.
+func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.BackupSettingsMatch) ([]*backupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -497,9 +729,9 @@ func (s *BackupService) FindBackupSettingsMatch(ctx context.Context, match *api.
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into backupSettingRawList.
-	var backupSettingRawList []*api.BackupSettingRaw
+	var backupSettingRawList []*backupSettingRaw
 	for rows.Next() {
-		var backupSettingRaw api.BackupSettingRaw
+		var backupSettingRaw backupSettingRaw
 		if err := rows.Scan(
 			&backupSettingRaw.ID,
 			&backupSettingRaw.CreatorID,

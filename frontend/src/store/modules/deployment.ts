@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   ResourceObject,
@@ -9,13 +10,12 @@ import {
   unknown,
   UNKNOWN_ID,
   DeploymentConfigPatch,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   deployment: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): DeploymentConfig {
   if (parseInt(deployment.id, 10) === EMPTY_ID) {
     return empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
@@ -55,87 +55,65 @@ function convert(
   };
 }
 
-const state: () => DeploymentState = () => ({
-  deploymentConfigByProjectId: new Map(),
-});
-
-const getters = {
-  deploymentConfigByProjectId:
-    (state: DeploymentState) =>
-    (projectId: ProjectId): DeploymentConfig => {
+export const useDeploymentStore = defineStore("deployment", {
+  state: (): DeploymentState => ({
+    deploymentConfigByProjectId: new Map(),
+  }),
+  actions: {
+    getDeploymentConfigByProjectId(projectId: ProjectId): DeploymentConfig {
       if (projectId == EMPTY_ID) {
         return empty("DEPLOYMENT_CONFIG") as DeploymentConfig;
       }
 
       return (
-        state.deploymentConfigByProjectId.get(projectId) ||
+        this.deploymentConfigByProjectId.get(projectId) ||
         (unknown("DEPLOYMENT_CONFIG") as DeploymentConfig)
       );
     },
-};
-
-const actions = {
-  async fetchDeploymentConfigByProjectId(
-    { commit, getters, rootGetters }: any,
-    projectId: ProjectId
-  ) {
-    const data = (await axios.get(`/api/project/${projectId}/deployment`)).data;
-
-    const deploymentConfig = convert(data.data, data.included, rootGetters);
-    const { id } = deploymentConfig;
-    if (id !== EMPTY_ID && id !== UNKNOWN_ID) {
-      commit("setDeploymentConfigByProjectId", { projectId, deploymentConfig });
-    }
-    return getters["deploymentConfigByProjectId"](projectId);
-  },
-
-  async patchDeploymentConfigByProjectId(
-    { commit, rootGetters }: any,
-    {
-      projectId,
-      deploymentConfigPatch,
-    }: { projectId: ProjectId; deploymentConfigPatch: DeploymentConfigPatch }
-  ) {
-    const data = (
-      await axios.patch(`/api/project/${projectId}/deployment`, {
-        data: {
-          type: "deploymentConfigPatch",
-          attributes: deploymentConfigPatch,
-        },
-      })
-    ).data;
-    const updatedDeploymentConfig = convert(
-      data.data,
-      data.included,
-      rootGetters
-    );
-    commit("setDeploymentConfigByProjectId", {
-      projectId,
-      deploymentConfig: updatedDeploymentConfig,
-    });
-    return updatedDeploymentConfig;
-  },
-};
-
-const mutations = {
-  setDeploymentConfigByProjectId(
-    state: DeploymentState,
-    {
+    setDeploymentConfigByProjectId({
       projectId,
       deploymentConfig,
     }: {
       projectId: ProjectId;
       deploymentConfig: DeploymentConfig;
-    }
-  ) {
-    state.deploymentConfigByProjectId.set(projectId, deploymentConfig);
-  },
-};
+    }) {
+      this.deploymentConfigByProjectId.set(projectId, deploymentConfig);
+    },
+    async fetchDeploymentConfigByProjectId(projectId: ProjectId) {
+      const data = (await axios.get(`/api/project/${projectId}/deployment`))
+        .data;
 
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+      const deploymentConfig = convert(data.data, data.included);
+      const { id } = deploymentConfig;
+      if (id !== EMPTY_ID && id !== UNKNOWN_ID) {
+        this.setDeploymentConfigByProjectId({
+          projectId,
+          deploymentConfig,
+        });
+      }
+      return this.getDeploymentConfigByProjectId(projectId);
+    },
+    async patchDeploymentConfigByProjectId({
+      projectId,
+      deploymentConfigPatch,
+    }: {
+      projectId: ProjectId;
+      deploymentConfigPatch: DeploymentConfigPatch;
+    }) {
+      const data = (
+        await axios.patch(`/api/project/${projectId}/deployment`, {
+          data: {
+            type: "deploymentConfigPatch",
+            attributes: deploymentConfigPatch,
+          },
+        })
+      ).data;
+      const updatedDeploymentConfig = convert(data.data, data.included);
+      this.setDeploymentConfigByProjectId({
+        projectId,
+        deploymentConfig: updatedDeploymentConfig,
+      });
+      return updatedDeploymentConfig;
+    },
+  },
+});

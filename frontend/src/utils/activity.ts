@@ -1,16 +1,10 @@
-import { Store } from "vuex";
+import { usePrincipalStore } from "@/store";
 import { IssueBuiltinFieldId } from "../plugins";
 import {
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityIssueStatusUpdatePayload,
 } from "../types";
-
-let store: Store<any>;
-
-export function registerStoreWithActivityUtil(theStore: Store<any>) {
-  store = theStore;
-}
 
 export function issueActivityActionSentence(
   activity: Activity
@@ -21,6 +15,7 @@ export function issueActivityActionSentence(
     case "bb.issue.comment.create":
       return ["activity.sentence.commented", {}];
     case "bb.issue.field.update": {
+      const principalStore = usePrincipalStore();
       const update = activity.payload as ActivityIssueFieldUpdatePayload;
 
       const name = "Unknown Field";
@@ -30,13 +25,9 @@ export function issueActivityActionSentence(
       switch (update.fieldId) {
         case IssueBuiltinFieldId.ASSIGNEE: {
           if (update.oldValue && update.newValue) {
-            const oldName = store.getters["principal/principalById"](
-              update.oldValue
-            ).name;
+            const oldName = principalStore.principalById(+update.oldValue).name;
 
-            const newName = store.getters["principal/principalById"](
-              update.newValue
-            ).name;
+            const newName = principalStore.principalById(+update.newValue).name;
             return [
               "activity.sentence.reassigned-issue",
               {
@@ -45,9 +36,7 @@ export function issueActivityActionSentence(
               },
             ];
           } else if (!update.oldValue && update.newValue) {
-            const newName = store.getters["principal/principalById"](
-              update.newValue
-            ).name;
+            const newName = principalStore.principalById(+update.newValue).name;
             return [
               "activity.sentence.assigned-issue",
               {
@@ -55,9 +44,7 @@ export function issueActivityActionSentence(
               },
             ];
           } else if (update.oldValue && !update.newValue) {
-            const oldName = store.getters["principal/principalById"](
-              update.oldValue
-            ).name;
+            const oldName = principalStore.principalById(+update.oldValue).name;
             return [
               "activity.sentence.unassigned-issue",
               {

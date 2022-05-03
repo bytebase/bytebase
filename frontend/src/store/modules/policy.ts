@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   Environment,
@@ -6,14 +7,14 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
-} from "../../types";
-import { Policy, PolicyType, PolicyUpsert } from "../../types/policy";
+} from "@/types";
+import { Policy, PolicyType, PolicyUpsert } from "@/types/policy";
 import { getPrincipalFromIncludedList } from "./principal";
+import { useEnvironmentStore } from "./environment";
 
 function convert(
   policy: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Policy {
   const environmentId = (
     policy.relationships!.environment.data as ResourceIdentifier
@@ -21,13 +22,14 @@ function convert(
   let environment: Environment = unknown("ENVIRONMENT") as Environment;
   environment.id = parseInt(environmentId);
 
+  const environmentStore = useEnvironmentStore();
   for (const item of includedList || []) {
     if (
       item.type == "environment" &&
       (policy.relationships!.environment.data as ResourceIdentifier).id ==
         item.id
     ) {
-      environment = rootGetters["environment/convert"](item, includedList);
+      environment = environmentStore.convert(item, includedList);
     }
   }
 
@@ -50,39 +52,61 @@ function convert(
   };
 }
 
-const state: () => PolicyState = () => ({
-  policyMapByEnvironmentId: new Map(),
-});
-
-const getters = {
-  policyByEnvironmentIdAndType:
-    (state: PolicyState) =>
-    (environmentId: EnvironmentId, type: PolicyType): Policy | undefined => {
-      const map = state.policyMapByEnvironmentId.get(environmentId);
+export const usePolicyStore = defineStore("policy", {
+  state: (): PolicyState => ({
+    policyMapByEnvironmentId: new Map(),
+  }),
+  actions: {
+    getPolicyByEnvironmentIdAndType(
+      environmentId: EnvironmentId,
+      type: PolicyType
+    ): Policy | undefined {
+      const map = this.policyMapByEnvironmentId.get(environmentId);
       if (map) {
         return map.get(type);
       }
       return undefined;
     },
-};
+    setPolicyByEnvironmentId({
+      environmentId,
+      policy,
+    }: {
+      environmentId: EnvironmentId;
+      policy: Policy;
+    }) {
+      const map = this.policyMapByEnvironmentId.get(environmentId);
+      if (map) {
+        map.set(policy.type, policy);
+      } else {
+        this.policyMapByEnvironmentId.set(
+          environmentId,
+          new Map([[policy.type, policy]])
+        );
+      }
+    },
+    async fetchPolicyListByType(type: PolicyType): Promise<Policy[]> {
+      const data: { data: ResourceObject[]; included: ResourceObject[] } = (
+        await axios.get(`/api/policy?type=${type}`)
+      ).data;
 
-const actions = {
-  async fetchPolicyByEnvironmentAndType(
-    { commit, rootGetters }: any,
-    { environmentId, type }: { environmentId: EnvironmentId; type: PolicyType }
-  ): Promise<Policy> {
-    const data = (
-      await axios.get(`/api/policy/environment/${environmentId}?type=${type}`)
-    ).data;
-    const policy = convert(data.data, data.included, rootGetters);
-    commit("setPolicyByEnvironmentId", { environmentId, policy });
+      return data.data.map((d) => convert(d, data.included));
+    },
+    async fetchPolicyByEnvironmentAndType({
+      environmentId,
+      type,
+    }: {
+      environmentId: EnvironmentId;
+      type: PolicyType;
+    }): Promise<Policy> {
+      const data = (
+        await axios.get(`/api/policy/environment/${environmentId}?type=${type}`)
+      ).data;
+      const policy = convert(data.data, data.included);
+      this.setPolicyByEnvironmentId({ environmentId, policy });
 
-    return policy;
-  },
-
-  async upsertPolicyByEnvironmentAndType(
-    { commit, rootGetters }: any,
-    {
+      return policy;
+    },
+    async upsertPolicyByEnvironmentAndType({
       environmentId,
       type,
       policyUpsert,
@@ -90,56 +114,39 @@ const actions = {
       environmentId: EnvironmentId;
       type: PolicyType;
       policyUpsert: PolicyUpsert;
-    }
-  ): Promise<Policy> {
-    const data = (
-      await axios.patch(
-        `/api/policy/environment/${environmentId}?type=${type}`,
-        {
-          data: {
-            type: "policyUpsert",
-            attributes: {
-              payload: JSON.stringify(policyUpsert.payload),
+    }): Promise<Policy> {
+      const data = (
+        await axios.patch(
+          `/api/policy/environment/${environmentId}?type=${type}`,
+          {
+            data: {
+              type: "policyUpsert",
+              attributes: {
+                rowStatus: policyUpsert.rowStatus,
+                payload: policyUpsert.payload
+                  ? JSON.stringify(policyUpsert.payload)
+                  : undefined,
+              },
             },
-          },
-        }
-      )
-    ).data;
-    const policy = convert(data.data, data.included, rootGetters);
+          }
+        )
+      ).data;
+      const policy = convert(data.data, data.included);
 
-    commit("setPolicyByEnvironmentId", { environmentId, policy });
+      this.setPolicyByEnvironmentId({ environmentId, policy });
 
-    return policy;
-  },
-};
-
-const mutations = {
-  setPolicyByEnvironmentId(
-    state: PolicyState,
-    {
+      return policy;
+    },
+    async deletePolicyByEnvironmentAndType({
       environmentId,
-      policy,
+      type,
     }: {
       environmentId: EnvironmentId;
-      policy: Policy;
-    }
-  ) {
-    const map = state.policyMapByEnvironmentId.get(environmentId);
-    if (map) {
-      map.set(policy.type, policy);
-    } else {
-      state.policyMapByEnvironmentId.set(
-        environmentId,
-        new Map([[policy.type, policy]])
+      type: PolicyType;
+    }) {
+      await axios.delete(
+        `/api/policy/environment/${environmentId}?type=${type}`
       );
-    }
+    },
   },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

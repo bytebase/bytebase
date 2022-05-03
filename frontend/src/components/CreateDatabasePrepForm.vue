@@ -212,7 +212,6 @@ import {
   defineComponent,
   ref,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { isEmpty } from "lodash-es";
 import { NTooltip } from "naive-ui";
@@ -236,8 +235,8 @@ import {
   Project,
   DatabaseLabel,
   CreateDatabaseContext,
-  Environment,
   UNKNOWN_ID,
+  Instance,
 } from "../types";
 import {
   buildDatabaseNameByTemplateAndLabelList,
@@ -245,6 +244,14 @@ import {
   issueSlug,
 } from "../utils";
 import { useEventListener } from "@vueuse/core";
+import {
+  hasFeature,
+  useCurrentUser,
+  useEnvironmentStore,
+  useInstanceStore,
+  useIssueStore,
+  useProjectStore,
+} from "@/store";
 
 interface LocalState {
   projectId?: ProjectId;
@@ -290,10 +297,11 @@ export default defineComponent({
   },
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
+    const instanceStore = useInstanceStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     useEventListener("keydown", (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -303,7 +311,7 @@ export default defineComponent({
 
     // Refresh the instance list
     const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
+      instanceStore.fetchInstanceList();
     };
 
     watchEffect(prepareInstanceList);
@@ -326,7 +334,7 @@ export default defineComponent({
 
     const project = computed((): Project => {
       if (!state.projectId) return unknown("PROJECT") as Project;
-      return store.getters["project/projectById"](state.projectId) as Project;
+      return projectStore.getProjectById(state.projectId) as Project;
     });
 
     const isReservedName = computed(() => {
@@ -395,10 +403,10 @@ export default defineComponent({
       return !props.instanceId;
     });
 
-    const selectedInstance = computed(() => {
+    const selectedInstance = computed((): Instance => {
       return state.instanceId
-        ? store.getters["instance/instanceById"](state.instanceId)
-        : unknown("INSTANCE");
+        ? instanceStore.getInstanceById(state.instanceId)
+        : (unknown("INSTANCE") as Instance);
     });
 
     const selectProject = (projectId: ProjectId) => {
@@ -478,9 +486,7 @@ export default defineComponent({
         };
       }
       if (isTenantProject.value) {
-        if (
-          !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
-        ) {
+        if (!hasFeature("bb.feature.multi-tenancy")) {
           state.showFeatureModal = true;
           return;
         }
@@ -489,9 +495,13 @@ export default defineComponent({
       // Do not submit non-selected optional labels
       const labelList = state.labelList.filter((label) => !!label.value);
       context.labels = JSON.stringify(labelList);
-      store.dispatch("issue/createIssue", newIssue).then((createdIssue) => {
-        router.push(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-      });
+      useIssueStore()
+        .createIssue(newIssue)
+        .then((createdIssue) => {
+          router.push(
+            `/issue/${issueSlug(createdIssue.name, createdIssue.id)}`
+          );
+        });
     };
 
     // update `state.labelList` when selected Environment changed
@@ -501,9 +511,7 @@ export default defineComponent({
       const key = "bb.environment";
       const index = labelList.findIndex((label) => label.key === key);
       if (envId) {
-        const env = store.getters["environment/environmentById"](
-          state.environmentId
-        ) as Environment;
+        const env = useEnvironmentStore().getEnvironmentById(envId);
         if (index >= 0) labelList[index].value = env.name;
         else labelList.unshift({ key, value: env.name });
       } else {

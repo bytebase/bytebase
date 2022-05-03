@@ -17,7 +17,7 @@ import (
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	// Besides adding the instance to Bytebase, it will also try to create a "bytebase" db in the newly added instance.
 	g.POST("/instance", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		if err := s.instanceCountGuard(ctx); err != nil {
 			return err
 		}
@@ -31,17 +31,12 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
-		instanceRaw, err := s.InstanceService.CreateInstance(ctx, instanceCreate)
+		instance, err := s.store.CreateInstance(ctx, instanceCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Instance name already exists: %s", instanceCreate.Name))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create instance").SetInternal(err)
-		}
-
-		instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
-		if err != nil {
-			return err
 		}
 
 		// Try creating the "bytebase" db in the added instance if needed.
@@ -68,24 +63,15 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		instanceFind := &api.InstanceFind{}
 		if rowStatusStr := c.QueryParam("rowstatus"); rowStatusStr != "" {
 			rowStatus := api.RowStatus(rowStatusStr)
 			instanceFind.RowStatus = &rowStatus
 		}
-		instanceRawList, err := s.InstanceService.FindInstanceList(ctx, instanceFind)
+		instanceList, err := s.store.FindInstance(ctx, instanceFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch instance list").SetInternal(err)
-		}
-
-		var instanceList []*api.Instance
-		for _, instanceRaw := range instanceRawList {
-			instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
-			if err != nil {
-				return err
-			}
-			instanceList = append(instanceList, instance)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -96,13 +82,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -118,7 +104,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/instance/:instanceID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -131,7 +117,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
 		}
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", id)).SetInternal(err)
 		}
@@ -149,7 +135,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 
-		var instancePatchedRaw *api.InstanceRaw
+		var instancePatched *api.Instance
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
@@ -158,18 +144,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return err
 				}
 			}
-			instancePatchedRaw, err = s.InstanceService.PatchInstance(ctx, instancePatch)
+			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
 					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 				}
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch instance ID: %v", id)).SetInternal(err)
 			}
-		}
-
-		instancePatched, err := s.composeInstanceRelationship(ctx, instancePatchedRaw)
-		if err != nil {
-			return err
 		}
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
@@ -179,8 +160,8 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
 					s.l.Warn("Failed to setup migration schema on instance update",
-						zap.String("instance_name", instancePatchedRaw.Name),
-						zap.String("engine", string(instancePatchedRaw.Engine)),
+						zap.String("instance_name", instancePatched.Name),
+						zap.String("engine", string(instancePatched.Engine)),
 						zap.Error(err))
 				}
 				s.syncEngineVersionAndSchema(ctx, instancePatched)
@@ -195,16 +176,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/user", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instanceUserFind := &api.InstanceUserFind{
-			InstanceID: id,
-		}
-		instanceUserList, err := s.InstanceUserService.FindInstanceUserList(ctx, instanceUserFind)
+		instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", id)).SetInternal(err)
 		}
@@ -217,13 +195,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.POST("/instance/:instanceID/migration", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -250,13 +228,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/status", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -290,7 +268,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/history/:historyID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Instance ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
@@ -301,7 +279,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("History ID is not a number: %s", c.Param("historyID"))).SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -353,13 +331,13 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 
 	g.GET("/instance/:instanceID/migration/history", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("instanceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("instanceID"))).SetInternal(err)
 		}
 
-		instance, err := s.composeInstanceByID(ctx, id)
+		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
@@ -428,77 +406,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
-	instanceFind := &api.InstanceFind{
-		ID: &id,
-	}
-	instanceRaw, err := s.InstanceService.FindInstance(ctx, instanceFind)
-	if err != nil {
-		return nil, err
-	}
-	if instanceRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance not found with ID %v", id)}
-	}
-
-	instance, err := s.composeInstanceRelationship(ctx, instanceRaw)
-	if err != nil {
-		return nil, err
-	}
-
-	return instance, nil
-}
-
-func (s *Server) composeInstanceRelationship(ctx context.Context, raw *api.InstanceRaw) (*api.Instance, error) {
-	instance := raw.ToInstance()
-
-	creator, err := s.store.GetPrincipalByID(ctx, instance.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, instance.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Updater = updater
-
-	env, err := s.store.GetEnvironmentByID(ctx, instance.EnvironmentID)
-	if err != nil {
-		return nil, err
-	}
-	instance.Environment = env
-
-	rowStatus := api.Normal
-	anomalyList, err := s.store.FindAnomaly(ctx, &api.AnomalyFind{
-		RowStatus:    &rowStatus,
-		InstanceID:   &instance.ID,
-		InstanceOnly: true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	instance.AnomalyList = anomalyList
-
-	dataSourceList, err := s.store.FindDataSource(ctx, &api.DataSourceFind{
-		InstanceID: &instance.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	instance.DataSourceList = dataSourceList
-	for _, dataSource := range instance.DataSourceList {
-		if dataSource.Creator, err = s.store.GetPrincipalByID(ctx, dataSource.CreatorID); err != nil {
-			return nil, err
-		}
-		if dataSource.Updater, err = s.store.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
-			return nil, err
-		}
-	}
-
-	return instance, nil
-}
-
 func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,
@@ -519,7 +426,7 @@ func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID i
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
 	status := api.Normal
-	count, err := s.InstanceService.CountInstance(ctx, &api.InstanceFind{
+	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
 		RowStatus: &status,
 	})
 

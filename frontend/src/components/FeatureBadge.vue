@@ -1,15 +1,15 @@
 <template>
   <router-link v-if="!hasFeature" to="/setting/subscription" exact-active-class>
-    <heroicons-solid:sparkles class="w-5 h-5"/>
+    <heroicons-solid:sparkles class="w-5 h-5" />
   </router-link>
 </template>
 
 <script lang="ts">
-import { PropType, computed } from "vue";
-import { useStore } from "vuex";
+import { defineComponent, PropType } from "vue";
 import { FeatureType } from "../types";
+import { featureToRef } from "@/store";
 
-export default {
+export default defineComponent({
   props: {
     feature: {
       required: true,
@@ -17,15 +17,11 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
-
-    const hasFeature = computed(() =>
-      store.getters["subscription/feature"](props.feature)
-    );
+    const hasFeature = featureToRef(props.feature);
 
     return {
       hasFeature,
     };
   },
-};
+});
 </script>

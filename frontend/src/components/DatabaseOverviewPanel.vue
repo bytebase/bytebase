@@ -128,7 +128,9 @@
                 </div>
                 <div class="relative flex justify-start">
                   <router-link
-                    :to="`/db/${databaseSlug}/datasource/${dataSourceSlug(ds)}`"
+                    :to="`/db/${databaseSlug}/data-source/${dataSourceSlug(
+                      ds
+                    )}`"
                     class="pr-3 bg-white font-medium normal-link"
                     >{{ ds.name }}</router-link
                   >
@@ -188,8 +190,13 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect, PropType } from "vue";
-import { useStore } from "vuex";
+import {
+  computed,
+  reactive,
+  watchEffect,
+  PropType,
+  defineComponent,
+} from "vue";
 import { useRouter } from "vue-router";
 import AnomalyTable from "../components/AnomalyTable.vue";
 import DataSourceTable from "../components/DataSourceTable.vue";
@@ -200,12 +207,19 @@ import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDataSourceStore,
+  useTableStore,
+  useViewStore,
+} from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseOverviewPanel",
   components: {
     AnomalyTable,
@@ -221,21 +235,23 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
+    const dataSourceStore = useDataSourceStore();
 
     const state = reactive<LocalState>({});
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const tableStore = useTableStore();
+    const viewStore = useViewStore();
 
     const prepareTableList = () => {
-      store.dispatch("table/fetchTableListByDatabaseId", props.database.id);
+      tableStore.fetchTableListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareTableList);
 
     const prepareViewList = () => {
-      store.dispatch("view/fetchViewListByDatabaseId", props.database.id);
+      viewStore.fetchViewListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareViewList);
@@ -253,16 +269,14 @@ export default {
       }
     );
 
-    const hasDataSourceFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.data-source")
-    );
+    const hasDataSourceFeature = featureToRef("bb.feature.data-source");
 
     const tableList = computed(() => {
-      return store.getters["table/tableListByDatabaseId"](props.database.id);
+      return tableStore.getTableListByDatabaseId(props.database.id);
     });
 
     const viewList = computed(() => {
-      return store.getters["view/viewListByDatabaseId"](props.database.id);
+      return viewStore.getViewListByDatabaseId(props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -335,10 +349,10 @@ export default {
         username: state.editingDataSource?.username,
         password: state.editingDataSource?.password,
       };
-      store
-        .dispatch("dataSource/patchDataSource", {
-          databaseId: state.editingDataSource?.databaseId,
-          dataSourceId: state.editingDataSource?.id,
+      dataSourceStore
+        .patchDataSource({
+          databaseId: state.editingDataSource?.databaseId as number,
+          dataSourceId: state.editingDataSource?.id as number,
           dataSource: dataSourcePatch,
         })
         .then(() => {
@@ -370,5 +384,5 @@ export default {
       configInstance,
     };
   },
-};
+});
 </script>

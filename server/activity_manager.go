@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/webhook"
+	"github.com/bytebase/bytebase/store"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -16,8 +17,8 @@ import (
 
 // ActivityManager is the activity manager.
 type ActivityManager struct {
-	s               *Server
-	activityService api.ActivityService
+	s     *Server
+	store *store.Store
 }
 
 // ActivityMeta is the activity metadata.
@@ -26,21 +27,16 @@ type ActivityMeta struct {
 }
 
 // NewActivityManager creates an activity manager.
-func NewActivityManager(server *Server, activityService api.ActivityService) *ActivityManager {
+func NewActivityManager(server *Server, store *store.Store) *ActivityManager {
 	return &ActivityManager{
-		s:               server,
-		activityService: activityService,
+		s:     server,
+		store: store,
 	}
 }
 
 // CreateActivity creates an activity.
 func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.ActivityCreate, meta *ActivityMeta) (*api.Activity, error) {
-	activityRaw, err := m.activityService.CreateActivity(ctx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	activity, err := m.s.composeActivityRelationship(ctx, activityRaw)
+	activity, err := m.store.CreateActivity(ctx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +58,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		ProjectID:    &meta.issue.ProjectID,
 		ActivityType: &create.Type,
 	}
-	webhookList, err := m.s.ProjectWebhookService.FindProjectWebhookList(ctx, hookFind)
+	webhookList, err := m.s.store.FindProjectWebhook(ctx, hookFind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project webhook after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
@@ -73,29 +69,23 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 	// If we need to post webhook event, then we need to make sure the project info exists since we will include
 	// the project name in the webhook event.
 	if meta.issue.Project == nil {
-		projectFind := &api.ProjectFind{
-			ID: &meta.issue.ProjectID,
-		}
-		projectRaw, err := m.s.ProjectService.FindProject(ctx, projectFind)
+		project, err := m.s.store.GetProjectByID(ctx, meta.issue.ProjectID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 		}
-		if projectRaw == nil {
+		if project == nil {
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
 		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
-		meta.issue.Project = projectRaw.ToProject()
+		meta.issue.Project = project
 	}
 
-	principalFind := &api.PrincipalFind{
-		ID: &create.CreatorID,
-	}
-	updater, err := m.s.store.FindPrincipal(ctx, principalFind)
+	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
 	}
 	if updater == nil {
-		return nil, fmt.Errorf("Updater principal not found for ID %v", create.CreatorID)
+		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
 	// Call external webhook endpoint in Go routine to avoid blocking web serveing thread.
@@ -165,10 +155,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					principalFind := &api.PrincipalFind{
-						ID: &oldID,
-					}
-					oldAssignee, err = m.s.store.FindPrincipal(ctx, principalFind)
+					oldAssignee, err = m.s.store.GetPrincipalByID(ctx, oldID)
 					if err != nil {
 						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -177,7 +164,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if oldAssignee == nil {
-						err := fmt.Errorf("Failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
+						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
 						m.s.l.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
@@ -195,10 +182,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 							zap.Error(err))
 						return webhookCtx, err
 					}
-					principalFind := &api.PrincipalFind{
-						ID: &newID,
-					}
-					newAssignee, err = m.s.store.FindPrincipal(ctx, principalFind)
+					newAssignee, err = m.s.store.GetPrincipalByID(ctx, newID)
 					if err != nil {
 						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.issue.Name),
@@ -207,7 +191,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 						return webhookCtx, err
 					}
 					if newAssignee == nil {
-						err := fmt.Errorf("Failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
+						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
 						m.s.l.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
@@ -240,10 +224,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 
-		taskFind := &api.TaskFind{
-			ID: &update.TaskID,
-		}
-		task, err := m.s.TaskService.FindTask(ctx, taskFind)
+		task, err := m.s.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
 			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				zap.String("issue_name", meta.issue.Name),
@@ -252,7 +233,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 			return webhookCtx, err
 		}
 		if task == nil {
-			err := fmt.Errorf("Failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
+			err := fmt.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
 			m.s.l.Warn(err.Error(),
 				zap.String("issue_name", meta.issue.Name),
 				zap.Int("task_id", update.TaskID),
@@ -263,9 +244,10 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		title = "Task changed - " + task.Name
 		switch update.NewStatus {
 		case api.TaskPending:
-			if update.OldStatus == api.TaskRunning {
+			switch update.OldStatus {
+			case api.TaskRunning:
 				title = "Task canceled - " + task.Name
-			} else if update.OldStatus == api.TaskPendingApproval {
+			case api.TaskPendingApproval:
 				title = "Task approved - " + task.Name
 			}
 		case api.TaskRunning:
@@ -291,9 +273,22 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	}
 	webhookCtx = webhook.Context{
 		Level:        level,
+		ActivityType: string(activity.Type),
 		Title:        title,
+		Issue: webhook.Issue{
+			ID:          meta.issue.ID,
+			Name:        meta.issue.Name,
+			Status:      string(meta.issue.Status),
+			Type:        string(meta.issue.Type),
+			Description: meta.issue.Description,
+		},
+		Project: webhook.Project{
+			ID:   meta.issue.ProjectID,
+			Name: meta.issue.Project.Name,
+		},
 		Description:  activity.Comment,
 		Link:         link,
+		CreatorID:    updater.ID,
 		CreatorName:  updater.Name,
 		CreatorEmail: updater.Email,
 		MetaList:     metaList,

@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   DataSourceId,
@@ -10,13 +11,12 @@ import {
   DataSourcePatch,
   EMPTY_ID,
   empty,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   dataSource: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): DataSource {
   const databaseId = dataSource.attributes!.databaseId as string;
   const instanceId = dataSource.attributes!.instanceId as string;
@@ -40,80 +40,85 @@ function convert(
   };
 }
 
-const state: () => DataSourceState = () => ({
-  dataSourceById: new Map(),
-});
+export const useDataSourceStore = defineStore("dataSource", {
+  state: (): DataSourceState => ({
+    dataSourceById: new Map(),
+  }),
 
-const getters = {
-  convert:
-    (state: DataSourceState, getters: any, rootState: any, rootGetters: any) =>
-    (dataSource: ResourceObject): DataSource => {
+  actions: {
+    convert(dataSource: ResourceObject): DataSource {
       // Pass includedList with [] here, otherwise, it may cause cyclic dependency
       // e.g. Database calls this to convert its dataSourceList, while data source here
       // also tries to convert its database.
-      return convert(dataSource, [], rootGetters);
+      return convert(dataSource, []);
     },
 
-  dataSourceById:
-    (state: DataSourceState) =>
-    (dataSourceId: DataSourceId): DataSource => {
+    getDataSourceById(dataSourceId: DataSourceId): DataSource {
       if (dataSourceId == EMPTY_ID) {
         return empty("DATA_SOURCE") as DataSource;
       }
 
       return (
-        state.dataSourceById.get(dataSourceId) ||
+        this.dataSourceById.get(dataSourceId) ||
         (unknown("DATA_SOURCE") as DataSource)
       );
     },
-};
 
-const actions = {
-  async fetchDataSourceById(
-    { commit, rootGetters }: any,
-    {
-      dataSourceId,
-      databaseId,
-    }: { dataSourceId: DataSourceId; databaseId: DatabaseId }
-  ) {
-    const data = (
-      await axios.get(`/api/database/${databaseId}/datasource/${dataSourceId}`)
-    ).data;
-    const dataSource = convert(data.data, data.included, rootGetters);
-
-    commit("setDataSourceById", {
+    setDataSourceById({
       dataSourceId,
       dataSource,
-    });
+    }: {
+      dataSourceId: DataSourceId;
+      dataSource: DataSource;
+    }) {
+      this.dataSourceById.set(dataSourceId, dataSource);
+    },
 
-    return dataSource;
-  },
+    async fetchDataSourceById({
+      dataSourceId,
+      databaseId,
+    }: {
+      dataSourceId: DataSourceId;
+      databaseId: DatabaseId;
+    }) {
+      const data = (
+        await axios.get(
+          `/api/database/${databaseId}/data-source/${dataSourceId}`
+        )
+      ).data;
+      const dataSource = convert(data.data, data.included);
 
-  async createDataSource(
-    { commit, dispatch, rootGetters }: any,
-    newDataSource: DataSourceCreate
-  ) {
-    const data = (
-      await axios.post(`/api/database/${newDataSource.databaseId}/datasource`, {
-        data: {
-          type: "DataSourceCreate",
-          attributes: newDataSource,
-        },
-      })
-    ).data;
-    const createdDataSource = convert(data.data, data.included, rootGetters);
+      this.setDataSourceById({
+        dataSourceId,
+        dataSource,
+      });
 
-    commit("setDataSourceById", {
-      dataSourceId: createdDataSource.id,
-      dataSource: createdDataSource,
-    });
+      return dataSource;
+    },
 
-    return createdDataSource;
-  },
+    async createDataSource(newDataSource: DataSourceCreate) {
+      const data = (
+        await axios.post(
+          `/api/database/${newDataSource.databaseId}/data-source`,
+          {
+            data: {
+              type: "DataSourceCreate",
+              attributes: newDataSource,
+            },
+          }
+        )
+      ).data;
+      const createdDataSource = convert(data.data, data.included);
 
-  async patchDataSource(
-    { commit, dispatch, rootGetters }: any,
-    {
+      this.setDataSourceById({
+        dataSourceId: createdDataSource.id,
+        dataSource: createdDataSource,
+      });
+
+      return createdDataSource;
+    },
+
+    async patchDataSource({
       databaseId,
       dataSourceId,
       dataSource,
@@ -121,67 +126,40 @@ const actions = {
       databaseId: DatabaseId;
       dataSourceId: DataSourceId;
       dataSource: DataSourcePatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(
-        `/api/database/${databaseId}/datasource/${dataSourceId}`,
-        {
-          data: {
-            type: "dataSourcePatch",
-            attributes: dataSource,
-          },
-        }
-      )
-    ).data;
-    const updatedDataSource = convert(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(
+          `/api/database/${databaseId}/data-source/${dataSourceId}`,
+          {
+            data: {
+              type: "dataSourcePatch",
+              attributes: dataSource,
+            },
+          }
+        )
+      ).data;
+      const updatedDataSource = convert(data.data, data.included);
 
-    commit("setDataSourceById", {
-      dataSourceId: updatedDataSource.id,
-      dataSource: updatedDataSource,
-    });
+      this.setDataSourceById({
+        dataSourceId: updatedDataSource.id,
+        dataSource: updatedDataSource,
+      });
 
-    return updatedDataSource;
-  },
+      return updatedDataSource;
+    },
 
-  async deleteDataSourceById(
-    { dispatch, commit }: any,
-    {
+    async deleteDataSourceById({
       databaseId,
       dataSourceId,
-    }: { databaseId: DatabaseId; dataSourceId: DataSourceId }
-  ) {
-    await axios.delete(
-      `/api/database/${databaseId}/datasource/${dataSourceId}`
-    );
-
-    commit("deleteDataSourceById", dataSourceId);
-  },
-};
-
-const mutations = {
-  setDataSourceById(
-    state: DataSourceState,
-    {
-      dataSourceId,
-      dataSource,
     }: {
+      databaseId: DatabaseId;
       dataSourceId: DataSourceId;
-      dataSource: DataSource;
-    }
-  ) {
-    state.dataSourceById.set(dataSourceId, dataSource);
-  },
+    }) {
+      await axios.delete(
+        `/api/database/${databaseId}/data-source/${dataSourceId}`
+      );
 
-  deleteDataSourceById(state: DataSourceState, dataSourceId: DataSourceId) {
-    state.dataSourceById.delete(dataSourceId);
+      this.dataSourceById.delete(dataSourceId);
+    },
   },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

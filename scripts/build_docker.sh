@@ -1,21 +1,15 @@
 #!/bin/sh
-
-# cd to the root directory and run
-# ./scripts/build_docker.sh
+# ===========================================================================
+# File: build_docker.sh
+# Description: usage: ./build_docker.sh
+# ===========================================================================
 
 # exit when any command fails
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+cd "$(dirname "$0")/../"
+. ./scripts/init.sh
 
-if [ `dirname "${BASH_SOURCE[0]}"` != "./scripts" ] && [ `dirname "${BASH_SOURCE[0]}"` != "scripts" ]
-then
-  echo "${RED}Precheck failed.${NC} Build script must run from root directory: scripts/build_docker.sh"; exit 1;
-fi
-
-VERSION=`cat ./scripts/VERSION`
 echo "Start building Bytebase docker image ${VERSION}..."
 
 docker build \

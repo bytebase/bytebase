@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   PrincipalId,
@@ -12,8 +13,9 @@ import {
   PrincipalType,
   ResourceIdentifier,
   RoleType,
-} from "../../types";
-import { randomString } from "../../utils";
+} from "@/types";
+import { randomString } from "@/utils";
+import { useAuthStore } from "./auth";
 
 function convert(principal: ResourceObject): Principal {
   return {
@@ -50,134 +52,104 @@ export function getPrincipalFromIncludedList(
   return empty("PRINCIPAL") as Principal;
 }
 
-const state: () => PrincipalState = () => ({
-  principalList: [],
-});
-
-const getters = {
-  convert:
-    (state: PrincipalState, getters: any, rootState: any, rootGetters: any) =>
-    (principal: ResourceObject, includedList: ResourceObject[]): Principal => {
+export const usePrincipalStore = defineStore("principal", {
+  state: (): PrincipalState => ({
+    principalList: [],
+  }),
+  actions: {
+    convert(principal: ResourceObject): Principal {
       return convert(principal);
     },
-
-  principalList: (state: PrincipalState) => (): Principal[] => {
-    return state.principalList;
-  },
-
-  principalById:
-    (state: PrincipalState) =>
-    (principalId: PrincipalId): Principal => {
+    principalById(principalId: PrincipalId): Principal {
       if (principalId == EMPTY_ID) {
         return empty("PRINCIPAL") as Principal;
       }
 
       return (
-        state.principalList.find((item) => item.id == principalId) ||
+        this.principalList.find((item) => item.id == principalId) ||
         (unknown("PRINCIPAL") as Principal)
       );
     },
-};
+    setPrincipalList(principalList: Principal[]) {
+      this.principalList = principalList;
+    },
+    appendPrincipal(newPrincipal: Principal) {
+      this.principalList.push(newPrincipal);
+    },
+    upsertPrincipalInList(updatedPrincipal: Principal) {
+      const i = this.principalList.findIndex(
+        (item: Principal) => item.id == updatedPrincipal.id
+      );
+      if (i == -1) {
+        this.principalList.push(updatedPrincipal);
+      } else {
+        this.principalList[i] = updatedPrincipal;
+      }
+    },
+    async fetchPrincipalList() {
+      const userList: ResourceObject[] = (await axios.get(`/api/principal`))
+        .data.data;
+      const principalList = userList.map((user) => {
+        return convert(user);
+      });
 
-const actions = {
-  async fetchPrincipalList({ commit }: any) {
-    const userList: ResourceObject[] = (await axios.get(`/api/principal`)).data
-      .data;
-    const principalList = userList.map((user) => {
-      return convert(user);
-    });
+      this.setPrincipalList(principalList);
 
-    commit("setPrincipalList", principalList);
+      return principalList;
+    },
+    async fetchPrincipalById(principalId: PrincipalId) {
+      const principal = convert(
+        (await axios.get(`/api/principal/${principalId}`)).data.data
+      );
 
-    return principalList;
-  },
+      this.upsertPrincipalInList(principal);
 
-  async fetchPrincipalById({ commit }: any, principalId: PrincipalId) {
-    const principal = convert(
-      (await axios.get(`/api/principal/${principalId}`)).data.data
-    );
-
-    commit("upsertPrincipalInList", principal);
-
-    return principal;
-  },
-
-  // Returns existing user if already created.
-  async createPrincipal({ commit }: any, newPrincipal: PrincipalCreate) {
-    const createdPrincipal = convert(
-      (
-        await axios.post(`/api/principal`, {
-          data: {
-            type: "PrincipalCreate",
-            attributes: {
-              name: newPrincipal.name,
-              email: newPrincipal.email,
-              password: randomString(),
+      return principal;
+    },
+    // Returns existing user if already created.
+    async createPrincipal(newPrincipal: PrincipalCreate) {
+      const createdPrincipal = convert(
+        (
+          await axios.post(`/api/principal`, {
+            data: {
+              type: "PrincipalCreate",
+              attributes: {
+                name: newPrincipal.name,
+                email: newPrincipal.email,
+                password: randomString(),
+              },
             },
-          },
-        })
-      ).data.data
-    );
+          })
+        ).data.data
+      );
 
-    commit("appendPrincipal", createdPrincipal);
+      this.appendPrincipal(createdPrincipal);
 
-    return createdPrincipal;
-  },
-
-  async patchPrincipal(
-    { commit, dispatch }: any,
-    {
+      return createdPrincipal;
+    },
+    async patchPrincipal({
       principalId,
       principalPatch,
     }: {
       principalId: PrincipalId;
       principalPatch: PrincipalPatch;
-    }
-  ) {
-    const updatedPrincipal = convert(
-      (
-        await axios.patch(`/api/principal/${principalId}`, {
-          data: {
-            type: "principalPatch",
-            attributes: principalPatch,
-          },
-        })
-      ).data.data
-    );
+    }) {
+      const updatedPrincipal = convert(
+        (
+          await axios.patch(`/api/principal/${principalId}`, {
+            data: {
+              type: "principalPatch",
+              attributes: principalPatch,
+            },
+          })
+        ).data.data
+      );
 
-    commit("upsertPrincipalInList", updatedPrincipal);
+      this.upsertPrincipalInList(updatedPrincipal);
 
-    dispatch("auth/refreshUserIfNeeded", updatedPrincipal.id, { root: true });
+      useAuthStore().refreshUserIfNeeded(updatedPrincipal.id);
 
-    return updatedPrincipal;
+      return updatedPrincipal;
+    },
   },
-};
-
-const mutations = {
-  setPrincipalList(state: PrincipalState, principalList: Principal[]) {
-    state.principalList = principalList;
-  },
-
-  appendPrincipal(state: PrincipalState, newPrincipal: Principal) {
-    state.principalList.push(newPrincipal);
-  },
-
-  upsertPrincipalInList(state: PrincipalState, updatedPrincipal: Principal) {
-    const i = state.principalList.findIndex(
-      (item: Principal) => item.id == updatedPrincipal.id
-    );
-    if (i == -1) {
-      state.principalList.push(updatedPrincipal);
-    } else {
-      state.principalList[i] = updatedPrincipal;
-    }
-  },
-};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

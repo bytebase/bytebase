@@ -42,32 +42,7 @@
       "
       :positive-text="$t('common.confirm')"
       :negative-text="$t('common.cancel')"
-      @positive-click="
-        () => {
-          state.showModal = false;
-          // the current role provider is BYTEBASE, meaning switching role provider to VCS
-          if (project.roleProvider === 'BYTEBASE') {
-            patchProjectRoleProvider('GITLAB_SELF_HOST')
-              .then(() => {
-                syncMemberFromVCS();
-              })
-              .catch(() => {}); // mute error at browser
-          } else if (project.roleProvider === 'GITLAB_SELF_HOST') {
-            // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
-            patchProjectRoleProvider('BYTEBASE').then(() => {
-              $store
-                .dispatch('notification/pushNotification', {
-                  module: 'bytebase',
-                  style: 'SUCCESS',
-                  title: $t(
-                    'project.settings.switch-role-provider-to-bytebase-success-prompt'
-                  ),
-                })
-                .catch(() => {}); // mute error at browser
-            });
-          }
-        }
-      "
+      @positive-click="onConfirmToggleRoleProvider"
       @negative-click="
         () => {
           state.showModal = false;
@@ -182,7 +157,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { useStore } from "vuex";
 import MemberSelect from "../components/MemberSelect.vue";
 import ProjectMemberTable from "../components/ProjectMemberTable.vue";
 import {
@@ -198,6 +172,14 @@ import {
 } from "../types";
 import { isOwner, isProjectOwner } from "../utils";
 import { useI18n } from "vue-i18n";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUser,
+  useMemberStore,
+  useProjectStore,
+  useRepositoryStore,
+} from "@/store";
 
 interface LocalState {
   principalId: PrincipalId;
@@ -219,10 +201,10 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       principalId: UNKNOWN_ID,
@@ -234,13 +216,9 @@ export default defineComponent({
       showFeatureModal: false,
     });
 
-    const has3rdPartyAuthFeature = computed(() => {
-      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
-    });
+    const has3rdPartyAuthFeature = featureToRef("bb.feature.3rd-party-auth");
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const allowAddMember = computed(() => {
       if (props.project.id == DEFAULT_PROJECT_ID) {
@@ -308,16 +286,14 @@ export default defineComponent({
         role: hasRBACFeature.value ? state.role : "OWNER",
         roleProvider: "BYTEBASE",
       };
-      const member = store.getters["member/memberByPrincipalId"](
-        state.principalId
-      );
-      store
-        .dispatch("project/createdMember", {
+      const member = useMemberStore().memberByPrincipalId(state.principalId);
+      projectStore
+        .createdMember({
           projectId: props.project.id,
           projectMember,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-added-prompt", {
@@ -337,8 +313,8 @@ export default defineComponent({
     ): Promise<boolean> =>
       new Promise((resolve, reject) => {
         const projectPatch: ProjectPatch = { roleProvider: roleProvider };
-        store
-          .dispatch("project/patchProject", {
+        projectStore
+          .patchProject({
             projectId: props.project.id,
             projectPatch,
           })
@@ -348,12 +324,12 @@ export default defineComponent({
       });
 
     const syncMemberFromVCS = () => {
-      store
-        .dispatch("project/syncMemberRoleFromVCS", {
+      projectStore
+        .syncMemberRoleFromVCS({
           projectId: props.project.id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-member-sync-prompt"),
@@ -363,8 +339,8 @@ export default defineComponent({
 
     const openWindowForVCSMember = () => {
       // currently we only support Gitlab, so the following redirect URL is fixed
-      store
-        .dispatch("repository/fetchRepositoryByProjectId", props.project.id)
+      useRepositoryStore()
+        .fetchRepositoryByProjectId(props.project.id)
         .then((repository) => {
           // this uri format is for GitLab
           window.open(`${repository.webUrl}/-/project_members`);
@@ -392,6 +368,37 @@ export default defineComponent({
       }
     };
 
+    const onConfirmToggleRoleProvider = () => {
+      () => {
+        state.showModal = false;
+        // the current role provider is BYTEBASE, meaning switching role provider to VCS
+        if (props.project.roleProvider === "BYTEBASE") {
+          patchProjectRoleProvider("GITLAB_SELF_HOST")
+            .then(() => {
+              syncMemberFromVCS();
+            })
+            .catch(() => {
+              // nothing todo
+            }); // mute error at browser
+        } else if (props.project.roleProvider === "GITLAB_SELF_HOST") {
+          // the current role provider is GITLAB_SELF_HOST, meaning switching role provider to BYTEBASE
+          patchProjectRoleProvider("BYTEBASE")
+            .then(() => {
+              pushNotification({
+                module: "bytebase",
+                style: "SUCCESS",
+                title: t(
+                  "project.settings.switch-role-provider-to-bytebase-success-prompt"
+                ),
+              });
+            })
+            .catch(() => {
+              // nothing todo
+            }); // mute error at browser;
+        }
+      };
+    };
+
     return {
       state,
       hasRBACFeature,
@@ -407,6 +414,7 @@ export default defineComponent({
       has3rdPartyAuthFeature,
       onRefreshSync,
       onToggleRoleProvider,
+      onConfirmToggleRoleProvider,
     };
   },
 });

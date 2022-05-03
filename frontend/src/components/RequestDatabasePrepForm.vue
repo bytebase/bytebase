@@ -128,8 +128,13 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, onMounted, onUnmounted } from "vue";
-import { useStore } from "vuex";
+import {
+  computed,
+  reactive,
+  onMounted,
+  onUnmounted,
+  defineComponent,
+} from "vue";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import ProjectSelect from "../components/ProjectSelect.vue";
@@ -137,6 +142,7 @@ import DatabaseSelect from "../components/DatabaseSelect.vue";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import { DatabaseId, EnvironmentId, ProjectId, UNKNOWN_ID } from "../types";
 import { allowDatabaseAccess } from "../utils";
+import { useCurrentUser, useDatabaseStore, useEnvironmentStore } from "@/store";
 
 interface LocalState {
   environmentId: EnvironmentId;
@@ -148,16 +154,16 @@ interface LocalState {
   readonly: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "RequestDatabasePrepForm",
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
   props: {},
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const router = useRouter();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.code == "Escape") {
@@ -191,8 +197,9 @@ export default {
         return false;
       }
 
+      const database = databaseStore.getDatabaseById(state.databaseId);
       return allowDatabaseAccess(
-        store.getters["database/databaseById"](state.databaseId),
+        database,
         currentUser.value,
         state.readonly ? "RO" : "RW"
       );
@@ -215,7 +222,7 @@ export default {
     const request = () => {
       emit("dismiss");
 
-      const environment = store.getters["environment/environmentById"](
+      const environment = useEnvironmentStore().getEnvironmentById(
         state.environmentId
       );
       if (state.create == "ON") {
@@ -233,9 +240,7 @@ export default {
           },
         });
       } else {
-        const database = store.getters["database/databaseById"](
-          state.databaseId
-        );
+        const database = databaseStore.getDatabaseById(state.databaseId);
         router.push({
           name: "workspace.issue.detail",
           params: {
@@ -263,5 +268,5 @@ export default {
       request,
     };
   },
-};
+});
 </script>

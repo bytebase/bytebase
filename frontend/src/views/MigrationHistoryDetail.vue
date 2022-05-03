@@ -209,18 +209,17 @@
 
 <script lang="ts">
 import { computed, reactive, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
 import { idFromSlug, nanosecondsToString } from "../utils";
 import {
-  Database,
   MigrationHistory,
   MigrationHistoryPayload,
   VCSPushEvent,
 } from "../types";
 import { BBSelect } from "../bbkit";
+import { pushNotification, useDatabaseStore, useInstanceStore } from "@/store";
 
 type LeftSchemaSelected =
   | "previousHistorySchema" // schema after last migration
@@ -250,36 +249,36 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
+    const instanceStore = useInstanceStore();
 
-    const database = computed((): Database => {
-      return store.getters["database/databaseById"](
-        idFromSlug(props.databaseSlug)
-      );
+    const database = computed(() => {
+      return useDatabaseStore().getDatabaseById(idFromSlug(props.databaseSlug));
     });
 
     const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
 
     // get all migration histories before (include) the one of given id, ordered by descending version.
     const prevMigrationHistoryList = computed((): MigrationHistory[] => {
-      const migrationHistoryList: MigrationHistory[] = store.getters[
-        "instance/migrationHistoryListByInstanceIdAndDatabaseName"
-      ](database.value.instance.id, database.value.name);
+      const migrationHistoryList =
+        instanceStore.getMigrationHistoryListByInstanceIdAndDatabaseName(
+          database.value.instance.id,
+          database.value.name
+        );
 
       // If migrationHistoryList does not contain current migration, it indicates cache stale.
       // Dispatch a fetch. When new data is returned, it will update computed value.
-      if (migrationHistoryList.every((mh) => mh.id !== migrationHistoryId))
-        store.dispatch("instance/fetchInstanceList");
+      if (migrationHistoryList.every((mh) => mh.id !== migrationHistoryId)) {
+        instanceStore.fetchInstanceList();
+      }
 
       return migrationHistoryList.filter((mh) => mh.id <= migrationHistoryId);
     });
 
     const migrationHistory = computed((): MigrationHistory => {
-      if (prevMigrationHistoryList.value.length > 0)
+      if (prevMigrationHistoryList.value.length > 0) {
         return prevMigrationHistoryList.value[0];
-      return store.getters["instance/migrationHistoryById"](
-        migrationHistoryId
-      ) as MigrationHistory;
+      }
+      return instanceStore.getMigrationHistoryById(migrationHistoryId)!;
     });
 
     // previousHistorySchema is the schema snapshot of the last migration history before the one of given id.
@@ -328,7 +327,7 @@ export default defineComponent({
 
     const copyStatement = () => {
       toClipboard(migrationHistory.value.statement).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `Statement copied to clipboard.`,
@@ -338,7 +337,7 @@ export default defineComponent({
 
     const copySchema = () => {
       toClipboard(migrationHistory.value.schema).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `Schema copied to clipboard.`,

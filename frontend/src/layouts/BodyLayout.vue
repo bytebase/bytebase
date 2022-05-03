@@ -139,7 +139,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
 import IntroBanner from "../components/IntroBanner.vue";
@@ -148,7 +147,12 @@ import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { PlanType } from "../types";
-import { useActuatorStore } from "@/store";
+import {
+  useActuatorStore,
+  useCurrentUser,
+  useSubscriptionStore,
+  useUIStateStore,
+} from "@/store";
 
 interface LocalState {
   showMobileOverlay: boolean;
@@ -163,15 +167,16 @@ export default defineComponent({
     QuickActionPanel,
   },
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
+    const subscriptionStore = useSubscriptionStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
       showMobileOverlay: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const quickActionList = computed(() => {
       const role = currentUser.value.role;
@@ -221,15 +226,14 @@ export default defineComponent({
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
-    const showIntro = computed(() => {
-      return !store.getters["uistate/introStateByKey"]("general.overview");
-    });
+    const showIntro = computed(
+      () => !uiStateStore.getIntroStateByKey("general.overview")
+    );
 
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
       return (
-        !actuatorStore.isDemo &&
-        !store.getters["uistate/introStateByKey"]("hidden")
+        !actuatorStore.isDemo && !uiStateStore.getIntroStateByKey("hidden")
       );
     });
 
@@ -242,7 +246,7 @@ export default defineComponent({
     });
 
     const currentPlan = computed((): string => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       switch (plan) {
         case PlanType.TEAM:
           return "subscription.plan.team.title";
@@ -254,7 +258,7 @@ export default defineComponent({
     });
 
     const isFreePlan = computed((): boolean => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       return plan === PlanType.FREE;
     });
 

@@ -16,29 +16,42 @@
             v-if="showDBAItem"
             to="/issue"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/issue')"
             >{{ $t("common.issues") }}</router-link
           >
 
-          <router-link to="/project" class="bar-link px-2 py-2 rounded-md">
+          <router-link
+            to="/project"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/project')"
+          >
             {{ $t("common.projects") }}
           </router-link>
 
-          <router-link to="/db" class="bar-link px-2 py-2 rounded-md">{{
-            $t("common.databases")
-          }}</router-link>
+          <router-link
+            to="/db"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/db')"
+            >{{ $t("common.databases") }}</router-link
+          >
 
-          <router-link to="/instance" class="bar-link px-2 py-2 rounded-md">{{
-            $t("common.instances")
-          }}</router-link>
+          <router-link
+            to="/instance"
+            class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/instance')"
+            >{{ $t("common.instances") }}</router-link
+          >
 
           <router-link
             to="/environment"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/environment')"
             >{{ $t("common.environments") }}</router-link
           >
           <router-link
             to="/setting/member"
             class="bar-link px-2 py-2 rounded-md"
+            :class="getRouteLinkClass('/setting')"
             >{{ $t("common.settings") }}</router-link
           >
         </div>
@@ -190,15 +203,22 @@
 <script lang="ts">
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, reactive, watchEffect, defineComponent } from "vue";
-import { useRouter } from "vue-router";
-import { useStore } from "vuex";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import ProfileDropdown from "../components/ProfileDropdown.vue";
-import { InboxSummary, UNKNOWN_ID } from "../types";
-import { Setting, brandingLogoSettingName } from "../types/setting";
+import { UNKNOWN_ID } from "../types";
+import { brandingLogoSettingName } from "../types/setting";
 import { isDBAOrOwner, isDev } from "../utils";
 import { useLanguage } from "../composables/useLanguage";
+import {
+  useCurrentUser,
+  useAuthStore,
+  useSettingStore,
+  useSubscriptionStore,
+  useInboxStore,
+} from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   showMobileMenu: boolean;
@@ -209,19 +229,31 @@ export default defineComponent({
   components: { ProfileDropdown },
   setup() {
     const { t, availableLocales } = useI18n();
-    const store = useStore();
+    const authStore = useAuthStore();
+    const inboxStore = useInboxStore();
+    const settingStore = useSettingStore();
+    const subscriptionStore = useSubscriptionStore();
     const router = useRouter();
+    const route = useRoute();
     const { setLocale, toggleLocales } = useLanguage();
 
     const state = reactive<LocalState>({
       showMobileMenu: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const currentPlan = computed(() =>
-      store.getters["subscription/currentPlan"]()
-    );
+    const { currentPlan } = storeToRefs(subscriptionStore);
+
+    const getRouteLinkClass = (prefix: string): string[] => {
+      const { path } = route;
+      const isActiveRoute = path === prefix || path.startsWith(`${prefix}/`);
+      const classes: string[] = [];
+      if (isActiveRoute) {
+        classes.push("router-link-active", "bg-link-hover");
+      }
+      return classes;
+    };
 
     const showDBAItem = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
@@ -232,31 +264,33 @@ export default defineComponent({
     });
 
     const prepareBranding = () => {
-      store.dispatch("setting/fetchSetting");
+      settingStore.fetchSetting();
     };
 
     const logoUrl = computed((): string | undefined => {
-      const brandingLogoSetting: Setting = store.getters["setting/settingByName"](brandingLogoSettingName);
+      const brandingLogoSetting = settingStore.getSettingByName(
+        brandingLogoSettingName
+      );
       return brandingLogoSetting?.value;
-    })
+    });
 
     watchEffect(prepareBranding);
 
     const prepareInboxSummary = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("inbox/fetchInboxSummaryByUser", currentUser.value.id);
+        inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
       }
     };
 
     watchEffect(prepareInboxSummary);
 
-    const inboxSummary = computed((): InboxSummary => {
-      return store.getters["inbox/inboxSummaryByUser"](currentUser.value.id);
+    const inboxSummary = computed(() => {
+      return inboxStore.getInboxSummaryByUser(currentUser.value.id);
     });
 
     const switchToOwner = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "demo@example.com",
@@ -266,7 +300,7 @@ export default defineComponent({
     };
 
     const switchToDBA = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "jerry@example.com",
@@ -276,7 +310,7 @@ export default defineComponent({
     };
 
     const switchToDeveloper = () => {
-      store.dispatch("auth/login", {
+      authStore.login({
         authProvider: "BYTEBASE",
         payload: {
           email: "tom@example.com",
@@ -286,14 +320,11 @@ export default defineComponent({
     };
 
     const switchToFree = () => {
-      store.dispatch("subscription/patchSubscription", "");
+      subscriptionStore.patchSubscription("");
     };
 
     const switchToTeam = () => {
-      store.dispatch(
-        "subscription/patchSubscription",
-        import.meta.env.BB_DEV_LICENSE
-      );
+      subscriptionStore.patchSubscription(import.meta.env.BB_DEV_LICENSE);
     };
 
     const kbarActions = computed(() => [
@@ -375,6 +406,7 @@ export default defineComponent({
 
     return {
       state,
+      getRouteLinkClass,
       logoUrl,
       currentUser,
       currentPlan,

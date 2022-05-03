@@ -165,7 +165,6 @@ import {
   onUnmounted,
   reactive,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import {
   AuthProvider,
@@ -174,11 +173,10 @@ import {
   LoginInfo,
   OAuthWindowEventPayload,
   openWindowForOAuth,
-  redirectUrl,
 } from "../../types";
 import { isDev, isValidEmail } from "../../utils";
 import AuthFooter from "./AuthFooter.vue";
-import { useActuatorStore } from "@/store";
+import { featureToRef, useActuatorStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 interface LocalState {
@@ -191,8 +189,8 @@ export default defineComponent({
   name: "SigninPage",
   components: { AuthFooter },
   setup() {
-    const store = useStore();
     const actuatorStore = useActuatorStore();
+    const authStore = useAuthStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -212,7 +210,7 @@ export default defineComponent({
         router.push({ name: "auth.signup", replace: true });
       }
 
-      store.dispatch("auth/fetchProviderList");
+      authStore.fetchProviderList();
 
       window.addEventListener("bb.oauth.signin", eventListener, false);
     });
@@ -225,9 +223,7 @@ export default defineComponent({
       return isValidEmail(state.email) && state.password;
     });
 
-    const authProviderList = computed(() => {
-      return store.getters["auth/authProviderList"]();
-    });
+    const { authProviderList } = storeToRefs(authStore);
 
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
@@ -239,8 +235,8 @@ export default defineComponent({
         name: state.activeAuthProvider.name,
         code: payload.code,
       };
-      store
-        .dispatch("auth/login", {
+      authStore
+        .login({
           authProvider: "GITLAB_SELF_HOST",
           payload: gitlabLoginInfo,
         })
@@ -257,7 +253,7 @@ export default defineComponent({
           password: state.password,
         },
       };
-      store.dispatch("auth/login", loginInfo).then(() => {
+      authStore.login(loginInfo).then(() => {
         router.push("/");
       });
     };
@@ -287,9 +283,7 @@ export default defineComponent({
       );
     };
 
-    const has3rdPartyLoginFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.3rd-party-auth");
-    });
+    const has3rdPartyLoginFeature = featureToRef("bb.feature.3rd-party-auth");
 
     return {
       state,

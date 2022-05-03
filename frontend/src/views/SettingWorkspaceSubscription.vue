@@ -71,25 +71,26 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
-import { PlanType, Subscription } from "../types";
+import { PlanType } from "../types";
+import { pushNotification, useSubscriptionStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 interface LocalState {
   loading: boolean;
   license: string;
 }
 
-export default {
+export default defineComponent({
   name: "SettingWorkspaceSubscription",
   components: {
     PricingTable,
   },
   setup() {
-    const store = useStore();
+    const subscriptionStore = useSubscriptionStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -106,15 +107,15 @@ export default {
       state.loading = true;
 
       try {
-        await store.dispatch("subscription/patchSubscription", state.license);
-        store.dispatch("notification/pushNotification", {
+        await subscriptionStore.patchSubscription(state.license);
+        pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("subscription.update.success.title"),
           description: t("subscription.update.success.description"),
         });
       } catch {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: t("subscription.update.failure.title"),
@@ -126,9 +127,7 @@ export default {
       }
     };
 
-    const subscription = computed((): Subscription | undefined => {
-      return store.getters["subscription/subscription"]();
-    });
+    const { subscription } = storeToRefs(subscriptionStore);
 
     const instanceCount = computed((): number => {
       return subscription.value?.instanceCount ?? 5;
@@ -143,7 +142,7 @@ export default {
     });
 
     const currentPlan = computed((): string => {
-      const plan = store.getters["subscription/currentPlan"]();
+      const plan = subscriptionStore.currentPlan;
       switch (plan) {
         case PlanType.TEAM:
           return t("subscription.plan.team.title");
@@ -164,5 +163,5 @@ export default {
       uploadLicense,
     };
   },
-};
+});
 </script>

@@ -19,7 +19,10 @@ export type TaskType =
   | "bb.task.database.create"
   | "bb.task.database.schema.update"
   | "bb.task.database.data.update"
-  | "bb.task.database.restore";
+  | "bb.task.database.restore"
+  | "bb.task.database.schema.update.ghost.sync"
+  | "bb.task.database.schema.update.ghost.cutover"
+  | "bb.task.database.schema.update.ghost.drop-original-table";
 
 export type TaskStatus =
   | "PENDING"
@@ -51,6 +54,21 @@ export type TaskDatabaseSchemaUpdatePayload = {
   pushEvent?: VCSPushEvent;
 };
 
+export type TaskDatabaseSchemaUpdateGhostSyncPayload = {
+  statement: string;
+  pushEvent?: VCSPushEvent;
+};
+
+export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
+  // empty by now
+  // more input and output parameters in the future
+};
+
+export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
+  databaseName: string;
+  tableName: string;
+};
+
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   pushEvent?: VCSPushEvent;
@@ -65,6 +83,9 @@ export type TaskPayload =
   | TaskGeneralPayload
   | TaskDatabaseCreatePayload
   | TaskDatabaseSchemaUpdatePayload
+  | TaskDatabaseSchemaUpdateGhostSyncPayload
+  | TaskDatabaseSchemaUpdateGhostCutoverPayload
+  | TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload;
@@ -93,6 +114,9 @@ export type Task = {
   // Tasks like creating database may not have database.
   database?: Database;
   payload?: TaskPayload;
+
+  // Task DAG
+  blockedBy: Task[];
 };
 
 export type TaskCreate = {
@@ -156,12 +180,27 @@ export type TaskCheckType =
   | "bb.task-check.database.statement.fake-advise"
   | "bb.task-check.database.statement.syntax"
   | "bb.task-check.database.statement.compatibility"
+  | "bb.task-check.database.statement.advise"
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
-  | "bb.task-check.general.earliest-allowed-time";
+  | "bb.task-check.general.earliest-allowed-time"
+  | "bb.task-check.database.schema.update.ghost"
+  | "bb.task-check.database.schema.update.ghost.cutover";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;
+};
+
+export type TaskCheckDatabaseSchemaUpdateGhostPayload = {
+  statement: string;
+  instanceId: InstanceId;
+  databaseName: string;
+  tableName: string;
+};
+
+export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
+  // empty by now
+  // more to come
 };
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";

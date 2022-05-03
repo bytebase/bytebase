@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,23 +11,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ()
-
 func (s *Server) registerLabelRoutes(g *echo.Group) {
 	g.GET("/label", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		rowStatus := api.Normal
 		find := &api.LabelKeyFind{
 			RowStatus: &rowStatus,
 		}
-		labelKeyRawList, err := s.LabelService.FindLabelKeyList(ctx, find)
+		labelKeyList, err := s.store.FindLabelKey(ctx, find)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch label keys").SetInternal(err)
-		}
-		// TODO(dragonly): compose this
-		var labelKeyList []*api.LabelKey
-		for _, raw := range labelKeyRawList {
-			labelKeyList = append(labelKeyList, raw.ToLabelKey())
 		}
 
 		// Add reserved environment key.
@@ -50,7 +42,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/label/:id", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("id is not a number: %s", c.Param("id"))).SetInternal(err)
@@ -69,7 +61,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		}
 		// We don't allow updating reserved environment label keys. Since its ID is zero, it cannot be updated by default.
 
-		labelKeyRaw, err := s.LabelService.PatchLabelKey(ctx, patch)
+		labelKey, err := s.store.PatchLabelKey(ctx, patch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Label ID not found: %d", id))
@@ -77,8 +69,6 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch label ID: %v", id)).SetInternal(err)
 		}
 
-		// TODO(dragonly): implement composeLabelKey
-		labelKey := labelKeyRaw.ToLabelKey()
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, labelKey); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal label key response: %v", id)).SetInternal(err)

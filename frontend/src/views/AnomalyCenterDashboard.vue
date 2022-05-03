@@ -126,12 +126,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 
 import AnomalyTable from "../components/AnomalyTable.vue";
-import { Anomaly, Database, EnvironmentId } from "../types";
+import { Anomaly, EnvironmentId, UNKNOWN_ID } from "../types";
 import {
   databaseSlug,
   instanceSlug,
@@ -141,6 +140,13 @@ import {
 } from "../utils";
 import { BBTabFilterItem, BBTableSectionDataSource } from "../bbkit/types";
 import { cloneDeep } from "lodash-es";
+import {
+  featureToRef,
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+  useInstanceList,
+} from "@/store";
 
 const DATABASE_TAB = 0;
 const INSTANCE_TAB = 1;
@@ -157,14 +163,14 @@ interface LocalState {
   searchText: string;
 }
 
-export default {
+export default defineComponent({
   name: "AnomalyCenterDashboard",
   components: { AnomalyTable },
   setup() {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const state = reactive<LocalState>({
       selectedIndex: isDBAOrOwner(currentUser.value.role)
@@ -173,32 +179,22 @@ export default {
       searchText: "",
     });
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const prepareDatabaseList = () => {
       // It will also be called when user logout
-      store.dispatch("database/fetchDatabaseList");
+      if (currentUser.value.id !== UNKNOWN_ID) {
+        databaseStore.fetchDatabaseList();
+      }
     };
 
     watchEffect(prepareDatabaseList);
 
-    const databaseList = computed((): Database[] => {
-      return store.getters["database/databaseListByPrincipalId"](
-        currentUser.value.id
-      );
+    const databaseList = computed(() => {
+      return databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
     });
 
-    const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
-    };
-
-    watchEffect(prepareInstanceList);
-
-    const instanceList = computed(() => {
-      return store.getters["instance/instanceList"]();
-    });
+    const instanceList = useInstanceList();
 
     const databaseAnomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
@@ -377,9 +373,7 @@ export default {
       state.searchText = searchText;
     };
 
-    const hasSchemaDriftFeature = computed((): boolean => {
-      return store.getters["subscription/feature"]("bb.feature.schema-drift");
-    });
+    const hasSchemaDriftFeature = featureToRef("bb.feature.schema-drift");
 
     return {
       DATABASE_TAB,
@@ -394,5 +388,5 @@ export default {
       hasSchemaDriftFeature,
     };
   },
-};
+});
 </script>

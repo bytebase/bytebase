@@ -56,11 +56,11 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to upsert policy with PolicyUpsert[%+v], error[%w]", upsert, err)
+		return nil, fmt.Errorf("failed to upsert policy with PolicyUpsert[%+v], error[%w]", upsert, err)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
+		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
 	}
 	return policy, nil
 }
@@ -69,13 +69,85 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get policy with PolicyFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get policy with PolicyFind[%+v], error[%w]", find, err)
 	}
 	policy, err := s.composePolicy(ctx, policyRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
+		return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", policyRaw, err)
 	}
 	return policy, nil
+}
+
+// DeletePolicy deletes an existing ARCHIVED policy by PolicyDelete.
+func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) error {
+	// Validate policy.
+	// Currently we only support PolicyTypeSchemaReview type policy to delete by id
+	if delete.Type != api.PolicyTypeSchemaReview {
+		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy type")}
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	find := &api.PolicyFind{
+		EnvironmentID: &delete.EnvironmentID,
+		Type:          &delete.Type,
+	}
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return fmt.Errorf("failed to list policy with PolicyFind[%+v], error[%w]", find, err)
+	}
+	if len(policyRawList) != 1 {
+		return &common.Error{Code: common.NotFound, Err: fmt.Errorf("failed to found policy with filter %+v, expect 1. ", find)}
+	}
+	policyRaw := policyRawList[0]
+	if policyRaw.RowStatus != api.Archived {
+		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
+	}
+
+	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
+		return FormatError(err)
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
+	return nil
+}
+
+// ListPolicy gets a list of policy by PolicyFind.
+func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Policy, error) {
+	// Validate policy type existence.
+	if find.Type != nil && *find.Type != "" {
+		if err := api.ValidatePolicy(*find.Type, ""); err != nil {
+			return nil, &common.Error{Code: common.Invalid, Err: err}
+		}
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list policy with PolicyFind[%+v], error[%w]", find, err)
+	}
+
+	policyList := []*api.Policy{}
+	for _, raw := range policyRawList {
+		policy, err := s.composePolicy(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error[%w]", raw, err)
+		}
+		policyList = append(policyList, policy)
+	}
+
+	return policyList, nil
 }
 
 // GetBackupPlanPolicyByEnvID will get the backup plan policy for an environment.
@@ -102,6 +174,41 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 		return nil, err
 	}
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
+}
+
+// GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
+func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
+	pType := api.PolicyTypeSchemaReview
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		EnvironmentID: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return policy.ID, nil
+}
+
+// GetSchemaReviewPolicyByID will get the schema review policy for an environment.
+func (s *Store) GetSchemaReviewPolicyByID(ctx context.Context, id int) (*api.SchemaReviewPolicy, error) {
+	pType := api.PolicyTypeSchemaReview
+
+	if id == api.DefaultPolicyID {
+		defaultPolicy, err := api.GetDefaultPolicy(pType)
+		if err != nil {
+			return nil, err
+		}
+		return api.UnmarshalSchemaReviewPolicy(defaultPolicy)
+	}
+
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		ID:   &id,
+		Type: &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }
 
 //
@@ -147,7 +254,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 	}
 	defer tx.PTx.Rollback()
 
-	policyRawList, err := s.findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
 	var ret *policyRaw
 	if err != nil {
 		return nil, err
@@ -173,11 +280,12 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			return nil, &common.Error{Code: common.Internal, Err: err}
 		}
 		ret.Payload = payload
+		ret.ID = api.DefaultPolicyID
 	}
 	return ret, nil
 }
 
-func (s *Store) findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*policyRaw, error) {
+func findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.PolicyFind) ([]*policyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -197,6 +305,7 @@ func (s *Store) findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.Policy
 			created_ts,
 			updater_id,
 			updated_ts,
+			row_status,
 			environment_id,
 			type,
 			payload
@@ -219,6 +328,7 @@ func (s *Store) findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.Policy
 			&policyRaw.CreatedTs,
 			&policyRaw.UpdaterID,
 			&policyRaw.UpdatedTs,
+			&policyRaw.RowStatus,
 			&policyRaw.EnvironmentID,
 			&policyRaw.Type,
 			&policyRaw.Payload,
@@ -238,8 +348,8 @@ func (s *Store) findPolicyImpl(ctx context.Context, tx *sql.Tx, find *api.Policy
 // upsertPolicyRaw sets a policy for an environment.
 func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Validate policy.
-	if upsert.Type != "" {
-		if err := api.ValidatePolicy(upsert.Type, upsert.Payload); err != nil {
+	if upsert.Type != "" && upsert.Payload != nil {
+		if err := api.ValidatePolicy(upsert.Type, *upsert.Payload); err != nil {
 			return nil, &common.Error{Code: common.Invalid, Err: err}
 		}
 	}
@@ -249,7 +359,7 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 	}
 	defer tx.PTx.Rollback()
 
-	policy, err := s.upsertPolicyImpl(ctx, tx.PTx, upsert)
+	policy, err := upsertPolicyImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -261,30 +371,50 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 	return policy, nil
 }
 
-// upsertPolicyImpl updates an existing policy.
-func (s *Store) upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
+// upsertPolicyImpl updates an existing policy by environment id and type.
+func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert) (*policyRaw, error) {
 	// Upsert row into policy.
-	if upsert.Payload == "" {
-		upsert.Payload = "{}"
+	var set []string
+	if v := upsert.Payload; v != nil {
+		set = append(set, "payload = EXCLUDED.payload")
 	}
-	row, err := tx.QueryContext(ctx, `
+	if v := upsert.RowStatus; v != nil {
+		set = append(set, "row_status = EXCLUDED.row_status")
+	}
+
+	if len(set) == 0 {
+		return nil, &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy upsert %+v", upsert)}
+	}
+
+	if upsert.Payload == nil || *upsert.Payload == "" {
+		emptyPayload := "{}"
+		upsert.Payload = &emptyPayload
+	}
+	if upsert.RowStatus == nil {
+		rowStatus := api.Normal.String()
+		upsert.RowStatus = &rowStatus
+	}
+
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
 			environment_id,
 			type,
-			payload
+			payload,
+			row_status
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
-			payload = excluded.payload
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, environment_id, type, payload
-		`,
+			%s
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
+		`, strings.Join(set, ",")),
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
+		upsert.RowStatus,
 	)
 
 	if err != nil {
@@ -300,6 +430,7 @@ func (s *Store) upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.Po
 		&policyRaw.CreatedTs,
 		&policyRaw.UpdaterID,
 		&policyRaw.UpdatedTs,
+		&policyRaw.RowStatus,
 		&policyRaw.EnvironmentID,
 		&policyRaw.Type,
 		&policyRaw.Payload,
@@ -308,4 +439,20 @@ func (s *Store) upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.Po
 	}
 
 	return &policyRaw, nil
+}
+
+// deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
+func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
+	// Remove row from policy.
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM policy
+			WHERE environment_id = $1 AND type = $2 AND row_status = $3
+		`,
+		delete.EnvironmentID,
+		delete.Type,
+		api.Archived,
+	); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }

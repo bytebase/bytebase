@@ -26,6 +26,9 @@
         <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.wecom'">
           <img class="h-6 w-6" src="../assets/wecom-logo.png" />
         </template>
+        <template v-else-if="projectWebhook.type == 'bb.plugin.webhook.custom'">
+          <heroicons-outline:puzzle class="w-6 h-6" />
+        </template>
         <h3 class="text-xl leading-6 font-medium text-main">
           {{ projectWebhook.name }}
         </h3>
@@ -49,14 +52,18 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, defineComponent } from "vue";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
-import { useStore } from "vuex";
 import { ProjectWebhookTestResult } from "../types";
 import { useI18n } from "vue-i18n";
+import {
+  pushNotification,
+  useProjectWebhookStore,
+  useProjectStore,
+} from "@/store";
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookDetail",
   components: { ProjectWebhookForm },
   props: {
@@ -74,31 +81,30 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
+    const projectWebhookStore = useProjectWebhookStore();
+    const projectStore = useProjectStore();
 
     const project = computed(() => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     const projectWebhook = computed(() => {
-      return store.getters["projectWebhook/projectWebhookById"](
+      return projectWebhookStore.projectWebhookById(
         idFromSlug(props.projectSlug),
         idFromSlug(props.projectWebhookSlug)
       );
     });
 
     const testWebhook = () => {
-      store
-        .dispatch("projectWebhook/testProjectWebhookById", {
+      projectWebhookStore
+        .testProjectWebhookById({
           projectId: idFromSlug(props.projectSlug),
           projectWebhookId: idFromSlug(props.projectWebhookSlug),
         })
         .then((testResult: ProjectWebhookTestResult) => {
           if (testResult.error) {
-            store.dispatch("notification/pushNotification", {
+            pushNotification({
               module: "bytebase",
               style: "CRITICAL",
               title: t("project.webhook.fail-tested-title"),
@@ -106,7 +112,7 @@ export default {
               manualHide: true,
             });
           } else {
-            store.dispatch("notification/pushNotification", {
+            pushNotification({
               module: "bytebase",
               style: "SUCCESS",
               title: t("project.webhook.success-tested-prompt"),
@@ -121,5 +127,5 @@ export default {
       testWebhook,
     };
   },
-};
+});
 </script>

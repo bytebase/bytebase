@@ -45,7 +45,6 @@
 
 <script lang="ts">
 import { reactive, computed, PropType, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { BBStepTabItem } from "../bbkit/types";
@@ -63,17 +62,22 @@ import {
 } from "../types";
 import { projectSlug } from "../utils";
 import { useI18n } from "vue-i18n";
+import { useRepositoryStore } from "@/store";
 
 // Default file path template is to organize migration files from different environments under separate directories.
 const DEFAULT_FILE_PATH_TEMPLATE =
   "{{ENV_NAME}}/{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
 // Default schema path template is co-locate with the corresponding db's migration files and use .(dot) to appear the first.
 const DEFAULT_SCHEMA_PATH_TEMPLATE = "{{ENV_NAME}}/.{{DB_NAME}}__LATEST.sql";
+// Default sheet path tempalte is to organize script files for SQL Editor.
+const DEFAULT_SHEET_PATH_TEMPLATE =
+  "script/{{ENV_NAME}}__{{DB_NAME}}__{{NAME}}.sql";
 
 // For tenant mode projects, {{ENV_NAME}} is not supported.
 const DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE =
   "{{DB_NAME}}__{{VERSION}}__{{TYPE}}__{{DESCRIPTION}}.sql";
 const DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE = ".{{DB_NAME}}__LATEST.sql";
+const DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE = "script/{{NAME}}.sql";
 
 const CHOOSE_PROVIDER_STEP = 0;
 // const CHOOSE_REPOSITORY_STEP = 1;
@@ -107,7 +111,7 @@ export default defineComponent({
     const { t } = useI18n();
 
     const router = useRouter();
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
 
     const stepList: BBStepTabItem[] = [
       { title: t("repository.choose-git-provider"), hideNext: true },
@@ -135,14 +139,17 @@ export default defineComponent({
           webUrl: "",
         },
         repositoryConfig: {
-          baseDirectory: "",
-          branchFilter: "",
+          baseDirectory: "bytebase",
+          branchFilter: "main",
           filePathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_FILE_PATH_TEMPLATE
             : DEFAULT_FILE_PATH_TEMPLATE,
           schemaPathTemplate: isTenantProject.value
             ? DEFAULT_TENANT_MODE_SCHEMA_PATH_TEMPLATE
             : DEFAULT_SCHEMA_PATH_TEMPLATE,
+          sheetPathTemplate: isTenantProject.value
+            ? DEFAULT_TENANT_MODE_SHEET_PATH_TEMPLATE
+            : DEFAULT_SHEET_PATH_TEMPLATE,
         },
       },
       currentStep: CHOOSE_PROVIDER_STEP,
@@ -178,13 +185,14 @@ export default defineComponent({
           baseDirectory: state.config.repositoryConfig.baseDirectory,
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
+          sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
           externalId: state.config.repositoryInfo.externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,
         };
-        store
-          .dispatch("repository/createRepository", {
+        repositoryStore
+          .createRepository({
             projectId: props.project.id,
             repositoryCreate,
           })
@@ -199,8 +207,8 @@ export default defineComponent({
         // It's simple to implement change behavior as delete followed by create.
         // Though the delete can succeed while the create fails, this is rare, and
         // even it happens, user can still configure it again.
-        store
-          .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
+        repositoryStore
+          .deleteRepositoryByProjectId(props.project.id)
           .then(() => {
             createFunc();
           });

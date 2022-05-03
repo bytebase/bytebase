@@ -1,12 +1,12 @@
+import { defineStore } from "pinia";
 import axios from "axios";
-import { ResourceObject, SettingState } from "../../types";
-import { Setting, SettingName } from "../../types/setting";
+import { ResourceObject, SettingState } from "@/types";
+import { Setting, SettingName } from "@/types/setting";
 import { getPrincipalFromIncludedList } from "./principal";
 
 function convert(
   setting: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Setting {
   return {
     ...(setting.attributes as Omit<Setting, "id" | "creator" | "updater">),
@@ -22,72 +22,55 @@ function convert(
   };
 }
 
-const state: () => SettingState = () => ({
-  settingByName: new Map(),
-});
-
-const getters = {
-  settingByName:
-    (state: SettingState) =>
-    (name: SettingName): Setting | undefined => {
-      return state.settingByName.get(name);
+export const useSettingStore = defineStore("setting", {
+  state: (): SettingState => ({
+    settingByName: new Map(),
+  }),
+  actions: {
+    getSettingByName(name: SettingName) {
+      return this.settingByName.get(name);
     },
-};
-
-const actions = {
-  async fetchSetting({ commit, rootGetters }: any): Promise<Setting[]> {
-    const data = (await axios.get(`/api/setting`)).data;
-    const settingList = data.data.map((setting: ResourceObject) => {
-      return convert(setting, data.included, rootGetters);
-    });
-    for (const setting of settingList) {
-      commit("setSettingByName", { name: setting.name, setting });
-    }
-    return settingList;
-  },
-
-  async updateSettingByName(
-    { commit, rootGetters }: any,
-    { name, value }: { name: SettingName; value: string }
-  ): Promise<Setting> {
-    const data = (
-      await axios.patch(`/api/setting/${name}`, {
-        data: {
-          type: "settingPatch",
-          attributes: {
-            value,
-          },
-        },
-      })
-    ).data;
-
-    const setting = convert(data.data, data.included, rootGetters);
-
-    commit("setSettingByName", { name: setting.name, setting });
-
-    return setting;
-  },
-};
-
-const mutations = {
-  setSettingByName(
-    state: SettingState,
-    {
+    setSettingByName({
       name,
       setting,
     }: {
       name: SettingName;
       setting: Setting;
-    }
-  ) {
-    state.settingByName.set(name, setting);
-  },
-};
+    }) {
+      this.settingByName.set(name, setting);
+    },
+    async fetchSetting(): Promise<Setting[]> {
+      const data = (await axios.get(`/api/setting`)).data;
+      const settingList = data.data.map((setting: ResourceObject) => {
+        return convert(setting, data.included);
+      });
+      for (const setting of settingList) {
+        this.setSettingByName({ name: setting.name, setting });
+      }
+      return settingList;
+    },
+    async updateSettingByName({
+      name,
+      value,
+    }: {
+      name: SettingName;
+      value: string;
+    }): Promise<Setting> {
+      const data = (
+        await axios.patch(`/api/setting/${name}`, {
+          data: {
+            type: "settingPatch",
+            attributes: {
+              value,
+            },
+          },
+        })
+      ).data;
 
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+      const setting = convert(data.data, data.included);
+      this.setSettingByName({ name: setting.name, setting });
+
+      return setting;
+    },
+  },
+});

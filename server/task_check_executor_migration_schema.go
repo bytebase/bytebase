@@ -23,10 +23,7 @@ type TaskCheckMigrationSchemaExecutor struct {
 
 // Run will run the task check migration schema executor once.
 func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	taskFind := &api.TaskFind{
-		ID: &taskCheckRun.TaskID,
-	}
-	task, err := server.TaskService.FindTask(ctx, taskFind)
+	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
@@ -41,7 +38,7 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		}, nil
 	}
 
-	instance, err := server.composeInstanceByID(ctx, task.InstanceID)
+	instance, err := server.store.GetInstanceByID(ctx, task.InstanceID)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

@@ -66,8 +66,8 @@
       <BBTableCell v-if="showMiscColumn" class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
       </BBTableCell>
-      <BBTableCell v-if="showSqlEditorLink" class="w-16">
-        <button class="btn-icon" @click.stop="gotoSqlEditor(database)">
+      <BBTableCell v-if="showSQLEditorLink" class="w-16">
+        <button class="btn-icon" @click.stop="gotoSQLEditor(database)">
           <heroicons-outline:terminal class="w-4 h-4" />
         </button>
       </BBTableCell>
@@ -248,8 +248,6 @@ const columnListMap = computed(() => {
   ]);
 });
 
-// const currentUser = computed(() => store.getters["auth/currentUser"]());
-
 const showInstanceColumn = computed(() => {
   return props.mode != "INSTANCE";
 });
@@ -268,7 +266,7 @@ const showMiscColumn = computed(() => {
 
 const columnList = computed(() => {
   var list: BBTableColumn[] = columnListMap.value.get(props.mode)!;
-  if (showSqlEditorLink.value) {
+  if (showSQLEditorLink.value) {
     // Use cloneDeep, otherwise it will alter the one in columnListMap
     list = cloneDeep(list);
     list.push({ title: t("sql-editor.self") });
@@ -276,14 +274,14 @@ const columnList = computed(() => {
   return list;
 });
 
-const showSqlEditorLink = computed(() => {
+const showSQLEditorLink = computed(() => {
   if (props.mode == "ALL_SHORT" || props.mode == "PROJECT_SHORT") {
     return false;
   }
   return true;
 });
 
-const gotoSqlEditor = (database: Database) => {
+const gotoSQLEditor = (database: Database) => {
   // SQL editors can only query databases in the projects available to the user.
   if (
     database.projectId === UNKNOWN_ID ||

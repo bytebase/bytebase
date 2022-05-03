@@ -1,6 +1,6 @@
 common:
   when: When
-  view: view
+  view: View
   you: you
   general: General
   slack: Slack
@@ -9,6 +9,7 @@ common:
   dingtalk: DingTalk
   feishu: Feishu
   wecom: WeCom
+  custom: Custom
   overview: Overview
   migration-history: Migration History
   webhook: Webhook
@@ -34,6 +35,8 @@ common:
   settings: Settings
   project: Project
   projects: Projects
+  default-project: Default Project
+  visit-default-project: "@:common.visit @:common.default-project"
   help: Help
   database: Database
   databases: Databases
@@ -100,6 +103,7 @@ common:
   new: New
   add: Add
   confirm-and-add: Confirm and add
+  confirm-and-update: Confirm and update
   query: Query
   transfer: Transfer
   migration: Migration
@@ -180,6 +184,15 @@ common:
   file-selector:
     type-limit: Only support {extension} file
     size-limit: File size should less than {size} MiB
+  no-data: No data
+  visibility: Visibility
+  star: Star
+  unstar: Unstar
+  starred: Starred
+  duplicate: Duplicate
+  clear-search: Clear search
+  enable: Enable
+  disable: Disable
 error-page:
   go-back-home: Go back home
 anomaly-center: Anomaly Center
@@ -207,6 +220,7 @@ task:
     compatibility: Compatibility
     connection: Connection
     migration-schema: Migration schema
+    sql-review: SQL review
     earliest-allowed-time: Earliest allowed time
   earliest-allowed-time-hint: >-
     '@:{'common.when'}' specifies the expected execution timing for this task.
@@ -229,12 +243,17 @@ task:
   earliest-allowed-time-no-modify: >-
     You can not modify this field because you are not the issue assignee or it's
     not pending to run.
+  type:
+    bb-task-database-schema-update-ghost-sync: Sync data
+    bb-task-database-schema-update-ghost-cutover: Switch tables
+    bb-task-database-schema-update-ghost-drop-original-table: Drop original table
 banner:
   demo-intro: This is a demo version of Bytebase.
   demo-intro-readonly: This is a demo version of Bytebase in read-only mode.
   trial-expires: Your trial for {plan} plan will expires in {days} days.
   extend-trial: Extend trialing time
   action: Deploy yours in 5 seconds
+  debug: Debug mode is active, you can disable Debug mode via the top-right profile dropdown.
 intro:
   content: >-
     Bytebase is for DBAs and Developers to collaborate on database schemas
@@ -421,6 +440,17 @@ issue:
   stage-select:
     active: "{name} (active)"
   not-allowed-to-single-database-in-tenant-mode: Can't {operation} to single database in tenant mode
+  migration-mode:
+    title: Migration mode
+    normal:
+      title: Normal migration (for normal-sized table)
+      description: Perform schema change directly on the target table.
+    online:
+      title: Online migration (for large-sized table)
+      description: >-
+        Perform schema change on a duplicated empty table. Sync the data and
+        swap the table name after sync finishes. Applying migration on a large
+        table directly would cause long-time unavailability {link}.
 alter-schema:
   vcs-enabled: >-
     This project has enabled VCS based version control and selecting database
@@ -443,7 +473,6 @@ quick-action:
   add-instance: "@:common.add @:common.instance"
   create-instance: "@:common.create @:common.instance"
   manage-user: Manage User
-  default-project: Default Project
   add-environment: "@:common.add @:common.environment"
   create-environment: "@:common.create @:common.environment"
   new-project: "@:common.new @:common.project"
@@ -455,7 +484,7 @@ quick-action:
   from-default-project: From Default project
   from-other-projects: From other projects
   transfer-in-db-title: Transfer in database from other projects
-  transfer-in-db-hint: >-
+  default-db-hint: >-
     Bytebase periodically syncs the instance schema. Newly synced databases are
     first placed in this default project.
   transfer-in-db-alert: Are you sure to transfer "{ dbName }" into our project?
@@ -812,6 +841,9 @@ repository:
     to push to that protected branch.
   if-specified: If specified
   schema-path-example: Schema path example
+  sheet-path-template: Sheet path template
+  sheet-path-template-description: >-
+    Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.
   git-provider: Git provider
   version-control-status: "@.capitalize:common.version-control is {status}"
   version-control-description-file-path: >-
@@ -1157,6 +1189,8 @@ datasource:
   connection-name-string-copied-to-clipboard: "{0} string copied to clipboard."
   jdbc-cant-connect-to-socket-database-value-instance-host: "JDBC can't connect to socket {0} "
 setting:
+  project:
+    description: This is the Admin project panel listing all projects in Bytebase.
   label:
     key: Key
     values: Values
@@ -1192,7 +1226,6 @@ sql-editor:
   search-sheets: Search Sheets
   hint-tips:
     confirm-to-delete-this-history: Confirm to delete this history?
-    confirm-to-delete-this-sheet: Confirm to delete this sheet?
     confirm-to-close-unsaved-tab: Confirm to close unsaved tab?
   please-input-the-tab-label: Please input the tab label!
   copy-code: Copy code
@@ -1203,7 +1236,7 @@ sql-editor:
   view-all-tabs: View all Tabs
   sheet: Sheet
   sheets: Sheets
-  connection-holder: Select a connection or select a sheet from left panel to get started
+  connection-holder: Select a connection from left panel to get started
   link-access: Link access
   private: Private
   private-desc: Only you can access this sheet
@@ -1310,7 +1343,7 @@ subscription:
     bb-feature-backward-compatibility:
       title: Backward compatibility
       desc: >-
-        MySQL and TiDB support schema change with backward compatibility.
+        MySQL and TiDB support checking whether the schema change is backward compatible.
         @:{'subscription.upgrade'} to unlock this feature.
     bb-feature-rbac:
       title: Role management
@@ -1389,3 +1422,128 @@ subscription:
       title: Enterprise Plan
       label: Early access
       desc: Large organization, has dedicated DBA group to manage database fleet
+sheet:
+  self: Sheets
+  my-sheets: My Sheets
+  shared-with-me: Shared with me
+  actions:
+    sync-from-vcs: Sync from VCS
+  hint-tips:
+    confirm-to-sync-sheet: Confirm to sync sheets?
+    confirm-to-delete-this-sheet: Confirm to delete this sheet?
+    confirm-to-duplicate-sheet: Confirm to duplicate this sheet?
+engine:
+  mysql: MySQL
+  common: Common
+schema-review-policy:
+  title: Schema Review
+  no-policy-set: No schema review policy
+  add-review: Add policy
+  search-rule-name: Search rule name
+  remove-review: Successfully removed the review policy.
+  create-review: Successfully created the review policy.
+  update-review: Successfully updated the review policy.
+  rules: Rules
+  filter: Filter
+  no-permission: Only DBA or Owner has permission to create or update review policy.
+  disable: Disable schema review policy
+  enable: Enable schema review policy
+  delete: Delete schema review policy
+  category:
+    engine: Engine
+    naming: Naming
+    statement: Statement
+    table: Table
+    column: Column
+    schema: Schema
+  template:
+    policy-for-prod:
+      title: Schema review for Prod
+    policy-for-dev:
+      title: Schema review for Dev
+  rule:
+    engine-mysql-use-innodb:
+      title: Use Innodb
+      description: Require InnoDB as the storage engine for MySQL.
+    table-require-pk:
+      title: Require primary key
+      description: Require the table to have a primary key.
+    naming-table:
+      title: Table naming check
+      description: Enforce the table name format. Default snake_lower_case.
+    naming-column:
+      title: Column naming check
+      description: Enforce the column name format. Default snake_lower_case.
+    naming-index-pk:
+      title: Primary key naming check
+      description: Enforce the primary key name format. Default pk_{table_name}_{column_name}.
+    naming-index-uk:
+      title: Unique key naming check
+      description: Enforce the unique key name format. Default uk_{table_name}_{column_name}.
+    naming-index-fk:
+      title: Foreign key naming check
+      description: Enforce the foreign key name format. Default fk_{referencing_table}_{referencing_column}_{referenced_table}_{referenced_column}.
+    naming-index-idx:
+      title: Index naming check
+      description: Enforce the index name format. Default idx_{table_name}_{column_name}.
+    column-required:
+      title: Required columns
+      description: Enforce the required columns in each table.
+    column-no-null:
+      title: Disallow NULL
+      description: Columns cannot have NULL value.
+    statement-select-no-select-all:
+      title: Disallow "SELECT *"
+      description: Disallow 'SELECT *' statement.
+    statement-where-require:
+      title: Require "WHERE"
+      description: Require 'WHERE' clause.
+    statement-where-no-leading-wildcard-like:
+      title: Disallow leading wildcard like
+      description: Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
+    schema-backward-compatibility:
+      title: Backward compatibility
+      description: MySQL and TiDB support checking whether the schema change is backward compatible.
+  payload-config:
+    table-name-format: Table name format (regex)
+    column-name-format: Column name format (regex)
+    pk-name-format: Primary key name format
+    uk-name-format: Unique key name format
+    idx-name-format: Index name format
+    required-column: Required column names
+    input-then-press-enter: Input the value then press enter to add
+    template:
+      table-name: The table name
+      column-list: Index column names, joined by _
+      referencing-table: The referencing table name
+      referencing-column: The referencing column name
+      referenced-table: The referenced table name
+      referenced-column: The referenced column name
+  error-level:
+    name: Error Level
+    error: Error
+    warning: Warning
+    disabled: Disabled
+  create:
+    breadcrumb: Create schema review policy
+    basic-info:
+      name: Basic info
+      display-name: Display name
+      display-name-placeholder: The review policy name
+      display-name-default: Schema review policy
+      display-name-label: >-
+        A display name to help identifying among different review policies.
+      environments: Environments
+      environments-label: Apply the review policy to the selected environments. One environment can only link one policy.
+      environments-select: Select environments
+      no-linked-environments: No linked environment
+      no-available-environment: No available environment
+      no-available-environment-desc: No available environment. One environment can only link one schema review policy.
+      choose-template: Choose template
+    configure-rule:
+      name: Configure rule
+      change-template: Change the template
+      confirm-override-title: Confirm change
+      confirm-override-description: Your rules will be overridden
+    preview:
+      name: Preview

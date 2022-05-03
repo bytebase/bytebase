@@ -327,7 +327,6 @@ import {
   PropType,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
 import {
@@ -354,6 +353,12 @@ import {
 import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
+import {
+  useCurrentUser,
+  useUIStateStore,
+  useIssueSubscriberStore,
+  useActivityStore,
+} from "@/store";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -394,7 +399,7 @@ export default defineComponent({
   emits: ["add-subscriber-id"],
   setup(props, { emit }) {
     const { t } = useI18n();
-    const store = useStore();
+    const activityStore = useActivityStore();
     const router = useRouter();
 
     const newComment = ref("");
@@ -434,10 +439,10 @@ export default defineComponent({
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareActivityList = () => {
-      store.dispatch("activity/fetchActivityListForIssue", props.issue.id);
+      activityStore.fetchActivityListForIssue(props.issue.id);
     };
 
     watchEffect(prepareActivityList);
@@ -456,9 +461,7 @@ export default defineComponent({
 
     // Need to use computed to make list reactive to activity list changes.
     const activityList = computed((): Activity[] => {
-      const list = store.getters["activity/activityListByIssue"](
-        props.issue.id
-      );
+      const list = activityStore.getActivityListByIssue(props.issue.id);
       return list.filter((activity: Activity) => {
         if (activity.type == "bb.issue.field.update") {
           let containUserVisibleChange =
@@ -471,9 +474,7 @@ export default defineComponent({
     });
 
     const subscriberList = computed((): IssueSubscriber[] => {
-      return store.getters["issueSubscriber/subscriberListByIssue"](
-        props.issue.id
-      );
+      return useIssueSubscriberStore().subscriberListByIssue(props.issue.id);
     });
 
     const cancelEditComment = () => {
@@ -488,8 +489,8 @@ export default defineComponent({
         containerId: props.issue.id,
         comment: newComment.value,
       };
-      store.dispatch("activity/createActivity", createActivity).then(() => {
-        store.dispatch("uistate/saveIntroStateByKey", {
+      activityStore.createActivity(createActivity).then(() => {
+        useUIStateStore().saveIntroStateByKey({
           key: "comment.create",
           newState: true,
         });
@@ -522,8 +523,8 @@ export default defineComponent({
     };
 
     const doUpdateComment = () => {
-      store
-        .dispatch("activity/updateComment", {
+      activityStore
+        .updateComment({
           activityId: state.activeActivity!.id,
           updatedComment: editComment.value,
         })
@@ -537,7 +538,7 @@ export default defineComponent({
     });
 
     const doDeleteComment = (activity: Activity) => {
-      store.dispatch("activity/deleteActivity", activity);
+      activityStore.deleteActivity(activity);
     };
 
     const actionIcon = (activity: Activity): ActionIconType => {

@@ -20,8 +20,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { defineComponent, reactive, watchEffect } from "vue";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -30,11 +29,13 @@ import {
   EnvironmentPatch,
   Policy,
   PolicyType,
-  FeatureType,
   DefaultApporvalPolicy,
   DefaultSchedulePolicy,
+  PipelineApporvalPolicyPayload,
+  BackupPlanPolicyPayload,
 } from "../types";
 import { idFromSlug } from "../utils";
+import { hasFeature, useEnvironmentStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   environment: Environment;
@@ -46,7 +47,7 @@ interface LocalState {
     | "bb.feature.backup-policy";
 }
 
-export default {
+export default defineComponent({
   name: "EnvironmentDetail",
   components: {
     ArchiveBanner,
@@ -60,18 +61,19 @@ export default {
   },
   emits: ["archive"],
   setup(props, { emit }) {
-    const store = useStore();
+    const environmentStore = useEnvironmentStore();
+    const policyStore = usePolicyStore();
 
     const state = reactive<LocalState>({
-      environment: store.getters["environment/environmentById"](
+      environment: environmentStore.getEnvironmentById(
         idFromSlug(props.environmentSlug)
       ),
       showArchiveModal: false,
     });
 
     const preparePolicy = () => {
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.pipeline-approval",
         })
@@ -79,8 +81,8 @@ export default {
           state.approvalPolicy = policy;
         });
 
-      store
-        .dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore
+        .fetchPolicyByEnvironmentAndType({
           environmentId: (state.environment as Environment).id,
           type: "bb.policy.backup-plan",
         })
@@ -96,8 +98,8 @@ export default {
     };
 
     const doUpdate = (environmentPatch: EnvironmentPatch) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: idFromSlug(props.environmentSlug),
           environmentPatch,
         })
@@ -107,8 +109,8 @@ export default {
     };
 
     const doArchive = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "ARCHIVED",
@@ -121,8 +123,8 @@ export default {
     };
 
     const doRestore = (environment: Environment) => {
-      store
-        .dispatch("environment/patchEnvironment", {
+      environmentStore
+        .patchEnvironment({
           environmentId: environment.id,
           environmentPatch: {
             rowStatus: "NORMAL",
@@ -140,22 +142,24 @@ export default {
     ) => {
       if (
         type === "bb.policy.pipeline-approval" &&
-        policy.payload.value !== DefaultApporvalPolicy &&
-        !store.getters["subscription/feature"]("bb.feature.approval-policy")
+        (policy.payload as PipelineApporvalPolicyPayload).value !==
+          DefaultApporvalPolicy &&
+        !hasFeature("bb.feature.approval-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.approval-policy";
         return;
       }
       if (
         type === "bb.policy.backup-plan" &&
-        policy.payload.schedule !== DefaultSchedulePolicy &&
-        !store.getters["subscription/feature"]("bb.feature.backup-policy")
+        (policy.payload as BackupPlanPolicyPayload).schedule !==
+          DefaultSchedulePolicy &&
+        !hasFeature("bb.feature.backup-policy")
       ) {
         state.missingRequiredFeature = "bb.feature.backup-policy";
         return;
       }
-      store
-        .dispatch("policy/upsertPolicyByEnvironmentAndType", {
+      policyStore
+        .upsertPolicyByEnvironmentAndType({
           environmentId,
           type: type,
           policyUpsert: {
@@ -175,5 +179,5 @@ export default {
       updatePolicy,
     };
   },
-};
+});
 </script>

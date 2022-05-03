@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -74,68 +73,11 @@ func (v SheetType) String() string {
 // SheetVCSPayload is the additional data payload of the VCS sheet.
 type SheetVCSPayload struct {
 	FileName     string `json:"fileName"`
-	Path         string `json:"path"`
+	FilePath     string `json:"filePath"`
 	Size         int64  `json:"size"`
 	Author       string `json:"author"`
 	LastCommitID string `json:"lastCommitId"`
 	LastSyncTs   int64  `json:"lastSyncTs"`
-}
-
-// SheetRaw is the store model for an Sheet.
-// Fields have exactly the same meanings as Sheet.
-type SheetRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID int
-	// The DatabaseID is optional.
-	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
-	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-	DatabaseID *int
-
-	// Domain specific fields
-	Name       string
-	Statement  string
-	Visibility SheetVisibility
-	Source     SheetSource
-	Type       SheetType
-	// Payload is in the json string format of SheetVCSPayload.
-	Payload string
-}
-
-// ToSheet creates an instance of Sheet based on the SheetRaw.
-// This is intended to be called when we need to compose an Sheet relationship.
-func (raw *SheetRaw) ToSheet() *Sheet {
-	return &Sheet{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID: raw.ProjectID,
-		// The DatabaseID is optional.
-		// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
-		// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:       raw.Name,
-		Statement:  raw.Statement,
-		Visibility: raw.Visibility,
-		Source:     raw.Source,
-		Type:       raw.Type,
-		Payload:    raw.Payload,
-	}
 }
 
 // Sheet is the API message for a sheet.
@@ -143,6 +85,7 @@ type Sheet struct {
 	ID int `jsonapi:"primary,sheet"`
 
 	// Standard fields
+	RowStatus RowStatus `jsonapi:"attr,rowStatus"`
 	CreatorID int
 	Creator   *Principal `jsonapi:"relation,creator"`
 	CreatedTs int64      `jsonapi:"attr,createdTs"`
@@ -166,12 +109,13 @@ type Sheet struct {
 	Source     SheetSource     `jsonapi:"attr,source"`
 	Type       SheetType       `jsonapi:"attr,type"`
 	Payload    string          `jsonapi:"attr,payload"`
+	Starred    bool            `jsonapi:"attr,starred"`
+	Pinned     bool            `jsonapi:"attr,pinned"`
 }
 
 // SheetCreate is the API message for creating a sheet.
 type SheetCreate struct {
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID int
 
 	// Related fields
@@ -192,11 +136,10 @@ type SheetPatch struct {
 	ID int `jsonapi:"primary,sheetPatch"`
 
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
+	RowStatus *string `jsonapi:"attr,rowStatus"`
 	UpdaterID int
 
 	// Related fields
-	ProjectID  int  `jsonapi:"attr,projectId"`
 	DatabaseID *int `jsonapi:"attr,databaseId"`
 
 	// Domain specific fields
@@ -208,22 +151,30 @@ type SheetPatch struct {
 
 // SheetFind is the API message for finding sheets.
 type SheetFind struct {
+	ID *int
+
 	// Standard fields
-	ID        *int
 	RowStatus *RowStatus
-	// Value is assigned from the jwt subject field passed by the client.
+	// Used to find the creator's sheet list.
+	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	CreatorID *int
 
 	// Related fields
-	ProjectID *int
-	// Query all related sheets with databaseId can be used for database transfer checking.
+	ProjectID  *int
 	DatabaseID *int
 
 	// Domain fields
+	Name       *string
 	Visibility *SheetVisibility
 	Source     *SheetSource
 	Type       *SheetType
 	Payload    *string
+	// Used to find starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// For now, we only need the starred sheets.
+	OrganizerID *int
+	// Used to find a constraint sheet list with related projects containing PrincipalID as an active member.
+	// When finding a shared PROJECT/PROJECT sheet, the value should have value.
+	PrincipalID *int
 }
 
 func (find *SheetFind) String() string {
@@ -239,15 +190,5 @@ type SheetDelete struct {
 	ID int
 
 	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
 	DeleterID int
-}
-
-// SheetService is the service for sheet.
-type SheetService interface {
-	CreateSheet(ctx context.Context, create *SheetCreate) (*SheetRaw, error)
-	PatchSheet(ctx context.Context, patch *SheetPatch) (*SheetRaw, error)
-	FindSheetList(ctx context.Context, find *SheetFind) ([]*SheetRaw, error)
-	FindSheet(ctx context.Context, find *SheetFind) (*SheetRaw, error)
-	DeleteSheet(ctx context.Context, delete *SheetDelete) error
 }

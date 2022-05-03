@@ -22,7 +22,7 @@
       v-if="state.showCreateUserExample"
       class="mt-2 text-sm text-main w-208"
     >
-      <template·
+      <template
         v-if="props.engineType == 'MYSQL' || props.engineType == 'TIDB'"
       >
         <i18n-t
@@ -45,7 +45,7 @@
         >
           {{ $t("common.detailed-guide") }}
         </a>
-      </template·>
+      </template>
       <template v-else-if="props.engineType == 'CLICKHOUSE'">
         <i18n-t
           tag="p"
@@ -117,10 +117,10 @@
 
 <script lang="ts" setup>
 import { reactive, PropType } from "vue";
-import { useStore } from "vuex";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { useI18n } from "vue-i18n";
 import { DataSourceType, EngineType } from "../types";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   showCreateUserExample: boolean;
@@ -145,7 +145,6 @@ const props = defineProps({
   },
 });
 
-const store = useStore();
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
@@ -190,7 +189,7 @@ const toggleCreateUserExample = () => {
 const copyGrantStatement = () => {
   toClipboard(grantStatement(props.engineType, props.dataSourceType)).then(
     () => {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "INFO",
         title: t("instance.copy-grant-statement"),

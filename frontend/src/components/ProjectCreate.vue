@@ -125,13 +125,18 @@
 
 <script lang="ts">
 import { computed, reactive, defineComponent, watch } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEmpty from "lodash-es/isEmpty";
 import { Project, ProjectCreate } from "../types";
 import { projectSlug, randomString } from "../utils";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
+import {
+  hasFeature,
+  pushNotification,
+  useUIStateStore,
+  useProjectStore,
+} from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
@@ -144,9 +149,9 @@ export default defineComponent({
   props: {},
   emits: ["dismiss"],
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       project: {
@@ -196,21 +201,21 @@ export default defineComponent({
       }
       if (
         state.project.tenantMode == "TENANT" &&
-        !store.getters["subscription/feature"]("bb.feature.multi-tenancy")
+        !hasFeature("bb.feature.multi-tenancy")
       ) {
         state.showFeatureModal = true;
         return;
       }
 
-      store
-        .dispatch("project/createProject", state.project)
+      projectStore
+        .createProject(state.project)
         .then((createdProject: Project) => {
-          store.dispatch("uistate/saveIntroStateByKey", {
+          useUIStateStore().saveIntroStateByKey({
             key: "project.visit",
             newState: true,
           });
 
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.create-modal.success-prompt", {

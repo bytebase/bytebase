@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -36,32 +37,7 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	SettingService          api.SettingService
-	ProjectService          api.ProjectService
-	ProjectMemberService    api.ProjectMemberService
-	ProjectWebhookService   api.ProjectWebhookService
-	InstanceService         api.InstanceService
-	InstanceUserService     api.InstanceUserService
-	DatabaseService         api.DatabaseService
-	TableService            api.TableService
-	ColumnService           api.ColumnService
-	ViewService             api.ViewService
-	IndexService            api.IndexService
-	BackupService           api.BackupService
-	IssueService            api.IssueService
-	IssueSubscriberService  api.IssueSubscriberService
-	PipelineService         api.PipelineService
-	StageService            api.StageService
-	TaskService             api.TaskService
-	TaskCheckRunService     api.TaskCheckRunService
-	ActivityService         api.ActivityService
-	InboxService            api.InboxService
-	BookmarkService         api.BookmarkService
-	RepositoryService       api.RepositoryService
-	LabelService            api.LabelService
-	DeploymentConfigService api.DeploymentConfigService
-	LicenseService          enterprise.LicenseService
-	SheetService            api.SheetService
+	LicenseService enterprise.LicenseService
 
 	e *echo.Echo
 
@@ -69,7 +45,7 @@ type Server struct {
 	l             *zap.Logger
 	lvl           *zap.AtomicLevel
 	version       string
-	mode          string
+	mode          common.ReleaseMode
 	host          string
 	port          int
 	frontendHost  string
@@ -96,7 +72,7 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode string, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode common.ReleaseMode, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
 	e := echo.New()
 	e.Debug = debug
 	e.HideBanner = true
@@ -150,15 +126,27 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
 
+		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostSync), schemaUpdateGhostSyncExecutor)
+
+		schemaUpdateTaskGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateTaskGhostCutoverExecutor)
+
+		schemaUpdateTaskGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateTaskGhostDropOriginalTableExecutor)
+
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
 		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
 
-		statementExecutor := NewTaskCheckStatementAdvisorExecutor(logger)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementExecutor)
+		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementSimpleExecutor)
+
+		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
+		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
 
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
@@ -182,7 +170,7 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	}
 
 	// Middleware
-	if mode == "dev" || debug {
+	if mode == common.ReleaseModeDev || debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")
@@ -242,6 +230,11 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	s.registerLabelRoutes(apiGroup)
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
+	s.registerSheetOrganizerRoutes(apiGroup)
+	// Register healthz endpoint.
+	e.GET("/healthz", func(c echo.Context) error {
+		return c.String(http.StatusOK, "OK!\n")
+	})
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {

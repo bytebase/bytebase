@@ -33,14 +33,27 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, onMounted, reactive, ref } from "vue";
-import { useStore } from "vuex";
+import {
+  computed,
+  watchEffect,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+} from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import { Environment, Database, UNKNOWN_ID } from "../types";
 import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useEnvironmentList,
+  useEnvironmentStore,
+  useUIStateStore,
+} from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -49,7 +62,7 @@ interface LocalState {
   showGuide: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceDashboard",
   components: {
     EnvironmentTabFilter,
@@ -58,34 +71,32 @@ export default {
   setup() {
     const searchField = ref();
 
-    const store = useStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
       searchText: "",
       databaseList: [],
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.database")) {
+      if (!uiStateStore.getIntroStateByKey("guide.database")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,
           });
@@ -96,19 +107,21 @@ export default {
     const prepareDatabaseList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store.dispatch("database/fetchDatabaseList").then((list) => {
-          state.databaseList = sortDatabaseList(
-            cloneDeep(list),
-            environmentList.value
-          );
-        });
+        useDatabaseStore()
+          .fetchDatabaseList()
+          .then((list) => {
+            state.databaseList = sortDatabaseList(
+              cloneDeep(list),
+              environmentList.value
+            );
+          });
       }
     };
 
     watchEffect(prepareDatabaseList);
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.database",
         newState: true,
       });
@@ -157,5 +170,5 @@ export default {
       changeSearchText,
     };
   },
-};
+});
 </script>

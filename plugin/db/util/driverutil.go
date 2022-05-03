@@ -16,10 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	bytebaseDatabase = "bytebase"
-)
-
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
@@ -128,8 +124,8 @@ type MigrationExecutor interface {
 }
 
 // ExecuteMigration will execute the database migration.
-// Returns the created migraiton history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string) (migrationHistoryID int64, updatedSchema string, resErr error) {
+// Returns the created migration history id and the updated schema on success.
+func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -142,7 +138,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// Phase 1 - Precheck before executing migration
 	// Phase 2 - Record migration history as PENDING
-	insertedID, err := beginMigration(ctx, executor, m, prevSchemaBuf.String(), statement)
+	insertedID, err := beginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
 		return -1, "", err
 	}
@@ -150,7 +146,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, resErr == nil /*isDone*/); err != nil {
+		if err := endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
 			l.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
@@ -184,9 +180,9 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string) (insertedID int64, err error) {
-	// Convert verion to stored version.
-	storedVersion, err := toStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
+func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
+	// Convert version to stored version.
+	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
 	}
@@ -194,10 +190,9 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
-		Source:   &m.Source,
 		Version:  &m.Version,
 	}); err != nil {
-		return -1, fmt.Errorf("Check duplicate version error: %q", err)
+		return -1, fmt.Errorf("check duplicate version error: %q", err)
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
@@ -212,7 +207,7 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+	sqldb, err := executor.GetDbConnection(ctx, databaseName)
 	if err != nil {
 		return -1, err
 	}
@@ -252,10 +247,10 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, isDone bool) (err error) {
+func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDbConnection(ctx, bytebaseDatabase)
+	sqldb, err := executor.GetDbConnection(ctx, databaseName)
 	if err != nil {
 		return err
 	}
@@ -269,7 +264,7 @@ func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
 		err = executor.UpdateHistoryAsDone(ctx, tx, migrationDurationNs, updatedSchema, migrationHistoryID)
 	} else {
-		// Otherwise, update the migration history as 'FAILED', exeuction_duration.
+		// Otherwise, update the migration history as 'FAILED', execution_duration.
 		err = executor.UpdateHistoryAsFailed(ctx, tx, migrationDurationNs, migrationHistoryID)
 	}
 
@@ -379,8 +374,10 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
-	sqldb, err := driver.GetDbConnection(ctx, bytebaseDatabase)
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
+	// To support `pg` option, util layer will not know which database `migration_history` is located in,
+	// so wo need connect database provided by params.
+	sqldb, err := driver.GetDbConnection(ctx, database)
 	if err != nil {
 		return nil, err
 	}
@@ -460,10 +457,10 @@ func formatError(err error) error {
 // NonSemanticPrefix is the prefix for non-semantic version
 const NonSemanticPrefix = "0000.0000.0000-"
 
-// toStoredVersion converts semantic or non-semantic version to stored version format.
+// ToStoredVersion converts semantic or non-semantic version to stored version format.
 // Non-semantic version will have additional "0000.0000.0000-" prefix.
 // Semantic version will add zero padding to MAJOR, MINOR, PATCH version with a timestamp suffix.
-func toStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
+func ToStoredVersion(useSemanticVersion bool, version, semanticVersionSuffix string) (string, error) {
 	if !useSemanticVersion {
 		return fmt.Sprintf("%s%s", NonSemanticPrefix, version), nil
 	}

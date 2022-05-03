@@ -173,13 +173,13 @@ import {
   ref,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import cloneDeep from "lodash-es/cloneDeep";
 import isEmpty from "lodash-es/isEmpty";
 import isEqual from "lodash-es/isEqual";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import { Principal, PrincipalPatch } from "../types";
+import { PrincipalPatch } from "../types";
 import { isOwner } from "../utils";
+import { featureToRef, useCurrentUser, usePrincipalStore } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -199,7 +199,7 @@ export default defineComponent({
   setup(props) {
     const editNameTextField = ref();
 
-    const store = useStore();
+    const principalStore = usePrincipalStore();
 
     const state = reactive<LocalState>({
       editing: false,
@@ -225,19 +225,13 @@ export default defineComponent({
       document.removeEventListener("keydown", keyboardHandler);
     });
 
-    const currentUser = computed(
-      (): Principal => store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const principal = computed(() => {
       if (props.principalId) {
-        return store.getters["principal/principalById"](
-          parseInt(props.principalId)
-        );
+        return principalStore.principalById(parseInt(props.principalId));
       }
       return currentUser.value;
     });
@@ -286,10 +280,10 @@ export default defineComponent({
     };
 
     const saveEdit = () => {
-      store
-        .dispatch("principal/patchPrincipal", {
+      principalStore
+        .patchPrincipal({
           principalId: principal.value.id,
-          principalPatch: state.editingPrincipal,
+          principalPatch: state.editingPrincipal!,
         })
         .then(() => {
           state.editingPrincipal = undefined;

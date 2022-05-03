@@ -1,6 +1,6 @@
 {
   "name": "bytebase",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "vite --mode dev",
@@ -26,6 +26,7 @@
     "node-sql-parser": "^4.0.8",
     "papaparse": "^5.3.1",
     "pinia": "^2.0.12",
+    "semver": "^7.3.7",
     "slug": "^4.0.2",
     "splitpanes": "^3.0.6",
     "sql-formatter": "^4.0.2",
@@ -34,10 +35,7 @@
     "vue": "^3.2.30",
     "vue-i18n": "^9.2.0-beta.20",
     "vue-router": "^4.0.8",
-    "vueuc": "^0.4.27",
-    "vuex": "^4.0.0",
-    "vuex-composition-helpers": "^2.0.1",
-    "vuex-persistedstate": "^4.1.0"
+    "vueuc": "^0.4.27"
   },
   "devDependencies": {
     "@iconify/json": "^1.1.432",
@@ -49,6 +47,7 @@
     "@types/node": "^16.11.9",
     "@types/papaparse": "^5.3.1",
     "@types/prettier": "^2.4.2",
+    "@types/semver": "^7.3.9",
     "@types/slug": "^0.9.1",
     "@types/splitpanes": "^2.2.1",
     "@types/uuid": "^8.3.0",

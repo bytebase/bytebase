@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
@@ -73,6 +71,8 @@ const (
 	TaskCheckDatabaseStatementSyntax TaskCheckType = "bb.task-check.database.statement.syntax"
 	// TaskCheckDatabaseStatementCompatibility is the task check type for statement compatibility.
 	TaskCheckDatabaseStatementCompatibility TaskCheckType = "bb.task-check.database.statement.compatibility"
+	// TaskCheckDatabaseStatementAdvise is the task check type for schema system review policy.
+	TaskCheckDatabaseStatementAdvise TaskCheckType = "bb.task-check.database.statement.advise"
 	// TaskCheckDatabaseConnect is the task check type for database connection.
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
@@ -92,6 +92,9 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	DbType    db.Type `json:"dbType,omitempty"`
 	Charset   string  `json:"charset,omitempty"`
 	Collation string  `json:"collation,omitempty"`
+
+	// Schema review special fields.
+	PolicyID int `json:"policyID,omitempty"`
 }
 
 // TaskCheckResult is the result of task checks.
@@ -106,54 +109,6 @@ type TaskCheckResult struct {
 type TaskCheckRunResultPayload struct {
 	Detail     string            `json:"detail,omitempty"`
 	ResultList []TaskCheckResult `json:"resultList,omitempty"`
-}
-
-// TaskCheckRunRaw is the store model for a TaskCheckRun.
-// Fields have exactly the same meanings as TaskCheckRun.
-type TaskCheckRunRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	TaskID int
-
-	// Domain specific fields
-	Status  TaskCheckRunStatus
-	Type    TaskCheckType
-	Code    common.Code
-	Comment string
-	Result  string
-	Payload string
-}
-
-// ToTaskCheckRun creates an instance of TaskCheckRun based on the TaskCheckRunRaw.
-// This is intended to be called when we need to compose a TaskCheckRun relationship.
-func (raw *TaskCheckRunRaw) ToTaskCheckRun() *TaskCheckRun {
-	return &TaskCheckRun{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		TaskID: raw.TaskID,
-
-		// Domain specific fields
-		Status:  raw.Status,
-		Type:    raw.Type,
-		Code:    raw.Code,
-		Comment: raw.Comment,
-		Result:  raw.Result,
-		Payload: raw.Payload,
-	}
 }
 
 // TaskCheckRun is the API message for task check run.
@@ -234,16 +189,4 @@ type TaskCheckRunStatusPatch struct {
 	Status TaskCheckRunStatus
 	Code   common.Code
 	Result string
-}
-
-// TaskCheckRunService is the service for task check runs.
-type TaskCheckRunService interface {
-	// For a particular task and a particular check type, we only create a new TaskCheckRun if matches all conditions below:
-	// 1. There is no existing RUNNING check run. If this is the case, then returns that RUNNING check run.
-	// 2. If SkipIfAlreadyTerminated is false, or if SkipIfAlreadyTerminated is true and there is no DONE/FAILED/CANCELED check run. If this is the case,
-	//    then returns that terminated check run.
-	CreateTaskCheckRunIfNeeded(ctx context.Context, create *TaskCheckRunCreate) (*TaskCheckRunRaw, error)
-	FindTaskCheckRunList(ctx context.Context, find *TaskCheckRunFind) ([]*TaskCheckRunRaw, error)
-	FindTaskCheckRunListTx(ctx context.Context, tx *sql.Tx, find *TaskCheckRunFind) ([]*TaskCheckRunRaw, error)
-	PatchTaskCheckRunStatus(ctx context.Context, patch *TaskCheckRunStatusPatch) (*TaskCheckRunRaw, error)
 }

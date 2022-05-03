@@ -34,11 +34,11 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watchEffect } from "vue";
-import { useStore } from "vuex";
+import { reactive, watchEffect } from "vue";
 import InboxList from "../components/InboxList.vue";
 import { Inbox, UNKNOWN_ID } from "../types";
 import { useRouter } from "vue-router";
+import { useCurrentUser, useInboxStore } from "@/store";
 
 // We alway fetch all "UNREAD" items. But for "READ" items, by default, we only fetch the most recent 7 days.
 // And each time clicking "View older" will extend 7 days further.
@@ -54,7 +54,7 @@ export default {
   name: "Inbox",
   components: { InboxList },
   setup() {
-    const store = useStore();
+    const inboxStore = useInboxStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -65,13 +65,13 @@ export default {
         Math.ceil(Date.now() / 1000) - READ_INBOX_DURATION_STEP,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const prepareInboxList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch("inbox/fetchInboxListByUser", {
+        inboxStore
+          .fetchInboxListByUser({
             userId: currentUser.value.id,
             readCreatedAfterTs: state.readCreatedAfterTs,
           })
@@ -97,8 +97,8 @@ export default {
       const inboxList = state.unreadList.map((item) => item);
 
       inboxList.forEach((item: Inbox) => {
-        store
-          .dispatch("inbox/patchInbox", {
+        inboxStore
+          .patchInbox({
             inboxId: item.id,
             inboxPatch: {
               status: "READ",
@@ -113,10 +113,7 @@ export default {
             }
             count--;
             if (count == 0) {
-              store.dispatch(
-                "inbox/fetchInboxSummaryByUser",
-                currentUser.value.id
-              );
+              inboxStore.fetchInboxSummaryByUser(currentUser.value.id);
             }
             state.readList.push(item);
           });

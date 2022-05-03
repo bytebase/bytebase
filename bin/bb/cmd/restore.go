@@ -7,61 +7,37 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/spf13/cobra"
+	"github.com/xo/dburl"
 )
 
 func newRestoreCmd() *cobra.Command {
 	var (
-		databaseType string
-		username     string
-		password     string
-		hostname     string
-		port         string
-		database     string
-		file         string
-
-		// SSL flags.
-		sslCA   string // server-ca.pem
-		sslCert string // client-cert.pem
-		sslKey  string // client-key.pem
+		dsn  string
+		file string
 	)
 	restoreCmd := &cobra.Command{
 		Use:   "restore",
-		Short: "restores the schema of a database instance",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			tlsCfg := db.TLSConfig{
-				SslCA:   sslCA,
-				SslCert: sslCert,
-				SslKey:  sslKey,
+		Short: "Restores schema and data of a database.",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			u, err := dburl.Parse(dsn)
+			if err != nil {
+				return fmt.Errorf("failed to parse dsn, got error: %w", err)
 			}
-			return restoreDatabase(context.Background(), databaseType, username, password, hostname, port, database, file, tlsCfg)
+			return restoreDatabase(context.Background(), u, file)
 		},
 	}
-	restoreCmd.Flags().StringVar(&databaseType, "type", "mysql", "Database type. (mysql, or pg).")
-	restoreCmd.Flags().StringVar(&username, "username", "", "Username to login database. (default mysql:root pg:postgres).")
-	restoreCmd.Flags().StringVar(&password, "password", "", "Password to login database.")
-	restoreCmd.Flags().StringVar(&hostname, "hostname", "", "Hostname of database.")
-	restoreCmd.Flags().StringVar(&port, "port", "", "Port of database. (default mysql:3306 pg:5432).")
-	restoreCmd.Flags().StringVar(&database, "database", "", "Database to connect and export.")
+	restoreCmd.Flags().StringVar(&dsn, "dsn", "", dsnUsage)
 	restoreCmd.Flags().StringVar(&file, "file", "", "File to store the dump.")
-	if err := restoreCmd.MarkFlagRequired("database"); err != nil {
-		panic(err)
-	}
 	if err := restoreCmd.MarkFlagRequired("file"); err != nil {
 		panic(err)
 	}
-
-	// tls flags for SSL connection.
-	restoreCmd.Flags().StringVar(&sslCA, "ssl-ca", "", "CA file in PEM format.")
-	restoreCmd.Flags().StringVar(&sslCert, "ssl-cert", "", "X509 cert in PEM format.")
-	restoreCmd.Flags().StringVar(&sslKey, "ssl-key", "", "X509 key in PEM format.")
 
 	return restoreCmd
 }
 
 // restoreDatabase restores the schema of a database instance.
-func restoreDatabase(ctx context.Context, databaseType, username, password, hostname, port, database, file string, tlsCfg db.TLSConfig) error {
+func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	f, err := os.OpenFile(file, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("os.OpenFile(%q) error: %v", file, err)
@@ -69,32 +45,7 @@ func restoreDatabase(ctx context.Context, databaseType, username, password, host
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 
-	var dbType db.Type
-	switch databaseType {
-	case "mysql":
-		dbType = db.MySQL
-		if username == "" {
-			username = "root"
-		}
-	case "pg":
-		dbType = db.Postgres
-	default:
-		return fmt.Errorf("database type %q not supported; supported types: mysql, pg", databaseType)
-	}
-	db, err := db.Open(
-		ctx,
-		dbType,
-		db.DriverConfig{Logger: logger},
-		db.ConnectionConfig{
-			Host:      hostname,
-			Port:      port,
-			Username:  username,
-			Password:  password,
-			Database:  database,
-			TLSConfig: tlsCfg,
-		},
-		db.ConnectionContext{},
-	)
+	db, err := open(ctx, logger, u)
 	if err != nil {
 		return err
 	}

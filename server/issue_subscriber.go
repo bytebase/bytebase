@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	g.POST("/issue/:issueID/subscriber", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -27,17 +26,12 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 
 		issueSubscriberCreate.IssueID = issueID
 
-		issueSubscriberRaw, err := s.IssueSubscriberService.CreateIssueSubscriber(ctx, issueSubscriberCreate)
+		issueSubscriber, err := s.store.CreateIssueSubscriber(ctx, issueSubscriberCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Subscriber %d already exists in issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d to issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
-		}
-
-		issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberCreate.SubscriberID, issueSubscriberCreate.IssueID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -48,7 +42,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 
 	g.GET("/issue/:issueID/subscriber", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -57,18 +51,9 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		issueSubscriberFind := &api.IssueSubscriberFind{
 			IssueID: &issueID,
 		}
-		issueSubscriberRawList, err := s.IssueSubscriberService.FindIssueSubscriberList(ctx, issueSubscriberFind)
+		issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issueID)).SetInternal(err)
-		}
-
-		var issueSubscriberList []*api.IssueSubscriber
-		for _, issueSubscriberRaw := range issueSubscriberRawList {
-			issueSubscriber, err := s.composeIssueSubscriberRelationship(ctx, issueSubscriberRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber %d relationship for issue %d", issueSubscriberRaw.SubscriberID, issueSubscriberRaw.IssueID)).SetInternal(err)
-			}
-			issueSubscriberList = append(issueSubscriberList, issueSubscriber)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -79,7 +64,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/issue/:issueID/subscriber/:subscriberID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		issueID, err := strconv.Atoi(c.Param("issueID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
@@ -94,7 +79,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 			IssueID:      issueID,
 			SubscriberID: subscriberID,
 		}
-		if err := s.IssueSubscriberService.DeleteIssueSubscriber(ctx, issueSubscriberDelete); err != nil {
+		if err := s.store.DeleteIssueSubscriber(ctx, issueSubscriberDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete subscriber %d from issue %d", subscriberID, issueID)).SetInternal(err)
 		}
 
@@ -102,16 +87,4 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-func (s *Server) composeIssueSubscriberRelationship(ctx context.Context, raw *api.IssueSubscriberRaw) (*api.IssueSubscriber, error) {
-	issueSubscriber := raw.ToIssueSubscriber()
-
-	subscriber, err := s.store.GetPrincipalByID(ctx, issueSubscriber.SubscriberID)
-	if err != nil {
-		return nil, err
-	}
-	issueSubscriber.Subscriber = subscriber
-
-	return issueSubscriber, nil
 }

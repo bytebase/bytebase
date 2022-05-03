@@ -58,16 +58,10 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					Hour:      t.Hour(),
 					DayOfWeek: int(t.Weekday()),
 				}
-				backupSettingRawList, err := s.server.BackupService.FindBackupSettingsMatch(ctx, match)
+				backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
-				}
-				// TODO(dragonly): implement composeBackupSettingRelation
-				var backupSettingList []*api.BackupSetting
-				for _, backupSettingRaw := range backupSettingRawList {
-					backupSetting := backupSettingRaw.ToBackupSetting()
-					backupSettingList = append(backupSettingList, backupSetting)
 				}
 
 				for _, backupSetting := range backupSettingList {
@@ -79,10 +73,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					runningTasks[backupSetting.ID] = true
 					mu.Unlock()
 
-					dbFind := &api.DatabaseFind{
-						ID: &backupSetting.DatabaseID,
-					}
-					db, err := s.server.composeDatabaseByFind(ctx, dbFind)
+					db, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
 					if err != nil {
 						s.l.Error("Failed to get database for backup setting",
 							zap.Int("id", backupSetting.ID),
@@ -91,7 +82,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 					if db == nil {
-						err := fmt.Errorf("Failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
+						err := fmt.Errorf("failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
 						s.l.Error(err.Error(),
 							zap.Int("id", backupSetting.ID),
 							zap.Int("databaseID", backupSetting.DatabaseID),
@@ -156,12 +147,12 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
 	}
 
-	// Return early if the backupRawOld already exists.
-	backupRawOld, err := s.server.BackupService.FindBackup(ctx, &api.BackupFind{Name: &backupName})
+	// Return early if the backupOld already exists.
+	backupOld, err := s.server.store.FindBackup(ctx, &api.BackupFind{Name: &backupName})
 	if err != nil {
 		return fmt.Errorf("failed to find backup %q, error %v", backupName, err)
 	}
-	if backupRawOld != nil {
+	if backupOld != nil {
 		return nil
 	}
 
@@ -174,7 +165,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		StorageBackend:          api.BackupStorageBackendLocal,
 		Path:                    path,
 	}
-	backupRawNew, err := s.server.BackupService.CreateBackup(ctx, backupCreate)
+	backupNew, err := s.server.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			// Automatic backup already exists.
@@ -184,14 +175,14 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
-		BackupID: backupRawNew.ID,
+		BackupID: backupNew.ID,
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to create task payload: %w", err)
 	}
 
-	createdPipeline, err := s.server.PipelineService.CreatePipeline(ctx, &api.PipelineCreate{
+	createdPipeline, err := s.server.store.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      backupName,
 		CreatorID: backupCreate.CreatorID,
 	})
@@ -199,7 +190,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create pipeline: %w", err)
 	}
 
-	createdStage, err := s.server.StageService.CreateStage(ctx, &api.StageCreate{
+	createdStage, err := s.server.store.CreateStage(ctx, &api.StageCreate{
 		Name:          backupName,
 		EnvironmentID: database.Instance.EnvironmentID,
 		PipelineID:    createdPipeline.ID,
@@ -209,7 +200,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		return fmt.Errorf("failed to create stage: %w", err)
 	}
 
-	_, err = s.server.TaskService.CreateTask(ctx, &api.TaskCreate{
+	_, err = s.server.store.CreateTask(ctx, &api.TaskCreate{
 		Name:       backupName,
 		PipelineID: createdPipeline.ID,
 		StageID:    createdStage.ID,

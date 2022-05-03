@@ -10,10 +10,11 @@ type Code int
 // Application error codes.
 const (
 	// 0 ~ 99 general error
-	Ok             Code = 0
-	Internal       Code = 1
-	NotAuthorized  Code = 2
-	Invalid        Code = 3
+	Ok            Code = 0
+	Internal      Code = 1
+	NotAuthorized Code = 2
+	Invalid       Code = 3
+	// TODO(dragonly): check usages of NotFound to ensure no code uses it to check for Get/Find methods
 	NotFound       Code = 4
 	Conflict       Code = 5
 	NotImplemented Code = 6
@@ -47,6 +48,8 @@ const (
 	CompatibilityAddCheck      Code = 10009
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
+
+	StatementNoWhere Code = 10101
 )
 
 // Error represents an application-specific error. Application errors can be

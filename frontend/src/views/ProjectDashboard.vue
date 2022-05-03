@@ -1,6 +1,18 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-2 py-2 flex justify-end items-center">
+    <div class="px-2 py-2 flex justify-between items-center">
+      <BBTooltipButton
+        type="normal"
+        tooltip-mode="ALWAYS"
+        @click="goDefaultProject"
+      >
+        {{ $t("common.visit-default-project") }}
+        <template #tooltip>
+          <div class="whitespace-pre-wrap">
+            {{ $t("quick-action.default-db-hint") }}
+          </div>
+        </template>
+      </BBTooltipButton>
       <BBTableSearch
         ref="searchField"
         :placeholder="$t('project.dashboard.search-bar-placeholder')"
@@ -28,17 +40,11 @@
 </template>
 
 <script lang="ts">
-import {
-  watchEffect,
-  computed,
-  onMounted,
-  reactive,
-  ref,
-  defineComponent,
-} from "vue";
-import { useStore } from "vuex";
+import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
+import { useRouter } from "vue-router";
+import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID } from "../types";
+import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
 
 interface LocalState {
   projectList: Project[];
@@ -52,9 +58,12 @@ export default defineComponent({
     ProjectTable,
   },
   setup() {
+    const router = useRouter();
     const searchField = ref();
 
-    const store = useStore();
+    const uiStateStore = useUIStateStore();
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       projectList: [],
@@ -62,16 +71,14 @@ export default defineComponent({
       showGuide: false,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
-
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.project")) {
+      if (!uiStateStore.getIntroStateByKey("guide.project")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,
           });
@@ -82,9 +89,10 @@ export default defineComponent({
     const prepareProjectList = () => {
       // It will also be called when user logout
       if (currentUser.value.id != UNKNOWN_ID) {
-        store
-          .dispatch("project/fetchProjectListByUser", {
+        projectStore
+          .fetchProjectListByUser({
             userId: currentUser.value.id,
+            rowStatusList: ["NORMAL"],
           })
           .then((projectList: Project[]) => {
             state.projectList = projectList;
@@ -99,11 +107,20 @@ export default defineComponent({
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.project",
         newState: true,
       });
       state.showGuide = false;
+    };
+
+    const goDefaultProject = () => {
+      router.push({
+        name: "workspace.project.detail",
+        params: {
+          projectSlug: DEFAULT_PROJECT_ID,
+        },
+      });
     };
 
     const filteredList = (list: Project[]) => {
@@ -125,6 +142,7 @@ export default defineComponent({
       filteredList,
       doDismissGuide,
       changeSearchText,
+      goDefaultProject,
     };
   },
 });

@@ -8,100 +8,121 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
-var (
-	_ api.InstanceService = (*InstanceService)(nil)
-)
+// instanceRaw is the store model for an Instance.
+// Fields have exactly the same meanings as Instance.
+type instanceRaw struct {
+	ID int
 
-// InstanceService represents a service for managing instance.
-type InstanceService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	RowStatus api.RowStatus
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
 
-	cache api.CacheService
+	// Related fields
+	EnvironmentID int
 
-	databaseService api.DatabaseService
-	store           *Store
+	// Domain specific fields
+	Name          string
+	Engine        db.Type
+	EngineVersion string
+	ExternalLink  string
+	Host          string
+	Port          string
 }
 
-// NewInstanceService returns a new instance of InstanceService.
-func NewInstanceService(logger *zap.Logger, db *DB, cache api.CacheService, databaseService api.DatabaseService, store *Store) *InstanceService {
-	return &InstanceService{l: logger, db: db, cache: cache, databaseService: databaseService, store: store}
+// toInstance creates an instance of Instance based on the instanceRaw.
+// This is intended to be called when we need to compose an Instance relationship.
+func (raw *instanceRaw) toInstance() *api.Instance {
+	return &api.Instance{
+		ID: raw.ID,
+
+		// Standard fields
+		RowStatus: raw.RowStatus,
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		EnvironmentID: raw.EnvironmentID,
+
+		// Domain specific fields
+		Name:          raw.Name,
+		Engine:        raw.Engine,
+		EngineVersion: raw.EngineVersion,
+		ExternalLink:  raw.ExternalLink,
+		Host:          raw.Host,
+		Port:          raw.Port,
+	}
 }
 
-// CreateInstance creates a new instance.
-func (s *InstanceService) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.InstanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// CreateInstance creates an instance of Instance
+func (s *Store) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
+	instanceRaw, err := s.createInstanceRaw(ctx, create)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("failed to create Instance with InstanceCreate[%+v], error[%w]", create, err)
 	}
-	defer tx.PTx.Rollback()
-
-	instance, err := createInstance(ctx, tx.PTx, create)
+	instance, err := s.composeInstance(ctx, instanceRaw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
 	}
-
-	// Create * database
-	databaseCreate := &api.DatabaseCreate{
-		CreatorID:     create.CreatorID,
-		ProjectID:     api.DefaultProjectID,
-		InstanceID:    instance.ID,
-		EnvironmentID: instance.EnvironmentID,
-		Name:          api.AllDatabaseName,
-		CharacterSet:  api.DefaultCharactorSetName,
-		Collation:     api.DefaultCollationName,
-	}
-	allDatabase, err := s.databaseService.CreateDatabaseTx(ctx, tx.PTx, databaseCreate)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create admin data source
-	adminDataSourceCreate := &api.DataSourceCreate{
-		CreatorID:  create.CreatorID,
-		InstanceID: instance.ID,
-		DatabaseID: allDatabase.ID,
-		Name:       api.AdminDataSourceName,
-		Type:       api.Admin,
-		Username:   create.Username,
-		Password:   create.Password,
-	}
-	if err := s.store.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
-		return nil, err
-	}
-
 	return instance, nil
 }
 
-// FindInstanceList retrieves a list of instances based on find.
-func (s *InstanceService) FindInstanceList(ctx context.Context, find *api.InstanceFind) ([]*api.InstanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+// GetInstanceByID gets an instance of Instance
+func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
+	find := &api.InstanceFind{ID: &id}
+	instanceRaw, err := s.getInstanceRaw(ctx, find)
 	if err != nil {
-		return nil, FormatError(err)
+		return nil, fmt.Errorf("failed to get Instance with ID[%d], error[%w]", id, err)
 	}
-	defer tx.PTx.Rollback()
-
-	list, err := findInstanceList(ctx, tx.PTx, find)
+	if instanceRaw == nil {
+		return nil, nil
+	}
+	instance, err := s.composeInstance(ctx, instanceRaw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
 	}
+	return instance, nil
+}
 
-	return list, nil
+// FindInstance finds a list of Instance instances
+func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
+	instanceRawList, err := s.findInstanceRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Instance list with InstanceFind[%+v], error[%w]", find, err)
+	}
+	var instanceList []*api.Instance
+	for _, raw := range instanceRawList {
+		instance, err := s.composeInstance(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", raw, err)
+		}
+		instanceList = append(instanceList, instance)
+	}
+	return instanceList, nil
+}
+
+// PatchInstance patches an instance of Instance
+func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
+	instanceRaw, err := s.patchInstanceRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Instance with InstancePatch[%+v], error[%w]", patch, err)
+	}
+	instance, err := s.composeInstance(ctx, instanceRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
+	}
+	return instance, nil
 }
 
 // CountInstance counts the number of instances.
-func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
+func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, FormatError(err)
@@ -131,11 +152,135 @@ func (s *InstanceService) CountInstance(ctx context.Context, find *api.InstanceF
 	return count, nil
 }
 
-// FindInstance retrieves a single instance based on find.
+//
+// private function
+//
+
+func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Instance, error) {
+	instance := raw.toInstance()
+
+	creator, err := s.GetPrincipalByID(ctx, instance.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	instance.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, instance.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	instance.Updater = updater
+
+	env, err := s.GetEnvironmentByID(ctx, instance.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+	instance.Environment = env
+
+	rowStatus := api.Normal
+	anomalyList, err := s.FindAnomaly(ctx, &api.AnomalyFind{
+		RowStatus:    &rowStatus,
+		InstanceID:   &instance.ID,
+		InstanceOnly: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	instance.AnomalyList = anomalyList
+
+	dataSourceList, err := s.FindDataSource(ctx, &api.DataSourceFind{
+		InstanceID: &instance.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	instance.DataSourceList = dataSourceList
+	for _, dataSource := range instance.DataSourceList {
+		if dataSource.Creator, err = s.GetPrincipalByID(ctx, dataSource.CreatorID); err != nil {
+			return nil, err
+		}
+		if dataSource.Updater, err = s.GetPrincipalByID(ctx, dataSource.UpdaterID); err != nil {
+			return nil, err
+		}
+	}
+
+	return instance, nil
+}
+
+// createInstanceRaw creates a new instance.
+func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreate) (*instanceRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	instance, err := createInstanceImpl(ctx, tx.PTx, create)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create * database
+	databaseCreate := &api.DatabaseCreate{
+		CreatorID:     create.CreatorID,
+		ProjectID:     api.DefaultProjectID,
+		InstanceID:    instance.ID,
+		EnvironmentID: instance.EnvironmentID,
+		Name:          api.AllDatabaseName,
+		CharacterSet:  api.DefaultCharactorSetName,
+		Collation:     api.DefaultCollationName,
+	}
+	allDatabase, err := s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create admin data source
+	adminDataSourceCreate := &api.DataSourceCreate{
+		CreatorID:  create.CreatorID,
+		InstanceID: instance.ID,
+		DatabaseID: allDatabase.ID,
+		Name:       api.AdminDataSourceName,
+		Type:       api.Admin,
+		Username:   create.Username,
+		Password:   create.Password,
+	}
+	if err := s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+		return nil, err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+		return nil, err
+	}
+
+	return instance, nil
+}
+
+// findInstanceRaw retrieves a list of instances based on find.
+func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]*instanceRaw, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	list, err := findInstanceImpl(ctx, tx.PTx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// getInstanceRaw retrieves a single instance based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFind) (*api.InstanceRaw, error) {
+func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*instanceRaw, error) {
 	if find.ID != nil {
-		instanceRaw := &api.InstanceRaw{}
+		instanceRaw := &instanceRaw{}
 		has, err := s.cache.FindCache(api.InstanceCache, *find.ID, instanceRaw)
 		if err != nil {
 			return nil, err
@@ -151,7 +296,7 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findInstanceList(ctx, tx.PTx, find)
+	list, err := findInstanceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -169,16 +314,16 @@ func (s *InstanceService) FindInstance(ctx context.Context, find *api.InstanceFi
 	return instance, nil
 }
 
-// PatchInstance updates an existing instance by ID.
+// patchInstanceRaw updates an existing instance by ID.
 // Returns ENOTFOUND if instance does not exist.
-func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.InstanceRaw, error) {
+func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) (*instanceRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	instance, err := patchInstance(ctx, tx.PTx, patch)
+	instance, err := patchInstanceImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -194,8 +339,8 @@ func (s *InstanceService) PatchInstance(ctx context.Context, patch *api.Instance
 	return instance, nil
 }
 
-// createInstance creates a new instance.
-func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*api.InstanceRaw, error) {
+// createInstanceImpl creates a new instance.
+func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*instanceRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO instance (
@@ -227,7 +372,7 @@ func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate)
 	defer row.Close()
 
 	row.Next()
-	var instanceRaw api.InstanceRaw
+	var instanceRaw instanceRaw
 	if err := row.Scan(
 		&instanceRaw.ID,
 		&instanceRaw.RowStatus,
@@ -249,7 +394,7 @@ func createInstance(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate)
 	return &instanceRaw, nil
 }
 
-func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*api.InstanceRaw, error) {
+func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
 	where, args := findInstanceQuery(find)
 
 	rows, err := tx.QueryContext(ctx, `
@@ -277,9 +422,9 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into instanceRawList.
-	var instanceRawList []*api.InstanceRaw
+	var instanceRawList []*instanceRaw
 	for rows.Next() {
-		var instanceRaw api.InstanceRaw
+		var instanceRaw instanceRaw
 		if err := rows.Scan(
 			&instanceRaw.ID,
 			&instanceRaw.RowStatus,
@@ -307,8 +452,8 @@ func findInstanceList(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 	return instanceRawList, nil
 }
 
-// patchInstance updates a instance by ID. Returns the new state of the instance after update.
-func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*api.InstanceRaw, error) {
+// patchInstanceImpl updates a instance by ID. Returns the new state of the instance after update.
+func patchInstanceImpl(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*instanceRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.RowStatus; v != nil {
@@ -347,7 +492,7 @@ func patchInstance(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch) (*
 	defer row.Close()
 
 	if row.Next() {
-		var instanceRaw api.InstanceRaw
+		var instanceRaw instanceRaw
 		if err := row.Scan(
 			&instanceRaw.ID,
 			&instanceRaw.RowStatus,

@@ -1,17 +1,22 @@
+import { defineStore } from "pinia";
 import { RouteLocationNormalized } from "vue-router";
-import { RouterSlug } from "../../types";
+import { RouterSlug } from "@/types";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RouterState {}
+export const useRouterStore = defineStore("router", {
+  // need not to initialize a state since we store everything into localStorage
+  // state: () => ({}),
 
-const getters = {
-  backPath: (state: RouterState) => (): string => {
-    return localStorage.getItem("ui.backPath") || "/";
+  getters: {
+    backPath: () => () => {
+      return localStorage.getItem("ui.backPath") || "/";
+    },
   },
-
-  routeSlug:
-    (state: RouterState) =>
-    (currentRoute: RouteLocationNormalized): RouterSlug => {
+  actions: {
+    setBackPath(backPath: string) {
+      localStorage.setItem("ui.backPath", backPath);
+      return backPath;
+    },
+    routeSlug(currentRoute: RouteLocationNormalized): RouterSlug {
       {
         // /u/:principalId
         // Total 2 elements, 2nd element is the principal id
@@ -96,10 +101,10 @@ const getters = {
       }
 
       {
-        // /db/:databaseSlug/datasource/:dataSourceSlug
+        // /db/:databaseSlug/data-source/:dataSourceSlug
         // Total 3 elements, 2nd element is the database slug, 3rd element is the data source slug
         const dataSourceComponents = currentRoute.path.match(
-          "/db/([0-9a-zA-Z_-]+)/datasource/([0-9a-zA-Z_-]+)"
+          "/db/([0-9a-zA-Z_-]+)/data-source/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined, undefined];
         if (dataSourceComponents[1] && dataSourceComponents[2]) {
           return {
@@ -163,6 +168,19 @@ const getters = {
       }
 
       {
+        // /setting/schema-review-policy/:schemaReviewPolicyId
+        // Total 2 elements, 2nd element is the schema review id
+        const schemaReviewComponents = currentRoute.path.match(
+          "/setting/schema-review-policy/([0-9a-zA-Z_-]+)"
+        ) || ["/", undefined];
+        if (schemaReviewComponents[1]) {
+          return {
+            schemaReviewPolicySlug: schemaReviewComponents[1],
+          };
+        }
+      }
+
+      {
         // /sql-editor/:connectionSlug/:sheetSlug
         // match this route first
         const sqlEditorComponents = currentRoute.path.match(
@@ -192,17 +210,5 @@ const getters = {
 
       return {};
     },
-};
-
-const actions = {
-  setBackPath({ commit }: any, backPath: string) {
-    localStorage.setItem("ui.backPath", backPath);
-    return backPath;
   },
-};
-
-export default {
-  namespaced: true,
-  getters,
-  actions,
-};
+});

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
 
@@ -68,11 +67,4 @@ func (find *IndexFind) String() string {
 		return err.Error()
 	}
 	return string(str)
-}
-
-// IndexService is the service for indices.
-type IndexService interface {
-	CreateIndex(ctx context.Context, create *IndexCreate) (*Index, error)
-	FindIndexList(ctx context.Context, find *IndexFind) ([]*Index, error)
-	FindIndex(ctx context.Context, find *IndexFind) (*Index, error)
 }

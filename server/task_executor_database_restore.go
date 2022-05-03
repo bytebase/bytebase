@@ -10,7 +10,9 @@ import (
 	"strconv"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+
 	"go.uber.org/zap"
 )
 
@@ -45,30 +47,27 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
 	}
 
-	backupRaw, err := server.BackupService.FindBackup(ctx, &api.BackupFind{ID: &payload.BackupID})
+	backup, err := server.store.GetBackupByID(ctx, payload.BackupID)
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to find backup: %w", err)
+		return true, nil, fmt.Errorf("failed to find backup with ID[%d], error[%w]", payload.BackupID, err)
 	}
-	if backupRaw == nil {
-		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
+	if backup == nil {
+		return true, nil, fmt.Errorf("backup with ID[%d] not found", payload.BackupID)
 	}
 
-	sourceDatabaseFind := &api.DatabaseFind{
-		ID: &backupRaw.DatabaseID,
-	}
-	sourceDatabase, err := server.composeDatabaseByFind(ctx, sourceDatabaseFind)
+	sourceDatabase, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backup.DatabaseID})
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find database for the backup: %w", err)
 	}
 	if sourceDatabase == nil {
-		return true, nil, fmt.Errorf("source database ID not found %v", backupRaw.DatabaseID)
+		return true, nil, fmt.Errorf("source database ID not found %v", backup.DatabaseID)
 	}
 
 	targetDatabaseFind := &api.DatabaseFind{
 		InstanceID: &task.InstanceID,
 		Name:       &payload.DatabaseName,
 	}
-	targetDatabase, err := server.composeDatabaseByFind(ctx, targetDatabaseFind)
+	targetDatabase, err := server.store.GetDatabase(ctx, targetDatabaseFind)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to find target database %q in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}
@@ -81,11 +80,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		zap.String("source_database", sourceDatabase.Name),
 		zap.String("target_instance", targetDatabase.Instance.Name),
 		zap.String("target_database", targetDatabase.Name),
-		zap.String("backup", backupRaw.Name),
+		zap.String("backup", backup.Name),
 	)
-
-	// TODO(dragonly): refactor to composed Backup
-	backup := backupRaw.ToBackup()
 
 	// Restore the database to the target database.
 	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.dataDir); err != nil {
@@ -106,17 +102,17 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	databasePatch := &api.DatabasePatch{
 		ID:             targetDatabase.ID,
 		UpdaterID:      api.SystemBotID,
-		SourceBackupID: &backupRaw.ID,
+		SourceBackupID: &backup.ID,
 	}
-	if _, err = server.DatabaseService.PatchDatabase(ctx, databasePatch); err != nil {
-		return true, nil, fmt.Errorf("failed to patch database source backup ID after restore: %w", err)
+	if _, err = server.store.PatchDatabase(ctx, databasePatch); err != nil {
+		return true, nil, fmt.Errorf("failed to patch database source with ID[%d] and backup ID[%d] after restore, error[%w]", targetDatabase.ID, backup.ID, err)
 	}
 
 	// Sync database schema after restore is completed.
 	server.syncEngineVersionAndSchema(ctx, targetDatabase.Instance)
 
 	return true, &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backupRaw.Name),
+		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
 		MigrationID: migrationID,
 		Version:     version,
 	}, nil
@@ -162,7 +158,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	issueFind := &api.IssueFind{
 		PipelineID: &task.PipelineID,
 	}
-	issue, err := server.IssueService.FindIssue(ctx, issueFind)
+	issue, err := server.store.GetIssue(ctx, issueFind)
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 	}
@@ -179,7 +175,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.version,
-		Version:        defaultMigrationVersionFromTaskID(),
+		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
 		Environment:    targetDatabase.Instance.Environment.Name,

@@ -86,13 +86,13 @@
 </template>
 
 <script lang="ts">
-import { reactive, watchEffect, watch } from "vue";
+import { reactive, watchEffect, watch, defineComponent } from "vue";
 import { computed, PropType } from "vue";
 import RepositorySetupWizard from "./RepositorySetupWizard.vue";
 import RepositoryPanel from "./RepositoryPanel.vue";
-import { Project, ProjectWorkflowType, Repository, UNKNOWN_ID } from "../types";
-import { useStore } from "vuex";
+import { Project, ProjectWorkflowType, UNKNOWN_ID } from "../types";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useRepositoryStore } from "@/store";
 
 interface LocalState {
   workflowType: ProjectWorkflowType;
@@ -100,7 +100,7 @@ interface LocalState {
   showWizardForChange: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectVersionControlPanel",
   components: {
     RepositorySetupWizard,
@@ -119,7 +119,7 @@ export default {
   async setup(props) {
     const { t } = useI18n();
 
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
 
     const state = reactive<LocalState>({
       workflowType: props.project.workflowType,
@@ -128,7 +128,7 @@ export default {
     });
 
     const prepareRepository = () => {
-      store.dispatch("repository/fetchRepositoryByProjectId", props.project.id);
+      repositoryStore.fetchRepositoryByProjectId(props.project.id);
     };
 
     watchEffect(prepareRepository);
@@ -140,10 +140,8 @@ export default {
       }
     );
 
-    const repository = computed((): Repository => {
-      return store.getters["repository/repositoryByProjectId"](
-        props.project.id
-      );
+    const repository = computed(() => {
+      return repositoryStore.getRepositoryByProjectId(props.project.id);
     });
 
     const enterWizard = (create: boolean) => {
@@ -161,7 +159,7 @@ export default {
     };
 
     const finishWizard = () => {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: state.showWizardForCreate
@@ -185,5 +183,5 @@ export default {
       finishWizard,
     };
   },
-};
+});
 </script>

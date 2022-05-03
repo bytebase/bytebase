@@ -39,11 +39,6 @@
           </div>
         </div>
       </div>
-      <BBAttention
-        v-if="project.id == DEFAULT_PROJECT_ID"
-        :style="`INFO`"
-        :title="$t('project.overview.info-slot-content')"
-      />
 
       <YAxisRadioGroup
         v-if="isTenantProject && state.yAxisLabel"
@@ -119,22 +114,14 @@ import {
   computed,
   defineComponent,
 } from "vue";
-import { useStore } from "vuex";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
-import {
-  Activity,
-  Database,
-  Issue,
-  Project,
-  DEFAULT_PROJECT_ID,
-  LabelKeyType,
-} from "../types";
+import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
 import { NSpin } from "naive-ui";
-import { useLabelStore } from "@/store";
+import { useActivityStore, useIssueStore, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 // Show at most 5 activity
@@ -170,7 +157,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const labelStore = useLabelStore();
 
     const state = reactive<LocalState>({
@@ -183,8 +169,8 @@ export default defineComponent({
     });
 
     const prepareActivityList = () => {
-      store
-        .dispatch("activity/fetchActivityListForProject", {
+      useActivityStore()
+        .fetchActivityListForProject({
           projectId: props.project.id,
           limit: ACTIVITY_LIMIT,
         })
@@ -194,8 +180,8 @@ export default defineComponent({
     };
 
     const prepareIssueList = () => {
-      store
-        .dispatch("issue/fetchIssueList", {
+      useIssueStore()
+        .fetchIssueList({
           projectId: props.project.id,
         })
         .then((issueList: Issue[]) => {
@@ -256,7 +242,6 @@ export default defineComponent({
     });
 
     return {
-      DEFAULT_PROJECT_ID,
       state,
       isTenantProject,
       filteredDatabaseList,

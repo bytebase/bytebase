@@ -30,6 +30,9 @@ const (
 	SQLite Type = "SQLITE"
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
+
+	// BytebaseDatabase is the database installed in the controlled database server
+	BytebaseDatabase = "bytebase"
 )
 
 // User is the database user.
@@ -51,7 +54,7 @@ type View struct {
 // Index is the database index.
 type Index struct {
 	Name string
-	// This could refer to a column or an expression
+	// This could refer to a column or an expression.
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
@@ -236,9 +239,9 @@ type MigrationInfo struct {
 	// UseSemanticVersion is whether version is a semantic version.
 	// When UseSemanticVersion is set, version should be set to the format specified in Semantic Versioning 2.0.0 (https://semver.org/).
 	// For example, for setting non-semantic version "hello", the values should be Version = "hello", UseSemanticVersion = false, SemanticVersionSuffix = "".
-	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405".
+	// For setting semantic version "1.2.0", the values should be Version = "1.2.0", UseSemanticVersion = true, SemanticVersionSuffix = "20060102150405" (common.DefaultMigrationVersion).
 	UseSemanticVersion bool
-	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" if UseSemanticVersion is set.
+	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
 }
@@ -373,6 +376,8 @@ type ConnectionConfig struct {
 	TLSConfig TLSConfig
 	// ReadOnly is only supported for Postgres at the moment.
 	ReadOnly bool
+	// StrictUseDb will only set as true if the user gives only a database instead of a whole instance to access.
+	StrictUseDb bool
 }
 
 // ConnectionContext is the context for connection.

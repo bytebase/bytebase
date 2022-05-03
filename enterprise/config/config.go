@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/bytebase/bytebase/common"
 	"go.uber.org/zap"
 )
 
@@ -39,8 +40,8 @@ const (
 )
 
 // NewConfig will create a new enterprise config instance.
-func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
-	l.Info("get project env", zap.String("env", mode))
+func NewConfig(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*Config, error) {
+	l.Info("get project env", zap.String("env", string(mode)))
 
 	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
@@ -50,7 +51,7 @@ func NewConfig(l *zap.Logger, dataDir string, mode string) (*Config, error) {
 	l.Info("load public pem", zap.String("file", filename))
 
 	storefile := "license"
-	if mode != "release" {
+	if mode != common.ReleaseModeProd {
 		storefile = fmt.Sprintf("license_%s", mode)
 	}
 

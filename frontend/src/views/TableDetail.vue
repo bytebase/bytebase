@@ -71,7 +71,7 @@
               <span class="ml-2 textlabel">
                 {{ $t("sql-editor.self") }}
               </span>
-              <button class="ml-1 btn-icon" @click.prevent="gotoSqlEditor">
+              <button class="ml-1 btn-icon" @click.prevent="gotoSQLEditor">
                 <heroicons-outline:terminal class="w-4 h-4" />
               </button>
             </dd>
@@ -204,15 +204,16 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent } from "vue";
 import ColumnTable from "../components/ColumnTable.vue";
 import IndexTable from "../components/IndexTable.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
 import { bytesToString, connectionSlug, idFromSlug } from "../utils";
 import { useRouter } from "vue-router";
+import { useTableStore } from "@/store";
+import { Table } from "@/types";
 
-export default {
+export default defineComponent({
   name: "TableDetail",
   components: { ColumnTable, IndexTable, InstanceEngineIcon },
   props: {
@@ -226,21 +227,21 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
+    const tableStore = useTableStore();
 
     const table = computed(() => {
-      return store.getters["table/tableListByDatabaseIdAndTableName"](
+      return tableStore.getTableListByDatabaseIdAndTableName(
         idFromSlug(props.databaseSlug),
         props.tableName
-      );
+      ) as Table;
     });
 
     const database = computed(() => {
       return table.value.database;
     });
 
-    const gotoSqlEditor = () => {
+    const gotoSQLEditor = () => {
       router.push({
         name: "sql-editor.detail",
         params: {
@@ -252,9 +253,9 @@ export default {
     return {
       table,
       database,
-      gotoSqlEditor,
+      gotoSQLEditor,
       bytesToString,
     };
   },
-};
+});
 </script>

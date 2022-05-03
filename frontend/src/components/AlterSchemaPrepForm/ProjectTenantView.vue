@@ -88,13 +88,11 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { computed, watchEffect, watch, ref } from "vue";
-import { useStore } from "vuex";
+
 import {
   Database,
   DatabaseId,
-  DeploymentConfig,
   Environment,
-  Label,
   LabelKeyType,
   Project,
   UNKNOWN_ID,
@@ -104,7 +102,7 @@ import { groupBy } from "lodash-es";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import { parseDatabaseNameByTemplate } from "../../utils";
 import { getPipelineFromDeploymentSchedule } from "../../utils";
-import { useLabelStore } from "@/store";
+import { useDeploymentStore, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
 
 export type State = {
@@ -123,16 +121,13 @@ defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const store = useStore();
+const deploymentStore = useDeploymentStore();
 const labelStore = useLabelStore();
 
 const fetchData = () => {
   labelStore.fetchLabelList();
   if (props.project) {
-    store.dispatch(
-      "deployment/fetchDeploymentConfigByProjectId",
-      props.project.id
-    );
+    deploymentStore.fetchDeploymentConfigByProjectId(props.project.id);
   }
 };
 
@@ -143,9 +138,7 @@ const { labelList } = storeToRefs(labelStore);
 
 const deployment = computed(() => {
   if (props.project) {
-    return store.getters["deployment/deploymentConfigByProjectId"](
-      props.project.id
-    ) as DeploymentConfig;
+    return deploymentStore.getDeploymentConfigByProjectId(props.project.id);
   } else {
     return undefined;
   }

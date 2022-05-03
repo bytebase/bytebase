@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,7 +14,7 @@ import (
 
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	g.POST("/principal", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		principalCreate := &api.PrincipalCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create principal request").SetInternal(err)
@@ -47,7 +46,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 
 	g.GET("/principal", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		principalList, err := s.store.GetPrincipalList(ctx)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch principal list").SetInternal(err)
@@ -61,13 +60,13 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 
 	g.GET("/principal/:principalID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("principalID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)
 		}
 
-		principal, err := s.store.FindPrincipal(ctx, &api.PrincipalFind{ID: &id})
+		principal, err := s.store.GetPrincipalByID(ctx, id)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
@@ -83,7 +82,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/principal/:principalID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("principalID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("principalID"))).SetInternal(err)

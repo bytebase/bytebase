@@ -58,86 +58,81 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, ComputedRef, defineComponent } from "vue";
-import { useStore } from "vuex";
+import { computed, reactive, defineComponent, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { isDBA, isOwner } from "../utils";
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUser,
+  useUIStateStore,
+} from "@/store";
 
 type IntroItem = {
-  name: string;
+  name: string | Ref<string>;
   link: string;
   allowDBA: boolean;
   allowDeveloper: boolean;
-  done: ComputedRef<boolean>;
+  done: Ref<boolean>;
   click?: () => void;
 };
 
 export default defineComponent({
   name: "QuickStart",
   setup() {
-    const store = useStore();
+    const uiStateStore = useUIStateStore();
     const { t } = useI18n();
     const kbarHandler = useKBarHandler();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
-    const introList: IntroItem[] = reactive([
+    const introList = reactive<IntroItem[]>([
       {
         name: computed(() => t("quick-start.bookmark-an-issue")),
         link: "/issue/hello-world-101",
         allowDBA: true,
         allowDeveloper: true,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("bookmark.create");
-        }),
+        done: computed(() =>
+          uiStateStore.getIntroStateByKey("bookmark.create")
+        ),
       },
       {
         name: computed(() => t("quick-start.add-a-comment")),
         link: "/issue/hello-world-101#activity101",
         allowDBA: true,
         allowDeveloper: true,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("comment.create");
-        }),
+        done: computed(() => uiStateStore.getIntroStateByKey("comment.create")),
       },
       {
         name: computed(() => t("quick-start.visit-project")),
         link: "/project",
         allowDBA: true,
         allowDeveloper: true,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("project.visit");
-        }),
+        done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
       },
       {
         name: computed(() => t("quick-start.visit-environment")),
         link: "/environment",
         allowDBA: true,
         allowDeveloper: false,
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("environment.visit");
-        }),
+        done: computed(() =>
+          uiStateStore.getIntroStateByKey("environment.visit")
+        ),
       },
       {
         name: computed(() => t("quick-start.visit-instance")),
         link: "/instance",
         allowDBA: true,
-        allowDeveloper: !store.getters["subscription/feature"](
-          "bb.feature.dba-workflow"
-        ),
-        done: computed(() => {
-          return store.getters["uistate/introStateByKey"]("instance.visit");
-        }),
+        allowDeveloper: !hasFeature("bb.feature.dba-workflow"),
+        done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
       },
       {
         name: computed(() => t("quick-start.visit-database")),
         link: "/db",
         allowDBA: true,
         allowDeveloper: true,
-        done: computed(() =>
-          store.getters["uistate/introStateByKey"]("database.visit")
-        ),
+        done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
       },
       {
         name: computed(() => t("quick-start.add-a-member")),
@@ -145,7 +140,7 @@ export default defineComponent({
         allowDBA: false,
         allowDeveloper: false,
         done: computed(() =>
-          store.getters["uistate/introStateByKey"]("member.addOrInvite")
+          uiStateStore.getIntroStateByKey("member.addOrInvite")
         ),
       },
       {
@@ -160,9 +155,7 @@ export default defineComponent({
         click: () => {
           kbarHandler.value.show();
         },
-        done: computed(() =>
-          store.getters["uistate/introStateByKey"]("kbar.open")
-        ),
+        done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
       },
     ]);
 
@@ -186,17 +179,17 @@ export default defineComponent({
     };
 
     const hideQuickstart = () => {
-      store
-        .dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore
+        .saveIntroStateByKey({
           key: "hidden",
           newState: true,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "INFO",
-            title: computed(() => t("quick-start.notice.title")),
-            description: computed(() => t("quick-start.notice.desc")),
+            title: t("quick-start.notice.title"),
+            description: t("quick-start.notice.desc"),
             manualHide: true,
           });
         });
@@ -204,7 +197,7 @@ export default defineComponent({
 
     useKBarEventOnce("open", () => {
       // once kbar is open, mark the quickstart as done
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "kbar.open",
         newState: true,
       });

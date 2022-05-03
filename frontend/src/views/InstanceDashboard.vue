@@ -39,15 +39,22 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { useStore } from "vuex";
-import { Environment, Subscription, Instance } from "../types";
+import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
+import {
+  useUIStateStore,
+  useSubscriptionStore,
+  useEnvironmentStore,
+  useEnvironmentList,
+  useInstanceList,
+  useInstanceStore,
+} from "@/store";
 
 interface LocalState {
   searchText: string;
@@ -55,7 +62,7 @@ interface LocalState {
   showGuide: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "InstanceDashboard",
   components: {
     EnvironmentTabFilter,
@@ -64,19 +71,19 @@ export default {
   setup() {
     const searchField = ref();
 
-    const store = useStore();
+    const instanceStore = useInstanceStore();
+    const subscriptionStore = useSubscriptionStore();
+    const uiStateStore = useUIStateStore();
     const router = useRouter();
     const { t } = useI18n();
 
-    const environmentList = computed(() => {
-      return store.getters["environment/environmentList"](["NORMAL"]);
-    });
+    const environmentList = useEnvironmentList(["NORMAL"]);
 
     const state = reactive<LocalState>({
       searchText: "",
       selectedEnvironment: router.currentRoute.value.query.environment
-        ? store.getters["environment/environmentById"](
-            router.currentRoute.value.query.environment
+        ? useEnvironmentStore().getEnvironmentById(
+            parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
       showGuide: false,
@@ -86,22 +93,16 @@ export default {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!store.getters["uistate/introStateByKey"]("guide.instance")) {
+      if (!uiStateStore.getIntroStateByKey("guide.instance")) {
         setTimeout(() => {
           state.showGuide = true;
-          store.dispatch("uistate/saveIntroStateByKey", {
+          uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,
           });
         }, 1000);
       }
     });
-
-    const prepareInstanceList = () => {
-      store.dispatch("instance/fetchInstanceList");
-    };
-
-    watchEffect(prepareInstanceList);
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
@@ -120,16 +121,20 @@ export default {
     };
 
     const doDismissGuide = () => {
-      store.dispatch("uistate/saveIntroStateByKey", {
+      uiStateStore.saveIntroStateByKey({
         key: "guide.instance",
         newState: true,
       });
       state.showGuide = false;
     };
 
+    const rawInstanceList = useInstanceList();
+
     const instanceList = computed(() => {
-      const list = store.getters["instance/instanceList"]();
-      return sortInstanceList(cloneDeep(list), environmentList.value);
+      return sortInstanceList(
+        cloneDeep(rawInstanceList.value),
+        environmentList.value
+      );
     });
 
     const filteredList = (list: Instance[]) => {
@@ -150,15 +155,12 @@ export default {
     };
 
     const instanceQuota = computed((): number => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
+      const { subscription } = subscriptionStore;
       return subscription?.instanceCount ?? 5;
     });
 
     const remainingInstanceCount = computed((): number => {
-      const instanceList: Instance[] = store.getters["instance/instanceList"]([
-        "NORMAL",
-      ]);
+      const instanceList = instanceStore.getInstanceList(["NORMAL"]);
       return Math.max(0, instanceQuota.value - instanceList.length);
     });
 
@@ -196,5 +198,5 @@ export default {
       instanceCountAttention,
     };
   },
-};
+});
 </script>

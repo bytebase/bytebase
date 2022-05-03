@@ -11,6 +11,12 @@
       {{ $t("project.mode.tenant") }}
     </span>
   </h1>
+  <BBAttention
+    v-if="project.id === DEFAULT_PROJECT_ID"
+    class="mx-6 mb-4"
+    :style="'INFO'"
+    :title="$t('project.overview.info-slot-content')"
+  />
   <BBTabFilter
     class="px-3 pb-2 border-b border-block-border"
     :responsive="false"
@@ -34,13 +40,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, watch } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { idFromSlug, isProjectOwner } from "../utils";
 import ArchiveBanner from "../components/ArchiveBanner.vue";
 import { BBTabFilterItem } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
-import { Project } from "../types";
+import { Project, DEFAULT_PROJECT_ID } from "../types";
+import { useCurrentUser, useProjectStore } from "@/store";
 
 type ProjectTabItem = {
   name: string;
@@ -67,16 +73,14 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const project = computed((): Project => {
-      return store.getters["project/projectById"](
-        idFromSlug(props.projectSlug)
-      );
+      return projectStore.getProjectById(idFromSlug(props.projectSlug));
     });
 
     const isTenantProject = computed((): boolean => {
@@ -187,6 +191,7 @@ export default defineComponent({
     );
 
     return {
+      DEFAULT_PROJECT_ID,
       state,
       project,
       allowEdit,

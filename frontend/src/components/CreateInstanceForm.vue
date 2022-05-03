@@ -229,7 +229,6 @@
 
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
@@ -238,11 +237,12 @@ import {
   InstanceCreate,
   UNKNOWN_ID,
   ConnectionInfo,
-  SqlResultSet,
+  SQLResultSet,
   EngineType,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useInstanceStore, useSQLStore } from "@/store";
 
 interface LocalState {
   instance: InstanceCreate;
@@ -253,9 +253,9 @@ interface LocalState {
 
 const emit = defineEmits(["dismiss"]);
 
-const store = useStore();
 const router = useRouter();
 const { t } = useI18n();
+const sqlStore = useSQLStore();
 
 const engineList: EngineType[] = [
   "MYSQL",
@@ -391,7 +391,7 @@ const tryCreate = () => {
     host: state.instance.host,
     port: state.instance.port,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       doCreate();
     } else {
@@ -409,15 +409,15 @@ const tryCreate = () => {
 // Conceptually, data source is the proper place to store connection info (thinking of DSN)
 const doCreate = () => {
   state.isCreatingInstance = true;
-  store
-    .dispatch("instance/createInstance", state.instance)
+  useInstanceStore()
+    .createInstance(state.instance)
     .then((createdInstance) => {
       state.isCreatingInstance = false;
       emit("dismiss");
 
       router.push(`/instance/${instanceSlug(createdInstance)}`);
 
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t(
@@ -438,15 +438,15 @@ const testConnection = () => {
     useEmptyPassword: false,
     instanceId: undefined,
   };
-  store.dispatch("sql/ping", connectionInfo).then((resultSet: SqlResultSet) => {
+  sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("instance.successfully-connected-instance"),
       });
     } else {
-      store.dispatch("notification/pushNotification", {
+      pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("instance.failed-to-connect-instance"),

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
@@ -31,6 +29,8 @@ const (
 	IssueDatabaseGrant IssueType = "bb.issue.database.grant"
 	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
 	IssueDatabaseSchemaUpdate IssueType = "bb.issue.database.schema.update"
+	// IssueDatabaseSchemaUpdateGhost is the issue type for updating database schemas using gh-ost.
+	IssueDatabaseSchemaUpdateGhost IssueType = "bb.issue.database.schema.update.ghost"
 	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
@@ -57,56 +57,6 @@ const (
 	// IssueFieldSQL is the field ID for SQL.
 	IssueFieldSQL IssueFieldID = "7"
 )
-
-// IssueRaw is the store model for an Issue.
-// Fields have exactly the same meanings as Issue.
-type IssueRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	ProjectID  int
-	PipelineID int
-
-	// Domain specific fields
-	Name        string
-	Status      IssueStatus
-	Type        IssueType
-	Description string
-	AssigneeID  int
-	Payload     string
-}
-
-// ToIssue creates an instance of Issue based on the IssueRaw.
-// This is intended to be called when we need to compose an Issue relationship.
-func (raw *IssueRaw) ToIssue() *Issue {
-	return &Issue{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		ProjectID:  raw.ProjectID,
-		PipelineID: raw.PipelineID,
-
-		// Domain specific fields
-		Name:        raw.Name,
-		Status:      raw.Status,
-		Type:        raw.Type,
-		Description: raw.Description,
-		AssigneeID:  raw.AssigneeID,
-		Payload:     raw.Payload,
-	}
-}
 
 // Issue is the API message for an issue.
 type Issue struct {
@@ -206,6 +156,28 @@ type UpdateSchemaContext struct {
 	VCSPushEvent *vcs.PushEvent
 }
 
+// UpdateSchemaGhostDetail is the detail of updating database schema using gh-ost
+type UpdateSchemaGhostDetail struct {
+	// DatabaseID is the ID of a database.
+	DatabaseID int `json:"databaseId"`
+	// DatabaseName is the name of databases, mutually exclusive to DatabaseID.
+	// This should be set when a project is in tenant mode, and ProjectID is derived from IssueCreate.
+	DatabaseName string `json:"databaseName"`
+	// Statement is the statement to update database schema.
+	Statement string `json:"statement"`
+	// EarliestAllowedTs the earliest execution time of the change at system local Unix timestamp in seconds.
+	EarliestAllowedTs int64 `jsonapi:"attr,earliestAllowedTs"`
+}
+
+// UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
+type UpdateSchemaGhostContext struct {
+	// UpdateSchemaDetail is the details of schema update.
+	// When a project is in tenant mode, there should be one item in the list.
+	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	// VCSPushEvent is the event information for VCS push.
+	VCSPushEvent *vcs.PushEvent
+}
+
 // IssueFind is the API message for finding issues.
 type IssueFind struct {
 	ID *int
@@ -250,12 +222,4 @@ type IssueStatusPatch struct {
 	// Domain specific fields
 	Status  IssueStatus `jsonapi:"attr,status"`
 	Comment string      `jsonapi:"attr,comment"`
-}
-
-// IssueService is the services for issues.
-type IssueService interface {
-	CreateIssue(ctx context.Context, create *IssueCreate) (*IssueRaw, error)
-	FindIssueList(ctx context.Context, find *IssueFind) ([]*IssueRaw, error)
-	FindIssue(ctx context.Context, find *IssueFind) (*IssueRaw, error)
-	PatchIssue(ctx context.Context, patch *IssuePatch) (*IssueRaw, error)
 }

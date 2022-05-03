@@ -32,12 +32,18 @@
 </template>
 
 <script lang="ts">
-import { computed, reactive, watch, watchEffect, PropType } from "vue";
-import { useStore } from "vuex";
+import { useCurrentUser, useDatabaseStore } from "@/store";
+import {
+  computed,
+  reactive,
+  watch,
+  watchEffect,
+  PropType,
+  defineComponent,
+} from "vue";
 import {
   UNKNOWN_ID,
   Database,
-  Principal,
   ProjectId,
   InstanceId,
   EnvironmentId,
@@ -47,7 +53,7 @@ interface LocalState {
   selectedId?: number;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseSelect",
   props: {
     selectedId: {
@@ -77,28 +83,20 @@ export default {
   },
   emits: ["select-database-id"],
   setup(props, { emit }) {
-    const store = useStore();
+    const databaseStore = useDatabaseStore();
     const state = reactive<LocalState>({
       selectedId: props.selectedId,
     });
 
-    const currentUser = computed(
-      (): Principal => store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
 
     const prepareDatabaseList = () => {
       // TODO(tianzhou): Instead of fetching each time, we maybe able to let the outside context
       // to provide the database list and we just do a get here.
       if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
-        store.dispatch(
-          "database/fetchDatabaseListByEnvironmentId",
-          props.environmentId
-        );
+        databaseStore.fetchDatabaseListByEnvironmentId(props.environmentId);
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
-        store.dispatch(
-          "database/fetchDatabaseListByInstanceId",
-          props.instanceId
-        );
+        databaseStore.fetchDatabaseListByInstanceId(props.instanceId);
       } else if (props.mode == "USER") {
         // We assume the database list for the current user should have already been fetched, so we won't do a fetch here.
       }
@@ -109,17 +107,13 @@ export default {
     const databaseList = computed(() => {
       let list: Database[] = [];
       if (props.mode == "ENVIRONMENT" && props.environmentId != UNKNOWN_ID) {
-        list = store.getters["database/databaseListByEnvironmentId"](
+        list = databaseStore.getDatabaseListByEnvironmentId(
           props.environmentId
         );
       } else if (props.mode == "INSTANCE" && props.instanceId != UNKNOWN_ID) {
-        list = store.getters["database/databaseListByInstanceId"](
-          props.instanceId
-        );
+        list = databaseStore.getDatabaseListByInstanceId(props.instanceId);
       } else if (props.mode == "USER") {
-        list = store.getters["database/databaseListByPrincipalId"](
-          currentUser.value.id
-        );
+        list = databaseStore.getDatabaseListByPrincipalId(currentUser.value.id);
         if (
           props.environmentId != UNKNOWN_ID ||
           props.projectId != UNKNOWN_ID
@@ -172,5 +166,5 @@ export default {
       databaseList,
     };
   },
-};
+});
 </script>

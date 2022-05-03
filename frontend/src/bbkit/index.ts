@@ -7,10 +7,12 @@ import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBCheckbox from "./BBCheckbox.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBModal from "./BBModal.vue";
+import BBDialog from "./BBDialog.vue";
 import BBNotification from "./BBNotification.vue";
 import BBOutline from "./BBOutline.vue";
 import BBSelect from "./BBSelect.vue";
 import BBComboBox from "./BBComboBox.vue";
+import BBProgressPie from "./BBProgressPie.vue";
 import BBSpin from "./BBSpin.vue";
 import BBStepBar from "./BBStepBar.vue";
 import BBStepTab from "./BBStepTab.vue";
@@ -36,10 +38,12 @@ export {
   BBCheckbox,
   BBContextMenu,
   BBModal,
+  BBDialog,
   BBNotification,
   BBOutline,
   BBSelect,
   BBComboBox,
+  BBProgressPie,
   BBSpin,
   BBStepBar,
   BBStepTab,

@@ -23,10 +23,7 @@ type TaskCheckDatabaseConnectExecutor struct {
 
 // Run will run the task check database connector executor once.
 func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	taskFind := &api.TaskFind{
-		ID: &taskCheckRun.TaskID,
-	}
-	task, err := server.TaskService.FindTask(ctx, taskFind)
+	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}
@@ -41,10 +38,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		}, nil
 	}
 
-	databaseFind := &api.DatabaseFind{
-		ID: task.DatabaseID,
-	}
-	database, err := server.composeDatabaseByFind(ctx, databaseFind)
+	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
 	}

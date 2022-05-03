@@ -53,18 +53,18 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType, reactive } from "vue";
-import { useStore } from "vuex";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { DEFAULT_PROJECT_ID, Project, ProjectPatch } from "../types";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useProjectStore } from "@/store";
 
 interface LocalState {
   name: string;
   key: string;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectGeneralSettingPanel",
   props: {
     project: {
@@ -77,8 +77,8 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
     const { t } = useI18n();
+    const projectStore = useProjectStore();
 
     const state = reactive<LocalState>({
       name: props.project.name,
@@ -107,13 +107,13 @@ export default {
       } else if (state.key != props.project.key) {
         subject = "project key";
       }
-      store
-        .dispatch("project/patchProject", {
+      projectStore
+        .patchProject({
           projectId: props.project.id,
           projectPatch,
         })
         .then((updatedProject: Project) => {
-          store.dispatch("notification/", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.settings.success-updated-prompt", {
@@ -131,5 +131,5 @@ export default {
       save,
     };
   },
-};
+});
 </script>

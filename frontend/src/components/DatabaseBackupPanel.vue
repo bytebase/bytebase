@@ -133,8 +133,14 @@
 </template>
 
 <script lang="ts">
-import { computed, watchEffect, reactive, onUnmounted, PropType } from "vue";
-import { useStore } from "vuex";
+import {
+  computed,
+  watchEffect,
+  reactive,
+  onUnmounted,
+  PropType,
+  defineComponent,
+} from "vue";
 import {
   Backup,
   BackupCreate,
@@ -142,7 +148,7 @@ import {
   BackupSettingUpsert,
   Database,
   NORMAL_POLL_INTERVAL,
-  PolicyBackupPlanPolicyPayload,
+  BackupPlanPolicyPayload,
   POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   UNKNOWN_ID,
@@ -151,6 +157,7 @@ import BackupTable from "../components/BackupTable.vue";
 import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue";
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -162,7 +169,7 @@ interface LocalState {
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
 }
 
-export default {
+export default defineComponent({
   name: "DatabaseBackupPanel",
   components: {
     BackupTable,
@@ -183,7 +190,8 @@ export default {
     },
   },
   setup(props) {
-    const store = useStore();
+    const backupStore = useBackupStore();
+    const policyStore = usePolicyStore();
     const { t } = useI18n();
 
     const state = reactive<LocalState>({
@@ -202,13 +210,13 @@ export default {
     });
 
     const prepareBackupList = () => {
-      store.dispatch("backup/fetchBackupListByDatabaseId", props.database.id);
+      backupStore.fetchBackupListByDatabaseId(props.database.id);
     };
 
     watchEffect(prepareBackupList);
 
     const prepareBackupPolicy = () => {
-      store.dispatch("policy/fetchPolicyByEnvironmentAndType", {
+      policyStore.fetchPolicyByEnvironmentAndType({
         environmentId: props.database.instance.environment.id,
         type: "bb.policy.backup-plan",
       });
@@ -227,7 +235,7 @@ export default {
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
     const backupList = computed(() => {
       const list = cloneDeep(
-        store.getters["backup/backupListByDatabaseId"](props.database.id)
+        backupStore.backupListByDatabaseId(props.database.id)
       );
       return list.sort((a: Backup, b: Backup) => {
         if (a.status == "PENDING_CREATE" && b.status != "PENDING_CREATE") {
@@ -287,11 +295,12 @@ export default {
     });
 
     const backupPolicy = computed(() => {
-      const policy = store.getters["policy/policyByEnvironmentIdAndType"](
+      const policy = policyStore.getPolicyByEnvironmentIdAndType(
         props.database.instance.environment.id,
         "bb.policy.backup-plan"
       );
-      return (policy.payload as PolicyBackupPlanPolicyPayload).schedule;
+      const payload = policy?.payload;
+      return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
     });
 
     const allowDisableAutoBackup = computed(() => {
@@ -310,7 +319,7 @@ export default {
         type: "MANUAL",
         storageBackend: "LOCAL",
       };
-      store.dispatch("backup/createBackup", {
+      backupStore.createBackup({
         databaseId: props.database.id,
         newBackup: newBackup,
       });
@@ -323,8 +332,8 @@ export default {
         clearInterval(state.pollBackupsTimer);
       }
       state.pollBackupsTimer = setTimeout(() => {
-        store
-          .dispatch("backup/fetchBackupListByDatabaseId", props.database.id)
+        backupStore
+          .fetchBackupListByDatabaseId(props.database.id)
           .then((backups: Backup[]) => {
             var pending = false;
             for (let idx in backups) {
@@ -341,8 +350,8 @@ export default {
     };
 
     const prepareBackupSetting = () => {
-      store
-        .dispatch("backup/fetchBackupSettingByDatabaseId", props.database.id)
+      backupStore
+        .fetchBackupSettingByDatabaseId(props.database.id)
         .then((backupSetting: BackupSetting) => {
           // UNKNOWN_ID means database does not have backup setting and we should NOT overwrite the default setting.
           if (backupSetting.id != UNKNOWN_ID) {
@@ -374,14 +383,14 @@ export default {
           : state.autoBackupDayOfWeek,
         hookUrl: "",
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
           const action = on ? t("database.enabled") : t("database.disabled");
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -400,13 +409,13 @@ export default {
         dayOfWeek: state.autoBackupDayOfWeek,
         hookUrl: state.autoBackupUpdatedHookUrl,
       };
-      store
-        .dispatch("backup/upsertBackupSetting", {
+      backupStore
+        .upsertBackupSetting({
           newBackupSetting: newBackupSetting,
         })
         .then((backupSetting: BackupSetting) => {
           assignBackupSetting(backupSetting);
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t(
@@ -457,5 +466,5 @@ export default {
       updateBackupHookUrl,
     };
   },
-};
+});
 </script>

@@ -48,6 +48,12 @@
             Agents
           </router-link>-->
           <router-link
+            v-if="showOwnerOrDBAItem"
+            to="/setting/project"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("common.projects") }}</router-link
+          >
+          <router-link
             to="/setting/member"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.members") }}</router-link
@@ -66,6 +72,12 @@
             to="/setting/version-control"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
             >{{ $t("settings.sidebar.version-control") }}</router-link
+          >
+          <router-link
+            v-if="isDev()"
+            to="/setting/schema-review-policy"
+            class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
+            >{{ $t("schema-review-policy.title") }}</router-link
           >
           <router-link
             to="/setting/subscription"
@@ -89,9 +101,9 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { isOwner, isDev } from "../utils";
+import { isOwner, isDBAOrOwner, isDev } from "../utils";
+import { useCurrentUser, useRouterStore } from "@/store";
 
 interface LocalState {
   collapseState: boolean;
@@ -104,23 +116,31 @@ export default defineComponent({
       default: "",
       type: String,
     },
+    schemaReviewPolicySlug: {
+      default: "",
+      type: String,
+    },
   },
   setup() {
-    const store = useStore();
+    const routerStore = useRouterStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
       collapseState: true,
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const showOwnerItem = computed((): boolean => {
       return isOwner(currentUser.value.role);
     });
 
+    const showOwnerOrDBAItem = computed((): boolean => {
+      return isDBAOrOwner(currentUser.value.role);
+    });
+
     const goBack = () => {
-      router.push(store.getters["router/backPath"]());
+      router.push(routerStore.backPath());
     };
 
     const toggleCollapse = () => {
@@ -139,6 +159,7 @@ export default defineComponent({
       isDev,
       integrationList,
       showOwnerItem,
+      showOwnerOrDBAItem,
       goBack,
       toggleCollapse,
     };

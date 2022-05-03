@@ -91,8 +91,8 @@ import {
   RepositoryConfig,
   Project,
 } from "../types";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useRepositoryStore } from "@/store";
 
 interface LocalState {
   repositoryConfig: RepositoryConfig;
@@ -118,13 +118,14 @@ export default defineComponent({
   emits: ["change-repository"],
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
+    const repositoryStore = useRepositoryStore();
     const state = reactive<LocalState>({
       repositoryConfig: {
         baseDirectory: props.repository.baseDirectory,
         branchFilter: props.repository.branchFilter,
         filePathTemplate: props.repository.filePathTemplate,
         schemaPathTemplate: props.repository.schemaPathTemplate,
+        sheetPathTemplate: props.repository.sheetPathTemplate,
       },
     });
 
@@ -136,6 +137,7 @@ export default defineComponent({
           branchFilter: cur.branchFilter,
           filePathTemplate: cur.filePathTemplate,
           schemaPathTemplate: cur.schemaPathTemplate,
+          sheetPathTemplate: cur.sheetPathTemplate,
         };
       }
     );
@@ -159,20 +161,20 @@ export default defineComponent({
           props.repository.filePathTemplate !=
             state.repositoryConfig.filePathTemplate ||
           props.repository.schemaPathTemplate !=
-            state.repositoryConfig.schemaPathTemplate)
+            state.repositoryConfig.schemaPathTemplate ||
+          props.repository.sheetPathTemplate !=
+            state.repositoryConfig.sheetPathTemplate)
       );
     });
 
     const restoreToUIWorkflowType = () => {
-      store
-        .dispatch("repository/deleteRepositoryByProjectId", props.project.id)
-        .then(() => {
-          store.dispatch("notification/pushNotification", {
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("repository.restore-ui-workflow-success"),
-          });
+      repositoryStore.deleteRepositoryByProjectId(props.project.id).then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("repository.restore-ui-workflow-success"),
         });
+      });
     };
 
     const doUpdate = () => {
@@ -201,13 +203,21 @@ export default defineComponent({
         repositoryPatch.schemaPathTemplate =
           state.repositoryConfig.schemaPathTemplate;
       }
-      store
-        .dispatch("repository/updateRepositoryByProjectId", {
+      if (
+        props.repository.sheetPathTemplate !=
+        state.repositoryConfig.sheetPathTemplate
+      ) {
+        repositoryPatch.sheetPathTemplate =
+          state.repositoryConfig.sheetPathTemplate;
+      }
+
+      repositoryStore
+        .updateRepositoryByProjectId({
           projectId: props.project.id,
           repositoryPatch,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("repository.update-version-control-config-success"),

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
 	g.POST("/activity", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		activityCreate := &api.ActivityCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityCreate); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
@@ -28,16 +27,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			issueFind := &api.IssueFind{
 				ID: &activityCreate.ContainerID,
 			}
-			issueRaw, err := s.IssueService.FindIssue(ctx, issueFind)
+			issue, err := s.store.GetIssue(ctx, issueFind)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when creating the comment: %d", activityCreate.ContainerID)).SetInternal(err)
 			}
-			if issueRaw == nil {
+			if issue == nil {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unable to find issue ID for creating the comment: %d", activityCreate.ContainerID))
-			}
-			issue, err := s.composeIssueRelationship(ctx, issueRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to compose issue relation with ID %d", issueRaw.ID)).SetInternal(err)
 			}
 
 			bytes, err := json.Marshal(api.ActivityIssueCommentCreatePayload{
@@ -65,7 +60,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.GET("/activity", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		activityFind := &api.ActivityFind{}
 		if creatorIDStr := c.QueryParams().Get("user"); creatorIDStr != "" {
 			creatorID, err := strconv.Atoi(creatorIDStr)
@@ -74,8 +69,8 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.CreatorID = &creatorID
 		}
-		if typeStr := c.QueryParams().Get("type"); typeStr != "" {
-			activityFind.Type = &typeStr
+		if typePrefixStr := c.QueryParams().Get("typePrefix"); typePrefixStr != "" {
+			activityFind.TypePrefix = &typePrefixStr
 		}
 		if levelStr := c.QueryParams().Get("level"); levelStr != "" {
 			activityLevel := api.ActivityLevel(levelStr)
@@ -95,18 +90,9 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.Limit = &limit
 		}
-		activityRawList, err := s.ActivityService.FindActivityList(ctx, activityFind)
+		activityList, err := s.store.FindActivity(ctx, activityFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch activity list").SetInternal(err)
-		}
-
-		var activityList []*api.Activity
-		for _, activityRaw := range activityRawList {
-			activity, err := s.composeActivityRelationship(ctx, activityRaw)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch activity relationship: %v", activityRaw.ID)).SetInternal(err)
-			}
-			activityList = append(activityList, activity)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -117,7 +103,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.PATCH("/activity/:activityID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
@@ -131,17 +117,12 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)
 		}
 
-		activityRaw, err := s.ActivityService.PatchActivity(ctx, activityPatch)
+		activity, err := s.store.PatchActivity(ctx, activityPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Activity ID not found: %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch activity ID: %v", id)).SetInternal(err)
-		}
-
-		activity, err := s.composeActivityRelationship(ctx, activityRaw)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated activity relationship: %v", activityRaw.ID)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -152,7 +133,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 	})
 
 	g.DELETE("/activity/:activityID", func(c echo.Context) error {
-		ctx := context.Background()
+		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("activityID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
@@ -162,7 +143,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			ID:        id,
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
-		if err := s.ActivityService.DeleteActivity(ctx, activityDelete); err != nil {
+		if err := s.store.DeleteActivity(ctx, activityDelete); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete activity ID: %v", id)).SetInternal(err)
 		}
 
@@ -170,22 +151,4 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-}
-
-func (s *Server) composeActivityRelationship(ctx context.Context, raw *api.ActivityRaw) (*api.Activity, error) {
-	activity := raw.ToActivity()
-
-	creator, err := s.store.GetPrincipalByID(ctx, activity.CreatorID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Creator = creator
-
-	updater, err := s.store.GetPrincipalByID(ctx, activity.UpdaterID)
-	if err != nil {
-		return nil, err
-	}
-	activity.Updater = updater
-
-	return activity, nil
 }

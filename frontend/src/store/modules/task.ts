@@ -1,3 +1,4 @@
+import { defineStore } from "pinia";
 import axios from "axios";
 import {
   empty,
@@ -17,15 +18,15 @@ import {
   TaskState,
   TaskStatusPatch,
   unknown,
-} from "../../types";
+} from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
-
-const state: () => TaskState = () => ({});
+import { useDatabaseStore } from "./database";
+import { useInstanceStore } from "./instance";
+import { useIssueStore } from "./issue";
 
 function convertTaskRun(
   taskRun: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): TaskRun {
   const result = taskRun.attributes.result
     ? JSON.parse((taskRun.attributes.result as string) || "{}")
@@ -55,8 +56,7 @@ function convertTaskRun(
 
 function convertTaskCheckRun(
   taskCheckRun: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): TaskCheckRun {
   const result = taskCheckRun.attributes.result
     ? JSON.parse((taskCheckRun.attributes.result as string) || "{}")
@@ -87,8 +87,7 @@ function convertTaskCheckRun(
 
 function convertPartial(
   task: ResourceObject,
-  includedList: ResourceObject[],
-  rootGetters: any
+  includedList: ResourceObject[]
 ): Omit<Task, "pipeline" | "stage"> {
   const payload = task.attributes.payload
     ? JSON.parse((task.attributes.payload as string) || "{}")
@@ -102,11 +101,7 @@ function convertPartial(
     for (const item of includedList || []) {
       if (item.type == "taskRun") {
         if (idItem.id == item.id) {
-          const taskRun: TaskRun = convertTaskRun(
-            item,
-            includedList,
-            rootGetters
-          );
+          const taskRun: TaskRun = convertTaskRun(item, includedList);
           taskRunList.push(taskRun);
         }
       }
@@ -123,8 +118,7 @@ function convertPartial(
         if (idItem.id == item.id) {
           const taskCheckRun: TaskCheckRun = convertTaskCheckRun(
             item,
-            includedList,
-            rootGetters
+            includedList
           );
           taskCheckRunList.push(taskCheckRun);
         }
@@ -140,19 +134,21 @@ function convertPartial(
   }
 
   let database = undefined;
+  const databaseStore = useDatabaseStore();
+  const instanceStore = useInstanceStore();
   for (const item of includedList || []) {
     if (
       item.type == "instance" &&
       (task.relationships!.instance.data as ResourceIdentifier).id == item.id
     ) {
-      instance = rootGetters["instance/convert"](item, includedList);
+      instance = instanceStore.convert(item, includedList);
     }
     if (
       item.type == "database" &&
       // Tasks like creating database may not have database.
       (task.relationships!.database.data as ResourceIdentifier)?.id == item.id
     ) {
-      database = rootGetters["database/convert"](item, includedList);
+      database = databaseStore.convert(item, includedList);
     }
   }
 
@@ -187,10 +183,10 @@ function convertPartial(
   };
 }
 
-const getters = {
-  convertPartial:
-    (state: TaskState, getters: any, rootState: any, rootGetters: any) =>
-    (task: ResourceObject, includedList: ResourceObject[]): Task => {
+export const useTaskStore = defineStore("task", {
+  state: (): TaskState => ({}),
+  actions: {
+    convertPartial(task: ResourceObject, includedList: ResourceObject[]) {
       // It's only called when pipeline/stage tries to convert itself, so we don't have a issue yet.
       const pipelineId = task.attributes.pipelineId as PipelineId;
       const pipeline: Pipeline = unknown("PIPELINE") as Pipeline;
@@ -201,17 +197,12 @@ const getters = {
       stage.id = stageId;
 
       return {
-        ...convertPartial(task, includedList, rootGetters),
+        ...convertPartial(task, includedList),
         pipeline,
         stage,
-      };
+      } as Task;
     },
-};
-
-const actions = {
-  async updateStatus(
-    { dispatch, rootGetters }: any,
-    {
+    async updateStatus({
       issueId,
       pipelineId,
       taskId,
@@ -221,26 +212,22 @@ const actions = {
       pipelineId: PipelineId;
       taskId: TaskId;
       taskStatusPatch: TaskStatusPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
-        data: {
-          type: "taskStatusPatch",
-          attributes: taskStatusPatch,
-        },
-      })
-    ).data;
-    const task = convertPartial(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}/status`, {
+          data: {
+            type: "taskStatusPatch",
+            attributes: taskStatusPatch,
+          },
+        })
+      ).data;
+      const task = this.convertPartial(data.data, data.included);
 
-    dispatch("issue/fetchIssueById", issueId, { root: true });
+      useIssueStore().fetchIssueById(issueId);
 
-    return task;
-  },
-
-  async patchTask(
-    { dispatch, rootGetters }: any,
-    {
+      return task;
+    },
+    async patchTask({
       issueId,
       pipelineId,
       taskId,
@@ -250,26 +237,22 @@ const actions = {
       pipelineId: PipelineId;
       taskId: TaskId;
       taskPatch: TaskPatch;
-    }
-  ) {
-    const data = (
-      await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}`, {
-        data: {
-          type: "taskPatch",
-          attributes: taskPatch,
-        },
-      })
-    ).data;
-    const task = convertPartial(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.patch(`/api/pipeline/${pipelineId}/task/${taskId}`, {
+          data: {
+            type: "taskPatch",
+            attributes: taskPatch,
+          },
+        })
+      ).data;
+      const task = this.convertPartial(data.data, data.included);
 
-    dispatch("issue/fetchIssueById", issueId, { root: true });
+      useIssueStore().fetchIssueById(issueId);
 
-    return task;
-  },
-
-  async runChecks(
-    { dispatch, rootGetters }: any,
-    {
+      return task;
+    },
+    async runChecks({
       issueId,
       pipelineId,
       taskId,
@@ -277,25 +260,15 @@ const actions = {
       issueId: IssueId;
       pipelineId: PipelineId;
       taskId: TaskId;
-    }
-  ) {
-    const data = (
-      await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/check`)
-    ).data;
-    const task = convertPartial(data.data, data.included, rootGetters);
+    }) {
+      const data = (
+        await axios.post(`/api/pipeline/${pipelineId}/task/${taskId}/check`)
+      ).data;
+      const task = this.convertPartial(data.data, data.included);
 
-    dispatch("issue/fetchIssueById", issueId, { root: true });
+      useIssueStore().fetchIssueById(issueId);
 
-    return task;
+      return task;
+    },
   },
-};
-
-const mutations = {};
-
-export default {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations,
-};
+});

@@ -10,17 +10,37 @@ import DashboardLayout from "../layouts/DashboardLayout.vue";
 import DatabaseLayout from "../layouts/DatabaseLayout.vue";
 import InstanceLayout from "../layouts/InstanceLayout.vue";
 import SplashLayout from "../layouts/SplashLayout.vue";
-import SqlEditorLayout from "../layouts/SqlEditorLayout.vue";
+import SQLEditorLayout from "../layouts/SQLEditorLayout.vue";
+import SheetDashboardLayout from "../layouts/SheetDashboardLayout.vue";
 import { t } from "../plugins/i18n";
-import { store } from "../store";
-import { Database, QuickActionType, Sheet } from "../types";
+import {
+  useAuthStore,
+  useDatabaseStore,
+  useEnvironmentStore,
+  useInstanceStore,
+  useIssueStore,
+  usePrincipalStore,
+  useRouterStore,
+} from "../store";
+import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
 import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
 import DashboardSidebar from "../views/DashboardSidebar.vue";
 import Home from "../views/Home.vue";
-import { useTabStore } from "@/store";
+import {
+  useTabStore,
+  hasFeature,
+  useVCSStore,
+  useProjectWebhookStore,
+  useDataSourceStore,
+  useSchemaSystemStore,
+  useProjectStore,
+  useTableStore,
+  useSQLEditorStore,
+  useSheetStore,
+} from "@/store";
 
 const HOME_MODULE = "workspace.home";
 const AUTH_MODULE = "auth";
@@ -29,6 +49,8 @@ const SIGNUP_MODULE = "auth.signup";
 const ACTIVATE_MODULE = "auth.activate";
 const PASSWORD_RESET_MODULE = "auth.password.reset";
 const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
+
+// console.log(useProjectWebhookStore());
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -93,9 +115,10 @@ const routes: Array<RouteRecordRaw> = [
             name: HOME_MODULE,
             meta: {
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -113,9 +136,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.project.create",
                       "quickaction.bb.user.manage",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -131,9 +152,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.instance.create",
                       "quickaction.bb.project.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -237,9 +256,11 @@ const routes: Array<RouteRecordRaw> = [
             name: "workspace.profile",
             meta: {
               title: (route: RouteLocationNormalized) => {
-                const principalId = route.params.principalId as string;
-                return store.getters["principal/principalById"](principalId)
-                  .name;
+                const principalId = parseInt(
+                  route.params.principalId as string,
+                  10
+                );
+                return usePrincipalStore().principalById(principalId).name;
               },
             },
             components: {
@@ -291,6 +312,22 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "project",
+                name: "setting.workspace.project",
+                meta: {
+                  title: () => t("common.projects"),
+                  quickActionListByRole: () => {
+                    return new Map([
+                      ["OWNER", ["quickaction.bb.project.create"]],
+                      ["DBA", ["quickaction.bb.project.create"]],
+                      ["DEVELOPER", []],
+                    ]);
+                  },
+                },
+                component: () => import("../views/SettingWorkspaceProject.vue"),
+                props: true,
+              },
+              {
                 path: "member",
                 name: "setting.workspace.member",
                 meta: { title: () => t("settings.sidebar.members") },
@@ -318,7 +355,7 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.vcsSlug as string;
-                    return store.getters["vcs/vcsById"](idFromSlug(slug)).name;
+                    return useVCSStore().getVCSById(idFromSlug(slug)).name;
                   },
                 },
                 component: () =>
@@ -346,6 +383,43 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("common.slack") },
                 component: () =>
                   import("../views/SettingWorkspaceIntegrationSlack.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy",
+                name: "setting.workspace.schema-review-policy",
+                meta: {
+                  title: () => t("schema-review-policy.title"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReview.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy/new",
+                name: "setting.workspace.schema-review-policy.create",
+                meta: {
+                  title: () => t("schema-review-policy.create.breadcrumb"),
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReviewCreate.vue"),
+                props: true,
+              },
+              {
+                path: "schema-review-policy/:schemaReviewPolicySlug",
+                name: "setting.workspace.schema-review-policy.detail",
+                meta: {
+                  title: (route: RouteLocationNormalized) => {
+                    const slug = route.params.schemaReviewPolicySlug as string;
+                    return (
+                      useSchemaSystemStore().getReviewPolicyByEnvironmentId(
+                        idFromSlug(slug)
+                      )?.name ?? ""
+                    );
+                  },
+                },
+                component: () =>
+                  import("../views/SettingWorkspaceSchemaReviewDetail.vue"),
                 props: true,
               },
             ],
@@ -398,7 +472,7 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.environmentSlug as string;
-                return store.getters["environment/environmentById"](
+                return useEnvironmentStore().getEnvironmentById(
                   idFromSlug(slug)
                 ).name;
               },
@@ -417,27 +491,9 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.project"),
               quickActionListByRole: () => {
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DBA",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
-                  [
-                    "DEVELOPER",
-                    [
-                      "quickaction.bb.project.create",
-                      "quickaction.bb.project.default",
-                    ],
-                  ],
+                  ["OWNER", ["quickaction.bb.project.create"]],
+                  ["DBA", ["quickaction.bb.project.create"]],
+                  ["DEVELOPER", ["quickaction.bb.project.create"]],
                 ]);
               },
             },
@@ -456,12 +512,12 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               quickActionListByRole: (route: RouteLocationNormalized) => {
                 const slug = route.params.projectSlug as string;
-                const project = store.getters["project/projectById"](
+                const project = useProjectStore().getProjectById(
                   idFromSlug(slug)
                 );
 
                 if (project.rowStatus == "NORMAL") {
-                  const currentUser = store.getters["auth/currentUser"]();
+                  const currentUser = useAuthStore().currentUser;
                   let allowEditProject = false;
                   if (isDBAOrOwner(currentUser.role)) {
                     allowEditProject = true;
@@ -499,9 +555,8 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.projectSlug as string;
-                    return store.getters["project/projectById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useProjectStore().getProjectById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -526,7 +581,7 @@ const routes: Array<RouteRecordRaw> = [
                     const projectWebhookSlug = route.params
                       .projectWebhookSlug as string;
                     return `${t("common.webhook")} - ${
-                      store.getters["projectWebhook/projectWebhookById"](
+                      useProjectWebhookStore().projectWebhookById(
                         idFromSlug(projectSlug),
                         idFromSlug(projectWebhookSlug)
                       ).name
@@ -563,9 +618,10 @@ const routes: Array<RouteRecordRaw> = [
             meta: {
               title: () => t("common.database"),
               quickActionListByRole: () => {
-                const ownerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const hasDBAWorkflowFeature = hasFeature(
+                  "bb.feature.dba-workflow"
+                );
+                const ownerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -577,9 +633,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const dbaList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const dbaList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -591,9 +645,7 @@ const routes: Array<RouteRecordRaw> = [
                       "quickaction.bb.database.data.update",
                       "quickaction.bb.database.create",
                     ];
-                const developerList: QuickActionType[] = store.getters[
-                  "subscription/feature"
-                ]("bb.feature.dba-workflow")
+                const developerList: QuickActionType[] = hasDBAWorkflowFeature
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
@@ -619,18 +671,6 @@ const routes: Array<RouteRecordRaw> = [
             props: { content: true, leftSidebar: true },
           },
           {
-            path: "db/grant",
-            name: "workspace.database.grant",
-            meta: {
-              title: () => t("datasource.grant-database"),
-            },
-            components: {
-              content: () => import("../views/DatabaseGrant.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: { content: true, leftSidebar: true },
-          },
-          {
             path: "db/:databaseSlug",
             components: {
               content: DatabaseLayout,
@@ -647,9 +687,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["database/databaseById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useDatabaseStore().getDatabaseById(idFromSlug(slug))
+                      .name;
                   },
                   allowBookmark: true,
                 },
@@ -669,34 +708,14 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "datasource/:dataSourceSlug",
-                name: "workspace.database.datasource.detail",
-                meta: {
-                  title: (route: RouteLocationNormalized) => {
-                    const slug = route.params.dataSourceSlug as string;
-                    if (slug.toLowerCase() == "new") {
-                      return t("common.new");
-                    }
-                    return `${t("common.data-source")} - ${
-                      store.getters["dataSource/dataSourceById"](
-                        idFromSlug(slug)
-                      ).name
-                    }`;
-                  },
-                  allowBookmark: true,
-                },
-                component: () => import("../views/DataSourceDetail.vue"),
-                props: true,
-              },
-              {
                 path: "history/:migrationHistorySlug",
                 name: "workspace.database.history.detail",
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return store.getters["instance/migrationHistoryById"](
+                    return useInstanceStore().getMigrationHistoryById(
                       idFromSlug(slug)
-                    ).version;
+                    )?.version;
                   },
                   allowBookmark: true,
                 },
@@ -722,9 +741,8 @@ const routes: Array<RouteRecordRaw> = [
                     if (slug.toLowerCase() == "new") {
                       return t("common.new");
                     }
-                    return store.getters["instance/instanceById"](
-                      idFromSlug(slug)
-                    ).name;
+                    return useInstanceStore().getInstanceById(idFromSlug(slug))
+                      .name;
                   },
                 },
                 component: () => import("../views/InstanceDetail.vue"),
@@ -741,7 +759,8 @@ const routes: Array<RouteRecordRaw> = [
                 if (slug.toLowerCase() == "new") {
                   return t("common.new");
                 }
-                return store.getters["issue/issueById"](idFromSlug(slug)).name;
+                const issue = useIssueStore().getIssueById(idFromSlug(slug));
+                return issue.name;
               },
               allowBookmark: true,
             },
@@ -758,28 +777,59 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/sql-editor",
     name: "sql-editor",
-    component: SqlEditorLayout,
+    component: SQLEditorLayout,
     children: [
       {
         path: "",
         name: "sql-editor.home",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
       },
       {
         path: "/sql-editor/:connectionSlug/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "SQL Editor" },
-        component: () => import("../views/SqlEditor/SqlEditor.vue"),
+        component: () => import("../views/sql-editor/SQLEditor.vue"),
         props: true,
+      },
+    ],
+  },
+  {
+    path: "/sheets",
+    name: "sheets",
+    component: SheetDashboardLayout,
+    children: [
+      {
+        path: "",
+        name: "sheets.dashboard",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "my",
+        name: "sheets.my",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "shared",
+        name: "sheets.shared",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
+      },
+      {
+        path: "starred",
+        name: "sheets.starred",
+        meta: { title: () => "Sheets" },
+        component: () => import("../views/SheetDashboard.vue"),
       },
     ],
   },
@@ -801,9 +851,17 @@ export const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   console.debug("Router %s -> %s", from.name, to.name);
+  const authStore = useAuthStore();
+  const databaseStore = useDatabaseStore();
+  const environmentStore = useEnvironmentStore();
+  const instanceStore = useInstanceStore();
+  const issueStore = useIssueStore();
   const tabStore = useTabStore();
+  const routerStore = useRouterStore();
+  const projectWebhookStore = useProjectWebhookStore();
+  const projectStore = useProjectStore();
 
-  const isLoggedIn = store.getters["auth/isLoggedIn"]();
+  const isLoggedIn = authStore.isLoggedIn();
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
@@ -811,7 +869,7 @@ router.beforeEach((to, from, next) => {
   const toModule = to.name ? to.name.toString().split(".")[0] : HOME_MODULE;
 
   if (toModule != fromModule) {
-    store.dispatch("router/setBackPath", from.fullPath);
+    routerStore.setBackPath(from.fullPath);
   }
 
   // OAuth callback route is a relay to receive the OAuth callback and dispatch the corresponding OAuth event. It's called in the following scenarios:
@@ -853,7 +911,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  const currentUser = store.getters["auth/currentUser"]();
+  const currentUser = authStore.currentUser;
 
   if (to.name?.toString().startsWith("setting.workspace.version-control")) {
     // Returns 403 immediately if not Owner. Otherwise, we may need to fetch the VCS detail
@@ -866,9 +924,20 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  if (to.name?.toString().startsWith("setting.workspace.project")) {
+    // Returns 403 immediately if not DBA or Owner.
+    if (!isDBAOrOwner(currentUser.role)) {
+      next({
+        name: "error.403",
+        replace: false,
+      });
+      return;
+    }
+  }
+
   if (to.name === "workspace.instance") {
     if (
-      !store.getters["subscription/feature"]("bb.feature.dba-workflow") ||
+      !hasFeature("bb.feature.dba-workflow") ||
       isDBAOrOwner(currentUser.role)
     ) {
       next();
@@ -883,7 +952,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.name?.toString().startsWith("workspace.database.datasource")) {
     if (
-      !store.getters["subscription/feature"]("bb.feature.data-source") ||
+      !hasFeature("bb.feature.data-source") ||
       !isDBAOrOwner(currentUser.role)
     ) {
       next({
@@ -907,8 +976,10 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === "sql-editor.home" ||
+    to.name?.toString().startsWith("sheets") ||
     (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.version-control.detail")
+      to.name?.toString() != "setting.workspace.version-control.detail" &&
+      to.name?.toString() != "setting.workspace.schema-review-policy.detail")
   ) {
     next();
     return;
@@ -921,7 +992,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const routerSlug = store.getters["router/routeSlug"](to);
+  const routerSlug = routerStore.routeSlug(to);
   const principalId = routerSlug.principalId;
   const environmentSlug = routerSlug.environmentSlug;
   const projectSlug = routerSlug.projectSlug;
@@ -935,10 +1006,11 @@ router.beforeEach((to, from, next) => {
   const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
+  const schemaReviewPolicySlug = routerSlug.schemaReviewPolicySlug;
 
   if (principalId) {
-    store
-      .dispatch("principal/fetchPrincipalById", principalId)
+    usePrincipalStore()
+      .fetchPrincipalById(principalId)
       .then(() => {
         next();
       })
@@ -953,9 +1025,12 @@ router.beforeEach((to, from, next) => {
   }
 
   if (environmentSlug) {
-    if (
-      store.getters["environment/environmentById"](idFromSlug(environmentSlug))
-    ) {
+    const env = environmentStore.getEnvironmentById(
+      idFromSlug(environmentSlug)
+    );
+    // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
+    // so we need to check the id here
+    if (env && env.id !== UNKNOWN_ID) {
       next();
       return;
     }
@@ -966,14 +1041,14 @@ router.beforeEach((to, from, next) => {
   }
 
   if (projectSlug) {
-    store
-      .dispatch("project/fetchProjectById", idFromSlug(projectSlug))
+    projectStore
+      .fetchProjectById(idFromSlug(projectSlug))
       .then(() => {
         if (!projectWebhookSlug) {
           next();
         } else {
-          store
-            .dispatch("projectWebhook/fetchProjectWebhookById", {
+          projectWebhookStore
+            .fetchProjectWebhookById({
               projectId: idFromSlug(projectSlug),
               projectWebhookId: idFromSlug(projectWebhookSlug),
             })
@@ -1002,16 +1077,29 @@ router.beforeEach((to, from, next) => {
   if (issueSlug) {
     if (issueSlug.toLowerCase() == "new") {
       // For preparing the database if user visits creating issue url directly.
+      const requests: Promise<any>[] = [];
       if (to.query.databaseList) {
         for (const databaseId of (to.query.databaseList as string).split(",")) {
-          store.dispatch("database/fetchDatabaseById", { databaseId });
+          requests.push(
+            databaseStore.fetchDatabaseById(parseInt(databaseId, 10))
+          );
         }
       }
-      next();
+      Promise.all(requests)
+        .then(() => {
+          next();
+        })
+        .catch((error) => {
+          next({
+            name: "error.404",
+            replace: false,
+          });
+          throw error;
+        });
       return;
     }
-    store
-      .dispatch("issue/fetchIssueById", idFromSlug(issueSlug))
+    issueStore
+      .fetchIssueById(idFromSlug(issueSlug))
       .then(() => {
         next();
       })
@@ -1030,16 +1118,14 @@ router.beforeEach((to, from, next) => {
       next();
       return;
     }
-    store
-      .dispatch("database/fetchDatabaseById", {
-        databaseId: idFromSlug(databaseSlug),
-      })
+    databaseStore
+      .fetchDatabaseById(idFromSlug(databaseSlug))
       .then((database: Database) => {
         if (!tableName && !dataSourceSlug && !migrationHistorySlug) {
           next();
         } else if (tableName) {
-          store
-            .dispatch("table/fetchTableByDatabaseIdAndTableName", {
+          useTableStore()
+            .fetchTableByDatabaseIdAndTableName({
               databaseId: database.id,
               tableName,
             })
@@ -1054,8 +1140,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (dataSourceSlug) {
-          store
-            .dispatch("dataSource/fetchDataSourceById", {
+          useDataSourceStore()
+            .fetchDataSourceById({
               dataSourceId: idFromSlug(dataSourceSlug),
               databaseId: database.id,
             })
@@ -1070,8 +1156,8 @@ router.beforeEach((to, from, next) => {
               throw error;
             });
         } else if (migrationHistorySlug) {
-          store
-            .dispatch("instance/fetchMigrationHistoryById", {
+          instanceStore
+            .fetchMigrationHistoryById({
               instanceId: database.instance.id,
               migrationHistoryId: idFromSlug(migrationHistorySlug),
             })
@@ -1098,8 +1184,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (instanceSlug) {
-    store
-      .dispatch("instance/fetchInstanceById", idFromSlug(instanceSlug))
+    instanceStore
+      .fetchInstanceById(idFromSlug(instanceSlug))
       .then(() => {
         next();
       })
@@ -1114,8 +1200,24 @@ router.beforeEach((to, from, next) => {
   }
 
   if (vcsSlug) {
-    store
-      .dispatch("vcs/fetchVCSById", idFromSlug(vcsSlug))
+    useVCSStore()
+      .fetchVCSById(idFromSlug(vcsSlug))
+      .then(() => {
+        next();
+      })
+      .catch((error) => {
+        next({
+          name: "error.404",
+          replace: false,
+        });
+        throw error;
+      });
+    return;
+  }
+
+  if (schemaReviewPolicySlug) {
+    useSchemaSystemStore()
+      .fetchReviewPolicyByEnvironmentId(idFromSlug(schemaReviewPolicySlug))
       .then(() => {
         next();
       })
@@ -1131,8 +1233,8 @@ router.beforeEach((to, from, next) => {
 
   if (connectionSlug) {
     const [, instanceId, , databaseId] = connectionSlug.split("_");
-    store
-      .dispatch("sqlEditor/fetchConnectionByInstanceIdAndDatabaseId", {
+    useSQLEditorStore()
+      .fetchConnectionByInstanceIdAndDatabaseId({
         instanceId: Number(instanceId),
         databaseId: Number(databaseId),
       })
@@ -1140,8 +1242,8 @@ router.beforeEach((to, from, next) => {
         // for sharing the sheet to others
         if (sheetSlug) {
           const [_, sheetId] = sheetSlug.split("_");
-          store
-            .dispatch("sheet/fetchSheetById", sheetId)
+          useSheetStore()
+            .fetchSheetById(Number(sheetId))
             .then((sheet: Sheet) => {
               tabStore.addTab({
                 name: sheet.name,
@@ -1151,7 +1253,7 @@ router.beforeEach((to, from, next) => {
               tabStore.updateCurrentTab({
                 sheetId: sheet.id,
               });
-              store.dispatch("sqlEditor/setSqlEditorState", {
+              useSQLEditorStore().setSQLEditorState({
                 sharedSheet: sheet,
               });
 

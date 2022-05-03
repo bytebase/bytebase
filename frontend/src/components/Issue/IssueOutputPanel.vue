@@ -90,7 +90,6 @@
 
 <script lang="ts">
 import { PropType, computed, reactive, defineComponent } from "vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import isEqual from "lodash-es/isEqual";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
@@ -98,6 +97,7 @@ import DatabaseSelect from "../DatabaseSelect.vue";
 import { activeEnvironment } from "../../utils";
 import { OutputField, IssueContext } from "../../plugins";
 import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../../types";
+import { pushNotification, useCurrentUser } from "@/store";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -121,12 +121,11 @@ export default defineComponent({
   },
   emits: ["update-custom-field"],
   setup(props, { emit }) {
-    const store = useStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({});
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const environmentId = computed((): EnvironmentId => {
       return activeEnvironment(props.issue.pipeline).id;
@@ -138,7 +137,6 @@ export default defineComponent({
 
     const issueContext = computed((): IssueContext => {
       return {
-        store,
         currentUser: currentUser.value,
         create: false,
         issue: props.issue,
@@ -161,7 +159,7 @@ export default defineComponent({
 
     const copyText = (field: OutputField) => {
       toClipboard(props.issue.payload[field.id]).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `${field.name} copied to clipboard.`,

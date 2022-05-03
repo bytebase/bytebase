@@ -161,18 +161,6 @@
       </div>
 
       <div
-        v-if="quickAction == 'quickaction.bb.project.default'"
-        class="flex flex-col items-center w-28"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="goDefaultProject">
-          <heroicons-outline:cube class="w-6 h-6" />
-        </button>
-        <h3 class="mt-1 text-center text-base font-normal text-main">
-          {{ $t("quick-action.default-project") }}
-        </h3>
-      </div>
-
-      <div
         v-if="quickAction == 'quickaction.bb.project.database.transfer'"
         class="flex flex-col items-center w-28"
       >
@@ -257,19 +245,21 @@
 <script lang="ts">
 import { defineComponent, reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
 import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import RequestDatabasePrepForm from "../components/RequestDatabasePrepForm.vue";
 import TransferDatabaseForm from "../components/TransferDatabaseForm.vue";
-import { DEFAULT_PROJECT_ID, ProjectId, QuickActionType } from "../types";
+import { ProjectId, QuickActionType } from "../types";
 import { idFromSlug } from "../utils";
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useI18n } from "vue-i18n";
-import { Subscription } from "../types";
-import { useCommandStore } from "@/store";
+import {
+  useCommandStore,
+  useInstanceStore,
+  useSubscriptionStore,
+} from "@/store";
 
 interface LocalState {
   showModal: boolean;
@@ -298,8 +288,8 @@ export default defineComponent({
   setup(props) {
     const { t } = useI18n();
     const router = useRouter();
-    const store = useStore();
     const commandStore = useCommandStore();
+    const subscriptionStore = useSubscriptionStore();
 
     const state = reactive<LocalState>({
       showModal: false,
@@ -324,15 +314,6 @@ export default defineComponent({
       state.showModal = true;
     };
 
-    const goDefaultProject = () => {
-      router.push({
-        name: "workspace.project.detail",
-        params: {
-          projectSlug: DEFAULT_PROJECT_ID,
-        },
-      });
-    };
-
     const transferDatabase = () => {
       state.modalTitle = t("quick-action.transfer-in-db-title");
       state.modalSubtitle = "";
@@ -341,9 +322,8 @@ export default defineComponent({
     };
 
     const createInstance = () => {
-      const subscription: Subscription | undefined =
-        store.getters["subscription/subscription"]();
-      const instanceList = store.getters["instance/instanceList"]();
+      const { subscription } = subscriptionStore;
+      const instanceList = useInstanceStore().getInstanceList();
       if ((subscription?.instanceCount ?? 5) <= instanceList.length) {
         state.showFeatureModal = true;
         return;
@@ -427,10 +407,6 @@ export default defineComponent({
         name: t("quick-action.new-project"),
         perform: () => createProject(),
       },
-      "quickaction.bb.project.default": {
-        name: t("quick-action.default-project"),
-        perform: () => goDefaultProject(),
-      },
       "quickaction.bb.project.database.transfer": {
         name: t("quick-action.transfer-in-db"),
         perform: () => transferDatabase(),
@@ -459,7 +435,6 @@ export default defineComponent({
       state,
       projectId,
       createProject,
-      goDefaultProject,
       transferDatabase,
       createInstance,
       alterSchema,

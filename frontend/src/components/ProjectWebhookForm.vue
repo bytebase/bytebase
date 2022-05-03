@@ -4,7 +4,7 @@
       <label class="textlabel">
         {{ $t("project.webhook.destination") }}
       </label>
-      <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-6">
+      <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-7">
         <template
           v-for="(item, index) in PROJECT_HOOK_TYPE_ITEM_LIST()"
           :key="index"
@@ -33,6 +33,9 @@
               </template>
               <template v-else-if="item.type == 'bb.plugin.webhook.wecom'">
                 <img class="h-10 w-10" src="../assets/wecom-logo.png" />
+              </template>
+              <template v-else-if="item.type == 'bb.plugin.webhook.custom'">
+                <heroicons-outline:puzzle class="w-10 h-10" />
               </template>
               <p class="mt-1 text-center textlabel">
                 {{ item.name }}
@@ -169,6 +172,23 @@
             })
           }}
         </template>
+        <template v-else-if="state.webhook.type == 'bb.plugin.webhook.custom'">
+          {{
+            $t("project.webhook.creation.desc", {
+              destination: $t("common.custom"),
+            })
+          }}
+          <a
+            href="https://www.bytebase.com/docs/use-bytebase/webhook-integration/project-webhook#custom"
+            target="__blank"
+            class="normal-link"
+            >{{
+              $t("project.webhook.creation.view-doc", {
+                destination: $t("common.custom"),
+              })
+            }}</a
+          >.
+        </template>
       </div>
       <input
         id="url"
@@ -244,7 +264,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, PropType, watch } from "vue";
+import { reactive, computed, PropType, watch, defineComponent } from "vue";
 import {
   ActivityType,
   Project,
@@ -257,14 +277,14 @@ import {
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useRouter } from "vue-router";
 import { projectWebhookSlug, projectSlug } from "../utils";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { pushNotification, useProjectWebhookStore } from "@/store";
 
 interface LocalState {
   webhook: ProjectWebhook | ProjectWebhookCreate;
 }
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookForm",
   props: {
     allowEdit: {
@@ -286,9 +306,9 @@ export default {
   },
   emits: ["change-repository"],
   setup(props) {
-    const store = useStore();
     const router = useRouter();
     const { t } = useI18n();
+    const projectWebhookStore = useProjectWebhookStore();
 
     const state = reactive<LocalState>({
       webhook: cloneDeep(props.webhook),
@@ -314,6 +334,8 @@ export default {
         return `${t("common.feishu")} Webhook`;
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
         return `${t("common.wecom")} Webhook`;
+      } else if (state.webhook.type == "bb.plugin.webhook.custom") {
+        return `${t("common.custom")} Webhook`;
       }
 
       return "My Webhook";
@@ -332,6 +354,8 @@ export default {
         return "https://open.feishu.cn/open-apis/bot/v2/hook/...";
       } else if (state.webhook.type == "bb.plugin.webhook.wecom") {
         return "https://qyapi.weixin.qq.com/cgi-bin/webhook/...";
+      } else if (state.webhook.type == "bb.plugin.webhook.custom") {
+        return "https://example.com/api/webhook/...";
       }
 
       return "Webhook URL";
@@ -389,13 +413,13 @@ export default {
     };
 
     const createWebhook = () => {
-      store
-        .dispatch("projectWebhook/createProjectWebhook", {
+      projectWebhookStore
+        .createProjectWebhook({
           projectId: props.project.id,
           projectWebhookCreate: state.webhook,
         })
         .then((webhook: ProjectWebhook) => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-created-prompt", {
@@ -422,14 +446,14 @@ export default {
       if (props.webhook.activityList != state.webhook.activityList) {
         projectWebhookPatch.activityList = state.webhook.activityList.join(",");
       }
-      store
-        .dispatch("projectWebhook/updateProjectWebhookById", {
+      projectWebhookStore
+        .updateProjectWebhookById({
           projectId: props.project.id,
           projectWebhookId: (state.webhook as ProjectWebhook).id,
           projectWebhookPatch,
         })
         .then((webhook: ProjectWebhook) => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-updated-prompt", {
@@ -441,13 +465,13 @@ export default {
 
     const deleteWebhook = () => {
       const name = state.webhook.name;
-      store
-        .dispatch("projectWebhook/deleteProjectWebhookById", {
+      projectWebhookStore
+        .deleteProjectWebhookById({
           projectId: props.project.id,
           projectWebhookId: (state.webhook as ProjectWebhook).id,
         })
         .then(() => {
-          store.dispatch("notification/pushNotification", {
+          pushNotification({
             module: "bytebase",
             style: "SUCCESS",
             title: t("project.webhook.success-deleted-prompt", {
@@ -474,5 +498,5 @@ export default {
       deleteWebhook,
     };
   },
-};
+});
 </script>

@@ -80,22 +80,16 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				instanceFind := &api.InstanceFind{
 					RowStatus: &rowStatus,
 				}
-				instanceRawList, err := s.server.InstanceService.FindInstanceList(ctx, instanceFind)
+				instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve instance list", zap.Error(err))
 					return
 				}
 
-				for _, instanceRaw := range instanceRawList {
-					instance, err := s.server.composeInstanceRelationship(ctx, instanceRaw)
-					if err != nil {
-						s.l.Error(fmt.Sprintf("Failed to compose instance relationship, ID %v, name %q.", instanceRaw.ID, instanceRaw.Name), zap.Error(err))
-						continue
-					}
-
+				for _, instance := range instanceList {
 					foundEnv := false
 					for _, env := range envList {
-						if env.ID == instanceRaw.EnvironmentID {
+						if env.ID == instance.EnvironmentID {
 							if env.RowStatus == api.Normal {
 								instance.Environment = env
 							}
@@ -109,11 +103,11 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					mu.Lock()
-					if _, ok := runningTasks[instanceRaw.ID]; ok {
+					if _, ok := runningTasks[instance.ID]; ok {
 						mu.Unlock()
 						continue
 					}
-					runningTasks[instanceRaw.ID] = true
+					runningTasks[instance.ID] = true
 					mu.Unlock()
 
 					// Do NOT use go-routine otherwise would cause "database locked" in underlying SQLite
@@ -130,18 +124,16 @@ func (s *AnomalyScanner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						databaseFind := &api.DatabaseFind{
 							InstanceID: &instance.ID,
 						}
-						dbRawList, err := s.server.DatabaseService.FindDatabaseList(ctx, databaseFind)
+						dbList, err := s.server.store.FindDatabase(ctx, databaseFind)
 						if err != nil {
 							s.l.Error("Failed to retrieve database list",
 								zap.String("instance", instance.Name),
 								zap.Error(err))
 							return
 						}
-						for _, dbRaw := range dbRawList {
-							// TODO(dragonly): compose Database
-							db := dbRaw.ToDatabase()
-							s.checkDatabaseAnomaly(ctx, instance, db)
-							s.checkBackupAnomaly(ctx, instance, db, backupPlanPolicyMap)
+						for _, database := range dbList {
+							s.checkDatabaseAnomaly(ctx, instance, database)
+							s.checkBackupAnomaly(ctx, instance, database, backupPlanPolicyMap)
 						}
 					}(instance)
 
@@ -372,10 +364,7 @@ SchemaDriftEnd:
 
 func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.Instance, database *api.Database, policyMap map[int]*api.BackupPlanPolicy) {
 	schedule := api.BackupPlanPolicyScheduleUnset
-	backupSettingFind := &api.BackupSettingFind{
-		DatabaseID: &database.ID,
-	}
-	backupSetting, err := s.server.BackupService.FindBackupSetting(ctx, backupSettingFind)
+	backupSetting, err := s.server.store.GetBackupSettingByDatabaseID(ctx, database.ID)
 	if err != nil {
 		s.l.Error("Failed to retrieve backup setting",
 			zap.String("instance", instance.Name),
@@ -470,7 +459,7 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					DatabaseID: &database.ID,
 					Status:     &status,
 				}
-				backupRawList, err := s.server.BackupService.FindBackupList(ctx, backupFind)
+				backupList, err := s.server.store.FindBackup(ctx, backupFind)
 				if err != nil {
 					s.l.Error("Failed to retrieve backup list",
 						zap.String("instance", instance.Name),
@@ -479,8 +468,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 				}
 
 				hasValidBackup := false
-				if len(backupRawList) > 0 {
-					if backupRawList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
+				if len(backupList) > 0 {
+					if backupList[0].UpdatedTs >= time.Now().Add(-backupMaxAge).Unix() {
 						hasValidBackup = true
 					}
 				}
@@ -489,8 +478,8 @@ func (s *AnomalyScanner) checkBackupAnomaly(ctx context.Context, instance *api.I
 					backupMissingAnomalyPayload = &api.AnomalyDatabaseBackupMissingPayload{
 						ExpectedBackupSchedule: expectedSchedule,
 					}
-					if len(backupRawList) > 0 {
-						backupMissingAnomalyPayload.LastBackupTs = backupRawList[0].UpdatedTs
+					if len(backupList) > 0 {
+						backupMissingAnomalyPayload.LastBackupTs = backupList[0].UpdatedTs
 					}
 				}
 			}

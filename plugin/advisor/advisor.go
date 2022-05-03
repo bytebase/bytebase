@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
@@ -35,6 +36,17 @@ func (e Status) String() string {
 	return "UNKNOWN"
 }
 
+// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
+func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
+	switch level {
+	case api.SchemaRuleLevelError:
+		return Error, nil
+	case api.SchemaRuleLevelWarning:
+		return Warn, nil
+	}
+	return "", fmt.Errorf("unexpected rule level type: %s", level)
+}
+
 // Type is the type of advisor.
 type Type string
 
@@ -45,6 +57,8 @@ const (
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
+	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
+	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 )
 
 // Advice is the result of an advisor.
@@ -60,6 +74,9 @@ type Context struct {
 	Logger    *zap.Logger
 	Charset   string
 	Collation string
+
+	// Schema review rule special fields.
+	Rule *api.SchemaReviewRule
 }
 
 // Advisor is the interface for advisor.

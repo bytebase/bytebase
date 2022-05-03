@@ -3,49 +3,220 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
-var (
-	_ api.DatabaseService = (*DatabaseService)(nil)
-)
+// databaseRaw is the store model for an Database.
+// Fields have exactly the same meanings as Database.
+type databaseRaw struct {
+	ID int
 
-// DatabaseService represents a service for managing database.
-type DatabaseService struct {
-	l  *zap.Logger
-	db *DB
+	// Standard fields
+	CreatorID int
+	CreatedTs int64
+	UpdaterID int
+	UpdatedTs int64
 
-	cache         api.CacheService
-	store         *Store
-	backupService api.BackupService
+	// Related fields
+	ProjectID      int
+	InstanceID     int
+	SourceBackupID int
+
+	// Domain specific fields
+	Name                 string
+	CharacterSet         string
+	Collation            string
+	SchemaVersion        string
+	SyncStatus           api.SyncStatus
+	LastSuccessfulSyncTs int64
 }
 
-// NewDatabaseService returns a new instance of DatabaseService.
-func NewDatabaseService(logger *zap.Logger, db *DB, cache api.CacheService, store *Store, backupService api.BackupService) *DatabaseService {
-	return &DatabaseService{
-		l:             logger,
-		db:            db,
-		cache:         cache,
-		store:         store,
-		backupService: backupService,
+// toDatabase creates an instance of Database based on the databaseRaw.
+// This is intended to be called when we need to compose an Database relationship.
+func (raw *databaseRaw) toDatabase() *api.Database {
+	return &api.Database{
+		ID: raw.ID,
+
+		// Standard fields
+		CreatorID: raw.CreatorID,
+		CreatedTs: raw.CreatedTs,
+		UpdaterID: raw.UpdaterID,
+		UpdatedTs: raw.UpdatedTs,
+
+		// Related fields
+		ProjectID:      raw.ProjectID,
+		InstanceID:     raw.InstanceID,
+		SourceBackupID: raw.SourceBackupID,
+
+		// Domain specific fields
+		Name:                 raw.Name,
+		CharacterSet:         raw.CharacterSet,
+		Collation:            raw.Collation,
+		SchemaVersion:        raw.SchemaVersion,
+		SyncStatus:           raw.SyncStatus,
+		LastSuccessfulSyncTs: raw.LastSuccessfulSyncTs,
 	}
 }
 
-// CreateDatabase creates a new database.
-func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.DatabaseRaw, error) {
+// CreateDatabase creates an instance of Database
+func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
+	databaseRaw, err := s.createDatabaseRaw(ctx, create)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Database with DatabaseCreate[%+v], error[%w]", create, err)
+	}
+	database, err := s.composeDatabase(ctx, databaseRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+	}
+	return database, nil
+}
+
+// FindDatabase finds a list of Database instances
+func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
+	databaseRawList, err := s.findDatabaseRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find Database list with DatabaseFind[%+v], error[%w]", find, err)
+	}
+	var databaseList []*api.Database
+	for _, raw := range databaseRawList {
+		database, err := s.composeDatabase(ctx, raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", raw, err)
+		}
+		databaseList = append(databaseList, database)
+	}
+	return databaseList, nil
+}
+
+// GetDatabase gets an instance of Database
+func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
+	databaseRaw, err := s.getDatabaseRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Database with DatabaseFind[%+v], error[%w]", find, err)
+	}
+	if databaseRaw == nil {
+		return nil, nil
+	}
+	database, err := s.composeDatabase(ctx, databaseRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+	}
+	return database, nil
+}
+
+// PatchDatabase patches an instance of Database
+func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
+	databaseRaw, err := s.patchDatabaseRaw(ctx, patch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Database with DatabasePatch[%+v], error[%w]", patch, err)
+	}
+	database, err := s.composeDatabase(ctx, databaseRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+	}
+	return database, nil
+}
+
+//
+// private functions
+//
+
+func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Database, error) {
+	db := raw.toDatabase()
+
+	creator, err := s.GetPrincipalByID(ctx, db.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+	db.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, db.UpdaterID)
+	if err != nil {
+		return nil, err
+	}
+	db.Updater = updater
+
+	project, err := s.GetProjectByID(ctx, db.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	db.Project = project
+
+	instance, err := s.GetInstanceByID(ctx, db.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	db.Instance = instance
+
+	if db.SourceBackupID != 0 {
+		sourceBackup, err := s.GetBackupByID(ctx, db.SourceBackupID)
+		if err != nil {
+			return nil, err
+		}
+		db.SourceBackup = sourceBackup
+	}
+
+	// For now, only wildcard(*) database has data sources and we disallow it to be returned to the client.
+	// So we set this value to an empty array until we need to develop a data source for a non-wildcard database.
+	db.DataSourceList = []*api.DataSource{}
+
+	rowStatus := api.Normal
+	anomalyList, err := s.FindAnomaly(ctx, &api.AnomalyFind{
+		RowStatus:  &rowStatus,
+		DatabaseID: &db.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	db.AnomalyList = anomalyList
+
+	rowStatus = api.Normal
+	labelList, err := s.FindDatabaseLabel(ctx, &api.DatabaseLabelFind{
+		DatabaseID: &db.ID,
+		RowStatus:  &rowStatus,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Since tenants are identified by labels in deployment config, we need an environment
+	// label to identify tenants from different environment in a schema update deployment.
+	// If we expose the environment label concept in the deployment config, it should look consistent in the label API.
+
+	// Each database instance is created under a particular environment.
+	// The value of bb.environment is identical to the name of the environment.
+
+	// TODO(dragonly): seems like we do not need to composed this.
+	// need redesign, e.g., extract the kv part which is only in memory, and the relations which are in the database.
+	labelList = append(labelList, &api.DatabaseLabel{
+		Key:   api.EnvironmentKeyName,
+		Value: db.Instance.Environment.Name,
+	})
+
+	labels, err := json.Marshal(labelList)
+	if err != nil {
+		return nil, err
+	}
+	db.Labels = string(labels)
+
+	return db, nil
+}
+
+// createDatabaseRaw creates a new database.
+func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreate) (*databaseRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	database, err := s.CreateDatabaseTx(ctx, tx.PTx, create)
+	database, err := s.createDatabaseRawTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +228,14 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, create *api.Databa
 	return database, nil
 }
 
-// CreateDatabaseTx creates a database with a transaction.
-func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.DatabaseRaw, error) {
-	backupPlanPolicy, err := s.store.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
+// createDatabaseRawTx creates a database with a transaction.
+func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+	backupPlanPolicy, err := s.GetBackupPlanPolicyByEnvID(ctx, create.EnvironmentID)
 	if err != nil {
 		return nil, err
 	}
 
-	database, err := s.createDatabase(ctx, tx, create)
+	databaseRaw, err := s.createDatabaseImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +244,7 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 	if backupPlanPolicy.Schedule != api.BackupPlanPolicyScheduleUnset {
 		backupSettingUpsert := &api.BackupSettingUpsert{
 			UpdaterID:  api.SystemBotID,
-			DatabaseID: database.ID,
+			DatabaseID: databaseRaw.ID,
 			Enabled:    true,
 			Hour:       rand.Intn(24),
 			HookURL:    "",
@@ -84,27 +255,27 @@ func (s *DatabaseService) CreateDatabaseTx(ctx context.Context, tx *sql.Tx, crea
 		case api.BackupPlanPolicyScheduleWeekly:
 			backupSettingUpsert.DayOfWeek = rand.Intn(7)
 		}
-		if _, err := s.backupService.UpsertBackupSettingTx(ctx, tx, backupSettingUpsert); err != nil {
+		if _, err := s.upsertBackupSettingImpl(ctx, tx, backupSettingUpsert); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+	if err := s.cache.UpsertCache(api.DatabaseCache, databaseRaw.ID, databaseRaw); err != nil {
 		return nil, err
 	}
 
-	return database, nil
+	return databaseRaw, nil
 }
 
-// FindDatabaseList retrieves a list of databases based on find.
-func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.DatabaseFind) ([]*api.DatabaseRaw, error) {
+// findDatabaseRaw retrieves a list of databases based on find.
+func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseList(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -120,11 +291,11 @@ func (s *DatabaseService) FindDatabaseList(ctx context.Context, find *api.Databa
 	return list, nil
 }
 
-// FindDatabase retrieves a single database based on find.
+// getDatabaseRaw retrieves a single database based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
-func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFind) (*api.DatabaseRaw, error) {
+func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*databaseRaw, error) {
 	if find.ID != nil {
-		databaseRaw := &api.DatabaseRaw{}
+		databaseRaw := &databaseRaw{}
 		has, err := s.cache.FindCache(api.DatabaseCache, *find.ID, databaseRaw)
 		if err != nil {
 			return nil, err
@@ -140,7 +311,7 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseList(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -158,16 +329,16 @@ func (s *DatabaseService) FindDatabase(ctx context.Context, find *api.DatabaseFi
 	return list[0], nil
 }
 
-// PatchDatabase updates an existing database by ID.
+// patchDatabaseRaw updates an existing database by ID.
 // Returns ENOTFOUND if database does not exist.
-func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.DatabaseRaw, error) {
+func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) (*databaseRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	database, err := s.patchDatabase(ctx, tx.PTx, patch)
+	database, err := s.patchDatabaseImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -183,8 +354,8 @@ func (s *DatabaseService) PatchDatabase(ctx context.Context, patch *api.Database
 	return database, nil
 }
 
-// createDatabase creates a new database.
-func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*api.DatabaseRaw, error) {
+// createDatabaseImpl creates a new database.
+func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
 	row, err := tx.QueryContext(ctx, `
 		INSERT INTO db (
@@ -230,7 +401,7 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 	defer row.Close()
 
 	row.Next()
-	var databaseRaw api.DatabaseRaw
+	var databaseRaw databaseRaw
 	if err := row.Scan(
 		&databaseRaw.ID,
 		&databaseRaw.CreatorID,
@@ -252,7 +423,7 @@ func (s *DatabaseService) createDatabase(ctx context.Context, tx *sql.Tx, create
 	return &databaseRaw, nil
 }
 
-func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*api.DatabaseRaw, error) {
+func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -297,9 +468,9 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 	defer rows.Close()
 
 	// Iterate over result set and deserialize rows into databaseRawList.
-	var databaseRawList []*api.DatabaseRaw
+	var databaseRawList []*databaseRaw
 	for rows.Next() {
-		var databaseRaw api.DatabaseRaw
+		var databaseRaw databaseRaw
 		var nullSourceBackupID sql.NullInt64
 		if err := rows.Scan(
 			&databaseRaw.ID,
@@ -332,8 +503,8 @@ func (s *DatabaseService) findDatabaseList(ctx context.Context, tx *sql.Tx, find
 	return databaseRawList, nil
 }
 
-// patchDatabase updates a database by ID. Returns the new state of the database after update.
-func (s *DatabaseService) patchDatabase(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*api.DatabaseRaw, error) {
+// patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
+func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {
@@ -383,7 +554,7 @@ func (s *DatabaseService) patchDatabase(ctx context.Context, tx *sql.Tx, patch *
 	defer row.Close()
 
 	if row.Next() {
-		var databaseRaw api.DatabaseRaw
+		var databaseRaw databaseRaw
 		var nullSourceBackupID sql.NullInt64
 		if err := row.Scan(
 			&databaseRaw.ID,

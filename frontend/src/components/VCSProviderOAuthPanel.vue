@@ -215,8 +215,8 @@ import {
   VCSConfig,
   redirectUrl,
 } from "../types";
-import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 
 interface LocalState {
   applicationIdValidationTimer?: ReturnType<typeof setTimeout>;
@@ -235,7 +235,6 @@ export default defineComponent({
   },
   setup(props) {
     const { t } = useI18n();
-    const store = useStore();
     const state = reactive<LocalState>({
       showApplicationIdError:
         !isEmpty(props.config.applicationId) &&
@@ -271,7 +270,7 @@ export default defineComponent({
 
     const copyRedirectURI = () => {
       toClipboard(redirectUrl()).then(() => {
-        store.dispatch("notification/pushNotification", {
+        pushNotification({
           module: "bytebase",
           style: "INFO",
           title: `Redirect URI copied to clipboard. Paste to the corresponding field on the OAuth application form.`,

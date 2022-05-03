@@ -112,7 +112,6 @@
 
 <script lang="ts">
 import { PropType, computed, reactive, defineComponent, ref } from "vue";
-import { Store, useStore } from "vuex";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   activeTask,
@@ -139,6 +138,7 @@ import { IssueTemplate } from "../../plugins";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
 import { BBContextMenu } from "../../bbkit";
+import { useCurrentUser } from "@/store";
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
@@ -151,7 +151,6 @@ interface UpdateStatusModalState {
 }
 
 export type IssueContext = {
-  store: Store<any>;
   currentUser: Principal;
   create: boolean;
   issue: Issue | IssueCreate;
@@ -180,7 +179,6 @@ export default defineComponent({
 
   setup(props, { emit }) {
     const { t } = useI18n();
-    const store = useStore();
     const menu = ref<InstanceType<typeof BBContextMenu>>();
 
     const updateStatusModalState = reactive<UpdateStatusModalState>({
@@ -191,11 +189,10 @@ export default defineComponent({
       title: "",
     });
 
-    const currentUser = computed(() => store.getters["auth/currentUser"]());
+    const currentUser = useCurrentUser();
 
     const issueContext = computed((): IssueContext => {
       return {
-        store,
         currentUser: currentUser.value,
         create: props.create,
         issue: props.issue,

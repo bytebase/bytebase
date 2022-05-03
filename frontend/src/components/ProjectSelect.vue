@@ -53,22 +53,20 @@
 <script lang="ts">
 import {
   computed,
-  ComputedRef,
   defineComponent,
   PropType,
   reactive,
   watch,
   watchEffect,
 } from "vue";
-import { useStore } from "vuex";
 import {
-  Principal,
   Project,
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   ProjectRoleType,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
+import { featureToRef, useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
   selectedId: number;
@@ -105,17 +103,15 @@ export default defineComponent({
   },
   emits: ["select-project-id"],
   setup(props) {
-    const store = useStore();
     const state = reactive<LocalState>({
       selectedId: props.selectedId,
     });
 
-    const currentUser: ComputedRef<Principal> = computed(() =>
-      store.getters["auth/currentUser"]()
-    );
+    const currentUser = useCurrentUser();
+    const projectStore = useProjectStore();
 
     const prepareProjectList = () => {
-      store.dispatch("project/fetchProjectListByUser", {
+      projectStore.fetchProjectListByUser({
         userId: currentUser.value.id,
         rowStatusList: ["NORMAL", "ARCHIVED"],
       });
@@ -123,18 +119,16 @@ export default defineComponent({
 
     watchEffect(prepareProjectList);
 
-    const hasRBACFeature = computed(() =>
-      store.getters["subscription/feature"]("bb.feature.rbac")
-    );
+    const hasRBACFeature = featureToRef("bb.feature.rbac");
 
     const projectList = computed((): Project[] => {
-      let list = store.getters["project/projectListByUser"](
-        currentUser.value.id,
-        ["NORMAL", "ARCHIVED"]
-      ) as Project[];
+      let list = projectStore.getProjectListByUser(currentUser.value.id, [
+        "NORMAL",
+        "ARCHIVED",
+      ]) as Project[];
 
       if (props.includeDefaultProject) {
-        list.unshift(store.getters["project/projectById"](DEFAULT_PROJECT_ID));
+        list.unshift(useProjectStore().getProjectById(DEFAULT_PROJECT_ID));
       }
 
       list = list.filter((project) => {

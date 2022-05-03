@@ -1,51 +1,8 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 )
-
-// ViewRaw is the store model for an View.
-// Fields have exactly the same meanings as View.
-type ViewRaw struct {
-	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
-
-	// Related fields
-	DatabaseID int
-
-	// Domain specific fields
-	Name       string
-	Definition string
-	Comment    string
-}
-
-// ToView creates an instance of View based on the ViewRaw.
-// This is intended to be called when we need to compose an View relationship.
-func (raw *ViewRaw) ToView() *View {
-	return &View{
-		ID: raw.ID,
-
-		// Standard fields
-		CreatorID: raw.CreatorID,
-		CreatedTs: raw.CreatedTs,
-		UpdaterID: raw.UpdaterID,
-		UpdatedTs: raw.UpdatedTs,
-
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
-		// Domain specific fields
-		Name:       raw.Name,
-		Definition: raw.Definition,
-		Comment:    raw.Comment,
-	}
-}
 
 // View is the API message for a view.
 type View struct {
@@ -60,6 +17,7 @@ type View struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
+	// TODO(dragonly): seems like not using this field?
 	DatabaseID int
 	Database   *Database `jsonapi:"relation,database"`
 
@@ -109,12 +67,4 @@ func (find *ViewFind) String() string {
 type ViewDelete struct {
 	// Related fields
 	DatabaseID int
-}
-
-// ViewService is the service for views.
-type ViewService interface {
-	CreateView(ctx context.Context, create *ViewCreate) (*ViewRaw, error)
-	FindViewList(ctx context.Context, find *ViewFind) ([]*ViewRaw, error)
-	FindView(ctx context.Context, find *ViewFind) (*ViewRaw, error)
-	DeleteView(ctx context.Context, delete *ViewDelete) error
 }

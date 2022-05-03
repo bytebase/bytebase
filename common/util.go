@@ -1,10 +1,12 @@
 package common
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"path"
 	"sort"
 	"strings"
+	"time"
 )
 
 // FindString returns the search index of sorted strings.
@@ -24,7 +26,15 @@ func RandomString(n int) string {
 	var sb strings.Builder
 	sb.Grow(n)
 	for i := 0; i < n; i++ {
-		sb.WriteRune(letters[rand.Intn(len(letters))])
+		// The reason for using crypto/rand instead of math/rand is that
+		// the former relies on hardware to generate random numbers and
+		// thus has a stronger source of random numbers.
+		randNum, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			// Use 0 as default index when encounter error
+			sb.WriteRune(letters[0])
+		}
+		sb.WriteRune(letters[randNum.Uint64()])
 	}
 	return sb.String()
 }
@@ -47,4 +57,11 @@ func GetPostgresDataDir(dataDir string) string {
 // GetPostgresSocketDir returns the postgres socket directory of Bytebase.
 func GetPostgresSocketDir() string {
 	return "/tmp"
+}
+
+// DefaultMigrationVersion returns the default migration version string.
+// Use the concatenation of current time in second to guarantee uniqueness in a monotonic increasing way.
+// We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
+func DefaultMigrationVersion() string {
+	return time.Now().Format("20060102150405")
 }
