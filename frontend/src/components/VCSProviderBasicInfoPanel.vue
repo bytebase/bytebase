@@ -171,6 +171,7 @@ export default {
       return "";
     });
 
+    // github.com instance url is always https://github.com
     const instanceUrlDisabled = computed((): boolean => {
       return props.config.type == "GITHUB_COM";
     });
