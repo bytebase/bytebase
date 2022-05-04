@@ -77,8 +77,9 @@
   </p>
   <BBTextField
     class="mt-2 w-full"
-    :placeholder="instanceUrlPlaceholder"
     :value="config.instanceUrl"
+    :placeholder="instanceUrlPlaceholder"
+    :disabled="instanceUrlDisabled"
     @input="changeUrl($event.target.value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
@@ -170,6 +171,10 @@ export default {
       return "";
     });
 
+    const instanceUrlDisabled = computed((): boolean => {
+      return props.config.type == "GITHUB_COM";
+    });
+
     const changeUrl = (value: string) => {
       props.config.instanceUrl = value;
 
@@ -213,6 +218,7 @@ export default {
       namePlaceholder,
       instanceUrlLabel,
       instanceUrlPlaceholder,
+      instanceUrlDisabled,
       changeUrl,
       changeType,
     };
