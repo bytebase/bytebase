@@ -129,24 +129,6 @@ func init() {
 
 // -----------------------------------Main Entry Point---------------------------------------------
 
-//// Main is the main server for Bytebase.
-//type Main struct {
-//	profile *server.Profile
-//
-//	l   *zap.Logger
-//	lvl *zap.AtomicLevel
-//
-//	server *server.Server
-//	// serverCancel cancels any runner on the server.
-//	// Then the runnerWG waits for all runners to finish before we shutdown the server.
-//	// Otherwise, we will get database is closed error from runner when we shutdown the server.
-//	serverCancel context.CancelFunc
-//
-//	metadataDB *metadb.MetadataDB
-//	// db is a connection to the database storing Bytebase data.
-//	db *store.DB
-//}
-
 func checkDataDir() error {
 	// Convert to absolute path if relative path is supplied.
 	if !filepath.IsAbs(flags.dataDir) {
@@ -212,8 +194,8 @@ func start() {
 	// which is taken as the graceful shutdown signal for many systems, eg., Kubernetes, Gunicorn.
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-c
-		logger.Info("SIGINT received.")
+		sig := <-c
+		logger.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
 			_ = s.Shutdown()
 		}
@@ -223,9 +205,6 @@ func start() {
 	s, err = server.NewServer(ctx, &activeProfile, logger, level)
 	if err != nil {
 		fmt.Printf("cannot new server, error: %v\n", err)
-		if s != nil {
-			_ = s.Shutdown()
-		}
 		return
 	}
 
@@ -233,12 +212,9 @@ func start() {
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
 			logger.Error(err.Error())
-			if s != nil {
-				_ = s.Shutdown()
-			}
+			_ = s.Shutdown()
 			cancel()
 		}
-
 	}
 
 	// Wait for CTRL-C.
