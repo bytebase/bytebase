@@ -11,12 +11,14 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.Profile {
+func activeProfile(dataDir string) server.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := flags.port + 1
 	return server.Profile{
 		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
-		BackendPort:          port,
+		BackendPort:          flags.port,
 		FrontendHost:         flags.frontendHost,
 		FrontendPort:         flags.frontendPort,
 		DatastorePort:        datastorePort,
@@ -31,7 +33,10 @@ func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.
 }
 
 // GetTestProfile will return a profile for testing.
-func GetTestProfile(dataDir string, port, datastorePort int) server.Profile {
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
+func GetTestProfile(dataDir string, port int) server.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := port + 1
 	return server.Profile{
 		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeDev,

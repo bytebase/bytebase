@@ -11,16 +11,18 @@ import (
 	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, port, datastorePort int, isDemo bool) server.Profile {
+func activeProfile(dataDir string) server.Profile {
 	demoDataDir := ""
-	if isDemo {
+	if flags.demo {
 		demoDataDir = fmt.Sprintf("demo/%s", common.ReleaseModeProd)
 	}
+	// Using flags.port + 1 as our datastore port
+	datastorePort := flags.port + 1
 	return server.Profile{
 		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeProd,
 		BackendHost:          flags.host,
-		BackendPort:          port,
+		BackendPort:          flags.port,
 		FrontendHost:         flags.frontendHost,
 		FrontendPort:         flags.frontendPort,
 		DatastorePort:        datastorePort,

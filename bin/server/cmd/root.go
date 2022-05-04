@@ -181,9 +181,7 @@ func start() {
 		return
 	}
 
-	// We use port+1 for datastore port.
-	datastorePort := flags.port + 1
-	activeProfile := activeProfile(flags.dataDir, flags.port, datastorePort, flags.demo)
+	activeProfile := activeProfile(flags.dataDir)
 
 	var s *server.Server
 	// Setup signal handlers.
