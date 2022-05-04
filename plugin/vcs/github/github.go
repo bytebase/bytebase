@@ -122,7 +122,6 @@ type oauthResponse struct {
 	AccessToken      string `json:"access_token" `
 	Error            string `json:"error,omitempty"`
 	ErrorDescription string `json:"error_description,omitempty"`
-	ErrorURI         string `json:"error_uri,omitempty"`
 }
 
 // toVCSOAuthToken converts the response to *vcs.OAuthToken.
