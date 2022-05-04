@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metadb"
+	"github.com/bytebase/bytebase/component"
 	"github.com/bytebase/bytebase/store"
 
 	// embed will embeds the acl policy.
@@ -44,7 +44,7 @@ type Server struct {
 
 	e         *echo.Echo
 	profile   *Profile
-	metaDB    *metadb.MetadataDB
+	metaDB    *component.MetadataDB
 	db        *store.DB
 	store     *store.Store
 	l         *zap.Logger
@@ -93,9 +93,9 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 	// New MetadataDB instance
 	var err error
 	if prof.useEmbedDB() {
-		s.metaDB, err = metadb.NewMetadataDBWithEmbedPg(logger, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB, err = component.NewMetadataDBWithEmbedPg(logger, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB, err = metadb.NewMetadataDBWithExternalPg(logger, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB, err = component.NewMetadataDBWithExternalPg(logger, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot create metadatadb instance, error: %w", err)
