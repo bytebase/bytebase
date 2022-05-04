@@ -40,19 +40,21 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	LicenseService enterpriseAPI.LicenseService
+	subscription   *enterpriseAPI.Subscription
 
-	e            *echo.Echo
-	profile      *Profile
-	metaDB       *metadb.MetadataDB
-	db           *store.DB
-	store        *store.Store
-	l            *zap.Logger
-	lvl          *zap.AtomicLevel
-	startedTs    int64
-	secret       string
-	subscription *enterpriseAPI.Subscription
+	e         *echo.Echo
+	profile   *Profile
+	metaDB    *metadb.MetadataDB
+	db        *store.DB
+	store     *store.Store
+	l         *zap.Logger
+	lvl       *zap.AtomicLevel
+	startedTs int64
+	secret    string
+
 	// boot specifies that the server
 	cancel context.CancelFunc
+	boot   bool
 }
 
 //go:embed acl_casbin_model.conf
@@ -105,12 +107,22 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
 	s.db = storeDB
+	defer func() {
+		if !s.boot {
+			_ = s.metaDB.Close()
+		}
+	}()
 
 	// Open the database that stores bytebase's own metadata connection
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
-		return s, fmt.Errorf("cannot open db: %w", err)
+		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
+	defer func() {
+		if !s.boot {
+			_ = storeDB.Close()
+		}
+	}()
 
 	cacheService := NewCacheService(logger)
 	storeInstance := store.New(logger, storeDB, cacheService)
@@ -118,13 +130,13 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 
 	config, err := s.initSetting(ctx, storeInstance)
 	if err != nil {
-		return s, fmt.Errorf("failed to init config: %w", err)
+		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
 	s.secret = config.secret
 
 	err = s.initBranding(ctx, storeInstance)
 	if err != nil {
-		return s, fmt.Errorf("failed to init branding: %w", err)
+		return nil, fmt.Errorf("failed to init branding: %w", err)
 	}
 
 	e := echo.New()
@@ -231,12 +243,12 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
-		return s, err
+		return nil, err
 	}
 	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
 	ce, err := casbin.NewEnforcer(m, sa)
 	if err != nil {
-		return s, err
+		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return aclMiddleware(logger, s, ce, next, prof.Readonly)
@@ -274,17 +286,20 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
-		return s, err
+		return nil, err
 	}
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(logger, prof.DataDir, prof.Mode)
 	if err != nil {
-		return s, fmt.Errorf("failed to create license service, error: %w", err)
+		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
+
 	s.InitSubscription()
+
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	fmt.Printf(prof.GreetingBanner, fmt.Sprintf("Version %s has started at %s:%d", prof.Version, prof.BackendHost, prof.BackendPort))
+	s.boot = true
 	return s, nil
 }
 
