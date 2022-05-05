@@ -90,7 +90,7 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 	fmt.Printf("debug=%t\n", prof.Debug)
 	fmt.Println("-----Config END-------")
 
-	// New MetadataDB instance
+	// New MetadataDB instance.
 	var err error
 	if prof.useEmbedDB() {
 		s.metaDB, err = component.NewMetadataDBWithEmbedPg(logger, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
@@ -101,7 +101,7 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 		return nil, fmt.Errorf("cannot create metadatadb instance, error: %w", err)
 	}
 
-	// New store.DB instance that represents the db connection
+	// New store.DB instance that represents the db connection.
 	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
 	if err != nil {
 		return nil, fmt.Errorf("cannot new db: %w", err)
@@ -113,7 +113,7 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 		}
 	}()
 
-	// Open the database that stores bytebase's own metadata connection
+	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, fmt.Errorf("cannot open db: %w", err)
@@ -144,7 +144,7 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embedded in an iFrame
+	// Disallow to be embedded in an iFrame.
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
@@ -303,7 +303,7 @@ func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLev
 	return s, nil
 }
 
-// InitSubscription will initial the subscription cache in memory
+// InitSubscription will initial the subscription cache in memory.
 func (server *Server) InitSubscription() {
 	server.subscription = server.loadSubscription()
 }
@@ -394,7 +394,7 @@ func (server *Server) Shutdown() error {
 		}
 	}
 
-	// Shutdown postgres server if embed
+	// Shutdown postgres server if embed.
 	server.metaDB.Close()
 
 	server.l.Info("Bytebase stopped properly")
