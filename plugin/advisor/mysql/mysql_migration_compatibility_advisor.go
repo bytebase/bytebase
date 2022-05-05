@@ -74,6 +74,11 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 				code = common.CompatibilityDropColumn
 				break
 			}
+			// RENAME TABLE
+			if spec.Tp == ast.AlterTableRenameTable {
+				code = common.CompatibilityRenameTable
+				break
+			}
 
 			if spec.Tp == ast.AlterTableAddConstraint {
 				// ADD PRIMARY KEY
