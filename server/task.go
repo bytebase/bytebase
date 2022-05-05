@@ -611,14 +611,13 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		return fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
 	}
 
-	_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 		CreatorID:               api.SystemBotID,
 		TaskID:                  task.ID,
 		Type:                    api.TaskCheckDatabaseStatementAdvise,
 		Payload:                 string(payload),
 		SkipIfAlreadyTerminated: false,
-	})
-	if err != nil {
+	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
 		s.l.Error("Failed to trigger compatibility check after changing task statement",
 			zap.Int("task_id", task.ID),
