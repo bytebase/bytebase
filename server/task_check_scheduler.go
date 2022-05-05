@@ -316,6 +316,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 				return nil, err
 			}
 
+			// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
 			if s.server.feature(api.FeatureBackwardCompatibility) {
 				_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
 					CreatorID:               creatorID,
