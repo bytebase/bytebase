@@ -210,14 +210,14 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		s.SchemaSyncer = NewSchemaSyncer(logger, s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(logger, s, s.profile.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(logger, s, prof.BackupRunnerInterval)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(logger, s)
 	}
 
 	// Middleware
-	if s.profile.Mode == common.ReleaseModeDev || prof.Debug {
+	if prof.Mode == common.ReleaseModeDev || prof.Debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")
