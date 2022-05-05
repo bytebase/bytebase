@@ -24,6 +24,8 @@ func activeProfile(dataDir string) server.Profile {
 		DatastorePort:        datastorePort,
 		PgUser:               "bbdev",
 		Readonly:             flags.readonly,
+		Debug:                flags.debug,
+		Demo:                 flags.demo,
 		DataDir:              dataDir,
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
@@ -40,6 +42,7 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 	return server.Profile{
 		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeDev,
+		BackendHost:          flags.host,
 		BackendPort:          port,
 		DatastorePort:        datastorePort,
 		PgUser:               "bbtest",
