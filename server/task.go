@@ -619,7 +619,7 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		SkipIfAlreadyTerminated: false,
 	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
-		s.l.Error("Failed to trigger compatibility check after changing task statement",
+		s.l.Error("Failed to trigger statement advise task after changing task statement",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Error(err),
