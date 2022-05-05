@@ -50,6 +50,9 @@ const (
 	SchemaRuleRequiredColumn SchemaReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
 	SchemaRuleColumnNotNull SchemaReviewRuleType = "column.no-null"
+
+	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
+	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
 )
 
 // SchemaReviewPolicy is the policy configuration for schema review.
