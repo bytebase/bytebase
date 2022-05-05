@@ -25,17 +25,9 @@ type CompatibilityAdvisor struct {
 
 // Check checks schema backward compatibility.
 func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	p := newParser()
-
-	root, _, err := p.Parse(statement, ctx.Charset, ctx.Collation)
-	if err != nil {
-		return []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Title:   "Syntax error",
-				Content: err.Error(),
-			},
-		}, nil
+	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
+	if errAdvice != nil {
+		return errAdvice, nil
 	}
 
 	c := &compatibilityChecker{}

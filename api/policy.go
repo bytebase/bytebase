@@ -196,8 +196,8 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 		if err != nil {
 			return err
 		}
-		if sr.Name == "" || len(sr.RuleList) == 0 {
-			return fmt.Errorf("invalid payload for schema review policy, name or rule list cannot be empty")
+		if err := sr.Validate(); err != nil {
+			return fmt.Errorf("invalid schema review policy: %w", err)
 		}
 	}
 	return nil
