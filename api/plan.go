@@ -37,6 +37,7 @@ const (
 	// See https://bytebase.com/docs/features/sql-advisor/backward-compatibility-migration-check
 	//
 	// Currently, we only support MySQL/TiDB thanks to github.com/pingcap/parser
+	// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
 	FeatureBackwardCompatibility FeatureType = "bb.feature.backward-compatibility"
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
