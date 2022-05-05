@@ -1,6 +1,10 @@
 package mysql
 
-import "github.com/pingcap/tidb/parser"
+import (
+	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/pingcap/tidb/parser"
+	"github.com/pingcap/tidb/parser/ast"
+)
 
 // Wrapper for parser.New().
 func newParser() *parser.Parser {
@@ -11,4 +15,20 @@ func newParser() *parser.Parser {
 	p.EnableWindowFunc(true)
 
 	return p
+}
+
+func parseStatement(statement string, charset string, collation string) ([]ast.StmtNode, []advisor.Advice) {
+	p := newParser()
+
+	root, _, err := p.Parse(statement, charset, collation)
+	if err != nil {
+		return nil, []advisor.Advice{
+			{
+				Status:  advisor.Error,
+				Title:   "Syntax error",
+				Content: err.Error(),
+			},
+		}
+	}
+	return root, nil
 }
