@@ -76,32 +76,33 @@ type tableNamingConventionChecker struct {
 }
 
 func (v *tableNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := common.Ok
+	tableNames := make([]string, 0)
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		// Original string
-		if !v.format.MatchString(node.Table.Name.O) {
-			code = common.TableNamingConventionMismatch
-		}
+		tableNames = append(tableNames, node.Table.Name.O)
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			// RENAME TABLE
 			if spec.Tp == ast.AlterTableRenameTable {
-				if !v.format.MatchString(spec.NewTable.Name.O) {
-					code = common.TableNamingConventionMismatch
-					break
-				}
+				tableNames = append(tableNames, spec.NewTable.Name.O)
 			}
 		}
 	// RENAME TABLE
 	case *ast.RenameTableStmt:
 		for _, table2Table := range node.TableToTables {
-			if !v.format.MatchString(table2Table.NewTable.Name.O) {
-				code = common.TableNamingConventionMismatch
-				break
-			}
+			tableNames = append(tableNames, table2Table.NewTable.Name.O)
+		}
+	}
+
+	code := common.Ok
+
+	for _, tableName := range tableNames {
+		if !v.format.MatchString(tableName) {
+			code = common.TableNamingConventionMismatch
+			break
 		}
 	}
 
