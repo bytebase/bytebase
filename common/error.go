@@ -51,6 +51,7 @@ const (
 
 	StatementNoWhere Code = 10101
 
+	// 10201 naming advisor error code
 	TableNamingConventionMismatch Code = 10201
 )
 
