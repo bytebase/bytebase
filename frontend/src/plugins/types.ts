@@ -56,6 +56,7 @@ export type InputField = {
   type: InputFieldType;
   // Whether to allow edit after creation.
   allowEditAfterCreation: boolean;
+  required?: boolean;
   // Whether the field is resolved.
   // One use case is together with "required" field to validate whether it's ready to submit the data.
   // For OUTPUT, one use case is to validate whether the field is filled properly according to the issue.
