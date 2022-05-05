@@ -500,7 +500,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backupCreate.Path, err = getAndCreateBackupPath(s.dataDir, database, backupCreate.Name)
+		backupCreate.Path, err = getAndCreateBackupPath(s.profile.DataDir, database, backupCreate.Name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}

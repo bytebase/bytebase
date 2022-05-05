@@ -202,7 +202,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			)
 		} else {
 			resultSet.Error = err.Error()
-			if s.mode == common.ReleaseModeDev {
+			if s.profile.Mode == common.ReleaseModeDev {
 				s.l.Error("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
