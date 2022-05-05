@@ -8,20 +8,31 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
+func activeProfile(dataDir string) server.Profile {
 	demoDataDir := ""
-	if isDemo {
+	if flags.demo {
 		demoDataDir = fmt.Sprintf("demo/%s", common.ReleaseModeProd)
 	}
-	return Profile{
-		mode:                 common.ReleaseModeProd,
-		port:                 port,
-		datastorePort:        datastorePort,
-		pgUser:               "bb",
-		dataDir:              dataDir,
-		demoDataDir:          demoDataDir,
-		backupRunnerInterval: 10 * time.Minute,
+	// Using flags.port + 1 as our datastore port
+	datastorePort := flags.port + 1
+	return server.Profile{
+		Mode:                 common.ReleaseModeProd,
+		BackendHost:          flags.host,
+		BackendPort:          flags.port,
+		FrontendHost:         flags.frontendHost,
+		FrontendPort:         flags.frontendPort,
+		DatastorePort:        datastorePort,
+		PgUser:               "bb",
+		Readonly:             flags.readonly,
+		Debug:                flags.debug,
+		Demo:                 flags.demo,
+		DataDir:              dataDir,
+		DemoDataDir:          demoDataDir,
+		BackupRunnerInterval: 10 * time.Minute,
+		Version:              version,
+		PgURL:                flags.pgURL,
 	}
 }

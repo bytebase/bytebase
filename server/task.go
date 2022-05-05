@@ -213,6 +213,12 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 							)
 						}
 					}
+
+					if s.feature(api.FeatureSchemaReviewPolicy) {
+						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+						}
+					}
 				}
 			}
 
@@ -578,4 +584,47 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 
 	return taskPatched, nil
+}
+
+func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, statement string, task *api.Task) error {
+	policyID, err := s.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
+
+	if err != nil {
+		// It's OK if we failed to find the schema review policy, just emit an error log
+		s.l.Error("Failed to found schema review policy id for task",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.Int("environment_id", task.Instance.EnvironmentID),
+			zap.Error(err),
+		)
+		return nil
+	}
+
+	payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
+		Statement: statement,
+		DbType:    task.Database.Instance.Engine,
+		Charset:   task.Database.CharacterSet,
+		Collation: task.Database.Collation,
+		PolicyID:  policyID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal statement advise payload: %v, err: %w", task.Name, err)
+	}
+
+	if _, err := s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+		CreatorID:               api.SystemBotID,
+		TaskID:                  task.ID,
+		Type:                    api.TaskCheckDatabaseStatementAdvise,
+		Payload:                 string(payload),
+		SkipIfAlreadyTerminated: false,
+	}); err != nil {
+		// It's OK if we failed to trigger a check, just emit an error log
+		s.l.Error("Failed to trigger statement advise task after changing task statement",
+			zap.Int("task_id", task.ID),
+			zap.String("task_name", task.Name),
+			zap.Error(err),
+		)
+	}
+
+	return nil
 }

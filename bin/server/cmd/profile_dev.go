@@ -8,29 +8,44 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string, port, datastorePort int, isDemo bool) Profile {
-	return Profile{
-		mode:                 common.ReleaseModeDev,
-		port:                 port,
-		datastorePort:        datastorePort,
-		pgUser:               "bbdev",
-		dataDir:              dataDir,
-		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		backupRunnerInterval: 10 * time.Second,
+func activeProfile(dataDir string) server.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := flags.port + 1
+	return server.Profile{
+		Mode:                 common.ReleaseModeDev,
+		BackendHost:          flags.host,
+		BackendPort:          flags.port,
+		FrontendHost:         flags.frontendHost,
+		FrontendPort:         flags.frontendPort,
+		DatastorePort:        datastorePort,
+		PgUser:               "bbdev",
+		Readonly:             flags.readonly,
+		Debug:                flags.debug,
+		Demo:                 flags.demo,
+		DataDir:              dataDir,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		Version:              version,
+		PgURL:                flags.pgURL,
 	}
 }
 
 // GetTestProfile will return a profile for testing.
-func GetTestProfile(dataDir string, port, datastorePort int) Profile {
-	return Profile{
-		mode:                 common.ReleaseModeDev,
-		port:                 port,
-		datastorePort:        datastorePort,
-		pgUser:               "bbtest",
-		dataDir:              dataDir,
-		demoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		backupRunnerInterval: 10 * time.Second,
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
+func GetTestProfile(dataDir string, port int) server.Profile {
+	// Using flags.port + 1 as our datastore port
+	datastorePort := port + 1
+	return server.Profile{
+		Mode:                 common.ReleaseModeDev,
+		BackendHost:          flags.host,
+		BackendPort:          port,
+		DatastorePort:        datastorePort,
+		PgUser:               "bbtest",
+		DataDir:              dataDir,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
 	}
 }
