@@ -18,7 +18,7 @@ const allIssueTemplateList: IssueTemplate[] = [
   DatabaseSchemaBaselineTemplate,
 ];
 
-export function defaulTemplate(): IssueTemplate {
+export function defaultTemplate(): IssueTemplate {
   return DefaultTemplate;
 }
 

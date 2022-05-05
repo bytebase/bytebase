@@ -80,8 +80,8 @@ import {
   watch,
   defineComponent,
 } from "vue";
-import { Issue } from "../../types";
-import { sizeToFit } from "../../utils";
+import type { Issue, IssueCreate } from "@/types";
+import { sizeToFit } from "@/utils";
 
 interface LocalState {
   editing: boolean;
@@ -93,7 +93,7 @@ export default defineComponent({
   props: {
     issue: {
       required: true,
-      type: Object as PropType<Issue>,
+      type: Object as PropType<Issue | IssueCreate>,
     },
     create: {
       required: true,
