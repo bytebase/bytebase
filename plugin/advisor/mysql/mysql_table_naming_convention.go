@@ -26,18 +26,11 @@ type TableNamingConventionAdvisor struct {
 
 // Check checks for table naming convention.
 func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	p := newParser()
-
-	root, _, err := p.Parse(statement, ctx.Charset, ctx.Collation)
-	if err != nil {
-		return []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Title:   "Syntax error",
-				Content: err.Error(),
-			},
-		}, nil
+	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
+	if errAdvice != nil {
+		return errAdvice, nil
 	}
+
 	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err

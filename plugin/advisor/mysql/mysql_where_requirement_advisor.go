@@ -25,18 +25,11 @@ type WhereRequirementAdvisor struct {
 
 // Check checks for the WHERE clause requirement for UPDATE/DELETE.
 func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
-	p := newParser()
-
-	root, _, err := p.Parse(statement, ctx.Charset, ctx.Collation)
-	if err != nil {
-		return []advisor.Advice{
-			{
-				Status:  advisor.Error,
-				Title:   "Syntax error",
-				Content: err.Error(),
-			},
-		}, nil
+	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
+	if errAdvice != nil {
+		return errAdvice, nil
 	}
+
 	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return []advisor.Advice{}, err
