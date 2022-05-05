@@ -1,4 +1,4 @@
-package component
+package store
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
-	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +66,7 @@ func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, 
 	}, nil
 }
 
-func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*store.DB, error) {
+func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
 	if m.embed {
 		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
 	}
@@ -76,7 +75,7 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 }
 
 // connectEmbed starts the embed postgres server and returns an instance of store.DB
-func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*store.DB, error) {
+func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
 	if err := m.pgInstance.Start(datastorePort, os.Stderr, os.Stderr); err != nil {
 		return nil, err
 	}
@@ -91,12 +90,12 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := store.NewDB(m.l, connCfg, demoDataDir, readonly, version, mode)
+	db := NewDB(m.l, connCfg, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
 // connectExternal returns an instance of store.DB
-func (m *MetadataDB) connectExternal(readonly bool, version string) (*store.DB, error) {
+func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error) {
 	u, err := url.Parse(m.pgURL)
 	if err != nil {
 		return nil, err
@@ -140,7 +139,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*store.DB, 
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := store.NewDB(m.l, connCfg, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(m.l, connCfg, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
