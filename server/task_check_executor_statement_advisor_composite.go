@@ -118,6 +118,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLWhereRequirement, nil
 		}
+	case api.SchemaRuleSchemaBackwardCompatibility:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLMigrationCompatibility, nil
+		}
 	case api.SchemaRuleTableNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
