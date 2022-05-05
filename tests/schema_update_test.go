@@ -20,9 +20,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
-	defer ctl.Close()
+	defer ctl.Close(ctx)
 	err = ctl.Login()
 	require.NoError(t, err)
 
@@ -274,9 +274,9 @@ func TestVCS(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
-	defer ctl.Close()
+	defer ctl.Close(ctx)
 	err = ctl.Login()
 	require.NoError(t, err)
 	err = ctl.setLicense()

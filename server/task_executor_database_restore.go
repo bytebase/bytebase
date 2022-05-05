@@ -84,7 +84,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.dataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
 		return true, nil, err
 	}
 
@@ -174,7 +174,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	// TODO(d): support semantic versioning.
 	m := &db.MigrationInfo{
-		ReleaseVersion: server.version,
+		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      targetDatabase.Name,
 		Database:       targetDatabase.Name,
