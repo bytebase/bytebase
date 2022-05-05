@@ -48,7 +48,7 @@ import {
   UpdateSchemaGhostContext,
 } from "../types";
 import {
-  defaulTemplate as defaultTemplate,
+  defaultTemplate,
   templateForType,
   IssueTemplate,
   TemplateType,
