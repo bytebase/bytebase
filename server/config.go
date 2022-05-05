@@ -19,7 +19,6 @@ type config struct {
 
 // Profile is the configuration to start main server.
 type Profile struct {
-	GreetingBanner string
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
 	// BackendHost is the listening backend host for server

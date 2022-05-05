@@ -298,7 +298,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	s.InitSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
-	fmt.Printf(prof.GreetingBanner, fmt.Sprintf("Version %s has started at %s:%d", prof.Version, prof.BackendHost, prof.BackendPort))
 	s.boot = true
 	return s, nil
 }

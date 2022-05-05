@@ -19,7 +19,6 @@ func activeProfile(dataDir string) server.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
 	return server.Profile{
-		GreetingBanner:       greetingBanner,
 		Mode:                 common.ReleaseModeProd,
 		BackendHost:          flags.host,
 		BackendPort:          flags.port,

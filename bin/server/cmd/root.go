@@ -205,7 +205,7 @@ func start() {
 		fmt.Printf("cannot new server, error: %v\n", err)
 		return
 	}
-
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started at %s:%d", activeProfile.Version, activeProfile.BackendHost, activeProfile.BackendPort))
 	// Execute program.
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
