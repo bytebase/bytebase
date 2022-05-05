@@ -212,7 +212,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
+		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 
@@ -221,7 +221,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
+				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
 				PushEvents:             true,
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
@@ -373,7 +373,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
 				}
 				webhookPatchPayload, err = json.Marshal(webhookPut)

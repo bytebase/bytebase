@@ -64,7 +64,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// Create a baseline migration history upon creating the database.
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
-		ReleaseVersion: server.version,
+		ReleaseVersion: server.profile.Version,
 		Version:        payload.SchemaVersion,
 		Namespace:      payload.DatabaseName,
 		Database:       payload.DatabaseName,
