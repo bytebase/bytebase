@@ -50,6 +50,8 @@ const (
 	CompatibilityAlterColumn   Code = 10011
 
 	StatementNoWhere Code = 10101
+
+	TableNamingConventionMismatch Code = 10201
 )
 
 // Error represents an application-specific error. Application errors can be

@@ -1,5 +1,10 @@
 package api
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // SchemaReviewRuleLevel is the error level for schema review rule.
 type SchemaReviewRuleLevel string
 
@@ -69,4 +74,13 @@ type NamingRulePayload struct {
 // RequiredColumnRulePayload is the payload for required column rule.
 type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
+}
+
+// UnmarshalNamingRulePayload will unmarshal payload to NamingRulePayload.
+func UnmarshalNamingRulePayload(payload string) (*NamingRulePayload, error) {
+	var nr NamingRulePayload
+	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+	}
+	return &nr, nil
 }
