@@ -195,7 +195,7 @@ func start() {
 		sig := <-c
 		logger.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
-			_ = s.Shutdown()
+			_ = s.Shutdown(ctx)
 		}
 		cancel()
 	}()
@@ -210,7 +210,7 @@ func start() {
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
 			logger.Error(err.Error())
-			_ = s.Shutdown()
+			_ = s.Shutdown(ctx)
 			cancel()
 		}
 	}

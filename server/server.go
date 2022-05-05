@@ -364,11 +364,11 @@ func (server *Server) Run(ctx context.Context) error {
 }
 
 // Shutdown will shut down the server.
-func (server *Server) Shutdown() error {
+func (server *Server) Shutdown(ctx context.Context) error {
 	server.l.Info("Trying to stop Bytebase ....")
 	server.l.Info("Trying to gracefully shutdown server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	// Cancel the worker

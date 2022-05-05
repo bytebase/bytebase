@@ -232,10 +232,10 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 	}
 }
 
-func (ctl *controller) Close() error {
+func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
-		e = ctl.server.Shutdown()
+		e = ctl.server.Shutdown(ctx)
 	}
 	if ctl.gitlab != nil {
 		if err := ctl.gitlab.Close(); err != nil {
