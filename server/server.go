@@ -16,7 +16,8 @@ import (
 	_ "embed"
 
 	"github.com/bytebase/bytebase/api"
-	enterprise "github.com/bytebase/bytebase/enterprise/api"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -37,26 +38,22 @@ type Server struct {
 
 	ActivityManager *ActivityManager
 
-	LicenseService enterprise.LicenseService
+	LicenseService enterpriseAPI.LicenseService
+	subscription   *enterpriseAPI.Subscription
 
-	e *echo.Echo
+	profile   Profile
+	e         *echo.Echo
+	metaDB    *store.MetadataDB
+	db        *store.DB
+	store     *store.Store
+	l         *zap.Logger
+	lvl       *zap.AtomicLevel
+	startedTs int64
+	secret    string
 
-	store         *store.Store
-	l             *zap.Logger
-	lvl           *zap.AtomicLevel
-	version       string
-	mode          common.ReleaseMode
-	host          string
-	port          int
-	frontendHost  string
-	frontendPort  int
-	datastorePort int
-	startedTs     int64
-	secret        string
-	readonly      bool
-	demo          bool
-	dataDir       string
-	subscription  *enterprise.Subscription
+	// boot specifies that the server
+	cancel context.CancelFunc
+	boot   bool
 }
 
 //go:embed acl_casbin_model.conf
@@ -72,39 +69,89 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.AtomicLevel, version string, host string, port int, frontendHost string, frontendPort, datastorePort int, mode common.ReleaseMode, dataDir string, backupRunnerInterval time.Duration, secret string, readonly bool, demo bool, debug bool) *Server {
+func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLevel *zap.AtomicLevel) (*Server, error) {
+	s := &Server{
+		profile:   prof,
+		l:         logger,
+		lvl:       loggerLevel,
+		startedTs: time.Now().Unix(),
+	}
+
+	// Display config
+	fmt.Println("-----Config BEGIN-----")
+	fmt.Printf("mode=%s\n", prof.Mode)
+	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
+	fmt.Printf("datastore=%s:%d\n", prof.BackendHost, prof.DatastorePort)
+	fmt.Printf("frontend=%s:%d\n", prof.FrontendHost, prof.FrontendPort)
+	fmt.Printf("demoDataDir=%s\n", prof.DemoDataDir)
+	fmt.Printf("readonly=%t\n", prof.Readonly)
+	fmt.Printf("demo=%t\n", prof.Demo)
+	fmt.Printf("debug=%t\n", prof.Debug)
+	fmt.Println("-----Config END-------")
+
+	// New MetadataDB instance.
+	var err error
+	if prof.useEmbedDB() {
+		s.metaDB, err = store.NewMetadataDBWithEmbedPg(logger, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+	} else {
+		s.metaDB, err = store.NewMetadataDBWithExternalPg(logger, prof.PgURL, prof.DemoDataDir, prof.Mode)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot create metadatadb instance, error: %w", err)
+	}
+
+	// New store.DB instance that represents the db connection.
+	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
+	if err != nil {
+		return nil, fmt.Errorf("cannot new db: %w", err)
+	}
+	s.db = storeDB
+	defer func() {
+		if !s.boot {
+			_ = s.metaDB.Close()
+		}
+	}()
+
+	// Open the database that stores bytebase's own metadata connection.
+	if err = storeDB.Open(ctx); err != nil {
+		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
+		return nil, fmt.Errorf("cannot open db: %w", err)
+	}
+	defer func() {
+		if !s.boot {
+			_ = storeDB.Close()
+		}
+	}()
+
+	cacheService := NewCacheService(logger)
+	storeInstance := store.New(logger, storeDB, cacheService)
+	s.store = storeInstance
+
+	config, err := s.initSetting(ctx, storeInstance)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init config: %w", err)
+	}
+	s.secret = config.secret
+
+	err = s.initBranding(ctx, storeInstance)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init branding: %w", err)
+	}
+
 	e := echo.New()
-	e.Debug = debug
+	e.Debug = prof.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Disallow to be embedded in an iFrame
+	// Disallow to be embedded in an iFrame.
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XFrameOptions: "DENY",
 	}))
 
 	embedFrontend(logger, e)
+	s.e = e
 
-	s := &Server{
-		store:         storeInstance,
-		l:             logger,
-		lvl:           loggerLevel,
-		e:             e,
-		version:       version,
-		mode:          mode,
-		host:          host,
-		port:          port,
-		frontendHost:  frontendHost,
-		frontendPort:  frontendPort,
-		datastorePort: datastorePort,
-		startedTs:     time.Now().Unix(),
-		secret:        secret,
-		readonly:      readonly,
-		demo:          demo,
-		dataDir:       dataDir,
-	}
-
-	if !readonly {
+	if !prof.Readonly {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(logger, s)
 
@@ -164,14 +211,14 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 		s.SchemaSyncer = NewSchemaSyncer(logger, s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(logger, s, backupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(logger, s, prof.BackupRunnerInterval)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(logger, s)
 	}
 
 	// Middleware
-	if mode == common.ReleaseModeDev || debug {
+	if prof.Mode == common.ReleaseModeDev || prof.Debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")
@@ -191,20 +238,20 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.store, next, mode, secret)
+		return JWTMiddleware(logger, s.store, next, prof.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
-		e.Logger.Fatal(err)
+		return nil, err
 	}
 	sa := scas.NewAdapter(strings.Join([]string{casbinOwnerPolicy, casbinDBAPolicy, casbinDeveloperPolicy}, "\n"))
 	ce, err := casbin.NewEnforcer(m, sa)
 	if err != nil {
-		e.Logger.Fatal(err)
+		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(logger, s, ce, next, readonly)
+		return aclMiddleware(logger, s, ce, next, prof.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -239,22 +286,63 @@ func NewServer(logger *zap.Logger, storeInstance *store.Store, loggerLevel *zap.
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
-		e.Logger.Fatal(err)
+		return nil, err
 	}
 
-	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
+	s.ActivityManager = NewActivityManager(s, storeInstance)
+	s.LicenseService, err = enterpriseService.NewLicenseService(logger, prof.DataDir, prof.Mode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create license service, error: %w", err)
+	}
 
-	return s
+	s.InitSubscription()
+
+	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
+	s.boot = true
+	return s, nil
 }
 
-// InitSubscription will initial the subscription cache in memory
+// InitSubscription will initial the subscription cache in memory.
 func (server *Server) InitSubscription() {
 	server.subscription = server.loadSubscription()
 }
 
+func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
+	conf := &config{}
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingAuthSecret,
+		Value:       common.RandomString(secreatLength),
+		Description: "Random string used to sign the JWT auth token.",
+	}
+	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
+	if err != nil {
+		return nil, err
+	}
+	conf.secret = config.Value
+
+	return conf, nil
+}
+
+func (server *Server) initBranding(ctx context.Context, store *store.Store) error {
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingBrandingLogo,
+		Value:       "",
+		Description: "The branding logo image in base64 string format.",
+	}
+	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Run will run the server.
 func (server *Server) Run(ctx context.Context) error {
-	if !server.readonly {
+	ctx, cancel := context.WithCancel(ctx)
+	server.cancel = cancel
+	if !server.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
 		go server.TaskScheduler.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
@@ -271,16 +359,46 @@ func (server *Server) Run(ctx context.Context) error {
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return server.e.Start(fmt.Sprintf(":%d", server.port))
+	return server.e.Start(fmt.Sprintf(":%d", server.profile.BackendPort))
 }
 
 // Shutdown will shut down the server.
-func (server *Server) Shutdown(ctx context.Context) {
-	if err := server.e.Shutdown(ctx); err != nil {
-		server.e.Logger.Fatal(err)
+func (server *Server) Shutdown(ctx context.Context) error {
+	server.l.Info("Trying to stop Bytebase ....")
+	server.l.Info("Trying to gracefully shutdown server")
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Cancel the worker
+	if server.cancel != nil {
+		server.cancel()
 	}
+
+	// Shutdown echo
+	if server.e != nil {
+		if err := server.e.Shutdown(ctx); err != nil {
+			server.e.Logger.Fatal(err)
+		}
+	}
+
 	// Wait for all runners to exit.
 	server.runnerWG.Wait()
+
+	// Close db connection
+	if server.db != nil {
+		server.l.Info("Trying to close database connections")
+		if err := server.db.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Shutdown postgres server if embed.
+	server.metaDB.Close()
+
+	server.l.Info("Bytebase stopped properly")
+
+	return nil
 }
 
 // GetEcho returns the echo server.
