@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 )
 
 // SchemaReviewRuleLevel is the error level for schema review rule.
@@ -57,6 +58,19 @@ type SchemaReviewPolicy struct {
 	RuleList []*SchemaReviewRule `json:"ruleList"`
 }
 
+// Validate validates the SchemaReviewPolicy. It also validates the each review rule.
+func (policy *SchemaReviewPolicy) Validate() error {
+	if policy.Name == "" || len(policy.RuleList) == 0 {
+		return fmt.Errorf("invalid payload, name or rule list cannot be empty")
+	}
+	for _, rule := range policy.RuleList {
+		if err := rule.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SchemaReviewRule is the rule for schema review policy.
 type SchemaReviewRule struct {
 	Type  SchemaReviewRuleType  `json:"type"`
@@ -64,6 +78,18 @@ type SchemaReviewRule struct {
 	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, RequiredColumnRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
+}
+
+// Validate validates the schema review rule.
+func (rule *SchemaReviewRule) Validate() error {
+	// TODO(rebelice): add other schema review rule validation.
+	switch rule.Type {
+	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
+		if _, err := UnmarshalNamingRulePayloadFormat(rule.Payload); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NamingRulePayload is the payload for naming rule.
@@ -76,11 +102,15 @@ type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
 }
 
-// UnmarshalNamingRulePayload will unmarshal payload to NamingRulePayload.
-func UnmarshalNamingRulePayload(payload string) (*NamingRulePayload, error) {
+// UnmarshalNamingRulePayloadFormat will unmarshal payload to NamingRulePayload and compile it as regular expression.
+func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
-	return &nr, nil
+	format, err := regexp.Compile(nr.Format)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
+	}
+	return format, nil
 }

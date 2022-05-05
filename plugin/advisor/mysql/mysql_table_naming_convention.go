@@ -35,13 +35,9 @@ func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	payload, err := api.UnmarshalNamingRulePayload(ctx.Rule.Payload)
+	format, err := api.UnmarshalNamingRulePayloadFormat(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
-	}
-	format, err := regexp.Compile(payload.Format)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile regular expression: %v, err: %v", payload.Format, err)
 	}
 	checker := &tableNamingConventionChecker{
 		level:  level,
