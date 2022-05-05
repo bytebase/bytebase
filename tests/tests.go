@@ -142,7 +142,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	defer logger.Sync()
 
 	profile := cmd.GetTestProfile(dataDir, port)
-	ctl.server, err = server.NewServer(ctx, &profile, logger, lvl)
+	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
 	}

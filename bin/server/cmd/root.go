@@ -200,7 +200,7 @@ func start() {
 		cancel()
 	}()
 
-	s, err = server.NewServer(ctx, &activeProfile, logger, level)
+	s, err = server.NewServer(ctx, activeProfile, logger, level)
 	if err != nil {
 		fmt.Printf("cannot new server, error: %v\n", err)
 		return

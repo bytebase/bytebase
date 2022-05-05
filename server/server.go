@@ -42,8 +42,8 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   *enterpriseAPI.Subscription
 
+	profile   Profile
 	e         *echo.Echo
-	profile   *Profile
 	metaDB    *component.MetadataDB
 	db        *store.DB
 	store     *store.Store
@@ -70,7 +70,7 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof *Profile, logger *zap.Logger, loggerLevel *zap.AtomicLevel) (*Server, error) {
+func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLevel *zap.AtomicLevel) (*Server, error) {
 	s := &Server{
 		profile:   prof,
 		l:         logger,
