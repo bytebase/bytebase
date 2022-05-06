@@ -66,7 +66,9 @@ export default {
 <script lang="ts" setup>
 import { computed, reactive, watchEffect, watch } from "vue";
 import { capitalize, cloneDeep } from "lodash-es";
-import {
+import { useI18n } from "vue-i18n";
+import { storeToRefs } from "pinia";
+import type {
   Database,
   DatabaseLabel,
   Label,
@@ -74,16 +76,14 @@ import {
   LabelValueType,
   Project,
   ProjectId,
-} from "../../types";
+} from "@/types";
 import {
   buildDatabaseNameRegExpByTemplate,
   isReservedLabel,
   parseLabelListInTemplate,
   hidePrefix,
-} from "../../utils";
-import { useI18n } from "vue-i18n";
-import { useLabelStore, useProjectStore } from "@/store";
-import { storeToRefs } from "pinia";
+} from "@/utils";
+import { useLabelList, useProjectStore } from "@/store";
 
 const props = defineProps<{
   database: Database;
@@ -98,7 +98,6 @@ const state = reactive({
   databaseLabelList: cloneDeep(props.database.labels),
 });
 
-const labelStore = useLabelStore();
 const projectStore = useProjectStore();
 
 const { t } = useI18n();
@@ -107,7 +106,7 @@ const targetProject = computed(() => {
   return projectStore.getProjectById(props.targetProjectId) as Project;
 });
 
-const { labelList } = storeToRefs(labelStore);
+const labelList = useLabelList();
 
 const availableLabelList = computed(() => {
   return labelList.value.filter((label) => !isReservedLabel(label));
@@ -115,7 +114,6 @@ const availableLabelList = computed(() => {
 
 const prepare = () => {
   projectStore.fetchProjectById(props.targetProjectId);
-  labelStore.fetchLabelList();
 };
 
 watchEffect(prepare);
