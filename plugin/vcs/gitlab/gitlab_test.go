@@ -67,6 +67,54 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_ExchangeOAuthToken(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/oauth/token", r.URL.Path)
+						assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
+							Body: io.NopCloser(strings.NewReader(`
+{
+ "access_token": "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
+ "token_type": "bearer",
+ "expires_in": 7200,
+ "refresh_token": "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
+ "created_at": 1607635748
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.ExchangeOAuthToken(ctx, "",
+		&common.OAuthExchange{
+			ClientID:     "test_client_id",
+			ClientSecret: "test_client_secret",
+			Code:         "test_code",
+			RedirectURL:  "http://localhost:3000",
+		},
+	)
+	require.NoError(t, err)
+
+	want := &vcs.OAuthToken{
+		AccessToken:  "de6780bc506a0446309bd9362820ba8aed28aa506c71eedbe1c5c4f9dd350e54",
+		RefreshToken: "8257e65c97202ed1726cf9571600918f3bffb2544b26e00a61df9897668c33a1",
+		ExpiresIn:    7200,
+		CreatedAt:    1607635748,
+		ExpiresTs:    1607642948,
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
