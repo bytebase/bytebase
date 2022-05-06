@@ -1,10 +1,11 @@
 tasks:
   - name: Init Frontend
-    init: cd ./frontend && pnpm i
+    before: cd ./frontend
+    init: pnpm i
     command: pnpm dev
   - name: Init Backend
     init: curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s
-    command: ./bin/air -c scripts/.air.toml
+    command: rm -fv .air/pgdata/postmaster.pid && ./bin/air -c scripts/.air.toml
 
 # List the ports to expose. Learn more https://www.gitpod.io/docs/config-ports/
 ports:
