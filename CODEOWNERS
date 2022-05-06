@@ -1,5 +1,5 @@
 # These owners will be the default owners for everything in the repo.
-*                            @d-bytebase @tianzhou
+*                            @d-bytebase
 
 # Frontend
 /frontend/                   @LiuJi-Jim @boojack
