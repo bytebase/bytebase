@@ -17,9 +17,7 @@ type Table struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	// TODO(dragonly): seems like not using this field?
-	DatabaseID int
-	Database   *Database `jsonapi:"relation,database"`
+	Database *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name          string    `jsonapi:"attr,name"`

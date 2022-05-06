@@ -96,7 +96,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		for _, project := range projectList {
 			projectList = append(projectList, project)
 			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
-			// TODO(dragonly): move this if-branch out of the for loop to optimize access pattern
 			if projectFind.PrincipalID != nil {
 				principalID := *projectFind.PrincipalID
 				roleProvider := project.RoleProvider

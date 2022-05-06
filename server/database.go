@@ -467,7 +467,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database ID: %d", id)).SetInternal(err)
 		}
-		// TODO(dragonly): should we do this in composeView()?
 		for _, view := range viewList {
 			view.Database = database
 		}
@@ -808,7 +807,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, database *api.Database, project *api.Project, updaterID int, validateOnly bool) error {
 	// NOTE: this is a partially filled DatabaseLabel
-	// TODO(dragonly): should we make it cleaner?
 	var labels []*api.DatabaseLabel
 	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
 		return err

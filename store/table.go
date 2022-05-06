@@ -49,9 +49,6 @@ func (raw *tableRaw) toTable() *api.Table {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
 		// Domain specific fields
 		Name:          raw.Name,
 		Type:          raw.Type,

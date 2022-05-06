@@ -41,9 +41,6 @@ func (raw *viewRaw) toView() *api.View {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
-		// Related fields
-		DatabaseID: raw.DatabaseID,
-
 		// Domain specific fields
 		Name:       raw.Name,
 		Definition: raw.Definition,
