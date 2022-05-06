@@ -141,15 +141,8 @@ func (rule *SchemaReviewRule) Validate() error {
 			return err
 		}
 	case SchemaRulePKNaming, SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-		templateList, err := UnmarshalTemplateRulePayload(rule.Payload)
-		if err != nil {
+		if _, _, err := UnmarshalTemplateRulePayload(rule.Type, rule.Payload); err != nil {
 			return err
-		}
-
-		for _, section := range templateList {
-			if section.Type == TemplateRuleTemplateSection && !TemplateNamingTokens[rule.Type][section.Value] {
-				return fmt.Errorf("invalid template section %s for rule %s", section.Value, rule.Type)
-			}
 		}
 	}
 	return nil
@@ -185,61 +178,22 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 }
 
 // UnmarshalTemplateRulePayload will unmarshal payload to TemplateRulePayload and compile it as list of TemplateRuleSection.
-// For example, "hard_code_{{table}}_{{column}}_end" will convert to
-// [
-//  { Value: "hard_code_",  Type: "string" },
-//  { Value: "table", Type: "template" },
-//  { Value: "_", Type: "string" },
-//  { Value: "column", Type: "template" },
-//  { Value: "_end", Type: "string" },
-// ]
-func UnmarshalTemplateRulePayload(payload string) ([]*TemplateRuleSection, error) {
+// For example, "hard_code_{{table}}_{{column}}_end" will return
+// "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
+func UnmarshalTemplateRulePayload(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return "", []string{}, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 
 	template := nr.Format
-	start := 0
-	end := 0
-	res := []*TemplateRuleSection{}
+	keys := getTemplateTokens(template)
 
-	for end <= len(template)-1 {
-		if end+1 == len(template) {
-			end++
-			break
-		}
-		if template[end:end+2] == TemplateBracketRight && template[start:start+2] == TemplateBracketLeft {
-			// meet the }} and {{, extract [start+2:end] as the template section and move the pointer.
-			res = append(res, &TemplateRuleSection{
-				Value: template[start+2 : end],
-				Type:  TemplateRuleTemplateSection,
-			})
-			end += 2
-			start = end
-		} else if template[end:end+2] == TemplateBracketLeft {
-			// meet the {{, extract [start:end] as the string section and reset the pointer.
-			res = append(res, &TemplateRuleSection{
-				Value: template[start:end],
-				Type:  TemplateRuleStringSection,
-			})
-			start = end
-			end += 2
-		} else {
-			end++
+	for _, key := range keys {
+		if !TemplateNamingTokens[ruleType][key] {
+			return "", []string{}, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
 
-	if start < end {
-		res = append(res, &TemplateRuleSection{
-			Value: template[start:end],
-			Type:  TemplateRuleStringSection,
-		})
-	}
-
-	if len(res) <= 0 {
-		return nil, fmt.Errorf("invalid template list, at least has one template section")
-	}
-
-	return res, nil
+	return template, keys, nil
 }
