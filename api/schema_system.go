@@ -210,6 +210,7 @@ func UnmarshalTemplateRulePayload(payload string) ([]*TemplateRuleSection, error
 			break
 		}
 		if template[end:end+2] == TemplateBracketRight && template[start:start+2] == TemplateBracketLeft {
+			// meet the }} and {{, extract [start+2:end] as the template section and move the pointer.
 			res = append(res, &TemplateRuleSection{
 				Value: template[start+2 : end],
 				Type:  TemplateRuleTemplateSection,
@@ -217,6 +218,7 @@ func UnmarshalTemplateRulePayload(payload string) ([]*TemplateRuleSection, error
 			end += 2
 			start = end
 		} else if template[end:end+2] == TemplateBracketLeft {
+			// meet the {{, extract [start:end] as the string section and reset the pointer.
 			res = append(res, &TemplateRuleSection{
 				Value: template[start:end],
 				Type:  TemplateRuleStringSection,
