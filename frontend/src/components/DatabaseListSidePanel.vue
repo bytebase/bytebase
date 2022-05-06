@@ -10,31 +10,29 @@
 <script lang="ts">
 import { computed, defineComponent, watchEffect } from "vue";
 import { cloneDeep, groupBy, uniqBy } from "lodash-es";
-import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "../types";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import type { BBOutlineItem } from "@/bbkit/types";
+import { Database, Environment, EnvironmentId, UNKNOWN_ID } from "@/types";
 import {
   databaseSlug,
   environmentName,
   parseDatabaseNameByTemplate,
   projectSlug,
-} from "../utils";
-import { BBOutlineItem } from "../bbkit/types";
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
+} from "@/utils";
 import {
   useEnvironmentList,
   useCurrentUser,
-  useLabelStore,
   useDatabaseStore,
+  useLabelList,
 } from "@/store";
-import { storeToRefs } from "pinia";
 
 export default defineComponent({
   name: "DatabaseListSidePanel",
   setup() {
     const { t } = useI18n();
     const databaseStore = useDatabaseStore();
-    const labelStore = useLabelStore();
     const router = useRouter();
 
     const currentUser = useCurrentUser();
@@ -49,8 +47,6 @@ export default defineComponent({
       if (currentUser.value.id != UNKNOWN_ID) {
         databaseStore.fetchDatabaseList();
       }
-
-      labelStore.fetchLabelList();
     };
 
     watchEffect(prepareList);
@@ -61,7 +57,7 @@ export default defineComponent({
     });
 
     // Use this to parse database name from name template
-    const { labelList } = storeToRefs(labelStore);
+    const labelList = useLabelList();
 
     const databaseListByEnvironment = computed(() => {
       const envToDbMap: Map<EnvironmentId, BBOutlineItem[]> = new Map();
