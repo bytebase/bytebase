@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	_ "github.com/bytebase/bytebase/plugin/vcs/github" // Import to call the init until it is imported from somewhere else
 )
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {

@@ -214,7 +214,7 @@ func (p *Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 
-// gitlab oauth response
+// oauthResponse is a GitLab OAuth response.
 type oauthResponse struct {
 	AccessToken      string `json:"access_token" `
 	RefreshToken     string `json:"refresh_token"`
@@ -225,7 +225,7 @@ type oauthResponse struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// convert to *vcs.OAuthToken
+// toVCSOAuthToken converts the response to *vcs.OAuthToken.
 func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 	oauthToken := &vcs.OAuthToken{
 		AccessToken:  o.AccessToken,
@@ -242,7 +242,7 @@ func (o oauthResponse) toVCSOAuthToken() *vcs.OAuthToken {
 	return oauthToken
 }
 
-// ExchangeOAuthToken exchange oauth content with the provided authentication code.
+// ExchangeOAuthToken exchanges OAuth content with the provided authorization code.
 func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, oauthExchange *common.OAuthExchange) (*vcs.OAuthToken, error) {
 	urlParams := &url.Values{}
 	urlParams.Set("client_id", oauthExchange.ClientID)
@@ -258,25 +258,24 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 		redactedURL := fmt.Sprintf("%s/oauth/token?%s", instanceURL, urlParams.Encode())
 		return nil, errors.Wrapf(err, "construct POST %s", redactedURL)
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v", err)
+		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v", err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read oauth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, fmt.Errorf("failed to read OAuth response body, code %v, error: %v", resp.StatusCode, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	oauthResp := new(oauthResponse)
 	if err := json.Unmarshal(body, oauthResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal oauth response body, code %v, error: %v", resp.StatusCode, err)
+		return nil, fmt.Errorf("failed to unmarshal OAuth response body, code %v, error: %v", resp.StatusCode, err)
 	}
 	if oauthResp.Error != "" {
-		return nil, fmt.Errorf("failed to exchange Oauth Token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
+		return nil, fmt.Errorf("failed to exchange OAuth token, error: %v, error_description: %v", oauthResp.Error, oauthResp.ErrorDescription)
 	}
 	return oauthResp.toVCSOAuthToken(), nil
 }
