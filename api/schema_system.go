@@ -117,3 +117,12 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 	}
 	return format, nil
 }
+
+// UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
+func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
+	var rcr RequiredColumnRulePayload
+	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal required column rule payload %q: %q", payload, err)
+	}
+	return &rcr, nil
+}
