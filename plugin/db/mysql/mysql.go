@@ -940,6 +940,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+// RestoreIncremental restores the database using incremental backup in time range of [fromUnix, toUnix).
+func (driver *Driver) RestoreIncremental(ctx context.Context, fromUnix, toUnix int64) error {
+	return fmt.Errorf("Unimplemented")
+}
+
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
 	dbNames, err := getDatabases(txn)

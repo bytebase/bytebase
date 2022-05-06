@@ -865,6 +865,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+// RestoreIncremental restores the database using incremental backup in time range of [fromUnix, toUnix).
+func (driver *Driver) RestoreIncremental(ctx context.Context, fromUnix, toUnix int64) error {
+	return fmt.Errorf("Unimplemented")
+}
+
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	if err := driver.switchDatabase(database); err != nil {
 		return err
