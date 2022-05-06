@@ -54,10 +54,6 @@ const (
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
 
-	// TemplateBracketLeft is the left bracket for template
-	TemplateBracketLeft = "{{"
-	// TemplateBracketRight is the right bracket for template
-	TemplateBracketRight = "}}"
 	// TableNameTemplateToken is the token for table name
 	TableNameTemplateToken = "table"
 	// ColumnListTemplateToken is the token for column name list
@@ -163,7 +159,7 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 	return format, nil
 }
 
-// UnmarshalTemplateRulePayload will unmarshal payload to TemplateRulePayload and compile it as list of TemplateRuleSection.
+// UnmarshalTemplateRulePayload will unmarshal payload to TemplateRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
 // "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
 func UnmarshalTemplateRulePayload(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
