@@ -178,7 +178,8 @@ export default defineComponent({
         const newWindow = openWindowForOAuth(
           authorizeUrl,
           state.config.applicationId,
-          "bb.oauth.register-vcs"
+          "bb.oauth.register-vcs",
+          state.config.type
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {
