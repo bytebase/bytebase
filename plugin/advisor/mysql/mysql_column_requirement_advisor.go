@@ -58,16 +58,6 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 }
 
 type columnSet map[string]bool
-
-func (set columnSet) String() string {
-	list := make([]string, 0, len(set))
-	for column := range set {
-		list = append(list, column)
-	}
-	sort.Strings(list)
-	return strings.Join(list, ", ")
-}
-
 type tableState map[string]columnSet
 
 type columnRequirementChecker struct {
@@ -112,20 +102,32 @@ func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
-	requiredColumnList := v.requiredColumns.String()
-	for tableName, table := range v.tables {
+	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
+	var tableList []string
+	for tableName := range v.tables {
+		tableList = append(tableList, tableName)
+	}
+	sort.Strings(tableList)
+	for _, tableName := range tableList {
+		table := v.tables[tableName]
+		var missingColumns []string
 		for column := range v.requiredColumns {
 			if exist, ok := table[column]; !ok || !exist {
-				v.advisorList = append(v.advisorList, advisor.Advice{
-					Status:  v.level,
-					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
-					Content: fmt.Sprintf("%q requires columns: %s", tableName, requiredColumnList),
-				})
-				break
+				missingColumns = append(missingColumns, column)
 			}
 		}
+		if len(missingColumns) > 0 {
+			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
+			sort.Strings(missingColumns)
+			v.advisorList = append(v.advisorList, advisor.Advice{
+				Status:  v.level,
+				Code:    common.NoRequiredColumn,
+				Title:   "Require columns",
+				Content: fmt.Sprintf("%q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+			})
+		}
 	}
+
 	if len(v.advisorList) == 0 {
 		v.advisorList = append(v.advisorList, advisor.Advice{
 			Status:  advisor.Success,
