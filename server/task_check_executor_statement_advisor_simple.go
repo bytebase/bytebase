@@ -32,6 +32,7 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 	case api.TaskCheckDatabaseStatementSyntax:
 		advisorType = advisor.MySQLSyntax
 	case api.TaskCheckDatabaseStatementCompatibility:
+		// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
 		if !server.feature(api.FeatureBackwardCompatibility) {
 			return nil, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
 		}

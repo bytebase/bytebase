@@ -14,6 +14,13 @@
         </div>
         <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       </div>
+      <div
+        v-if="vcs.type == 'GITHUB_COM'"
+        class="flex flex-row items-center space-x-2"
+      >
+        <div class="textlabel whitespace-nowrap">GitHub.com</div>
+        <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      </div>
     </div>
 
     <div>
@@ -58,10 +65,21 @@
       </label>
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
-          {{ $t("version-control.setting.git-provider.application-id-label") }}
+          {{
+            $t(
+              "version-control.setting.git-provider.gitlab-application-id-label"
+            )
+          }}
           <a :href="adminApplicationUrl" target="_blank" class="normal-link">{{
             $t("version-control.setting.git-provider.view-in-gitlab")
           }}</a>
+        </template>
+        <template v-if="vcs.type == 'GITHUB_COM'">
+          {{
+            $t(
+              "version-control.setting.git-provider.github-application-id-label"
+            )
+          }}
         </template>
       </p>
       <input
@@ -78,6 +96,9 @@
       <p class="mt-1 textinfolabel">
         <template v-if="vcs.type == 'GITLAB_SELF_HOST'">
           {{ $t("version-control.setting.git-provider.secret-label-gitlab") }}
+        </template>
+        <template v-if="vcs.type == 'GITHUB_COM'">
+          {{ $t("version-control.setting.git-provider.secret-label-github") }}
         </template>
       </p>
       <input
@@ -205,7 +226,10 @@ export default defineComponent({
     const eventListener = (event: Event) => {
       const payload = (event as CustomEvent).detail as OAuthWindowEventPayload;
       if (isEmpty(payload.error)) {
-        if (vcs.value.type == "GITLAB_SELF_HOST") {
+        if (
+          vcs.value.type == "GITLAB_SELF_HOST" ||
+          vcs.value.type == "GITHUB_COM"
+        ) {
           useOAuthStore()
             .exchangeVCSTokenWithID({
               vcsId: idFromSlug(props.vcsSlug),
@@ -253,8 +277,12 @@ export default defineComponent({
         state.applicationId != vcs.value.applicationId ||
         !isEmpty(state.secret)
       ) {
+        let authorizeUrl = `${vcs.value.instanceUrl}/oauth/authorize`;
+        if (vcs.value.type == "GITHUB_COM") {
+          authorizeUrl = `https://github.com/login/oauth/authorize`;
+        }
         const newWindow = openWindowForOAuth(
-          `${vcs.value.instanceUrl}/oauth/authorize`,
+          authorizeUrl,
           vcs.value.applicationId,
           "bb.oauth.register-vcs"
         );
@@ -284,13 +312,16 @@ export default defineComponent({
                   });
                 });
             } else {
+              // If the application ID mismatches, the OAuth workflow will stop early.
+              // So the only possibility to reach here is we have a matching application ID, while
+              // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
               var description = "";
               if (vcs.value.type == "GITLAB_SELF_HOST") {
-                // If application id mismatches, the OAuth workflow will stop early.
-                // So the only possibility to reach here is we have a matching application id, while
-                // we failed to exchange a token, and it's likely we are requesting with a wrong secret.
                 description =
                   "Please make sure Secret matches the one from your GitLab instance Application.";
+              } else if (vcs.value.type == "GITHUB_COM") {
+                description =
+                  "Please make sure Client secret matches the one from your GitHub.com Application.";
               }
               pushNotification({
                 module: "bytebase",

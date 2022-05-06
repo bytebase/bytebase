@@ -264,6 +264,17 @@ func TestAlterTable(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "ALTER TABLE t1 RENAME TO t2",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    common.CompatibilityRenameTable,
+					Title:   "Potential incompatible migration",
+					Content: "\"ALTER TABLE t1 RENAME TO t2\" may cause incompatibility with the existing data and code",
+				},
+			},
+		},
 	}
 
 	runTests(t, tests, &CompatibilityAdvisor{})
