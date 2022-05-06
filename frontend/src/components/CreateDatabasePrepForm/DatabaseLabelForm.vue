@@ -28,23 +28,23 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { useLabelStore } from "@/store";
 import { capitalize } from "lodash-es";
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
+import type {
   DatabaseLabel,
   Label,
   LabelKeyType,
   LabelValueType,
   Project,
-} from "../../types";
+} from "@/types";
 import {
   isReservedLabel,
   parseLabelListInTemplate,
   hidePrefix,
   validateLabelsWithTemplate,
-} from "../../utils";
+} from "@/utils";
+import { useLabelList } from "@/store";
 
 const props = defineProps<{
   project: Project;
@@ -52,22 +52,16 @@ const props = defineProps<{
   filter: "required" | "optional";
 }>();
 
-const labelStore = useLabelStore();
+const allLabelList = useLabelList();
 const { t } = useI18n();
-
-const prepare = () => {
-  labelStore.fetchLabelList();
-};
-watchEffect(prepare);
 
 const isDbNameTemplateMode = computed((): boolean => {
   return !!props.project.dbNameTemplate;
 });
 
 const availableLabelList = computed(() => {
-  const allLabelList = labelStore.labelList;
   // ignore reserved labels (e.g. bb.environment)
-  return allLabelList.filter((label) => !isReservedLabel(label));
+  return allLabelList.value.filter((label) => !isReservedLabel(label));
 });
 
 const requiredLabelDict = computed((): Set<LabelKeyType> => {

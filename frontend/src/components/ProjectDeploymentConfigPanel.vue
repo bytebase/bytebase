@@ -125,6 +125,9 @@ import {
   watch,
   watchEffect,
 } from "vue";
+import { cloneDeep, isEqual } from "lodash-es";
+import { useI18n } from "vue-i18n";
+import { NPopover, useDialog } from "naive-ui";
 import {
   Project,
   AvailableLabel,
@@ -136,9 +139,6 @@ import {
   LabelSelectorRequirement,
 } from "../types";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { cloneDeep, isEqual } from "lodash-es";
-import { useI18n } from "vue-i18n";
-import { NPopover, useDialog } from "naive-ui";
 import { generateDefaultSchedule, validateDeploymentConfig } from "../utils";
 import {
   pushNotification,
@@ -146,9 +146,8 @@ import {
   useDeploymentStore,
   useEnvironmentList,
   useEnvironmentStore,
-  useLabelStore,
+  useLabelList,
 } from "@/store";
-import { storeToRefs } from "pinia";
 
 type LocalState = {
   deployment: DeploymentConfig | undefined;
@@ -173,7 +172,6 @@ export default defineComponent({
   setup(props) {
     const databaseStore = useDatabaseStore();
     const deploymentStore = useDeploymentStore();
-    const labelStore = useLabelStore();
     const { t } = useI18n();
     const dialog = useDialog();
 
@@ -196,13 +194,12 @@ export default defineComponent({
 
     const prepareList = () => {
       useEnvironmentStore().fetchEnvironmentList();
-      labelStore.fetchLabelList();
       databaseStore.fetchDatabaseListByProjectId(props.project.id);
     };
 
     const environmentList = useEnvironmentList();
 
-    const { labelList } = storeToRefs(labelStore);
+    const labelList = useLabelList();
 
     const databaseList = computed(() =>
       databaseStore.getDatabaseListByProjectId(props.project.id)
