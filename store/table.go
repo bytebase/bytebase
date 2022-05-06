@@ -49,6 +49,9 @@ func (raw *tableRaw) toTable() *api.Table {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
 		// Domain specific fields
 		Name:          raw.Name,
 		Type:          raw.Type,
@@ -146,6 +149,12 @@ func (s *Store) composeTable(ctx context.Context, raw *tableRaw) (*api.Table, er
 		return nil, err
 	}
 	table.Updater = updater
+
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &table.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	table.Database = database
 
 	return table, nil
 }

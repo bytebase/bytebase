@@ -343,14 +343,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
-
 		tableFind := &api.TableFind{
 			DatabaseID: &id,
 		}
@@ -360,7 +352,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		for _, table := range tableList {
-			table.Database = database
 			columnFind := &api.ColumnFind{
 				DatabaseID: &id,
 				TableID:    &table.ID,
