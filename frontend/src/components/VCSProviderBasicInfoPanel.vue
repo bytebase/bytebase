@@ -12,6 +12,7 @@
         type="radio"
         class="btn"
         value="GITLAB_SELF_HOST"
+        @change="changeType()"
       />
       <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
       <label class="whitespace-nowrap"
@@ -19,6 +20,19 @@
           $t("version-control.setting.add-git-provider.gitlab-self-host-ce-ee")
         }}
       </label>
+    </div>
+    <div v-if="isDev" class="radio space-x-2">
+      <input
+        v-model="config.type"
+        name="GitHub.com"
+        tabindex="-1"
+        type="radio"
+        class="btn"
+        value="GITHUB_COM"
+        @change="changeType()"
+      />
+      <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+      <label class="whitespace-nowrap">GitHub.com</label>
     </div>
   </div>
   <div class="mt-4 relative">
@@ -41,7 +55,10 @@
       </div>
       <label class="whitespace-nowrap">GitHub Enterprise </label>
     </div>
-    <div class="flex flex-row space-x-2 items-center text-control">
+    <div
+      v-if="!isDev"
+      class="flex flex-row space-x-2 items-center text-control"
+    >
       <div class="h-5 w-5">
         <img src="../assets/github-logo.svg" />
       </div>
@@ -60,8 +77,9 @@
   </p>
   <BBTextField
     class="mt-2 w-full"
-    :placeholder="'https://gitlab.example.com'"
     :value="config.instanceUrl"
+    :placeholder="instanceUrlPlaceholder"
+    :disabled="instanceUrlDisabled"
     @input="changeUrl($event.target.value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
@@ -93,7 +111,7 @@
 import { computed, onUnmounted, PropType, reactive } from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
-import { isUrl } from "../utils";
+import { isUrl, isDev } from "../utils";
 import { useI18n } from "vue-i18n";
 
 interface LocalState {
@@ -125,6 +143,8 @@ export default {
     const namePlaceholder = computed((): string => {
       if (props.config.type == "GITLAB_SELF_HOST") {
         return t("version-control.setting.add-git-provider.gitlab-self-host");
+      } else if (props.config.type == "GITHUB_COM") {
+        return "GitHub.com";
       }
       return "";
     });
@@ -134,8 +154,26 @@ export default {
         return t(
           "version-control.setting.add-git-provider.basic-info.gitlab-instance-url"
         );
+      } else if (props.config.type == "GITHUB_COM") {
+        return t(
+          "version-control.setting.add-git-provider.basic-info.github-instance-url"
+        );
       }
       return "";
+    });
+
+    const instanceUrlPlaceholder = computed((): string => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        return "https://gitlab.example.com";
+      } else if (props.config.type == "GITHUB_COM") {
+        return "https://github.com";
+      }
+      return "";
+    });
+
+    // github.com instance url is always https://github.com
+    const instanceUrlDisabled = computed((): boolean => {
+      return props.config.type == "GITHUB_COM";
     });
 
     const changeUrl = (value: string) => {
@@ -163,7 +201,28 @@ export default {
       }
     };
 
-    return { state, namePlaceholder, instanceUrlLabel, changeUrl };
+    // FIXME: Unexpected mutation of "config" prop. Do we care?
+    const changeType = () => {
+      if (props.config.type == "GITLAB_SELF_HOST") {
+        props.config.instanceUrl = "";
+        props.config.name = t(
+          "version-control.setting.add-git-provider.gitlab-self-host"
+        );
+      } else if (props.config.type == "GITHUB_COM") {
+        props.config.instanceUrl = "https://github.com";
+        props.config.name = "GitHub.com";
+      }
+    };
+
+    return {
+      state,
+      namePlaceholder,
+      instanceUrlLabel,
+      instanceUrlPlaceholder,
+      instanceUrlDisabled,
+      changeUrl,
+      changeType,
+    };
   },
 };
 </script>

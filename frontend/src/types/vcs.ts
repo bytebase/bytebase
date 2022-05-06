@@ -1,7 +1,7 @@
 import { VCSId } from "./id";
 import { Principal } from "./principal";
 
-export type VCSType = "GITLAB_SELF_HOST";
+export type VCSType = "GITLAB_SELF_HOST" | "GITHUB_COM";
 
 export interface VCSConfig {
   type: VCSType;
@@ -70,6 +70,14 @@ export type VCSPushEvent = {
   fileCommit: VCSFileCommit;
 };
 
-export function isValidVCSApplicationIdOrSecret(str: string): boolean {
-  return /^[a-zA-Z0-9_]{64}$/.test(str);
+export function isValidVCSApplicationIdOrSecret(
+  vcsType: VCSType,
+  str: string
+): boolean {
+  if (vcsType == "GITLAB_SELF_HOST") {
+    return /^[a-zA-Z0-9_]{64}$/.test(str);
+  } else if (vcsType == "GITHUB_COM") {
+    return /^[a-zA-Z0-9_]{20}$|^[a-zA-Z0-9_]{40}$/.test(str);
+  }
+  return false;
 }

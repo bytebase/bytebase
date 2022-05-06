@@ -938,6 +938,8 @@ version-control:
       gitlab-self-host-admin-requirement: >-
         您必须是 GitLab 实例的管理员才能进行该配置。否则您需要让您的 GitLab 实例管理员把 Bytebase 先注册为 GitLab
         整个实例级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
+      github-com-admin-requirement: >-
+        您必须是 GitHub 组织的管理员才能进行该配置。否则您需要让您的 GitHub 组织管理员把 Bytebase 先注册为组织级别的 OAuth 应用，之后再让对方提供给您注册完成后的应用 ID 以及 Secret，以让您在「OAuth 应用信息」步骤进行填写。
       ouath-info-correct: OAuth 信息验证成功
       check-oauth-info-match: 请确认 Secret 和注册在 GitLab 实例上的应用信息匹配。
       add-success: 成功添加了 Git 提供方「{vcs}」
@@ -947,26 +949,38 @@ version-control:
         self: 基本信息
         gitlab-instance-url: GitLab 实例 URL
         gitlab-instance-url-label: VCS 实例 URL。请确认这个实例和 Bytebase 之间网络是互通的。
+        github-instance-url: GitHub 实例 URL
         instance-url-error: 实例 URL 必须以 https:// or http:// 开头
         display-name: 展示名称
         display-name-label: 一个可选的展示名称用以区分不同的 Git 供应方。
       oauth-info:
         self: OAuth 应用信息
-        register-oauth-application: 注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。
-        login-as-admin: 以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
-        visit-admin-page: 通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。
+        gitlab-register-oauth-application: 注册 Bytebase 为一个 GitLab 实例级别 (instance-wide) 的 OAuth 应用。
+        gitlab-login-as-admin: 以管理员身份登录 GitLab 实例。这个账号必须是整个 GitLab 实例的管理员 (会看到小扳手在顶栏)。
+        gitlab-visit-admin-page: 通过点击小扳手访问管理员界面，然后导航到「应用」分区，再点击「创建应用」。
+        gitlab-paste-oauth-info: 从刚创建好的应用上粘贴它的应用 ID 和 Secret 到下面的字段。
+        github-register-oauth-application: 注册 Bytebase 为一个 GitHub 组织级别 (organization-wide) 的 OAuth 应用。
+        github-login-as-admin: >-
+          以组织管理员身份登录 GitHub.com。这个账号必须是 GitHub 组织的管理员 (能够进入组织 Settings 页面)。
+        github-visit-admin-page: >-
+          进入组织 Settings 页面，然后导航到「Developer settings > OAuth Apps」分区，再点击「Register an application」。
+        github-paste-oauth-info: >-
+          从刚创建好的应用上粘贴它的 Client ID 和 Client secret 到下面的字段。
         direct-link: 直达链接
         create-oauth-app: 使用如下信息来创建您的 Bytebase OAuth 应用。
-        paste-oauth-info: 从刚创建好的应用上粘贴他的应用 ID 和 Secret 到下面的字段。
-        application-id-error: 应用 ID 必须是 64 个字母长度
-        secret-error: Secret 必须是 64 个字母长度
+        gitlab-application-id-error: 应用 ID 必须是 64 个字母长度
+        gitlab-secret-error: Secret 必须是 64 个字母长度
+        github-application-id-error: 应用 ID 必须是 20 个字母长度
+        github-secret-error: Secret 必须是 40 个字母长度
       confirm:
         confirm-info: 确认信息
         confirm-description: 创建完成后，这个 Git 供应方将出现在项目面板「版本控制」Tab 下，可以被项目所有者选中。
     git-provider:
-      application-id-label: 注册为 GitLab 实例级 OAuth 应用的应用 ID。
+      gitlab-application-id-label: 注册为 GitLab 实例级 OAuth 应用的应用 ID。
       view-in-gitlab: 查看 GitLab
       secret-label-gitlab: 注册为 GitLab 实例级 OAuth 应用的 Secret。
+      github-application-id-label: 注册为 GitHub 组织级别 OAuth 应用的 Client ID。
+      secret-label-github: 注册为 GitHub 组织级别 OAuth 应用的 Client secret。
       delete: 删除这个提供方前，需要先解除所有仓库的关联。
 archive:
   archived: 已归档

@@ -1070,6 +1070,12 @@ version-control:
         Bytebase as a GitLab instance-wide OAuth application, then provide you
         that Application ID and Secret to fill at the 'OAuth application info'
         step.
+      github-com-admin-requirement: >-
+        You need to be an admin of your chosen GitHub organization to configure
+        this. Otherwise, you need to ask your GitHub organization admin to register
+        Bytebase as a GitHub organization-wide OAuth application, then provide you
+        that Application ID and Secret to fill at the 'OAuth application info'
+        step.
       ouath-info-correct: Verified OAuth info is correct
       check-oauth-info-match: >-
         Please make sure Secret matches the one from your GitLab instance
@@ -1083,6 +1089,7 @@ version-control:
         gitlab-instance-url-label: >-
           The VCS instance URL. Make sure this instance and Bytebase are network
           reachable from each other.
+        github-instance-url: GitHub instance URL
         instance-url-error: Instance URL must begin with https:// or http://
         display-name: Display name
         display-name-label: >-
@@ -1090,32 +1097,48 @@ version-control:
           using the same Git provider.
       oauth-info:
         self: OAuth application info
-        register-oauth-application: Register Bytebase as a GitLab instance-wide OAuth application.
-        login-as-admin: >-
+        gitlab-register-oauth-application: Register Bytebase as a GitLab instance-wide OAuth application.
+        gitlab-login-as-admin: >-
           Login as an Admin user to the GitLab instance. The account must be an
           Admin of the entire GitLab instance (it has a wrench icon on the top
           bar).
-        visit-admin-page: >-
+        gitlab-visit-admin-page: >-
           Go to the Admin page by clicking the wrench icon, then navigate to
           "Applications" section and click "New application" button.
-        direct-link: Direct link
-        create-oauth-app: Create your Bytebase OAuth application with the following info.
-        paste-oauth-info: >-
+        gitlab-paste-oauth-info: >-
           Paste the Application ID and Secret from that just created application
           into fields below.
-        application-id-error: Application ID must be a 64-character alphanumeric string
-        secret-error: Secret must be a 64-character alphanumeric string
+        github-register-oauth-application: Register Bytebase as a GitHub organization-wide OAuth application.
+        github-login-as-admin: >-
+          Login as an organization admin user to the GitHub.com. The account must be an
+          organization admin of the GitHub organization (able to access the organiztion Settings page).
+        github-visit-admin-page: >-
+          Go to the Settings page, then navigate to "Developer settings > OAuth Apps" section
+          and click "Register an application" button.
+        github-paste-oauth-info: >-
+          Paste the Client ID and Client secret from that just created application
+          into fields below.
+        direct-link: Direct link
+        create-oauth-app: Create your Bytebase OAuth application with the following info.
+        gitlab-application-id-error: Application ID must be a 64-character alphanumeric string
+        gitlab-secret-error: Secret must be a 64-character alphanumeric string
+        github-application-id-error: Application ID must be a 20-character alphanumeric string
+        github-secret-error: Secret must be a 40-character alphanumeric string
       confirm:
         confirm-info: Confirm the info
         confirm-description: >-
           After creation, this Git provider can be chosen under the project
           dashboard "Version Control" tab by the project owner.
     git-provider:
-      application-id-label: >-
+      gitlab-application-id-label: >-
         Application ID for the registered GitLab instance-wide OAuth
         application.
       view-in-gitlab: View in GitLab
       secret-label-gitlab: Secret for the registered GitLab instance-wide OAuth application.
+      github-application-id-label: >-
+        Client ID for the registered GitHub organization-wide OAuth
+        application.
+      secret-label-github: Client secret for the registered GitHub organization-wide OAuth application.
       delete: To delete this provider, unlink all repositories first.
 archive:
   archived: Archived
