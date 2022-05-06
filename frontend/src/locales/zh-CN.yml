@@ -1203,12 +1203,12 @@ subscription:
         sql-check-basic: 基础
         sql-check-basic-tooltip: 语法检查、数据库连接检查
         sql-check-advanced: 高级
-        sql-check-advanced-tooltip: 基础版功能+向后兼容性检查
+        sql-check-advanced-tooltip: 基础版功能 + 向后兼容性检查
         anomaly-detection: 异常检测
         anomaly-detection-basic: 基础
         anomaly-detection-basic-tooltip: 数据库连接异常、备份缺失
         anomaly-detection-advanced: 高级
-        anomaly-detection-advanced-tooltip: 基础版功能+ Schema 偏差检测
+        anomaly-detection-advanced-tooltip: 基础版功能 + Schema 偏差检测
         schedule-change: 设定任务执行时间
         review-and-backup-policy: 审核和备份策略
         tenancy: 多地域/多租户部署
