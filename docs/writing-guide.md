@@ -52,3 +52,4 @@ Let's go over the issues one by one:
 # Readings
 
 - [Docs for Developers](https://docsfordevelopers.com)
+- [A Framework for Writing Better Documentation](https://documentation.divio.com/structure)
