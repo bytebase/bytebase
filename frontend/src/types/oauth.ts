@@ -1,4 +1,6 @@
-import { randomString } from "../utils";
+import { useWindowScroll } from "@vueuse/core";
+import { VCSType } from ".";
+import { randomString, vcsSlug } from "../utils";
 
 export type OAuthConfig = {
   endpoint: string;
@@ -36,16 +38,27 @@ export type OAuthType =
 export function openWindowForOAuth(
   endpoint: string,
   applicationId: string,
-  type: OAuthType
+  type: OAuthType,
+  vcsType: VCSType
 ): Window | null {
   // we use type to determine oauth type when receiving the callback
   const stateQueryParameter = `${type}-${randomString(20)}`;
   sessionStorage.setItem(OAuthStateSessionKey, stateQueryParameter);
 
+  if (vcsType == "GITHUB_COM") {
+    return window.open(
+      `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
+        redirectUrl()
+      )}&state=${stateQueryParameter}&response_type=code&scope=api,repo`,
+      "oauth",
+      "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
+    );
+  }
+  // GITLAB_SELF_HOST
   return window.open(
     `${endpoint}?client_id=${applicationId}&redirect_uri=${encodeURIComponent(
       redirectUrl()
-    )}&state=${stateQueryParameter}&response_type=code&scope=api,repo`,
+    )}&state=${stateQueryParameter}&response_type=code&scope=api`,
     "oauth",
     "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
   );
