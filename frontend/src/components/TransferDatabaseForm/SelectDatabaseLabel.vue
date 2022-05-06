@@ -67,7 +67,6 @@ export default {
 import { computed, reactive, watchEffect, watch } from "vue";
 import { capitalize, cloneDeep } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { storeToRefs } from "pinia";
 import type {
   Database,
   DatabaseLabel,
