@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) registerVCSRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.APIURL = vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).APIURL(vcsCreate.InstanceURL)
+		vcsCreate.APIURL = vcs.Get(vcsCreate.Type, vcs.ProviderConfig{Logger: s.l}).APIURL(vcsCreate.InstanceURL)
 
 		vcs, err := s.store.CreateVCS(ctx, vcsCreate)
 		if err != nil {

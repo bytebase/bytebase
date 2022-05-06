@@ -91,6 +91,49 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_ExchangeOAuthToken(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/login/oauth/access_token", r.URL.Path)
+						assert.Equal(t, "client_id=test_client_id&client_secret=test_client_secret&code=test_code&redirect_uri=http%3A%2F%2Flocalhost%3A3000", r.URL.RawQuery)
+						assert.Equal(t, "application/json", r.Header.Get("Accept"))
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "access_token":"gho_16C7e42F292c6912E7710c838347Ae178B4a",
+  "scope":"repo,gist",
+  "token_type":"bearer"
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.ExchangeOAuthToken(ctx, "",
+		&common.OAuthExchange{
+			ClientID:     "test_client_id",
+			ClientSecret: "test_client_secret",
+			Code:         "test_code",
+			RedirectURL:  "http://localhost:3000",
+		},
+	)
+	require.NoError(t, err)
+
+	want := &vcs.OAuthToken{
+		AccessToken: "gho_16C7e42F292c6912E7710c838347Ae178B4a",
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

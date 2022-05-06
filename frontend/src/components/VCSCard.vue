@@ -7,6 +7,9 @@
         <template v-if="vcs.type.startsWith('GITLAB')">
           <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('GITHUB')">
+          <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+        </template>
         <h3 class="text-lg leading-6 font-medium text-main">
           {{ vcs.name }}
         </h3>
