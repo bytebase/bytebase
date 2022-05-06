@@ -65,15 +65,15 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, watchEffect } from "vue";
-import { isDBAOrOwner, hidePrefix } from "../utils";
-import { Label, LabelPatch } from "../types";
-import { BBTableColumn } from "../bbkit/types";
-import { BBTable, BBTableCell } from "../bbkit";
+import { computed, defineComponent } from "vue";
 import { useI18n } from "vue-i18n";
-import AddLabelValue from "../components/AddLabelValue.vue";
-import { useCurrentUser, useLabelStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { isDBAOrOwner, hidePrefix } from "@/utils";
+import type { Label, LabelPatch } from "@/types";
+import type { BBTableColumn } from "@/bbkit/types";
+import { BBTable, BBTableCell } from "@/bbkit";
+import AddLabelValue from "@/components/AddLabelValue.vue";
+import { useCurrentUser, useLabelStore } from "@/store";
 
 export default defineComponent({
   name: "SettingWorkspaceLabels",
@@ -86,12 +86,6 @@ export default defineComponent({
     const { t } = useI18n();
     const labelStore = useLabelStore();
     const currentUser = useCurrentUser();
-
-    const prepareLabelList = () => {
-      labelStore.fetchLabelList();
-    };
-
-    watchEffect(prepareLabelList);
 
     const { labelList } = storeToRefs(labelStore);
 
