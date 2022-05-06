@@ -12,6 +12,9 @@ type SchemaReviewRuleLevel string
 // SchemaReviewRuleType is the type of schema rule.
 type SchemaReviewRuleType string
 
+// TemplateRuleSectionType is the type for template section.
+type TemplateRuleSectionType string
+
 const (
 	// SchemaRuleLevelError is the error level of SchemaReviewRuleLevel.
 	SchemaRuleLevelError SchemaReviewRuleLevel = "ERROR"
@@ -53,6 +56,52 @@ const (
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
+
+	// TemplateRuleStringSection is the string type in TemplateRuleSection
+	TemplateRuleStringSection TemplateRuleSectionType = "string"
+	// TemplateRuleTemplateSection is the template type in TemplateRuleSection
+	TemplateRuleTemplateSection TemplateRuleSectionType = "template"
+
+	// TemplateBracketLeft is the left bracket for template
+	TemplateBracketLeft = "{{"
+	// TemplateBracketRight is the right bracket for template
+	TemplateBracketRight = "}}"
+	// TableNameTemplateToken is the token for table name
+	TableNameTemplateToken = "table"
+	// ColumnListTemplateToken is the token for column name list
+	ColumnListTemplateToken = "column_list"
+	// ReferencingTableNameTemplateToken is the token for referencing table name
+	ReferencingTableNameTemplateToken = "referencing_table"
+	// ReferencingColumnNameTemplateToken is the token for referencing column name
+	ReferencingColumnNameTemplateToken = "referencing_column"
+	// ReferencedTableNameTemplateToken is the token for referenced table name
+	ReferencedTableNameTemplateToken = "referenced_table"
+	// ReferencedColumnNameTemplateToken is the token for referenced column name
+	ReferencedColumnNameTemplateToken = "referenced_column"
+)
+
+var (
+	// TemplateNamingTokens is the mapping for rule type to template token
+	TemplateNamingTokens = map[SchemaReviewRuleType]map[string]bool{
+		SchemaRulePKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleIDXNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleUKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleFKNaming: {
+			ReferencingTableNameTemplateToken:  true,
+			ReferencingColumnNameTemplateToken: true,
+			ReferencedTableNameTemplateToken:   true,
+			ReferencedColumnNameTemplateToken:  true,
+		},
+	}
 )
 
 // SchemaReviewPolicy is the policy configuration for schema review.
@@ -91,6 +140,17 @@ func (rule *SchemaReviewRule) Validate() error {
 		if _, err := UnmarshalNamingRulePayloadFormat(rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRulePKNaming, SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
+		templateList, err := UnmarshalTemplateRulePayload(rule.Payload)
+		if err != nil {
+			return err
+		}
+
+		for _, section := range templateList {
+			if section.Type == TemplateRuleTemplateSection && !TemplateNamingTokens[rule.Type][section.Value] {
+				return fmt.Errorf("invalid template section %s for rule %s", section.Value, rule.Type)
+			}
+		}
 	}
 	return nil
 }
@@ -105,6 +165,12 @@ type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
 }
 
+// TemplateRuleSection is the section for template.
+type TemplateRuleSection struct {
+	Value string
+	Type  TemplateRuleSectionType
+}
+
 // UnmarshalNamingRulePayloadFormat will unmarshal payload to NamingRulePayload and compile it as regular expression.
 func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 	var nr NamingRulePayload
@@ -116,4 +182,62 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 		return nil, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
 	}
 	return format, nil
+}
+
+// UnmarshalTemplateRulePayload will unmarshal payload to TemplateRulePayload and compile it as list of TemplateRuleSection.
+// For example, "hard_code_{{table}}_{{column}}_end" will convert to
+// [
+//  { Value: "hard_code_",  Type: "string" },
+//  { Value: "table", Type: "template" },
+//  { Value: "_", Type: "string" },
+//  { Value: "column", Type: "template" },
+//  { Value: "_end", Type: "string" },
+// ]
+func UnmarshalTemplateRulePayload(payload string) ([]*TemplateRuleSection, error) {
+	var nr NamingRulePayload
+	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+	}
+
+	template := nr.Format
+	start := 0
+	end := 0
+	res := []*TemplateRuleSection{}
+
+	for end <= len(template)-1 {
+		if end+1 == len(template) {
+			end++
+			break
+		}
+		if template[end:end+2] == TemplateBracketRight && template[start:start+2] == TemplateBracketLeft {
+			res = append(res, &TemplateRuleSection{
+				Value: template[start+2 : end],
+				Type:  TemplateRuleTemplateSection,
+			})
+			end += 2
+			start = end
+		} else if template[end:end+2] == TemplateBracketLeft {
+			res = append(res, &TemplateRuleSection{
+				Value: template[start:end],
+				Type:  TemplateRuleStringSection,
+			})
+			start = end
+			end += 2
+		} else {
+			end++
+		}
+	}
+
+	if start < end {
+		res = append(res, &TemplateRuleSection{
+			Value: template[start:end],
+			Type:  TemplateRuleStringSection,
+		})
+	}
+
+	if len(res) <= 0 {
+		return nil, fmt.Errorf("invalid template list, at least has one template section")
+	}
+
+	return res, nil
 }
