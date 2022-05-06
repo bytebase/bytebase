@@ -53,6 +53,9 @@ const (
 
 	// 10201 naming advisor error code
 	TableNamingConventionMismatch Code = 10201
+
+	// 10301 column rule advisor error code
+	NoRequiredColumn Code = 10301
 )
 
 // Error represents an application-specific error. Application errors can be
