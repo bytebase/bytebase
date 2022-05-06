@@ -35,7 +35,7 @@ func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	format, err := api.UnmarshalNamingRulePayloadFormat(ctx.Rule.Payload)
+	format, err := api.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

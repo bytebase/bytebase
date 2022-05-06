@@ -125,11 +125,11 @@ func (rule *SchemaReviewRule) Validate() error {
 	// TODO(rebelice): add other schema review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
-		if _, err := UnmarshalNamingRulePayloadFormat(rule.Payload); err != nil {
+		if _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRulePKNaming, SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-		if _, _, err := UnmarshalTemplateRulePayload(rule.Type, rule.Payload); err != nil {
+		if _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}
 	}
@@ -146,8 +146,8 @@ type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
 }
 
-// UnmarshalNamingRulePayloadFormat will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
+// UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
+func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
@@ -159,10 +159,10 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 	return format, nil
 }
 
-// UnmarshalTemplateRulePayload will unmarshal payload to TemplateRulePayload and extract all the template keys.
+// UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
 // "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
-func UnmarshalTemplateRulePayload(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
+func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return "", []string{}, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
