@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -44,10 +45,9 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 		requiredColumns[column] = true
 	}
 	checker := &columnRequirementChecker{
-		level:              level,
-		requiredColumnList: strings.Join(payload.ColumnList, ", "),
-		requiredColumns:    requiredColumns,
-		tables:             make(tableState),
+		level:           level,
+		requiredColumns: requiredColumns,
+		tables:          make(tableState),
 	}
 
 	for _, stmtNode := range root {
@@ -58,14 +58,23 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 }
 
 type columnSet map[string]bool
+
+func (set columnSet) String() string {
+	list := make([]string, 0, len(set))
+	for column := range set {
+		list = append(list, column)
+	}
+	sort.Strings(list)
+	return strings.Join(list, ", ")
+}
+
 type tableState map[string]columnSet
 
 type columnRequirementChecker struct {
-	advisorList        []advisor.Advice
-	level              advisor.Status
-	requiredColumns    columnSet
-	requiredColumnList string
-	tables             tableState
+	advisorList     []advisor.Advice
+	level           advisor.Status
+	requiredColumns columnSet
+	tables          tableState
 }
 
 func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -103,6 +112,7 @@ func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
+	requiredColumnList := v.requiredColumns.String()
 	for tableName, table := range v.tables {
 		for column := range v.requiredColumns {
 			if exist, ok := table[column]; !ok || !exist {
@@ -110,7 +120,7 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 					Status:  v.level,
 					Code:    common.NoRequiredColumn,
 					Title:   "Require columns",
-					Content: fmt.Sprintf("%q requires columns: %s", tableName, v.requiredColumnList),
+					Content: fmt.Sprintf("%q requires columns: %s", tableName, requiredColumnList),
 				})
 				break
 			}
