@@ -273,13 +273,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch, watchEffect } from "vue";
+import { computed, PropType, reactive, watch } from "vue";
 import { isEqual } from "lodash-es";
 import { NDatePicker } from "naive-ui";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { storeToRefs } from "pinia";
 import StageSelect from "./StageSelect.vue";
 import TaskSelect from "./TaskSelect.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
@@ -320,7 +319,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useEnvironmentStore,
-  useLabelStore,
+  useLabelList,
   useProjectStore,
 } from "@/store";
 
@@ -381,7 +380,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const labelStore = useLabelStore();
 const projectStore = useProjectStore();
 
 const now = new Date();
@@ -440,13 +438,7 @@ const project = computed((): Project => {
   return (props.issue as Issue).project;
 });
 
-const prepareLabelList = () => {
-  labelStore.fetchLabelList();
-};
-
-watchEffect(prepareLabelList);
-
-const { labelList } = storeToRefs(labelStore);
+const labelList = useLabelList();
 
 const visibleLabelList = computed((): DatabaseLabel[] => {
   // transform non-reserved labels to db properties

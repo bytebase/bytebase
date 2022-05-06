@@ -88,22 +88,22 @@
 /* eslint-disable vue/no-mutating-props */
 
 import { computed, watchEffect, watch, ref } from "vue";
-
-import {
+import { NCollapse, NCollapseItem } from "naive-ui";
+import { groupBy } from "lodash-es";
+import type {
   Database,
   DatabaseId,
   Environment,
   LabelKeyType,
   Project,
-  UNKNOWN_ID,
-} from "../../types";
-import { NCollapse, NCollapseItem } from "naive-ui";
-import { groupBy } from "lodash-es";
+} from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
-import { parseDatabaseNameByTemplate } from "../../utils";
-import { getPipelineFromDeploymentSchedule } from "../../utils";
-import { useDeploymentStore, useLabelStore } from "@/store";
-import { storeToRefs } from "pinia";
+import {
+  parseDatabaseNameByTemplate,
+  getPipelineFromDeploymentSchedule,
+} from "@/utils";
+import { useDeploymentStore, useLabelList } from "@/store";
 
 export type State = {
   selectedDatabaseName: string | undefined;
@@ -122,10 +122,8 @@ defineEmits<{
 }>();
 
 const deploymentStore = useDeploymentStore();
-const labelStore = useLabelStore();
 
 const fetchData = () => {
-  labelStore.fetchLabelList();
   if (props.project) {
     deploymentStore.fetchDeploymentConfigByProjectId(props.project.id);
   }
@@ -134,7 +132,7 @@ const fetchData = () => {
 watchEffect(fetchData);
 
 const label = ref<LabelKeyType>("bb.environment");
-const { labelList } = storeToRefs(labelStore);
+const labelList = useLabelList();
 
 const deployment = computed(() => {
   if (props.project) {

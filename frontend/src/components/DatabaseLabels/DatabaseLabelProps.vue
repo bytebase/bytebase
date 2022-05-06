@@ -16,16 +16,16 @@
 </template>
 
 <script lang="ts" setup>
-import { useLabelStore } from "@/store";
 import { cloneDeep } from "lodash-es";
-import { computed, withDefaults, watch, watchEffect, reactive } from "vue";
-import {
+import { computed, withDefaults, watch, reactive } from "vue";
+import type {
   Database,
   DatabaseLabel,
   LabelKeyType,
   LabelValueType,
-} from "../../types";
-import { isReservedLabel, parseLabelListInTemplate } from "../../utils";
+} from "@/types";
+import { isReservedLabel, parseLabelListInTemplate } from "@/utils";
+import { useLabelList } from "@/store";
 import DatabaseLabelPropItem from "./DatabaseLabelPropItem.vue";
 
 const props = withDefaults(
@@ -47,12 +47,7 @@ const state = reactive({
   labelList: cloneDeep(props.labelList),
 });
 
-const labelStore = useLabelStore();
-
-const prepareLabelList = () => {
-  labelStore.fetchLabelList();
-};
-watchEffect(prepareLabelList);
+const allLabelList = useLabelList();
 
 watch(
   () => props.labelList,
@@ -60,8 +55,7 @@ watch(
 );
 
 const availableLabelList = computed(() => {
-  const allList = labelStore.labelList;
-  return allList.filter((label) => !isReservedLabel(label));
+  return allLabelList.value.filter((label) => !isReservedLabel(label));
 });
 
 const requiredLabelList = computed(() => {
