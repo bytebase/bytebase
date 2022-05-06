@@ -70,13 +70,13 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
+	driver := getDbDriver(t, localhost, fmt.Sprintf("%d", port), username, database)
 	defer func() {
 		err := driver.Close(context.TODO())
 		a.NoError(err)
 	}()
 
-	buf := backup(a, driver, database)
+	buf := doBackup(t, driver, database)
 	// t.Logf("dump:\n%s", buf.String())
 
 	// drop all tables
@@ -117,12 +117,52 @@ func TestPITR(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 
+	// common configs
 	localhost := "127.0.0.1"
 	port := getTestPort(t.Name())
 	username := "root"
 	database := "backup_restore"
 
-	insertData := func(db *sql.DB, a *require.Assertions, begin, end int) {
+	// common PITR routines
+	initDB := func(t *testing.T, database, username, localhost string, port int) (*sql.DB, func()) {
+		a := require.New(t)
+
+		_, stopFn := mysql.SetupTestInstance(t, port)
+
+		db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
+		a.NoError(err)
+
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
+		a.NoError(err)
+
+		_, err = db.Exec(fmt.Sprintf("USE %s", database))
+		a.NoError(err)
+
+		_, err = db.Exec(`
+		CREATE TABLE t0 (
+			id INT,
+			PRIMARY KEY (id),
+			CHECK (id >= 0)
+		);
+		`)
+		a.NoError(err)
+		_, err = db.Exec(`
+		CREATE TABLE t1 (
+			id INT,
+			pid INT,
+			PRIMARY KEY (id),
+			UNIQUE INDEX (pid),
+			CONSTRAINT FOREIGN KEY (pid) REFERENCES t0(id) ON DELETE NO ACTION
+		);
+		`)
+		a.NoError(err)
+
+		return db, stopFn
+	}
+
+	insertRangeData := func(t *testing.T, db *sql.DB, begin, end int) {
+		a := require.New(t)
+
 		tx, err := db.Begin()
 		a.NoError(err)
 		defer tx.Rollback()
@@ -138,98 +178,75 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 	}
 
-	_, stop := mysql.SetupTestInstance(t, port)
-	defer stop()
+	// test cases
+	t.Run("Buggy Application", func(t *testing.T) {
+		db, stopFn := initDB(t, database, username, localhost, port)
+		defer db.Close()
+		defer stopFn()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
-	a.NoError(err)
-	defer db.Close()
+		// insert data to make time point t0
+		insertRangeData(t, db, 0, 10)
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	a.NoError(err)
+		// make a full backup of t0
+		driverBackup := getDbDriver(t, localhost, fmt.Sprintf("%d", port), username, database)
+		defer func() {
+			err := driverBackup.Close(context.TODO())
+			a.NoError(err)
+		}()
 
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	a.NoError(err)
+		buf := doBackup(t, driverBackup, database)
+		t.Log(buf.String())
 
-	_, err = db.Exec(`
-	CREATE TABLE t0 (
-		id INT,
-		PRIMARY KEY (id),
-		CHECK (id >= 0)
-	);
-	`)
-	a.NoError(err)
-	_, err = db.Exec(`
-	CREATE TABLE t1 (
-		id INT,
-		pid INT,
-		PRIMARY KEY (id),
-		UNIQUE INDEX (pid),
-		CONSTRAINT FOREIGN KEY (pid) REFERENCES t0(id) ON DELETE NO ACTION
-	);
-	`)
-	a.NoError(err)
+		// insert more data to make time point t1
+		insertRangeData(t, db, 10, 20)
 
-	// insert data to make time point t0
-	insertData(db, a, 0, 10)
+		// concurrently update data
+		stopChan := make(chan bool)
+		go updateRow(t, username, localhost, database, port, stopChan)
+		defer func() { stopChan <- true }()
 
-	// make a full backup of t0
-	driverBackup := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
-	defer func() {
-		err := driverBackup.Close(context.TODO())
+		// restore to ghost database
+		_, err := db.Exec("SET foreign_key_checks=OFF")
 		a.NoError(err)
-	}()
 
-	buf := backup(a, driverBackup, database)
-	t.Log(buf.String())
-
-	// insert more data to make time point t1
-	insertData(db, a, 10, 20)
-
-	// concurrently update data
-	stopChan := make(chan bool)
-	go updateRow(t, username, localhost, database, port, stopChan)
-	defer func() { stopChan <- true }()
-
-	// restore to ghost database
-	_, err = db.Exec("SET foreign_key_checks=OFF")
-	a.NoError(err)
-
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_ghost", database))
-	a.NoError(err)
-	_, err = db.Exec(fmt.Sprintf("USE %s_ghost", database))
-	a.NoError(err)
-
-	driverRestore := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, fmt.Sprintf("%s_ghost", database))
-	defer func() {
-		err := driverRestore.Close(context.TODO())
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_ghost", database))
 		a.NoError(err)
-	}()
-	err = driverRestore.Restore(context.TODO(), bufio.NewScanner(buf))
-	a.NoError(err)
+		_, err = db.Exec(fmt.Sprintf("USE %s_ghost", database))
+		a.NoError(err)
 
-	// TODO(dragonly): validate ghost table data and schema
+		driverRestore := getDbDriver(t, localhost, fmt.Sprintf("%d", port), username, fmt.Sprintf("%s_ghost", database))
+		defer func() {
+			err := driverRestore.Close(context.TODO())
+			a.NoError(err)
+		}()
+		err = driverRestore.Restore(context.TODO(), bufio.NewScanner(buf))
+		a.NoError(err)
 
-	// TODO(dragonly): apply binlog from full backup to
-	// need to use binlog package from gh-ost or go-mysql
+		// TODO(dragonly): validate ghost table data and schema
 
-	_, err = db.Exec("SET foreign_key_checks=ON")
-	a.NoError(err)
+		// TODO(dragonly): apply binlog from full backup to
+		// need to use binlog package from gh-ost or go-mysql
 
-	// the user can inspect the ghost table for now, and decide whether to execute the cut over
-	// cut over stage, swap tables
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_old", database))
-	a.NoError(err)
-	queryRename := fmt.Sprintf("RENAME TABLE"+
-		" `%s`.`t0` TO `%s_old`.`t0`, `%s`.`t1` TO `%s_old`.`t1`,"+
-		" `%s_ghost`.`t0` TO `%s`.`t0`, `%s_ghost`.`t1` TO `%s`.`t1`",
-		database, database, database, database, database, database, database, database)
-	t.Log(queryRename)
-	_, err = db.Exec(queryRename)
-	a.NoError(err)
+		_, err = db.Exec("SET foreign_key_checks=ON")
+		a.NoError(err)
+
+		// the user can inspect the ghost table for now, and decide whether to execute the cut over
+		// cut over stage, swap tables
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_old", database))
+		a.NoError(err)
+		queryRename := fmt.Sprintf("RENAME TABLE"+
+			" `%s`.`t0` TO `%s_old`.`t0`, `%s`.`t1` TO `%s_old`.`t1`,"+
+			" `%s_ghost`.`t0` TO `%s`.`t0`, `%s_ghost`.`t1` TO `%s`.`t1`",
+			database, database, database, database, database, database, database, database)
+		t.Log(queryRename)
+		_, err = db.Exec(queryRename)
+		a.NoError(err)
+	})
 }
 
-func getDbDriver(a *require.Assertions, host, port, username, database string) dbPlugin.Driver {
+func getDbDriver(t *testing.T, host, port, username, database string) dbPlugin.Driver {
+	a := require.New(t)
+
 	logger, err := zap.NewDevelopment()
 	a.NoError(err)
 	driver, err := dbPlugin.Open(
@@ -250,7 +267,9 @@ func getDbDriver(a *require.Assertions, host, port, username, database string) d
 	return driver
 }
 
-func backup(a *require.Assertions, driver dbPlugin.Driver, database string) *bytes.Buffer {
+func doBackup(t *testing.T, driver dbPlugin.Driver, database string) *bytes.Buffer {
+	a := require.New(t)
+
 	var buf bytes.Buffer
 	err := driver.Dump(context.TODO(), database, &buf, false)
 	a.NoError(err)
