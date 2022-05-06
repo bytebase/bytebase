@@ -12,9 +12,6 @@ type SchemaReviewRuleLevel string
 // SchemaReviewRuleType is the type of schema rule.
 type SchemaReviewRuleType string
 
-// TemplateRuleSectionType is the type for template section.
-type TemplateRuleSectionType string
-
 const (
 	// SchemaRuleLevelError is the error level of SchemaReviewRuleLevel.
 	SchemaRuleLevelError SchemaReviewRuleLevel = "ERROR"
@@ -56,11 +53,6 @@ const (
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
-
-	// TemplateRuleStringSection is the string type in TemplateRuleSection
-	TemplateRuleStringSection TemplateRuleSectionType = "string"
-	// TemplateRuleTemplateSection is the template type in TemplateRuleSection
-	TemplateRuleTemplateSection TemplateRuleSectionType = "template"
 
 	// TemplateBracketLeft is the left bracket for template
 	TemplateBracketLeft = "{{"
@@ -156,12 +148,6 @@ type NamingRulePayload struct {
 // RequiredColumnRulePayload is the payload for required column rule.
 type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
-}
-
-// TemplateRuleSection is the section for template.
-type TemplateRuleSection struct {
-	Value string
-	Type  TemplateRuleSectionType
 }
 
 // UnmarshalNamingRulePayloadFormat will unmarshal payload to NamingRulePayload and compile it as regular expression.
