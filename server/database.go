@@ -443,23 +443,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", id)).SetInternal(err)
-		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
-		}
-
 		viewFind := &api.ViewFind{
 			DatabaseID: &id,
 		}
 		viewList, err := s.store.FindView(ctx, viewFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch view list for database ID: %d", id)).SetInternal(err)
-		}
-		for _, view := range viewList {
-			view.Database = database
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

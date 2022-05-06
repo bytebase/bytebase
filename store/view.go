@@ -41,6 +41,9 @@ func (raw *viewRaw) toView() *api.View {
 		UpdaterID: raw.UpdaterID,
 		UpdatedTs: raw.UpdatedTs,
 
+		// Related fields
+		DatabaseID: raw.DatabaseID,
+
 		// Domain specific fields
 		Name:       raw.Name,
 		Definition: raw.Definition,
@@ -115,6 +118,13 @@ func (s *Store) composeView(ctx context.Context, raw *viewRaw) (*api.View, error
 		return nil, err
 	}
 	view.Updater = updater
+
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &view.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	view.Database = database
+
 	return view, nil
 }
 

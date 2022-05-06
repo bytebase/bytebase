@@ -17,7 +17,8 @@ type View struct {
 	UpdatedTs int64      `jsonapi:"attr,updatedTs"`
 
 	// Related fields
-	Database *Database `jsonapi:"relation,database"`
+	DatabaseID int
+	Database   *Database `jsonapi:"relation,database"`
 
 	// Domain specific fields
 	Name       string `jsonapi:"attr,name"`
