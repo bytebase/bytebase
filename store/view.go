@@ -118,6 +118,13 @@ func (s *Store) composeView(ctx context.Context, raw *viewRaw) (*api.View, error
 		return nil, err
 	}
 	view.Updater = updater
+
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &view.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	view.Database = database
+
 	return view, nil
 }
 
