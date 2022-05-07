@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, storeToRefs } from "pinia";
 import axios from "axios";
 import {
   Label,
@@ -73,3 +73,8 @@ export const useLabelStore = defineStore("label", {
     },
   },
 });
+
+export const useLabelList = () => {
+  const store = useLabelStore();
+  return storeToRefs(store).labelList;
+};

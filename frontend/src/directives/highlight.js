@@ -7,7 +7,7 @@ hljs.configure({
 
 const directive = {
   beforeMount(el) {
-    hljs.highlightBlock(el);
+    hljs.highlightElement(el);
   },
 };
 

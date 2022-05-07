@@ -10,10 +10,10 @@ const locale = storage.value?.appearance?.language || navigator.language;
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
 const messages = Object.fromEntries(
-  Object.entries(import.meta.globEager("../locales/*.y(a)?ml")).map(
+  Object.entries(import.meta.globEager("../locales/*.json")).map(
     ([key, value]) => {
-      const yaml = key.endsWith(".yaml");
-      return [key.slice(localPathPrefix.length, yaml ? -5 : -4), value.default];
+      const name = key.slice(localPathPrefix.length, -5);
+      return [name, value.default];
     }
   )
 );

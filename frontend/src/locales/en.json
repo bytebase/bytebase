@@ -1,0 +1,1492 @@
+{
+  "common": {
+    "when": "When",
+    "view": "View",
+    "you": "you",
+    "general": "General",
+    "slack": "Slack",
+    "discord": "Discord",
+    "teams": "Teams",
+    "dingtalk": "DingTalk",
+    "feishu": "Feishu",
+    "wecom": "WeCom",
+    "custom": "Custom",
+    "overview": "Overview",
+    "migration-history": "Migration History",
+    "webhook": "Webhook",
+    "webhooks": "Webhooks",
+    "key": "Key",
+    "workflow": "Workflow",
+    "unread": "Unread",
+    "read": "Read",
+    "inbox": "Inbox",
+    "activity": "Activity",
+    "activities": "Activities",
+    "sign-in": "Sign in",
+    "sign-up": "Sign up",
+    "email": "Email",
+    "username": "Username",
+    "password": "Password",
+    "activate": "Activate",
+    "save": "Save",
+    "cancel": "Cancel",
+    "comment": "Comment",
+    "home": "Home",
+    "setting": "Setting",
+    "settings": "Settings",
+    "project": "Project",
+    "projects": "Projects",
+    "default-project": "Default Project",
+    "visit-default-project": "@:common.visit @:common.default-project",
+    "help": "Help",
+    "database": "Database",
+    "databases": "Databases",
+    "description": "Description",
+    "instance": "Instance",
+    "instances": "Instances",
+    "environment": "Environment",
+    "environments": "Environments",
+    "bookmark": "Bookmark",
+    "bookmarks": "Bookmarks",
+    "quick-action": "Quick Action",
+    "archive": "Archive",
+    "quickstart": "Quickstart",
+    "logout": "Logout",
+    "close": "Close",
+    "latest": "Latest",
+    "error": "Error",
+    "canceled": "Canceled",
+    "approval": "Approval",
+    "approve": "Approve",
+    "done": "Done",
+    "create": "Create",
+    "run": "Run",
+    "retry": "Retry",
+    "skip": "Skip",
+    "reopen": "Reopen",
+    "dismiss": "Dismiss",
+    "back": "Back",
+    "next": "Next",
+    "edit": "Edit",
+    "update": "Update",
+    "visit": "Visit",
+    "role": {
+      "dba": "DBA",
+      "owner": "Owner",
+      "developer": "Developer",
+      "member": "Member"
+    },
+    "role-switch": {
+      "dba": "Switch to DBA",
+      "owner": "Switch to Owner",
+      "developer": "Switch to Developer"
+    },
+    "assignee": "Assignee",
+    "revert": "Revert",
+    "apply": "Apply",
+    "reorder": "Reorder",
+    "id": "ID",
+    "name": "Name",
+    "creator": "Creator",
+    "version": "Version",
+    "issue": "Issue",
+    "issues": "Issues",
+    "duration": "Duration",
+    "created-at": "Created",
+    "updated-at": "Updated",
+    "commit": "Commit",
+    "statement": "Statement",
+    "sql-statement": "SQL statement",
+    "snapshot": "Snapshot",
+    "status": "Status",
+    "stage": "Stage",
+    "task": "Task",
+    "sql": "SQL",
+    "unassigned": "Unassigned",
+    "new": "New",
+    "add": "Add",
+    "confirm-and-add": "Confirm and add",
+    "confirm-and-update": "Confirm and update",
+    "query": "Query",
+    "transfer": "Transfer",
+    "migration": "Migration",
+    "schema": "Schema",
+    "anomalies": "Anomalies",
+    "do-not-show-again": "Do not show again",
+    "backups": "Backups",
+    "detail": "Detail",
+    "type": "Type",
+    "language": "Language",
+    "repository": "Repository",
+    "change": "Change",
+    "branch": "Branch",
+    "config-guide": "config guide",
+    "required-placeholder": "required placeholder",
+    "optional-placeholder": "optional placeholder",
+    "sensitive-placeholder": "sensitive - write only",
+    "enabled": "enabled",
+    "default": "default",
+    "version-control": "Version Control",
+    "restore": "Restore",
+    "detailed-guide": "detailed guide",
+    "workspace": "workspace",
+    "application": "Application",
+    "confirm": "Confirm",
+    "coming-later": "Coming later",
+    "learn-more": "Learn more",
+    "schema-version": "Schema version",
+    "time": "Time",
+    "manual": "Manual",
+    "automatic": "Automatic",
+    "Default": "Default",
+    "definition": "Definition",
+    "empty": "Empty",
+    "creating": "Creating...",
+    "updating": "Updating...",
+    "Address": "Address",
+    "User": "User",
+    "assigned": "Assigned",
+    "subscribed": "Subscribed",
+    "created": "Created",
+    "label": "Label",
+    "labels": "Labels",
+    "mode": "Mode",
+    "roletype": "Role Type",
+    "readonly": "readonly",
+    "user": "User",
+    "added-time": "Added time",
+    "data-source": "Data Source",
+    "grant": "Grant",
+    "admin": "Admin",
+    "read-only": "Read-only",
+    "connection-string": "Connection string",
+    "agents": "Agents",
+    "billings": "Billings",
+    "all": "All",
+    "deployment-config": "Deployment Config",
+    "by": "by",
+    "ok": "OK",
+    "share": "Share",
+    "others": "Others",
+    "or": "or",
+    "export": "Export",
+    "tips": "Tips",
+    "template": "Template",
+    "delete": "Delete",
+    "history": "History",
+    "loading": "Loading",
+    "from": "from",
+    "copy": "Copy",
+    "copied": "Copied",
+    "manage": "Manage",
+    "table": "Table",
+    "search": "Search",
+    "warning": "Warning",
+    "edited": "edited",
+    "preview": "Preview",
+    "file-selector": {
+      "type-limit": "Only support {extension} file",
+      "size-limit": "File size should less than {size} MiB"
+    },
+    "no-data": "No data",
+    "visibility": "Visibility",
+    "star": "Star",
+    "unstar": "Unstar",
+    "starred": "Starred",
+    "duplicate": "Duplicate",
+    "clear-search": "Clear search",
+    "enable": "Enable",
+    "disable": "Disable"
+  },
+  "error-page": {
+    "go-back-home": "Go back home"
+  },
+  "anomaly-center": "Anomaly Center",
+  "kbar": {
+    "recently-visited": "Recently Visited",
+    "navigation": "Navigation",
+    "help": {
+      "navigate": "to navigate",
+      "perform": "to perform",
+      "close": "to close",
+      "back": "to back"
+    },
+    "options": {
+      "placeholder": "Type a command or search…"
+    },
+    "preferences": {
+      "common": "Preferences",
+      "change-language": "Change Language…"
+    }
+  },
+  "task": {
+    "checking": "Checking...",
+    "run-task": "Run checks",
+    "check-result": {
+      "title": "Check result for {name}"
+    },
+    "check-type": {
+      "fake": "Fake",
+      "syntax": "Syntax",
+      "compatibility": "Compatibility",
+      "connection": "Connection",
+      "migration-schema": "Migration schema",
+      "sql-review": "SQL review",
+      "earliest-allowed-time": "Earliest allowed time"
+    },
+    "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
+    "earliest-allowed-time-unset": "Unset",
+    "comment": "Comment",
+    "invoker": "Invoker",
+    "started": "Started",
+    "ended": "Ended",
+    "view-migration": "View migration",
+    "view-migration-history": "View migration history",
+    "status": {
+      "running": "Running",
+      "failed": "Failed",
+      "canceled": "Canceled",
+      "success": "Success",
+      "warn": "Warning",
+      "error": "Error"
+    },
+    "earliest-allowed-time-no-modify": "You can not modify this field because you are not the issue assignee or it's not pending to run.",
+    "type": {
+      "bb-task-database-schema-update-ghost-sync": "Sync data",
+      "bb-task-database-schema-update-ghost-cutover": "Switch tables",
+      "bb-task-database-schema-update-ghost-drop-original-table": "Drop original table"
+    }
+  },
+  "banner": {
+    "demo-intro": "This is a demo version of Bytebase.",
+    "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
+    "trial-expires": "Your trial for {plan} plan will expires in {days} days.",
+    "extend-trial": "Extend trialing time",
+    "action": "Deploy yours in 5 seconds",
+    "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown."
+  },
+  "intro": {
+    "content": "Bytebase is for DBAs and Developers to collaborate on database schemas changes. One can construct a single pipeline to propagate the schema change across multiple environments. One can also store the schemas in VCS and trigger a new pipeline upon commit push. Follow the {quickstart} on the bottom left to get familiar with the product. If you encounter problems, visit {doc} or report {issue} on GitHub.",
+    "quickstart": "Quickstart",
+    "doc": "doc",
+    "issue": "issue"
+  },
+  "bbkit": {
+    "common": {
+      "ok": "OK",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next",
+      "finish": "Finish",
+      "step": "Step"
+    },
+    "attention": {
+      "default": "Attention needed"
+    }
+  },
+  "settings": {
+    "sidebar": {
+      "account": "Account",
+      "profile": "Profile",
+      "workspace": "Workspace",
+      "general": "General",
+      "members": "Members",
+      "version-control": "Version Control",
+      "subscription": "Subscription",
+      "labels": "Labels"
+    },
+    "profile": {
+      "email": "Email",
+      "role": "Role",
+      "password": "Password",
+      "password-confirm": "Confirm",
+      "password-confirm-placeholder": "Confirm new password",
+      "password-mismatch": "mismatch",
+      "subscription": "(Upgrade to enable role management)"
+    },
+    "members": {
+      "active": "Active members",
+      "inactive": "Inactive members",
+      "helper": "Add or invite by email address",
+      "add-more": "+ Add more",
+      "add": "Add",
+      "invites": "Send Invites",
+      "invited": "Invited",
+      "yourself": "You",
+      "upgrade": "Upgrade to enable role management",
+      "select-role": "Select role",
+      "not-assigned": "Not assigned",
+      "table": {
+        "account": "Account",
+        "role": "Role",
+        "update-time": "Updated Time",
+        "granted-time": "Granted Time"
+      },
+      "action": {
+        "deactivate": "Deactivate",
+        "deactivate-confirm-title": "Are you sure to deactivate",
+        "deactivate-confirm-description": "You can still reactivate later",
+        "reactivate": "Reactivate",
+        "reactivate-confirm-title": "Are you sure to reactivate"
+      },
+      "tooltip": {
+        "upgrade": "Upgrade to enable role management",
+        "not-allow-edit": "Only Owner can change the role",
+        "not-allow-remove": "Can not remove the last Owner",
+        "project-role-provider-gitlab": "Mapped from the {rawRole} role in the corresponding GitLab project."
+      },
+      "toggle-role-provider": {
+        "title": "Are you sure?"
+      },
+      "change-role-provider-to-vcs": {
+        "content": "Turning on VCS sync will replace all existing members with the members from the corresponding VCS project.\nThe existing members will become inactive. You can turn off VCS sync to restore those members.",
+        "emphasize": "Please be noticed that this function requires all project members from the VCS have a public email set."
+      },
+      "change-role-provider-to-bytebase": {
+        "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
+      }
+    },
+    "general": {
+      "workspace": {
+        "branding": "Branding",
+        "only-owner-can-edit": "Only workspace owner can update the branding.",
+        "logo": "Logo",
+        "logo-aspect": "The suggested logo size should be in 5:2 aspect ratio (e.g 100 x 40).",
+        "select-logo": "Upload a file",
+        "drag-logo": "or drag here",
+        "logo-upload-tip": "{extension} up to {size} MiB",
+        "logo-upload-succeed": "Successfully updated the logo"
+      }
+    }
+  },
+  "activity": {
+    "name": "Name",
+    "comment": "Comment",
+    "created": "Created",
+    "invoker": "Invoker",
+    "type": {
+      "issue-create": "create issue",
+      "comment-create": "create comment",
+      "issue-field-update": "update issue field",
+      "issue-status-update": "update issue status",
+      "pipeline-task-status-update": "update issue task status",
+      "pipeline-task-file-commit": "commit file",
+      "pipeline-task-statement-update": "SQL update",
+      "member-create": "create member",
+      "member-role-update": "update role",
+      "member-activate": "activate member",
+      "member-deactivate": "deactivate member",
+      "project-repository-push": "repository push event",
+      "project-database-transfer": "database transfer",
+      "project-member-create": "add project member",
+      "project-member-delete": "delete project member",
+      "project-member-role-update": "change project member role",
+      "pipeline-task-earliest-allowed-time-update": "update earliest allowed time"
+    },
+    "sentence": {
+      "created-issue": "created issue",
+      "commented": "commented",
+      "reassigned-issue": "reassigned issue from {oldName} to {newName}",
+      "assigned-issue": "assigned issue to {newName}",
+      "unassigned-issue": "unassigned issue from {oldName}",
+      "invalid-assignee-update": "invalid assignee update",
+      "changed-description": "changed description",
+      "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
+      "unset-from": "unset {name} from \"{oldValue}\"",
+      "set-to": "set {name} to \"{newValue}\"",
+      "changed-update": "changed {name} update",
+      "reopened-issue": "reopened issue",
+      "resolved-issue": "resolved issue",
+      "canceled-issue": "canceled issue",
+      "empty": "",
+      "changed": "changed",
+      "updated": "updated",
+      "canceled": "canceled",
+      "approved": "approved",
+      "started": "started",
+      "completed": "completed",
+      "failed": "failed",
+      "task-name": " task {name}",
+      "committed-to-at": "committed {file} to{branch}{'@'}{repo}"
+    },
+    "subject-prefix": {
+      "task": "Task"
+    }
+  },
+  "issue": {
+    "waiting-approval": "Waiting Approval",
+    "opened-by-at": "opened by {creator} at {time}",
+    "commit-by-at": "commit {id} {title} by {author} at {time}",
+    "status-transition": {
+      "modal": {
+        "resolve": "Resolve issue?",
+        "cancel": "Cancel this entire issue?",
+        "reopen": "Reopen issue?"
+      },
+      "dropdown": {
+        "resolve": "Resolve issue",
+        "cancel": "Cancel issue",
+        "reopen": "Reopen issue"
+      },
+      "form": {
+        "note": "Note",
+        "placeholder": "(Optional) Add a note..."
+      }
+    },
+    "subscribe": "Subscribe",
+    "unsubscribe": "Unsubscribe",
+    "subscriber": "No subscribers | 1 subscriber | {n} subscribers",
+    "apply-to-other-stages": "Apply to other stages",
+    "add-sql-statement": "Add SQL statement...",
+    "optional-add-sql-statement": "(Optional) Add SQL statement...",
+    "edit-description": "Edit description",
+    "add-some-description": "Add some description...",
+    "add-a-comment": "Add a comment",
+    "edit-comment": "Edit comment",
+    "leave-a-comment": "Leave a comment...",
+    "view-commit": "View commit",
+    "search-issue-name": "Search issue name",
+    "table": {
+      "open": "Open",
+      "closed": "Closed",
+      "status": "Status",
+      "project": "Project",
+      "name": "Name",
+      "environment": "Environment",
+      "db": "DB",
+      "progress": "Progress",
+      "updated": "Updated",
+      "assignee": "Assignee"
+    },
+    "stage-select": {
+      "active": "{name} (active)"
+    },
+    "not-allowed-to-single-database-in-tenant-mode": "Can't {operation} to single database in tenant mode",
+    "migration-mode": {
+      "title": "Migration mode",
+      "normal": {
+        "title": "Normal migration (for normal-sized table)",
+        "description": "Perform schema change directly on the target table."
+      },
+      "online": {
+        "title": "Online migration (for large-sized table)",
+        "description": "Perform schema change on a duplicated empty table. Sync the data and swap the table name after sync finishes. Applying migration on a large table directly would cause long-time unavailability {link}."
+      }
+    }
+  },
+  "alter-schema": {
+    "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
+    "vcs-info": "indicates the project has enabled VCS based version control. Selecting database belonging to such project will navigate you to the corresponding Git repository to initiate the change process.",
+    "alter-single-db": "Alter single database",
+    "alter-multiple-db": "Alter multiple databases",
+    "alter-multiple-db-info": "For each environment, you can select a database to alter its schema or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
+  },
+  "quick-action": {
+    "create-db": "Create database",
+    "choose-db": "Choose database",
+    "new-db": "New DB",
+    "add-instance": "@:common.add @:common.instance",
+    "create-instance": "@:common.create @:common.instance",
+    "manage-user": "Manage User",
+    "add-environment": "@:common.add @:common.environment",
+    "create-environment": "@:common.create @:common.environment",
+    "new-project": "@:common.new @:common.project",
+    "create-project": "@:common.create @:common.project",
+    "edit-data": "Edit Data",
+    "troubleshoot": "Troubleshoot",
+    "transfer-in-db": "Transfer in DB",
+    "request-db": "Request DB",
+    "from-default-project": "From Default project",
+    "from-other-projects": "From other projects",
+    "transfer-in-db-title": "Transfer in database from other projects",
+    "default-db-hint": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project.",
+    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?"
+  },
+  "create-db": {
+    "new-database-name": "New database name",
+    "reserved-db-error": "{databaseName} is a reserved name",
+    "generated-database-name": "Generated database name",
+    "db-name-generated-by-template": "Generated by template \"{template}\"",
+    "select-label-value": "Select {key}"
+  },
+  "db": {
+    "encoding": "Encoding",
+    "character-set": "Character set",
+    "collation": "Collation",
+    "select": "Select database",
+    "select-instance-first": "Select instance first",
+    "select-environment-first": "Select environment first",
+    "tables": "Tables",
+    "views": "Views",
+    "parent": "Parent",
+    "last-successful-sync": "Last successful sync",
+    "sync-status": "Sync status"
+  },
+  "instance": {
+    "select": "Select instance",
+    "new-database": "New Database",
+    "syncing": "Syncing ...",
+    "sync-now": "Sync Now",
+    "create-migration-schema": "Create migration schema",
+    "missing-migration-schema": "Missing migration schema",
+    "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.",
+    "please-contact-your-dba-to-configure-it": "Please contact your DBA to configure it.",
+    "please-check-the-instance-connection-info-is-correct": "Please check the instance connection info is correct.",
+    "users": "Users",
+    "successfully-archived-instance-updatedinstance-name": "Successfully archived instance '{0}'.",
+    "successfully-restored-instance-updatedinstance-name": "Successfully restored instance '{0}'.",
+    "failed-to-create-migration-schema-for-instance-instance-value-name": "Failed to create migration schema for instance '{0}'.",
+    "successfully-created-migration-schema-for-instance-value-name": "Successfully created migration schema for '{0}'.",
+    "failed-to-sync-schema-for-instance-instance-value-name": "Failed to sync schema for instance '{0}'.",
+    "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
+    "archive-this-instance": "Archive this instance",
+    "archive-instance-instance-name": "Archive instance '{0}'?",
+    "archived-instances-will-not-be-shown-on-the-normal-interface-you-can-still-restore-later-from-the-archive-page": "Archived instances will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "restore-this-instance": "Restore this instance",
+    "restore": "Restore",
+    "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
+    "account-name": "Account name",
+    "account": "Account",
+    "name": "Name",
+    "host-or-socket": "Host or Socket",
+    "your-snowflake-account-name": "your Snowflake account name",
+    "port": "Port",
+    "instance-name": "Instance Name",
+    "snowflake-web-console": "Snowflake Web Console",
+    "external-link": "External Link",
+    "web-console": "Web Console",
+    "connection-info": "Connection info",
+    "show-how-to-create": "Show how to create",
+    "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
+    "below-is-an-example-to-create-user-bytebase-with-password-clickhouse": "Below is an example to create user 'bytebase' with password",
+    "your_db_pwd": "YOUR_DB_PWD",
+    "no-read-only-data-source-warn": "The instance has not configured read-only user, please consider adding one.",
+    "sentence": {
+      "host": {
+        "snowflake": "e.g. host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
+      },
+      "proxy": {
+        "snowflake": "For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the port"
+      },
+      "console": {
+        "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
+      },
+      "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
+      "create-readonly-user": "This is the connection user used by Bytebase to perform read-only operations such as SELECT query.",
+      "create-user-example": {
+        "snowflake": {
+          "user": "bytebase{'@'}%",
+          "password": "YOUR_DB_PWD",
+          "template": "Below is an example to create user 'bytebase' with password {password} for {warehouse} and grant the user with the needed privileges."
+        },
+        "mysql": {
+          "password": "YOUR_DB_PWD",
+          "user": "bytebase{'@'}%",
+          "template": "Below is an example to create user {user} with password {password} and grant the user with the needed privileges."
+        },
+        "clickhouse": {
+          "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {link} and then run the following query to create the user.",
+          "sql-driven-workflow": "SQL-driven workflow"
+        },
+        "postgres": {
+          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges.",
+          "template": "Below is an example to create user 'bytebase' with password {password} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
+        }
+      }
+    },
+    "no-password": "No password",
+    "password-write-only": "YOUR_DB_PWD - write only",
+    "test-connection": "Test Connection",
+    "ignore-and-create": "Ignore and create",
+    "connection-info-seems-to-be-incorrect": "Connection info seems to be incorrect",
+    "new-instance": "New Instance",
+    "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {0}",
+    "successfully-created-instance-createdinstance-name": "Successfully created instance '{0}'.",
+    "successfully-updated-instance-instance-name": "Successfully updated instance '{0}'.",
+    "copy-grant-statement": "CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.",
+    "successfully-connected-instance": "Successfully connected instance.",
+    "failed-to-connect-instance": "Failed to connect instance.",
+    "how-to-setup-instance": "How to setup 'Instance' ?",
+    "how-to-setup-instance-description": "Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.",
+    "search-instance-name": "Search instance name",
+    "no-read-only-data-source-support": "The {database} does not currently support creating read-only connections",
+    "grants": "Grants"
+  },
+  "environment": {
+    "select": "Select environment",
+    "archive": "Archive this environment",
+    "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
+    "create": "Create Environment",
+    "how-to-setup-environment": "How to setup 'Environment' ?",
+    "how-to-setup-environment-description": "Each environment maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment.",
+    "restore": "Restore this environment"
+  },
+  "quick-start": {
+    "bookmark-an-issue": "Bookmark an issue",
+    "add-a-comment": "Add a comment",
+    "visit-project": "@:common.visit @:common.projects",
+    "visit-instance": "@:common.visit @:common.instances",
+    "visit-database": "@:common.visit @:common.databases",
+    "visit-environment": "@:common.visit @:common.environments",
+    "add-a-member": "Add a member",
+    "use-kbar": "Use kbar ({shortcut})",
+    "notice": {
+      "title": "Quickstart guide dismissed",
+      "desc": "You can still bring it back later from the top right menu"
+    }
+  },
+  "auth": {
+    "sign-up": {
+      "title": "Register your account",
+      "admin-title": "Setup {account}",
+      "admin-account": "admin account",
+      "create-admin-account": "Create admin account",
+      "confirm-password": "Confirm Password",
+      "confirm-password-placeholder": "Confirm password",
+      "password-mismatch": "mismatch",
+      "existing-user": "Already have an account?"
+    },
+    "sign-in": {
+      "title": "Sign in to your account",
+      "forget-password": "Forgot your password?",
+      "new-user": "New to Bytebase?",
+      "demo-note": "Please use demo account to sign in",
+      "gitlab": "Login with GitLab",
+      "gitlab-demo": "GitLab login is disabled in Demo mode",
+      "gitlab-oauth": "Reach to your Admin to enable GitLab login"
+    },
+    "password-forget": {
+      "title": "Forgot your password?",
+      "content": "Please contact your Bytebase Admin to reset your password.",
+      "return-to-sign-in": "Return to Sign in"
+    },
+    "password-forgot": "Forgot Password",
+    "password-reset": {
+      "title": "Reset your password",
+      "content": "Enter your email address and we will send you a password reset link",
+      "send-reset-link": "Send reset link",
+      "return-to-sign-in": "Return to Sign in"
+    },
+    "activate": {
+      "title": "Activate your {type} account"
+    }
+  },
+  "policy": {
+    "approval": {
+      "name": "Approval Policy",
+      "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
+      "manual": "Require manual approval",
+      "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
+      "auto": "Skip manual approval",
+      "auto-info": "Pending schema migration task will be executed automatically."
+    },
+    "backup": {
+      "name": "Database backup schedule policy",
+      "not-enforced": "Not enforced",
+      "not-enforced-info": "No backup schedule is enforced.",
+      "daily": "Daily backup",
+      "daily-info": "Enforce every database to backup daily.",
+      "weekly": "Weekly backup",
+      "weekly-info": "Enforce every database to backup weekly."
+    }
+  },
+  "migration-history": {
+    "self": "Migration History",
+    "workflow": "Workflow",
+    "commit-info": "by {author} at {time}",
+    "no-schema-change": "this migration has no schema change",
+    "schema-drift": "Schema drift detected",
+    "before-left-schema-choice": "Compare the schema",
+    "left-schema-choice-prev-history-schema": "after prev migration",
+    "left-schema-choice-current-history-schema-prev": "before this migration",
+    "after-left-schema-choice": "and after this migration",
+    "show-diff": "Show diff",
+    "left-vs-right": "Prev (left) vs This version (right)",
+    "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
+    "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
+    "no-history-in-project": "Do not find migration history from any database in this project.",
+    "recording-info": "Migration history is recorded whenever the database schema is altered.",
+    "establish-baseline": "Establish new baseline",
+    "refreshing-history": "Refreshing history ...",
+    "config-instance": "Config instance",
+    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. You should check that the current schema does reflect the desired state. For VCS workflow, there must exist a baseline before any incremental migration change can be applied to the database.",
+    "establish-database-baseline": "Establish \"{name}\" baseline",
+    "instance-missing-migration-schema": "Missing migration history schema on instance \"{name}\".",
+    "instance-bad-connection": "Unable to connect instance \"{name}\" to retrieve migration history.",
+    "contact-dba": "Please contact your DBA to config it"
+  },
+  "database": {
+    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
+    "no-anomalies-detected": "No anomalies detected",
+    "sync-status": "Sync status",
+    "last-successful-sync": "Last successful sync",
+    "search-database-name": "Search database name",
+    "how-to-setup-database": "How to setup 'Database' ?",
+    "show-guide-description": "Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.",
+    "restored-from": "Restored from ",
+    "database-name-is-restored-from-another-database-backup": "{0} is restored from another database backup",
+    "database-backup": "database backup",
+    "transfer-project": "Transfer Project",
+    "alter-schema": "Alter Schema",
+    "alter-schema-in-vcs": "Alter Schema in VCS",
+    "change-data": "Change Data",
+    "change-data-in-vcs": "Change Data in VCS",
+    "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
+    "backup-name": "Backup name",
+    "create-backup": "Create backup",
+    "automatic-weekly-backup": "Automatic weekly backup",
+    "disable-automatic-backup": "Disable automatic backup",
+    "backuppolicy-backup-enforced-and-cant-be-disabled": "{0} backup enforced and can't be disabled",
+    "backup-policy": {
+      "DAILY": "DAILY",
+      "WEEKLY": "WEEKLY"
+    },
+    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "An HTTP POST request will be sent to it after a successful backup.",
+    "backup-info": {
+      "template": "Backup will be taken on every {dayOrWeek} at {time}"
+    },
+    "week": {
+      "Sunday": "Sunday",
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+      "day": "day"
+    },
+    "enable-backup": "Enable backup",
+    "backup-now": "Backup now",
+    "create-a-manual-backup": "Create a manual backup",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "action-automatic-backup-for-database-props-database-name": "{0} automatic backup for database '{1}'.",
+    "updated-backup-webhook-url-for-database-props-database-name": "Updated backup webhook URL for database '{0}'.",
+    "last-sync-status": "Last sync status",
+    "last-sync-status-long": "Last sync status {0} at {1}",
+    "version-control-enabled": "Version control enabled",
+    "restore-backup": "Restore backup '{0}' to a new database",
+    "nullable": "Nullable",
+    "restore": "Restore",
+    "backup": {
+      "enabled": "enabled",
+      "disabled": "disabled"
+    },
+    "expression": "Expression",
+    "position": "Position",
+    "unique": "Unique",
+    "visible": "Visible",
+    "comment": "Comment",
+    "engine": "Engine",
+    "row-count-estimate": "Row count estimate",
+    "data-size": "Data size",
+    "index-size": "Index size",
+    "columns": "Columns",
+    "indexes": "Indexes",
+    "row-count-est": "Row count est.",
+    "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",
+    "go-to-transfer": "Go to transfer"
+  },
+  "repository": {
+    "branch-observe-file-change": "The branch where Bytebase observes the file change.",
+    "branch-specify-tip": "Tip: You can also use wildcard like 'feature/*",
+    "base-directory": "Base directory",
+    "base-directory-description": "The root directory where Bytebase observes the file change. If empty, then it observes the entire repository.",
+    "file-path-template": "File path template",
+    "file-path-template-description": "Bytebase only observes the file path name matching the template pattern relative to the base directory.",
+    "file-path-example-normal-migration": "File path example for normal migration type",
+    "file-path-example-baseline-migration": "File path example for baseline migration type",
+    "schema-path-template": "Schema path template",
+    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this",
+    "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
+    "if-specified": "If specified",
+    "schema-path-example": "Schema path example",
+    "sheet-path-template": "Sheet path template",
+    "sheet-path-template-description": "Bytebase only observes files with pathnames matching the template pattern relative to the base directory. The matched files will be synchronized to the SQL Editor for usage there.",
+    "git-provider": "Git provider",
+    "version-control-status": "@.capitalize:common.version-control is {status}",
+    "version-control-description-file-path": "Database migration scripts are stored in {fullPath}. To make schema changes, a developer would create a migration script matching file path pattern {fullPathTemplate}.",
+    "version-control-description-branch": "After the script is review approved and merged into the {branch} branch, Bytebase will automatically kicks off the pipeline to apply the new schema change.",
+    "version-control-description-description-schema-path": "After applying the schema change, Bytebase will also write the latest schema to the specified schema path location {schemaPathTemplate}.",
+    "restore-to-ui-workflow": "Restore to UI workflow",
+    "restore-ui-workflow-description": "When using the UI workflow, the developer submits a SQL review ticket directly from Bytebase console and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL change after review approved.",
+    "restore-ui-workflow-success": "Successfully restored to UI workflow",
+    "update-version-control-config-success": "Successfully updated @:common.version-control config",
+    "setup-wizard-guide": "If you encounter errors during the process, please refer to our {guide}",
+    "add-git-provider": "Add Git provider",
+    "choose-git-provider": "Choose Git provider",
+    "select-repository": "Select repository",
+    "configure-deploy": "Configure deploy",
+    "choose-git-provider-description": "Choose the Git provider where your database schema scripts (.sql) are hosted. When you push the changed script to the Git repository, Bytebase will automatically create a pipeline to apply the schema change to the database.",
+    "choose-git-provider-visit-workspace": "Visit {workspace} setting to add more Git providers.",
+    "choose-git-provider-contact-workspace-owner": "Contact your Bytebase owner if you want other Git providers to appear here. Bytebase currently supports self-host GitLab EE/CE, and plan to add GitLab.com, GitHub Enterprise and GitHub.com later.",
+    "select-repository-attention-gitlab": "Bytebase only lists GitLab projects granting you at least the 'Maintainer' role, which allows to configure the project webhook to observe the code push event.",
+    "select-repository-search": "Search repository",
+    "linked": "Linked repositories",
+    "role-provider": "Project role provider",
+    "role-provider-description": "Bytebase will sync members from the selected provider and replace the existing members in the project."
+  },
+  "workflow": {
+    "current-workflow": "Current workflow",
+    "ui-workflow": "UI workflow",
+    "ui-workflow-description": "Classic SQL Review workflow where the developer submits a SQL review ticket directly from Bytebase and waits for the assigned DBA or peer developer to review. Bytebase applies the SQL schema change after review approved.",
+    "gitops-workflow": "GitOps workflow",
+    "gitops-workflow-description": "Database migration scripts are stored in a git repository. To make schema changes, a developer would create a migration script and submit for review in the corresponding VCS such as GitLab. After the script is approved and merged into the configured branch, Bytebase will automatically kicks off the task to apply the new schema change.",
+    "configure-gitops": "Configure version control",
+    "configure-gitops-success": "Successfully enabled GitOps workflow for {project}",
+    "change-gitops-success": "Successfully changed repository for {project}"
+  },
+  "anomaly": {
+    "attention-title": "Anomaly detection",
+    "attention-desc": "Bytebase periodically scans the managed resources and list the detected anomalies here. The list is refreshed roughly every 10 minutes.",
+    "table-search-placeholder": "Search {type} or environment",
+    "table-placeholder": "Hooray, no {type} anomaly detected!",
+    "tooltip": "{env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount} MEDIUM anomalies",
+    "types": {
+      "connection-failure": "Connection failure",
+      "missing-migration-schema": "Missing migration schema",
+      "backup-enforcement-viloation": "Backup enforcement violation",
+      "missing-backup": "Missing backup",
+      "schema-drift": "Schema drift"
+    },
+    "action": {
+      "check-instance": "Check instance",
+      "view-backup": "View backup",
+      "configure-backup": "Configure backup",
+      "view-diff": "View diff"
+    },
+    "last-seen": "Last seen",
+    "first-seen": "First seen"
+  },
+  "project": {
+    "dashboard": {
+      "modal": {
+        "title": "How to setup '@:{'common.project'}' ?",
+        "content": "Bytebase project is similar to the project concept in other common dev tools.\n\nA project has its own members, and every issue and database always belongs to a single project.\n\nA project can also be configured to link to a repository to enable version control workflow.",
+        "cancel": "Dismiss",
+        "confirm": "Do not show again"
+      },
+      "search-bar-placeholder": "Search project name"
+    },
+    "table": {
+      "key": "@:common.key",
+      "name": "@:common.name",
+      "created-at": "Created At"
+    },
+    "create-modal": {
+      "project-name": "@:common.project @:common.name",
+      "key": "@:common.key",
+      "key-hint": "(Uppercase letters identifying your project)",
+      "cancel": "@:common.cancel",
+      "confirm": "@:common.create",
+      "success-prompt": "Successfully created project {name}."
+    },
+    "overview": {
+      "view-all": "View all",
+      "view-all-closed": "View all closed",
+      "recent-activity": "Recent @.lower:{'common.activities'}",
+      "in-progress": "In progress",
+      "recently-closed": "Recently Closed",
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed in this default project. User should transfer them to the proper application project.",
+      "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
+    },
+    "webhook": {
+      "success-created-prompt": "Successfully created webhook {name}.",
+      "success-updated-prompt": "Successfully updated webhook {name}.",
+      "success-deleted-prompt": "Successfully deleted webhook {name}.",
+      "success-tested-prompt": "Test webhook event OK.",
+      "fail-tested-title": "Test webhook event failed.",
+      "add-a-webhook": "Add a webhook",
+      "create-webhook": "Create webhook",
+      "last-updated-by": "Last updated by",
+      "destination": "Destination",
+      "webhook-url": "Webhook url",
+      "triggering-activity": "Triggering activities",
+      "test-webhook": "Test Webhook",
+      "no-webhook": {
+        "title": "No webhook configured for this project.",
+        "content": "Configure webhooks to let Bytebase post notification to the external systems on various events."
+      },
+      "creation": {
+        "title": "Create webhook",
+        "desc": "Create the corresponding webhook for the {destination} channel receiving the message.",
+        "how-to-protect": "If you want to use keyword list to protect the webhook, you can add \"Bytebase\" to that list.",
+        "view-doc": "View {destination}'s doc"
+      },
+      "deletion": {
+        "btn-text": "Delete this webhook"
+      },
+      "activity-item": {
+        "issue-creation": {
+          "title": "Issue creation",
+          "label": "When new issue has been created"
+        },
+        "issue-status-change": {
+          "title": "Issue status change",
+          "label": "When issue status has changed"
+        },
+        "issue-task-status-change": {
+          "title": "Issue task status change",
+          "label": "When issue's enclosing task status has changed"
+        },
+        "issue-info-change": {
+          "title": "Issue info change",
+          "label": "When issue info (e.g. assignee, title, description) has changed"
+        },
+        "issue-comment-creation": {
+          "title": "Issue comment creation",
+          "label": "When new issue comment has been created"
+        }
+      }
+    },
+    "settings": {
+      "success-updated-prompt": "Successfully updated {subject}.",
+      "success-member-added-prompt": "Successfully added {name} to the project.",
+      "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
+      "member-placeholder": "Select user",
+      "manage-member": "Manage members",
+      "add-member": "Add member",
+      "owner": "@.upper:common.role.owner",
+      "developer": "@.upper:common.role.developer",
+      "archive": {
+        "title": "Archive project",
+        "description": "Archived project will not be shown on the normal interface. You can still restore later from the Archive page.",
+        "btn-text": "Archive this @.lower:{'common.project'}"
+      },
+      "restore": {
+        "title": "Restore project",
+        "btn-text": "Restore this @.lower:{'common.project'}"
+      },
+      "sync-from-vcs": "Sync from VCS",
+      "success-member-sync-prompt": "Sync member from VCS Succeeded",
+      "view-vcs-member": "View members in VCS",
+      "switch-role-provider-to-bytebase-success-prompt": "Successfully turning off VCS project membership sync."
+    },
+    "mode": {
+      "standard": "Standard",
+      "tenant": "Tenant"
+    },
+    "db-name-template": "@:common.database @:common.name @:common.template"
+  },
+  "inbox": {
+    "mark-all-as-read": "Mark all as read",
+    "view-older": "View older"
+  },
+  "version-control": {
+    "setting": {
+      "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase owners manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
+      "description-highlight": "Once configured, Bytebase will enable third party login via your configured VCSs under paid subscription.",
+      "add-git-provider": {
+        "self": "Add a Git provider",
+        "description": "Before any project can enable GitOps workflow, Bytebase first needs to integrate with the corresponding version control system (VCS) by registering as an OAuth application in that VCS. Below are the steps to configure this, you can also follow our {guide}.",
+        "gitlab-self-host": "GitLab self-host",
+        "gitlab-self-host-admin-requirement": "You need to be an Admin of your chosen GitLab instance to configure this. Otherwise, you need to ask your GitLab instance Admin to register Bytebase as a GitLab instance-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "github-com-admin-requirement": "You need to be an admin of your chosen GitHub organization to configure this. Otherwise, you need to ask your GitHub organization admin to register Bytebase as a GitHub organization-wide OAuth application, then provide you that Application ID and Secret to fill at the 'OAuth application info' step.",
+        "ouath-info-correct": "Verified OAuth info is correct",
+        "check-oauth-info-match": "Please make sure Secret matches the one from your GitLab instance Application.",
+        "add-success": "Successfully added Git provider {vcs}",
+        "choose": "Choose Git provider",
+        "gitlab-self-host-ce-ee": "Self-host GitLab Enterprise Edition (EE) or Community Edition (CE)",
+        "basic-info": {
+          "self": "Basic info",
+          "gitlab-instance-url": "GitLab instance URL",
+          "gitlab-instance-url-label": "The VCS instance URL. Make sure this instance and Bytebase are network reachable from each other.",
+          "github-instance-url": "GitHub instance URL",
+          "instance-url-error": "Instance URL must begin with https:// or http://",
+          "display-name": "Display name",
+          "display-name-label": "An optional display name to help identifying among different configs using the same Git provider."
+        },
+        "oauth-info": {
+          "self": "OAuth application info",
+          "gitlab-register-oauth-application": "Register Bytebase as a GitLab instance-wide OAuth application.",
+          "gitlab-login-as-admin": "Login as an Admin user to the GitLab instance. The account must be an Admin of the entire GitLab instance (it has a wrench icon on the top bar).",
+          "gitlab-visit-admin-page": "Go to the Admin page by clicking the wrench icon, then navigate to \"Applications\" section and click \"New application\" button.",
+          "gitlab-paste-oauth-info": "Paste the Application ID and Secret from that just created application into fields below.",
+          "github-register-oauth-application": "Register Bytebase as a GitHub organization-wide OAuth application.",
+          "github-login-as-admin": "Login as an organization admin user to the GitHub.com. The account must be an organization admin of the GitHub organization (able to access the organiztion Settings page).",
+          "github-visit-admin-page": "Go to the Settings page, then navigate to \"Developer settings > OAuth Apps\" section and click \"Register an application\" button.",
+          "github-paste-oauth-info": "Paste the Client ID and Client secret from that just created application into fields below.",
+          "direct-link": "Direct link",
+          "create-oauth-app": "Create your Bytebase OAuth application with the following info.",
+          "gitlab-application-id-error": "Application ID must be a 64-character alphanumeric string",
+          "gitlab-secret-error": "Secret must be a 64-character alphanumeric string",
+          "github-application-id-error": "Application ID must be a 20-character alphanumeric string",
+          "github-secret-error": "Secret must be a 40-character alphanumeric string"
+        },
+        "confirm": {
+          "confirm-info": "Confirm the info",
+          "confirm-description": "After creation, this Git provider can be chosen under the project dashboard \"Version Control\" tab by the project owner."
+        }
+      },
+      "git-provider": {
+        "gitlab-application-id-label": "Application ID for the registered GitLab instance-wide OAuth application.",
+        "view-in-gitlab": "View in GitLab",
+        "secret-label-gitlab": "Secret for the registered GitLab instance-wide OAuth application.",
+        "github-application-id-label": "Client ID for the registered GitHub organization-wide OAuth application.",
+        "secret-label-github": "Client secret for the registered GitHub organization-wide OAuth application.",
+        "delete": "To delete this provider, unlink all repositories first."
+      }
+    }
+  },
+  "archive": {
+    "archived": "Archived",
+    "project-search-bar-placeholder": "Search @.lower:{'common.project'} name",
+    "instance-search-bar-placeholder": "Search @.lower:{'common.instance'} name",
+    "environment-search-bar-placeholder": "Search @.lower:{'common.environment'} name"
+  },
+  "deployment-config": {
+    "stage-n": "Stage {n}",
+    "add-selector": "Add selector",
+    "update-success": "Successfully updated deployment config.",
+    "this-is-example-deployment-config": "This is the deployment config example. You need to edit and save it.",
+    "n-databases": "{n} database | {n} databases",
+    "selectors": "Selectors",
+    "wont-be-deployed": "Will not be deployed",
+    "add-stage": "Add stage",
+    "confirm-to-revert": "Confirm to revert your editing?",
+    "name-placeholder": "Stage name...",
+    "error": {
+      "at-least-one-stage": "At least 1 stage",
+      "stage-name-required": "Stage name is required",
+      "at-least-one-selector": "At least 1 selector in each stage",
+      "env-in-selector-required": "\"Environment in\" is required in each stage",
+      "env-selector-must-has-one-value": "\"Environment in\" must has exactly one value",
+      "key-required": "Key is required",
+      "values-required": "Values are required"
+    },
+    "project-has-no-deployment-config": "This project has no deployment config yet. Please {go} first.",
+    "go-and-config": "Go and config",
+    "preview-deployment-config": "Preview Deployment Config"
+  },
+  "datasource": {
+    "role-type": "Role Type",
+    "successfully-deleted-data-source-name": "Successfully deleted data source '{0}'.",
+    "create-data-source": "Create data source",
+    "data-source-list": "Data source list",
+    "all-data-source": "All data source",
+    "search-name": "Search name",
+    "search-name-database": "Search name, database",
+    "successfully-created-data-source-datasource-name": "Successfully created data source '{0}'.",
+    "select-database-first": "Select database first",
+    "select-data-source": "Select data source",
+    "search-user": "Search user",
+    "user-list": "User list",
+    "revoke-access": "Are you sure to revoke '{0}' access from '{1}'?",
+    "grant-data-source": "Grant data source",
+    "grant-database": "Grant database",
+    "requested-issue": "Requested issue",
+    "successfully-revoked-member-principal-name-access-from-props-datasource-name": "Successfully revoked '{0}' access from '{1}'.",
+    "your-issue-id-e-g-1234": "Your issue id (e.g. 1234)",
+    "member-principal-name-already-exists": "{0} already exists",
+    "successfully-granted-datasource-name-to-addedmember-principal-name": "Successfully granted '{0}' to '{1}'.",
+    "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "We also linked the granted database to the requested issue '{0}'.",
+    "new-data-source": "New data source",
+    "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} "
+  },
+  "setting": {
+    "project": {
+      "description": "This is the Admin project panel listing all projects in Bytebase."
+    },
+    "label": {
+      "key": "Key",
+      "values": "Values",
+      "value-placeholder": "Label value..."
+    }
+  },
+  "sql-editor": {
+    "self": "SQL Editor",
+    "select-connection": "Please select connections",
+    "search-databases": "Search Databases",
+    "search-results": "Search Results",
+    "loading-databases": "Loading Databases...",
+    "close-pane": "Close Pane",
+    "loading-data": "Loading Data...",
+    "table-empty-placehoder": "Click Run to execute the query.",
+    "no-rows-found": "No rows found",
+    "download-as-csv": "Download as CSV",
+    "download-as-json": "Download as JSON",
+    "only-select-allowed": "Only {select} statements are allowed to execute.",
+    "want-to-change-schema": "If you want to {changeschema}.",
+    "change-schema": "change schema",
+    "go-to-alter-schema": "You can click the {alterschema} button, and submit an issue.",
+    "table-schema-placeholder": "Select a table to see its schema",
+    "notify-empty-statement": "Please input your SQL statements in the editor",
+    "notify-multiple-statements": "Multiple SQL statements detected. SQL Editor only executes the first statement. You can select another statement and execute it individually.",
+    "goto-alter-schema-hint": "Please select a database connection from the top of the editor",
+    "notify-invalid-sql-statement": "Invalid SQL statement.",
+    "can-not-execute-query": "Can not execute query when loading data.",
+    "rows": "row | rows",
+    "no-history-found": "No history found",
+    "no-sheet-found": "No sheet found",
+    "search-history": "Search History",
+    "search-sheets": "Search Sheets",
+    "hint-tips": {
+      "confirm-to-delete-this-history": "Confirm to delete this history?",
+      "confirm-to-close-unsaved-tab": "Confirm to close unsaved tab?"
+    },
+    "please-input-the-tab-label": "Please input the tab label!",
+    "copy-code": "Copy code",
+    "notify": {
+      "copy-code-succeed": "Copy code succeed",
+      "copy-share-link": "The share link was copied to Clipboard.",
+      "sheet-is-read-only": "The shared sheet is read-only."
+    },
+    "view-all-tabs": "View all Tabs",
+    "sheet": "Sheet",
+    "sheets": "Sheets",
+    "connection-holder": "Select a connection from left panel to get started",
+    "link-access": "Link access",
+    "private": "Private",
+    "private-desc": "Only you can access this sheet",
+    "project-desc": "Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read",
+    "public": "Public",
+    "public-desc": "Sheet OWNER can read/write, and all others can read",
+    "create-read-only-data-source": "Go to create",
+    "go-back": "Go Back",
+    "save-sheet": "Save Sheet",
+    "save-sheet-input-placeholder": "Please input a sheet name",
+    "untitled-sheet": "Untitled Sheet",
+    "format": "Format"
+  },
+  "label": {
+    "empty-label-value": "<Empty Value>",
+    "no-label": "No labels",
+    "error": {
+      "key-necessary": "Key is required",
+      "value-necessary": "Value is required",
+      "key-duplicated": "Duplicated keys",
+      "value-duplicated": "Duplicated values",
+      "max-length-exceeded": "Length cannot exceed {len} characters",
+      "max-label-count-exceeded": "Cannot exceed {count} labels",
+      "cannot-edit-reserved-label": "Cannot edit reserved label \"{key}\""
+    },
+    "placeholder": {
+      "select-key": "Select key...",
+      "select-value": "Select value...",
+      "select-values": "Select values..."
+    },
+    "setting": {
+      "description": "A label is a key-value pair that helps you identify the tenant for a database. {link}."
+    },
+    "db-name-template-tips": "Allow you to group databases with the same {placeholder} from different tenants. {link}.",
+    "confirm-change": "Are you sure to change '{label}' ?",
+    "parsed-from-template": "Parsed from {name} by template {template}.",
+    "cannot-transfer-template-not-match": "Database '{name}' cannot be transferred to this project. Since its name doesn't match the template {template}."
+  },
+  "oauth": {
+    "unknown-event": "Unexpeted event type, OAuth failed."
+  },
+  "subscription": {
+    "description": "You can upload your bytebase license to unlock team/enterprise features.",
+    "current": "Current plan",
+    "instance-count": "Instance count",
+    "expires-at": "Expires at",
+    "description-highlight": "Purchase a license",
+    "sensitive-placeholder": "Paste your license here - write only",
+    "upload-license": "Upload license",
+    "plan-compare": "Compare features between different plans",
+    "disabled-feature": "This is a premium feature in subscription plan",
+    "trial": "You can start a trial with $14 for 14 days.",
+    "upgrade": "Upgrade subscription",
+    "per-month": "/ month",
+    "per-instance": "Per instance",
+    "free-price-intro": "Up to 5",
+    "team-price-intro": "5 minimum, billed annually",
+    "enterprise-price-intro": "Customized, billed annually",
+    "deploy": "Deploy",
+    "contact-us": "Contact us",
+    "start-trial": "Start trial with ${price} for {days} days",
+    "subscribe": "Subscribe now",
+    "current-plan": "Current plan",
+    "buy": "Buy {plan} plan",
+    "cancel": "cancel your subscription",
+    "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
+    "trialing": "trialing",
+    "update": {
+      "success": {
+        "title": "Successfully updated license",
+        "description": "Premium features in subscription plan unlocked."
+      },
+      "failure": {
+        "title": "Failed to update license",
+        "description": "Please check if your license is valid."
+      }
+    },
+    "features": {
+      "bb-feature-task-schedule-time": {
+        "title": "Set task schedule time",
+        "desc": "Set task schedule time allows you to set a specific time to run your tasks."
+      },
+      "bb-feature-instance-count": {
+        "title": "Instance count limit",
+        "desc": "You have reached the maximum instance count limit. Please upgrade to get more instance quota.",
+        "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
+        "runoutof": "Your have run out of your {total} instance quota.",
+        "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+      },
+      "bb-feature-multi-tenancy": {
+        "title": "Multi-tenancy",
+        "desc": "Intelligent database management for tenants using identical schemas."
+      },
+      "bb-feature-approval-policy": {
+        "title": "Approval policy",
+        "desc": "Approval policy controls whether the schama change task requires manual approval."
+      },
+      "bb-feature-backup-policy": {
+        "title": "Backup policy",
+        "desc": "Backup policy will auto-backup your database based on the schedule."
+      },
+      "bb-feature-backward-compatibility": {
+        "title": "Backward compatibility",
+        "desc": "MySQL and TiDB support checking whether the schema change is backward compatible. @:{'subscription.upgrade'} to unlock this feature."
+      },
+      "bb-feature-rbac": {
+        "title": "Role management",
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to unlock this feature."
+      },
+      "bb-feature-schema-drift": {
+        "title": "Schema drift",
+        "desc": "@:{'subscription.upgrade'} to unlock schema dirft auto-detection"
+      },
+      "bb-feature-3rd-party-auth": {
+        "title": "3rd party authentication & authorization",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.",
+        "login": "@:{'subscription.upgrade'} to unlock this feature"
+      },
+      "bb-feature-branding": {
+        "title": "Branding",
+        "desc": "Customize the logo."
+      }
+    },
+    "feature-sections": {
+      "database-management": {
+        "title": "Database Development",
+        "features": {
+          "instance-count": "Instance count",
+          "instance-upto-5": "Up to 5",
+          "instance-customized": "Customized",
+          "instance-minimum-5": "5 ~ unlimited",
+          "schema-change": "Schema and data change",
+          "migration-history": "Migration history",
+          "sql-editor": "SQL Editor",
+          "database-backup-restore": "Database backup / restore",
+          "archiving": "Archiving",
+          "sql-check": "SQL check",
+          "sql-check-basic": "Basic",
+          "sql-check-basic-tooltip": "Syntax check, connection check",
+          "sql-check-advanced": "Advanced",
+          "sql-check-advanced-tooltip": "Basic + Backward compatibility check",
+          "anomaly-detection": "Anomaly detection",
+          "anomaly-detection-basic": "Basic",
+          "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
+          "anomaly-detection-advanced": "Advanced",
+          "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
+          "schedule-change": "Scheduled change at specific time",
+          "review-and-backup-policy": "Review and backup policy",
+          "tenancy": "Multi-Region / Multi-Tenancy deployment"
+        }
+      },
+      "collaboration": {
+        "title": "Collaboration",
+        "features": {
+          "ui-based-sql-review": "UI based SQL review",
+          "vsc-workflow": "VCS workflow #GitOps",
+          "shareable-query-link": "Shareable query link",
+          "im-integration": "IM integration",
+          "inbox-notification": "Inbox notification"
+        }
+      },
+      "admin-and-security": {
+        "title": "Admin & Security",
+        "features": {
+          "activity-log": "Activity log",
+          "rbac": "RBAC (Owner, DBA, Developer role)",
+          "3rd-party-auth": "Login with GitLab account",
+          "sync-members-from-vcs": "Sync project membership from the linked GitLab project"
+        }
+      },
+      "branding": {
+        "title": "Branding",
+        "features": {
+          "branding-logo": "Customize the logo"
+        }
+      }
+    },
+    "plan": {
+      "title": "Plan",
+      "try": "Try Team",
+      "free": {
+        "title": "Free Plan",
+        "label": "",
+        "desc": "Personal project or small team, no DBA"
+      },
+      "team": {
+        "title": "Team Plan",
+        "label": "Beta",
+        "desc": "Medium size team, has dedicated DBA or TL for engineering velocity"
+      },
+      "enterprise": {
+        "title": "Enterprise Plan",
+        "label": "Early access",
+        "desc": "Large organization, has dedicated DBA group to manage database fleet"
+      }
+    }
+  },
+  "sheet": {
+    "self": "Sheets",
+    "my-sheets": "My Sheets",
+    "shared-with-me": "Shared with me",
+    "actions": {
+      "sync-from-vcs": "Sync from VCS"
+    },
+    "hint-tips": {
+      "confirm-to-sync-sheet": "Confirm to sync sheets?",
+      "confirm-to-delete-this-sheet": "Confirm to delete this sheet?",
+      "confirm-to-duplicate-sheet": "Confirm to duplicate this sheet?"
+    }
+  },
+  "engine": {
+    "mysql": "MySQL",
+    "common": "Common"
+  },
+  "schema-review-policy": {
+    "title": "Schema Review",
+    "no-policy-set": "No schema review policy",
+    "add-review": "Add policy",
+    "search-rule-name": "Search rule name",
+    "remove-review": "Successfully removed the review policy.",
+    "create-review": "Successfully created the review policy.",
+    "update-review": "Successfully updated the review policy.",
+    "rules": "Rules",
+    "filter": "Filter",
+    "no-permission": "Only DBA or Owner has permission to create or update review policy.",
+    "disable": "Disable schema review policy",
+    "enable": "Enable schema review policy",
+    "delete": "Delete schema review policy",
+    "category": {
+      "engine": "Engine",
+      "naming": "Naming",
+      "statement": "Statement",
+      "table": "Table",
+      "column": "Column",
+      "schema": "Schema"
+    },
+    "template": {
+      "policy-for-prod": {
+        "title": "Schema review for Prod"
+      },
+      "policy-for-dev": {
+        "title": "Schema review for Dev"
+      }
+    },
+    "rule": {
+      "engine-mysql-use-innodb": {
+        "title": "Use Innodb",
+        "description": "Require InnoDB as the storage engine for MySQL."
+      },
+      "table-require-pk": {
+        "title": "Require primary key",
+        "description": "Require the table to have a primary key."
+      },
+      "naming-table": {
+        "title": "Table naming check",
+        "description": "Enforce the table name format. Default snake_lower_case."
+      },
+      "naming-column": {
+        "title": "Column naming check",
+        "description": "Enforce the column name format. Default snake_lower_case."
+      },
+      "naming-index-pk": {
+        "title": "Primary key naming check",
+        "description": "Enforce the primary key name format. Default pk_{table_name}_{column_name}."
+      },
+      "naming-index-uk": {
+        "title": "Unique key naming check",
+        "description": "Enforce the unique key name format. Default uk_{table_name}_{column_name}."
+      },
+      "naming-index-fk": {
+        "title": "Foreign key naming check",
+        "description": "Enforce the foreign key name format. Default fk_{referencing_table}_{referencing_column}_{referenced_table}_{referenced_column}."
+      },
+      "naming-index-idx": {
+        "title": "Index naming check",
+        "description": "Enforce the index name format. Default idx_{table_name}_{column_name}."
+      },
+      "column-required": {
+        "title": "Required columns",
+        "description": "Enforce the required columns in each table."
+      },
+      "column-no-null": {
+        "title": "Disallow NULL",
+        "description": "Columns cannot have NULL value."
+      },
+      "statement-select-no-select-all": {
+        "title": "Disallow \"SELECT *\"",
+        "description": "Disallow 'SELECT *' statement."
+      },
+      "statement-where-require": {
+        "title": "Require \"WHERE\"",
+        "description": "Require 'WHERE' clause."
+      },
+      "statement-where-no-leading-wildcard-like": {
+        "title": "Disallow leading wildcard like",
+        "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
+      },
+      "schema-backward-compatibility": {
+        "title": "Backward compatibility",
+        "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
+      }
+    },
+    "payload-config": {
+      "table-name-format": "Table name format (regex)",
+      "column-name-format": "Column name format (regex)",
+      "pk-name-format": "Primary key name format",
+      "uk-name-format": "Unique key name format",
+      "idx-name-format": "Index name format",
+      "required-column": "Required column names",
+      "input-then-press-enter": "Input the value then press enter to add",
+      "template": {
+        "table-name": "The table name",
+        "column-list": "Index column names, joined by _",
+        "referencing-table": "The referencing table name",
+        "referencing-column": "The referencing column name",
+        "referenced-table": "The referenced table name",
+        "referenced-column": "The referenced column name"
+      }
+    },
+    "error-level": {
+      "name": "Error Level",
+      "error": "Error",
+      "warning": "Warning",
+      "disabled": "Disabled"
+    },
+    "create": {
+      "breadcrumb": "Create schema review policy",
+      "basic-info": {
+        "name": "Basic info",
+        "display-name": "Display name",
+        "display-name-placeholder": "The review policy name",
+        "display-name-default": "Schema review policy",
+        "display-name-label": "A display name to help identifying among different review policies.",
+        "environments": "Environments",
+        "environments-label": "Apply the review policy to the selected environments. One environment can only link one policy.",
+        "environments-select": "Select environments",
+        "no-linked-environments": "No linked environment",
+        "no-available-environment": "No available environment",
+        "no-available-environment-desc": "No available environment. One environment can only link one schema review policy.",
+        "choose-template": "Choose template"
+      },
+      "configure-rule": {
+        "name": "Configure rule",
+        "change-template": "Change the template",
+        "confirm-override-title": "Confirm change",
+        "confirm-override-description": "Your rules will be overridden"
+      },
+      "preview": {
+        "name": "Preview"
+      }
+    }
+  }
+}
