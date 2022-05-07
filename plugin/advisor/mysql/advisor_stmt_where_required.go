@@ -39,20 +39,20 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 		(stmtNode).Accept(we)
 	}
 
-	if len(we.advisorList) == 0 {
-		we.advisorList = append(we.advisorList, advisor.Advice{
+	if len(we.adviceList) == 0 {
+		we.adviceList = append(we.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return we.advisorList, nil
+	return we.adviceList, nil
 }
 
 type whereRequirementChecker struct {
-	advisorList []advisor.Advice
-	level       advisor.Status
+	adviceList []advisor.Advice
+	level      advisor.Status
 }
 
 func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -71,7 +71,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	if code != common.Ok {
-		v.advisorList = append(v.advisorList, advisor.Advice{
+		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
 			Title:   "Require WHERE clause",
