@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
@@ -387,6 +388,25 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
+// IncrementalRecoveryConfig defines a range in the incremental backup.
+type IncrementalRecoveryConfig struct {
+	// Start/End is the binlog position in MySQL, and WAL lsn in PostgreSQL.
+	// Encoded in JSON format.
+	Start []byte
+	End   []byte
+}
+
+// MySQLBinlogConfig is the binlog coordination for MySQL.
+type MySQLBinlogConfig struct {
+	Filename string `json:"filename"`
+	Position int64  `json:"position"`
+}
+
+// Parse decodes JSON and populates the config struct
+func (config *MySQLBinlogConfig) Parse(pos []byte) error {
+	return json.Unmarshal(pos, config)
+}
+
 // Driver is the interface for database driver.
 type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
@@ -422,8 +442,8 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreIncremental restores the database using incremental backup in time range of [fromUnix, toUnix).
-	RestoreIncremental(ctx context.Context, fromUnix, toUnix int64) error
+	// RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
+	RestoreIncremental(ctx context.Context, config IncrementalRecoveryConfig) error
 }
 
 // Register makes a database driver available by the provided type.

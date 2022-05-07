@@ -508,9 +508,8 @@ func fromStoredVersion(storedVersion string) (bool, string, string, error) {
 }
 
 // GetPITRDatabaseName composes a pitr database name
-func GetPITRDatabaseName(database string) string {
-	now := time.Now().Unix()
-	postfix := fmt.Sprintf("_pitr_%d", now)
+func GetPITRDatabaseName(database string, timestamp int64) string {
+	postfix := fmt.Sprintf("_pitr_%d", timestamp)
 	ret := database + postfix
 	// MySQL max database length is 64
 	if len(ret) > 64 {

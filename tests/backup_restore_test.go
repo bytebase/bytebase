@@ -190,8 +190,7 @@ func TestPITR(t *testing.T) {
 		t.Log("[t0] insert data")
 		insertRangeData(t, db, 0, 10)
 
-		t0 := time.Now().Unix()
-
+		// t0 := time.Now().Unix()
 		t.Log("[t0] make a full backup")
 		driverBackup := getDbDriver(t, localhost, fmt.Sprintf("%d", port), username, database)
 		defer func() {
@@ -207,13 +206,13 @@ func TestPITR(t *testing.T) {
 
 		t.Log("[t1] start to concurrently update data")
 		stopChan := make(chan bool)
-		t1 := startUpdateRow(t, username, localhost, database, port, stopChan)
+		// t1 := startUpdateRow(t, username, localhost, database, port, stopChan)
 
 		t.Log("restore to pitr database")
 		_, err := db.Exec("SET foreign_key_checks=OFF")
 		a.NoError(err)
 
-		pitrDatabaseName := dbUtil.GetPITRDatabaseName(database)
+		pitrDatabaseName := dbUtil.GetPITRDatabaseName(database, time.Now().Unix())
 		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", pitrDatabaseName))
 		a.NoError(err)
 
@@ -227,7 +226,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("apply binlog from t0 to t1")
 		// TODO(dragonly): implement RestoreIncremental in mysql driver
-		err = driverRestore.RestoreIncremental(context.TODO(), t0, t1)
+		err = driverRestore.RestoreIncremental(context.TODO(), dbPlugin.IncrementalRecoveryConfig{Start: []byte(""), End: []byte("")})
 		a.Error(err)
 
 		_, err = db.Exec("SET foreign_key_checks=ON")
