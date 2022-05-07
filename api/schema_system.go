@@ -132,6 +132,10 @@ func (rule *SchemaReviewRule) Validate() error {
 		if _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}
+	case SchemaRuleRequiredColumn:
+		if _, err := UnmarshalRequiredColumnRulePayload(rule.Payload); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -178,4 +182,16 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	}
 
 	return template, keys, nil
+}
+
+// UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
+func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
+	var rcr RequiredColumnRulePayload
+	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal required column rule payload %q: %q", payload, err)
+	}
+	if len(rcr.ColumnList) == 0 {
+		return nil, fmt.Errorf("invalid required column rule payload, column list cannot be empty")
+	}
+	return &rcr, nil
 }

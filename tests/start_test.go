@@ -13,7 +13,7 @@ func TestServiceRestart(t *testing.T) {
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
-	err := ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
 
 	err = ctl.Login()
@@ -26,12 +26,12 @@ func TestServiceRestart(t *testing.T) {
 	assert.Greater(t, len(projects), 1)
 
 	// Restart the server.
-	err = ctl.Close()
+	err = ctl.Close(ctx)
 	require.NoError(t, err)
 
-	err = ctl.StartMain(ctx, dataDir, getTestPort(t.Name()))
+	err = ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
 	require.NoError(t, err)
-	defer ctl.Close()
+	defer ctl.Close(ctx)
 
 	err = ctl.Login()
 	require.NoError(t, err)

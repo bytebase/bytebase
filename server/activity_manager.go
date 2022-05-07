@@ -117,7 +117,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	var webhookCtx webhook.Context
 	level := webhook.WebhookInfo
 	title := ""
-	link := fmt.Sprintf("%s:%d/issue/%s", m.s.frontendHost, m.s.frontendPort, api.IssueSlug(meta.issue))
+	link := fmt.Sprintf("%s:%d/issue/%s", m.s.profile.FrontendHost, m.s.profile.FrontendPort, api.IssueSlug(meta.issue))
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = "Issue created - " + meta.issue.Name

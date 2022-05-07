@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	_ "github.com/bytebase/bytebase/plugin/vcs/github" // Import to call the init until it is imported from somewhere else
 )
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
@@ -56,7 +57,7 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			}
 		}
 
-		oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.frontendHost, s.frontendPort)
+		oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{Logger: s.l}).
 			ExchangeOAuthToken(
 				c.Request().Context(),

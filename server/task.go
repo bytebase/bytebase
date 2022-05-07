@@ -129,10 +129,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		taskPatched, err := s.store.PatchTask(ctx, taskPatch)
 		if err != nil {
-			// TODO(dragonly): double check whether this should be common.Invalid or not
-			if common.ErrorCode(err) == common.Invalid {
-				return echo.NewHTTPError(http.StatusBadRequest, common.ErrorMessage(err))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update task \"%v\"", task.Name)).SetInternal(err)
 		}
 
@@ -216,7 +212,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 					if s.feature(api.FeatureSchemaReviewPolicy) {
 						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
+							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 						}
 					}
 				}
@@ -378,7 +374,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-// TODO(dragonly): remove this hack
 func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
 	var err error
 

@@ -55,6 +55,9 @@ const (
 	TableNamingConventionMismatch Code = 10201
 	// 10202 index naming advisor error code
 	IndexNamingConventionMismatch Code = 10202
+
+	// 10301 column rule advisor error code
+	NoRequiredColumn Code = 10301
 )
 
 // Error represents an application-specific error. Application errors can be

@@ -21,7 +21,8 @@ import (
 
 // TestBackupRestoreBasic tests basic backup and restore behavior
 // The test plan is:
-// 1. create schema with index and constraint and populate data (TODO(dragonly): add routine/event/trigger)
+// TODO(dragonly): add routine/event/trigger
+// 1. create schema with index and constraint and populate data
 // 2. create a full backup
 // 3. clear data
 // 4. restore data

@@ -63,6 +63,8 @@ const (
 	MySQLTableNamingConvention Type = "bb.plugin.advisor.mysql.naming.table"
 	// MySQLIndexNamingConvention is an advisor type for MySQL index key naming convention.
 	MySQLIndexNamingConvention Type = "bb.plugin.advisor.mysql.naming.index"
+	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
+	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 )
 
 // Advice is the result of an advisor.

@@ -114,15 +114,14 @@ import {
   computed,
   defineComponent,
 } from "vue";
+import { NSpin } from "naive-ui";
 import ActivityTable from "../components/ActivityTable.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
 import TenantDatabaseTable, { YAxisRadioGroup } from "./TenantDatabaseTable";
 import { IssueTable } from "../components/Issue";
 import { Activity, Database, Issue, Project, LabelKeyType } from "../types";
 import { findDefaultGroupByLabel } from "../utils";
-import { NSpin } from "naive-ui";
-import { useActivityStore, useIssueStore, useLabelStore } from "@/store";
-import { storeToRefs } from "pinia";
+import { useActivityStore, useIssueStore, useLabelList } from "@/store";
 
 // Show at most 5 activity
 const ACTIVITY_LIMIT = 5;
@@ -157,8 +156,6 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const labelStore = useLabelStore();
-
     const state = reactive<LocalState>({
       activityList: [],
       progressIssueList: [],
@@ -204,20 +201,14 @@ export default defineComponent({
       return props.project.tenantMode === "TENANT";
     });
 
-    const prepareLabelList = () => {
-      if (!isTenantProject.value) return;
-      labelStore.fetchLabelList();
-    };
-
     const prepare = () => {
       prepareActivityList();
       prepareIssueList();
-      prepareLabelList();
     };
 
     watchEffect(prepare);
 
-    const { labelList } = storeToRefs(labelStore);
+    const labelList = useLabelList();
 
     const filteredDatabaseList = computed(() => {
       const filter = state.databaseNameFilter.toLocaleLowerCase();

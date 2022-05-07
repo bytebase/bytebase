@@ -96,7 +96,6 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		for _, project := range projectList {
 			projectList = append(projectList, project)
 			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
-			// TODO(dragonly): move this if-branch out of the for loop to optimize access pattern
 			if projectFind.PrincipalID != nil {
 				principalID := *projectFind.PrincipalID
 				roleProvider := project.RoleProvider
@@ -212,7 +211,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repositoryCreate.VCSID))
 		}
 
-		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.host, s.port)
+		repositoryCreate.WebhookURLHost = fmt.Sprintf("%s:%d", s.profile.BackendHost, s.profile.BackendPort)
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 
@@ -221,7 +220,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		switch vcs.Type {
 		case "GITLAB_SELF_HOST":
 			webhookPost := gitlab.WebhookPost{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
+				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
 				PushEvents:             true,
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
@@ -373,7 +372,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			switch vcs.Type {
 			case "GITLAB_SELF_HOST":
 				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.host, s.port, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
 				}
 				webhookPatchPayload, err = json.Marshal(webhookPut)
