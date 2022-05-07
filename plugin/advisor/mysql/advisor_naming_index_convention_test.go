@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIndexNamingRequirement(t *testing.T) {
+func TestNamingIndexConvention(t *testing.T) {
 	tests := []test{
 		{
 			statement: "CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)",
@@ -40,7 +40,7 @@ func TestIndexNamingRequirement(t *testing.T) {
 		Format: "idx_{{table}}_{{column_list}}",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &IndexNamingConventionAdvisor{}, &api.SchemaReviewRule{
+	runSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &api.SchemaReviewRule{
 		Type:    api.SchemaRuleIDXNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),

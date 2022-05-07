@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*IndexNamingConventionAdvisor)(nil)
+	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
 
 	ruleMapping = map[api.SchemaReviewRuleType]ast.ConstraintType{
 		api.SchemaRulePKNaming:  ast.ConstraintPrimaryKey,
@@ -22,16 +22,16 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &IndexNamingConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &IndexNamingConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 }
 
-// IndexNamingConventionAdvisor is the advisor checking for index naming convention.
-type IndexNamingConventionAdvisor struct {
+// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
+type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (adv *IndexNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (adv *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -46,7 +46,7 @@ func (adv *IndexNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	checker := &indexNamingConventionChecker{
+	checker := &namingIndexConventionChecker{
 		level:        level,
 		ruleType:     ctx.Rule.Type,
 		format:       format,
@@ -67,7 +67,7 @@ func (adv *IndexNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	return checker.advisorList, nil
 }
 
-type indexNamingConventionChecker struct {
+type namingIndexConventionChecker struct {
 	advisorList  []advisor.Advice
 	level        advisor.Status
 	ruleType     api.SchemaReviewRuleType
@@ -75,7 +75,7 @@ type indexNamingConventionChecker struct {
 	templateList []string
 }
 
-func (v *indexNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (v *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := v.getIndexMetaData(in)
 
 	code := common.Ok
@@ -100,7 +100,7 @@ func (v *indexNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (v *indexNamingConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (v *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -110,7 +110,7 @@ type indexMetaData struct {
 }
 
 // getIndexMetaData returns the list of index with meta data.
-func (v *indexNamingConventionChecker) getIndexMetaData(in ast.Node) []*indexMetaData {
+func (v *namingIndexConventionChecker) getIndexMetaData(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
