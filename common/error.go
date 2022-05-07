@@ -51,8 +51,10 @@ const (
 
 	StatementNoWhere Code = 10101
 
-	// 10201 naming advisor error code
+	// 10201 table naming advisor error code
 	TableNamingConventionMismatch Code = 10201
+	// 10202 index naming advisor error code
+	IndexNamingConventionMismatch Code = 10202
 )
 
 // Error represents an application-specific error. Application errors can be

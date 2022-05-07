@@ -128,6 +128,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLTableNamingConvention, nil
 		}
+	case api.SchemaRuleIDXNaming, api.SchemaRuleUKNaming, api.SchemaRulePKNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLIndexNamingConvention, nil
+		}
 	}
 	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 }

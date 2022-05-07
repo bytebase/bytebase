@@ -61,6 +61,8 @@ const (
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 	// MySQLTableNamingConvention is an advisor type for MySQL table naming convention.
 	MySQLTableNamingConvention Type = "bb.plugin.advisor.mysql.naming.table"
+	// MySQLIndexNamingConvention is an advisor type for MySQL index key naming convention.
+	MySQLIndexNamingConvention Type = "bb.plugin.advisor.mysql.naming.index"
 )
 
 // Advice is the result of an advisor.
