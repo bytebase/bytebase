@@ -59,10 +59,11 @@ const (
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
-	// MySQLTableNamingConvention is an advisor type for MySQL table naming convention.
-	MySQLTableNamingConvention Type = "bb.plugin.advisor.mysql.naming.table"
-	// MySQLIndexNamingConvention is an advisor type for MySQL index key naming convention.
-	MySQLIndexNamingConvention Type = "bb.plugin.advisor.mysql.naming.index"
+
+	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
+	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
+	// MySQLNamingIndexConvention is an advisor type for MySQL index key naming convention.
+	MySQLNamingIndexConvention Type = "bb.plugin.advisor.mysql.naming.index"
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 )

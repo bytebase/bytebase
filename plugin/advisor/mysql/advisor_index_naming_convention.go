@@ -22,8 +22,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLIndexNamingConvention, &IndexNamingConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLIndexNamingConvention, &IndexNamingConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &IndexNamingConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &IndexNamingConventionAdvisor{})
 }
 
 // IndexNamingConventionAdvisor is the advisor checking for index naming convention.

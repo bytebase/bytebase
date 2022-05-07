@@ -12,20 +12,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*TableNamingConventionAdvisor)(nil)
+	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableNamingConvention, &TableNamingConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableNamingConvention, &TableNamingConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 }
 
-// TableNamingConventionAdvisor is the advisor checking for table naming convention.
-type TableNamingConventionAdvisor struct {
+// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -39,7 +39,7 @@ func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	checker := &tableNamingConventionChecker{
+	checker := &namingTableConventionChecker{
 		level:  level,
 		format: format,
 	}
@@ -47,25 +47,25 @@ func (adv *TableNamingConventionAdvisor) Check(ctx advisor.Context, statement st
 		(stmtNode).Accept(checker)
 	}
 
-	if len(checker.advisorList) == 0 {
-		checker.advisorList = append(checker.advisorList, advisor.Advice{
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return checker.advisorList, nil
+	return checker.adviceList, nil
 }
 
-type tableNamingConventionChecker struct {
-	advisorList []advisor.Advice
-	level       advisor.Status
-	format      *regexp.Regexp
+type namingTableConventionChecker struct {
+	adviceList []advisor.Advice
+	level      advisor.Status
+	format     *regexp.Regexp
 }
 
-func (v *tableNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	tableNames := make([]string, 0)
+func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+	var tableNames []string
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
@@ -96,7 +96,7 @@ func (v *tableNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	if code != common.Ok {
-		v.advisorList = append(v.advisorList, advisor.Advice{
+		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
 			Title:   "Mismatch table naming convention",
@@ -106,6 +106,6 @@ func (v *tableNamingConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (v *tableNamingConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

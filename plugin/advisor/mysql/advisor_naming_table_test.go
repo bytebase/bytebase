@@ -83,7 +83,7 @@ func TestTableNamingRequirement(t *testing.T) {
 		Format: "^[a-z]+(_[a-z]+)?$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &TableNamingConventionAdvisor{}, &api.SchemaReviewRule{
+	runSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &api.SchemaReviewRule{
 		Type:    api.SchemaRuleTableNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),

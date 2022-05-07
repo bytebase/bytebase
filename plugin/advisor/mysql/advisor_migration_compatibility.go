@@ -35,18 +35,18 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 		(stmtNode).Accept(c)
 	}
 
-	if len(c.advisorList) == 0 {
-		c.advisorList = append(c.advisorList, advisor.Advice{
+	if len(c.adviceList) == 0 {
+		c.adviceList = append(c.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "Migration is backward compatible"})
 	}
-	return c.advisorList, nil
+	return c.adviceList, nil
 }
 
 type compatibilityChecker struct {
-	advisorList []advisor.Advice
+	adviceList []advisor.Advice
 }
 
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -137,7 +137,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	if code != common.Ok {
-		v.advisorList = append(v.advisorList, advisor.Advice{
+		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  advisor.Warn,
 			Code:    code,
 			Title:   "Potential incompatible migration",

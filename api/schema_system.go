@@ -169,7 +169,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, error) 
 func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return "", []string{}, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return "", nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 
 	template := nr.Format
@@ -177,7 +177,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
-			return "", []string{}, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
+			return "", nil, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
 
