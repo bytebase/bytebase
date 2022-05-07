@@ -4,7 +4,7 @@ Pipeline, Stage, Task are the backbones of execution.
 
 A PIPELINE consists of multiple STAGES. A STAGE consists of multiple TASKS.
 
-# Comparision to other systems
+# Comparison to other systems
 
 ## Comparison with Tekton
 
@@ -33,13 +33,13 @@ A PIPELINE consists of multiple STAGES. A STAGE consists of multiple TASKS.
 - STAGE = Octopus Phase + Task
 - TASK = Octopus Step
 
-## Comparsion with Jenkins:
+## Comparison with Jenkins:
 
 - PIPELINE = Jenkins Pipeline
 - STAGE = Jenkins Stage
 - TASK = Jenkins Step (but it's also called task from its doc)
 
-## Comparsion with Spinnaker:
+## Comparison with Spinnaker:
 
 - PIPELINE = Spinnaker Pipeline
 - STAGE = Spinnaker Stage
@@ -57,7 +57,7 @@ A PIPELINE consists of multiple STAGES. A STAGE consists of multiple TASKS.
   Thus, we also choose Task as our smallest querable execution unit.
 
 - We also have a Stage concept which is similar to GitLab Stage/Octopus Phase, in that it's a
-  container to group mulitple tasks. Stage is usually used to model a stage in the development
+  container to group multiple tasks. Stage is usually used to model a stage in the development
   lifecycle (dev, testing, staging, prod).
 
 - Only Pipeline and Task have status, while Stage doesn't. Stage's status derives from its
