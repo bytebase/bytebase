@@ -35,9 +35,9 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 		}, nil
 	}
 
-	var advisorList []advisor.Advice
+	var adviceList []advisor.Advice
 	for _, warn := range warns {
-		advisorList = append(advisorList, advisor.Advice{
+		adviceList = append(adviceList, advisor.Advice{
 			Status:  advisor.Warn,
 			Code:    common.DbStatementSyntaxError,
 			Title:   "Syntax Warning",
@@ -45,10 +45,10 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 		})
 	}
 
-	advisorList = append(advisorList, advisor.Advice{
+	adviceList = append(adviceList, advisor.Advice{
 		Status:  advisor.Success,
 		Code:    common.Ok,
 		Title:   "Syntax OK",
 		Content: "OK"})
-	return advisorList, nil
+	return adviceList, nil
 }
