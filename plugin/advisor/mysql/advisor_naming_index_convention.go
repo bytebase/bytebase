@@ -76,7 +76,7 @@ type namingIndexConventionChecker struct {
 }
 
 func (v *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	indexDataList := v.getIndexMetaData(in)
+	indexDataList := v.getIndexMetaDataList(in)
 
 	code := common.Ok
 
@@ -110,7 +110,7 @@ type indexMetaData struct {
 }
 
 // getIndexMetaData returns the list of index with meta data.
-func (v *namingIndexConventionChecker) getIndexMetaData(in ast.Node) []*indexMetaData {
+func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
