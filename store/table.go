@@ -150,6 +150,12 @@ func (s *Store) composeTable(ctx context.Context, raw *tableRaw) (*api.Table, er
 	}
 	table.Updater = updater
 
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &table.DatabaseID})
+	if err != nil {
+		return nil, err
+	}
+	table.Database = database
+
 	return table, nil
 }
 
