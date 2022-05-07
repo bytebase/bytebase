@@ -49,7 +49,16 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 		(stmtNode).Accept(checker)
 	}
 
-	return checker.generateAdviceList(), nil
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    common.Ok,
+			Title:   "OK",
+			Content: "",
+		})
+	}
+
+	return checker.adviceList, nil
 }
 
 type namingColumnConventionChecker struct {
@@ -60,73 +69,49 @@ type namingColumnConventionChecker struct {
 }
 
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+	var columnList []string
+	var tableName string
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
-		v.createTable(node)
+		tableName = node.Table.Name.O
+		for _, column := range node.Cols {
+			columnList = append(columnList, column.Name.Name.O)
+		}
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
-		table := v.tables.getTable(node.Table.Name.O)
+		tableName = node.Table.Name.O
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			// RENAME COLUMN
 			case ast.AlterTableRenameColumn:
-				delete(table, spec.OldColumnName.Name.O)
-				table[spec.NewColumnName.Name.O] = true
+				columnList = append(columnList, spec.NewColumnName.Name.O)
 			// ADD COLUMNS
 			case ast.AlterTableAddColumns:
 				for _, column := range spec.NewColumns {
-					table[column.Name.Name.O] = true
+					columnList = append(columnList, column.Name.Name.O)
 				}
-			// DROP COLUMN
-			case ast.AlterTableDropColumn:
-				delete(table, spec.OldColumnName.Name.O)
 			// CHANGE COLUMN
 			case ast.AlterTableChangeColumn:
-				delete(table, spec.OldColumnName.Name.O)
-				table[spec.NewColumns[0].Name.Name.O] = true
+				columnList = append(columnList, spec.NewColumns[0].Name.Name.O)
 			}
 		}
 	}
+
+	for _, column := range columnList {
+		if !v.format.MatchString(column) {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    common.NamingColumnConventionMismatch,
+				Title:   "Mismatch column naming convention",
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention", tableName, column),
+			})
+		}
+	}
+
 	return in, false
 }
 
 func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
-}
-
-func (v *namingColumnConventionChecker) createTable(node *ast.CreateTableStmt) {
-	table := make(columnSet)
-	for _, column := range node.Cols {
-		table[column.Name.Name.O] = true
-	}
-	v.tables[node.Table.Name.O] = table
-}
-
-func (v *namingColumnConventionChecker) generateAdviceList() []advisor.Advice {
-	tableList := v.tables.tableList()
-	for _, tableName := range tableList {
-		table := v.tables[tableName]
-		columnList := table.columnList()
-		for _, columnName := range columnList {
-			if !v.format.MatchString(columnName) {
-				v.adviceList = append(v.adviceList, advisor.Advice{
-					Status:  v.level,
-					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
-					Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention", tableName, columnName),
-				})
-			}
-		}
-	}
-
-	if len(v.adviceList) == 0 {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: "",
-		})
-	}
-	return v.adviceList
 }

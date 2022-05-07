@@ -47,13 +47,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
-							id int,
-							creatorId int,
-							created_ts timestamp,
-							updater_id int,
-							updated_ts timestamp);
-						ALTER TABLE book RENAME COLUMN creatorId TO creator_id;`,
+			statement: `ALTER TABLE book RENAME COLUMN creatorId TO creator_id;`,
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -81,13 +75,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
-							id int,
-							creatorId int,
-							created_ts timestamp,
-							updater_id int,
-							updated_ts timestamp);
-						ALTER TABLE book CHANGE COLUMN creatorId creator_id int;`,
+			statement: `ALTER TABLE book CHANGE COLUMN creatorId creator_id int;`,
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -98,14 +86,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
-							id int,
-							creator_id int,
-							created_ts timestamp,
-							updater_id int,
-							updated_ts timestamp,
-							contentString varchar(255));
-						ALTER TABLE book DROP COLUMN contentString;`,
+			statement: `ALTER TABLE book DROP COLUMN contentString;`,
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Success,

@@ -100,11 +100,7 @@ func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 
 func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-	var tableList []string
-	for tableName := range v.tables {
-		tableList = append(tableList, tableName)
-	}
-	sort.Strings(tableList)
+	tableList := v.tables.tableList()
 	for _, tableName := range tableList {
 		table := v.tables[tableName]
 		var missingColumns []string
