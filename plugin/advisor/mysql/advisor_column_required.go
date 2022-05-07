@@ -61,7 +61,7 @@ type columnSet map[string]bool
 type tableState map[string]columnSet
 
 type columnRequirementChecker struct {
-	advisorList     []advisor.Advice
+	adviceList      []advisor.Advice
 	level           advisor.Status
 	requiredColumns columnSet
 	tables          tableState
@@ -119,7 +119,7 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 		if len(missingColumns) > 0 {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
-			v.advisorList = append(v.advisorList, advisor.Advice{
+			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    common.NoRequiredColumn,
 				Title:   "Require columns",
@@ -128,15 +128,15 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 		}
 	}
 
-	if len(v.advisorList) == 0 {
-		v.advisorList = append(v.advisorList, advisor.Advice{
+	if len(v.adviceList) == 0 {
+		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return v.advisorList
+	return v.adviceList
 }
 
 // initEmptyTable will initialize a table without any required columns.

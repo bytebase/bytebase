@@ -126,7 +126,7 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 	case api.SchemaRuleTableNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
-			return advisor.MySQLTableNamingConvention, nil
+			return advisor.MySQLNamingTableConvention, nil
 		}
 	case api.SchemaRuleRequiredColumn:
 		switch engine {
