@@ -34,20 +34,29 @@ func (i Instance) Port() int { return i.port }
 
 // Start starts a postgres instance on given port, outputs to stdout and stderr.
 //
+// If host == "", postgres will only listen the Unix-domain socket, else it will only listen the host
+//
 // If port is 0, then it will choose a random unused port.
 //
 // If waitSec > 0, watis at most `waitSec` seconds for the postgres instance to start.
 // Otherwise, returns immediately.
-func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
+func (i *Instance) Start(host string, port int, stdout, stderr io.Writer) (err error) {
 	pgbin := filepath.Join(i.basedir, "bin", "pg_ctl")
 
 	i.port = port
 
+	var p *exec.Cmd
 	// See -p -k -h option definitions in the link below.
 	// https://www.postgresql.org/docs/current/app-postgres.html
-	p := exec.Command(pgbin, "start", "-w",
-		"-D", i.datadir,
-		"-o", fmt.Sprintf(`-p %d -k %s -h ""`, i.port, common.GetPostgresSocketDir()))
+	if host == "" {
+		p = exec.Command(pgbin, "start", "-w",
+			"-D", i.datadir,
+			"-o", fmt.Sprintf(`-p %d -k %s -h ""`, i.port, common.GetPostgresSocketDir()))
+	} else {
+		p = exec.Command(pgbin, "start", "-w",
+			"-D", i.datadir,
+			"-o", fmt.Sprintf(`-p %d -h %s`, i.port, host))
+	}
 
 	p.Stdout = stdout
 	p.Stderr = stderr

@@ -22,12 +22,13 @@ func newFakeExternalPostgres(tmpDir string, port int) (*fakeExternalPostgres, er
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")
 	pgUser := "bbexternal"
+	pgHost := "localhost"
 	pgIns, err := postgres.Install(resourceDir, dataDir, pgUser)
 	if err != nil {
 		return nil, err
 	}
 
-	err = pgIns.Start(port, os.Stderr, os.Stderr)
+	err = pgIns.Start(pgHost, port, os.Stderr, os.Stderr)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func newFakeExternalPostgres(tmpDir string, port int) (*fakeExternalPostgres, er
 		// The host component is interpreted as described for the parameter host.
 		// In particular, a Unix-domain socket connection is chosen if the host part is either empty or starts with a slash,
 		// otherwise a TCP/IP connection is initiated.
-		pgURL: fmt.Sprintf("postgresql://%s@:%d/%s", pgUser, port, "postgres"),
+		pgURL: fmt.Sprintf("postgresql://%s@%s:%d/%s", pgUser, pgHost, port, "postgres"),
 	}, nil
 }
 

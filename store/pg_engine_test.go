@@ -146,7 +146,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)
-	err = pgInstance.Start(pgPort, os.Stdout, os.Stderr)
+	err = pgInstance.Start("" /*host*/, pgPort, os.Stdout, os.Stderr)
 	require.NoError(t, err)
 	defer pgInstance.Stop(os.Stdout, os.Stderr)
 
