@@ -50,7 +50,7 @@ Occasionally, catastrophic events can happen to the databases and result in serv
 
 - **Drop Database**: the database is dropped accidentally by mistake.
 - **Schema Migration Failure**: A column is dropped, or its type is updated incorrectly. The table needs to be rolled back to the state before the migration. In the long term, we could polish the feature to provide the ability to revert the migration with minimal cost. Still, currently, we could leverage PITR to do the lift, with the limitation of losing incoming data after the migration.
-- **Buggy Application**: Bugs happen, and they may corrupt your data. The chances are that the user rolls out a new release of their service, only to find a bug in the application code that deletes essential data. It is best to roll back the service and recover the database to the state just before the release. Here’s when PITR kicks in.
+- **Buggy Application**: Bugs happen, and they may corrupt your data. The chances are that the user rolls out a new release of their service, only to find a bug in the application code that deletes essential data. It is best to roll back the service and recover the database to the state just before the release.
 
 ## Database Recovery
 
@@ -107,7 +107,7 @@ An example command is like this, and the `--ssl` parameters should be used [foll
 
 `mysqlbinlog mysql-bin.000001 --ssl=0 --read-from-remote-server --host=x --user=x --password=x --raw --result-file=/bytebase/binlog/`
 
-## Navigation
+## Find the point-in-time T
 
 The user should be able to navigate the database history to search for SQL queries to determine the exact point in time to recover. As is described in the [OMG Moments](#omg-moments), when the user meets a schema migration failure, Bytebase should locate the binlog/wal position just before the corresponding migration happens.
 
@@ -131,7 +131,7 @@ When the point-in-time t1 is determined, Bytebase will take a series of actions 
 The timeline involved above could be roughly represented like this:
 (bk (t0), data changes, t1, data changes)
 
-The pitr database naming convention in step 2 is appending _pitr_${UNIX_TIMESTAMP} to the end of the original database name. We must check that the pitr database name does contain more than 64 characters, which is [the limit of MySQL](https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html).
+The pitr database naming convention in step 2 is appending _pitr_${UNIX_TIMESTAMP} to the end of the original database name. We must check that the pitr database name does not contain more than 64 characters, which is [the limit of MySQL](https://dev.mysql.com/doc/refman/8.0/en/identifier-length.html).
 
 Step 6b uses a special MySQL syntax [`RENAME TABLE current_db.tbl_name TO other_db.tbl_name`](https://dev.mysql.com/doc/refman/8.0/en/rename-table.html), which effectively moves tables between databases. At last, Bytebase will delete the pitr database, which will be empty. The original database, if it exists, will be deleted if the user manually approves the issue Bytebase automatically generates.
 
