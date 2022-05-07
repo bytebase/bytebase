@@ -4,6 +4,7 @@ import "sort"
 
 type columnSet map[string]bool
 
+// columnList returns column list in lexicographical order.
 func (set columnSet) columnList() []string {
 	var columnList []string
 	for columnName := range set {
@@ -22,6 +23,7 @@ func (t tableState) getTable(table string) columnSet {
 	return t[table]
 }
 
+// tableList returns table list in lexicographical order.
 func (t tableState) tableList() []string {
 	var tableList []string
 	for tableName := range t {
