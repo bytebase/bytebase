@@ -129,12 +129,16 @@ func getTestPort(testName string) int {
 		return 1258
 	case "TestTenantVCSDatabaseNameTemplate":
 		return 1261
+	case "TestBootWithExternalPostgres":
+		return 1264
+	case "NEXT":
+		return 1268
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
 // StartServer starts the main server.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
+func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int, pgURL string) error {
 	// start main server.
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
@@ -142,13 +146,19 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	}
 	defer logger.Sync()
 
-	profile := cmd.GetTestProfile(dataDir, port)
+	var profile server.Profile
+	if pgURL == "" {
+		profile = cmd.GetTestProfile(dataDir, port)
+	} else {
+		profile = cmd.GetTestProfileWithExternalPg(dataDir, pgURL, port)
+	}
+
 	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
 	}
 
-	ctl.rootURL = fmt.Sprintf("http://localhost:%d/", port)
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// set up gitlab.
@@ -353,6 +363,28 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 	return resp.Body, nil
+}
+
+func (ctl *controller) reachHealthz() error {
+	healthzEndPoint := "/healthz"
+	url := fmt.Sprintf("%s%s", ctl.rootURL, healthzEndPoint)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("fail to create a new GET request(%q), error: %w", url, err)
+	}
+
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return nil
 }
 
 // getProjects gets the projects.
