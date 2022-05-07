@@ -69,7 +69,7 @@ What’s more convenient is that if the user used Bytebase to do the wrong schem
 
 Full backup follows what `mysqldump` does with `--source-data` flag. `SHOW MASTER STATUS` gives the coordinate (MySQL binlog file name and position) of a backup. This provides us with the starting position to apply binary logs in the PITR recovery step. Because the `SHOW MASTER STATUS` statement is not transactional, we have to put [`FLUSH TABLES tbl_names... WITH READ LOCK`](https://dev.mysql.com/doc/refman/8.0/en/flush.html#flush-tables-with-read-lock-with-list) to block writes to figure out the precise binary log coordinate in the transaction of taking database backup. As a side-effect, writes will be blocked for a short period between steps 1 and 4. By the way, we have to make sure the tables are unlocked regardless of any failure.
 
-1. `FLUSH TABLES tbl_names... WITH READ LOCK`. Bytebase will set a timeout of 30s to release the lock if things go wrong.
+1. `FLUSH TABLES tbl_names... WITH READ LOCK`. Bytebase will set a timeout to release the lock if things go wrong.
 2. `SHOW MASTER STATUS`. Bytebase will record the binary log coordinates and timestamp.
 3. Start a transaction. This [will implicitly unlock tables](https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html) that were locked in the same session.
 4. Dump all the schema and data for a database.
