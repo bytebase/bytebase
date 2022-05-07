@@ -64,6 +64,7 @@ func TestBootWithExternalPostgres(t *testing.T) {
 	ctl := &controller{}
 	err = ctl.StartServer(ctx, dataDir, serverPort, externalPg.pgURL)
 	require.NoError(t, err)
+	defer ctl.Close(ctx)
 
 	timer := time.NewTimer(5 * time.Second)
 	for {
