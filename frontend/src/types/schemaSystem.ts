@@ -170,7 +170,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           description: "",
           payload: {
             type: "TEMPLATE",
-            default: "^pk_{{table}}_{{column_list}}$",
+            default: "pk_{{table}}_{{column_list}}",
             templateList: [
               {
                 id: "table",
@@ -195,7 +195,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           description: "",
           payload: {
             type: "TEMPLATE",
-            default: "^uk_{{table}}_{{column_list}}$",
+            default: "uk_{{table}}_{{column_list}}",
             templateList: [
               {
                 id: "table",
@@ -221,7 +221,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           payload: {
             type: "TEMPLATE",
             default:
-              "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+              "fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}",
             templateList: [
               {
                 id: "referencing_table",
@@ -256,7 +256,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           description: "",
           payload: {
             type: "TEMPLATE",
-            default: "^idx_{{table}}_{{column_list}}$",
+            default: "idx_{{table}}_{{column_list}}",
             templateList: [
               {
                 id: "table",
