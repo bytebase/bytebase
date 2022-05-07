@@ -945,6 +945,88 @@ func (driver *Driver) RestoreIncremental(ctx context.Context, config db.Incremen
 	return fmt.Errorf("Unimplemented")
 }
 
+// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
+func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.IncrementalRecoveryConfig, database string, timestamp int64) error {
+	pitrDatabaseName := util.GetPITRDatabaseName(database, timestamp)
+	if _, err := driver.db.Exec(fmt.Sprintf("CREATE DATABASE %s", pitrDatabaseName)); err != nil {
+		return err
+	}
+
+	if _, err := driver.db.Exec(fmt.Sprintf("USE %s", pitrDatabaseName)); err != nil {
+		return err
+	}
+
+	if _, err := driver.db.Exec("SET foreign_key_checks=OFF"); err != nil {
+		return err
+	}
+
+	if err := driver.Restore(ctx, fullBackup); err != nil {
+		return err
+	}
+
+	// TODO(dragonly): implement RestoreIncremental in mysql driver
+	_ = driver.RestoreIncremental(ctx, config)
+
+	if _, err := driver.db.Exec("SET foreign_key_checks=ON"); err != nil {
+		return err
+	}
+
+	if _, err := driver.db.Exec(fmt.Sprintf("USE %s", database)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
+func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error {
+	txn, err := driver.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	pitrOldDatabase := util.GetPITRDatabaseOldName(database)
+	pitrDatabaseName := util.GetPITRDatabaseName(database, timestamp)
+
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", pitrOldDatabase)); err != nil {
+		return err
+	}
+
+	tables, err := getTables(txn, database)
+	if err != nil {
+		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
+	}
+	tablesPITR, err := getTables(txn, pitrDatabaseName)
+	if err != nil {
+		return fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
+	}
+
+	var buf strings.Builder
+	buf.WriteString("RENAME TABLE")
+	for _, table := range tables {
+		buf.WriteString(fmt.Sprintf(" `%s`.`%s` TO `%s`.`%s`,", database, table.name, pitrOldDatabase, table.name))
+	}
+	for i, table := range tablesPITR {
+		buf.WriteString(fmt.Sprintf(" `%s`.`%s` TO `%s`.`%s`", pitrDatabaseName, table.name, database, table.name))
+		if i != len(tablesPITR)-1 {
+			buf.WriteString(",")
+		}
+	}
+	queryRenameTables := buf.String()
+	driver.l.Debug("mysql swap database", zap.String("query", queryRenameTables))
+
+	if _, err := txn.ExecContext(ctx, queryRenameTables); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
 	dbNames, err := getDatabases(txn)
@@ -999,7 +1081,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Table and view statement.
 		tables, err := getTables(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
+			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
 		}
 		for _, tbl := range tables {
 			if schemaOnly && tbl.tableType == baseTableType {

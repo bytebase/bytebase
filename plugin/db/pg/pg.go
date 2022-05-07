@@ -870,6 +870,16 @@ func (driver *Driver) RestoreIncremental(ctx context.Context, config db.Incremen
 	return fmt.Errorf("Unimplemented")
 }
 
+// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
+func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.IncrementalRecoveryConfig, database string, timestamp int64) error {
+	return fmt.Errorf("Unimplemented")
+}
+
+// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
+func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error {
+	return fmt.Errorf("Unimplemented")
+}
+
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	if err := driver.switchDatabase(database); err != nil {
 		return err

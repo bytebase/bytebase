@@ -444,6 +444,10 @@ type Driver interface {
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 	// RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
 	RestoreIncremental(ctx context.Context, config IncrementalRecoveryConfig) error
+	// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
+	RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config IncrementalRecoveryConfig, database string, timestamp int64) error
+	// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
+	SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error
 }
 
 // Register makes a database driver available by the provided type.
