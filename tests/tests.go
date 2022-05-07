@@ -137,8 +137,25 @@ func getTestPort(testName string) int {
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgURL string) error {
+	logger, lvl, err := cmd.GetLogger()
+	if err != nil {
+		return fmt.Errorf("failed to get logger, error: %w", err)
+	}
+	defer logger.Sync()
+
+	profile := cmd.GetTestProfileWithExternalPg(dataDir, pgURL, port)
+
+	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
+	if err != nil {
+		return err
+	}
+
+	return ctl.start(ctx, port)
+}
+
 // StartServer starts the main server.
-func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int, pgURL string) error {
+func (ctl *controller) StartServerWithEmbedPg(ctx context.Context, dataDir string, port int) error {
 	// start main server.
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
@@ -146,18 +163,18 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	}
 	defer logger.Sync()
 
-	var profile server.Profile
-	if pgURL == "" {
-		profile = cmd.GetTestProfile(dataDir, port)
-	} else {
-		profile = cmd.GetTestProfileWithExternalPg(dataDir, pgURL, port)
-	}
+	profile := cmd.GetTestProfile(dataDir, port)
 
 	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
 	}
 
+	return ctl.start(ctx, port)
+}
+
+// start only called by ctl.StartXXX()
+func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
@@ -181,10 +198,10 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 		}
 	}()
 
-	if err := waitForServerStart(ctl.server, errChan); err != nil {
+	if err := ctl.waitForServerStart(errChan); err != nil {
 		return fmt.Errorf("failed to wait for server to start, error: %w", err)
 	}
-	if err := waitForGitLabStart(ctl.gitlab, errChan); err != nil {
+	if err := ctl.waitForGitLabStart(errChan); err != nil {
 		return fmt.Errorf("failed to wait for gitlab to start, error: %w", err)
 	}
 
@@ -194,23 +211,23 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	return nil
 }
 
-func waitForServerStart(s *server.Server, errChan <-chan error) error {
+func (ctl *controller) waitForServerStart(errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if s == nil {
+			if ctl.server == nil {
 				continue
 			}
-			e := s.GetEcho()
+			e := ctl.server.GetEcho()
 			if e == nil {
 				continue
 			}
 			addr := e.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
-				return nil // was started
+				return ctl.reachHealthz()
 			}
 		case err := <-errChan:
 			if err == http.ErrServerClosed {
@@ -221,17 +238,17 @@ func waitForServerStart(s *server.Server, errChan <-chan error) error {
 	}
 }
 
-func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
+func (ctl *controller) waitForGitLabStart(errChan <-chan error) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if g.Echo == nil {
+			if ctl.gitlab.Echo == nil {
 				continue
 			}
-			addr := g.Echo.ListenerAddr()
+			addr := ctl.gitlab.Echo.ListenerAddr()
 			if addr != nil && strings.Contains(addr.String(), ":") {
 				return nil // was started
 			}
@@ -372,19 +389,25 @@ func (ctl *controller) reachHealthz() error {
 	if err != nil {
 		return fmt.Errorf("fail to create a new GET request(%q), error: %w", url, err)
 	}
-
-	resp, err := ctl.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read http response body, error: %w", err)
+	timer := time.NewTimer(3 * time.Second)
+	for {
+		select {
+		case <-timer.C:
+			return nil
+		default:
+			resp, err := ctl.client.Do(req)
+			if err != nil {
+				return fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
+			}
+			if resp.StatusCode != http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read http response body, error: %w", err)
+				}
+				return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			}
 		}
-		return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
-	return nil
 }
 
 // getProjects gets the projects.
