@@ -55,17 +55,17 @@ const (
 	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
 
 	// TableNameTemplateToken is the token for table name
-	TableNameTemplateToken = "table"
+	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list
-	ColumnListTemplateToken = "column_list"
+	ColumnListTemplateToken = "{{column_list}}"
 	// ReferencingTableNameTemplateToken is the token for referencing table name
-	ReferencingTableNameTemplateToken = "referencing_table"
+	ReferencingTableNameTemplateToken = "{{referencing_table}}"
 	// ReferencingColumnNameTemplateToken is the token for referencing column name
-	ReferencingColumnNameTemplateToken = "referencing_column"
+	ReferencingColumnNameTemplateToken = "{{referencing_column}}"
 	// ReferencedTableNameTemplateToken is the token for referenced table name
-	ReferencedTableNameTemplateToken = "referenced_table"
+	ReferencedTableNameTemplateToken = "{{referenced_table}}"
 	// ReferencedColumnNameTemplateToken is the token for referenced column name
-	ReferencedColumnNameTemplateToken = "referenced_column"
+	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
 )
 
 var (
@@ -176,7 +176,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	keys := getTemplateTokens(template)
 
 	for _, key := range keys {
-		if !TemplateNamingTokens[ruleType][key] {
+		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
 			return "", []string{}, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
