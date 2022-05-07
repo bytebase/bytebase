@@ -175,6 +175,9 @@ func (ctl *controller) StartServerWithEmbedPg(ctx context.Context, dataDir strin
 
 // start only called by ctl.StartXXX()
 func (ctl *controller) start(ctx context.Context, port int) error {
+	// initialize controller clients.
+	ctl.client = &http.Client{}
+
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
@@ -204,9 +207,6 @@ func (ctl *controller) start(ctx context.Context, port int) error {
 	if err := ctl.waitForGitLabStart(errChan); err != nil {
 		return fmt.Errorf("failed to wait for gitlab to start, error: %w", err)
 	}
-
-	// initialize controller clients.
-	ctl.client = &http.Client{}
 
 	return nil
 }
@@ -385,16 +385,18 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 func (ctl *controller) reachHealthz() error {
 	healthzEndPoint := "/healthz"
 	url := fmt.Sprintf("%s%s", ctl.rootURL, healthzEndPoint)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("fail to create a new GET request(%q), error: %w", url, err)
-	}
+
 	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
 	for {
 		select {
 		case <-timer.C:
 			return nil
 		default:
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				return fmt.Errorf("fail to create a new GET request(%q), error: %w", url, err)
+			}
 			resp, err := ctl.client.Do(req)
 			if err != nil {
 				return fmt.Errorf("fail to send a POST request(%q), error: %w", url, err)
