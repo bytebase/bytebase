@@ -69,7 +69,7 @@ What’s more convenient is that if the user used Bytebase to do the wrong schem
 
 Full backup follows what `mysqldump` does with `--source-data` flag. `SHOW MASTER STATUS` gives the coordinate (MySQL binlog file name and position) of a backup. This provides us with the starting position to apply binary logs in the PITR recovery step. Because the `SHOW MASTER STATUS` statement is not transactional, we have to put [`FLUSH TABLES tbl_names... WITH READ LOCK`](https://dev.mysql.com/doc/refman/8.0/en/flush.html#flush-tables-with-read-lock-with-list) to block writes to figure out the precise binary log coordinate in the transaction of taking database backup. As a side-effect, writes will be blocked for a short period between steps 1 and 4. By the way, we have to make sure the tables are unlocked regardless of any failure.
 
-1. `FLUSH TABLES tbl_names... WITH READ LOCK`.
+1. `FLUSH TABLES tbl_names... WITH READ LOCK`. Bytebase will set a timeout of 30s to release the lock if things go wrong.
 2. `SHOW MASTER STATUS`. Bytebase will record the binary log coordinates and timestamp.
 3. Start a transaction. This [will implicitly unlock tables](https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html) that were locked in the same session.
 4. Dump all the schema and data for a database.
@@ -87,7 +87,7 @@ Currently, we keep the logical backup and binlog together in the local disk wher
 
 The partial backup dump should be discarded if Bytebase encounters an unrecoverable error during the full backup process. The system should report a failed backup, and the user could choose to start another backup task manually. The partially dumped logical backup file will be automatically deleted by Bytebase.
 
-To check the integrity of the logical dump, Bytebase will write file size along with the table data into the backup file. When using a logical backup to recover, we should first validate the row count.
+To check the integrity of the logical dump, Bytebase will write file size along with the table data into the backup file. When using a logical backup to recover, we should first validate the file size.
 
 ## Incremental Backup
 
@@ -109,7 +109,7 @@ An example command is like this, and the `--ssl` parameters should be used [foll
 
 ## Find the point-in-time T
 
-The user should be able to navigate the database history to search for SQL queries to determine the exact point in time to recover. As is described in the [OMG Moments](#omg-moments), when the user meets a schema migration failure, Bytebase should locate the binlog/wal position just before the corresponding migration happens.
+The user should be able to navigate the database history to search for SQL queries to determine the exact point in time to recover. As is described in the [OMG Moments](#omg-moments), when the user meets a schema migration failure, Bytebase should locate the binlog position just before the corresponding migration happens.
 
 Bytebase will support a binlog search api accepting a timestamp and returns several numbers of events around it, containing the data changes and binlog positions. The user should choose a proper binlog position from the UI so that Bytebase can recover the database to the corresponding state.
 
@@ -139,7 +139,7 @@ After the recovery process described above, Bytebase will ask for the user’s m
 
 To restore binlog from the original to the pitr table as is described in step 4, Bytebase will use the [`--rewrite-db`](https://dev.mysql.com/doc/refman/8.0/en/mysqlbinlog.html#option_mysqlbinlog_rewrite-db) option. An example is like `mysqlbinlog --rewrite-db='dbtarget->dbtarget_pitr' --database=dbtarget_pitr binlog.00001`. The `--database` option filters changed database names, so should not use the original database name.
 
-The database session used to accomplish this recovery task should disable binlog/wal.
+The database session used to accomplish this recovery task should disable binlog. The binlog is used as incremental backups of the database, and the recovery operation itself will also introduce data changes, which are actually a duplicate of the recovered data changes. We should prevent the duplicate from going into the incremental backups, i.e., the binlog.
 
 After the recovery process, the user has the original database named old to investigate for problems or just delete to reclaim storage space. The original database is recovered to the point in time.
 
@@ -216,3 +216,6 @@ Bytebase should provide event webhooks for user system integration. For example,
 # Test Plan
 
 To test the Point-in-time Recovery is working as expected, we will write several unit test cases following the [Critical User Journeys](#critical-user-journeys) described above. The test cases should cover major path and corner cases as possible.
+
+- Normal cases should perform PITR in the target database.
+- Advanced cases should perform PITR in the database which is restored from a PITR operation.
