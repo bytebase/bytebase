@@ -6,7 +6,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-// TODO(dragonly): remove this hack
 func (s *Server) composeStageRelationshipValidateOnly(ctx context.Context, stage *api.Stage) error {
 	var err error
 	stage.Creator, err = s.store.GetPrincipalByID(ctx, stage.CreatorID)
