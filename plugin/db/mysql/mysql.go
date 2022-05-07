@@ -39,6 +39,10 @@ var (
 	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
+const (
+	maxDatabaseNameLength = 64
+)
+
 func init() {
 	db.Register(db.MySQL, newDriver)
 	db.Register(db.TiDB, newDriver)
@@ -947,7 +951,7 @@ func (driver *Driver) RestoreIncremental(ctx context.Context, config db.Incremen
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
 func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.IncrementalRecoveryConfig, database string, timestamp int64) error {
-	pitrDatabaseName := util.GetPITRDatabaseName(database, timestamp)
+	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
 	if _, err := driver.db.Exec(fmt.Sprintf("CREATE DATABASE %s", pitrDatabaseName)); err != nil {
 		return err
 	}
@@ -986,8 +990,8 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, tim
 	}
 	defer txn.Rollback()
 
-	pitrOldDatabase := util.GetPITRDatabaseOldName(database)
-	pitrDatabaseName := util.GetPITRDatabaseName(database, timestamp)
+	pitrOldDatabase := getPITRDatabaseOldName(database)
+	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", pitrOldDatabase)); err != nil {
 		return err
@@ -1025,6 +1029,27 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, tim
 	}
 
 	return nil
+}
+
+// getPITRDatabaseName composes a pitr database name
+func getPITRDatabaseName(database string, timestamp int64) string {
+	suffix := fmt.Sprintf("_pitr_%d", timestamp)
+	return getSafeTableName(database, suffix)
+}
+
+// getPITRDatabaseOldName composes a pitr database name for
+func getPITRDatabaseOldName(database string) string {
+	suffix := "_old"
+	return getSafeTableName(database, suffix)
+}
+
+func getSafeTableName(baseName, suffix string) string {
+	name := fmt.Sprintf("%s_%s", baseName, suffix)
+	if len(name) <= maxDatabaseNameLength {
+		return name
+	}
+	extraCharacters := len(name) - maxDatabaseNameLength
+	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
