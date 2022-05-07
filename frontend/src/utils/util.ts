@@ -168,7 +168,3 @@ export function defer<T = any>() {
   });
   return d;
 }
-
-export function filename(path: string): string {
-  return path.slice(path.lastIndexOf("/") + 1);
-}
