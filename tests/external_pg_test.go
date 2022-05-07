@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"testing"
-	"time"
 
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
@@ -65,15 +64,4 @@ func TestBootWithExternalPostgres(t *testing.T) {
 	err = ctl.StartServerWithExternalPg(ctx, dataDir, serverPort, externalPg.pgURL)
 	require.NoError(t, err)
 	defer ctl.Close(ctx)
-
-	timer := time.NewTimer(5 * time.Second)
-	for {
-		select {
-		case <-timer.C:
-			return
-		default:
-			err := ctl.reachHealthz()
-			require.NoError(t, err)
-		}
-	}
 }
