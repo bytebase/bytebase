@@ -6,7 +6,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-// TODO(dragonly): remove this hack.
 func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
 	var err error
 

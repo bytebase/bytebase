@@ -374,7 +374,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-// TODO(dragonly): remove this hack
 func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
 	var err error
 

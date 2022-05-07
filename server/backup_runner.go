@@ -89,7 +89,6 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							zap.Error(err))
 						continue
 					}
-					// TODO(dragonly): what's the purpose of this assignment?
 					backupSetting.Database = db
 
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
