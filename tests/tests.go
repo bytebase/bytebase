@@ -250,7 +250,7 @@ func (ctl *controller) waitForHealthz() error {
 		case <-timer.C:
 			return nil
 		default:
-			gURL := fmt.Sprintf("%s%s", ctl.apiURL, healthzURL)
+			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
 			req, err := http.NewRequest(http.MethodGet, gURL, nil)
 			if err != nil {
 				return fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
