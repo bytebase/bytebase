@@ -130,11 +130,31 @@ func getTestPort(testName string) int {
 		return 1258
 	case "TestTenantVCSDatabaseNameTemplate":
 		return 1261
+	case "TestBootWithExternalPg":
+		return 1264
+	case "NEXT": // TestBootWithExternalPg need 4 ports for test, modify here for your test.
+		return 1268
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
-// StartServer starts the main server.
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
+	logger, lvl, err := cmd.GetLogger()
+	if err != nil {
+		return fmt.Errorf("failed to get logger, error: %w", err)
+	}
+	defer logger.Sync()
+
+	profile := cmd.GetTestProfileWithExternalPg(port, pgUser, pgURL)
+	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
+	if err != nil {
+		return err
+	}
+
+	return ctl.start(ctx, port)
+}
+
+// StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
 	logger, lvl, err := cmd.GetLogger()
@@ -149,6 +169,11 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 		return err
 	}
 
+	return ctl.start(ctx, port)
+}
+
+// start only called by StartServer() and StartServerWithExternalPg
+func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
