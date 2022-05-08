@@ -148,6 +148,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		guesses = append(guesses, dsn+" dbname=template1")
 	}
 
+	fmt.Printf("[DEBUG]: guess: %v\n", guesses)
 	for _, dsn := range guesses {
 		db, err := sql.Open(driverName, dsn)
 		if err != nil {
@@ -160,6 +161,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		}
 		return dsn, nil
 	}
+
 	if database != "" {
 		return "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
 	}
