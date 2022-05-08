@@ -96,10 +96,12 @@ var (
 )
 
 type controller struct {
-	server    *server.Server
-	client    *http.Client
-	cookie    string
-	gitlab    *fake.GitLab
+	server *server.Server
+	client *http.Client
+	cookie string
+	gitlab *fake.GitLab
+
+	rootURL   string
 	apiURL    string
 	gitURL    string
 	gitAPIURL string
@@ -147,6 +149,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 		return err
 	}
 
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// set up gitlab.
