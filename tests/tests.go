@@ -96,11 +96,13 @@ var (
 )
 
 type controller struct {
-	server    *server.Server
-	client    *http.Client
-	cookie    string
-	gitlab    *fake.GitLab
+	server *server.Server
+	client *http.Client
+	cookie string
+	gitlab *fake.GitLab
+
 	rootURL   string
+	apiURL    string
 	gitURL    string
 	gitAPIURL string
 }
@@ -147,7 +149,8 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 		return err
 	}
 
-	ctl.rootURL = fmt.Sprintf("http://localhost:%d/api", port)
+	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
+	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
 	// set up gitlab.
 	gitlabPort := port + 2
@@ -178,6 +181,10 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 
 	// initialize controller clients.
 	ctl.client = &http.Client{}
+
+	if err := ctl.waitForHealthz(); err != nil {
+		return fmt.Errorf("failed to wait for healthz, err: %w", err)
+	}
 
 	return nil
 }
@@ -232,6 +239,40 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 	}
 }
 
+func (ctl *controller) waitForHealthz() error {
+	timer := time.NewTimer(1 * time.Second)
+	defer timer.Stop()
+
+	healthzURL := "/healthz"
+
+	for {
+		select {
+		case <-timer.C:
+			return nil
+		default:
+			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
+			req, err := http.NewRequest(http.MethodGet, gURL, nil)
+			if err != nil {
+				return fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
+			}
+
+			resp, err := ctl.client.Do(req)
+
+			if err != nil {
+				return fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read http response body, error: %w", err)
+				}
+				return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			}
+		}
+	}
+}
+
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
@@ -248,7 +289,7 @@ func (ctl *controller) Close(ctx context.Context) error {
 // Login will login as user demo@example.com and caches its cookie.
 func (ctl *controller) Login() error {
 	resp, err := ctl.client.Post(
-		fmt.Sprintf("%s/auth/login/BYTEBASE", ctl.rootURL),
+		fmt.Sprintf("%s/auth/login/BYTEBASE", ctl.apiURL),
 		"",
 		strings.NewReader(`{"data":{"type":"loginInfo","attributes":{"email":"demo@example.com","password":"1024"}}}`))
 	if err != nil {
@@ -284,7 +325,7 @@ func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, er
 
 // get sends a GET client request.
 func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCloser, error) {
-	gURL := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
+	gURL := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("GET", gURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
@@ -311,7 +352,7 @@ func (ctl *controller) get(shortURL string, params map[string]string) (io.ReadCl
 
 // post sends a POST client request.
 func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new POST request(%q), error: %w", url, err)
@@ -333,7 +374,7 @@ func (ctl *controller) post(shortURL string, body io.Reader) (io.ReadCloser, err
 
 // patch sends a PATCH client request.
 func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", ctl.rootURL, shortURL)
+	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
 	req, err := http.NewRequest("PATCH", url, body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create a new PATCH request(%q), error: %w", url, err)
