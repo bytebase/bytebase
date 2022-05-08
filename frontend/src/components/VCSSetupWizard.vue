@@ -47,6 +47,7 @@ import {
   openWindowForOAuth,
   OAuthWindowEventPayload,
   OAuthToken,
+  redirectUrl,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
@@ -110,6 +111,7 @@ export default defineComponent({
             .exchangeVCSToken({
               vcsType: state.config.type,
               instanceUrl: state.config.instanceUrl,
+              redirectUrl: redirectUrl(),
               clientId: state.config.applicationId,
               clientSecret: state.config.secret,
               code: payload.code,

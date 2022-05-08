@@ -94,6 +94,7 @@ type VCSExchangeToken struct {
 	ID           int      `jsonapi:"attr,vcsId"`
 	Type         vcs.Type `jsonapi:"attr,vcsType"`
 	InstanceURL  string   `jsonapi:"attr,instanceUrl"`
+	RedirectURL  string   `jsonapi:"attr,redirectUrl"`
 	ClientID     string   `jsonapi:"attr,clientId"`
 	ClientSecret string   `jsonapi:"attr,clientSecret"`
 }
