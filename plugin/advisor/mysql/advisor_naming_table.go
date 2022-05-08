@@ -90,7 +90,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	for _, tableName := range tableNames {
 		if !v.format.MatchString(tableName) {
-			code = common.TableNamingConventionMismatch
+			code = common.NamingTableConventionMismatch
 			break
 		}
 	}
