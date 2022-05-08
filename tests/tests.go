@@ -138,6 +138,7 @@ func getTestPort(testName string) int {
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
+// StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
