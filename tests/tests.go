@@ -182,6 +182,10 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	// initialize controller clients.
 	ctl.client = &http.Client{}
 
+	if err := ctl.waitForHealthz(); err != nil {
+		return fmt.Errorf("failed to wait for healthz, err: %w", err)
+	}
+
 	return nil
 }
 
@@ -231,6 +235,40 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 				return nil
 			}
 			return err
+		}
+	}
+}
+
+func (ctl *controller) waitForHealthz() error {
+	timer := time.NewTimer(1 * time.Second)
+	defer timer.Stop()
+
+	healthzURL := "/healthz"
+
+	for {
+		select {
+		case <-timer.C:
+			return nil
+		default:
+			gURL := fmt.Sprintf("%s%s", ctl.apiURL, healthzURL)
+			req, err := http.NewRequest(http.MethodGet, gURL, nil)
+			if err != nil {
+				return fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
+			}
+
+			resp, err := ctl.client.Do(req)
+
+			if err != nil {
+				return fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read http response body, error: %w", err)
+				}
+				return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+			}
 		}
 	}
 }
