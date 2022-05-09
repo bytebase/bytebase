@@ -19,6 +19,7 @@ var (
 		api.SchemaRulePKNaming:  ast.ConstraintPrimaryKey,
 		api.SchemaRuleIDXNaming: ast.ConstraintIndex,
 		api.SchemaRuleUKNaming:  ast.ConstraintUniq,
+		api.SchemaRuleFKNaming:  ast.ConstraintForeignKey,
 	}
 )
 
@@ -128,11 +129,11 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
+			if c, ok := ruleMapping[checker.ruleType]; !ok || c != constraint.Tp {
+				continue
+			}
 			switch constraint.Tp {
 			case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniq:
-				if c, ok := ruleMapping[checker.ruleType]; !ok || c != constraint.Tp {
-					continue
-				}
 				var columnList []string
 				for _, key := range constraint.Keys {
 					columnList = append(columnList, key.Column.Name.String())
@@ -145,10 +146,34 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 					index:    constraint.Name,
 					metaData: metaData,
 				})
+			case ast.ConstraintForeignKey:
+				var referencingColumnList []string
+				for _, key := range constraint.Keys {
+					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
+				}
+				var referencedColumnList []string
+				for _, spec := range constraint.Refer.IndexPartSpecifications {
+					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
+				}
+
+				metaData := map[string]string{
+					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					api.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
+					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+				}
+
+				res = append(res, &indexMetaData{
+					index:    constraint.Name,
+					metaData: metaData,
+				})
 			}
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
+			if c, ok := ruleMapping[checker.ruleType]; !ok || c != spec.Constraint.Tp {
+				continue
+			}
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
 				// TODO: how to get the releated column list through old index name
@@ -163,9 +188,6 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniq:
-					if c, ok := ruleMapping[checker.ruleType]; !ok || c != spec.Constraint.Tp {
-						continue
-					}
 					var columnList []string
 					for _, key := range spec.Constraint.Keys {
 						columnList = append(columnList, key.Column.Name.String())
@@ -174,6 +196,26 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 					metaData := map[string]string{
 						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
 						api.TableNameTemplateToken:  node.Table.Name.String(),
+					}
+					res = append(res, &indexMetaData{
+						index:    spec.Constraint.Name,
+						metaData: metaData,
+					})
+				case ast.ConstraintForeignKey:
+					var referencingColumnList []string
+					for _, key := range spec.Constraint.Keys {
+						referencingColumnList = append(referencingColumnList, key.Column.Name.String())
+					}
+					var referencedColumnList []string
+					for _, spec := range spec.Constraint.Refer.IndexPartSpecifications {
+						referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
+					}
+
+					metaData := map[string]string{
+						api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+						api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+						api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
+						api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 					}
 					res = append(res, &indexMetaData{
 						index:    spec.Constraint.Name,

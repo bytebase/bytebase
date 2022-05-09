@@ -92,7 +92,7 @@ func TestNamingIndexConvention(t *testing.T) {
 	}
 
 	payload, err := json.Marshal(api.NamingRulePayload{
-		Format: "idx_{{table}}_{{column_list}}",
+		Format: "^idx_{{table}}_{{column_list}}$",
 	})
 	require.NoError(t, err)
 	runSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &api.SchemaReviewRule{
@@ -195,7 +195,7 @@ func TestNamingUKConvention(t *testing.T) {
 	}
 
 	payload, err := json.Marshal(api.NamingRulePayload{
-		Format: "uk_{{table}}_{{column_list}}",
+		Format: "^uk_{{table}}_{{column_list}}$",
 	})
 	require.NoError(t, err)
 	runSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &api.SchemaReviewRule{
@@ -255,11 +255,70 @@ func TestNamingPKConvention(t *testing.T) {
 	}
 
 	payload, err := json.Marshal(api.NamingRulePayload{
-		Format: "pk_{{table}}_{{column_list}}",
+		Format: "^pk_{{table}}_{{column_list}}$",
 	})
 	require.NoError(t, err)
 	runSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &api.SchemaReviewRule{
 		Type:    api.SchemaRulePKNaming,
+		Level:   api.SchemaRuleLevelError,
+		Payload: string(payload),
+	})
+}
+
+func TestNamingFKConvention(t *testing.T) {
+	tests := []test{
+		{
+			statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    common.NamingIndexConventionMismatch,
+					Title:   "Mismatch index naming convention",
+					Content: "\"ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)\" mismatches index naming convention, expect \"^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\" but found \"fk_author_id\"",
+				},
+			},
+		},
+		{
+			statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    common.NamingIndexConventionMismatch,
+					Title:   "Mismatch index naming convention",
+					Content: "\"CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))\" mismatches index naming convention, expect \"^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\" but found \"fk_book_author_id\"",
+				},
+			},
+		},
+	}
+
+	payload, err := json.Marshal(api.NamingRulePayload{
+		Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+	})
+	require.NoError(t, err)
+	runSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleFKNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),
 	})

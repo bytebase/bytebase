@@ -128,7 +128,7 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingTableConvention, nil
 		}
-	case api.SchemaRuleIDXNaming, api.SchemaRuleUKNaming, api.SchemaRulePKNaming:
+	case api.SchemaRuleIDXNaming, api.SchemaRuleUKNaming, api.SchemaRulePKNaming, api.SchemaRuleFKNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingIndexConvention, nil
