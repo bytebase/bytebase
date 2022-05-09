@@ -97,9 +97,10 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != common.Ok {
 		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    code,
-			Title:   "Mismatch table naming convention",
+			Status: v.level,
+			Code:   code,
+			Title:  "Mismatch table naming convention",
+			// TODO: give a more explicit message about the valid naming format
 			Content: fmt.Sprintf("%q mismatches table naming convention", in.Text()),
 		})
 	}

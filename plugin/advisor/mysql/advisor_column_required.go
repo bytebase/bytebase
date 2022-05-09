@@ -113,9 +113,10 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			sort.Strings(missingColumns)
 			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status:  v.level,
-				Code:    common.NoRequiredColumn,
-				Title:   "Require columns",
+				Status: v.level,
+				Code:   common.NoRequiredColumn,
+				Title:  "Require columns",
+				// TODO: give a more explicit message to show the required columns.
 				Content: fmt.Sprintf("%q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			})
 		}

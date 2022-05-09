@@ -85,7 +85,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
 				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("%q mismatches index naming convention", in.Text()),
+				Content: fmt.Sprintf("%q mismatches index naming convention. Expect %q but found %q", in.Text(), template, indexData.index),
 			})
 		}
 	}
