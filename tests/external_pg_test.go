@@ -7,6 +7,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +23,6 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")
 	pgUser := "bbexternal"
-	socket := "/tmp"
 	pgIns, err := postgres.Install(resourceDir, dataDir, pgUser)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install postgres, error: %w", err)
@@ -35,7 +35,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 
 	return &fakeExternalPg{
 		pgIns:  pgIns,
-		pgURL:  fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", pgUser, port, "postgres", socket),
+		pgURL:  fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", pgUser, port, "postgres", common.GetPostgresSocketDir()),
 		pgUser: pgUser,
 	}, nil
 }
