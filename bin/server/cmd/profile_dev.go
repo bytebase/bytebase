@@ -49,3 +49,18 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 		BackupRunnerInterval: 10 * time.Second,
 	}
 }
+
+// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
+// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
+// pgURL for connect to Postgres.
+func GetTestProfileWithExternalPg(port int, pgUser string, pgURL string) server.Profile {
+	return server.Profile{
+		Mode:                 common.ReleaseModeDev,
+		BackendHost:          flags.host,
+		BackendPort:          port,
+		PgUser:               pgUser,
+		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
+		BackupRunnerInterval: 10 * time.Second,
+		PgURL:                pgURL,
+	}
+}

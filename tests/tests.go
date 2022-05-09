@@ -130,11 +130,32 @@ func getTestPort(testName string) int {
 		return 1258
 	case "TestTenantVCSDatabaseNameTemplate":
 		return 1261
+	case "TestBootWithExternalPg":
+		return 1264
+	case "NEXT": // TestBootWithExternalPg need 4 ports for test, modify here for your test.
+		return 1268
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
-// StartServer starts the main server.
+// StartServerWithExternalPg starts the main server with external Postgres.
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
+	logger, lvl, err := cmd.GetLogger()
+	if err != nil {
+		return fmt.Errorf("failed to get logger, error: %w", err)
+	}
+	defer logger.Sync()
+
+	profile := cmd.GetTestProfileWithExternalPg(port, pgUser, pgURL)
+	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
+	if err != nil {
+		return err
+	}
+
+	return ctl.start(ctx, port)
+}
+
+// StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
 	logger, lvl, err := cmd.GetLogger()
@@ -149,6 +170,11 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 		return err
 	}
 
+	return ctl.start(ctx, port)
+}
+
+// start only called by StartServer() and StartServerWithExternalPg
+func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
 
@@ -240,37 +266,46 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 }
 
 func (ctl *controller) waitForHealthz() error {
-	timer := time.NewTimer(1 * time.Second)
+	begin := time.Now()
+	ticker := time.NewTicker(100 * time.Microsecond)
+	timer := time.NewTimer(5 * time.Second)
+	defer ticker.Stop()
 	defer timer.Stop()
-
-	healthzURL := "/healthz"
-
 	for {
 		select {
-		case <-timer.C:
-			return nil
-		default:
+		case <-ticker.C:
+			healthzURL := "/healthz"
 			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
 			req, err := http.NewRequest(http.MethodGet, gURL, nil)
 			if err != nil {
-				return fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
+				fmt.Printf("fail to create a new GET request(%q), error: %s", gURL, err.Error())
+				continue
+
 			}
 
 			resp, err := ctl.client.Do(req)
-
 			if err != nil {
-				return fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
+				fmt.Printf("fail to send a GET request(%q), error: %s", gURL, err.Error())
+				continue
 			}
 
 			if resp.StatusCode != http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					return fmt.Errorf("failed to read http response body, error: %w", err)
+					fmt.Printf("failed to read http response body, error: %s", err.Error())
 				}
-				return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+				fmt.Printf("http response error code %v body %q", resp.StatusCode, string(body))
+				continue
 			}
+
+			return nil
+
+		case end := <-timer.C:
+			return fmt.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
+
 		}
 	}
+
 }
 
 func (ctl *controller) Close(ctx context.Context) error {
