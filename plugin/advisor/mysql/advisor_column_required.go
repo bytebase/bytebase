@@ -116,7 +116,7 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 				Status:  v.level,
 				Code:    common.NoRequiredColumn,
 				Title:   "Require columns",
-				Content: fmt.Sprintf("%q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			})
 		}
 	}
