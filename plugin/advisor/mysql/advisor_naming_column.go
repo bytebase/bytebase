@@ -35,7 +35,7 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 	if err != nil {
 		return nil, err
 	}
-	format, err := api.UnmarshalNamingRulePayloadFormat(ctx.Rule.Payload)
+	format, err := api.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

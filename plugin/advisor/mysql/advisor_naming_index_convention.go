@@ -31,7 +31,7 @@ type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (adv *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -56,51 +56,53 @@ func (adv *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement st
 		(stmtNode).Accept(checker)
 	}
 
-	if len(checker.advisorList) == 0 {
-		checker.advisorList = append(checker.advisorList, advisor.Advice{
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return checker.advisorList, nil
+	return checker.adviceList, nil
 }
 
 type namingIndexConventionChecker struct {
-	advisorList  []advisor.Advice
+	adviceList   []advisor.Advice
 	level        advisor.Status
 	ruleType     api.SchemaReviewRuleType
 	format       string
 	templateList []string
 }
 
-func (v *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	indexDataList := v.getIndexMetaDataList(in)
-
-	code := common.Ok
+func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+	indexDataList := checker.getIndexMetaDataList(in)
 
 	for _, indexData := range indexDataList {
-		template := formatTemplate(v.format, v.templateList, indexData.metaData)
+		template := formatTemplate(checker.format, checker.templateList, indexData.metaData)
 		if template != indexData.index {
-			code = common.NamingIndexConventionMismatch
-			break
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    common.NamingIndexConventionMismatch,
+				Title:   "Mismatch index naming convention",
+				Content: fmt.Sprintf("%q mismatches index naming convention", in.Text()),
+			})
 		}
 	}
 
-	if code != common.Ok {
-		v.advisorList = append(v.advisorList, advisor.Advice{
-			Status:  v.level,
-			Code:    code,
-			Title:   "Mismatch index naming convention",
-			Content: fmt.Sprintf("%q mismatches index naming convention", in.Text()),
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    common.Ok,
+			Title:   "OK",
+			Content: "",
 		})
 	}
 
 	return in, false
 }
 
-func (v *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -110,7 +112,7 @@ type indexMetaData struct {
 }
 
 // getIndexMetaData returns the list of index with meta data.
-func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*indexMetaData {
+func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
@@ -118,7 +120,7 @@ func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*inde
 		for _, constraint := range node.Constraints {
 			switch constraint.Tp {
 			case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniqIndex:
-				if c, ok := ruleMapping[v.ruleType]; !ok || c != constraint.Tp {
+				if c, ok := ruleMapping[checker.ruleType]; !ok || c != constraint.Tp {
 					continue
 				}
 				var columnList []string
@@ -154,7 +156,7 @@ func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*inde
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniqIndex:
-					if c, ok := ruleMapping[v.ruleType]; !ok || c != spec.Constraint.Tp {
+					if c, ok := ruleMapping[checker.ruleType]; !ok || c != spec.Constraint.Tp {
 						continue
 					}
 					var columnList []string
@@ -174,8 +176,8 @@ func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*inde
 			}
 		}
 	case *ast.CreateIndexStmt:
-		if (node.KeyType == ast.IndexKeyTypeUnique && v.ruleType == api.SchemaRuleUKNaming) ||
-			(node.KeyType != ast.IndexKeyTypeUnique && v.ruleType != api.SchemaRuleUKNaming) {
+		if (node.KeyType == ast.IndexKeyTypeUnique && checker.ruleType == api.SchemaRuleUKNaming) ||
+			(node.KeyType != ast.IndexKeyTypeUnique && checker.ruleType != api.SchemaRuleUKNaming) {
 			var columnList []string
 			for _, spec := range node.IndexPartSpecifications {
 				columnList = append(columnList, spec.Column.Name.String())
