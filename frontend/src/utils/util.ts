@@ -99,7 +99,9 @@ export function array_swap(arr: any[], old_index: number, new_index: number) {
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
 
-export function sizeToFit(el: HTMLTextAreaElement) {
+export function sizeToFit(el: HTMLTextAreaElement | undefined) {
+  if (!el) return;
+
   el.style.height = "auto";
   // Extra 2px is to prevent jiggling upon entering the text
   el.style.height = `${el.scrollHeight + 2}px`;
