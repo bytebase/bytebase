@@ -66,19 +66,6 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return activity, nil
 	}
 
-	// If we need to post webhook event, then we need to make sure the project info exists since we will include
-	// the project name in the webhook event.
-	if meta.issue.Project == nil {
-		project, err := m.s.store.GetProjectByID(ctx, meta.issue.ProjectID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find project for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
-		}
-		if project == nil {
-			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
-		}
-		meta.issue.Project = project
-	}
-
 	updater, err := m.s.store.GetPrincipalByID(ctx, create.CreatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find updater for posting webhook event after changing the issue status: %v, error: %w", meta.issue.Name, err)
