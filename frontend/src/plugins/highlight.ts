@@ -3,7 +3,7 @@ import hljs from "highlight.js/lib/core";
 import sql from "highlight.js/lib/languages/sql";
 import "highlight.js/lib/common";
 import "highlight.js/styles/github.css";
-import CodeHighlight from "@/components/CodeHighlight";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 
 export default {
   install(app: App) {
@@ -11,6 +11,6 @@ export default {
     hljs.configure({
       languages: ["sql"],
     });
-    app.component("CodeHighlight", CodeHighlight);
+    app.component("HighlightCodeBlock", HighlightCodeBlock);
   },
 };

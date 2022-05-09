@@ -101,7 +101,7 @@
   </template>
   <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
   <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
-    <code-highlight
+    <highlight-code-block
       v-if="statement"
       :code="statement"
       class="whitespace-pre-wrap"

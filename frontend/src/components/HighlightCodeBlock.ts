@@ -2,7 +2,7 @@ import { h, defineComponent } from "vue";
 import hljs from "highlight.js/lib/core";
 
 export default defineComponent({
-  name: "CodeHighlight",
+  name: "HighlightCodeBlock",
   props: {
     code: {
       type: String,

@@ -105,7 +105,7 @@
             <heroicons-outline:clipboard class="w-6 h-6" />
           </button>
         </a>
-        <code-highlight
+        <highlight-code-block
           class="border px-2 whitespace-pre-wrap w-full"
           :code="migrationHistory.statement"
         />
@@ -196,7 +196,7 @@
           :new-string="state.rightSchema"
           output-format="side-by-side"
         />
-        <code-highlight
+        <highlight-code-block
           v-else
           class="border mt-2 px-2 whitespace-pre-wrap w-full"
           :code="migrationHistory.schema"
