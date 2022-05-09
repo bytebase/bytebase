@@ -133,7 +133,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		// So we put the socket path in the `host` key in the query,
 		// note that in order to comply with the Postgresql document we are not using the `socket` key with obvious semantics.
 		// To give a correct example: postgresql://bbexternal@:3456/postgres?host=/tmp
-		hostInQuery := q.Get(u.Host)
+		hostInQuery := q.Get("host")
 		if hostInQuery != "" && host != "" {
 			// In this case, it is impossible to decide whether to use socket or tcp.
 			return nil, fmt.Errorf("please only using socket or host instead of both")
