@@ -1,8 +1,15 @@
 import { defineStore } from "pinia";
 import { isUndefined } from "lodash-es";
+import { useLocalStorage } from "@vueuse/core";
 
 const COLLAPSE_MODULE = "ui.list.collapse";
 const INTRO_MODULE = "ui.intro";
+
+// default to true
+const issueFormatStatementOnSave = useLocalStorage(
+  "ui.state.issue.format-statement-on-save",
+  true
+);
 
 export interface UIState {
   collapseStateByKey: Map<string, boolean>;
@@ -14,6 +21,11 @@ export const useUIStateStore = defineStore("uistate", {
     collapseStateByKey: new Map(),
     introStateByKey: new Map(),
   }),
+  getters: {
+    issueFormatStatementOnSave: () => {
+      return issueFormatStatementOnSave.value;
+    },
+  },
   actions: {
     getCollapseStateByKey(key: string): boolean {
       return stateByKey(this.collapseStateByKey, COLLAPSE_MODULE, key);
@@ -46,6 +58,9 @@ export const useUIStateStore = defineStore("uistate", {
     },
     setIntroStateByKey({ key, newState }: { key: string; newState: boolean }) {
       this.introStateByKey.set(key, newState);
+    },
+    setIssueFormatStatementOnSave(value: boolean) {
+      issueFormatStatementOnSave.value = value;
     },
     async restoreState() {
       const storedCollapseState = localStorage.getItem(COLLAPSE_MODULE);
