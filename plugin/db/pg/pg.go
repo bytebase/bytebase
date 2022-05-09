@@ -148,7 +148,6 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		guesses = append(guesses, dsn+" dbname=template1")
 	}
 
-	fmt.Printf("[DEBUG]: guess: %v\n", guesses)
 	for _, dsn := range guesses {
 		db, err := sql.Open(driverName, dsn)
 		if err != nil {

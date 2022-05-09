@@ -62,7 +62,6 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 		}
 	}
 
-	fmt.Printf("[DEBUG]: StartCommand: %v\n", p.String())
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start postgres %q, error %v", p.String(), err)
 	}
@@ -208,7 +207,6 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		}
 	}
 
-	fmt.Printf("[DEBUG]: InitDBCommand: %v\n", p.String())
 	if err := p.Run(); err != nil {
 		return fmt.Errorf("failed to initdb %q, error %v", p.String(), err)
 	}
