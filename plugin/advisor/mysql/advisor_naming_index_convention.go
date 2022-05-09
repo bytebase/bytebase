@@ -17,7 +17,7 @@ var (
 	ruleMapping = map[api.SchemaReviewRuleType]ast.ConstraintType{
 		api.SchemaRulePKNaming:  ast.ConstraintPrimaryKey,
 		api.SchemaRuleIDXNaming: ast.ConstraintIndex,
-		api.SchemaRuleUKNaming:  ast.ConstraintUniqIndex,
+		api.SchemaRuleUKNaming:  ast.ConstraintUniq,
 	}
 )
 
@@ -78,8 +78,11 @@ type namingIndexConventionChecker struct {
 func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getIndexMetaDataList(in)
 
+	fmt.Printf("indexDataList len:%d\n", len(indexDataList))
+
 	for _, indexData := range indexDataList {
 		template := formatTemplate(checker.format, checker.templateList, indexData.metaData)
+		fmt.Printf("template:%q, index:%q\n", template, indexData.index)
 		if template != indexData.index {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
@@ -119,7 +122,7 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
 			switch constraint.Tp {
-			case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniqIndex:
+			case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniq:
 				if c, ok := ruleMapping[checker.ruleType]; !ok || c != constraint.Tp {
 					continue
 				}
@@ -155,7 +158,7 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
-				case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniqIndex:
+				case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniq:
 					if c, ok := ruleMapping[checker.ruleType]; !ok || c != spec.Constraint.Tp {
 						continue
 					}
