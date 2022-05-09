@@ -87,6 +87,10 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
+				// We need to attach the RedirectURL in the get token process of oauth,
+				// and the RedirectURL needs to be consistent with the RedirectURL in the get code process.
+				// The frontend get it through window.location.origin in the get code process,
+				// so port 80 needs to be cropped when the backend splices the RedirectURL.
 				var redirectURL string
 				if s.profile.FrontendPort == 80 {
 					redirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
