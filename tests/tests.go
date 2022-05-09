@@ -108,7 +108,7 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3 for bytebase, Postgres, and GitLab.
+	// The port should be incremented by 3 for bytebase, Postgres, and GitLab, unless documented otherwise.
 	switch testName {
 	case "TestServiceRestart":
 		return 1234
@@ -130,6 +130,9 @@ func getTestPort(testName string) int {
 		return 1258
 	case "TestTenantVCSDatabaseNameTemplate":
 		return 1261
+	// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
+	case "TestGhostSchemaUpdate":
+		return 1264
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -848,6 +851,8 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Labels:       labels,
+		CharacterSet: "utf8mb4",
+		Collation:    "utf8mb4_general_ci",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
