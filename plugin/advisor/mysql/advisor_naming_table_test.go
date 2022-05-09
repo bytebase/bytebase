@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTableNamingRequirement(t *testing.T) {
+func TestNamingTableConvention(t *testing.T) {
 	tests := []test{
 		{
 			statement: "CREATE TABLE techBook(id int, name varchar(255))",
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNamingConventionMismatch,
+					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
 					Content: "\"CREATE TABLE techBook(id int, name varchar(255))\" mismatches table naming convention",
 				},
@@ -39,7 +39,7 @@ func TestTableNamingRequirement(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNamingConventionMismatch,
+					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
 					Content: "\"ALTER TABLE techBook RENAME TO TechBook\" mismatches table naming convention",
 				},
@@ -61,7 +61,7 @@ func TestTableNamingRequirement(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNamingConventionMismatch,
+					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
 					Content: "\"RENAME TABLE techBook TO tech_book, literaryBook TO LiteraryBook\" mismatches table naming convention",
 				},
