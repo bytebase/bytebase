@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -13,20 +12,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
+	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
-// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
-type NamingIndexConventionAdvisor struct {
+// NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
+type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -41,7 +40,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	if err != nil {
 		return nil, err
 	}
-	checker := &namingIndexConventionChecker{
+	checker := &namingUKConventionChecker{
 		level:        level,
 		format:       format,
 		templateList: templateList,
@@ -61,14 +60,14 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	return checker.adviceList, nil
 }
 
-type namingIndexConventionChecker struct {
+type namingUKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
 	format       string
 	templateList []string
 }
 
-func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
 	for _, indexData := range indexDataList {
@@ -77,7 +76,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.Internal,
-				Title:   "Internal error for index naming convention rule",
+				Title:   "Internal error for unique key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
 			continue
@@ -85,9 +84,9 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 		if !regex.MatchString(indexData.index) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingIndexConventionMismatch,
-				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("%q mismatches index naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
+				Code:    common.NamingUKConventionMismatch,
+				Title:   "Mismatch unique key naming convention",
+				Content: fmt.Sprintf("%q mismatches unique key naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
 			})
 		}
 	}
@@ -104,24 +103,19 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 	return in, false
 }
 
-func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (checker *namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-type indexMetaData struct {
-	index    string
-	metaData map[string]string
-}
-
-// getMetaDataList returns the list of index with meta data.
-func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
+// getMetaDataList returns the list of unique key with meta data.
+func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
 			switch constraint.Tp {
-			case ast.ConstraintIndex:
+			case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 				var columnList []string
 				for _, key := range constraint.Keys {
 					columnList = append(columnList, key.Column.Name.String())
@@ -138,6 +132,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
+
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
 				// TODO: how to get the releated column list through old index name
@@ -151,7 +146,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
-				case ast.ConstraintIndex:
+				case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 					var columnList []string
 					for _, key := range spec.Constraint.Keys {
 						columnList = append(columnList, key.Column.Name.String())
@@ -169,7 +164,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			}
 		}
 	case *ast.CreateIndexStmt:
-		if node.KeyType != ast.IndexKeyTypeUnique {
+		if node.KeyType == ast.IndexKeyTypeUnique {
 			var columnList []string
 			for _, spec := range node.IndexPartSpecifications {
 				columnList = append(columnList, spec.Column.Name.String())
@@ -186,15 +181,4 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 	}
 
 	return res
-}
-
-// getTemplateRegexp formats the template as regex.
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
 }

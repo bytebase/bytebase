@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -13,20 +12,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
+	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(db.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(db.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
-// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
-type NamingIndexConventionAdvisor struct {
+// NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
+type NamingFKConventionAdvisor struct {
 }
 
-// Check checks for index naming convention.
-func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for foreign key naming convention.
+func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -41,7 +40,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	if err != nil {
 		return nil, err
 	}
-	checker := &namingIndexConventionChecker{
+	checker := &namingFKConventionChecker{
 		level:        level,
 		format:       format,
 		templateList: templateList,
@@ -61,14 +60,14 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	return checker.adviceList, nil
 }
 
-type namingIndexConventionChecker struct {
+type namingFKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
 	format       string
 	templateList []string
 }
 
-func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
 	for _, indexData := range indexDataList {
@@ -77,7 +76,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.Internal,
-				Title:   "Internal error for index naming convention rule",
+				Title:   "Internal error for foreign key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
 			continue
@@ -85,9 +84,9 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 		if !regex.MatchString(indexData.index) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingIndexConventionMismatch,
-				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("%q mismatches index naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
+				Code:    common.NamingFKConventionMismatch,
+				Title:   "Mismatch foreign key naming convention",
+				Content: fmt.Sprintf("%q mismatches foreign key naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
 			})
 		}
 	}
@@ -104,32 +103,35 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 	return in, false
 }
 
-func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (checker *namingFKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-type indexMetaData struct {
-	index    string
-	metaData map[string]string
-}
-
 // getMetaDataList returns the list of index with meta data.
-func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
+func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
 			switch constraint.Tp {
-			case ast.ConstraintIndex:
-				var columnList []string
+			case ast.ConstraintForeignKey:
+				var referencingColumnList []string
 				for _, key := range constraint.Keys {
-					columnList = append(columnList, key.Column.Name.String())
+					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
 				}
+				var referencedColumnList []string
+				for _, spec := range constraint.Refer.IndexPartSpecifications {
+					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
+				}
+
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					api.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
+					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
+
 				res = append(res, &indexMetaData{
 					index:    constraint.Name,
 					metaData: metaData,
@@ -151,15 +153,21 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
-				case ast.ConstraintIndex:
-					var columnList []string
+				case ast.ConstraintForeignKey:
+					var referencingColumnList []string
 					for _, key := range spec.Constraint.Keys {
-						columnList = append(columnList, key.Column.Name.String())
+						referencingColumnList = append(referencingColumnList, key.Column.Name.String())
+					}
+					var referencedColumnList []string
+					for _, spec := range spec.Constraint.Refer.IndexPartSpecifications {
+						referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
 					}
 
 					metaData := map[string]string{
-						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-						api.TableNameTemplateToken:  node.Table.Name.String(),
+						api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+						api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+						api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
+						api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 					}
 					res = append(res, &indexMetaData{
 						index:    spec.Constraint.Name,
@@ -168,33 +176,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				}
 			}
 		}
-	case *ast.CreateIndexStmt:
-		if node.KeyType != ast.IndexKeyTypeUnique {
-			var columnList []string
-			for _, spec := range node.IndexPartSpecifications {
-				columnList = append(columnList, spec.Column.Name.String())
-			}
-			metaData := map[string]string{
-				api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				api.TableNameTemplateToken:  node.Table.Name.String(),
-			}
-			res = append(res, &indexMetaData{
-				index:    node.IndexName,
-				metaData: metaData,
-			})
-		}
 	}
 
 	return res
-}
-
-// getTemplateRegexp formats the template as regex.
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
 }
