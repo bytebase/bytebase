@@ -757,7 +757,7 @@ const routes: Array<RouteRecordRaw> = [
               title: (route: RouteLocationNormalized) => {
                 const slug = route.params.issueSlug as string;
                 if (slug.toLowerCase() == "new") {
-                  return t("common.new");
+                  return t("issue.new-issue");
                 }
                 const issue = useIssueStore().getIssueById(idFromSlug(slug));
                 return issue.name;
