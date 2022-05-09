@@ -57,9 +57,6 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 	return checker.generateAdvisorList(), nil
 }
 
-type columnSet map[string]bool
-type tableState map[string]columnSet
-
 type columnRequirementChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
@@ -74,8 +71,8 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 		v.createTable(node)
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
+		table := node.Table.Name.O
 		for _, spec := range node.Specs {
-			table := node.Table.Name.O
 			switch spec.Tp {
 			// RENAME COLUMN
 			case ast.AlterTableRenameColumn:
@@ -103,11 +100,7 @@ func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 
 func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
-	var tableList []string
-	for tableName := range v.tables {
-		tableList = append(tableList, tableName)
-	}
-	sort.Strings(tableList)
+	tableList := v.tables.tableList()
 	for _, tableName := range tableList {
 		table := v.tables[tableName]
 		var missingColumns []string
