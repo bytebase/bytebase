@@ -28,7 +28,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.IndexNamingConventionMismatch,
+					Code:    common.NamingIndexConventionMismatch,
 					Title:   "Mismatch index naming convention",
 					Content: "\"CREATE INDEX tech_book_id_name ON tech_book(id, name)\" mismatches index naming convention",
 				},

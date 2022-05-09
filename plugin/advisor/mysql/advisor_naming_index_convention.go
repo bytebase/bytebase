@@ -83,7 +83,7 @@ func (v *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, indexData := range indexDataList {
 		template := formatTemplate(v.format, v.templateList, indexData.metaData)
 		if template != indexData.index {
-			code = common.IndexNamingConventionMismatch
+			code = common.NamingIndexConventionMismatch
 			break
 		}
 	}
@@ -137,7 +137,21 @@ func (v *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) []*inde
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableAddConstraint {
+			switch spec.Tp {
+			case ast.AlterTableRenameIndex:
+				var columnList []string
+				for _, col := range spec.NewColumns {
+					columnList = append(columnList, col.Name.String())
+				}
+				metaData := map[string]string{
+					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					api.TableNameTemplateToken:  node.Table.Name.String(),
+				}
+				res = append(res, &indexMetaData{
+					index:    spec.IndexName.String(),
+					metaData: metaData,
+				})
+			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintPrimaryKey, ast.ConstraintUniqIndex:
 					if c, ok := ruleMapping[v.ruleType]; !ok || c != spec.Constraint.Tp {
