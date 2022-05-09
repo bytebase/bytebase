@@ -52,9 +52,11 @@ const (
 	StatementNoWhere Code = 10101
 
 	// 10201 table naming advisor error code
-	TableNamingConventionMismatch Code = 10201
-	// 10202 index naming advisor error code
-	IndexNamingConventionMismatch Code = 10202
+	NamingTableConventionMismatch Code = 10201
+	// 10202 column naming advisor error code
+	NamingColumnConventionMismatch Code = 10202
+	// 10203 index naming advisor error code
+	NamingIndexConventionMismatch Code = 10203
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301

@@ -53,17 +53,25 @@ type Type string
 const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
+
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
+
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
+
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 
 	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
 	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
+
 	// MySQLNamingIndexConvention is an advisor type for MySQL index key naming convention.
 	MySQLNamingIndexConvention Type = "bb.plugin.advisor.mysql.naming.index"
+
+	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
+	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
+
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 )
