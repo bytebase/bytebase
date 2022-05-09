@@ -92,7 +92,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    common.NamingTableConventionMismatch,
 				Title:   "Mismatch table naming convention",
-				Content: fmt.Sprintf("`%s` mismatches table naming convention", tableName),
+				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
 			})
 		}
 	}
