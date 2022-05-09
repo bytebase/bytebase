@@ -36,6 +36,7 @@ We target database-level recovery with logical backup because the database is th
 - The database should use the InnoDB storage engine.
 - Enable binlog and choose row-based binlog format.
 - Databases for Point-in-time Recovery are not involved in [XA Transactions](https://dev.mysql.com/doc/refman/8.0/en/xa.html).
+- The remaining disk storage should be enough. Bytebase will estimate the database dump size, and make sure that there is always at lease 1GB more disk space.
 
 Note that when statement binlog format is used, the `mysqlbinlog` tool could misbehave with regard to the `--database` option as described [in the docs](https://dev.mysql.com/doc/refman/8.0/en/mysqlbinlog.html#option_mysqlbinlog_database). In short, using statement logging has a chance to miss some binary log events in the specified database.
 
