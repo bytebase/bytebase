@@ -76,7 +76,6 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		if project == nil {
 			return nil, fmt.Errorf("failed to find project ID %v for posting webhook event after changing the issue status %q", meta.issue.ProjectID, meta.issue.Name)
 		}
-		// TODO(dragonly): revisit the necessity of this function to depend on ActivityMeta.
 		meta.issue.Project = project
 	}
 
