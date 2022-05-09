@@ -39,7 +39,7 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell class="table-cell w-36">
+      <BBTableCell class="table-cell w-36 whitespace-pre-wrap break-words">
         {{ comment(taskRun) }}
         <template v-if="commentLink(task, taskRun).link">
           <router-link
