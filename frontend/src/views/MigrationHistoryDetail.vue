@@ -105,9 +105,10 @@
             <heroicons-outline:clipboard class="w-6 h-6" />
           </button>
         </a>
-        <div v-highlight class="border px-2 whitespace-pre-wrap w-full">
-          {{ migrationHistory.statement }}
-        </div>
+        <code-highlight
+          class="border px-2 whitespace-pre-wrap w-full"
+          :code="migrationHistory.statement"
+        />
         <a
           id="schema"
           href="#schema"
@@ -195,13 +196,11 @@
           :new-string="state.rightSchema"
           output-format="side-by-side"
         />
-        <div
+        <code-highlight
           v-else
-          v-highlight
           class="border mt-2 px-2 whitespace-pre-wrap w-full"
-        >
-          {{ migrationHistory.schema }}
-        </div>
+          :code="migrationHistory.schema"
+        />
       </div>
     </main>
   </div>

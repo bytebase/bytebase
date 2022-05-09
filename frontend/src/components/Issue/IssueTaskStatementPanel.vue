@@ -101,9 +101,11 @@
   </template>
   <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
   <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
-    <div v-if="state.editStatement" v-highlight class="whitespace-pre-wrap">
-      {{ state.editStatement }}
-    </div>
+    <code-highlight
+      v-if="statement"
+      :code="statement"
+      class="whitespace-pre-wrap"
+    />
     <div v-else-if="create" class="ml-2 text-control-light">
       {{ $t("issue.add-sql-statement") }}
     </div>
