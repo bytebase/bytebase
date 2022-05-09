@@ -47,7 +47,6 @@ import {
   openWindowForOAuth,
   OAuthWindowEventPayload,
   OAuthToken,
-  redirectUrl,
 } from "../types";
 import { isUrl } from "../utils";
 import { useI18n } from "vue-i18n";
