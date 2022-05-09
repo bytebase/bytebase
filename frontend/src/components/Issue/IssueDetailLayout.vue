@@ -179,40 +179,25 @@
                 </template>
               </template>
               <template v-else>
-                <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
-                   The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
-                   to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
-                   doesn't seem to work well with the reactivity. So for non-edit mode when !props.create, we
-                list every IssueTaskStatementPanel for each stage and use v-if to show the active one.-->
-                <template v-if="create">
-                  <IssueTaskStatementPanel
-                    :sql-hint="sqlHint()"
-                    :statement="selectedStatement"
-                    :create="create"
-                    :allow-edit="true"
-                    :show-apply-statement="showIssueTaskStatementApply"
-                    @update-statement="updateStatement"
-                    @apply-statement-to-other-stages="
-                      applyStatementToOtherStages
-                    "
-                  />
-                </template>
-                <template
-                  v-for="(stage, index) in (issue as Issue).pipeline.stageList"
+                <IssueTaskStatementPanel
+                  v-if="create"
+                  :sql-hint="sqlHint()"
+                  :statement="selectedStatement"
+                  :create="create"
+                  :allow-edit="true"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                  @apply-statement-to-other-stages="applyStatementToOtherStages"
+                />
+                <IssueTaskStatementPanel
                   v-else
-                  :key="index"
-                >
-                  <template v-if="(selectedStage as Stage).id == stage.id">
-                    <IssueTaskStatementPanel
-                      :sql-hint="sqlHint()"
-                      :statement="statement(stage)"
-                      :create="create"
-                      :allow-edit="allowEditStatement"
-                      :show-apply-statement="showIssueTaskStatementApply"
-                      @update-statement="updateStatement"
-                    />
-                  </template>
-                </template>
+                  :sql-hint="sqlHint()"
+                  :statement="statement(selectedStage as Stage)"
+                  :create="create"
+                  :allow-edit="allowEditStatement"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                />
               </template>
             </section>
 
@@ -298,6 +283,7 @@ import type {
   UpdateSchemaDetail,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   UpdateSchemaGhostContext,
+  SQLDialect,
 } from "@/types";
 import {
   defaultTemplate,
@@ -314,7 +300,9 @@ import {
   useIssueSubscriberStore,
   useProjectStore,
   useTaskStore,
+  useUIStateStore,
 } from "@/store";
+import formatSQL from "../MonacoEditor/sqlFormatter";
 
 const props = defineProps({
   create: {
@@ -339,6 +327,7 @@ const issueStore = useIssueStore();
 const issueSubscriberStore = useIssueSubscriberStore();
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
+const databaseStore = useDatabaseStore();
 
 watchEffect(function prepare() {
   if (props.create) {
@@ -356,6 +345,31 @@ const project = computed((): Project => {
   }
   return (props.issue as Issue).project;
 });
+
+const formatStatementIfNeeded = (
+  statement: string,
+  database?: Database
+): string => {
+  const uiStateStore = useUIStateStore();
+  if (!uiStateStore.issueFormatStatementOnSave) {
+    // Don't format if user closed this feature
+    return statement;
+  }
+
+  // Default to use mysql dialect but use postgresql dialect if needed
+  let dialect: SQLDialect = "mysql";
+  if (database && database.instance.engine === "POSTGRES") {
+    dialect = "postgresql";
+  }
+
+  const result = formatSQL(statement, dialect);
+  if (!result.error) {
+    return result.data;
+  }
+
+  // Fallback to the input statement if error occurs while formatting
+  return statement;
+};
 
 const updateName = (
   newName: string,
@@ -403,10 +417,11 @@ const updateStatement = (
       // nope, we are not allowed to update statement in tenant deploy mode anyway
     } else {
       // otherwise, patch the task
+      const task = selectedTask.value as Task;
       patchTask(
-        (selectedTask.value as Task).id,
+        task.id,
         {
-          statement: newStatement,
+          statement: formatStatementIfNeeded(newStatement, task.database),
         },
         postUpdated
       );
@@ -515,10 +530,11 @@ const doCreate = () => {
       (stage) => stage.taskList[0]
     );
     const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
+      const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
         databaseId: task.databaseId!,
         databaseName: task.databaseName!,
-        statement: task.statement,
+        statement: formatStatementIfNeeded(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
@@ -535,16 +551,22 @@ const doCreate = () => {
     stageList.forEach((stage, i) => {
       const detail = detailList[i];
       const syncTask = stage.taskList[0];
+      const db = databaseStore.getDatabaseById(syncTask.databaseId!);
 
       detail.databaseId = syncTask.databaseId!;
       detail.databaseName = syncTask.databaseName!;
-      detail.statement = syncTask.statement;
+      detail.statement = formatStatementIfNeeded(syncTask.statement, db);
       detail.earliestAllowedTs = syncTask.earliestAllowedTs;
     });
   } else {
     // for multi-tenancy issue pipeline (M * N)
     // createContext is up-to-date already
-    // so nothing to do
+    // so we just format the statement if needed
+    const context = issue.createContext as UpdateSchemaContext;
+    context.updateSchemaDetailList.forEach((detail) => {
+      const db = databaseStore.getDatabaseById(detail.databaseId!);
+      detail.statement = formatStatementIfNeeded(detail.statement, db);
+    });
   }
 
   // then empty issue.pipeline and issue.payload
@@ -963,7 +985,7 @@ const database = computed((): Database | undefined => {
   if (props.create) {
     const databaseId = (selectedTask.value as TaskCreate).databaseId;
     if (databaseId) {
-      return useDatabaseStore().getDatabaseById(databaseId);
+      return databaseStore.getDatabaseById(databaseId);
     }
     return undefined;
   }
