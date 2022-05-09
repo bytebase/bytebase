@@ -6,13 +6,13 @@ import App from "./App.vue";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
+import highlight from "./plugins/highlight";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 
 import dataSourceType from "./directives/data-source-type";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import highlight from "./directives/highlight";
 import { router } from "./router";
 import {
   pinia,
@@ -129,8 +129,8 @@ app
   // Need to use a directive on the element.
   // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
   // to re-render the page and remove the event listener required for
-  .directive("highlight", highlight)
   .directive("data-source-type", dataSourceType)
+  .use(highlight)
   .use(pinia)
   .use(router)
   .use(i18n)
