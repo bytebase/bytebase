@@ -266,29 +266,46 @@ func waitForGitLabStart(g *fake.GitLab, errChan <-chan error) error {
 }
 
 func (ctl *controller) waitForHealthz() error {
-	healthzURL := "/healthz"
+	begin := time.Now()
+	ticker := time.NewTicker(100 * time.Microsecond)
+	timer := time.NewTimer(5 * time.Second)
+	defer ticker.Stop()
+	defer timer.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			healthzURL := "/healthz"
+			gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
+			req, err := http.NewRequest(http.MethodGet, gURL, nil)
+			if err != nil {
+				fmt.Printf("fail to create a new GET request(%q), error: %s", gURL, err.Error())
+				continue
 
-	gURL := fmt.Sprintf("%s%s", ctl.rootURL, healthzURL)
-	req, err := http.NewRequest(http.MethodGet, gURL, nil)
-	if err != nil {
-		return fmt.Errorf("fail to create a new GET request(%q), error: %w", gURL, err)
-	}
+			}
 
-	resp, err := ctl.client.Do(req)
+			resp, err := ctl.client.Do(req)
+			if err != nil {
+				fmt.Printf("fail to send a GET request(%q), error: %s", gURL, err.Error())
+				continue
+			}
 
-	if err != nil {
-		return fmt.Errorf("fail to send a GET request(%q), error: %w", gURL, err)
-	}
+			if resp.StatusCode != http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Printf("failed to read http response body, error: %s", err.Error())
+				}
+				fmt.Printf("http response error code %v body %q", resp.StatusCode, string(body))
+				continue
+			}
 
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read http response body, error: %w", err)
+			return nil
+
+		case end := <-timer.C:
+			return fmt.Errorf("cannot wait for healthz in duration: %v", end.Sub(begin).Seconds())
+
 		}
-		return fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
 	}
 
-	return nil
 }
 
 func (ctl *controller) Close(ctx context.Context) error {
