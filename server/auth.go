@@ -87,6 +87,12 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
 				}
 
+				var redirectURL string
+				if s.profile.FrontendPort == 80 {
+					redirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
+				} else {
+					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
+				}
 				// exchange OAuth Token
 				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
 					ctx,
@@ -95,7 +101,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
 						Code:         gitlabLogin.Code,
-						RedirectURL:  fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort),
+						RedirectURL:  redirectURL,
 					},
 				)
 				if err != nil {

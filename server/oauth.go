@@ -56,7 +56,13 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 				Code:         req.Code,
 			}
 		}
-		oauthExchange.RedirectURL = req.RedirectURL
+
+		if s.profile.FrontendPort == 80 {
+			oauthExchange.RedirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
+		} else {
+			oauthExchange.RedirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
+		}
+
 		oauthToken, err := vcsPlugin.Get(vcsType, vcsPlugin.ProviderConfig{Logger: s.l}).
 			ExchangeOAuthToken(
 				c.Request().Context(),

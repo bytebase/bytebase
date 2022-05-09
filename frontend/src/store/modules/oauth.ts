@@ -42,14 +42,12 @@ export const useOAuthStore = defineStore("oauth", {
     async exchangeVCSToken({
       vcsType,
       instanceUrl,
-      redirectUrl,
       clientId,
       clientSecret,
       code,
     }: {
       vcsType: VCSType;
       instanceUrl: string;
-      redirectUrl: string;
       clientId: string;
       clientSecret: string;
       code: string;
@@ -61,7 +59,6 @@ export const useOAuthStore = defineStore("oauth", {
             attributes: {
               vcsType,
               instanceUrl,
-              redirectUrl,
               clientId,
               clientSecret,
               code,

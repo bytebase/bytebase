@@ -111,7 +111,6 @@ export default defineComponent({
             .exchangeVCSToken({
               vcsType: state.config.type,
               instanceUrl: state.config.instanceUrl,
-              redirectUrl: redirectUrl(),
               clientId: state.config.applicationId,
               clientSecret: state.config.secret,
               code: payload.code,
