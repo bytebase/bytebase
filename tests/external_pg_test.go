@@ -22,6 +22,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")
 	pgUser := "bbexternal"
+	socket := "/tmp"
 	pgIns, err := postgres.Install(resourceDir, dataDir, pgUser)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install postgres, error: %w", err)
@@ -34,7 +35,7 @@ func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 
 	return &fakeExternalPg{
 		pgIns:  pgIns,
-		pgURL:  fmt.Sprintf("postgresql://%s@:%d/%s", pgUser, port, "postgres"),
+		pgURL:  fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", pgUser, port, "postgres", socket),
 		pgUser: pgUser,
 	}, nil
 }

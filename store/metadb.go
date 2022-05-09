@@ -101,6 +101,8 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		return nil, err
 	}
 
+	q := u.Query()
+
 	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgresql" {
@@ -123,7 +125,23 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
+		// There is a hack. PostgreSQL document(https://www.postgresql.org/docs/14/libpq-connect.html)
+		// specifies that a Unix-domain socket connection is chosen if the host part is either empty or **looks like an absolute path name**.
+		// But url.Parse() does not meet this standard, for example:
+		// url.Parse("postgresql://bbexternal@/tmp:3456/postgres"), it will consider `tmp:3456/postgres` as `path`,
+		// and we use path as dbasename(same as PostgreSQL document) so that we get a wrong dbname.
+		// So we put the socket path in the `host` key in the query,
+		// note that in order to comply with the Postgresql document we are not using the `socket` key with obvious semantics.
+		// To give a correct example: postgresql://bbexternal@:3456/postgres?host=/tmp
+		hostInQuery := q.Get(u.Host)
+		if hostInQuery != "" && host != "" {
+			// In this case, it is impossible to decide whether to use socket or tcp.
+			return nil, fmt.Errorf("please only using socket or host instead of both")
+		}
 		connCfg.Host = host
+		if hostInQuery != "" {
+			connCfg.Host = hostInQuery
+		}
 		connCfg.Port = port
 	}
 
@@ -132,7 +150,6 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	}
 	connCfg.Database = u.Path[1:]
 
-	q := u.Query()
 	connCfg.TLSConfig = dbdriver.TLSConfig{
 		SslCA:   q.Get("sslrootcert"),
 		SslKey:  q.Get("sslkey"),
