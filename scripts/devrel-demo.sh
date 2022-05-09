@@ -9,7 +9,7 @@
 # ./devrel.sh https://example.com:8080
 
 # If no parameter is passed, use https://devrel.bytebase.com as host and 80 as port by default
-ONLINE_DEMO_HOST='https://devrel-bytebase-demo.onrender.com/'
+ONLINE_DEMO_HOST='https://devrel-bytebase-demo.onrender.com'
 ONLINE_DEMO_PORT='80'
 if [ $1 ]; then
     PROTOCAL=`echo $1 | awk -F ':' '{ print $1 }'`
