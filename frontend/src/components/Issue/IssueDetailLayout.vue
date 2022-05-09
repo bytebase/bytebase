@@ -179,40 +179,25 @@
                 </template>
               </template>
               <template v-else>
-                <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
-                   The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
-                   to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
-                   doesn't seem to work well with the reactivity. So for non-edit mode when !props.create, we
-                list every IssueTaskStatementPanel for each stage and use v-if to show the active one.-->
-                <template v-if="create">
-                  <IssueTaskStatementPanel
-                    :sql-hint="sqlHint()"
-                    :statement="selectedStatement"
-                    :create="create"
-                    :allow-edit="true"
-                    :show-apply-statement="showIssueTaskStatementApply"
-                    @update-statement="updateStatement"
-                    @apply-statement-to-other-stages="
-                      applyStatementToOtherStages
-                    "
-                  />
-                </template>
-                <template
-                  v-for="(stage, index) in (issue as Issue).pipeline.stageList"
+                <IssueTaskStatementPanel
+                  v-if="create"
+                  :sql-hint="sqlHint()"
+                  :statement="selectedStatement"
+                  :create="create"
+                  :allow-edit="true"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                  @apply-statement-to-other-stages="applyStatementToOtherStages"
+                />
+                <IssueTaskStatementPanel
                   v-else
-                  :key="index"
-                >
-                  <template v-if="(selectedStage as Stage).id == stage.id">
-                    <IssueTaskStatementPanel
-                      :sql-hint="sqlHint()"
-                      :statement="statement(stage)"
-                      :create="create"
-                      :allow-edit="allowEditStatement"
-                      :show-apply-statement="showIssueTaskStatementApply"
-                      @update-statement="updateStatement"
-                    />
-                  </template>
-                </template>
+                  :sql-hint="sqlHint()"
+                  :statement="statement(selectedStage as Stage)"
+                  :create="create"
+                  :allow-edit="allowEditStatement"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                />
               </template>
             </section>
 
