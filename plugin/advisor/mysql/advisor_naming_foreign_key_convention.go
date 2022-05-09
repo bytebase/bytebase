@@ -107,7 +107,7 @@ func (checker *namingFKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-// getMetaDataList returns the list of index with meta data.
+// getMetaDataList returns the list of foreign key with meta data.
 func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
