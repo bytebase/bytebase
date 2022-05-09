@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -78,17 +79,23 @@ type namingIndexConventionChecker struct {
 func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getIndexMetaDataList(in)
 
-	fmt.Printf("indexDataList len:%d\n", len(indexDataList))
-
 	for _, indexData := range indexDataList {
-		template := formatTemplate(checker.format, checker.templateList, indexData.metaData)
-		fmt.Printf("template:%q, index:%q\n", template, indexData.index)
-		if template != indexData.index {
+		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
+		if err != nil {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    common.Internal,
+				Title:   "Internal error for index naming convention rule",
+				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
+			})
+			continue
+		}
+		if !regex.MatchString(indexData.index) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
 				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("%q mismatches index naming convention. Expect %q but found %q", in.Text(), template, indexData.index),
+				Content: fmt.Sprintf("%q mismatches index naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
 			})
 		}
 	}
@@ -144,16 +151,13 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				var columnList []string
-				for _, col := range spec.NewColumns {
-					columnList = append(columnList, col.Name.String())
-				}
+				// TODO: how to get the releated column list through old index name
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					api.ColumnListTemplateToken: "*.",
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    spec.IndexName.String(),
+					index:    spec.ToKey.String(),
 					metaData: metaData,
 				})
 			case ast.AlterTableAddConstraint:
@@ -199,12 +203,13 @@ func (checker *namingIndexConventionChecker) getIndexMetaDataList(in ast.Node) [
 	return res
 }
 
-// formatTemplate formats the template.
-func formatTemplate(template string, templateList []string, tokens map[string]string) string {
+// getTemplateRegexp formats the template as regex.
+func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
 	for _, key := range templateList {
 		if token, ok := tokens[key]; ok {
 			template = strings.ReplaceAll(template, key, token)
 		}
 	}
-	return template
+
+	return regexp.Compile(template)
 }

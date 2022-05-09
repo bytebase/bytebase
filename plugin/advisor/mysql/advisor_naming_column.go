@@ -101,10 +101,9 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columnList {
 		if !v.format.MatchString(column) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
-				Status: v.level,
-				Code:   common.NamingColumnConventionMismatch,
-				Title:  "Mismatch column naming convention",
-				// TODO: give a more explicit message about the valid naming format
+				Status:  v.level,
+				Code:    common.NamingColumnConventionMismatch,
+				Title:   "Mismatch column naming convention",
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention", tableName, column),
 			})
 		}
