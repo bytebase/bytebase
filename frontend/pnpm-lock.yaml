@@ -2,7 +2,6 @@ lockfileVersion: 5.4
 
 specifiers:
   '@bytebase/vue-kbar': ^0.1.6
-  '@highlightjs/vue-plugin': ^2.1.0
   '@iconify/json': ^1.1.432
   '@intlify/vite-plugin-vue-i18n': ^3.2.1
   '@soerenmartius/vue3-clipboard': ^0.1.2
@@ -61,7 +60,6 @@ specifiers:
 
 dependencies:
   '@bytebase/vue-kbar': 0.1.6_vue@3.2.31
-  '@highlightjs/vue-plugin': 2.1.0_iaemlvd6nomexedfn5te23etdi
   '@soerenmartius/vue3-clipboard': 0.1.2
   '@vueuse/core': 7.7.1_vue@3.2.31
   axios: 0.26.1
@@ -251,16 +249,6 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
-
-  /@highlightjs/vue-plugin/2.1.0_iaemlvd6nomexedfn5te23etdi:
-    resolution: {integrity: sha512-E+bmk4ncca+hBEYRV2a+1aIzIV0VSY/e5ArjpuSN9IO7wBJrzUE2u4ESCwrbQD7sAy+jWQjkV5qCCWgc+pu7CQ==}
-    peerDependencies:
-      highlight.js: ^11.0.1
-      vue: ^3
-    dependencies:
-      highlight.js: 11.5.0
-      vue: 3.2.31
-    dev: false
 
   /@humanwhocodes/config-array/0.9.5:
     resolution: {integrity: sha512-ObyMyWxZiCu/yTisA7uzx81s40xR2fD5Cg/2Kq7G02ajkNubJf6BopgDTmDyc3U7sXpNKM8cYOw7s7Tyr+DnCw==}
@@ -851,7 +839,7 @@ packages:
         optional: true
     dependencies:
       vue: 3.2.31
-      vue-demi: 0.12.5_vue@3.2.31
+      vue-demi: 0.12.1_vue@3.2.31
     dev: false
 
   /abbrev/1.1.1:

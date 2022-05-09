@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@bytebase/vue-kbar": "^0.1.6",
-    "@highlightjs/vue-plugin": "^2.1.0",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
     "@vueuse/core": "^7.6.0",
     "axios": "^0.26.0",
