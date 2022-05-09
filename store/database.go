@@ -192,8 +192,6 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 	// Each database instance is created under a particular environment.
 	// The value of bb.environment is identical to the name of the environment.
 
-	// TODO(dragonly): seems like we do not need to composed this.
-	// need redesign, e.g., extract the kv part which is only in memory, and the relations which are in the database.
 	labelList = append(labelList, &api.DatabaseLabel{
 		Key:   api.EnvironmentKeyName,
 		Value: db.Instance.Environment.Name,

@@ -73,24 +73,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					runningTasks[backupSetting.ID] = true
 					mu.Unlock()
 
-					db, err := s.server.store.GetDatabase(ctx, &api.DatabaseFind{ID: &backupSetting.DatabaseID})
-					if err != nil {
-						s.l.Error("Failed to get database for backup setting",
-							zap.Int("id", backupSetting.ID),
-							zap.Int("databaseID", backupSetting.DatabaseID),
-							zap.Error(err))
-						continue
-					}
-					if db == nil {
-						err := fmt.Errorf("failed to get database for backup setting, database ID not found %v", backupSetting.DatabaseID)
-						s.l.Error(err.Error(),
-							zap.Int("id", backupSetting.ID),
-							zap.Int("databaseID", backupSetting.DatabaseID),
-							zap.Error(err))
-						continue
-					}
-					backupSetting.Database = db
-
+					db := backupSetting.Database
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 						s.l.Debug("Schedule auto backup",
