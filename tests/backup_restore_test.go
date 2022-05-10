@@ -118,10 +118,14 @@ func TestPITR(t *testing.T) {
 	a := require.New(t)
 
 	// common configs
-	localhost := "127.0.0.1"
+	const (
+		localhost    = "127.0.0.1"
+		username     = "root"
+		database     = "backup_restore"
+		numRowsTime0 = 10
+		numRowsTime1 = 20
+	)
 	port := getTestPort(t.Name())
-	username := "root"
-	database := "backup_restore"
 
 	// common PITR routines
 	initDB := func(t *testing.T) (*sql.DB, func()) {
@@ -178,6 +182,37 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 	}
 
+	validateTbl0 := func(db *sql.DB) {
+		rows, err := db.Query("SELECT * FROM tbl0")
+		a.NoError(err)
+		i := 0
+		for rows.Next() {
+			var col int
+			a.NoError(rows.Scan(&col))
+			a.Equal(i, col)
+			i++
+		}
+		a.NoError(rows.Err())
+		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		a.Equal(numRowsTime0, i)
+	}
+
+	validateTbl1 := func(db *sql.DB) {
+		rows, err := db.Query("SELECT * FROM tbl1")
+		a.NoError(err)
+		i := 0
+		for rows.Next() {
+			var col1, col2 int
+			a.NoError(rows.Scan(&col1, &col2))
+			a.Equal(i, col1)
+			a.Equal(i, col2)
+			i++
+		}
+		a.NoError(rows.Err())
+		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		a.Equal(numRowsTime0, i)
+	}
+
 	// test cases
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Parallel()
@@ -189,7 +224,7 @@ func TestPITR(t *testing.T) {
 		defer stopFn()
 
 		t.Log("insert data")
-		insertRangeData(t, db, 0, 10)
+		insertRangeData(t, db, 0, numRowsTime0)
 
 		t.Log("make a full backup")
 		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", port), username, database)
@@ -202,15 +237,15 @@ func TestPITR(t *testing.T) {
 		t.Logf("backup content:\n%s", buf.String())
 
 		t.Log("insert more data")
-		insertRangeData(t, db, 10, 20)
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
-		t.Log("start to concurrently update data")
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		_ = startUpdateRow(ctxUpdateRow, t, username, localhost, database, port)
+		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, port)
+		t.Logf("start to concurrently update data at t1: %v", t1)
 
 		t.Log("restore to pitr database")
 		timestamp := time.Now().Unix()
-		config := dbPlugin.IncrementalRecoveryConfig{Start: []byte(""), End: []byte("")}
+		config := dbPlugin.RecoveryConfig{}
 		err := driver.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
@@ -222,36 +257,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		func() {
-			rows, err := db.Query("SELECT * FROM tbl0")
-			a.NoError(err)
-			i := 0
-			for rows.Next() {
-				var col int
-				a.NoError(rows.Scan(&col))
-				a.Equal(i, col)
-				i++
-			}
-			a.NoError(rows.Err())
-			// TODO(dragonly): change to 20 when RestoreIncremental is implemented
-			a.Equal(10, i)
-		}()
+		validateTbl0(db)
 		t.Log("validate table tbl1")
-		func() {
-			rows, err := db.Query("SELECT * FROM tbl1")
-			a.NoError(err)
-			i := 0
-			for rows.Next() {
-				var col1, col2 int
-				a.NoError(rows.Scan(&col1, &col2))
-				a.Equal(i, col1)
-				a.Equal(i, col2)
-				i++
-			}
-			a.NoError(rows.Err())
-			// TODO(dragonly): change to 20 when RestoreIncremental is implemented
-			a.Equal(10, i)
-		}()
+		validateTbl1(db)
 		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
 		t.Log("validate table _update_row_")
 	})

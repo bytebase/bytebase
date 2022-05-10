@@ -797,12 +797,12 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
-func (driver *Driver) RestoreIncremental(ctx context.Context, config db.IncrementalRecoveryConfig) error {
+func (driver *Driver) RestoreIncremental(ctx context.Context, config db.RecoveryConfig) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.IncrementalRecoveryConfig, database string, timestamp int64) error {
+func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.RecoveryConfig, database string, timestamp int64) error {
 	return fmt.Errorf("Unimplemented")
 }
 

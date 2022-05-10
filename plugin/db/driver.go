@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
@@ -388,23 +387,15 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
-// IncrementalRecoveryConfig defines a range in the incremental backup.
-type IncrementalRecoveryConfig struct {
-	// Start/End is the binlog position in MySQL, and WAL lsn in PostgreSQL.
-	// Encoded in JSON format.
-	Start []byte
-	End   []byte
-}
-
 // MySQLBinlogConfig is the binlog coordination for MySQL.
 type MySQLBinlogConfig struct {
 	Filename string `json:"filename"`
 	Position int64  `json:"position"`
 }
 
-// Parse decodes JSON and populates the config struct
-func (config *MySQLBinlogConfig) Parse(pos []byte) error {
-	return json.Unmarshal(pos, config)
+// RecoveryConfig defines a range in the incremental backup.
+type RecoveryConfig struct {
+	MySQL *MySQLBinlogConfig
 }
 
 // Driver is the interface for database driver.
@@ -443,9 +434,9 @@ type Driver interface {
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 	// RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
-	RestoreIncremental(ctx context.Context, config IncrementalRecoveryConfig) error
+	RestoreIncremental(ctx context.Context, config RecoveryConfig) error
 	// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-	RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config IncrementalRecoveryConfig, database string, timestamp int64) error
+	RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config RecoveryConfig, database string, timestamp int64) error
 	// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 	SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error
 }
