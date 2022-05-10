@@ -68,10 +68,10 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 
 		principal, err := s.store.GetPrincipalByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch principal ID: %v", id)).SetInternal(err)
+		}
+		if principal == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("User ID not found: %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
