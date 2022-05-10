@@ -473,7 +473,8 @@
         "description": "在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。"
       }
     },
-    "new-issue": "@:common.new@:common.issue"
+    "new-issue": "@:common.new@:common.issue",
+    "format-on-save": "保存时格式化"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
