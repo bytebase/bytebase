@@ -55,6 +55,7 @@ type whereRequirementChecker struct {
 	level      advisor.Status
 }
 
+// Enter implements the ast.Visitor interface
 func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := common.Ok
 	switch node := in.(type) {
@@ -81,6 +82,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
