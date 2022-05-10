@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center space-x-2">
+  <div class="flex items-center flex-wrap gap-2 flex-1">
     <template
       v-for="(checkRun, index) in filteredTaskCheckRunList"
       :key="index"
