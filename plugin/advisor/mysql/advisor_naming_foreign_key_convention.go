@@ -86,7 +86,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    common.NamingFKConventionMismatch,
 				Title:   "Mismatch foreign key naming convention",
-				Content: fmt.Sprintf("%q mismatches foreign key naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
+				Content: fmt.Sprintf("Foreign key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
 			})
 		}
 	}
@@ -114,8 +114,7 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
-			switch constraint.Tp {
-			case ast.ConstraintForeignKey:
+			if constraint.Tp == ast.ConstraintForeignKey {
 				var referencingColumnList []string
 				for _, key := range constraint.Keys {
 					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
@@ -140,30 +139,26 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddConstraint:
-				switch spec.Constraint.Tp {
-				case ast.ConstraintForeignKey:
-					var referencingColumnList []string
-					for _, key := range spec.Constraint.Keys {
-						referencingColumnList = append(referencingColumnList, key.Column.Name.String())
-					}
-					var referencedColumnList []string
-					for _, spec := range spec.Constraint.Refer.IndexPartSpecifications {
-						referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
-					}
-
-					metaData := map[string]string{
-						api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-						api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-						api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
-						api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
-					}
-					res = append(res, &indexMetaData{
-						index:    spec.Constraint.Name,
-						metaData: metaData,
-					})
+			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
+				var referencingColumnList []string
+				for _, key := range spec.Constraint.Keys {
+					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
 				}
+				var referencedColumnList []string
+				for _, spec := range spec.Constraint.Refer.IndexPartSpecifications {
+					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
+				}
+
+				metaData := map[string]string{
+					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
+					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+				}
+				res = append(res, &indexMetaData{
+					index:    spec.Constraint.Name,
+					metaData: metaData,
+				})
 			}
 		}
 	}

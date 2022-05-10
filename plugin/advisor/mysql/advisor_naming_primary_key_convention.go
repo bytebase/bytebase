@@ -86,7 +86,7 @@ func (checker *namingPKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    common.NamingPKConventionMismatch,
 				Title:   "Mismatch primary key naming convention",
-				Content: fmt.Sprintf("%q mismatches primary key naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
+				Content: fmt.Sprintf("Primary key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
 			})
 		}
 	}
@@ -114,8 +114,7 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
-			switch constraint.Tp {
-			case ast.ConstraintPrimaryKey:
+			if constraint.Tp == ast.ConstraintPrimaryKey {
 				var columnList []string
 				for _, key := range constraint.Keys {
 					columnList = append(columnList, key.Column.Name.String())
@@ -132,24 +131,20 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
-			switch spec.Tp {
-			case ast.AlterTableAddConstraint:
-				switch spec.Constraint.Tp {
-				case ast.ConstraintPrimaryKey:
-					var columnList []string
-					for _, key := range spec.Constraint.Keys {
-						columnList = append(columnList, key.Column.Name.String())
-					}
-
-					metaData := map[string]string{
-						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-						api.TableNameTemplateToken:  node.Table.Name.String(),
-					}
-					res = append(res, &indexMetaData{
-						index:    spec.Constraint.Name,
-						metaData: metaData,
-					})
+			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintPrimaryKey {
+				var columnList []string
+				for _, key := range spec.Constraint.Keys {
+					columnList = append(columnList, key.Column.Name.String())
 				}
+
+				metaData := map[string]string{
+					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					api.TableNameTemplateToken:  node.Table.Name.String(),
+				}
+				res = append(res, &indexMetaData{
+					index:    spec.Constraint.Name,
+					metaData: metaData,
+				})
 			}
 		}
 	}

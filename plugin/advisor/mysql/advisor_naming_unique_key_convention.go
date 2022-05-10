@@ -93,7 +93,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    common.NamingUKConventionMismatch,
 				Title:   "Mismatch unique key naming convention",
-				Content: fmt.Sprintf("%q mismatches unique key naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
+				Content: fmt.Sprintf("Unique key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
 			})
 		}
 	}
@@ -139,7 +139,6 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
-
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
 				ctx := context.Background()

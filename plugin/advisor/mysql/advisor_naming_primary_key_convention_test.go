@@ -30,12 +30,11 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingPKConventionMismatch,
 					Title:   "Mismatch primary key naming convention",
-					Content: "\"ALTER TABLE tech_book ADD PRIMARY KEY tech_book_id (id)\" mismatches primary key naming convention, expect \"^pk_tech_book_id$\" but found \"tech_book_id\"",
+					Content: "Primary key mismatches the naming convention, expect \"^pk_tech_book_id$\" but found `tech_book_id`",
 				},
 			},
 		},
 		{
-			// TODO: Test "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20))",
 			statement: "CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY pk_tech_book_name (name))",
 			want: []advisor.Advice{
 				{
@@ -53,7 +52,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingPKConventionMismatch,
 					Title:   "Mismatch primary key naming convention",
-					Content: "\"CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY (name))\" mismatches primary key naming convention, expect \"^pk_tech_book_name$\" but found \"\"",
+					Content: "Primary key mismatches the naming convention, expect \"^pk_tech_book_name$\" but found ``",
 				},
 			},
 		},

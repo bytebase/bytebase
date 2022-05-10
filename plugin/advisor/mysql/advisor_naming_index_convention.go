@@ -94,7 +94,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
 				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("%q mismatches index naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
+				Content: fmt.Sprintf("Index mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
 			})
 		}
 	}
@@ -127,8 +127,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.Constraints {
-			switch constraint.Tp {
-			case ast.ConstraintIndex:
+			if constraint.Tp == ast.ConstraintIndex {
 				var columnList []string
 				for _, key := range constraint.Keys {
 					columnList = append(columnList, key.Column.Name.String())
@@ -170,8 +169,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					metaData: metaData,
 				})
 			case ast.AlterTableAddConstraint:
-				switch spec.Constraint.Tp {
-				case ast.ConstraintIndex:
+				if spec.Constraint.Tp == ast.ConstraintIndex {
 					var columnList []string
 					for _, key := range spec.Constraint.Keys {
 						columnList = append(columnList, key.Column.Name.String())
