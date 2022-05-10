@@ -24,16 +24,17 @@ const baseDirectory = "bbtest"
 
 func TestTenant(t *testing.T) {
 	t.Parallel()
+	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
-	require.NoError(t, err)
+	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.setLicense()
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
@@ -41,7 +42,7 @@ func TestTenant(t *testing.T) {
 		Key:        "TestSchemaUpdate",
 		TenantMode: api.TenantModeTenant,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
@@ -50,20 +51,20 @@ func TestTenant(t *testing.T) {
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
 	environments, err := ctl.getEnvironments()
-	require.NoError(t, err)
+	a.NoError(err)
 	stagingEnvironment, err := findEnvironment(environments, "Staging")
-	require.NoError(t, err)
+	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Add the provisioned instances.
 	var stagingInstances []*api.Instance
@@ -75,7 +76,7 @@ func TestTenant(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          stagingInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstances = append(stagingInstances, instance)
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
@@ -85,7 +86,7 @@ func TestTenant(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstances = append(prodInstances, instance)
 	}
 
@@ -96,7 +97,7 @@ func TestTenant(t *testing.T) {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
 	}
 	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
@@ -105,24 +106,24 @@ func TestTenant(t *testing.T) {
 		},
 		deploymentSchedule,
 	)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for i, stagingInstance := range stagingInstances {
 		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
 		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		ProjectID: &project.ID,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	var stagingDatabases []*api.Database
 	var prodDatabases []*api.Database
@@ -142,8 +143,8 @@ func TestTenant(t *testing.T) {
 			}
 		}
 	}
-	require.Equal(t, len(stagingDatabases), stagingTenantNumber)
-	require.Equal(t, len(prodDatabases), prodTenantNumber)
+	a.Equal(len(stagingDatabases), stagingTenantNumber)
+	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
@@ -155,7 +156,7 @@ func TestTenant(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
 		Name:        fmt.Sprintf("update schema for database %q", databaseName),
@@ -165,21 +166,21 @@ func TestTenant(t *testing.T) {
 		AssigneeID:    project.Creator.ID,
 		CreateContext: string(createContext),
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
-	require.NoError(t, err)
-	require.Equal(t, status, api.TaskDone)
+	a.NoError(err)
+	a.Equal(status, api.TaskDone)
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
 		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 	for _, prodInstance := range prodInstances {
 		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 
 	// Query migration history
@@ -188,29 +189,30 @@ func TestTenant(t *testing.T) {
 	hm2 := map[string]bool{}
 	for _, instance := range instances {
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
-		require.NoError(t, err)
-		require.Equal(t, len(histories), 2)
-		require.NotEqual(t, histories[0].Version, "")
-		require.NotEqual(t, histories[1].Version, "")
+		a.NoError(err)
+		a.Equal(len(histories), 2)
+		a.NotEqual(histories[0].Version, "")
+		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
 		hm2[histories[1].Version] = true
 	}
-	require.Equal(t, len(hm1), 1)
-	require.Equal(t, len(hm2), 1)
+	a.Equal(len(hm1), 1)
+	a.Equal(len(hm2), 1)
 }
 
 func TestTenantVCS(t *testing.T) {
 	t.Parallel()
+	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
-	require.NoError(t, err)
+	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.setLicense()
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a VCS.
 	applicationID := "testApplicationID"
@@ -223,7 +225,7 @@ func TestTenantVCS(t *testing.T) {
 		ApplicationID: applicationID,
 		Secret:        applicationSecret,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
@@ -231,7 +233,7 @@ func TestTenantVCS(t *testing.T) {
 		Key:        "TestSchemaUpdate",
 		TenantMode: api.TenantModeTenant,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a repository.
 	repositoryPath := "test/schemaUpdate"
@@ -256,7 +258,7 @@ func TestTenantVCS(t *testing.T) {
 		ExpiresTs:          0,
 		RefreshToken:       refreshToken,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
@@ -265,20 +267,20 @@ func TestTenantVCS(t *testing.T) {
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
 	environments, err := ctl.getEnvironments()
-	require.NoError(t, err)
+	a.NoError(err)
 	stagingEnvironment, err := findEnvironment(environments, "Staging")
-	require.NoError(t, err)
+	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Add the provisioned instances.
 	var stagingInstances []*api.Instance
@@ -290,7 +292,7 @@ func TestTenantVCS(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          stagingInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstances = append(stagingInstances, instance)
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
@@ -300,7 +302,7 @@ func TestTenantVCS(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstances = append(prodInstances, instance)
 	}
 
@@ -311,7 +313,7 @@ func TestTenantVCS(t *testing.T) {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
 	}
 	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
@@ -320,24 +322,24 @@ func TestTenantVCS(t *testing.T) {
 		},
 		deploymentSchedule,
 	)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create issues that create databases.
 	databaseName := "testTenantVCSSchemaUpdate"
 	for i, stagingInstance := range stagingInstances {
 		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
 		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		ProjectID: &project.ID,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	var stagingDatabases []*api.Database
 	var prodDatabases []*api.Database
@@ -357,8 +359,8 @@ func TestTenantVCS(t *testing.T) {
 			}
 		}
 	}
-	require.Equal(t, len(stagingDatabases), stagingTenantNumber)
-	require.Equal(t, len(prodDatabases), prodTenantNumber)
+	a.Equal(len(stagingDatabases), stagingTenantNumber)
+	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Simulate Git commits.
 	gitFile := "bbtest/testTenantVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
@@ -378,30 +380,30 @@ func TestTenantVCS(t *testing.T) {
 		},
 	}
 	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Get schema update issue.
 	openStatus := []api.IssueStatus{api.IssueOpen}
 	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
-	require.NoError(t, err)
-	require.Equal(t, len(issues), 1)
+	a.NoError(err)
+	a.Equal(len(issues), 1)
 	issue := issues[0]
 	status, err := ctl.waitIssuePipeline(issue.ID)
-	require.NoError(t, err)
-	require.Equal(t, status, api.TaskDone)
+	a.NoError(err)
+	a.Equal(status, api.TaskDone)
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
 		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 	for _, prodInstance := range prodInstances {
 		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 
 	// Query migration history
@@ -410,29 +412,30 @@ func TestTenantVCS(t *testing.T) {
 	hm2 := map[string]bool{}
 	for _, instance := range instances {
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
-		require.NoError(t, err)
-		require.Equal(t, len(histories), 2)
-		require.Equal(t, histories[0].Version, "ver1")
-		require.NotEqual(t, histories[1].Version, "")
+		a.NoError(err)
+		a.Equal(len(histories), 2)
+		a.Equal(histories[0].Version, "ver1")
+		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
 		hm2[histories[1].Version] = true
 	}
-	require.Equal(t, len(hm1), 1)
-	require.Equal(t, len(hm2), 1)
+	a.Equal(len(hm1), 1)
+	a.Equal(len(hm2), 1)
 }
 
 func TestTenantDatabaseNameTemplate(t *testing.T) {
 	t.Parallel()
+	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
-	require.NoError(t, err)
+	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.setLicense()
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
@@ -441,21 +444,21 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		TenantMode:     api.TenantModeTenant,
 		DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
 	stagingInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, stagingInstanceName)
-	require.NoError(t, err)
+	a.NoError(err)
 	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
-	require.NoError(t, err)
+	a.NoError(err)
 	stagingEnvironment, err := findEnvironment(environments, "Staging")
-	require.NoError(t, err)
+	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Add the provisioned instances.
 	stagingInstance, err := ctl.addInstance(api.InstanceCreate{
@@ -464,14 +467,14 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		Engine:        db.SQLite,
 		Host:          stagingInstanceDir,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 	prodInstance, err := ctl.addInstance(api.InstanceCreate{
 		EnvironmentID: prodEnvironment.ID,
 		Name:          prodInstanceName,
 		Engine:        db.SQLite,
 		Host:          prodInstanceDir,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Set up label values for tenants.
 	// Prod and staging are using the same tenant values. Use prodTenantNumber because it's larger than stagingInstancesNumber.
@@ -480,7 +483,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
 	}
 	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
@@ -489,26 +492,26 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		},
 		deploymentSchedule,
 	)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create issues that create databases.
 	baseDatabaseName := "testTenant"
 	for i := 0; i < stagingTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
 		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
 		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		ProjectID: &project.ID,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	var stagingDatabases []*api.Database
 	var prodDatabases []*api.Database
@@ -530,8 +533,8 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			}
 		}
 	}
-	require.Equal(t, len(stagingDatabases), stagingTenantNumber)
-	require.Equal(t, len(prodDatabases), prodTenantNumber)
+	a.Equal(len(stagingDatabases), stagingTenantNumber)
+	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
@@ -543,7 +546,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 			},
 		},
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 	issue, err := ctl.createIssue(api.IssueCreate{
 		ProjectID:   project.ID,
 		Name:        "update schema for tenants",
@@ -553,38 +556,39 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 		AssigneeID:    project.Creator.ID,
 		CreateContext: string(createContext),
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
-	require.NoError(t, err)
-	require.Equal(t, status, api.TaskDone)
+	a.NoError(err)
+	a.Equal(status, api.TaskDone)
 
 	// Query schema.
 	for i := 0; i < stagingTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
 		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		databaseName := fmt.Sprintf("%s_tenant%d", baseDatabaseName, i)
 		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 }
 
 func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	t.Parallel()
+	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	err := ctl.StartServer(ctx, dataDir, getTestPort(t.Name()))
-	require.NoError(t, err)
+	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.setLicense()
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a VCS.
 	applicationID := "testApplicationID"
@@ -597,7 +601,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		ApplicationID: applicationID,
 		Secret:        applicationSecret,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
@@ -606,7 +610,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		TenantMode:     api.TenantModeTenant,
 		DBNameTemplate: "{{DB_NAME}}_{{TENANT}}",
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create a repository.
 	repositoryPath := "test/schemaUpdate"
@@ -631,7 +635,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		ExpiresTs:          0,
 		RefreshToken:       refreshToken,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
@@ -640,20 +644,20 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
 		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
 	environments, err := ctl.getEnvironments()
-	require.NoError(t, err)
+	a.NoError(err)
 	stagingEnvironment, err := findEnvironment(environments, "Staging")
-	require.NoError(t, err)
+	a.NoError(err)
 	prodEnvironment, err := findEnvironment(environments, "Prod")
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Add the provisioned instances.
 	var stagingInstances []*api.Instance
@@ -665,7 +669,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          stagingInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		stagingInstances = append(stagingInstances, instance)
 	}
 	for i, prodInstanceDir := range prodInstanceDirs {
@@ -675,7 +679,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			Engine:        db.SQLite,
 			Host:          prodInstanceDir,
 		})
-		require.NoError(t, err)
+		a.NoError(err)
 		prodInstances = append(prodInstances, instance)
 	}
 
@@ -686,7 +690,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		tenants = append(tenants, fmt.Sprintf("tenant%d", i))
 	}
 	err = ctl.addLabelValues(api.TenantLabelKey, tenants)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create deployment configuration.
 	_, err = ctl.upsertDeploymentConfig(
@@ -695,7 +699,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		},
 		deploymentSchedule,
 	)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Create issues that create databases.
 	baseDatabaseName := "testTenantVCSSchemaUpdate"
@@ -704,20 +708,20 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		err := ctl.createDatabase(project, stagingInstance, databaseName, map[string]string{api.TenantLabelKey: tenant})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 	for i, prodInstance := range prodInstances {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		err := ctl.createDatabase(project, prodInstance, databaseName, map[string]string{api.TenantLabelKey: tenant})
-		require.NoError(t, err)
+		a.NoError(err)
 	}
 
 	// Getting databases for each environment.
 	databases, err := ctl.getDatabases(api.DatabaseFind{
 		ProjectID: &project.ID,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
 	var stagingDatabases []*api.Database
 	var prodDatabases []*api.Database
@@ -737,8 +741,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 		}
 	}
-	require.Equal(t, len(stagingDatabases), stagingTenantNumber)
-	require.Equal(t, len(prodDatabases), prodTenantNumber)
+	a.Equal(len(stagingDatabases), stagingTenantNumber)
+	a.Equal(len(prodDatabases), prodTenantNumber)
 
 	// Simulate Git commits.
 	gitFile := "bbtest/testTenantVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
@@ -758,34 +762,34 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		},
 	}
 	err = ctl.gitlab.AddFiles(gitlabProjectIDStr, map[string]string{gitFile: migrationStatement})
-	require.NoError(t, err)
+	a.NoError(err)
 	err = ctl.gitlab.SendCommits(gitlabProjectIDStr, pushEvent)
-	require.NoError(t, err)
+	a.NoError(err)
 
 	// Get schema update issue.
 	openStatus := []api.IssueStatus{api.IssueOpen}
 	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
-	require.NoError(t, err)
-	require.Equal(t, len(issues), 1)
+	a.NoError(err)
+	a.Equal(len(issues), 1)
 	issue := issues[0]
 	status, err := ctl.waitIssuePipeline(issue.ID)
-	require.NoError(t, err)
-	require.Equal(t, status, api.TaskDone)
+	a.NoError(err)
+	a.Equal(status, api.TaskDone)
 
 	// Query schema.
 	for i, stagingInstance := range stagingInstances {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		result, err := ctl.query(stagingInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 	for i, prodInstance := range prodInstances {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		result, err := ctl.query(prodInstance, databaseName, bookTableQuery)
-		require.NoError(t, err)
-		require.Equal(t, bookSchemaSQLResult, result)
+		a.NoError(err)
+		a.Equal(bookSchemaSQLResult, result)
 	}
 
 	// Query migration history
@@ -795,29 +799,28 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
-		require.NoError(t, err)
-		require.Equal(t, len(histories), 2)
-		require.Equal(t, histories[0].Version, "ver1")
-		require.NotEqual(t, histories[1].Version, "")
+		a.NoError(err)
+		a.Equal(len(histories), 2)
+		a.Equal(histories[0].Version, "ver1")
+		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
 	}
 	for i, instance := range prodInstances {
 		tenant := fmt.Sprintf("tenant%d", i)
 		databaseName := baseDatabaseName + "_" + tenant
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
-		require.NoError(t, err)
-		require.Equal(t, len(histories), 2)
-		require.Equal(t, histories[0].Version, "ver1")
-		require.NotEqual(t, histories[1].Version, "")
+		a.NoError(err)
+		a.Equal(len(histories), 2)
+		a.Equal(histories[0].Version, "ver1")
+		a.NotEqual(histories[1].Version, "")
 		hm2[histories[0].Version] = true
 	}
 
-	require.Equal(t, len(hm1), 1)
-	require.Equal(t, len(hm2), 1)
+	a.Equal(len(hm1), 1)
+	a.Equal(len(hm2), 1)
 
 	// Check latestSchemaFile
 	files, err := ctl.gitlab.GetFiles(gitlabProjectIDStr, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
-	require.NoError(t, err)
-	require.Equal(t, len(files), 1)
-
+	a.NoError(err)
+	a.Equal(len(files), 1)
 }
