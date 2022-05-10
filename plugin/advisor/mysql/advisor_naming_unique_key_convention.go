@@ -99,15 +99,6 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: "",
-		})
-	}
-
 	return in, false
 }
 

@@ -63,6 +63,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 			Content: "",
 		})
 	}
+
 	return checker.adviceList, nil
 }
 
@@ -98,15 +99,6 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Content: fmt.Sprintf("Index mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
 			})
 		}
-	}
-
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  advisor.Success,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: "",
-		})
 	}
 
 	return in, false
