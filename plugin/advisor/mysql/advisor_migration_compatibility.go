@@ -49,6 +49,7 @@ type compatibilityChecker struct {
 	adviceList []advisor.Advice
 }
 
+// Enter implements the ast.Visitor interface
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := common.Ok
 	switch node := in.(type) {
@@ -147,6 +148,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *compatibilityChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

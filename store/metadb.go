@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// MetadataDB abstracts the underlying Postgres instance
 type MetadataDB struct {
 	l           *zap.Logger
 	mode        common.ReleaseMode
@@ -39,10 +40,10 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 	}
 	resourceDir := path.Join(dataDir, "resources")
 	pgDataDir := common.GetPostgresDataDir(dataDir)
-	fmt.Println("-----Embedded Postgres Config BEGIN-----")
-	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	fmt.Println("-----Embedded Postgres Config END-----")
+	logger.Info("-----Embedded Postgres Config BEGIN-----")
+	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+	logger.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	logger.Info("-----Embedded Postgres Config END-----")
 
 	logger.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
@@ -56,6 +57,7 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 	return mgr, nil
 }
 
+// NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance
 func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	return &MetadataDB{
 		l:           logger,
@@ -66,6 +68,7 @@ func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, 
 	}, nil
 }
 
+// Connect connects to the underlying Postgres instance
 func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
 	if m.embed {
 		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
