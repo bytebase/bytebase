@@ -104,7 +104,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    common.NamingColumnConventionMismatch,
 				Title:   "Mismatch column naming convention",
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention", tableName, column),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
 			})
 		}
 	}
