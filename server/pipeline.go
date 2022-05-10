@@ -6,28 +6,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 )
 
-func (s *Server) composePipelineRelationshipValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
-	var err error
-
-	pipeline.Creator, err = s.store.GetPrincipalByID(ctx, pipeline.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	pipeline.Updater, err = s.store.GetPrincipalByID(ctx, pipeline.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	for _, stage := range pipeline.StageList {
-		if err := s.composeStageRelationshipValidateOnly(ctx, stage); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // ScheduleNextTaskIfNeeded tries to schedule the next task if needed.
 // Returns nil if no task applicable can be scheduled
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) (*api.Task, error) {
