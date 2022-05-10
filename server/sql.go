@@ -86,10 +86,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceID)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
 		}
 
 		resultSet := s.syncEngineVersionAndSchema(ctx, instance)
@@ -123,10 +123,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", exec.InstanceID)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
 
 		start := time.Now().UnixNano()

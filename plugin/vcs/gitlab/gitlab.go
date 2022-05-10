@@ -478,7 +478,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		return nil, errors.Wrap(err, "GET")
 	}
 
-	if code == 404 {
+	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
