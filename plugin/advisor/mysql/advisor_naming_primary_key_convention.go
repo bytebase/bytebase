@@ -86,7 +86,7 @@ func (checker *namingPKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    common.NamingPKConventionMismatch,
 				Title:   "Mismatch primary key naming convention",
-				Content: fmt.Sprintf("%q mismatches primary key naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
+				Content: fmt.Sprintf("%q mismatches primary key naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
 			})
 		}
 	}
@@ -133,16 +133,6 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			switch spec.Tp {
-			case ast.AlterTableRenameIndex:
-				// TODO: how to get the releated column list through old index name
-				metaData := map[string]string{
-					api.ColumnListTemplateToken: ".*",
-					api.TableNameTemplateToken:  node.Table.Name.String(),
-				}
-				res = append(res, &indexMetaData{
-					index:    spec.ToKey.String(),
-					metaData: metaData,
-				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
 				case ast.ConstraintPrimaryKey:

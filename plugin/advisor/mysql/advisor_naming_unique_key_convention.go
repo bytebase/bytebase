@@ -1,14 +1,17 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
+	"go.uber.org/zap"
 )
 
 var (
@@ -44,6 +47,8 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		level:        level,
 		format:       format,
 		templateList: templateList,
+		catalog:      ctx.Catalog,
+		logger:       ctx.Logger,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -65,6 +70,8 @@ type namingUKConventionChecker struct {
 	level        advisor.Status
 	format       string
 	templateList []string
+	catalog      catalog.Service
+	logger       *zap.Logger
 }
 
 func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
@@ -86,7 +93,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    common.NamingUKConventionMismatch,
 				Title:   "Mismatch unique key naming convention",
-				Content: fmt.Sprintf("%q mismatches unique key naming convention, expect %q but found %q", in.Text(), checker.format, indexData.index),
+				Content: fmt.Sprintf("%q mismatches unique key naming convention, expect %q but found %q", in.Text(), regex, indexData.index),
 			})
 		}
 	}
@@ -135,9 +142,25 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				// TODO: how to get the releated column list through old index name
+				ctx := context.Background()
+				index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+					TableName: node.Table.Name.String(),
+					IndexName: spec.FromKey.String(),
+				})
+				if err != nil {
+					checker.logger.Error(
+						"Cannot find index in table",
+						zap.String("table_name", node.Table.Name.String()),
+						zap.String("index_name", spec.FromKey.String()),
+						zap.Error(err),
+					)
+					continue
+				}
+				if !index.Unique {
+					continue
+				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: ".*",
+					api.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

@@ -30,7 +30,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingFKConventionMismatch,
 					Title:   "Mismatch foreign key naming convention",
-					Content: "\"ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)\" mismatches foreign key naming convention, expect \"^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\" but found \"fk_author_id\"",
+					Content: "\"ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)\" mismatches foreign key naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found \"fk_author_id\"",
 				},
 			},
 		},
@@ -52,7 +52,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingFKConventionMismatch,
 					Title:   "Mismatch foreign key naming convention",
-					Content: "\"CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))\" mismatches foreign key naming convention, expect \"^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$\" but found \"fk_book_author_id\"",
+					Content: "\"CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))\" mismatches foreign key naming convention, expect \"^fk_book_author_id_author_id$\" but found \"fk_book_author_id\"",
 				},
 			},
 		},
@@ -66,5 +66,5 @@ func TestNamingFKConvention(t *testing.T) {
 		Type:    api.SchemaRuleFKNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -100,7 +101,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule *api.SchemaReviewRule
+	Rule    *api.SchemaReviewRule
+	Catalog catalog.Service
 }
 
 // Advisor is the interface for advisor.

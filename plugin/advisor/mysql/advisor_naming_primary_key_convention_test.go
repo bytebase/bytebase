@@ -30,7 +30,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingPKConventionMismatch,
 					Title:   "Mismatch primary key naming convention",
-					Content: "\"ALTER TABLE tech_book ADD PRIMARY KEY tech_book_id (id)\" mismatches primary key naming convention, expect \"^pk_{{table}}_{{column_list}}$\" but found \"tech_book_id\"",
+					Content: "\"ALTER TABLE tech_book ADD PRIMARY KEY tech_book_id (id)\" mismatches primary key naming convention, expect \"^pk_tech_book_id$\" but found \"tech_book_id\"",
 				},
 			},
 		},
@@ -53,7 +53,7 @@ func TestNamingPKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingPKConventionMismatch,
 					Title:   "Mismatch primary key naming convention",
-					Content: "\"CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY (name))\" mismatches primary key naming convention, expect \"^pk_{{table}}_{{column_list}}$\" but found \"\"",
+					Content: "\"CREATE TABLE tech_book(id INT, name VARCHAR(20), PRIMARY KEY (name))\" mismatches primary key naming convention, expect \"^pk_tech_book_name$\" but found \"\"",
 				},
 			},
 		},
@@ -67,5 +67,5 @@ func TestNamingPKConvention(t *testing.T) {
 		Type:    api.SchemaRulePKNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }

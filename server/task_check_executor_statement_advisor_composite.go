@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -54,6 +55,11 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
 	}
 
+	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
+	if err != nil {
+		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get task by id: %w", err))
+	}
+
 	result = []api.TaskCheckResult{}
 	for _, rule := range policy.RuleList {
 		if rule.Level == api.SchemaRuleLevelDisabled {
@@ -72,6 +78,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 				Charset:   payload.Charset,
 				Collation: payload.Collation,
 				Rule:      rule,
+				Catalog:   catalog.NewService(exec.l, task.DatabaseID, server.store),
 			},
 			payload.Statement,
 		)

@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
@@ -30,18 +32,36 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
 					Title:   "Mismatch index naming convention",
-					Content: "\"CREATE INDEX tech_book_id_name ON tech_book(id, name)\" mismatches index naming convention, expect \"^idx_{{table}}_{{column_list}}$\" but found \"tech_book_id_name\"",
+					Content: "\"CREATE INDEX tech_book_id_name ON tech_book(id, name)\" mismatches index naming convention, expect \"^idx_tech_book_id_name$\" but found \"tech_book_id_name\"",
 				},
 			},
 		},
 		{
-			statement: "ALTER TABLE tech_book RENAME INDEX tech_book_id_name TO idx_tech_book_id_name",
+			statement: fmt.Sprintf(
+				"ALTER TABLE tech_book RENAME INDEX %s TO idx_tech_book_%s",
+				MockOldIndexName,
+				strings.Join(MockIndexColumnList, "_"),
+			),
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
 					Title:   "OK",
 					Content: "",
+				},
+			},
+		},
+		{
+			statement: fmt.Sprintf(
+				"ALTER TABLE tech_book RENAME INDEX %s TO idx_tech_book",
+				MockOldIndexName,
+			),
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    common.NamingIndexConventionMismatch,
+					Title:   "Mismatch index naming convention",
+					Content: "\"ALTER TABLE tech_book RENAME INDEX old_index TO idx_tech_book\" mismatches index naming convention, expect \"^idx_tech_book_id_name$\" but found \"idx_tech_book\"",
 				},
 			},
 		},
@@ -63,7 +83,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
 					Title:   "Mismatch index naming convention",
-					Content: "\"ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name)\" mismatches index naming convention, expect \"^idx_{{table}}_{{column_list}}$\" but found \"tech_book_id_name\"",
+					Content: "\"ALTER TABLE tech_book ADD INDEX tech_book_id_name (id, name)\" mismatches index naming convention, expect \"^idx_tech_book_id_name$\" but found \"tech_book_id_name\"",
 				},
 			},
 		},
@@ -85,7 +105,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
 					Title:   "Mismatch index naming convention",
-					Content: "\"CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))\" mismatches index naming convention, expect \"^idx_{{table}}_{{column_list}}$\" but found \"\"",
+					Content: "\"CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))\" mismatches index naming convention, expect \"^idx_tech_book_name$\" but found \"\"",
 				},
 			},
 		},
@@ -99,5 +119,5 @@ func TestNamingIndexConvention(t *testing.T) {
 		Type:    api.SchemaRuleIDXNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }
