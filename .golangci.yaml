@@ -10,6 +10,7 @@ linters:
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
   include:
+    # https://golangci-lint.run/usage/configuration/#command-line-options
     - EXC0012
     - EXC0013
     - EXC0014
