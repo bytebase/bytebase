@@ -152,6 +152,23 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	return count, nil
 }
 
+// GetInstanceAdminPasswordByID gets admin password of instance
+func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
+	dataSourceFind := &api.DataSourceFind{
+		InstanceID: &instanceID,
+	}
+	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	if err != nil {
+		return "", err
+	}
+	for _, dataSourceRaw := range dataSourceRawList {
+		if dataSourceRaw.Type == api.Admin {
+			return dataSourceRaw.Password, nil
+		}
+	}
+	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
+}
+
 //
 // private function
 //

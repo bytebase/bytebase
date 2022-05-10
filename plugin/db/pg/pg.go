@@ -160,6 +160,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		}
 		return dsn, nil
 	}
+
 	if database != "" {
 		return "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
 	}

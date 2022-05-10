@@ -24,13 +24,13 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 		}
 
 		// Add reserved environment key.
-		envRawList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
+		envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{RowStatus: &rowStatus})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch environments").SetInternal(err)
 		}
 		envKey := &api.LabelKey{Key: api.EnvironmentKeyName}
-		for _, envRaw := range envRawList {
-			envKey.ValueList = append(envKey.ValueList, envRaw.Name)
+		for _, env := range envList {
+			envKey.ValueList = append(envKey.ValueList, env.Name)
 		}
 		labelKeyList = append(labelKeyList, envKey)
 

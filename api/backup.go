@@ -169,7 +169,6 @@ type BackupSetting struct {
 	DatabaseID int `jsonapi:"attr,databaseId"`
 	// Do not return this to the client since the client always has the database context and fetching the
 	// database object and all its own related objects is a bit expensive.
-	// TODO(dragonly): do we need this field?
 	Database *Database
 
 	// Domain specific fields
