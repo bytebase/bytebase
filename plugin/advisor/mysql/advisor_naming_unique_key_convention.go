@@ -74,6 +74,7 @@ type namingUKConventionChecker struct {
 	logger       *zap.Logger
 }
 
+// Enter implements the ast.Visitor interface
 func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -110,6 +111,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (checker *namingUKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

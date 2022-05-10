@@ -67,6 +67,7 @@ type namingPKConventionChecker struct {
 	templateList []string
 }
 
+// Enter implements the ast.Visitor interface
 func (checker *namingPKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -103,6 +104,7 @@ func (checker *namingPKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (checker *namingPKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
