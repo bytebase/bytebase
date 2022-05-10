@@ -45,6 +45,7 @@ func (f *fakeExternalPg) Destroy() error {
 }
 func TestBootWithExternalPg(t *testing.T) {
 	t.Parallel()
+	a := require.New(t)
 	ctx := context.Background()
 
 	pgTmpDir := t.TempDir()
@@ -53,7 +54,7 @@ func TestBootWithExternalPg(t *testing.T) {
 	serverPort := port + 1
 
 	externalPg, err := newFakeExternalPg(pgTmpDir, port)
-	require.NoError(t, err)
+	a.NoError(err)
 	defer func() {
 		if err = externalPg.Destroy(); err != nil {
 			fmt.Printf("cannot destroy pginstance, error: %s", err.Error())
@@ -63,6 +64,6 @@ func TestBootWithExternalPg(t *testing.T) {
 
 	ctl := &controller{}
 	err = ctl.StartServerWithExternalPg(ctx, serverPort, externalPg.pgUser, externalPg.pgURL)
-	require.NoError(t, err)
+	a.NoError(err)
 	defer ctl.Close(ctx)
 }
