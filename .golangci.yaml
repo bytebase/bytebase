@@ -9,6 +9,11 @@ linters:
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
+  include:
+    - EXC0012
+    - EXC0013
+    - EXC0014
+    - EXC0015
   exclude:
     - Rollback
     - logger.Sync
@@ -16,3 +21,11 @@ issues:
 
 run:
   timeout: 5m
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters

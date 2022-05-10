@@ -308,6 +308,7 @@ func (ctl *controller) waitForHealthz() error {
 
 }
 
+// Close closes long running resources
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
