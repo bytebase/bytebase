@@ -277,35 +277,30 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	var issue *api.Issue
 	if issueCreate.ValidateOnly {
-		issue, err = s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate, creatorID)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate, creatorID)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		issueCreate.CreatorID = creatorID
-		issueCreate.PipelineID = pipeline.ID
-		issue, err = s.store.CreateIssue(ctx, issueCreate)
-		if err != nil {
-			return nil, err
-		}
-		// Create issue subscribers.
-		for _, subscriberID := range issueCreate.SubscriberIDList {
-			subscriberCreate := &api.IssueSubscriberCreate{
-				IssueID:      issue.ID,
-				SubscriberID: subscriberID,
-			}
-			_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-			}
-		}
+		return issue, nil
 	}
 
-	// Return early if this is a validate only request.
-	if issueCreate.ValidateOnly {
-		return issue, nil
+	issueCreate.CreatorID = creatorID
+	issueCreate.PipelineID = pipeline.ID
+	issue, err := s.store.CreateIssue(ctx, issueCreate)
+	if err != nil {
+		return nil, err
+	}
+	// Create issue subscribers.
+	for _, subscriberID := range issueCreate.SubscriberIDList {
+		subscriberCreate := &api.IssueSubscriberCreate{
+			IssueID:      issue.ID,
+			SubscriberID: subscriberID,
+		}
+		_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
+		}
 	}
 
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {
