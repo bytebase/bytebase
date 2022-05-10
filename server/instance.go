@@ -408,22 +408,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
-	dataSourceFind := &api.DataSourceFind{
-		InstanceID: &instanceID,
-	}
-	dataSourceRawList, err := s.store.FindDataSource(ctx, dataSourceFind)
-	if err != nil {
-		return "", err
-	}
-	for _, dataSourceRaw := range dataSourceRawList {
-		if dataSourceRaw.Type == api.Admin {
-			return dataSourceRaw.Password, nil
-		}
-	}
-	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
-}
-
 // instanceCountGuard is a feature guard for instance count.
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
