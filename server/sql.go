@@ -36,7 +36,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		// we do not transfer the password back to client, thus the client will pass the instanceID to let server
 		// retrieve the password.
 		if password == "" && !connectionInfo.UseEmptyPassword && connectionInfo.InstanceID != nil {
-			adminPassword, err := s.findInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
+			adminPassword, err := s.store.GetInstanceAdminPasswordByID(ctx, *connectionInfo.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve admin password for instance: %d", connectionInfo.InstanceID)).SetInternal(err)
 			}
