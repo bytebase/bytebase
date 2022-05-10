@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -243,49 +242,6 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 	})
 }
 
-// TODO(dragonly): refactor validate only code path
-func (s *Server) composeIssueRelationshipValidateOnly(ctx context.Context, issue *api.Issue) error {
-	var err error
-
-	issue.Creator, err = s.store.GetPrincipalByID(ctx, issue.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	issue.Updater, err = s.store.GetPrincipalByID(ctx, issue.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	issue.Assignee, err = s.store.GetPrincipalByID(ctx, issue.AssigneeID)
-	if err != nil {
-		return err
-	}
-
-	issueSubscriberFind := &api.IssueSubscriberFind{
-		IssueID: &issue.ID,
-	}
-	issueSubscriberList, err := s.store.FindIssueSubscriber(ctx, issueSubscriberFind)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch subscriber list for issue %d", issue.ID)).SetInternal(err)
-	}
-	for _, issueSub := range issueSubscriberList {
-		issue.SubscriberList = append(issue.SubscriberList, issueSub.Subscriber)
-	}
-
-	project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-	if err != nil {
-		return err
-	}
-	issue.Project = project
-
-	if err := s.composePipelineRelationshipValidateOnly(ctx, issue.Pipeline); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Only allow Bot/Owner/DBA as the assignee, not Developer.
 func (s *Server) validateAssigneeRoleByID(ctx context.Context, assigneeID int) error {
 	assignee, err := s.store.GetPrincipalByID(ctx, assigneeID)
@@ -321,48 +277,30 @@ func (s *Server) createIssue(ctx context.Context, issueCreate *api.IssueCreate, 
 		return nil, err
 	}
 
-	var issue *api.Issue
 	if issueCreate.ValidateOnly {
-		issue = &api.Issue{
-			CreatorID:   creatorID,
-			CreatedTs:   time.Now().Unix(),
-			UpdaterID:   creatorID,
-			UpdatedTs:   time.Now().Unix(),
-			ProjectID:   issueCreate.ProjectID,
-			Name:        issueCreate.Name,
-			Status:      api.IssueOpen,
-			Type:        issueCreate.Type,
-			Description: issueCreate.Description,
-			AssigneeID:  issueCreate.AssigneeID,
-			PipelineID:  pipeline.ID,
-			Pipeline:    pipeline,
-		}
-		if err := s.composeIssueRelationshipValidateOnly(ctx, issue); err != nil {
-			return nil, err
-		}
-	} else {
-		issueCreate.CreatorID = creatorID
-		issueCreate.PipelineID = pipeline.ID
-		issue, err = s.store.CreateIssue(ctx, issueCreate)
+		issue, err := s.store.CreateIssueValidateOnly(ctx, pipeline, issueCreate, creatorID)
 		if err != nil {
 			return nil, err
 		}
-		// Create issue subscribers.
-		for _, subscriberID := range issueCreate.SubscriberIDList {
-			subscriberCreate := &api.IssueSubscriberCreate{
-				IssueID:      issue.ID,
-				SubscriberID: subscriberID,
-			}
-			_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
-			}
-		}
+		return issue, nil
 	}
 
-	// Return early if this is a validate only request.
-	if issueCreate.ValidateOnly {
-		return issue, nil
+	issueCreate.CreatorID = creatorID
+	issueCreate.PipelineID = pipeline.ID
+	issue, err := s.store.CreateIssue(ctx, issueCreate)
+	if err != nil {
+		return nil, err
+	}
+	// Create issue subscribers.
+	for _, subscriberID := range issueCreate.SubscriberIDList {
+		subscriberCreate := &api.IssueSubscriberCreate{
+			IssueID:      issue.ID,
+			SubscriberID: subscriberID,
+		}
+		_, err := s.store.CreateIssueSubscriber(ctx, subscriberCreate)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to add subscriber %d after creating issue %d", subscriberID, issue.ID)).SetInternal(err)
+		}
 	}
 
 	if _, err := s.ScheduleNextTaskIfNeeded(ctx, issue.Pipeline); err != nil {

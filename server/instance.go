@@ -90,10 +90,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -117,6 +117,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
 		}
+
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get instance ID: %v", id)).SetInternal(err)
@@ -124,6 +125,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if instance == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
+
 		host, port := instance.Host, instance.Port
 		if instancePatch.Host != nil {
 			host = *instancePatch.Host
@@ -203,10 +205,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
 		resultSet := &api.SQLResultSet{}
@@ -236,10 +238,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
 		instanceMigration := &api.InstanceMigration{}
@@ -281,10 +283,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
@@ -339,10 +341,10 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instance, err := s.store.GetInstanceByID(ctx, id)
 		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
-			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", id)).SetInternal(err)
+		}
+		if instance == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", id))
 		}
 
 		find := &db.MigrationHistoryFind{}
@@ -404,22 +406,6 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 		return nil
 	})
-}
-
-func (s *Server) findInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
-	dataSourceFind := &api.DataSourceFind{
-		InstanceID: &instanceID,
-	}
-	dataSourceRawList, err := s.store.FindDataSource(ctx, dataSourceFind)
-	if err != nil {
-		return "", err
-	}
-	for _, dataSourceRaw := range dataSourceRawList {
-		if dataSourceRaw.Type == api.Admin {
-			return dataSourceRaw.Password, nil
-		}
-	}
-	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
 }
 
 // instanceCountGuard is a feature guard for instance count.

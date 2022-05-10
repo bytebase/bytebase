@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center space-x-4">
+  <div class="flex items-start space-x-4">
     <button
       v-if="showRunCheckButton"
       type="button"
