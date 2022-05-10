@@ -72,11 +72,11 @@
           >
             <div
               class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': locale === 'en' }"
-              @click.prevent="toggleLocale('en')"
+              :class="{ 'bg-gray-100': locale === 'en-US' }"
+              @click.prevent="toggleLocale('en-US')"
             >
               <div class="radio text-sm">
-                <input type="radio" class="btn" :checked="locale === 'en'" />
+                <input type="radio" class="btn" :checked="locale === 'en-US'" />
                 <label class="ml-2">English</label>
               </div>
             </div>
