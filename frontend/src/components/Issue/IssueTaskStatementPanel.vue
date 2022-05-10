@@ -30,7 +30,7 @@
             type="checkbox"
             class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
           />
-          <span class="textlabel">Format on save</span>
+          <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
       </template>
       <template v-else>
@@ -52,7 +52,7 @@
               type="checkbox"
               class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
             />
-            <span class="textlabel">Format on save</span>
+            <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
           </label>
           <button
             v-if="state.editing"
