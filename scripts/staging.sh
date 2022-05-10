@@ -8,9 +8,9 @@
 # ./staging.sh https://example.com
 # ./staging.sh https://example.com:8080
 
-# If no parameter is passed, use https://staging.bytebase.com as host and 80 as port by default
+# If no parameter is passed, use https://staging.bytebase.com as host and 443 as port by default
 ONLINE_DEMO_HOST='https://staging.bytebase.com'
-ONLINE_DEMO_PORT='80'
+ONLINE_DEMO_PORT='443'
 if [ $1 ]; then
     PROTOCAL=`echo $1 | awk -F ':' '{ print $1 }'`
     URI=`echo $1 | awk -F '[/:]' '{ print $4; }'`
