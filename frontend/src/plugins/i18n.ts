@@ -5,7 +5,13 @@ import { useLocalStorage } from "@vueuse/core";
 const localPathPrefix = "../locales/";
 
 const storage = useLocalStorage("bytebase_options", {}) as any;
-const locale = storage.value?.appearance?.language || navigator.language;
+
+let locale = storage.value?.appearance?.language || navigator.language;
+if (locale === "en") {
+  // To support user stored legacy preferences, we switch to en-US
+  // here if we got "en" from localStorage
+  locale = "en-US";
+}
 
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
@@ -23,6 +29,7 @@ const i18n = createI18n({
   locale,
   globalInjection: true,
   messages,
+  fallbackLocale: "en-US",
 });
 
 export const t = i18n.global.t;
