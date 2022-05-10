@@ -83,6 +83,31 @@ func (s *Store) FindStage(ctx context.Context, find *api.StageFind) ([]*api.Stag
 // private functions
 //
 
+func (s *Store) composeStageValidateOnly(ctx context.Context, stage *api.Stage) error {
+	creator, err := s.GetPrincipalByID(ctx, stage.CreatorID)
+	if err != nil {
+		return err
+	}
+	stage.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, stage.UpdaterID)
+	if err != nil {
+		return err
+	}
+	stage.Updater = updater
+
+	env, err := s.GetEnvironmentByID(ctx, stage.EnvironmentID)
+	if err != nil {
+		return err
+	}
+	stage.Environment = env
+
+	// Note: stage.TaskList is already composed in CreatePipelineValidateOnly(). Do not need to compose here.
+
+	return nil
+}
+
+// Note: MUST keep in sync with composeStageValidateOnly
 func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, error) {
 	stage := raw.toStage()
 

@@ -224,22 +224,23 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 //
 
 func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) error {
-	var err error
-
-	issue.Creator, err = s.GetPrincipalByID(ctx, issue.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
+	issue.Creator = creator
 
-	issue.Updater, err = s.GetPrincipalByID(ctx, issue.UpdaterID)
+	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
+	issue.Updater = updater
 
-	issue.Assignee, err = s.GetPrincipalByID(ctx, issue.AssigneeID)
+	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}
+	issue.Assignee = assignee
 
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
@@ -266,50 +267,7 @@ func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) 
 	return nil
 }
 
-func (s *Store) composePipelineValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
-	var err error
-
-	pipeline.Creator, err = s.GetPrincipalByID(ctx, pipeline.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	pipeline.Updater, err = s.GetPrincipalByID(ctx, pipeline.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	for _, stage := range pipeline.StageList {
-		if err := s.composeStageValidateOnly(ctx, stage); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *Store) composeStageValidateOnly(ctx context.Context, stage *api.Stage) error {
-	var err error
-	stage.Creator, err = s.GetPrincipalByID(ctx, stage.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	stage.Updater, err = s.GetPrincipalByID(ctx, stage.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	stage.Environment, err = s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-	if err != nil {
-		return err
-	}
-
-	// Note: stage.TaskList is already composed in CreatePipelineValidateOnly(). Do not need to compose here.
-
-	return nil
-}
-
+// Note: MUST keep in sync with composeIssueValidateOnly
 func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, error) {
 	issue := raw.toIssue()
 
