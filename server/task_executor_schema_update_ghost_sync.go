@@ -100,9 +100,9 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
-	//TODO: change file name according to design doc.
+	// TODO(p0ny): change file name according to design doc.
 	migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
-	//TODO: set OkToDropTable to false and drop table in dropOriginalTable Task.
+	// TODO(p0ny): set OkToDropTable to false and drop table in dropOriginalTable Task.
 	migrationContext.OkToDropTable = true
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
