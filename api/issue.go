@@ -173,7 +173,7 @@ type UpdateSchemaGhostDetail struct {
 type UpdateSchemaGhostContext struct {
 	// UpdateSchemaDetail is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	UpdateSchemaDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaDetailList"`
+	UpdateSchemaGhostDetailList []*UpdateSchemaGhostDetail `json:"updateSchemaGhostDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
 }

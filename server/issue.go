@@ -727,7 +727,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, err
 		}
 		if !s.feature(api.FeatureTaskScheduleTime) {
-			for _, detail := range m.UpdateSchemaDetailList {
+			for _, detail := range m.UpdateSchemaGhostDetailList {
 				if detail.EarliestAllowedTs != 0 {
 					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 				}
@@ -743,7 +743,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		if project.TenantMode == api.TenantModeTenant {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
 		}
-		for _, d := range m.UpdateSchemaDetailList {
+		for _, d := range m.UpdateSchemaGhostDetailList {
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
 			}

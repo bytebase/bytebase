@@ -34,7 +34,7 @@ type SchemaUpdateGhostSyncTaskExecutor struct {
 
 type ghostConfig struct {
 	host           string
-	port           int
+	port           string
 	user           string
 	password       string
 	database       string
@@ -60,7 +60,15 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	)
 	migrationContext := base.NewMigrationContext()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
-	migrationContext.InspectorConnectionConfig.Key.Port = config.port
+	port := 3306
+	if config.port != "" {
+		configPort, err := strconv.Atoi(config.port)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert port from string to int, error: %w", err)
+		}
+		port = configPort
+	}
+	migrationContext.InspectorConnectionConfig.Key.Port = port
 	migrationContext.CliUser = config.user
 	migrationContext.CliPassword = config.password
 	migrationContext.DatabaseName = config.database
@@ -81,18 +89,16 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
 
 	if migrationContext.DatabaseName == "" {
-		if parser.HasExplicitSchema() {
-			migrationContext.DatabaseName = parser.GetExplicitSchema()
-		} else {
+		if !parser.HasExplicitSchema() {
 			return nil, fmt.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
 		}
+		migrationContext.DatabaseName = parser.GetExplicitSchema()
 	}
 	if migrationContext.OriginalTableName == "" {
-		if parser.HasExplicitTable() {
-			migrationContext.OriginalTableName = parser.GetExplicitTable()
-		} else {
+		if !parser.HasExplicitTable() {
 			return nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
+		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
 	//TODO: change file name according to design doc.
 	migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
@@ -202,18 +208,9 @@ func executeGhost(instance *api.Instance, databaseName string, statement string)
 		return common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
 	}
 
-	port := 3306
-	if instance.Port != "" {
-		instancePort, err := strconv.Atoi(instance.Port)
-		if err != nil {
-			return fmt.Errorf("failed to convert port from string to int, error: %w", err)
-		}
-		port = instancePort
-	}
-
 	migrationContext, err := newMigrationContext(ghostConfig{
 		host:           instance.Host,
-		port:           port,
+		port:           instance.Port,
 		user:           adminDataSource.Username,
 		password:       adminDataSource.Password,
 		database:       databaseName,
