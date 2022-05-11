@@ -665,7 +665,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 			return nil, err
 		}
 		if !s.feature(api.FeatureTaskScheduleTime) {
-			for _, detail := range c.UpdateSchemaDetailList {
+			for _, detail := range c.DetailList {
 				if detail.EarliestAllowedTs != 0 {
 					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 				}
@@ -681,7 +681,7 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 		if project.TenantMode == api.TenantModeTenant {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
 		}
-		for _, d := range c.UpdateSchemaDetailList {
+		for _, d := range c.DetailList {
 			if d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
 			}
@@ -819,7 +819,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-func getUpdateGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func getUpdateGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	{
 		payload := api.TaskDatabaseSchemaUpdateGhostSyncPayload{}

@@ -138,7 +138,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// Phase 1 - Precheck before executing migration
 	// Phase 2 - Record migration history as PENDING
-	insertedID, err := beginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
+	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
 		return -1, "", err
 	}
@@ -146,7 +146,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+		if err := EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
 			l.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
@@ -179,8 +179,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-// beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
+// BeginMigration checks before executing migration and inserts a migration history record with pending status.
+func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
 	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -246,8 +246,8 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	return insertedID, nil
 }
 
-// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+// EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
 	sqldb, err := executor.GetDbConnection(ctx, databaseName)
