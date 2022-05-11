@@ -215,5 +215,5 @@ func TestColumnRequirement(t *testing.T) {
 		Type:    api.SchemaRuleRequiredColumn,
 		Level:   api.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }
