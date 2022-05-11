@@ -40,38 +40,13 @@
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
       <template v-if="isTenantDeployMode">
-        <PipelineTenantFlow
-          v-if="project"
-          :create="create"
-          :project="project"
-          :pipeline="(issue as Issue).pipeline"
-          :selected-stage="selectedStage"
-          :selected-task="selectedTask"
-          class="border-t border-b"
-          @select-stage-id="selectStageId"
-          @select-task="selectTask"
-        />
+        <PipelineTenantFlow v-if="project" class="border-t border-b" />
       </template>
       <template v-else-if="isGhostMode">
-        <PipelineGhostFlow
-          v-if="project"
-          :create="create"
-          :project="project"
-          :pipeline="issue.pipeline!"
-          :selected-stage="selectedStage"
-          :selected-task="selectedTask"
-          class="border-t border-b"
-          @select-stage="selectStageId"
-          @select-task="selectTask"
-        />
+        <PipelineGhostFlow v-if="project" class="border-t border-b" />
       </template>
       <template v-else>
-        <PipelineSimpleFlow
-          :create="create"
-          :pipeline="(issue as Issue).pipeline"
-          :selected-stage="selectedStage"
-          @select-stage-id="selectStageId"
-        />
+        <PipelineSimpleFlow class="border-t border-b" />
       </template>
 
       <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
@@ -129,7 +104,7 @@
               @add-subscriber-id="addSubscriberId"
               @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
-              @select-stage-id="selectStageId"
+              @select-stage-id="selectStageOrTask"
               @select-task-id="selectTaskId"
             />
           </div>
@@ -230,7 +205,7 @@
 
 import { computed, nextTick, onMounted, PropType, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import {
   idFromSlug,
   issueSlug,
@@ -241,6 +216,8 @@ import {
   stageSlug,
   taskSlug,
   isDev,
+  activeTaskInStage,
+  activeTask,
 } from "@/utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -303,6 +280,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import formatSQL from "../MonacoEditor/sqlFormatter";
+import { provideIssueContext } from "./context";
 
 const props = defineProps({
   create: {
@@ -602,7 +580,7 @@ const changeTaskStatus = (
   comment: string
 ) => {
   // Switch to the stage view containing this task
-  selectStageId(task.stage.id);
+  selectStageOrTask(task.stage.id);
   nextTick().then(() => {
     selectTaskId(task.id);
   });
@@ -719,14 +697,14 @@ const selectedStage = computed((): Stage | StageCreate => {
   return activeStage((props.issue as Issue).pipeline);
 });
 
-const selectStageId = (
+const selectStageOrTask = (
   stageId: StageId,
-  task: string | undefined = undefined
+  taskSlug: string | undefined = undefined
 ) => {
   const stageList = props.issue.pipeline!.stageList;
   const index = stageList.findIndex((item, index) => {
     if (props.create) {
-      return index == stageId;
+      return index === stageId;
     }
     return (item as Stage).id == stageId;
   });
@@ -735,13 +713,9 @@ const selectStageId = (
     query: {
       ...router.currentRoute.value.query,
       stage: stageSlug(stageList[index].name, index),
-      task,
+      task: taskSlug,
     },
   });
-};
-
-const selectTask = (stageId: StageId, taskSlug: string) => {
-  selectStageId(stageId, taskSlug);
 };
 
 const selectTaskId = (taskId: TaskId) => {
@@ -750,7 +724,7 @@ const selectTaskId = (taskId: TaskId) => {
   if (!task) return;
   const slug = taskSlug(task.name, task.id);
   const stage = selectedStage.value as Stage;
-  selectTask(stage.id, slug);
+  selectStageOrTask(stage.id, slug);
 };
 
 const selectedTask = computed((): Task | TaskCreate => {
@@ -1031,4 +1005,49 @@ const supportBackwardCompatibilityFeature = computed((): boolean => {
   const engine = database.value?.instance.engine;
   return engine === "MYSQL" || engine === "TIDB";
 });
+
+const taskStatusOfStage = (stage: Stage | StageCreate) => {
+  if (props.create) {
+    return stage.taskList[0].status;
+  }
+  const activeTask = activeTaskInStage(stage as Stage);
+  return activeTask.status;
+};
+
+const isValidStage = (stage: Stage | StageCreate) => {
+  if (!props.create) {
+    return true;
+  }
+
+  for (const task of stage.taskList) {
+    if (
+      task.type === "bb.task.database.create" ||
+      task.type === "bb.task.database.schema.update" ||
+      task.type === "bb.task.database.data.update" ||
+      task.type === "bb.task.database.schema.update.ghost.sync"
+    ) {
+      if (isEmpty((task as TaskCreate).statement)) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+provideIssueContext(
+  {
+    create: computed(() => props.create),
+    issue: computed(() => props.issue),
+    project: project,
+    selectedStage,
+    selectedTask,
+    isValidStage,
+    taskStatusOfStage,
+    activeStageOfPipeline: activeStage,
+    activeTaskOfPipeline: activeTask,
+    activeTaskOfStage: activeTaskInStage,
+    selectStageOrTask: selectStageOrTask,
+  },
+  true // root context
+);
 </script>
