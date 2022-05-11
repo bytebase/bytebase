@@ -456,7 +456,6 @@ const patchTask = (
     .then((updatedTask) => {
       // For now, the only task/patchTask is to change statement, which will trigger async task check.
       // Thus we use the short poll interval
-      // pollIssue(POST_CHANGE_POLL_INTERVAL);
       emit("status-changed", true);
       if (postUpdated) {
         postUpdated(updatedTask);
@@ -719,7 +718,6 @@ watch(
 
 provideIssueLogic(
   {
-    emit,
     create,
     issue,
     project: project,
@@ -734,6 +732,8 @@ provideIssueLogic(
     activeTaskOfPipeline: activeTask,
     activeTaskOfStage: activeTaskInStage,
     selectStageOrTask: selectStageOrTask,
+    patchTask,
+    patchIssue,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

@@ -5,7 +5,6 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useIssueStore,
-  useTaskStore,
   useUIStateStore,
 } from "@/store";
 import {
@@ -20,8 +19,6 @@ import {
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdatePayload,
   TaskGeneralPayload,
-  TaskId,
-  TaskPatch,
   TaskType,
   UpdateSchemaDetail,
 } from "@/types";
@@ -30,7 +27,7 @@ import { isDev, issueSlug } from "@/utils";
 import { router } from "@/router";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, emit } = useIssueLogic();
+  const { create, issue, selectedTask, patchTask } = useIssueLogic();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
 
@@ -74,30 +71,6 @@ export const useCommonLogic = () => {
 
     return statementOfTask(task as Task);
   });
-
-  const patchTask = (
-    taskId: TaskId,
-    taskPatch: TaskPatch,
-    postUpdated?: (updatedTask: Task) => void
-  ) => {
-    const issueEntity = issue.value as Issue;
-    useTaskStore()
-      .patchTask({
-        issueId: issueEntity.id,
-        pipelineId: issueEntity.pipeline.id,
-        taskId,
-        taskPatch,
-      })
-      .then((updatedTask) => {
-        // For now, the only task/patchTask is to change statement, which will trigger async task check.
-        // Thus we use the short poll interval
-        // pollIssue(POST_CHANGE_POLL_INTERVAL);
-        emit("status-changed", true);
-        if (postUpdated) {
-          postUpdated(updatedTask);
-        }
-      });
-  };
 
   const updateStatement = (
     newStatement: string,

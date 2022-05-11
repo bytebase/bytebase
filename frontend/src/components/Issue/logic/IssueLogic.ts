@@ -2,6 +2,7 @@ import { IssueTemplate } from "@/plugins";
 import {
   Issue,
   IssueCreate,
+  IssuePatch,
   Pipeline,
   Project,
   Stage,
@@ -34,12 +35,18 @@ type IssueLogic = {
   activeTaskOfStage: (stage: Stage) => Task;
   taskStatusOfStage: (stage: Stage | StageCreate, index: number) => TaskStatus;
 
-  // edit logic
+  // api endpoint
   patchTask: (
     taskId: TaskId,
     taskPatch: TaskPatch,
     postUpdated?: (updatedTask: Task) => void
   ) => any;
+  patchIssue: (
+    issuePatch: IssuePatch,
+    postUpdated?: (updatedIssue: Issue) => void
+  ) => any;
+
+  // edit logic
   allowEditStatement: Ref<boolean>;
   selectedStatement: Ref<string>;
   updateStatement: (
@@ -49,23 +56,8 @@ type IssueLogic = {
   allowApplyStatementToOtherStages: Ref<boolean>;
   applyStatementToOtherStages: (statement: string) => any;
   doCreate(): any;
-  // updateName: (
-  //   newName: string,
-  //   postUpdated: (updatedIssue: Issue) => void
-  // ) => any;
-  // updateDescription: (
-  //   newDescription: string,
-  //   postUpdated: (updatedIssue: Issue) => void
-  // ) => any;
-  // updateAssigneeId: (newAssigneeId: PrincipalId) => any;
-  // updateEarliestAllowedTime: (newEarliestAllowedTsMs: number) => any;
-  // addSubscriberId: (subscriberId: PrincipalId) => any;
-  // removeSubscriberId: (subscriberId: PrincipalId) => any;
 
   // events
-  emit: {
-    (event: "status-changed", eager: boolean): void;
-  };
   selectStageOrTask: (
     stageIdOrIndex: number,
     taskSlug?: string | undefined
