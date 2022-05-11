@@ -389,8 +389,8 @@ type ConnectionContext struct {
 
 // MySQLBinlogConfig is the binlog coordination for MySQL.
 type MySQLBinlogConfig struct {
-	Filename string `json:"filename"`
-	Position int64  `json:"position"`
+	Filename string
+	Position int64
 }
 
 // RecoveryConfig defines a range in the incremental backup.

@@ -952,15 +952,15 @@ func (driver *Driver) RestoreIncremental(ctx context.Context, config db.Recovery
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
 func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.RecoveryConfig, database string, timestamp int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
-	if _, err := driver.db.Exec(fmt.Sprintf("CREATE DATABASE %s", pitrDatabaseName)); err != nil {
+	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrDatabaseName)); err != nil {
 		return err
 	}
 
-	if _, err := driver.db.Exec(fmt.Sprintf("USE %s", pitrDatabaseName)); err != nil {
+	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("USE `%s`", pitrDatabaseName)); err != nil {
 		return err
 	}
 
-	if _, err := driver.db.Exec("SET foreign_key_checks=OFF"); err != nil {
+	if _, err := driver.db.ExecContext(ctx, "SET foreign_key_checks=OFF"); err != nil {
 		return err
 	}
 
@@ -971,11 +971,11 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 	// TODO(dragonly): implement RestoreIncremental in mysql driver
 	_ = driver.RestoreIncremental(ctx, config)
 
-	if _, err := driver.db.Exec("SET foreign_key_checks=ON"); err != nil {
+	if _, err := driver.db.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
 		return err
 	}
 
-	if _, err := driver.db.Exec(fmt.Sprintf("USE %s", database)); err != nil {
+	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
 		return err
 	}
 
@@ -993,7 +993,7 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, tim
 	pitrOldDatabase := getPITRDatabaseOldName(database)
 	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", pitrOldDatabase)); err != nil {
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return err
 	}
 
@@ -1006,21 +1006,17 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, tim
 		return fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
 	}
 
-	var buf strings.Builder
-	buf.WriteString("RENAME TABLE")
+	var tableRenames []string
 	for _, table := range tables {
-		buf.WriteString(fmt.Sprintf(" `%s`.`%s` TO `%s`.`%s`,", database, table.name, pitrOldDatabase, table.name))
+		tableRenames = append(tableRenames, fmt.Sprintf("`%s`.`%s` TO `%s`.`%s`", database, table.name, pitrOldDatabase, table.name))
 	}
-	for i, table := range tablesPITR {
-		buf.WriteString(fmt.Sprintf(" `%s`.`%s` TO `%s`.`%s`", pitrDatabaseName, table.name, database, table.name))
-		if i != len(tablesPITR)-1 {
-			buf.WriteString(",")
-		}
+	for _, table := range tablesPITR {
+		tableRenames = append(tableRenames, fmt.Sprintf("`%s`.`%s` TO `%s`.`%s`", pitrDatabaseName, table.name, database, table.name))
 	}
-	queryRenameTables := buf.String()
-	driver.l.Debug("mysql swap database", zap.String("query", queryRenameTables))
+	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
+	driver.l.Debug("mysql swap database", zap.String("query", renameStmt))
 
-	if _, err := txn.ExecContext(ctx, queryRenameTables); err != nil {
+	if _, err := txn.ExecContext(ctx, renameStmt); err != nil {
 		return err
 	}
 
@@ -1033,17 +1029,17 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, tim
 
 // getPITRDatabaseName composes a pitr database name
 func getPITRDatabaseName(database string, timestamp int64) string {
-	suffix := fmt.Sprintf("_pitr_%d", timestamp)
-	return getSafeTableName(database, suffix)
+	suffix := fmt.Sprintf("pitr_%d", timestamp)
+	return getSafeName(database, suffix)
 }
 
 // getPITRDatabaseOldName composes a pitr database name for
 func getPITRDatabaseOldName(database string) string {
-	suffix := "_old"
-	return getSafeTableName(database, suffix)
+	suffix := "old"
+	return getSafeName(database, suffix)
 }
 
-func getSafeTableName(baseName, suffix string) string {
+func getSafeName(baseName, suffix string) string {
 	name := fmt.Sprintf("%s_%s", baseName, suffix)
 	if len(name) <= maxDatabaseNameLength {
 		return name

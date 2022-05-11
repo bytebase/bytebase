@@ -182,37 +182,6 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 	}
 
-	validateTbl0 := func(db *sql.DB) {
-		rows, err := db.Query("SELECT * FROM tbl0")
-		a.NoError(err)
-		i := 0
-		for rows.Next() {
-			var col int
-			a.NoError(rows.Scan(&col))
-			a.Equal(i, col)
-			i++
-		}
-		a.NoError(rows.Err())
-		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
-		a.Equal(numRowsTime0, i)
-	}
-
-	validateTbl1 := func(db *sql.DB) {
-		rows, err := db.Query("SELECT * FROM tbl1")
-		a.NoError(err)
-		i := 0
-		for rows.Next() {
-			var col1, col2 int
-			a.NoError(rows.Scan(&col1, &col2))
-			a.Equal(i, col1)
-			a.Equal(i, col2)
-			i++
-		}
-		a.NoError(rows.Err())
-		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
-		a.Equal(numRowsTime0, i)
-	}
-
 	// test cases
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Parallel()
@@ -251,18 +220,50 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
 		err = driver.SwapPITRDatabase(ctx, database, timestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		validateTbl0(db)
+		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
 		t.Log("validate table tbl1")
-		validateTbl1(db)
+		validateTbl1(t, db, numRowsTime0)
 		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
 		t.Log("validate table _update_row_")
 	})
+}
+func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
+	a := require.New(t)
+	rows, err := db.Query("SELECT * FROM tbl0")
+	a.NoError(err)
+	i := 0
+	for rows.Next() {
+		var col int
+		a.NoError(rows.Scan(&col))
+		a.Equal(i, col)
+		i++
+	}
+	a.NoError(rows.Err())
+	a.Equal(numRows, i)
+}
+func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
+	a := require.New(t)
+	rows, err := db.Query("SELECT * FROM tbl1")
+	a.NoError(err)
+	i := 0
+	for rows.Next() {
+		var col1, col2 int
+		a.NoError(rows.Scan(&col1, &col2))
+		a.Equal(i, col1)
+		a.Equal(i, col2)
+		i++
+	}
+	a.NoError(rows.Err())
+	// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+	a.Equal(numRows, i)
 }
 
 func getMySQLDriver(ctx context.Context, t *testing.T, host, port, username, database string) dbPlugin.Driver {
