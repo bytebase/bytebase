@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/utils"
+	"github.com/stretchr/testify/require"
 )
 
 // TestBootMySQLBinlog tests whether mysqlbinlog can be started on the target platform
@@ -26,22 +27,20 @@ func TestBootMySQLBinlog(t *testing.T) {
 	}
 
 	tarF, err := resources.Open(tarName)
-	if err != nil {
-		t.Errorf("failed to open mysqlbinlog dist %q, error: %v", tarName, err)
-	}
+
+	require.NoError(t, err)
+
 	defer tarF.Close()
 
 	tmpDir := t.TempDir()
-	if err := utils.ExtractTarGz(tarF, tmpDir); err != nil {
-		t.Errorf("failed to extract mysqlbinlog distribution %q, error: %v", tarName, err)
-	}
+	err = utils.ExtractTarGz(tarF, tmpDir)
+	require.NoError(t, err)
 
 	mysqlbinlogBinPath := filepath.Join(tmpDir, version, "bin", "mysqlbinlog")
 	cmd := exec.Command(mysqlbinlogBinPath, "-V")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		t.Errorf("failed to boot mysqlbinlog, cmd: %s, err: %v", cmd.String(), err)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 }
