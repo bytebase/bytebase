@@ -1,6 +1,8 @@
 package mysql
 
-import "sort"
+import (
+	"sort"
+)
 
 type columnSet map[string]bool
 type tableState map[string]columnSet
