@@ -23,6 +23,9 @@ const (
 	Warn Status = "WARN"
 	// Error is the advisor status for errors.
 	Error Status = "ERROR"
+
+	// SyntaxErrorTitle is the error title for syntax error.
+	SyntaxErrorTitle string = "Syntax error"
 )
 
 func (e Status) String() string {
