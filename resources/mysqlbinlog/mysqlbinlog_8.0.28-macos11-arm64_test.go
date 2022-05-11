@@ -1,29 +1,29 @@
-//go:build linux && amd64
-// +build linux,amd64
+//go:build darwin && arm64
+// +build darwin,arm64
 
 package mysqlbinlog
 
 import (
 	"embed"
-	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/utils"
 )
 
-//go:embed mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64.tar.gz
+//go:embed mysqlbinlog-8.0.28-macos11-arm64.tar.gz
 var resources embed.FS
 
 // TestBootMySQLBinlog tests whether mysqlbinlog can be started on the target platform
 // to check whether the lib extraction is correct.
 func TestBootMySQLBinlog(t *testing.T) {
-	tarName := "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64.tar.gz"
-	version := "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64"
+	tarName := "mysqlbinlog-8.0.28-macos11-arm64.tar.gz"
+	version := "mysqlbinlog-8.0.28-macos11-arm64"
 	tarF, err := resources.Open(tarName)
 	if err != nil {
-		t.Errorf("failed to open mysqlbinlog dist %q, error: %w", tarName, err)
+		t.Errorf("failed to open mysqlbinlog dist %q, error: %v", tarName, err)
 	}
 	defer tarF.Close()
 
@@ -32,12 +32,12 @@ func TestBootMySQLBinlog(t *testing.T) {
 		t.Errorf("failed to extract mysqlbinlog distribution %q, error: %v", tarName, err)
 	}
 
-	mysqlbinlogBinPath := filePath.Join(tmpDir, version, "bin", "mysqlbinlog")
+	mysqlbinlogBinPath := filepath.Join(tmpDir, version, "bin", "mysqlbinlog")
 	cmd := exec.Command(mysqlbinlogBinPath, "-V")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		t.Errorf("failed to boot mysqlbinlog, cmd: %s, err: %w", cmd.String(), err)
+		t.Errorf("failed to boot mysqlbinlog, cmd: %s, err: %v", cmd.String(), err)
 	}
 }
