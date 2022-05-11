@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBootMySQLBinlog tests whether mysqlbinlog can be started on the target platform
+// TestRunBinary tests whether mysqlbinlog can be started on the target platform
 // to check whether the lib extraction is correct.
-func TestBootMySQLBinlog(t *testing.T) {
+func TestRunBinary(t *testing.T) {
 	var tarName string
 	var version string
 
@@ -36,8 +36,8 @@ func TestBootMySQLBinlog(t *testing.T) {
 	err = utils.ExtractTarGz(tarF, tmpDir)
 	require.NoError(t, err)
 
-	mysqlbinlogBinPath := filepath.Join(tmpDir, version, "bin", "mysqlbinlog")
-	cmd := exec.Command(mysqlbinlogBinPath, "-V")
+	mysqlbinlogPath := filepath.Join(tmpDir, version, "bin", "mysqlbinlog")
+	cmd := exec.Command(mysqlbinlogPath, "-V")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
