@@ -1,6 +1,6 @@
 import { computed, ref, Ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { Issue, IssueCreate, IssueType } from "@/types";
+import { IssueCreate, IssueType } from "@/types";
 import { pushNotification, useIssueStore } from "@/store";
 import { idFromSlug } from "@/utils";
 import { defaultTemplate, templateForType } from "@/plugins";
@@ -13,7 +13,14 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   const issueStore = useIssueStore();
   const create = computed(() => issueSlug.value.toLowerCase() == "new");
   const route = useRoute();
-  const issue = ref<Issue | IssueCreate | undefined>();
+  const issueCreate = ref<IssueCreate | undefined>();
+
+  const issue = computed(() => {
+    return create.value
+      ? issueCreate.value
+      : issueStore.getIssueById(idFromSlug(issueSlug.value));
+  });
+
   const template = computed(() => {
     // Find proper IssueTemplate from route.query.template
     const issueType = route.query.template as IssueType;
@@ -38,11 +45,9 @@ export function useInitializeIssue(issueSlug: Ref<string>) {
   watch(
     issueSlug,
     async () => {
-      issue.value = undefined;
+      issueCreate.value = undefined;
       if (create.value) {
-        issue.value = await buildNewIssue({ template, route });
-      } else {
-        issue.value = issueStore.getIssueById(idFromSlug(issueSlug.value));
+        issueCreate.value = await buildNewIssue({ template, route });
       }
     },
     { immediate: true }

@@ -83,19 +83,19 @@
     <StatusTransitionForm
       :mode="updateStatusModalState.mode"
       :ok-text="updateStatusModalState.okText"
-      :issue="issue"
+      :issue="(issue as Issue)"
       :task="currentTask"
-      :transition="updateStatusModalState.transition"
+      :transition="updateStatusModalState.transition!"
       :output-field-list="issueTemplate.outputFieldList"
       @submit="
         (comment) => {
           updateStatusModalState.show = false;
           if (updateStatusModalState.mode == 'ISSUE') {
-            doIssueStatusTransition(updateStatusModalState.transition, comment);
+            doIssueStatusTransition(updateStatusModalState.transition as IssueStatusTransition, comment);
           } else if (updateStatusModalState.mode == 'TASK') {
             doTaskStatusTransition(
-              updateStatusModalState.transition,
-              updateStatusModalState.payload,
+              updateStatusModalState.transition as TaskStatusTransition,
+              updateStatusModalState.payload!,
               comment
             );
           }
@@ -110,35 +110,44 @@
   </BBModal>
 </template>
 
-<script lang="ts">
-import { PropType, computed, reactive, defineComponent, ref } from "vue";
-import StatusTransitionForm from "./StatusTransitionForm.vue";
-import {
-  activeTask,
-  allTaskList,
-  applicableTaskTransition,
-  isDBAOrOwner,
-  TaskStatusTransition,
-} from "../../utils";
-import {
-  ASSIGNEE_APPLICABLE_ACTION_LIST,
-  CREATOR_APPLICABLE_ACTION_LIST,
+<script lang="ts" setup>
+import { computed, reactive, ref } from "vue";
+import { isEmpty } from "lodash-es";
+import { useI18n } from "vue-i18n";
+import type { TaskStatusTransition } from "@/utils";
+import { allTaskList, applicableTaskTransition, isDBAOrOwner } from "@/utils";
+import type {
   Issue,
   IssueCreate,
   IssueStatusTransition,
   IssueStatusTransitionType,
+  Principal,
+  Task,
+  TaskCreate,
+} from "@/types";
+import {
+  ASSIGNEE_APPLICABLE_ACTION_LIST,
+  CREATOR_APPLICABLE_ACTION_LIST,
+  SYSTEM_BOT_ID,
+  UNKNOWN_ID,
   ISSUE_STATUS_TRANSITION_LIST,
   ONBOARDING_ISSUE_ID,
-  Principal,
-  SYSTEM_BOT_ID,
-  Task,
-  UNKNOWN_ID,
-} from "../../types";
-import { IssueTemplate } from "../../plugins";
-import isEmpty from "lodash-es/isEmpty";
-import { useI18n } from "vue-i18n";
-import { BBContextMenu } from "../../bbkit";
+} from "@/types";
+import { BBContextMenu } from "@/bbkit";
 import { useCurrentUser } from "@/store";
+import StatusTransitionForm from "./StatusTransitionForm.vue";
+import {
+  flattenTaskList,
+  IssueTypeWithStatement,
+  TaskTypeWithStatement,
+  useIssueContext,
+} from "./context";
+
+export type IssueContext = {
+  currentUser: Principal;
+  create: boolean;
+  issue: Issue | IssueCreate;
+};
 
 interface UpdateStatusModalState {
   mode: "ISSUE" | "TASK";
@@ -150,298 +159,239 @@ interface UpdateStatusModalState {
   payload?: Task;
 }
 
-export type IssueContext = {
-  currentUser: Principal;
-  create: boolean;
-  issue: Issue | IssueCreate;
-};
+const emit = defineEmits(["change-issue-status", "change-task-status"]);
 
-export default defineComponent({
-  name: "IssueStatusTransitionButtonGroup",
-  components: {
-    StatusTransitionForm,
-  },
-  props: {
-    create: {
-      required: true,
-      type: Boolean,
-    },
-    issue: {
-      required: true,
-      type: Object as PropType<Issue | IssueCreate>,
-    },
-    issueTemplate: {
-      required: true,
-      type: Object as PropType<IssueTemplate>,
-    },
-  },
-  emits: ["create", "change-issue-status", "change-task-status"],
+const { t } = useI18n();
+const menu = ref<InstanceType<typeof BBContextMenu>>();
 
-  setup(props, { emit }) {
-    const { t } = useI18n();
-    const menu = ref<InstanceType<typeof BBContextMenu>>();
+const {
+  create,
+  issue,
+  template: issueTemplate,
+  activeTaskOfPipeline,
+  doCreate,
+} = useIssueContext();
 
-    const updateStatusModalState = reactive<UpdateStatusModalState>({
-      mode: "ISSUE",
-      show: false,
-      style: "INFO",
-      okText: "OK",
-      title: "",
-    });
+const updateStatusModalState = reactive<UpdateStatusModalState>({
+  mode: "ISSUE",
+  show: false,
+  style: "INFO",
+  okText: "OK",
+  title: "",
+});
 
-    const currentUser = useCurrentUser();
+const currentUser = useCurrentUser();
 
-    const issueContext = computed((): IssueContext => {
-      return {
-        currentUser: currentUser.value,
-        create: props.create,
-        issue: props.issue,
-      };
-    });
+const issueContext = computed((): IssueContext => {
+  return {
+    currentUser: currentUser.value,
+    create: create.value,
+    issue: issue.value,
+  };
+});
 
-    const applicableTaskStatusTransitionList = computed(
-      (): TaskStatusTransition[] => {
-        if ((props.issue as Issue).id == ONBOARDING_ISSUE_ID) {
-          return [];
-        }
-        switch ((props.issue as Issue).status) {
-          case "DONE":
-          case "CANCELED":
-            return [];
-          case "OPEN": {
-            let list: TaskStatusTransition[] = [];
+const applicableTaskStatusTransitionList = computed(
+  (): TaskStatusTransition[] => {
+    const issueEntity = issue.value as Issue;
+    if (issueEntity.id == ONBOARDING_ISSUE_ID) {
+      return [];
+    }
+    switch (issueEntity.status) {
+      case "DONE":
+      case "CANCELED":
+        return [];
+      case "OPEN": {
+        let list: TaskStatusTransition[] = [];
 
-            // Allow assignee, or assignee is the system bot and current user is DBA or owner
-            if (
-              currentUser.value.id === (props.issue as Issue).assignee?.id ||
-              ((props.issue as Issue).assignee?.id == SYSTEM_BOT_ID &&
-                isDBAOrOwner(currentUser.value.role))
-            ) {
-              list = applicableTaskTransition((props.issue as Issue).pipeline);
-            }
-
-            return list;
-          }
-        }
-        return []; // Only to make eslint happy. Should never reach this line.
-      }
-    );
-
-    const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
-      updateStatusModalState.mode = "TASK";
-      updateStatusModalState.okText = t(transition.buttonName);
-      const task = currentTask.value;
-      switch (transition.type) {
-        case "RUN":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.run")} '${task.name}'?`;
-          break;
-        case "APPROVE":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.approve")} '${
-            task.name
-          }'?`;
-          break;
-        case "RETRY":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.retry")} '${task.name}'?`;
-          break;
-        case "CANCEL":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.cancel")} '${
-            task.name
-          }'?`;
-          break;
-        case "SKIP":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = `${t("common.skip")} '${task.name}'?`;
-          break;
-      }
-      updateStatusModalState.transition = transition;
-      updateStatusModalState.payload = task;
-      updateStatusModalState.show = true;
-    };
-
-    const doTaskStatusTransition = (
-      transition: TaskStatusTransition,
-      task: Task,
-      comment: string
-    ) => {
-      emit("change-task-status", task, transition.to, comment);
-    };
-
-    const applicableIssueStatusTransitionList = computed(
-      (): IssueStatusTransition[] => {
-        if ((props.issue as Issue).id == ONBOARDING_ISSUE_ID) {
-          return [];
-        }
-        const list: IssueStatusTransitionType[] = [];
         // Allow assignee, or assignee is the system bot and current user is DBA or owner
         if (
-          currentUser.value.id === (props.issue as Issue).assignee?.id ||
-          ((props.issue as Issue).assignee?.id == SYSTEM_BOT_ID &&
+          currentUser.value.id === issueEntity.assignee?.id ||
+          (issueEntity.assignee?.id == SYSTEM_BOT_ID &&
             isDBAOrOwner(currentUser.value.role))
         ) {
-          list.push(
-            ...ASSIGNEE_APPLICABLE_ACTION_LIST.get(
-              (props.issue as Issue).status
-            )!
-          );
-        }
-        if (currentUser.value.id === (props.issue as Issue).creator.id) {
-          CREATOR_APPLICABLE_ACTION_LIST.get(
-            (props.issue as Issue).status
-          )!.forEach((item) => {
-            if (list.indexOf(item) == -1) {
-              list.push(item);
-            }
-          });
+          list = applicableTaskTransition(issueEntity.pipeline);
         }
 
-        return list
-          .filter((item) => {
-            const pipeline = (props.issue as Issue).pipeline;
-            // Disallow any issue status transition if the active task is in RUNNING state.
-            if (currentTask.value.status == "RUNNING") {
-              return false;
-            }
-
-            const taskList = allTaskList(pipeline);
-            // Don't display the Resolve action if the last task is NOT in DONE status.
-            if (
-              item == "RESOLVE" &&
-              taskList.length > 0 &&
-              (currentTask.value.id != taskList[taskList.length - 1].id ||
-                currentTask.value.status != "DONE")
-            ) {
-              return false;
-            }
-
-            return true;
-          })
-          .map(
-            (type: IssueStatusTransitionType) =>
-              ISSUE_STATUS_TRANSITION_LIST.get(type)!
-          )
-          .reverse();
+        return list;
       }
-    );
+    }
+    return []; // Only to make eslint happy. Should never reach this line.
+  }
+);
 
-    const currentTask = computed(() => {
-      return activeTask((props.issue as Issue).pipeline);
-    });
+const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
+  updateStatusModalState.mode = "TASK";
+  updateStatusModalState.okText = t(transition.buttonName);
+  const task = currentTask.value;
+  switch (transition.type) {
+    case "RUN":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = `${t("common.run")} '${task.name}'?`;
+      break;
+    case "APPROVE":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = `${t("common.approve")} '${task.name}'?`;
+      break;
+    case "RETRY":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = `${t("common.retry")} '${task.name}'?`;
+      break;
+    case "CANCEL":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = `${t("common.cancel")} '${task.name}'?`;
+      break;
+    case "SKIP":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = `${t("common.skip")} '${task.name}'?`;
+      break;
+  }
+  updateStatusModalState.transition = transition;
+  updateStatusModalState.payload = task;
+  updateStatusModalState.show = true;
+};
 
-    const allowIssueStatusTransition = (
-      transition: IssueStatusTransition
-    ): boolean => {
-      if (transition.type == "RESOLVE") {
-        // Returns false if any of the required output fields is not provided.
-        for (let i = 0; i < props.issueTemplate.outputFieldList.length; i++) {
-          const field = props.issueTemplate.outputFieldList[i];
-          if (!field.resolved(issueContext.value)) {
-            return false;
+const doTaskStatusTransition = (
+  transition: TaskStatusTransition,
+  task: Task,
+  comment: string
+) => {
+  emit("change-task-status", task, transition.to, comment);
+};
+
+const applicableIssueStatusTransitionList = computed(
+  (): IssueStatusTransition[] => {
+    const issueEntity = issue.value as Issue;
+    if (issueEntity.id == ONBOARDING_ISSUE_ID) {
+      return [];
+    }
+    const list: IssueStatusTransitionType[] = [];
+    // Allow assignee, or assignee is the system bot and current user is DBA or owner
+    if (
+      currentUser.value.id === issueEntity.assignee?.id ||
+      (issueEntity.assignee?.id == SYSTEM_BOT_ID &&
+        isDBAOrOwner(currentUser.value.role))
+    ) {
+      list.push(...ASSIGNEE_APPLICABLE_ACTION_LIST.get(issueEntity.status)!);
+    }
+    if (currentUser.value.id === issueEntity.creator.id) {
+      CREATOR_APPLICABLE_ACTION_LIST.get(issueEntity.status)!.forEach(
+        (item) => {
+          if (list.indexOf(item) == -1) {
+            list.push(item);
           }
         }
-        return true;
-      }
-      return true;
-    };
+      );
+    }
 
-    const tryStartIssueStatusTransition = (
-      transition: IssueStatusTransition
-    ) => {
-      updateStatusModalState.mode = "ISSUE";
-      updateStatusModalState.okText = t(transition.buttonName);
-      switch (transition.type) {
-        case "RESOLVE":
-          updateStatusModalState.style = "SUCCESS";
-          updateStatusModalState.title = t(
-            "issue.status-transition.modal.resolve"
-          );
-          break;
-        case "CANCEL":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = t(
-            "issue.status-transition.modal.cancel"
-          );
-          break;
-        case "REOPEN":
-          updateStatusModalState.style = "INFO";
-          updateStatusModalState.title = t(
-            "issue.status-transition.modal.reopen"
-          );
-          break;
-      }
-      updateStatusModalState.transition = transition;
-      updateStatusModalState.show = true;
-    };
-
-    const doIssueStatusTransition = (
-      transition: IssueStatusTransition,
-      comment: string
-    ) => {
-      emit("change-issue-status", transition.to, comment);
-    };
-
-    const allowCreate = computed(() => {
-      const newIssue = props.issue as IssueCreate;
-      if (isEmpty(newIssue.name)) {
-        return false;
-      }
-
-      if (newIssue.assigneeId == UNKNOWN_ID) {
-        return false;
-      }
-
-      if (
-        newIssue.type == "bb.issue.database.create" ||
-        newIssue.type == "bb.issue.database.schema.update" ||
-        newIssue.type == "bb.issue.database.data.update"
-      ) {
-        for (const stage of newIssue.pipeline.stageList) {
-          for (const task of stage.taskList) {
-            if (
-              task.type == "bb.task.database.create" ||
-              task.type == "bb.task.database.schema.update" ||
-              task.type == "bb.task.database.data.update"
-            ) {
-              if (isEmpty(task.statement)) {
-                return false;
-              }
-            }
-          }
+    return list
+      .filter((item) => {
+        const pipeline = issueEntity.pipeline;
+        // Disallow any issue status transition if the active task is in RUNNING state.
+        if (currentTask.value.status == "RUNNING") {
+          return false;
         }
-      }
 
-      for (const field of props.issueTemplate.inputFieldList) {
+        const taskList = allTaskList(pipeline);
+        // Don't display the Resolve action if the last task is NOT in DONE status.
         if (
-          field.type != "Boolean" && // Switch is boolean value which always is present
-          !field.resolved(issueContext.value)
+          item == "RESOLVE" &&
+          taskList.length > 0 &&
+          (currentTask.value.id != taskList[taskList.length - 1].id ||
+            currentTask.value.status != "DONE")
         ) {
           return false;
         }
+
+        return true;
+      })
+      .map(
+        (type: IssueStatusTransitionType) =>
+          ISSUE_STATUS_TRANSITION_LIST.get(type)!
+      )
+      .reverse();
+  }
+);
+
+const currentTask = computed(() => {
+  return activeTaskOfPipeline((issue.value as Issue).pipeline);
+});
+
+const allowIssueStatusTransition = (
+  transition: IssueStatusTransition
+): boolean => {
+  if (transition.type == "RESOLVE") {
+    const template = issueTemplate.value;
+    // Returns false if any of the required output fields is not provided.
+    for (let i = 0; i < template.outputFieldList.length; i++) {
+      const field = template.outputFieldList[i];
+      if (!field.resolved(issueContext.value)) {
+        return false;
       }
-      return true;
-    });
+    }
+    return true;
+  }
+  return true;
+};
 
-    const doCreate = () => {
-      emit("create");
-    };
+const tryStartIssueStatusTransition = (transition: IssueStatusTransition) => {
+  updateStatusModalState.mode = "ISSUE";
+  updateStatusModalState.okText = t(transition.buttonName);
+  switch (transition.type) {
+    case "RESOLVE":
+      updateStatusModalState.style = "SUCCESS";
+      updateStatusModalState.title = t("issue.status-transition.modal.resolve");
+      break;
+    case "CANCEL":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = t("issue.status-transition.modal.cancel");
+      break;
+    case "REOPEN":
+      updateStatusModalState.style = "INFO";
+      updateStatusModalState.title = t("issue.status-transition.modal.reopen");
+      break;
+  }
+  updateStatusModalState.transition = transition;
+  updateStatusModalState.show = true;
+};
 
-    return {
-      menu,
-      updateStatusModalState,
-      applicableTaskStatusTransitionList,
-      tryStartTaskStatusTransition,
-      doTaskStatusTransition,
-      applicableIssueStatusTransitionList,
-      currentTask,
-      allowIssueStatusTransition,
-      tryStartIssueStatusTransition,
-      doIssueStatusTransition,
-      allowCreate,
-      doCreate,
-    };
-  },
+const doIssueStatusTransition = (
+  transition: IssueStatusTransition,
+  comment: string
+) => {
+  emit("change-issue-status", transition.to, comment);
+};
+
+const allowCreate = computed(() => {
+  const newIssue = issue.value as IssueCreate;
+
+  if (isEmpty(newIssue.name)) {
+    return false;
+  }
+
+  if (newIssue.assigneeId == UNKNOWN_ID) {
+    return false;
+  }
+
+  if (IssueTypeWithStatement.includes(newIssue.type)) {
+    const allTaskList = flattenTaskList<TaskCreate>(newIssue);
+    for (const task of allTaskList) {
+      if (TaskTypeWithStatement.includes(task.type)) {
+        if (isEmpty(task.statement)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  const template = issueTemplate.value;
+  for (const field of template.inputFieldList) {
+    if (
+      field.type !== "Boolean" && // Switch is boolean value which always is present
+      !field.resolved(issueContext.value)
+    ) {
+      return false;
+    }
+  }
+  return true;
 });
 </script>

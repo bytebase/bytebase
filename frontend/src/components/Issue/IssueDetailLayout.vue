@@ -4,211 +4,161 @@
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
-    <IssueBanner v-if="!create" :issue="(issue as Issue)" />
+    <component :is="contextProvider" ref="provider">
+      <IssueBanner v-if="!create" :issue="(issue as Issue)" />
 
-    <!-- Highlight Panel -->
-    <div class="bg-white px-4 pb-4">
-      <IssueHighlightPanel
-        :issue="(issue as Issue)"
-        :create="create"
-        :allow-edit="allowEditNameAndDescription"
-        @update-name="updateName"
-      >
-        <IssueStatusTransitionButtonGroup
+      <!-- Highlight Panel -->
+      <div class="bg-white px-4 pb-4">
+        <IssueHighlightPanel
+          :issue="(issue as Issue)"
           :create="create"
-          :issue="issue"
-          :issue-template="issueTemplate"
-          @create="doCreate"
-          @change-issue-status="changeIssueStatus"
-          @change-task-status="changeTaskStatus"
-        />
-      </IssueHighlightPanel>
-    </div>
+          :allow-edit="allowEditNameAndDescription"
+          @update-name="updateName"
+        >
+          <IssueStatusTransitionButtonGroup
+            @change-issue-status="changeIssueStatus"
+            @change-task-status="changeTaskStatus"
+          />
+        </IssueHighlightPanel>
+      </div>
 
-    <!-- Remind banner for bb.feature.backward-compatibility -->
-    <FeatureAttention
-      v-if="
-        !hasBackwardCompatibilityFeature && supportBackwardCompatibilityFeature
-      "
-      custom-class="m-5 mt-0"
-      feature="bb.feature.backward-compatibility"
-      :description="
-        $t('subscription.features.bb-feature-backward-compatibility.desc')
-      "
-    />
+      <!-- Remind banner for bb.feature.backward-compatibility -->
+      <FeatureAttention
+        v-if="
+          !hasBackwardCompatibilityFeature &&
+          supportBackwardCompatibilityFeature
+        "
+        custom-class="m-5 mt-0"
+        feature="bb.feature.backward-compatibility"
+        :description="
+          $t('subscription.features.bb-feature-backward-compatibility.desc')
+        "
+      />
 
-    <!-- Stage Flow Bar -->
-    <template v-if="showPipelineFlowBar">
-      <template v-if="isTenantDeployMode">
-        <PipelineTenantFlow v-if="project" class="border-t border-b" />
-      </template>
-      <template v-else-if="isGhostMode">
-        <PipelineGhostFlow v-if="project" class="border-t border-b" />
-      </template>
-      <template v-else>
-        <PipelineSimpleFlow class="border-t border-b" />
+      <!-- Stage Flow Bar -->
+      <template v-if="showPipelineFlowBar">
+        <template v-if="isTenantMode">
+          <PipelineTenantFlow v-if="project" class="border-t border-b" />
+        </template>
+        <template v-else-if="isGhostMode">
+          <PipelineGhostFlow v-if="project" class="border-t border-b" />
+        </template>
+        <template v-else>
+          <PipelineSimpleFlow class="border-t border-b" />
+        </template>
+
+        <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
+          <IssueStagePanel
+            :stage="(selectedStage as Stage)"
+            :selected-task="(selectedTask as Task)"
+            :is-tenant-mode="isTenantMode"
+            :is-ghost-mode="isGhostMode"
+          />
+        </div>
       </template>
 
-      <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
-        <IssueStagePanel
-          :stage="(selectedStage as Stage)"
-          :selected-task="(selectedTask as Task)"
-          :is-tenant-mode="isTenantDeployMode"
-          :is-ghost-mode="isGhostMode"
+      <!-- Output Panel -->
+      <!-- Only render the top border if PipelineFlowBar is not displayed, otherwise it would overlap with the bottom border of that -->
+      <div
+        v-if="showIssueOutputPanel"
+        class="px-2 py-4 md:flex md:flex-col"
+        :class="showPipelineFlowBar ? '' : 'lg:border-t'"
+      >
+        <IssueOutputPanel
+          :issue="(issue as Issue)"
+          :output-field-list="issueTemplate.outputFieldList"
+          :allow-edit="allowEditOutput"
+          @update-custom-field="updateCustomField"
         />
       </div>
-    </template>
 
-    <!-- Output Panel -->
-    <!-- Only render the top border if PipelineFlowBar is not displayed, otherwise it would overlap with the bottom border of that -->
-    <div
-      v-if="showIssueOutputPanel"
-      class="px-2 py-4 md:flex md:flex-col"
-      :class="showPipelineFlowBar ? '' : 'lg:border-t'"
-    >
-      <IssueOutputPanel
-        :issue="(issue as Issue)"
-        :output-field-list="issueTemplate.outputFieldList"
-        :allow-edit="allowEditOutput"
-        @update-custom-field="updateCustomField"
-      />
-    </div>
-
-    <!-- Main Content -->
-    <main
-      class="flex-1 relative overflow-y-auto focus:outline-none"
-      :class="
-        showPipelineFlowBar && !showIssueOutputPanel
-          ? ''
-          : 'lg:border-t lg:border-block-border'
-      "
-      tabindex="-1"
-    >
-      <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
-        <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
-          <div
-            class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border overflow-hidden"
-          >
-            <IssueSidebar
-              :issue="issue"
-              :database="database"
-              :instance="instance"
-              :create="create"
-              :selected-stage="selectedStage"
-              :task="selectedTask"
-              :input-field-list="issueTemplate.inputFieldList"
-              :allow-edit="allowEditSidebar"
-              :is-tenant-deploy-mode="isTenantDeployMode"
-              @update-assignee-id="updateAssigneeId"
-              @update-earliest-allowed-time="updateEarliestAllowedTime"
-              @add-subscriber-id="addSubscriberId"
-              @remove-subscriber-id="removeSubscriberId"
-              @update-custom-field="updateCustomField"
-              @select-stage-id="selectStageOrTask"
-              @select-task-id="selectTaskId"
-            />
-          </div>
-          <div class="lg:hidden border-t border-block-border" />
-          <div class="w-full py-4 pr-4">
-            <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
-              <div v-if="!create" class="mb-4">
-                <TaskCheckBar
-                  :task="(selectedTask as Task)"
-                  @run-checks="runTaskChecks"
-                />
-              </div>
-              <template v-if="isTenantDeployMode">
-                <!--
-                  For tenant deploy mode, we provide only one statement panel.
-                  It's editable only when creating an issue.
-                  It is not allowed to "Apply to other stages".
-                -->
-                <IssueTaskStatementPanel
-                  :sql-hint="sqlHint()"
-                  :statement="selectedStatement"
-                  :create="create"
-                  :allow-edit="create"
-                  :show-apply-statement="false"
-                  @update-statement="updateStatement"
-                />
-              </template>
-              <template v-else-if="isGhostMode">
-                <!--
-                  For gh-ost mode, only the first task (bb.task.database.schema.update.ghost.sync)
-                  has a SQL statement.
-                  TODO(jim): When the other two tasks are selected we should show the SQL which will be internally
-                  executed (change table name and drop table).
-                -->
-                <template v-if="isGhostSyncTaskSelected">
-                  <IssueTaskStatementPanel
-                    :sql-hint="sqlHint()"
-                    :statement="selectedStatement"
-                    :create="create"
-                    :allow-edit="allowEditStatement"
-                    :show-apply-statement="showIssueTaskStatementApply"
-                    @update-statement="updateStatement"
-                    @apply-statement-to-other-stages="
-                      applyStatementToOtherStages
-                    "
-                  />
-                </template>
-              </template>
-              <template v-else>
-                <IssueTaskStatementPanel
-                  v-if="create"
-                  :sql-hint="sqlHint()"
-                  :statement="selectedStatement"
-                  :create="create"
-                  :allow-edit="true"
-                  :show-apply-statement="showIssueTaskStatementApply"
-                  @update-statement="updateStatement"
-                  @apply-statement-to-other-stages="applyStatementToOtherStages"
-                />
-                <IssueTaskStatementPanel
-                  v-else
-                  :sql-hint="sqlHint()"
-                  :statement="statement(selectedStage as Stage)"
-                  :create="create"
-                  :allow-edit="allowEditStatement"
-                  :show-apply-statement="showIssueTaskStatementApply"
-                  @update-statement="updateStatement"
-                />
-              </template>
-            </section>
-
-            <IssueDescriptionPanel
-              :issue="issue"
-              :create="create"
-              :allow-edit="allowEditNameAndDescription"
-              @update-description="updateDescription"
-            />
-            <section
-              v-if="!create"
-              aria-labelledby="activity-title"
-              class="mt-4"
+      <!-- Main Content -->
+      <main
+        class="flex-1 relative overflow-y-auto focus:outline-none"
+        :class="
+          showPipelineFlowBar && !showIssueOutputPanel
+            ? ''
+            : 'lg:border-t lg:border-block-border'
+        "
+        tabindex="-1"
+      >
+        <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
+          <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
+            <div
+              class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border overflow-hidden"
             >
-              <IssueActivityPanel
-                :issue="(issue as Issue)"
-                :issue-template="issueTemplate"
+              <IssueSidebar
+                :issue="issue"
+                :database="database"
+                :instance="instance"
+                :create="create"
+                :selected-stage="selectedStage"
+                :task="selectedTask"
+                :input-field-list="issueTemplate.inputFieldList"
+                :allow-edit="allowEditSidebar"
+                :is-tenant-deploy-mode="isTenantMode"
+                @update-assignee-id="updateAssigneeId"
+                @update-earliest-allowed-time="updateEarliestAllowedTime"
                 @add-subscriber-id="addSubscriberId"
+                @remove-subscriber-id="removeSubscriberId"
+                @update-custom-field="updateCustomField"
+                @select-stage-id="selectStageOrTask"
+                @select-task-id="selectTaskId"
               />
-            </section>
+            </div>
+            <div class="lg:hidden border-t border-block-border" />
+            <div class="w-full py-4 pr-4">
+              <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
+                <div v-if="!create" class="mb-4">
+                  <TaskCheckBar
+                    :task="(selectedTask as Task)"
+                    @run-checks="runTaskChecks"
+                  />
+                </div>
+                <IssueTaskStatementPanel :sql-hint="sqlHint()" />
+              </section>
+
+              <IssueDescriptionPanel
+                :issue="issue"
+                :create="create"
+                :allow-edit="allowEditNameAndDescription"
+                @update-description="updateDescription"
+              />
+              <section
+                v-if="!create"
+                aria-labelledby="activity-title"
+                class="mt-4"
+              >
+                <IssueActivityPanel
+                  :issue="(issue as Issue)"
+                  :issue-template="issueTemplate"
+                  @add-subscriber-id="addSubscriberId"
+                />
+              </section>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </component>
   </div>
 </template>
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, nextTick, onMounted, PropType, watchEffect } from "vue";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  PropType,
+  ref,
+  watch,
+  watchEffect,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import {
   idFromSlug,
-  issueSlug,
   pipelineType,
   PipelineType,
   indexFromSlug,
@@ -248,19 +198,11 @@ import type {
   IssueStatusPatch,
   Task,
   TaskDatabaseSchemaUpdatePayload,
-  TaskDatabaseDataUpdatePayload,
   StageCreate,
   TaskCreate,
-  TaskDatabaseCreatePayload,
-  TaskGeneralPayload,
   Project,
   MigrationType,
   TaskPatch,
-  UpdateSchemaContext,
-  UpdateSchemaDetail,
-  TaskDatabaseSchemaUpdateGhostSyncPayload,
-  UpdateSchemaGhostContext,
-  SQLDialect,
 } from "@/types";
 import {
   defaultTemplate,
@@ -277,10 +219,15 @@ import {
   useIssueSubscriberStore,
   useProjectStore,
   useTaskStore,
-  useUIStateStore,
 } from "@/store";
-import formatSQL from "../MonacoEditor/sqlFormatter";
-import { provideIssueContext } from "./context";
+import {
+  provideIssueContext,
+  TenantModeProvider,
+  GhostModeProvider,
+  StandardModeProvider,
+  TaskTypeWithStatement,
+} from "./context";
+import IssueContext from "./context/IssueContext";
 
 const props = defineProps({
   create: {
@@ -307,6 +254,8 @@ const taskStore = useTaskStore();
 const projectStore = useProjectStore();
 const databaseStore = useDatabaseStore();
 
+const provider = ref<IssueContext>();
+
 watchEffect(function prepare() {
   if (props.create) {
     projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
@@ -324,31 +273,6 @@ const project = computed((): Project => {
   return (props.issue as Issue).project;
 });
 
-const formatStatementIfNeeded = (
-  statement: string,
-  database?: Database
-): string => {
-  const uiStateStore = useUIStateStore();
-  if (!uiStateStore.issueFormatStatementOnSave) {
-    // Don't format if user closed this feature
-    return statement;
-  }
-
-  // Default to use mysql dialect but use postgresql dialect if needed
-  let dialect: SQLDialect = "mysql";
-  if (database && database.instance.engine === "POSTGRES") {
-    dialect = "postgresql";
-  }
-
-  const result = formatSQL(statement, dialect);
-  if (!result.error) {
-    return result.data;
-  }
-
-  // Fallback to the input statement if error occurs while formatting
-  return statement;
-};
-
 const updateName = (
   newName: string,
   postUpdated: (updatedIssue: Issue) => void
@@ -362,64 +286,6 @@ const updateName = (
       },
       postUpdated
     );
-  }
-};
-
-const updateStatement = (
-  newStatement: string,
-  postUpdated?: (updatedTask: Task) => void
-) => {
-  if (props.create) {
-    if (isTenantDeployMode.value) {
-      // For tenant deploy mode, we apply the statement to all stages and all tasks
-      const issueCreate = props.issue as IssueCreate;
-      const context = issueCreate.createContext as UpdateSchemaContext;
-      issueCreate.pipeline?.stageList.forEach((stage: StageCreate) => {
-        stage.taskList.forEach((task) => {
-          task.statement = newStatement;
-        });
-      });
-      // We also apply it to the CreateContext
-      context.updateSchemaDetailList.forEach(
-        (detail) => (detail.statement = newStatement)
-      );
-    } else {
-      // otherwise apply it to the only one task in stage
-      // i.e. selectedStage.taskList[0]
-      const stage = selectedStage.value as StageCreate;
-      stage.taskList[0].statement = newStatement;
-    }
-  } else {
-    if (isTenantDeployMode.value) {
-      // <del>For tenant deploy mode, we patch the issue's create context</del>
-      // nope, we are not allowed to update statement in tenant deploy mode anyway
-    } else {
-      // otherwise, patch the task
-      const task = selectedTask.value as Task;
-      patchTask(
-        task.id,
-        {
-          statement: formatStatementIfNeeded(newStatement, task.database),
-        },
-        postUpdated
-      );
-    }
-  }
-};
-
-const applyStatementToOtherStages = (newStatement: string) => {
-  for (const stage of (props.issue as IssueCreate).pipeline!.stageList) {
-    for (const task of stage.taskList) {
-      if (
-        task.type == "bb.task.general" ||
-        task.type == "bb.task.database.create" ||
-        task.type == "bb.task.database.schema.update" ||
-        task.type == "bb.task.database.schema.update.ghost.sync" ||
-        task.type == "bb.task.database.data.update"
-      ) {
-        task.statement = newStatement;
-      }
-    }
   }
 };
 
@@ -497,66 +363,6 @@ const updateCustomField = (field: InputField | OutputField, value: any) => {
       });
     }
   }
-};
-
-const doCreate = () => {
-  const issue = cloneDeep(props.issue) as IssueCreate;
-  if (!isTenantDeployMode.value) {
-    // for standard issue pipeline (1 * 1 or M * 1)
-    // copy user edited tasks back to issue.createContext
-    const taskList = issue.pipeline!.stageList.map(
-      (stage) => stage.taskList[0]
-    );
-    const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
-      const db = databaseStore.getDatabaseById(task.databaseId!);
-      return {
-        databaseId: task.databaseId!,
-        databaseName: task.databaseName!,
-        statement: formatStatementIfNeeded(task.statement, db),
-        earliestAllowedTs: task.earliestAllowedTs,
-      };
-    });
-    issue.createContext = {
-      migrationType: taskList[0].migrationType!,
-      updateSchemaDetailList: detailList,
-    };
-  } else if (isGhostMode.value) {
-    // for gh-ost mode, copy user edited tasks back to issue.createContext
-    // only the first subtask (bb.task.database.schema.update.ghost.sync) has statement
-    const stageList = issue.pipeline!.stageList;
-    const createContext = issue.createContext as UpdateSchemaGhostContext;
-    const detailList = createContext.updateSchemaDetailList;
-    stageList.forEach((stage, i) => {
-      const detail = detailList[i];
-      const syncTask = stage.taskList[0];
-      const db = databaseStore.getDatabaseById(syncTask.databaseId!);
-
-      detail.databaseId = syncTask.databaseId!;
-      detail.databaseName = syncTask.databaseName!;
-      detail.statement = formatStatementIfNeeded(syncTask.statement, db);
-      detail.earliestAllowedTs = syncTask.earliestAllowedTs;
-    });
-  } else {
-    // for multi-tenancy issue pipeline (M * N)
-    // createContext is up-to-date already
-    // so we just format the statement if needed
-    const context = issue.createContext as UpdateSchemaContext;
-    context.updateSchemaDetailList.forEach((detail) => {
-      const db = databaseStore.getDatabaseById(detail.databaseId!);
-      detail.statement = formatStatementIfNeeded(detail.statement, db);
-    });
-  }
-
-  // then empty issue.pipeline and issue.payload
-  // because we are no longer passing parameters via issue.pipeline
-  // we are using issue.createContext instead
-  delete issue.pipeline;
-  issue.payload = {};
-
-  issueStore.createIssue(issue).then((createdIssue) => {
-    // Use replace to omit the new issue url in the navigation history.
-    router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-  });
 };
 
 const changeIssueStatus = (newStatus: IssueStatus, comment: string) => {
@@ -746,35 +552,7 @@ const selectedTask = computed((): Task | TaskCreate => {
   return taskList[0];
 });
 
-const statement = (stage: Stage): string => {
-  const task = stage.taskList[0];
-  switch (task.type) {
-    case "bb.task.general":
-      return ((task as Task).payload as TaskGeneralPayload).statement || "";
-    case "bb.task.database.create":
-      return (
-        ((task as Task).payload as TaskDatabaseCreatePayload).statement || ""
-      );
-    case "bb.task.database.schema.update":
-      return (
-        ((task as Task).payload as TaskDatabaseSchemaUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.data.update":
-      return (
-        ((task as Task).payload as TaskDatabaseDataUpdatePayload).statement ||
-        ""
-      );
-    case "bb.task.database.restore":
-      return "";
-    case "bb.task.database.schema.update.ghost.sync":
-    case "bb.task.database.schema.update.ghost.cutover":
-    case "bb.task.database.schema.update.ghost.drop-original-table":
-      return ""; // should never reach here
-  }
-};
-
-const isTenantDeployMode = computed((): boolean => {
+const isTenantMode = computed((): boolean => {
   if (project.value.tenantMode !== "TENANT") return false;
   return (
     props.issue.type === "bb.issue.database.schema.update" ||
@@ -786,51 +564,6 @@ const isGhostMode = computed((): boolean => {
   if (!isDev()) return false;
 
   return props.issue.type === "bb.issue.database.schema.update.ghost";
-});
-
-const isGhostSyncTaskSelected = computed((): boolean => {
-  return (
-    selectedTask.value.type === "bb.task.database.schema.update.ghost.sync"
-  );
-});
-
-const selectedStatement = computed((): string => {
-  if (isTenantDeployMode.value) {
-    // In tenant mode, the entire issue shares only one SQL statement
-    if (props.create) {
-      const issueCreate = props.issue as IssueCreate;
-      const context = issueCreate.createContext as UpdateSchemaContext;
-      return context.updateSchemaDetailList[0].statement;
-    } else {
-      const issue = props.issue as Issue;
-      const task = issue.pipeline.stageList[0].taskList[0];
-      const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-      return payload.statement;
-    }
-  } else if (isGhostMode.value) {
-    // In gh-ost mode, each stage can own its SQL statement
-    // But only for task.type === "bb.task.database.schema.update.ghost.sync"
-    const task = selectedTask.value;
-    if (task.type === "bb.task.database.schema.update.ghost.sync") {
-      if (props.create) {
-        return (task as TaskCreate).statement;
-      } else {
-        const payload = (task as Task)
-          .payload as TaskDatabaseSchemaUpdateGhostSyncPayload;
-        return payload.statement;
-      }
-    } else {
-      return "";
-    }
-  } else {
-    if (router.currentRoute.value.query.sql) {
-      const sql = router.currentRoute.value.query.sql as string;
-      updateStatement(sql);
-    }
-
-    const task = (selectedStage.value as StageCreate).taskList[0];
-    return task.statement;
-  }
 });
 
 const selectedMigrateType = computed((): MigrationType => {
@@ -876,42 +609,6 @@ const allowEditNameAndDescription = computed(() => {
   );
 });
 
-const allowEditStatement = computed(() => {
-  // if creating an issue, it's editable
-  if (props.create) {
-    return true;
-  }
-  const checkTask = (task: Task) => {
-    return (
-      task.status == "PENDING" ||
-      task.status == "PENDING_APPROVAL" ||
-      task.status == "FAILED"
-    );
-  };
-
-  const issue = props.issue as Issue;
-  // if not creating, we are allowed to edit sql statement only when:
-  // 1. issue.status is OPEN
-  // 2. AND currentUser is the creator
-  // 3. AND workflowType is UI
-  if (issue.status !== "OPEN") return false;
-  if (issue.creator.id !== currentUser.value.id) return false;
-  if (issue.project.workflowType !== "UI") return false;
-
-  if (isTenantDeployMode.value) {
-    // <del>then if in tenant deploy mode, EVERY task must be PENDING or PENDING_APPROVAL or FAILED</del>
-    // nope, we are not allowed to update statement in tenant deploy mode anyway
-    // const allTasks = issue.pipeline.stageList.flatMap(
-    //   (stage) => stage.taskList
-    // );
-    // return allTasks.every((task) => checkTask(task));
-    return false;
-  } else {
-    // otherwise, check `selectedTask`, expected to be PENDING or PENDING_APPROVAL or FAILED
-    return checkTask(selectedTask.value as Task);
-  }
-});
-
 const showPipelineFlowBar = computed(() => {
   return currentPipelineType.value != "NO_PIPELINE";
 });
@@ -922,37 +619,7 @@ const showIssueOutputPanel = computed(() => {
 
 const showIssueTaskStatementPanel = computed(() => {
   const task = selectedTask.value;
-  return (
-    task.type == "bb.task.general" ||
-    task.type == "bb.task.database.create" ||
-    task.type == "bb.task.database.schema.update" ||
-    task.type == "bb.task.database.schema.update.ghost.sync" ||
-    task.type == "bb.task.database.data.update"
-  );
-});
-
-const showIssueTaskStatementApply = computed(() => {
-  if (!props.create) {
-    return false;
-  }
-  if (isTenantDeployMode.value) {
-    return false;
-  }
-  let count = 0;
-  for (const stage of (props.issue as IssueCreate).pipeline!.stageList) {
-    for (const task of stage.taskList) {
-      if (
-        task.type == "bb.task.general" ||
-        task.type == "bb.task.database.create" ||
-        task.type == "bb.task.database.schema.update" ||
-        task.type == "bb.task.database.schema.update.ghost.sync" ||
-        task.type == "bb.task.database.data.update"
-      ) {
-        count++;
-      }
-    }
-  }
-  return count > 1;
+  return TaskTypeWithStatement.includes(task.type);
 });
 
 const database = computed((): Database | undefined => {
@@ -1034,13 +701,37 @@ const isValidStage = (stage: Stage | StageCreate) => {
   return true;
 };
 
+const contextProvider = computed(() => {
+  if (isTenantMode.value) return TenantModeProvider;
+  if (isGhostMode.value) return GhostModeProvider;
+  return StandardModeProvider;
+});
+
+const create = computed(() => props.create);
+const issue = computed(() => props.issue);
+
+watch(
+  [create, issue, () => route.query.sql as string, provider],
+  ([create, issue, sql, provider]) => {
+    // If 'sql' in URL query, update the issueCreate's statement
+    // Only works for the first time.
+    if (create && issue && sql && provider) {
+      provider.updateStatement(sql);
+    }
+  }
+);
+
 provideIssueContext(
   {
-    create: computed(() => props.create),
-    issue: computed(() => props.issue),
+    emit,
+    create,
+    issue,
     project: project,
+    template: issueTemplate,
     selectedStage,
     selectedTask,
+    isTenantMode,
+    isGhostMode,
     isValidStage,
     taskStatusOfStage,
     activeStageOfPipeline: activeStage,

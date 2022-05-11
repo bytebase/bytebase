@@ -10,13 +10,11 @@
         <span v-if="sqlHint" class="text-accent">{{ `(${sqlHint})` }}</span>
       </div>
       <button
-        v-if="showApplyStatement"
+        v-if="allowApplyStatementToOtherStages"
         :disabled="isEmpty(state.editStatement)"
         type="button"
         class="btn-small"
-        @click.prevent="
-          $emit('apply-statement-to-other-stages', state.editStatement)
-        "
+        @click.prevent="applyStatementToOtherStages(state.editStatement)"
       >
         {{ $t("issue.apply-to-other-stages") }}
       </button>
@@ -35,7 +33,7 @@
       </template>
       <template v-else>
         <button
-          v-if="allowEdit && !state.editing"
+          v-if="allowEditStatement && !state.editing"
           type="button"
           class="btn-icon"
           @click.prevent="beginEdit"
@@ -86,9 +84,9 @@
       @input="
         (e) => {
           sizeToFit(e.target as HTMLTextAreaElement);
-          // When creating the issue, we will emit the event on keystroke to update the in-memory state.
+          // When creating the issue, we update the in-memory state.
           if (create) {
-            $emit('update-statement', state.editStatement);
+            updateStatement( state.editStatement);
           }
         }
       "
@@ -126,6 +124,7 @@ import {
 } from "vue";
 import { sizeToFit } from "../../utils";
 import { useUIStateStore } from "@/store";
+import { useIssueContext } from "./context";
 
 interface LocalState {
   editing: boolean;
@@ -135,37 +134,29 @@ interface LocalState {
 export default defineComponent({
   name: "IssueTaskStatementPanel",
   props: {
-    statement: {
-      required: true,
-      type: String,
-    },
-    create: {
-      required: true,
-      type: Boolean,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
-    showApplyStatement: {
-      required: true,
-      type: Boolean,
-    },
     sqlHint: {
       required: false,
       type: String,
       default: undefined,
     },
   },
-  emits: ["update-statement", "apply-statement-to-other-stages"],
   setup(props, { emit }) {
+    const {
+      create,
+      allowEditStatement,
+      selectedStatement: statement,
+      updateStatement,
+      allowApplyStatementToOtherStages,
+      applyStatementToOtherStages,
+    } = useIssueContext();
+
     const editStatementTextArea = ref();
 
     const uiStateStore = useUIStateStore();
 
     const state = reactive<LocalState>({
       editing: false,
-      editStatement: props.statement,
+      editStatement: statement.value,
     });
 
     const formatOnSave = computed({
@@ -182,7 +173,7 @@ export default defineComponent({
 
     onMounted(() => {
       window.addEventListener("resize", resizeTextAreaHandler);
-      if (props.create) {
+      if (create.value) {
         state.editing = true;
         nextTick(() => {
           sizeToFit(editStatementTextArea.value);
@@ -195,25 +186,19 @@ export default defineComponent({
     });
 
     // Reset the edit state after creating the issue.
-    watch(
-      () => props.create,
-      (curNew, prevNew) => {
-        if (!curNew && prevNew) {
-          state.editing = false;
-        }
+    watch(create, (curNew, prevNew) => {
+      if (!curNew && prevNew) {
+        state.editing = false;
       }
-    );
+    });
 
-    watch(
-      () => props.statement,
-      (cur) => {
-        state.editStatement = cur;
-        nextTick(() => sizeToFit(editStatementTextArea.value));
-      }
-    );
+    watch(statement, (cur) => {
+      state.editStatement = cur;
+      nextTick(() => sizeToFit(editStatementTextArea.value));
+    });
 
     const beginEdit = () => {
-      state.editStatement = props.statement;
+      state.editStatement = statement.value;
       state.editing = true;
       nextTick(() => {
         sizeToFit(editStatementTextArea.value);
@@ -222,17 +207,23 @@ export default defineComponent({
     };
 
     const saveEdit = () => {
-      emit("update-statement", state.editStatement, () => {
+      updateStatement(state.editStatement, () => {
         state.editing = false;
       });
     };
 
     const cancelEdit = () => {
-      state.editStatement = props.statement;
+      state.editStatement = statement.value;
       state.editing = false;
     };
 
     return {
+      create,
+      allowEditStatement,
+      statement,
+      updateStatement,
+      allowApplyStatementToOtherStages,
+      applyStatementToOtherStages,
       editStatementTextArea,
       formatOnSave,
       state,
