@@ -15,12 +15,12 @@ import {
   saveIssue,
   useCommonLogic,
 } from "./common";
-import { provideIssueContext, useIssueContext } from "./index";
+import { provideIssueLogic, useIssueLogic } from "./index";
 
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue } = useIssueContext();
+    const { create, issue } = useIssueLogic();
     const databaseStore = useDatabaseStore();
 
     const allowEditStatement = computed(() => {
@@ -83,7 +83,7 @@ export default defineComponent({
       saveIssue(issueCreate);
     };
 
-    provideIssueContext({
+    const logic = {
       ...useCommonLogic(),
       allowEditStatement,
       selectedStatement,
@@ -91,7 +91,9 @@ export default defineComponent({
       allowApplyStatementToOtherStages,
       applyStatementToOtherStages: errorAssertion,
       doCreate,
-    });
+    };
+    provideIssueLogic(logic);
+    return logic;
   },
   render() {
     return this.$slots.default?.();

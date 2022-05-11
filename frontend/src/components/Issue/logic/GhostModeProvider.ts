@@ -1,5 +1,5 @@
 import { computed, defineComponent } from "vue";
-import { provideIssueContext, useIssueContext } from "./index";
+import { provideIssueLogic, useIssueLogic } from "./index";
 import { formatStatementIfNeeded, useCommonLogic } from "./common";
 import {
   IssueCreate,
@@ -13,7 +13,7 @@ import { useDatabaseStore } from "@/store";
 export default defineComponent({
   name: "GhostModeProvider",
   setup() {
-    const { create, issue, selectedTask } = useIssueContext();
+    const { create, issue, selectedTask } = useIssueLogic();
     const databaseStore = useDatabaseStore();
 
     // In gh-ost mode, each stage can own its SQL statement
@@ -56,11 +56,13 @@ export default defineComponent({
       });
     };
 
-    provideIssueContext({
+    const logic = {
       ...useCommonLogic(),
       selectedStatement,
       doCreate,
-    });
+    };
+    provideIssueLogic(logic);
+    return logic;
   },
   render() {
     return this.$slots.default?.();

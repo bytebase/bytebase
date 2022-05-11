@@ -140,8 +140,8 @@ import {
   flattenTaskList,
   IssueTypeWithStatement,
   TaskTypeWithStatement,
-  useIssueContext,
-} from "./context";
+  useIssueLogic,
+} from "./logic";
 
 export type IssueContext = {
   currentUser: Principal;
@@ -170,7 +170,7 @@ const {
   template: issueTemplate,
   activeTaskOfPipeline,
   doCreate,
-} = useIssueContext();
+} = useIssueLogic();
 
 const updateStatusModalState = reactive<UpdateStatusModalState>({
   mode: "ISSUE",

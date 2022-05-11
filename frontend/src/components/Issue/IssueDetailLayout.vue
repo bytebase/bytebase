@@ -4,7 +4,7 @@
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
-    <component :is="contextProvider" ref="provider">
+    <component :is="logicProvider" ref="issueLogic">
       <IssueBanner v-if="!create" :issue="(issue as Issue)" />
 
       <!-- Highlight Panel -->
@@ -221,13 +221,13 @@ import {
   useTaskStore,
 } from "@/store";
 import {
-  provideIssueContext,
+  provideIssueLogic,
   TenantModeProvider,
   GhostModeProvider,
   StandardModeProvider,
   TaskTypeWithStatement,
-} from "./context";
-import IssueContext from "./context/IssueContext";
+  IssueLogic,
+} from "./logic";
 
 const props = defineProps({
   create: {
@@ -254,7 +254,7 @@ const taskStore = useTaskStore();
 const projectStore = useProjectStore();
 const databaseStore = useDatabaseStore();
 
-const provider = ref<IssueContext>();
+const issueLogic = ref<IssueLogic>();
 
 watchEffect(function prepare() {
   if (props.create) {
@@ -701,7 +701,7 @@ const isValidStage = (stage: Stage | StageCreate) => {
   return true;
 };
 
-const contextProvider = computed(() => {
+const logicProvider = computed(() => {
   if (isTenantMode.value) return TenantModeProvider;
   if (isGhostMode.value) return GhostModeProvider;
   return StandardModeProvider;
@@ -711,17 +711,18 @@ const create = computed(() => props.create);
 const issue = computed(() => props.issue);
 
 watch(
-  [create, issue, () => route.query.sql as string, provider],
+  [create, issue, () => route.query.sql as string, issueLogic],
   ([create, issue, sql, provider]) => {
     // If 'sql' in URL query, update the issueCreate's statement
     // Only works for the first time.
+    // E.g. redirected from SQL editor when user wants to execute DML.
     if (create && issue && sql && provider) {
       provider.updateStatement(sql);
     }
   }
 );
 
-provideIssueContext(
+provideIssueLogic(
   {
     emit,
     create,

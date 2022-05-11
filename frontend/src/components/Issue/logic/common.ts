@@ -25,13 +25,12 @@ import {
   TaskType,
   UpdateSchemaDetail,
 } from "@/types";
-import { useIssueContext } from "./index";
+import { useIssueLogic } from "./index";
 import { isDev, issueSlug } from "@/utils";
 import { router } from "@/router";
 
 export const useCommonLogic = () => {
-  const context = useIssueContext();
-  const { create, issue, selectedTask } = context;
+  const { create, issue, selectedTask, emit } = useIssueLogic();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
 
@@ -81,7 +80,6 @@ export const useCommonLogic = () => {
     taskPatch: TaskPatch,
     postUpdated?: (updatedTask: Task) => void
   ) => {
-    const { issue, emit } = context;
     const issueEntity = issue.value as Issue;
     useTaskStore()
       .patchTask({

@@ -122,9 +122,9 @@ import {
   defineComponent,
   computed,
 } from "vue";
-import { sizeToFit } from "../../utils";
+import { sizeToFit } from "@/utils";
 import { useUIStateStore } from "@/store";
-import { useIssueContext } from "./context";
+import { useIssueLogic } from "./logic";
 
 interface LocalState {
   editing: boolean;
@@ -148,7 +148,7 @@ export default defineComponent({
       updateStatement,
       allowApplyStatementToOtherStages,
       applyStatementToOtherStages,
-    } = useIssueContext();
+    } = useIssueLogic();
 
     const editStatementTextArea = ref();
 

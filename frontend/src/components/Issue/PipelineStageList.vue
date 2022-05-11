@@ -35,7 +35,7 @@
 
       <!-- Arrow separator -->
       <div
-        v-if="i < issue.pipeline?.stageList.length - 1"
+        v-if="i < issue.pipeline!.stageList.length - 1"
         class="hidden lg:block absolute top-0 bottom-0 right-0 w-5 pointer-events-none"
         aria-hidden="true"
       >
@@ -61,7 +61,7 @@
 import { NPopover } from "naive-ui";
 import { Issue, Stage, StageCreate } from "@/types";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
-import { useIssueContext } from "./context";
+import { useIssueLogic } from "./logic";
 
 const {
   create,
@@ -72,7 +72,7 @@ const {
   activeTaskOfStage,
   taskStatusOfStage,
   selectStageOrTask,
-} = useIssueContext();
+} = useIssueLogic();
 
 const isSelectedStage = (stage: Stage | StageCreate): boolean => {
   return stage === selectedStage.value;

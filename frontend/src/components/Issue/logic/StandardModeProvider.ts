@@ -1,5 +1,5 @@
 import { defineComponent } from "vue";
-import { provideIssueContext } from "./index";
+import { provideIssueLogic } from "./index";
 import { useCommonLogic } from "./common";
 
 export default defineComponent({
@@ -7,9 +7,8 @@ export default defineComponent({
   setup() {
     const common = useCommonLogic();
 
-    const context = common;
-    provideIssueContext(context);
-    return { ...context };
+    provideIssueLogic(common);
+    return common;
   },
   render() {
     return this.$slots.default?.();

@@ -14,7 +14,7 @@ import {
 } from "@/types";
 import { Ref } from "vue";
 
-type IssueContext = {
+type IssueLogic = {
   // base params
   create: Ref<boolean>;
   project: Ref<Project>;
@@ -72,4 +72,4 @@ type IssueContext = {
   ) => void;
 };
 
-export default IssueContext;
+export default IssueLogic;
