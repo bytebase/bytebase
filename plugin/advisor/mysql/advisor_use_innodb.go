@@ -92,11 +92,17 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// SET
 	case *ast.SetStmt:
 		for _, variable := range node.Variables {
-			if strings.ToLower(variable.Name) == defaultStorageEngin { //} && strings.ToLower(variable.Value) != innoDB {
+			if strings.ToLower(variable.Name) == defaultStorageEngin {
 				var buffer strings.Builder
 				// Return lowercase
 				ctx := format.NewRestoreCtx(format.RestoreNameLowercase, &buffer)
 				if err := variable.Value.Restore(ctx); err != nil {
+					v.adviceList = append(v.adviceList, advisor.Advice{
+						Status:  v.level,
+						Code:    common.Internal,
+						Title:   "Internal error for use InnoDB rule",
+						Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
+					})
 					continue
 				}
 				if buffer.String() != innoDB {
