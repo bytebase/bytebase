@@ -39,11 +39,6 @@ var (
 	_ util.MigrationExecutor = (*Driver)(nil)
 )
 
-const (
-	// MaxDatabaseNameLength is the allowed max database name length in MySQL
-	MaxDatabaseNameLength = 64
-)
-
 func init() {
 	db.Register(db.MySQL, newDriver)
 	db.Register(db.TiDB, newDriver)

@@ -125,36 +125,6 @@ func TestPITR(t *testing.T) {
 	)
 	port := getTestPort(t.Name())
 
-	// common PITR routines
-	initDB := func(t *testing.T) (*sql.DB, func()) {
-		a := require.New(t)
-
-		_, stopFn := resourcemysql.SetupTestInstance(t, port)
-
-		db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
-		a.NoError(err)
-
-		_, err = db.Exec(fmt.Sprintf(`
-		CREATE DATABASE %s;
-		USE %s;
-		CREATE TABLE tbl0 (
-			id INT,
-			PRIMARY KEY (id),
-			CHECK (id >= 0)
-		);
-		CREATE TABLE tbl1 (
-			id INT,
-			pid INT,
-			PRIMARY KEY (id),
-			UNIQUE INDEX (pid),
-			CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
-		);
-		`, database, database))
-		a.NoError(err)
-
-		return db, stopFn
-	}
-
 	insertRangeData := func(t *testing.T, db *sql.DB, begin, end int) {
 		a := require.New(t)
 
@@ -179,7 +149,7 @@ func TestPITR(t *testing.T) {
 		ctx := context.Background()
 
 		t.Log("initialize database")
-		db, stopFn := initDB(t)
+		db, stopFn := initTIPRDB(t, localhost, username, database, port)
 		defer db.Close()
 		defer stopFn()
 
@@ -228,6 +198,34 @@ func TestPITR(t *testing.T) {
 		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
 		t.Log("validate table _update_row_")
 	})
+}
+func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
+	a := require.New(t)
+
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, host, port))
+	a.NoError(err)
+
+	_, err = db.Exec(fmt.Sprintf(`
+	CREATE DATABASE %s;
+	USE %s;
+	CREATE TABLE tbl0 (
+		id INT,
+		PRIMARY KEY (id),
+		CHECK (id >= 0)
+	);
+	CREATE TABLE tbl1 (
+		id INT,
+		pid INT,
+		PRIMARY KEY (id),
+		UNIQUE INDEX (pid),
+		CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
+	);
+	`, database, database))
+	a.NoError(err)
+
+	return db, stopFn
 }
 func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)

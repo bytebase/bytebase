@@ -35,3 +35,27 @@ func TestGetSafeName(t *testing.T) {
 		a.Equal(test.expected, safeName)
 	}
 }
+
+func TestGetPITRDatabaseName(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		database  string
+		timestamp int
+		expected  string
+	}{
+		{
+			database:  "normal_database_name",
+			timestamp: 1652237293,
+			expected:  "normal_database_name_pitr_1652237293",
+		},
+		{
+			database:  "long_database_name1234567890123456789012345678901",
+			timestamp: 1652237293,
+			expected:  "long_database_name123456789012345678901234567890_pitr_1652237293",
+		},
+	}
+	for _, test := range tests {
+		name := getPITRDatabaseName(test.database, int64(test.timestamp))
+		a.Equal(test.expected, name)
+	}
+}

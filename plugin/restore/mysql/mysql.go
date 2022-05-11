@@ -9,6 +9,11 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 )
 
+const (
+	// MaxDatabaseNameLength is the allowed max database name length in MySQL
+	MaxDatabaseNameLength = 64
+)
+
 // BinlogConfig is the binlog coordination for MySQL.
 type BinlogConfig struct {
 	Filename string
@@ -35,7 +40,16 @@ func (r *Restore) RestoreBinlog(ctx context.Context, config BinlogConfig) error 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config BinlogConfig, database string, timestamp int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
-	query := fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; SET foreign_key_checks=OFF", pitrDatabaseName, pitrDatabaseName)
+	query := fmt.Sprintf(""+
+		// Create the pitr database.
+		"CREATE DATABASE `%s`;"+
+		// Change to the pitr database.
+		"USE `%s`;"+
+		// Set this to ignore foreign key constraints, otherwise the recovery of the full backup may encounter
+		// wrong foreign key dependency order and fail.
+		// We should turn it on after we the restore the full backup.
+		"SET foreign_key_checks=OFF",
+		pitrDatabaseName, pitrDatabaseName)
 	if _, err := r.driver.DB.ExecContext(ctx, query); err != nil {
 		return err
 	}
@@ -44,12 +58,13 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 		return err
 	}
 
-	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, config)
-
-	if _, err := r.driver.DB.ExecContext(ctx, fmt.Sprintf("SET foreign_key_checks=ON; USE `%s`", database)); err != nil {
+	// The full backup is restored successfully, enable foreign key constraints as normal.
+	if _, err := r.driver.DB.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
 		return err
 	}
+
+	// TODO(dragonly): implement RestoreBinlog in mysql driver
+	_ = r.RestoreBinlog(ctx, config)
 
 	return nil
 }
@@ -62,7 +77,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	}
 	defer txn.Rollback()
 
-	pitrOldDatabase := getPITRDatabaseOldName(database)
+	pitrOldDatabase := getSafeName(database, "old")
 	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
@@ -105,17 +120,11 @@ func getPITRDatabaseName(database string, timestamp int64) string {
 	return getSafeName(database, suffix)
 }
 
-// getPITRDatabaseOldName composes a pitr database name for
-func getPITRDatabaseOldName(database string) string {
-	suffix := "old"
-	return getSafeName(database, suffix)
-}
-
 func getSafeName(baseName, suffix string) string {
 	name := fmt.Sprintf("%s_%s", baseName, suffix)
-	if len(name) <= mysql.MaxDatabaseNameLength {
+	if len(name) <= MaxDatabaseNameLength {
 		return name
 	}
-	extraCharacters := len(name) - mysql.MaxDatabaseNameLength
+	extraCharacters := len(name) - MaxDatabaseNameLength
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
