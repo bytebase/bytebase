@@ -153,8 +153,9 @@ func runGhostMigration(ctx context.Context, l *zap.Logger, server *Server, task 
 	return postMigration(ctx, l, server, task, vcsPushEvent, mi, migrationID, schema)
 }
 
-func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string) (int64, string, error) {
+func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
+	databaseName := db.BytebaseDatabase
 
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, l)
 	if err != nil {
@@ -176,11 +177,20 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 		return -1, "", err
 	}
 
-	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
+	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
 		return -1, "", err
 	}
 	startedNs := time.Now().UnixNano()
+
+	defer func() {
+		if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+			l.Error("failed to update migration history record",
+				zap.Error(err),
+				zap.Int64("migration_id", migrationHistoryID),
+			)
+		}
+	}()
 
 	err = executeGhost(task.Instance, task.Database.Name, statement)
 	if err != nil {
@@ -188,17 +198,10 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	}
 
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true); err != nil {
-		return -1, "", err
+	if err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		return -1, "", util.FormatError(err)
 	}
 
-	if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, afterSchemaBuf.String(), mi.Database, true); err != nil {
-		l.Error("failed to update migration history record",
-			zap.Error(err),
-			zap.Int64("migration_id",
-				insertedID),
-		)
-	}
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
