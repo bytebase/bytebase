@@ -254,6 +254,9 @@ const taskStore = useTaskStore();
 const projectStore = useProjectStore();
 const databaseStore = useDatabaseStore();
 
+const create = computed(() => props.create);
+const issue = computed(() => props.issue);
+
 const issueLogic = ref<IssueLogic>();
 
 watchEffect(function prepare() {
@@ -695,14 +698,12 @@ const isValidStage = (stage: Stage | StageCreate) => {
   return true;
 };
 
+// Determine which type of IssueLogicProvider should be used
 const logicProviderType = computed(() => {
   if (isTenantMode.value) return TenantModeProvider;
   if (isGhostMode.value) return GhostModeProvider;
   return StandardModeProvider;
 });
-
-const create = computed(() => props.create);
-const issue = computed(() => props.issue);
 
 watch(
   [create, issue, () => route.query.sql as string, issueLogic],
