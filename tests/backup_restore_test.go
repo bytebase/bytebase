@@ -40,23 +40,19 @@ func TestBackupRestoreBasic(t *testing.T) {
 	_, stop := mysql.SetupTestInstance(t, port)
 	defer stop()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
 	a.NoError(err)
 	defer db.Close()
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	a.NoError(err)
-
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	a.NoError(err)
-
 	_, err = db.Exec(fmt.Sprintf(`
+	CREATE DATABASE %s;
+	USE %s;
 	CREATE TABLE %s (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`, table))
+	`, database, database, table))
 	a.NoError(err)
 
 	const numRecords = 10
@@ -133,24 +129,17 @@ func TestPITR(t *testing.T) {
 
 		_, stopFn := mysql.SetupTestInstance(t, port)
 
-		db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
+		db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
 		a.NoError(err)
 
-		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-		a.NoError(err)
-
-		_, err = db.Exec(fmt.Sprintf("USE %s", database))
-		a.NoError(err)
-
-		_, err = db.Exec(`
+		_, err = db.Exec(fmt.Sprintf(`
+		CREATE DATABASE %s;
+		USE %s;
 		CREATE TABLE tbl0 (
 			id INT,
 			PRIMARY KEY (id),
 			CHECK (id >= 0)
 		);
-		`)
-		a.NoError(err)
-		_, err = db.Exec(`
 		CREATE TABLE tbl1 (
 			id INT,
 			pid INT,
@@ -158,7 +147,7 @@ func TestPITR(t *testing.T) {
 			UNIQUE INDEX (pid),
 			CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
 		);
-		`)
+		`, database, database))
 		a.NoError(err)
 
 		return db, stopFn
