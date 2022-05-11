@@ -1,5 +1,5 @@
 import { inject, provide, InjectionKey } from "vue";
-import IssueLogic from "./IssueLogic";
+import type IssueLogic from "./IssueLogic";
 import TenantModeProvider from "./TenantModeProvider";
 import GhostModeProvider from "./GhostModeProvider";
 import StandardModeProvider from "./StandardModeProvider";
