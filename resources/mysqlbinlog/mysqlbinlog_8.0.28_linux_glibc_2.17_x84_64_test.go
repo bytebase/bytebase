@@ -5,7 +5,6 @@ package mysqlbinlog
 
 import (
 	"embed"
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -32,7 +31,7 @@ func TestBootMySQLBinlog(t *testing.T) {
 		t.Errorf("failed to extract mysqlbinlog distribution %q, error: %v", tarName, err)
 	}
 
-	mysqlbinlogBinPath := filePath.Join(tmpDir, version, "bin", "mysqlbinlog")
+	mysqlbinlogBinPath := filepath.Join(tmpDir, version, "bin", "mysqlbinlog")
 	cmd := exec.Command(mysqlbinlogBinPath, "-V")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
