@@ -35,15 +35,8 @@ func (r *Restore) RestoreBinlog(ctx context.Context, config BinlogConfig) error 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config BinlogConfig, database string, timestamp int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
-	if _, err := r.driver.DB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrDatabaseName)); err != nil {
-		return err
-	}
-
-	if _, err := r.driver.DB.ExecContext(ctx, fmt.Sprintf("USE `%s`", pitrDatabaseName)); err != nil {
-		return err
-	}
-
-	if _, err := r.driver.DB.ExecContext(ctx, "SET foreign_key_checks=OFF"); err != nil {
+	query := fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`; SET foreign_key_checks=OFF", pitrDatabaseName, pitrDatabaseName)
+	if _, err := r.driver.DB.ExecContext(ctx, query); err != nil {
 		return err
 	}
 
@@ -54,11 +47,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
 	_ = r.RestoreBinlog(ctx, config)
 
-	if _, err := r.driver.DB.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
-		return err
-	}
-
-	if _, err := r.driver.DB.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+	if _, err := r.driver.DB.ExecContext(ctx, fmt.Sprintf("SET foreign_key_checks=ON; USE `%s`", database)); err != nil {
 		return err
 	}
 
