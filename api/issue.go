@@ -171,9 +171,9 @@ type UpdateSchemaGhostDetail struct {
 
 // UpdateSchemaGhostContext is the issue create context for updating database schema using gh-ost.
 type UpdateSchemaGhostContext struct {
-	// UpdateSchemaDetail is the details of schema update.
+	// UpdateSchemaGhostDetail is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	DetailList []*UpdateSchemaGhostDetail `json:"updateSchemaGhostDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
 }
