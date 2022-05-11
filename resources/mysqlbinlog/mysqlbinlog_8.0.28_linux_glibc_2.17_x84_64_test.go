@@ -7,6 +7,7 @@ import (
 	"embed"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/bytebase/bytebase/resources/utils"
