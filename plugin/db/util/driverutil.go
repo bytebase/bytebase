@@ -132,7 +132,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
 		if err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
-			return -1, "", formatError(err)
+			return -1, "", FormatError(err)
 		}
 	}
 
@@ -166,14 +166,14 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 			}
 		}
 		if err := executor.Execute(ctx, statement); err != nil {
-			return -1, "", formatError(err)
+			return -1, "", FormatError(err)
 		}
 	}
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return -1, "", formatError(err)
+		return -1, "", FormatError(err)
 	}
 
 	return insertedID, afterSchemaBuf.String(), nil
@@ -296,12 +296,12 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, formatError(err)
+		return nil, FormatError(err)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, formatError(err)
+		return nil, FormatError(err)
 	}
 
 	colCount := len(columnTypes)
@@ -334,7 +334,7 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, formatError(err)
+			return nil, FormatError(err)
 		}
 
 		rowData := []interface{}{}
@@ -440,7 +440,8 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	return migrationHistoryList, nil
 }
 
-func formatError(err error) error {
+// FormatError formats schema migration errors
+func FormatError(err error) error {
 	if err == nil {
 		return nil
 	}
