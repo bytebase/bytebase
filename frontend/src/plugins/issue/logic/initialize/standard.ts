@@ -1,7 +1,11 @@
 import { TemplateType } from "@/plugins";
 import { IssueCreate, MigrationType } from "@/types";
-import { findDatabaseListByQuery, BuildNewIssueContext } from "../common";
-import { ESTABLISH_BASELINE_SQL, VALIDATE_ONLY_SQL } from "./constants";
+import {
+  findDatabaseListByQuery,
+  BuildNewIssueContext,
+  ESTABLISH_BASELINE_SQL,
+  VALIDATE_ONLY_SQL,
+} from "../common";
 import { IssueCreateHelper } from "./helper";
 
 export const buildNewStandardIssue = async (

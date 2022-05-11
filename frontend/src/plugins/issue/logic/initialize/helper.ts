@@ -14,8 +14,7 @@ import {
   useIssueStore,
   usePrincipalStore,
 } from "@/store";
-import { BuildNewIssueContext } from "../common";
-import { VALIDATE_ONLY_SQL } from "./constants";
+import { BuildNewIssueContext, VALIDATE_ONLY_SQL } from "../common";
 
 export class IssueCreateHelper {
   issueCreate: IssueCreate | null;
