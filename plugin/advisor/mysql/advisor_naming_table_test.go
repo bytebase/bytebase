@@ -104,5 +104,5 @@ func TestNamingTableConvention(t *testing.T) {
 		Type:    api.SchemaRuleTableNaming,
 		Level:   api.SchemaRuleLevelError,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }
