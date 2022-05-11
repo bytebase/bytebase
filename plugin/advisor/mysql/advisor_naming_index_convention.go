@@ -91,12 +91,12 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.index) {
+		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
 				Title:   "Mismatch index naming convention",
-				Content: fmt.Sprintf("Index mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
+				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
 	}
@@ -110,8 +110,9 @@ func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool)
 }
 
 type indexMetaData struct {
-	index    string
-	metaData map[string]string
+	indexName string
+	tableName string
+	metaData  map[string]string
 }
 
 // getMetaDataList returns the list of index with meta data.
@@ -131,8 +132,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    constraint.Name,
-					metaData: metaData,
+					indexName: constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}
@@ -154,13 +156,18 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					)
 					continue
 				}
+				if index.Unique {
+					// Unique index naming convention should in advisor_naming_unique_key_convention.go
+					continue
+				}
 				metaData := map[string]string{
 					api.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    spec.ToKey.String(),
-					metaData: metaData,
+					indexName: spec.ToKey.String(),
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			case ast.AlterTableAddConstraint:
 				if spec.Constraint.Tp == ast.ConstraintIndex {
@@ -174,8 +181,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 						api.TableNameTemplateToken:  node.Table.Name.String(),
 					}
 					res = append(res, &indexMetaData{
-						index:    spec.Constraint.Name,
-						metaData: metaData,
+						indexName: spec.Constraint.Name,
+						tableName: node.Table.Name.String(),
+						metaData:  metaData,
 					})
 				}
 			}
@@ -191,8 +199,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				api.TableNameTemplateToken:  node.Table.Name.String(),
 			}
 			res = append(res, &indexMetaData{
-				index:    node.IndexName,
-				metaData: metaData,
+				indexName: node.IndexName,
+				tableName: node.Table.Name.String(),
+				metaData:  metaData,
 			})
 		}
 	}

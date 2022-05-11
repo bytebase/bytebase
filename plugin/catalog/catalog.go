@@ -47,7 +47,7 @@ func NewService(logger *zap.Logger, databaseID *int, store *store.Store) *Catalo
 	}
 }
 
-// FindIndex finds the index by tableId and indexName
+// FindIndex finds the index by IndexFind
 func (c *Catalog) FindIndex(ctx context.Context, find *IndexFind) (*Index, error) {
 	table, err := c.store.GetTable(ctx, &api.TableFind{
 		DatabaseID: c.databaseID,

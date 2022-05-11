@@ -89,12 +89,12 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.index) {
+		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingUKConventionMismatch,
 				Title:   "Mismatch unique key naming convention",
-				Content: fmt.Sprintf("Unique key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
+				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
 	}
@@ -125,8 +125,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    constraint.Name,
-					metaData: metaData,
+					indexName: constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}
@@ -149,6 +150,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					continue
 				}
 				if !index.Unique {
+					// Index naming convention should in advisor_naming_index_convention.go
 					continue
 				}
 				metaData := map[string]string{
@@ -156,8 +158,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    spec.ToKey.String(),
-					metaData: metaData,
+					indexName: spec.ToKey.String(),
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			case ast.AlterTableAddConstraint:
 				switch spec.Constraint.Tp {
@@ -172,8 +175,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 						api.TableNameTemplateToken:  node.Table.Name.String(),
 					}
 					res = append(res, &indexMetaData{
-						index:    spec.Constraint.Name,
-						metaData: metaData,
+						indexName: spec.Constraint.Name,
+						tableName: node.Table.Name.String(),
+						metaData:  metaData,
 					})
 				}
 			}
@@ -189,8 +193,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				api.TableNameTemplateToken:  node.Table.Name.String(),
 			}
 			res = append(res, &indexMetaData{
-				index:    node.IndexName,
-				metaData: metaData,
+				indexName: node.IndexName,
+				tableName: node.Table.Name.String(),
+				metaData:  metaData,
 			})
 		}
 	}

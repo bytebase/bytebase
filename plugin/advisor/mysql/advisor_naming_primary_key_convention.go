@@ -82,12 +82,12 @@ func (checker *namingPKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.index) {
+		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingPKConventionMismatch,
 				Title:   "Mismatch primary key naming convention",
-				Content: fmt.Sprintf("Primary key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
+				Content: fmt.Sprintf("Primary key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
 	}
@@ -117,8 +117,9 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    constraint.Name,
-					metaData: metaData,
+					indexName: constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}
@@ -135,8 +136,9 @@ func (checker *namingPKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					api.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
-					index:    spec.Constraint.Name,
-					metaData: metaData,
+					indexName: spec.Constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}

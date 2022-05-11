@@ -83,12 +83,12 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.index) {
+		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingFKConventionMismatch,
 				Title:   "Mismatch foreign key naming convention",
-				Content: fmt.Sprintf("Foreign key mismatches the naming convention, expect %q but found `%s`", regex, indexData.index),
+				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
 	}
@@ -126,8 +126,9 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				}
 
 				res = append(res, &indexMetaData{
-					index:    constraint.Name,
-					metaData: metaData,
+					indexName: constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}
@@ -150,8 +151,9 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
 				res = append(res, &indexMetaData{
-					index:    spec.Constraint.Name,
-					metaData: metaData,
+					indexName: spec.Constraint.Name,
+					tableName: node.Table.Name.String(),
+					metaData:  metaData,
 				})
 			}
 		}
