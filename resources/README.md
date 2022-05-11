@@ -21,3 +21,11 @@ We will embed MySQL binaries for testing. You need to run `go generate -tags mys
 linux-glibc2.17-x86_64 used for Linux (MD5 55a7759e25cc527416150c8181ce3f6d): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz
 
 macos11-arm64 used for MacOS Apple Silicon development (MD5 f1943053b12428e4c0e4ed309a636fd0): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-macos11-arm64.tar.gz
+
+## MySQL - mysqlbinlog
+
+We embed mysqlbinlog for PITR. MySQL does not provide a separate mysqlbinlog binary, we need to manually extract our files from the mysql distribution.
+
+linux-glibc2.17-x86_64 used for Linux (MD5 55a7759e25cc527416150c8181ce3f6d): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz, extract bin/mysqlbinlog, lib/private/libcrypto.so.1.1 and lib/private/libssl.so.1.1.
+
+macos11-arm64 used for MacOS Apple Silicon development (MD5 f1943053b12428e4c0e4ed309a636fd0): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-macos11-arm64.tar.gz, extract bin/mysqlbinlog, lib/libcrypto.1.1.dylib and lib/libssl.1.1.dylib.
