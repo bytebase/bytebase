@@ -53,6 +53,43 @@ const (
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
+
+	// TableNameTemplateToken is the token for table name
+	TableNameTemplateToken = "{{table}}"
+	// ColumnListTemplateToken is the token for column name list
+	ColumnListTemplateToken = "{{column_list}}"
+	// ReferencingTableNameTemplateToken is the token for referencing table name
+	ReferencingTableNameTemplateToken = "{{referencing_table}}"
+	// ReferencingColumnNameTemplateToken is the token for referencing column name
+	ReferencingColumnNameTemplateToken = "{{referencing_column}}"
+	// ReferencedTableNameTemplateToken is the token for referenced table name
+	ReferencedTableNameTemplateToken = "{{referenced_table}}"
+	// ReferencedColumnNameTemplateToken is the token for referenced column name
+	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
+)
+
+var (
+	// TemplateNamingTokens is the mapping for rule type to template token
+	TemplateNamingTokens = map[SchemaReviewRuleType]map[string]bool{
+		SchemaRulePKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleIDXNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleUKNaming: {
+			TableNameTemplateToken:  true,
+			ColumnListTemplateToken: true,
+		},
+		SchemaRuleFKNaming: {
+			ReferencingTableNameTemplateToken:  true,
+			ReferencingColumnNameTemplateToken: true,
+			ReferencedTableNameTemplateToken:   true,
+			ReferencedColumnNameTemplateToken:  true,
+		},
+	}
 )
 
 // SchemaReviewPolicy is the policy configuration for schema review.
@@ -88,7 +125,11 @@ func (rule *SchemaReviewRule) Validate() error {
 	// TODO(rebelice): add other schema review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
-		if _, err := UnmarshalNamingRulePayloadFormat(rule.Payload); err != nil {
+		if _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+			return err
+		}
+	case SchemaRulePKNaming, SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
+		if _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleRequiredColumn:
@@ -109,8 +150,8 @@ type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
 }
 
-// UnmarshalNamingRulePayloadFormat will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
+// UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
+func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
@@ -120,6 +161,27 @@ func UnmarshalNamingRulePayloadFormat(payload string) (*regexp.Regexp, error) {
 		return nil, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
 	}
 	return format, nil
+}
+
+// UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
+// For example, "hard_code_{{table}}_{{column}}_end" will return
+// "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
+func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
+	var nr NamingRulePayload
+	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
+		return "", nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+	}
+
+	template := nr.Format
+	keys := getTemplateTokens(template)
+
+	for _, key := range keys {
+		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
+			return "", nil, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
+		}
+	}
+
+	return template, keys, nil
 }
 
 // UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
