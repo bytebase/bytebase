@@ -252,22 +252,32 @@
     </div>
 
     <!-- Action Button Group -->
-    <div class="pt-4">
-      <div class="flex justify-end items-center">
+    <div class="pt-4 px-2">
+      <div class="flex justify-between items-center">
         <div>
-          <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
+          <BBCheckbox
+            v-if="connectionInfoChanged"
+            :title="$t('instance.sync-schema-afterward')"
+            :value="state.syncSchema"
+            @toggle="state.syncSchema = !state.syncSchema"
+          />
         </div>
-        <button
-          v-if="allowEdit"
-          type="button"
-          :disabled="!valueChanged || state.isUpdating"
-          :class="
-            !valueChanged || state.isUpdating ? 'btn-normal' : 'btn-primary'
-          "
-          @click.prevent="doUpdate"
-        >
-          {{ $t("common.update") }}
-        </button>
+        <div class="flex justify-end items-center">
+          <div>
+            <BBSpin v-if="state.isUpdating" :title="$t('common.updating')" />
+          </div>
+          <button
+            v-if="allowEdit"
+            type="button"
+            :disabled="!valueChanged || state.isUpdating"
+            :class="
+              !valueChanged || state.isUpdating ? 'btn-normal' : 'btn-primary'
+            "
+            @click.prevent="doUpdate"
+          >
+            {{ $t("common.update") }}
+          </button>
+        </div>
       </div>
     </div>
   </form>
@@ -309,6 +319,7 @@ interface State {
   originalInstance: Instance;
   instance: Instance;
   isUpdating: boolean;
+  syncSchema: boolean;
   dataSourceList: EditDataSource[];
   currentDataSourceType: DataSourceType;
 }
@@ -340,6 +351,7 @@ const state = reactive<State>({
   // Make hard copy since we are going to make equal comparison to determine the update button enable state.
   instance: cloneDeep(props.instance),
   isUpdating: false,
+  syncSchema: true,
   dataSourceList: dataSourceList,
   currentDataSourceType: "ADMIN",
 });
@@ -352,6 +364,21 @@ const allowEdit = computed(() => {
 
 const valueChanged = computed(() => {
   return !isEqual(state.instance, state.originalInstance);
+});
+
+const connectionInfoChanged = computed(() => {
+  if (!valueChanged.value) {
+    return false;
+  }
+
+  return (
+    state.instance.host != state.originalInstance.host ||
+    state.instance.port != state.originalInstance.port ||
+    !isEqual(
+      state.originalInstance.dataSourceList,
+      state.instance.dataSourceList
+    )
+  );
 });
 
 const defaultPort = computed(() => {
@@ -502,10 +529,10 @@ const updateInstance = (field: string, value: string) => {
 };
 
 const doUpdate = () => {
-  const patchedInstance: InstancePatch = {};
+  const patchedInstance: InstancePatch = { syncSchema: state.syncSchema };
   let instanceInfoChanged = false;
   let dataSourceListChanged = false;
-  let connectionInfoChanged = false;
+  let reloadDatabaseAndUser = connectionInfoChanged.value;
 
   if (state.instance.name != state.originalInstance.name) {
     patchedInstance.name = state.instance.name;
@@ -517,13 +544,11 @@ const doUpdate = () => {
   }
   if (state.instance.host != state.originalInstance.host) {
     patchedInstance.host = state.instance.host;
-    connectionInfoChanged = true;
     instanceInfoChanged = true;
   }
   if (state.instance.port != state.originalInstance.port) {
     patchedInstance.port = state.instance.port;
     instanceInfoChanged = true;
-    connectionInfoChanged = true;
   }
 
   if (
@@ -553,6 +578,7 @@ const doUpdate = () => {
                 type: dataSource.type,
                 username: dataSource.username,
                 password: dataSource.password,
+                syncSchema: state.syncSchema,
               })
             );
           }
@@ -563,7 +589,7 @@ const doUpdate = () => {
             dataSourceStore.patchDataSource({
               databaseId: dataSource.databaseId,
               dataSourceId: dataSource.id,
-              dataSource: dataSource,
+              dataSource: { ...dataSource, syncSchema: state.syncSchema },
             })
           );
         }
@@ -583,18 +609,15 @@ const doUpdate = () => {
       instanceStore
         .fetchInstanceById(state.instance.id)
         .then((instance) => {
-          state.isUpdating = false;
           state.originalInstance = instance;
           state.instance = cloneDeep(state.originalInstance);
-          state.dataSourceList = state.instance.dataSourceList.map(
-            (dataSource) => {
-              return {
-                ...cloneDeep(dataSource),
-                updatedPassword: "",
-                useEmptyPassword: false,
-              } as EditDataSource;
-            }
-          );
+          state.dataSourceList = instance.dataSourceList.map((dataSource) => {
+            return {
+              ...cloneDeep(dataSource),
+              updatedPassword: "",
+              useEmptyPassword: false,
+            } as EditDataSource;
+          });
           pushNotification({
             module: "bytebase",
             style: "SUCCESS",
@@ -604,12 +627,14 @@ const doUpdate = () => {
           });
 
           // Backend will sync the schema upon connection info change, so here we try to fetch the synced schema.
-          if (connectionInfoChanged) {
-            useDatabaseStore().fetchDatabaseListByInstanceId(state.instance.id);
+          if (reloadDatabaseAndUser) {
+            useDatabaseStore().fetchDatabaseListByInstanceId(instance.id);
+            useInstanceStore().fetchInstanceUserListById(instance.id);
           }
         })
         .finally(() => {
           state.isUpdating = false;
+          state.syncSchema = true;
         });
     });
   }
