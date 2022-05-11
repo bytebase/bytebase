@@ -2,7 +2,7 @@
   <IssueDetailLayout
     v-if="issue"
     :issue="issue"
-    :create="state.create"
+    :create="create"
     @status-changed="onStatusChanged"
   />
   <div v-else class="w-full h-full flex justify-center items-center">
@@ -15,537 +15,78 @@
   />
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  watch,
-  watchEffect,
-  reactive,
-  ref,
-  defineComponent,
-  Ref,
-} from "vue";
+<script lang="ts" setup>
+import { computed, reactive, watch } from "vue";
 import { useRoute, _RouteLocationBase } from "vue-router";
-import { idFromSlug, isDBAOrOwner } from "../utils";
-import { IssueDetailLayout } from "../components/Issue";
+import { NSpin } from "naive-ui";
+import { IssueDetailLayout } from "@/components/Issue";
 import {
-  UNKNOWN_ID,
-  Issue,
-  IssueCreate,
   IssueType,
-  Database,
   NORMAL_POLL_INTERVAL,
-  POLL_JITTER,
   POST_CHANGE_POLL_INTERVAL,
   Project,
   unknown,
-  MigrationType,
-  TaskDatabaseSchemaUpdatePayload,
-  Principal,
-  UpdateSchemaContext,
-  UpdateSchemaGhostContext,
-} from "../types";
-import {
-  defaultTemplate,
-  templateForType,
-  IssueTemplate,
-  TemplateType,
-} from "../plugins";
-import { NSpin } from "naive-ui";
-import {
-  hasFeature,
-  pushNotification,
-  useActuatorStore,
-  useCurrentUser,
-  useDatabaseStore,
-  useIssueStore,
-  usePrincipalStore,
-  useProjectStore,
-} from "@/store";
+  UNKNOWN_ID,
+} from "@/types";
+import { hasFeature, useProjectStore } from "@/store";
+import { useInitializeIssue, usePollIssue } from "@/plugins/issue/logic";
 
 interface LocalState {
-  // Needs to maintain this state and set it to false manually after creating the issue.
-  // router.push won't trigger the reload because new and existing issue shares
-  // the same component.
-  create: boolean;
-  newIssue?: IssueCreate;
-  // Timer tracking the issue poller, we need this to cancel the outstanding one when needed.
-  pollIssueTimer?: ReturnType<typeof setTimeout>;
   showFeatureModal: boolean;
 }
 
-// validateOnly: true doesn't support empty SQL
-// so we use a fake sql to validate and then set it back to empty if needed
-const VALIDATE_ONLY_SQL = "/* YOUR_SQL_HERE */";
-const ESTABLISH_BASELINE_SQL = "/* Establish baseline using current schema */";
-
-export default defineComponent({
-  name: "IssueDetail",
-  components: {
-    IssueDetailLayout,
-    NSpin,
-  },
-  props: {
-    issueSlug: {
-      required: true,
-      type: String,
-    },
-  },
-
-  setup(props) {
-    const route = useRoute();
-
-    const currentUser = useCurrentUser();
-    const issueStore = useIssueStore();
-    const projectStore = useProjectStore();
-
-    let newIssueTemplate = ref<IssueTemplate>(defaultTemplate());
-
-    const refreshTemplate = () => {
-      const issueType = route.query.template as IssueType;
-      if (issueType) {
-        const template = templateForType(issueType);
-        if (template) {
-          newIssueTemplate.value = template;
-        } else {
-          pushNotification({
-            module: "bytebase",
-            style: "WARN",
-            title: `Unknown template '${issueType}'.`,
-            description: "Fallback to the default template",
-          });
-        }
-      }
-
-      if (!newIssueTemplate.value) {
-        newIssueTemplate.value = defaultTemplate();
-      }
-    };
-
-    // Vue doesn't natively react to query parameter change
-    // so we need to manually watch here.
-    watch(
-      () => route.query.template,
-      () => {
-        refreshTemplate();
-      }
-    );
-
-    watchEffect(refreshTemplate);
-
-    const state = reactive<LocalState>({
-      create: props.issueSlug.toLowerCase() == "new",
-      newIssue: undefined,
-      showFeatureModal: false,
-    });
-
-    const issue = computed((): Issue | IssueCreate => {
-      return state.create
-        ? state.newIssue!
-        : issueStore.getIssueById(idFromSlug(props.issueSlug));
-    });
-
-    const findProject = async (): Promise<Project> => {
-      const projectId = route.query.project
-        ? parseInt(route.query.project as string)
-        : UNKNOWN_ID;
-      let project = unknown("PROJECT") as Project;
-      if (projectId !== UNKNOWN_ID) {
-        project = await projectStore.fetchProjectById(projectId);
-      }
-
-      return project;
-    };
-
-    const findDatabaseListByQuery = (): Database[] => {
-      // route.query.databaseList is comma-splitted databaseId list
-      // e.g. databaseList=7002,7006,7014
-      const databaseList: Database[] = [];
-      if (route.query.databaseList) {
-        const databaseIdList = (route.query.databaseList as string).split(",");
-        const databaseStore = useDatabaseStore();
-        for (const databaseId of databaseIdList) {
-          databaseList.push(
-            databaseStore.getDatabaseById(parseInt(databaseId, 10))
-          );
-        }
-      }
-      return databaseList;
-    };
-
-    const buildNewTenantSchemaUpdateIssue = async (): Promise<IssueCreate> => {
-      const helper = new IssueCreateHelper({
-        template: newIssueTemplate,
-        currentUser,
-        issueStore,
-        route,
-      });
-      await helper.prepare();
-      // tenant issue is generated by specifying databaseName
-      const templateType = route.query.template as TemplateType;
-      let migrationType: MigrationType = "MIGRATE";
-      if (templateType === "bb.issue.database.data.update") {
-        migrationType = "DATA";
-      }
-      helper.issueCreate!.createContext = {
-        migrationType,
-        updateSchemaDetailList: [
-          {
-            databaseName: route.query.databaseName,
-            statement: VALIDATE_ONLY_SQL,
-          },
-        ],
-      };
-      await helper.validate();
-
-      // we are setting SQL statement to "" because showing /* YOUR_SQL_HERE */
-      // is not that friendly to users
-      // setting it to empty can provide a placeholder to user, along with an
-      // exclamation mark indicating "No SQL statement"
-      const context = helper.issueCreate!.createContext as UpdateSchemaContext;
-      context.updateSchemaDetailList[0].statement = "";
-
-      return helper.generate();
-    };
-
-    const buildNewStandardIssue = async (): Promise<IssueCreate> => {
-      const helper = new IssueCreateHelper({
-        template: newIssueTemplate,
-        currentUser,
-        issueStore,
-        route,
-      });
-      await helper.prepare();
-
-      // standard single-stage or multi-stage issue is generated by specifying
-      // databaseId for each stage
-      const databaseList = findDatabaseListByQuery();
-      const templateType = route.query.template as TemplateType;
-      let migrationType: MigrationType = "MIGRATE";
-      if (templateType === "bb.issue.database.data.update") {
-        migrationType = "DATA";
-      }
-      if (templateType === "bb.issue.database.schema.baseline") {
-        migrationType = "BASELINE";
-      }
-      const statement =
-        migrationType === "BASELINE"
-          ? ESTABLISH_BASELINE_SQL
-          : VALIDATE_ONLY_SQL;
-      helper.issueCreate!.createContext = {
-        migrationType,
-        updateSchemaDetailList: databaseList.map((db) => {
-          return {
-            databaseId: db.id,
-            databaseName: db.name,
-            statement,
-          };
-        }),
-      };
-
-      await helper.validate();
-
-      // clean up createContext for standard issues
-      helper.issueCreate!.createContext = {};
-
-      return helper.generate();
-    };
-
-    const buildNewGhostIssue = async (): Promise<IssueCreate> => {
-      const helper = new IssueCreateHelper({
-        template: newIssueTemplate,
-        currentUser,
-        issueStore,
-        route,
-      });
-      await helper.prepare();
-
-      helper.issueCreate!.type = "bb.issue.database.schema.update.ghost";
-
-      const databaseList = findDatabaseListByQuery();
-      const createContext: UpdateSchemaGhostContext = {
-        updateSchemaDetailList: databaseList.map((db) => {
-          return {
-            databaseId: db.id,
-            databaseName: db.name,
-            statement: VALIDATE_ONLY_SQL,
-            earliestAllowedTs: 0,
-          };
-        }),
-      };
-
-      helper.issueCreate!.createContext = createContext;
-
-      await helper.validate();
-
-      return helper.generate();
-    };
-
-    const maybeBuildTenantDeployIssue = async (): Promise<
-      IssueCreate | undefined
-    > => {
-      if (route.query.mode !== "tenant") {
-        return undefined;
-      }
-
-      const project = await findProject();
-      const issueType = route.query.template as IssueType;
-      const isMigrate =
-        issueType === "bb.issue.database.schema.update" ||
-        issueType === "bb.issue.database.data.update";
-      if (project.tenantMode === "TENANT" && isMigrate) {
-        return buildNewTenantSchemaUpdateIssue();
-      }
-      return undefined;
-    };
-
-    const maybeBuildGhostIssue = async (): Promise<IssueCreate | undefined> => {
-      if (parseInt(route.query.ghost as string, 10) !== 1) {
-        return undefined;
-      }
-      const issueType = route.query.template as IssueType;
-      if (issueType !== "bb.issue.database.schema.update") {
-        return undefined;
-      }
-      return buildNewGhostIssue();
-    };
-
-    const buildNewIssue = async (): Promise<IssueCreate | undefined> => {
-      const tenant = await maybeBuildTenantDeployIssue();
-      if (tenant) {
-        return tenant;
-      }
-
-      const ghost = await maybeBuildGhostIssue();
-      if (ghost) {
-        return ghost;
-      }
-
-      // Create issue from normal query parameter
-      const newIssue = await buildNewStandardIssue();
-
-      for (const field of newIssueTemplate.value.inputFieldList) {
-        const value = route.query[field.slug] as string;
-        if (value) {
-          if (field.type == "Boolean") {
-            newIssue.payload[field.id] =
-              value != "0" && value.toLowerCase() != "false";
-          } else {
-            newIssue.payload[field.id] = value;
-          }
-        }
-      }
-
-      return newIssue;
-    };
-
-    // pollIssue invalidates the current timer and schedule a new timer in <<interval>> microseconds
-    const pollIssue = (interval: number) => {
-      if (state.pollIssueTimer) {
-        clearInterval(state.pollIssueTimer);
-      }
-
-      state.pollIssueTimer = setTimeout(() => {
-        issueStore.fetchIssueById(idFromSlug(props.issueSlug));
-        pollIssue(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
-      }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
-    };
-
-    const pollOnCreateStateChange = () => {
-      let interval = NORMAL_POLL_INTERVAL;
-      // We will poll faster if meets either of the condition
-      // 1. Created the database create issue, expect creation result quickly.
-      // 2. Update the database schema, will do connection and syntax check.
-      if (
-        (issue.value.type == "bb.issue.database.create" ||
-          issue.value.type == "bb.issue.database.schema.update" ||
-          issue.value.type == "bb.issue.database.data.update") &&
-        Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000
-      ) {
-        interval = POST_CHANGE_POLL_INTERVAL;
-      }
-      pollIssue(interval);
-    };
-
-    onMounted(async () => {
-      if (!state.create) {
-        pollOnCreateStateChange();
-      } else {
-        state.newIssue = await buildNewIssue();
-      }
-    });
-
-    onUnmounted(() => {
-      if (state.pollIssueTimer) {
-        clearInterval(state.pollIssueTimer);
-      }
-    });
-
-    watch(
-      () => props.issueSlug,
-      async (cur) => {
-        const oldCreate = state.create;
-        state.create = cur.toLowerCase() == "new";
-        if (!state.create && oldCreate) {
-          pollOnCreateStateChange();
-        } else if (state.create && !oldCreate) {
-          clearInterval(state.pollIssueTimer as any);
-          state.newIssue = await buildNewIssue();
-        }
-      }
-    );
-
-    watch(
-      () => state.newIssue,
-      async (issue) => {
-        if (issue?.type === "bb.issue.database.schema.update") {
-          const project = await findProject();
-          if (
-            project.tenantMode === "TENANT" &&
-            !hasFeature("bb.feature.multi-tenancy")
-          ) {
-            state.showFeatureModal = true;
-          }
-        }
-      }
-    );
-
-    const onStatusChanged = (eager: boolean) => {
-      pollIssue(eager ? POST_CHANGE_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
-    };
-
-    return {
-      route,
-      state,
-      issue,
-      onStatusChanged,
-    };
+const props = defineProps({
+  issueSlug: {
+    required: true,
+    type: String,
   },
 });
 
-type IssueCreateHelperContext = {
-  template: Ref<IssueTemplate>;
-  currentUser: Ref<Principal>;
-  issueStore: ReturnType<typeof useIssueStore>;
-  route: _RouteLocationBase;
+const route = useRoute();
+
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+});
+
+const issueSlug = computed(() => props.issueSlug);
+
+const { create, issue } = useInitializeIssue(issueSlug);
+
+const pollIssue = usePollIssue(issueSlug, issue);
+
+watch(issueSlug, async () => {
+  if (!create.value) return;
+  const type = route.query.template as IssueType;
+  const tenantIssueTypes: IssueType[] = [
+    "bb.issue.database.schema.update",
+    "bb.issue.database.data.update",
+  ];
+  if (tenantIssueTypes.includes(type)) {
+    const project = await findProject();
+    if (
+      project.tenantMode === "TENANT" &&
+      !hasFeature("bb.feature.multi-tenancy")
+    ) {
+      state.showFeatureModal = true;
+    }
+  }
+});
+
+const onStatusChanged = (eager: boolean) => {
+  pollIssue(eager ? POST_CHANGE_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
 };
 
-class IssueCreateHelper {
-  context: IssueCreateHelperContext;
-  issueCreate: IssueCreate | null;
-  issue: Issue | null;
+const findProject = async (): Promise<Project> => {
+  const projectId = route.query.project
+    ? parseInt(route.query.project as string)
+    : UNKNOWN_ID;
+  let project = unknown("PROJECT");
 
-  constructor(context: IssueCreateHelperContext) {
-    this.context = context;
-    this.issueCreate = null;
-    this.issue = null;
+  if (projectId !== UNKNOWN_ID) {
+    const projectStore = useProjectStore();
+    project = await projectStore.fetchProjectById(projectId);
   }
 
-  findDBAOrOwner(): Principal {
-    const currentUser = this.context.currentUser.value;
-    if (isDBAOrOwner(currentUser.role)) return currentUser;
-
-    const userList = usePrincipalStore().principalList;
-
-    // In bytebase, we always have at least 1 DBA or Owner, so it's safe here.
-    return userList.find((user) => isDBAOrOwner(user.role))!;
-  }
-
-  async prepare(): Promise<IssueCreate> {
-    const { template, currentUser, route } = this.context;
-    const actuatorStore = useActuatorStore();
-    const baseTemplate = template.value.buildIssue({
-      environmentList: [],
-      approvalPolicyList: [],
-      databaseList: [],
-      currentUser: currentUser.value,
-    });
-
-    const templateType = route.query.template as TemplateType;
-    const issueCreate: IssueCreate = {
-      projectId: parseInt(route.query.project as string) || UNKNOWN_ID,
-      name: (route.query.name as string) || baseTemplate.name,
-      type:
-        templateType === "bb.issue.database.schema.baseline"
-          ? "bb.issue.database.schema.update" // use schema.update to establish baseline
-          : templateType,
-      description: baseTemplate.description,
-      // validateOnly does not support assigneeId=-1
-      // so we need to specify here
-      // but will reset this to -1 if route.query.assignee is empty
-      assigneeId: this.findDBAOrOwner().id,
-      createContext: {},
-      payload: {},
-    };
-
-    // For demo mode, we assign the issue to the current user, so it can also experience the assignee user flow.
-    if (actuatorStore.isDemo) {
-      issueCreate.assigneeId = currentUser.value.id;
-    }
-    if (route.query.name) {
-      issueCreate.name = route.query.name as string;
-    }
-    if (route.query.description) {
-      issueCreate.description = route.query.description as string;
-    }
-    if (route.query.assignee) {
-      issueCreate.assigneeId = parseInt(route.query.assignee as string);
-    }
-
-    this.issueCreate = issueCreate;
-
-    return issueCreate;
-  }
-
-  async validate(): Promise<[IssueCreate, Issue]> {
-    const { issueStore } = this.context;
-    const issue = await issueStore.validateIssue(this.issueCreate!);
-
-    this.issue = issue;
-
-    return [this.issueCreate!, this.issue];
-  }
-
-  async generate(): Promise<IssueCreate> {
-    const { route } = this.context;
-    const issueCreate = this.issueCreate!;
-    const issue = this.issue!;
-    if (!route.query.assignee) {
-      issueCreate.assigneeId =
-        parseInt(route.query.assignee as string) || UNKNOWN_ID;
-    }
-
-    // copy the generated pipeline to issueCreate
-    // issueCreate is an editable object for the whole issue UI
-    issueCreate.pipeline = {
-      name: issue.pipeline.name,
-      stageList: issue.pipeline.stageList.map((stage) => ({
-        name: stage.name,
-        environmentId: stage.environment.id,
-        taskList: stage.taskList.map((task) => {
-          const payload = task.payload as TaskDatabaseSchemaUpdatePayload;
-          // if we are using VALIDATE_ONLY_SQL, set it back to empty
-          // otherwise keep it as-is
-          const statement =
-            payload.statement === VALIDATE_ONLY_SQL ? "" : payload.statement;
-          return {
-            name: task.name,
-            status: task.status,
-            type: task.type,
-            instanceId: task.instance.id,
-            databaseId: task.database?.id,
-            databaseName: task.database?.name,
-            migrationType: payload.migrationType,
-            statement,
-            earliestAllowedTs: task.earliestAllowedTs,
-          };
-        }),
-      })),
-    };
-
-    return issueCreate;
-  }
-}
+  return project;
+};
 </script>
