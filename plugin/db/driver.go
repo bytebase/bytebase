@@ -387,17 +387,6 @@ type ConnectionContext struct {
 	InstanceName    string
 }
 
-// MySQLBinlogConfig is the binlog coordination for MySQL.
-type MySQLBinlogConfig struct {
-	Filename string
-	Position int64
-}
-
-// RecoveryConfig defines a range in the incremental backup.
-type RecoveryConfig struct {
-	MySQL *MySQLBinlogConfig
-}
-
 // Driver is the interface for database driver.
 type Driver interface {
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
@@ -433,12 +422,6 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
-	RestoreIncremental(ctx context.Context, config RecoveryConfig) error
-	// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-	RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config RecoveryConfig, database string, timestamp int64) error
-	// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
-	SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error
 }
 
 // Register makes a database driver available by the provided type.

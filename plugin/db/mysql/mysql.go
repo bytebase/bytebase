@@ -40,7 +40,8 @@ var (
 )
 
 const (
-	maxDatabaseNameLength = 64
+	// MaxDatabaseNameLength is the allowed max database name length in MySQL
+	MaxDatabaseNameLength = 64
 )
 
 func init() {
@@ -54,7 +55,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
-	db *sql.DB
+	DB *sql.DB
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -110,7 +111,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		panic(err)
 	}
 	driver.dbType = dbType
-	driver.db = db
+	driver.DB = db
 	driver.connectionCtx = connCtx
 
 	return driver, nil
@@ -118,23 +119,23 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 
 // Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
-	return driver.db.Close()
+	return driver.DB.Close()
 }
 
 // Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.db.PingContext(ctx)
+	return driver.DB.PingContext(ctx)
 }
 
 // GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
-	return driver.db, nil
+	return driver.DB, nil
 }
 
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
-	versionRow, err := driver.db.QueryContext(ctx, query)
+	versionRow, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
@@ -205,7 +206,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			FROM information_schema.STATISTICS
 			WHERE ` + indexWhere
 	}
-	indexRows, err := driver.db.QueryContext(ctx, query)
+	indexRows, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -264,7 +265,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				COLUMN_COMMENT
 			FROM information_schema.COLUMNS
 			WHERE ` + columnWhere
-	columnRows, err := driver.db.QueryContext(ctx, query)
+	columnRows, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -324,7 +325,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				IFNULL(TABLE_COMMENT, '')
 			FROM information_schema.TABLES
 			WHERE ` + tableWhere
-	tableRows, err := driver.db.QueryContext(ctx, query)
+	tableRows, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -395,7 +396,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				VIEW_DEFINITION
 			FROM information_schema.VIEWS
 			WHERE ` + viewWhere
-	viewRows, err := driver.db.QueryContext(ctx, query)
+	viewRows, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -435,7 +436,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+	rows, err := driver.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -474,7 +475,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		WHERE user NOT LIKE 'mysql.%'
 	`
 	var userList []*db.User
-	userRows, err := driver.db.QueryContext(ctx, query)
+	userRows, err := driver.DB.QueryContext(ctx, query)
 
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -496,7 +497,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
 		name := fmt.Sprintf("'%s'@'%s'", user, host)
 		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
-		grantRows, err := driver.db.QueryContext(ctx,
+		grantRows, err := driver.DB.QueryContext(ctx,
 			query,
 		)
 		if err != nil {
@@ -523,7 +524,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	tx, err := driver.db.BeginTx(ctx, nil)
+	tx, err := driver.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -542,7 +543,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.l, driver.DB, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -553,7 +554,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'
 		`
-	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
+	return util.NeedsSetupMigrationSchema(ctx, driver.DB, query)
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
@@ -571,7 +572,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		// Do not wrap it in a single transaction here because:
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
 		// 2. For TiDB, the created database/table is not visible to the followup statements from the same transaction.
-		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
+		if _, err := driver.DB.ExecContext(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -901,7 +902,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	txn, err := driver.db.BeginTx(ctx, &options)
+	txn, err := driver.DB.BeginTx(ctx, &options)
 	if err != nil {
 		return err
 	}
@@ -920,7 +921,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
+	txn, err := driver.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -942,110 +943,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-// RestoreIncremental restores the database using incremental backup in time range of [config.Start, config.End).
-func (driver *Driver) RestoreIncremental(ctx context.Context, config db.RecoveryConfig) error {
-	return fmt.Errorf("Unimplemented")
-}
-
-// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config db.RecoveryConfig, database string, timestamp int64) error {
-	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrDatabaseName)); err != nil {
-		return err
-	}
-
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("USE `%s`", pitrDatabaseName)); err != nil {
-		return err
-	}
-
-	if _, err := driver.db.ExecContext(ctx, "SET foreign_key_checks=OFF"); err != nil {
-		return err
-	}
-
-	if err := driver.Restore(ctx, fullBackup); err != nil {
-		return err
-	}
-
-	// TODO(dragonly): implement RestoreIncremental in mysql driver
-	_ = driver.RestoreIncremental(ctx, config)
-
-	if _, err := driver.db.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
-		return err
-	}
-
-	if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SwapPITRDatabase renames the pitr database to the target, and the original to the old database
-func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error {
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	pitrOldDatabase := getPITRDatabaseOldName(database)
-	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
-
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
-		return err
-	}
-
-	tables, err := getTables(txn, database)
-	if err != nil {
-		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
-	}
-	tablesPITR, err := getTables(txn, pitrDatabaseName)
-	if err != nil {
-		return fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
-	}
-
-	var tableRenames []string
-	for _, table := range tables {
-		tableRenames = append(tableRenames, fmt.Sprintf("`%s`.`%s` TO `%s`.`%s`", database, table.name, pitrOldDatabase, table.name))
-	}
-	for _, table := range tablesPITR {
-		tableRenames = append(tableRenames, fmt.Sprintf("`%s`.`%s` TO `%s`.`%s`", pitrDatabaseName, table.name, database, table.name))
-	}
-	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
-	driver.l.Debug("mysql swap database", zap.String("query", renameStmt))
-
-	if _, err := txn.ExecContext(ctx, renameStmt); err != nil {
-		return err
-	}
-
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// getPITRDatabaseName composes a pitr database name
-func getPITRDatabaseName(database string, timestamp int64) string {
-	suffix := fmt.Sprintf("pitr_%d", timestamp)
-	return getSafeName(database, suffix)
-}
-
-// getPITRDatabaseOldName composes a pitr database name for
-func getPITRDatabaseOldName(database string) string {
-	suffix := "old"
-	return getSafeName(database, suffix)
-}
-
-func getSafeName(baseName, suffix string) string {
-	name := fmt.Sprintf("%s_%s", baseName, suffix)
-	if len(name) <= maxDatabaseNameLength {
-		return name
-	}
-	extraCharacters := len(name) - maxDatabaseNameLength
-	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
@@ -1100,21 +997,21 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := getTables(txn, dbName)
+		tables, err := GetTables(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
 		}
 		for _, tbl := range tables {
-			if schemaOnly && tbl.tableType == baseTableType {
-				tbl.statement = excludeSchemaAutoIncrementValue(tbl.statement)
+			if schemaOnly && tbl.TableType == baseTableType {
+				tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
 			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 				return err
 			}
-			if !schemaOnly && tbl.tableType == baseTableType {
+			if !schemaOnly && tbl.TableType == baseTableType {
 				// Include db prefix if dumping multiple databases.
 				includeDbPrefix := len(dumpableDbNames) > 1
-				if err := exportTableData(txn, dbName, tbl.name, includeDbPrefix, out); err != nil {
+				if err := exportTableData(txn, dbName, tbl.Name, includeDbPrefix, out); err != nil {
 					return err
 				}
 			}
@@ -1201,11 +1098,11 @@ func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	return "", fmt.Errorf("query %q returned empty row", query)
 }
 
-// tableSchema describes the schema of a table or view.
-type tableSchema struct {
-	name      string
-	tableType string
-	statement string
+// TableSchema describes the schema of a table or view.
+type TableSchema struct {
+	Name      string
+	TableType string
+	Statement string
 }
 
 // routineSchema describes the schema of a function or procedure (routine).
@@ -1227,9 +1124,9 @@ type triggerSchema struct {
 	statement string
 }
 
-// getTables gets all tables of a database.
-func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
-	var tables []*tableSchema
+// GetTables gets all tables of a database.
+func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1238,18 +1135,18 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var tbl tableSchema
-		if err := rows.Scan(&tbl.name, &tbl.tableType); err != nil {
+		var tbl TableSchema
+		if err := rows.Scan(&tbl.Name, &tbl.TableType); err != nil {
 			return nil, err
 		}
 		tables = append(tables, &tbl)
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbName, tbl.name, tbl.tableType)
+		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
-			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.name, tbl.tableType, err)
+			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.Name, tbl.TableType, err)
 		}
-		tbl.statement = stmt
+		tbl.Statement = stmt
 	}
 	return tables, nil
 }
