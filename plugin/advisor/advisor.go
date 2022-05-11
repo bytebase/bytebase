@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -65,6 +66,19 @@ const (
 
 	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
 	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
+
+	// MySQLNamingIndexConvention is an advisor type for MySQL index key naming convention.
+	MySQLNamingIndexConvention Type = "bb.plugin.advisor.mysql.naming.index"
+
+	// MySQLNamingUKConvention is an advisor type for MySQL unique key naming convention.
+	MySQLNamingUKConvention Type = "bb.plugin.advisor.mysql.naming.uk"
+
+	// MySQLNamingPKConvention is an advisor type for MySQL primary key naming convention.
+	MySQLNamingPKConvention Type = "bb.plugin.advisor.mysql.naming.pk"
+
+	// MySQLNamingFKConvention is an advisor type for MySQL foreign key naming convention.
+	MySQLNamingFKConvention Type = "bb.plugin.advisor.mysql.naming.fk"
+
 	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
 	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
 
@@ -87,7 +101,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule *api.SchemaReviewRule
+	Rule    *api.SchemaReviewRule
+	Catalog catalog.Service
 }
 
 // Advisor is the interface for advisor.
