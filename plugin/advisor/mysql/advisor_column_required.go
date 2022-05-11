@@ -64,6 +64,7 @@ type columnRequirementChecker struct {
 	tables          tableState
 }
 
+// Enter implements the ast.Visitor interface
 func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
@@ -94,6 +95,7 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
@@ -116,7 +118,7 @@ func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
 				Status:  v.level,
 				Code:    common.NoRequiredColumn,
 				Title:   "Require columns",
-				Content: fmt.Sprintf("%q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			})
 		}
 	}

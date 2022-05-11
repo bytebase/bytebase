@@ -68,6 +68,7 @@ type namingColumnConventionChecker struct {
 	tables     tableState
 }
 
+// Enter implements the ast.Visitor interface
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []string
 	var tableName string
@@ -104,7 +105,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    common.NamingColumnConventionMismatch,
 				Title:   "Mismatch column naming convention",
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention", tableName, column),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
 			})
 		}
 	}
@@ -112,6 +113,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

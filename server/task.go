@@ -374,62 +374,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) composeTaskRelationshipValidateOnly(ctx context.Context, task *api.Task) error {
-	var err error
-
-	task.Creator, err = s.store.GetPrincipalByID(ctx, task.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	task.Updater, err = s.store.GetPrincipalByID(ctx, task.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	for _, taskRun := range task.TaskRunList {
-		taskRun.Creator, err = s.store.GetPrincipalByID(ctx, taskRun.CreatorID)
-		if err != nil {
-			return err
-		}
-
-		taskRun.Updater, err = s.store.GetPrincipalByID(ctx, taskRun.UpdaterID)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, taskCheckRun := range task.TaskCheckRunList {
-		taskCheckRun.Creator, err = s.store.GetPrincipalByID(ctx, taskCheckRun.CreatorID)
-		if err != nil {
-			return err
-		}
-
-		taskCheckRun.Updater, err = s.store.GetPrincipalByID(ctx, taskCheckRun.UpdaterID)
-		if err != nil {
-			return err
-		}
-	}
-
-	instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
-	if err != nil {
-		return err
-	}
-	task.Instance = instance
-
-	if task.DatabaseID != nil {
-		task.Database, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-		if err != nil {
-			return err
-		}
-		if task.Database == nil {
-			return fmt.Errorf("database ID not found %v", task.DatabaseID)
-		}
-	}
-
-	return nil
-}
-
 func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,

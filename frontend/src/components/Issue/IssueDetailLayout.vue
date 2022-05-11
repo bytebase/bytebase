@@ -40,38 +40,13 @@
     <!-- Stage Flow Bar -->
     <template v-if="showPipelineFlowBar">
       <template v-if="isTenantDeployMode">
-        <PipelineTenantFlow
-          v-if="project"
-          :create="create"
-          :project="project"
-          :pipeline="(issue as Issue).pipeline"
-          :selected-stage="selectedStage"
-          :selected-task="selectedTask"
-          class="border-t border-b"
-          @select-stage-id="selectStageId"
-          @select-task="selectTask"
-        />
+        <PipelineTenantFlow v-if="project" class="border-t border-b" />
       </template>
       <template v-else-if="isGhostMode">
-        <PipelineGhostFlow
-          v-if="project"
-          :create="create"
-          :project="project"
-          :pipeline="issue.pipeline!"
-          :selected-stage="selectedStage"
-          :selected-task="selectedTask"
-          class="border-t border-b"
-          @select-stage="selectStageId"
-          @select-task="selectTask"
-        />
+        <PipelineGhostFlow v-if="project" class="border-t border-b" />
       </template>
       <template v-else>
-        <PipelineSimpleFlow
-          :create="create"
-          :pipeline="(issue as Issue).pipeline"
-          :selected-stage="selectedStage"
-          @select-stage-id="selectStageId"
-        />
+        <PipelineSimpleFlow class="border-t border-b" />
       </template>
 
       <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
@@ -129,7 +104,7 @@
               @add-subscriber-id="addSubscriberId"
               @remove-subscriber-id="removeSubscriberId"
               @update-custom-field="updateCustomField"
-              @select-stage-id="selectStageId"
+              @select-stage-id="selectStageOrTask"
               @select-task-id="selectTaskId"
             />
           </div>
@@ -179,40 +154,25 @@
                 </template>
               </template>
               <template v-else>
-                <!-- The way this is written is awkward and is to workaround an issue in IssueTaskStatementPanel.
-                   The statement panel is in non-edit mode when not creating the issue, and we use v-highlight
-                   to apply syntax highlighting when the panel is in non-edit mode. However, the v-highlight
-                   doesn't seem to work well with the reactivity. So for non-edit mode when !props.create, we
-                list every IssueTaskStatementPanel for each stage and use v-if to show the active one.-->
-                <template v-if="create">
-                  <IssueTaskStatementPanel
-                    :sql-hint="sqlHint()"
-                    :statement="selectedStatement"
-                    :create="create"
-                    :allow-edit="true"
-                    :show-apply-statement="showIssueTaskStatementApply"
-                    @update-statement="updateStatement"
-                    @apply-statement-to-other-stages="
-                      applyStatementToOtherStages
-                    "
-                  />
-                </template>
-                <template
-                  v-for="(stage, index) in (issue as Issue).pipeline.stageList"
+                <IssueTaskStatementPanel
+                  v-if="create"
+                  :sql-hint="sqlHint()"
+                  :statement="selectedStatement"
+                  :create="create"
+                  :allow-edit="true"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                  @apply-statement-to-other-stages="applyStatementToOtherStages"
+                />
+                <IssueTaskStatementPanel
                   v-else
-                  :key="index"
-                >
-                  <template v-if="(selectedStage as Stage).id == stage.id">
-                    <IssueTaskStatementPanel
-                      :sql-hint="sqlHint()"
-                      :statement="statement(stage)"
-                      :create="create"
-                      :allow-edit="allowEditStatement"
-                      :show-apply-statement="showIssueTaskStatementApply"
-                      @update-statement="updateStatement"
-                    />
-                  </template>
-                </template>
+                  :sql-hint="sqlHint()"
+                  :statement="statement(selectedStage as Stage)"
+                  :create="create"
+                  :allow-edit="allowEditStatement"
+                  :show-apply-statement="showIssueTaskStatementApply"
+                  @update-statement="updateStatement"
+                />
               </template>
             </section>
 
@@ -245,7 +205,7 @@
 
 import { computed, nextTick, onMounted, PropType, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import {
   idFromSlug,
   issueSlug,
@@ -256,6 +216,8 @@ import {
   stageSlug,
   taskSlug,
   isDev,
+  activeTaskInStage,
+  activeTask,
 } from "@/utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -298,6 +260,7 @@ import type {
   UpdateSchemaDetail,
   TaskDatabaseSchemaUpdateGhostSyncPayload,
   UpdateSchemaGhostContext,
+  SQLDialect,
 } from "@/types";
 import {
   defaultTemplate,
@@ -314,7 +277,10 @@ import {
   useIssueSubscriberStore,
   useProjectStore,
   useTaskStore,
+  useUIStateStore,
 } from "@/store";
+import formatSQL from "../MonacoEditor/sqlFormatter";
+import { provideIssueContext } from "./context";
 
 const props = defineProps({
   create: {
@@ -339,6 +305,7 @@ const issueStore = useIssueStore();
 const issueSubscriberStore = useIssueSubscriberStore();
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
+const databaseStore = useDatabaseStore();
 
 watchEffect(function prepare() {
   if (props.create) {
@@ -356,6 +323,31 @@ const project = computed((): Project => {
   }
   return (props.issue as Issue).project;
 });
+
+const formatStatementIfNeeded = (
+  statement: string,
+  database?: Database
+): string => {
+  const uiStateStore = useUIStateStore();
+  if (!uiStateStore.issueFormatStatementOnSave) {
+    // Don't format if user closed this feature
+    return statement;
+  }
+
+  // Default to use mysql dialect but use postgresql dialect if needed
+  let dialect: SQLDialect = "mysql";
+  if (database && database.instance.engine === "POSTGRES") {
+    dialect = "postgresql";
+  }
+
+  const result = formatSQL(statement, dialect);
+  if (!result.error) {
+    return result.data;
+  }
+
+  // Fallback to the input statement if error occurs while formatting
+  return statement;
+};
 
 const updateName = (
   newName: string,
@@ -403,10 +395,11 @@ const updateStatement = (
       // nope, we are not allowed to update statement in tenant deploy mode anyway
     } else {
       // otherwise, patch the task
+      const task = selectedTask.value as Task;
       patchTask(
-        (selectedTask.value as Task).id,
+        task.id,
         {
-          statement: newStatement,
+          statement: formatStatementIfNeeded(newStatement, task.database),
         },
         postUpdated
       );
@@ -515,10 +508,11 @@ const doCreate = () => {
       (stage) => stage.taskList[0]
     );
     const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
+      const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
         databaseId: task.databaseId!,
         databaseName: task.databaseName!,
-        statement: task.statement,
+        statement: formatStatementIfNeeded(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
@@ -535,16 +529,22 @@ const doCreate = () => {
     stageList.forEach((stage, i) => {
       const detail = detailList[i];
       const syncTask = stage.taskList[0];
+      const db = databaseStore.getDatabaseById(syncTask.databaseId!);
 
       detail.databaseId = syncTask.databaseId!;
       detail.databaseName = syncTask.databaseName!;
-      detail.statement = syncTask.statement;
+      detail.statement = formatStatementIfNeeded(syncTask.statement, db);
       detail.earliestAllowedTs = syncTask.earliestAllowedTs;
     });
   } else {
     // for multi-tenancy issue pipeline (M * N)
     // createContext is up-to-date already
-    // so nothing to do
+    // so we just format the statement if needed
+    const context = issue.createContext as UpdateSchemaContext;
+    context.updateSchemaDetailList.forEach((detail) => {
+      const db = databaseStore.getDatabaseById(detail.databaseId!);
+      detail.statement = formatStatementIfNeeded(detail.statement, db);
+    });
   }
 
   // then empty issue.pipeline and issue.payload
@@ -580,7 +580,7 @@ const changeTaskStatus = (
   comment: string
 ) => {
   // Switch to the stage view containing this task
-  selectStageId(task.stage.id);
+  selectStageOrTask(task.stage.id);
   nextTick().then(() => {
     selectTaskId(task.id);
   });
@@ -697,14 +697,14 @@ const selectedStage = computed((): Stage | StageCreate => {
   return activeStage((props.issue as Issue).pipeline);
 });
 
-const selectStageId = (
+const selectStageOrTask = (
   stageId: StageId,
-  task: string | undefined = undefined
+  taskSlug: string | undefined = undefined
 ) => {
   const stageList = props.issue.pipeline!.stageList;
   const index = stageList.findIndex((item, index) => {
     if (props.create) {
-      return index == stageId;
+      return index === stageId;
     }
     return (item as Stage).id == stageId;
   });
@@ -713,13 +713,9 @@ const selectStageId = (
     query: {
       ...router.currentRoute.value.query,
       stage: stageSlug(stageList[index].name, index),
-      task,
+      task: taskSlug,
     },
   });
-};
-
-const selectTask = (stageId: StageId, taskSlug: string) => {
-  selectStageId(stageId, taskSlug);
 };
 
 const selectTaskId = (taskId: TaskId) => {
@@ -728,7 +724,7 @@ const selectTaskId = (taskId: TaskId) => {
   if (!task) return;
   const slug = taskSlug(task.name, task.id);
   const stage = selectedStage.value as Stage;
-  selectTask(stage.id, slug);
+  selectStageOrTask(stage.id, slug);
 };
 
 const selectedTask = computed((): Task | TaskCreate => {
@@ -963,7 +959,7 @@ const database = computed((): Database | undefined => {
   if (props.create) {
     const databaseId = (selectedTask.value as TaskCreate).databaseId;
     if (databaseId) {
-      return useDatabaseStore().getDatabaseById(databaseId);
+      return databaseStore.getDatabaseById(databaseId);
     }
     return undefined;
   }
@@ -1009,4 +1005,49 @@ const supportBackwardCompatibilityFeature = computed((): boolean => {
   const engine = database.value?.instance.engine;
   return engine === "MYSQL" || engine === "TIDB";
 });
+
+const taskStatusOfStage = (stage: Stage | StageCreate) => {
+  if (props.create) {
+    return stage.taskList[0].status;
+  }
+  const activeTask = activeTaskInStage(stage as Stage);
+  return activeTask.status;
+};
+
+const isValidStage = (stage: Stage | StageCreate) => {
+  if (!props.create) {
+    return true;
+  }
+
+  for (const task of stage.taskList) {
+    if (
+      task.type === "bb.task.database.create" ||
+      task.type === "bb.task.database.schema.update" ||
+      task.type === "bb.task.database.data.update" ||
+      task.type === "bb.task.database.schema.update.ghost.sync"
+    ) {
+      if (isEmpty((task as TaskCreate).statement)) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+provideIssueContext(
+  {
+    create: computed(() => props.create),
+    issue: computed(() => props.issue),
+    project: project,
+    selectedStage,
+    selectedTask,
+    isValidStage,
+    taskStatusOfStage,
+    activeStageOfPipeline: activeStage,
+    activeTaskOfPipeline: activeTask,
+    activeTaskOfStage: activeTaskInStage,
+    selectStageOrTask: selectStageOrTask,
+  },
+  true // root context
+);
 </script>

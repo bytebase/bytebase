@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// MetadataDB abstracts the underlying Postgres instance
 type MetadataDB struct {
 	l           *zap.Logger
 	mode        common.ReleaseMode
@@ -39,10 +40,10 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 	}
 	resourceDir := path.Join(dataDir, "resources")
 	pgDataDir := common.GetPostgresDataDir(dataDir)
-	fmt.Println("-----Embedded Postgres Config BEGIN-----")
-	fmt.Printf("resourceDir=%s\n", resourceDir)
-	fmt.Printf("pgdataDir=%s\n", pgDataDir)
-	fmt.Println("-----Embedded Postgres Config END-----")
+	logger.Info("-----Embedded Postgres Config BEGIN-----")
+	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+	logger.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	logger.Info("-----Embedded Postgres Config END-----")
 
 	logger.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
@@ -56,6 +57,7 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 	return mgr, nil
 }
 
+// NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance
 func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	return &MetadataDB{
 		l:           logger,
@@ -66,6 +68,7 @@ func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, 
 	}, nil
 }
 
+// Connect connects to the underlying Postgres instance
 func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
 	if m.embed {
 		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
@@ -101,6 +104,8 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		return nil, err
 	}
 
+	q := u.Query()
+
 	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgresql" {
@@ -123,7 +128,23 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	if host, port, err := net.SplitHostPort(u.Host); err != nil {
 		connCfg.Host = u.Host
 	} else {
+		// There is a hack. PostgreSQL document(https://www.postgresql.org/docs/14/libpq-connect.html)
+		// specifies that a Unix-domain socket connection is chosen if the host part is either empty or **looks like an absolute path name**.
+		// But url.Parse() does not meet this standard, for example:
+		// url.Parse("postgresql://bbexternal@/tmp:3456/postgres"), it will consider `tmp:3456/postgres` as `path`,
+		// and we use path as dbasename(same as PostgreSQL document) so that we get a wrong dbname.
+		// So we put the socket path in the `host` key in the query,
+		// note that in order to comply with the Postgresql document we are not using the `socket` key with obvious semantics.
+		// To give a correct example: postgresql://bbexternal@:3456/postgres?host=/tmp
+		hostInQuery := q.Get("host")
+		if hostInQuery != "" && host != "" {
+			// In this case, it is impossible to decide whether to use socket or tcp.
+			return nil, fmt.Errorf("please only using socket or host instead of both")
+		}
 		connCfg.Host = host
+		if hostInQuery != "" {
+			connCfg.Host = hostInQuery
+		}
 		connCfg.Port = port
 	}
 
@@ -132,7 +153,6 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	}
 	connCfg.Database = u.Path[1:]
 
-	q := u.Query()
 	connCfg.TLSConfig = dbdriver.TLSConfig{
 		SslCA:   q.Get("sslrootcert"),
 		SslKey:  q.Get("sslkey"),

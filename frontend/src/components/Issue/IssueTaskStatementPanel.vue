@@ -21,35 +21,58 @@
         {{ $t("issue.apply-to-other-stages") }}
       </button>
     </div>
-    <div v-if="!create" class="space-x-2">
-      <button
-        v-if="allowEdit && !state.editing"
-        type="button"
-        class="btn-icon"
-        @click.prevent="beginEdit"
-      >
-        <!-- Heroicon name: solid/pencil -->
-        <!-- Use h-5 to avoid flickering when show/hide icon -->
-        <heroicons-solid:pencil class="h-5 w-5" />
-      </button>
-      <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
-      <button
-        v-if="state.editing"
-        type="button"
-        class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-        @click.prevent="cancelEdit"
-      >
-        {{ $t("common.cancel") }}
-      </button>
-      <button
-        v-if="state.editing"
-        type="button"
-        class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-        :disabled="state.editStatement == statement"
-        @click.prevent="saveEdit"
-      >
-        {{ $t("common.save") }}
-      </button>
+
+    <div class="space-x-2 flex items-center">
+      <template v-if="create">
+        <label class="mt-0.5 inline-flex items-center gap-1">
+          <input
+            v-model="formatOnSave"
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          />
+          <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
+        </label>
+      </template>
+      <template v-else>
+        <button
+          v-if="allowEdit && !state.editing"
+          type="button"
+          class="btn-icon"
+          @click.prevent="beginEdit"
+        >
+          <!-- Heroicon name: solid/pencil -->
+          <!-- Use h-5 to avoid flickering when show/hide icon -->
+          <heroicons-solid:pencil class="h-5 w-5" />
+        </button>
+        <template v-if="state.editing">
+          <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
+          <label class="mt-0.5 inline-flex items-center gap-1">
+            <input
+              v-model="formatOnSave"
+              type="checkbox"
+              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            />
+            <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
+          </label>
+          <button
+            v-if="state.editing"
+            type="button"
+            class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+            @click.prevent="cancelEdit"
+          >
+            {{ $t("common.cancel") }}
+          </button>
+          <button
+            v-if="state.editing"
+            type="button"
+            class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+            :disabled="state.editStatement == statement"
+            @click.prevent="saveEdit"
+          >
+            {{ $t("common.save") }}
+          </button>
+        </template>
+      </template>
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
@@ -78,9 +101,11 @@
   </template>
   <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
   <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
-    <div v-if="state.editStatement" v-highlight class="whitespace-pre-wrap">
-      {{ state.editStatement }}
-    </div>
+    <highlight-code-block
+      v-if="statement"
+      :code="statement"
+      class="whitespace-pre-wrap"
+    />
     <div v-else-if="create" class="ml-2 text-control-light">
       {{ $t("issue.add-sql-statement") }}
     </div>
@@ -97,8 +122,10 @@ import {
   reactive,
   watch,
   defineComponent,
+  computed,
 } from "vue";
 import { sizeToFit } from "../../utils";
+import { useUIStateStore } from "@/store";
 
 interface LocalState {
   editing: boolean;
@@ -107,7 +134,6 @@ interface LocalState {
 
 export default defineComponent({
   name: "IssueTaskStatementPanel",
-  components: {},
   props: {
     statement: {
       required: true,
@@ -135,9 +161,17 @@ export default defineComponent({
   setup(props, { emit }) {
     const editStatementTextArea = ref();
 
+    const uiStateStore = useUIStateStore();
+
     const state = reactive<LocalState>({
       editing: false,
       editStatement: props.statement,
+    });
+
+    const formatOnSave = computed({
+      get: () => uiStateStore.issueFormatStatementOnSave,
+      set: (value: boolean) =>
+        uiStateStore.setIssueFormatStatementOnSave(value),
     });
 
     const resizeTextAreaHandler = () => {
@@ -174,6 +208,7 @@ export default defineComponent({
       () => props.statement,
       (cur) => {
         state.editStatement = cur;
+        nextTick(() => sizeToFit(editStatementTextArea.value));
       }
     );
 
@@ -181,6 +216,7 @@ export default defineComponent({
       state.editStatement = props.statement;
       state.editing = true;
       nextTick(() => {
+        sizeToFit(editStatementTextArea.value);
         editStatementTextArea.value.focus();
       });
     };
@@ -198,6 +234,7 @@ export default defineComponent({
 
     return {
       editStatementTextArea,
+      formatOnSave,
       state,
       beginEdit,
       saveEdit,

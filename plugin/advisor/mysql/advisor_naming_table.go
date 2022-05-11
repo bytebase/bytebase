@@ -64,6 +64,7 @@ type namingTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
+// Enter implements the ast.Visitor interface
 func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableNames []string
 	switch node := in.(type) {
@@ -86,26 +87,20 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	code := common.Ok
-
 	for _, tableName := range tableNames {
 		if !v.format.MatchString(tableName) {
-			code = common.NamingTableConventionMismatch
-			break
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    common.NamingTableConventionMismatch,
+				Title:   "Mismatch table naming convention",
+				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
+			})
 		}
-	}
-
-	if code != common.Ok {
-		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  v.level,
-			Code:    code,
-			Title:   "Mismatch table naming convention",
-			Content: fmt.Sprintf("%q mismatches table naming convention", in.Text()),
-		})
 	}
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

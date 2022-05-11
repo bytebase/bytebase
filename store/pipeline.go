@@ -116,6 +116,29 @@ func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*a
 // private function
 //
 
+func (s *Store) composePipelineValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
+	creator, err := s.GetPrincipalByID(ctx, pipeline.CreatorID)
+	if err != nil {
+		return err
+	}
+	pipeline.Creator = creator
+
+	updater, err := s.GetPrincipalByID(ctx, pipeline.UpdaterID)
+	if err != nil {
+		return err
+	}
+	pipeline.Updater = updater
+
+	for _, stage := range pipeline.StageList {
+		if err := s.composeStageValidateOnly(ctx, stage); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Note: MUST keep in sync with composePipelineValidateOnly
 func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pipeline, error) {
 	pipeline := raw.toPipeline()
 
