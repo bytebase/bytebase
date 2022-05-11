@@ -5,10 +5,9 @@ import {
   MigrationType,
   UpdateSchemaContext,
 } from "@/types";
-import { findProject } from "../common";
+import { findProject, BuildNewIssueContext } from "../common";
 import { VALIDATE_ONLY_SQL } from "./constants";
 import { IssueCreateHelper } from "./helper";
-import { BuildNewIssueContext } from "../types";
 
 export const maybeBuildTenantDeployIssue = async (
   context: BuildNewIssueContext

@@ -1,8 +1,7 @@
 import { IssueCreate, IssueType, UpdateSchemaGhostContext } from "@/types";
-import { findDatabaseListByQuery } from "../common";
+import { findDatabaseListByQuery, BuildNewIssueContext } from "../common";
 import { VALIDATE_ONLY_SQL } from "./constants";
 import { IssueCreateHelper } from "./helper";
-import { BuildNewIssueContext } from "../types";
 
 export const maybeBuildGhostIssue = async (
   context: BuildNewIssueContext

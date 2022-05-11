@@ -1,6 +1,13 @@
+import { Ref } from "vue";
+import { useRoute } from "vue-router";
 import { useDatabaseStore, useProjectStore } from "@/store";
 import { Database, Project, unknown, UNKNOWN_ID } from "@/types";
-import { BuildNewIssueContext } from "./types";
+import { IssueTemplate } from "@/plugins";
+
+export type BuildNewIssueContext = {
+  template: Ref<IssueTemplate>;
+  route: ReturnType<typeof useRoute>;
+};
 
 export const findProject = async (
   context: BuildNewIssueContext

@@ -4,7 +4,7 @@ import { Issue, IssueCreate, IssueType } from "@/types";
 import { pushNotification, useIssueStore } from "@/store";
 import { idFromSlug } from "@/utils";
 import { defaultTemplate, templateForType } from "@/plugins";
-import { BuildNewIssueContext } from "../types";
+import { BuildNewIssueContext } from "../common";
 import { maybeBuildTenantDeployIssue } from "./tenant";
 import { maybeBuildGhostIssue } from "./ghost";
 import { buildNewStandardIssue } from "./standard";
