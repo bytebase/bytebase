@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"go.uber.org/zap"
@@ -10,7 +9,7 @@ import (
 
 // NewSchemaUpdateGhostDropOriginalTableTaskExecutor creates a schema update (gh-ost) drop original table task executor.
 func NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SchemaUpdateTaskExecutor{
+	return &SchemaUpdateGhostDropOriginalTableTaskExecutor{
 		l: logger,
 	}
 }
@@ -22,5 +21,5 @@ type SchemaUpdateGhostDropOriginalTableTaskExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostDropOriginalTable task once.
 func (exec *SchemaUpdateGhostDropOriginalTableTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	return true, nil, fmt.Errorf("not implemented yet")
+	return true, &api.TaskRunResultPayload{Detail: "not implemented yet"}, nil
 }
