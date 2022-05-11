@@ -61,6 +61,9 @@ const (
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
 
+	// MySQLUseInnoDB is an advisor type for MySQL InnoDB Engine.
+	MySQLUseInnoDB Type = "bb.plugin.advisor.mysql.use-innodb"
+
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 

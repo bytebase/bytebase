@@ -66,6 +66,8 @@ const (
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
+
+	NotInnoDBEngine Code = 10401
 )
 
 // Error represents an application-specific error. Application errors can be
