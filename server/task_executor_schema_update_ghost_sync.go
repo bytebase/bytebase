@@ -187,8 +187,7 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 		if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
 			l.Error("failed to update migration history record",
 				zap.Error(err),
-				zap.Int64("migration_id",
-					insertedID),
+				zap.Int64("migration_id", migrationHistoryID),
 			)
 		}
 	}()
