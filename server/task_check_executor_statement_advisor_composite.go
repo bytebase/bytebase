@@ -106,6 +106,10 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 
 		}
 	}
+	// There may be multiple syntax errors, return one only.
+	if len(result) > 0 && result[0].Title == advisor.SyntaxErrorTitle {
+		return result[:1], nil
+	}
 	if len(result) == 0 {
 		result = append(result, api.TaskCheckResult{
 			Status:  api.TaskCheckStatusSuccess,
