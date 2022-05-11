@@ -4,7 +4,7 @@
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
   >
-    <component :is="logicProvider" ref="issueLogic">
+    <component :is="logicProviderType" ref="issueLogic">
       <IssueBanner v-if="!create" :issue="(issue as Issue)" />
 
       <!-- Highlight Panel -->
@@ -687,12 +687,7 @@ const isValidStage = (stage: Stage | StageCreate) => {
   }
 
   for (const task of stage.taskList) {
-    if (
-      task.type === "bb.task.database.create" ||
-      task.type === "bb.task.database.schema.update" ||
-      task.type === "bb.task.database.data.update" ||
-      task.type === "bb.task.database.schema.update.ghost.sync"
-    ) {
+    if (TaskTypeWithStatement.includes(task.type)) {
       if (isEmpty((task as TaskCreate).statement)) {
         return false;
       }
@@ -701,7 +696,7 @@ const isValidStage = (stage: Stage | StageCreate) => {
   return true;
 };
 
-const logicProvider = computed(() => {
+const logicProviderType = computed(() => {
   if (isTenantMode.value) return TenantModeProvider;
   if (isGhostMode.value) return GhostModeProvider;
   return StandardModeProvider;
@@ -740,6 +735,7 @@ provideIssueLogic(
     activeTaskOfStage: activeTaskInStage,
     selectStageOrTask: selectStageOrTask,
   },
-  true // root context
+  true
+  // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.
 );
 </script>
