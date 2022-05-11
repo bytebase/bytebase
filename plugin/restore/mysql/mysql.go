@@ -69,6 +69,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 		return err
 	}
 
+	// TODO(dragonly): handle the case that the original database does not exist
 	tables, err := mysql.GetTables(txn, database)
 	if err != nil {
 		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
