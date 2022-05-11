@@ -60,7 +60,8 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	defer mysqlDB.Close()
 
-	_, _ = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE %v", databaseName))
+	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+	a.NoError(err)
 
 	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
 	a.NoError(err)
