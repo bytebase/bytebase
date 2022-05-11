@@ -12,8 +12,10 @@ import (
 	"testing"
 	"time"
 
-	dbPlugin "github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/resources/mysql"
+	dbplugin "github.com/bytebase/bytebase/plugin/db"
+	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
+	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -37,7 +39,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	database := "backup_restore"
 	table := "backup_restore"
 
-	_, stop := mysql.SetupTestInstance(t, port)
+	_, stop := resourcemysql.SetupTestInstance(t, port)
 	defer stop()
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
@@ -127,7 +129,7 @@ func TestPITR(t *testing.T) {
 	initDB := func(t *testing.T) (*sql.DB, func()) {
 		a := require.New(t)
 
-		_, stopFn := mysql.SetupTestInstance(t, port)
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
 
 		db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
 		a.NoError(err)
@@ -203,8 +205,11 @@ func TestPITR(t *testing.T) {
 
 		t.Log("restore to pitr database")
 		timestamp := time.Now().Unix()
-		config := dbPlugin.RecoveryConfig{}
-		err := driver.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := restoremysql.BinlogConfig{}
+		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -212,7 +217,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = driver.SwapPITRDatabase(ctx, database, timestamp)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -255,30 +260,30 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func getMySQLDriver(ctx context.Context, t *testing.T, host, port, username, database string) dbPlugin.Driver {
+func getMySQLDriver(ctx context.Context, t *testing.T, host, port, username, database string) dbplugin.Driver {
 	a := require.New(t)
 
 	logger, err := zap.NewDevelopment()
 	a.NoError(err)
-	driver, err := dbPlugin.Open(
+	driver, err := dbplugin.Open(
 		ctx,
-		dbPlugin.MySQL,
-		dbPlugin.DriverConfig{Logger: logger},
-		dbPlugin.ConnectionConfig{
+		dbplugin.MySQL,
+		dbplugin.DriverConfig{Logger: logger},
+		dbplugin.ConnectionConfig{
 			Host:      host,
 			Port:      port,
 			Username:  username,
 			Password:  "",
 			Database:  database,
-			TLSConfig: dbPlugin.TLSConfig{},
+			TLSConfig: dbplugin.TLSConfig{},
 		},
-		dbPlugin.ConnectionContext{},
+		dbplugin.ConnectionContext{},
 	)
 	a.NoError(err)
 	return driver
 }
 
-func doBackup(ctx context.Context, t *testing.T, driver dbPlugin.Driver, database string) *bytes.Buffer {
+func doBackup(ctx context.Context, t *testing.T, driver dbplugin.Driver, database string) *bytes.Buffer {
 	a := require.New(t)
 
 	var buf bytes.Buffer
