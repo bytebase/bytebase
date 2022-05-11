@@ -40,7 +40,7 @@ http_download() {
 }
 
 execute() {
-    BB_VERSION="1.0.3"
+    BB_VERSION=$(curl -f https://raw.githubusercontent.com/bytebase/bytebase/main/scripts/VERSION)
     OS="$(uname_os)"
     ARCH="$(uname_arch)"
 
