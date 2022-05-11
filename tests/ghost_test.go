@@ -147,7 +147,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.Equal(mysqlBookSchema1, result)
 
 	createContext, err = json.Marshal(&api.UpdateSchemaGhostContext{
-		UpdateSchemaGhostDetailList: []*api.UpdateSchemaGhostDetail{
+		DetailList: []*api.UpdateSchemaGhostDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  mysqlGhostMigrationStatement,
