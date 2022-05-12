@@ -1667,7 +1667,10 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 
 	var cols []string
 	re := regexp.MustCompile(`\(\(.*\)\)`)
-	for len(columnStmt) > 0 {
+	for {
+		if len(columnStmt) <= 0 {
+			break
+		}
 		// Get a token
 		token := ""
 		// Expression has format of "((exp))".
@@ -1883,7 +1886,7 @@ func getEventTriggers(txn *sql.Tx) ([]*eventTriggerSchema, error) {
 
 // quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
 func quoteIdentifier(s string) string {
-	var quote bool
+	quote := true
 	if reserved[strings.ToUpper(s)] {
 		quote = true
 	}
