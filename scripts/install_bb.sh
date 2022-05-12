@@ -40,7 +40,7 @@ http_download() {
 }
 
 execute() {
-    BB_VERSION="1.0.3"
+    BB_VERSION="1.0.5"
     OS="$(uname_os)"
     ARCH="$(uname_arch)"
 
