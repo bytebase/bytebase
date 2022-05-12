@@ -180,7 +180,8 @@ func TestFormatTemplate(t *testing.T) {
 			},
 			"db1_hello_us-central1",
 			"",
-		}, {
+		},
+		{
 			"tokenNotFound",
 			"{{DB_NAME}}_hello_{{LOCATION}}",
 			map[string]string{
@@ -188,6 +189,16 @@ func TestFormatTemplate(t *testing.T) {
 			},
 			"",
 			"not found",
+		},
+		{
+			"template with regex meta",
+			"{{DB_NAME}}_hello_${{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello_\\$us-central1",
+			"",
 		},
 	}
 
