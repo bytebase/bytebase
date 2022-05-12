@@ -51,8 +51,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					zap.String("engine", string(instance.Engine)),
 					zap.Error(err))
 			}
-			// Try immediately sync the engine version and schema after instance creation.
-			s.syncEngineVersionAndSchema(ctx, instance)
+			if instanceCreate.SyncSchema {
+				s.syncEngineVersionAndSchema(ctx, instance)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -166,7 +167,9 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 						zap.String("engine", string(instancePatched.Engine)),
 						zap.Error(err))
 				}
-				s.syncEngineVersionAndSchema(ctx, instancePatched)
+				if instancePatch.SyncSchema {
+					s.syncEngineVersionAndSchema(ctx, instancePatched)
+				}
 			}
 		}
 

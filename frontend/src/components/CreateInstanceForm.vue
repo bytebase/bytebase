@@ -181,32 +181,37 @@
     </div>
 
     <!-- Action Button Group -->
-    <div class="pt-4">
+    <div class="pt-4 px-2">
       <!-- Create button group -->
-      <div class="flex justify-end items-center">
-        <div>
+      <div class="flex justify-between items-center">
+        <BBCheckbox
+          :title="$t('instance.sync-schema-afterward')"
+          :value="state.instance.syncSchema"
+          @toggle="state.instance.syncSchema = !state.instance.syncSchema"
+        />
+        <div class="flex justify-end items-center">
           <BBSpin
             v-if="state.isCreatingInstance"
             :title="$t('common.creating')"
           />
-        </div>
-        <div class="ml-2">
-          <button
-            type="button"
-            class="btn-normal py-2 px-4"
-            :disabled="state.isCreatingInstance"
-            @click.prevent="cancel"
-          >
-            {{ $t("common.cancel") }}
-          </button>
-          <button
-            type="button"
-            class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-            :disabled="!allowCreate || state.isCreatingInstance"
-            @click.prevent="tryCreate"
-          >
-            {{ $t("common.create") }}
-          </button>
+          <div class="ml-2">
+            <button
+              type="button"
+              class="btn-normal py-2 px-4"
+              :disabled="state.isCreatingInstance"
+              @click.prevent="cancel"
+            >
+              {{ $t("common.cancel") }}
+            </button>
+            <button
+              type="button"
+              class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+              :disabled="!allowCreate || state.isCreatingInstance"
+              @click.prevent="tryCreate"
+            >
+              {{ $t("common.create") }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -282,6 +287,7 @@ const state = reactive<LocalState>({
     // In release mode, Bytebase is likely run inside docker and access the local network via host.docker.internal.
     host: isDev() ? "127.0.0.1" : "host.docker.internal",
     username: "",
+    syncSchema: true,
   },
   showCreateInstanceWarningModal: false,
   createInstanceWarning: "",
