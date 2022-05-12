@@ -63,7 +63,7 @@ func (s *Store) GetIndex(ctx context.Context, find *api.IndexFind) (*api.Index, 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexs with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexes with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }

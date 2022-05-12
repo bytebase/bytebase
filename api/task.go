@@ -74,6 +74,8 @@ const (
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
 	TaskDatabaseRestore TaskType = "bb.task.database.restore"
+	// TaskDatabaseRestorePITR is the task type for restoring databases using PITR.
+	TaskDatabaseRestorePITR TaskType = "bb.task.database.restore.pitr"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -140,6 +142,14 @@ type TaskDatabaseRestorePayload struct {
 	// and don't have the database id upon constructing the task yet.
 	DatabaseName string `json:"databaseName,omitempty"`
 	BackupID     int    `json:"backupId,omitempty"`
+}
+
+// TaskDatabasePITRPayload is the task payload for database PITR restore.
+type TaskDatabasePITRPayload struct {
+	DatabaseID int `json:"databaseId,omitempty"`
+	// After the PITR operations, the database will be recovered to the state at this time.
+	// Represented in UNIX timestamp.
+	RecoveryTime int `json:"recoveryTime,omitempty"`
 }
 
 // Task is the API message for a task.

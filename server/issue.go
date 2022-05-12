@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
+	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
@@ -26,6 +28,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
 		}
 
+		fmt.Printf("issueCreate:\n%+v", issueCreate)
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create issue").SetInternal(err)
@@ -398,6 +401,18 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 	return pipelineCreated, nil
 }
 
+func (s *Server) getPipelineApprovalPolicyForEnv(ctx context.Context, envID int) (api.TaskStatus, error) {
+	taskStatus := api.TaskPendingApproval
+	policy, err := s.store.GetPipelineApprovalPolicy(ctx, envID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get approval policy for environment ID %v, error %v", envID, err)
+	}
+	if policy.Value == api.PipelineApprovalValueManualNever {
+		taskStatus = api.TaskPending
+	}
+	return taskStatus, nil
+}
+
 func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
@@ -511,13 +526,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
 		}
 
-		taskStatus := api.TaskPendingApproval
-		policy, err := s.store.GetPipelineApprovalPolicy(ctx, instance.EnvironmentID)
+		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, instance.EnvironmentID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", instance.EnvironmentID, err)
-		}
-		if policy.Value == api.PipelineApprovalValueManualNever {
-			taskStatus = api.TaskPending
+			return nil, err
 		}
 
 		if c.BackupID != 0 {
@@ -573,7 +584,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		}
 
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %v", payload.DatabaseName),
+			Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
 			StageList: []api.StageCreate{
 				{
 					Name:          "Create database",
@@ -581,7 +592,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 					TaskList: []api.TaskCreate{
 						{
 							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
+							Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
 							Status:       taskStatus,
 							Type:         api.TaskDatabaseCreate,
 							DatabaseName: payload.DatabaseName,
@@ -591,6 +602,80 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				},
 			},
 		}, nil
+
+	case api.IssueDatabasePITR:
+		c := api.PITRContext{}
+		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+			return nil, err
+		}
+
+		payload := api.TaskDatabasePITRPayload(c)
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", c.DatabaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
+		}
+
+		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+
+		pitrTimestamp := time.Now().Unix()
+		pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
+
+		create := &api.PipelineCreate{
+			Name: "Database Point-in-time Recovery pipeline",
+			StageList: []api.StageCreate{
+				{
+					Name:          "PITR",
+					EnvironmentID: database.Instance.Environment.ID,
+					TaskList: []api.TaskCreate{
+						{
+							InstanceID: database.InstanceID,
+							Name:       fmt.Sprintf("Check PITR requirements for database %s", database.Name),
+							Status:     taskStatus,
+							Type:       api.TaskDatabaseCreate,
+							Payload:    string(payloadBytes),
+						},
+						{
+							InstanceID: database.InstanceID,
+							Name:       fmt.Sprintf("Create PITR database %s", pitrDatabaseName),
+							Status:     taskStatus,
+							Type:       api.TaskDatabaseCreate,
+							Payload:    string(payloadBytes),
+						},
+						{
+							InstanceID: database.InstanceID,
+							Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
+							Status:     taskStatus,
+							Type:       api.TaskDatabaseCreate,
+							Payload:    string(payloadBytes),
+						},
+						{
+							InstanceID: database.InstanceID,
+							Name:       fmt.Sprintf("Swap PITR database %s", pitrDatabaseName),
+							Status:     taskStatus,
+							Type:       api.TaskDatabaseCreate,
+							Payload:    string(payloadBytes),
+						},
+					},
+					TaskIndexDAGList: []api.TaskIndexDAG{
+						{FromIndex: 0, ToIndex: 1},
+						{FromIndex: 1, ToIndex: 2},
+						{FromIndex: 2, ToIndex: 3},
+					},
+				},
+			},
+		}
+		return create, nil
 
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
 		c := api.UpdateSchemaContext{}
@@ -661,14 +746,12 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				for _, database := range databaseList {
 					environmentSet[database.Instance.Environment.Name] = true
 					environmentID = database.Instance.EnvironmentID
-					taskStatus := api.TaskPendingApproval
-					policy, err := s.store.GetPipelineApprovalPolicy(ctx, environmentID)
+
+					taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
 					if err != nil {
-						return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", environmentID, err)
+						return nil, err
 					}
-					if policy.Value == api.PipelineApprovalValueManualNever {
-						taskStatus = api.TaskPending
-					}
+
 					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
 					if err != nil {
 						return nil, err
@@ -703,13 +786,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 				}
 
-				taskStatus := api.TaskPendingApproval
-				policy, err := s.store.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
+				taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %v", database.Instance.EnvironmentID, err)
-				}
-				if policy.Value == api.PipelineApprovalValueManualNever {
-					taskStatus = api.TaskPending
+					return nil, err
 				}
 
 				taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
@@ -763,13 +842,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", detail.DatabaseID))
 			}
 
-			taskStatus := api.TaskPendingApproval
-			policy, err := s.store.GetPipelineApprovalPolicy(ctx, database.Instance.EnvironmentID)
+			taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get approval policy for environment ID %v, error %w", database.Instance.EnvironmentID, err)
-			}
-			if policy.Value == api.PipelineApprovalValueManualNever {
-				taskStatus = api.TaskPending
+				return nil, err
 			}
 
 			taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion, taskStatus)
