@@ -11,7 +11,7 @@ import {
 import {
   errorAssertion,
   flattenTaskList,
-  formatStatementIfNeeded,
+  maybeFormatStatementOnSave,
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
@@ -76,7 +76,7 @@ export default defineComponent({
       const context = issueCreate.createContext as UpdateSchemaContext;
       context.updateSchemaDetailList.forEach((detail) => {
         const db = databaseStore.getDatabaseById(detail.databaseId!);
-        detail.statement = formatStatementIfNeeded(detail.statement, db);
+        detail.statement = maybeFormatStatementOnSave(detail.statement, db);
       });
 
       createIssue(issueCreate);

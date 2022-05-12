@@ -1,6 +1,6 @@
 import { computed, defineComponent } from "vue";
 import { provideIssueLogic, useIssueLogic } from "./index";
-import { formatStatementIfNeeded, useCommonLogic } from "./common";
+import { maybeFormatStatementOnSave, useCommonLogic } from "./common";
 import {
   IssueCreate,
   Task,
@@ -51,7 +51,7 @@ export default defineComponent({
 
         detail.databaseId = syncTask.databaseId!;
         detail.databaseName = syncTask.databaseName!;
-        detail.statement = formatStatementIfNeeded(syncTask.statement, db);
+        detail.statement = maybeFormatStatementOnSave(syncTask.statement, db);
         detail.earliestAllowedTs = syncTask.earliestAllowedTs;
       });
     };

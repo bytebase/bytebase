@@ -81,7 +81,7 @@ export const useCommonLogic = () => {
       patchTask(
         task.id,
         {
-          statement: formatStatementIfNeeded(newStatement, task.database),
+          statement: maybeFormatStatementOnSave(newStatement, task.database),
         },
         postUpdated
       );
@@ -123,7 +123,7 @@ export const useCommonLogic = () => {
       return {
         databaseId: task.databaseId!,
         databaseName: task.databaseName!,
-        statement: formatStatementIfNeeded(task.statement, db),
+        statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
@@ -170,13 +170,13 @@ export const flattenTaskList = <T extends Task | TaskCreate>(
   return taskList || [];
 };
 
-export const formatStatementIfNeeded = (
+export const maybeFormatStatementOnSave = (
   statement: string,
   database?: Database
 ): string => {
   const uiStateStore = useUIStateStore();
   if (!uiStateStore.issueFormatStatementOnSave) {
-    // Don't format if user closed this feature
+    // Don't format if user disabled this feature
     return statement;
   }
 
