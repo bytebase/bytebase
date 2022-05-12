@@ -20,24 +20,23 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { Issue } from "../../types";
-import { activeTask } from "../../utils";
+import { computed, Ref } from "vue";
+import { Issue } from "@/types";
+import { activeTask } from "@/utils";
+import { useIssueLogic } from "./logic";
 
-const props = defineProps<{
-  issue: Issue;
-}>();
+const issue = useIssueLogic().issue as Ref<Issue>;
 
 const showCancelBanner = computed(() => {
-  return props.issue.status == "CANCELED";
+  return issue.value.status == "CANCELED";
 });
 
 const showSuccessBanner = computed(() => {
-  return props.issue.status == "DONE";
+  return issue.value.status == "DONE";
 });
 
 const showPendingApproval = computed(() => {
-  const task = activeTask(props.issue.pipeline);
+  const task = activeTask(issue.value.pipeline);
   return task.status == "PENDING_APPROVAL";
 });
 </script>
