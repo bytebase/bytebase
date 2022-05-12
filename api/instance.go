@@ -55,6 +55,10 @@ type InstanceCreate struct {
 	Port         string  `jsonapi:"attr,port"`
 	Username     string  `jsonapi:"attr,username"`
 	Password     string  `jsonapi:"attr,password"`
+	// If true, syncs the schema after adding the instance. The client
+	// may set to false if the target instance contains too many databases
+	// to avoid the request timeout.
+	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // InstanceFind is the API message for finding instances.
@@ -83,14 +87,15 @@ type InstancePatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Name             *string `jsonapi:"attr,name"`
-	EngineVersion    *string
-	ExternalLink     *string `jsonapi:"attr,externalLink"`
-	Host             *string `jsonapi:"attr,host"`
-	Port             *string `jsonapi:"attr,port"`
-	Username         *string `jsonapi:"attr,username"`
-	Password         *string `jsonapi:"attr,password"`
-	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
+	Name          *string `jsonapi:"attr,name"`
+	EngineVersion *string
+	ExternalLink  *string `jsonapi:"attr,externalLink"`
+	Host          *string `jsonapi:"attr,host"`
+	Port          *string `jsonapi:"attr,port"`
+	// If true, syncs the schema after patching the instance. The client
+	// may set to false if the target instance contains too many databases
+	// to avoid the request timeout.
+	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // DataSourceFromInstanceWithType gets a typed data source from a instance.
