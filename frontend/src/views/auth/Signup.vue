@@ -123,7 +123,7 @@
             />
             <i18n-t
               tag="span"
-              keypath="auth.sign-up.accept-term-of-service-and-privacy"
+              keypath="auth.sign-up.accept-terms-and-policy"
               class="ml-1 select-none"
               @click="onToggleAcceptTermsAndPolicyCheckbox"
             >
@@ -132,10 +132,12 @@
                   $t("auth.sign-up.terms-of-service")
                 }}</a>
               </template>
-              <template #privacy>
-                <a href="https://www.bytebase.com/terms" class="text-accent">{{
-                  $t("auth.sign-up.privacy-policy")
-                }}</a>
+              <template #policy>
+                <a
+                  href="https://www.bytebase.com/privacy"
+                  class="text-accent"
+                  >{{ $t("auth.sign-up.privacy-policy") }}</a
+                >
               </template>
             </i18n-t>
           </div>

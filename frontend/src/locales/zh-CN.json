@@ -648,7 +648,7 @@
       "confirm-password-placeholder": "确认您的密码",
       "password-mismatch": "不匹配",
       "existing-user": "已有账号?",
-      "accept-term-of-service-and-privacy": "我接受 Bytebase 的{terms}和{privacy}",
+      "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
       "terms-of-service": "服务条款",
       "privacy-policy": "隐私政策"
     },

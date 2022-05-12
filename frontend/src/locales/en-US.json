@@ -648,7 +648,7 @@
       "confirm-password-placeholder": "Confirm password",
       "password-mismatch": "mismatch",
       "existing-user": "Already have an account?",
-      "accept-term-of-service-and-privacy": "I accept Bytebase's {terms} and {privacy}",
+      "accept-terms-and-policy": "I accept Bytebase's {terms} and {policy}",
       "terms-of-service": "Terms of Service",
       "privacy-policy": "Privacy Policy"
     },
