@@ -87,7 +87,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  migrationStatement,
@@ -117,7 +117,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	// Create an issue that updates database data.
 	createContext, err = json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Data,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseID: database.ID,
 				Statement:  dataUpdateStatement,

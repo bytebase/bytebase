@@ -992,21 +992,21 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := getTables(txn, dbName)
+		tables, err := GetTables(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
+			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
 		}
 		for _, tbl := range tables {
-			if schemaOnly && tbl.tableType == baseTableType {
-				tbl.statement = excludeSchemaAutoIncrementValue(tbl.statement)
+			if schemaOnly && tbl.TableType == baseTableType {
+				tbl.Statement = excludeSchemaAutoIncrementValue(tbl.Statement)
 			}
-			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.statement)); err != nil {
+			if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tbl.Statement)); err != nil {
 				return err
 			}
-			if !schemaOnly && tbl.tableType == baseTableType {
+			if !schemaOnly && tbl.TableType == baseTableType {
 				// Include db prefix if dumping multiple databases.
 				includeDbPrefix := len(dumpableDbNames) > 1
-				if err := exportTableData(txn, dbName, tbl.name, includeDbPrefix, out); err != nil {
+				if err := exportTableData(txn, dbName, tbl.Name, includeDbPrefix, out); err != nil {
 					return err
 				}
 			}
@@ -1093,11 +1093,11 @@ func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	return "", fmt.Errorf("query %q returned empty row", query)
 }
 
-// tableSchema describes the schema of a table or view.
-type tableSchema struct {
-	name      string
-	tableType string
-	statement string
+// TableSchema describes the schema of a table or view.
+type TableSchema struct {
+	Name      string
+	TableType string
+	Statement string
 }
 
 // routineSchema describes the schema of a function or procedure (routine).
@@ -1119,9 +1119,9 @@ type triggerSchema struct {
 	statement string
 }
 
-// getTables gets all tables of a database.
-func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
-	var tables []*tableSchema
+// GetTables gets all tables of a database.
+func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1130,18 +1130,18 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var tbl tableSchema
-		if err := rows.Scan(&tbl.name, &tbl.tableType); err != nil {
+		var tbl TableSchema
+		if err := rows.Scan(&tbl.Name, &tbl.TableType); err != nil {
 			return nil, err
 		}
 		tables = append(tables, &tbl)
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbName, tbl.name, tbl.tableType)
+		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
-			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.name, tbl.tableType, err)
+			return nil, fmt.Errorf("getTableStmt(%q, %q, %q) got error: %s", dbName, tbl.Name, tbl.TableType, err)
 		}
-		tbl.statement = stmt
+		tbl.Statement = stmt
 	}
 	return tables, nil
 }

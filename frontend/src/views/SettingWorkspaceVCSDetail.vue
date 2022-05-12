@@ -232,8 +232,10 @@ export default defineComponent({
         ) {
           useOAuthStore()
             .exchangeVCSTokenWithID({
-              vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
+              vcsId: idFromSlug(props.vcsSlug),
+              clientId: state.applicationId,
+              clientSecret: state.secret,
             })
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
@@ -283,8 +285,9 @@ export default defineComponent({
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,
-          vcs.value.applicationId,
-          "bb.oauth.register-vcs"
+          state.applicationId,
+          "bb.oauth.register-vcs",
+          vcs.value.type
         );
         if (newWindow) {
           state.oAuthResultCallback = (token: OAuthToken | undefined) => {

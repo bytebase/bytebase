@@ -49,7 +49,8 @@ const (
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
 
-	StatementNoWhere Code = 10101
+	StatementNoWhere   Code = 10101
+	StatementSelectAll Code = 10102
 
 	// 10201 table naming advisor error code
 	NamingTableConventionMismatch Code = 10201
@@ -66,6 +67,7 @@ const (
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
+	ColumnCanNull    Code = 10302
 
 	NotInnoDBEngine Code = 10401
 )

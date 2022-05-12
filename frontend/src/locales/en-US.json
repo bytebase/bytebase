@@ -529,6 +529,7 @@
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-now": "Sync Now",
+    "sync-schema-afterward": "Sync schema afterward",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
@@ -561,7 +562,6 @@
     "connection-info": "Connection info",
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
-    "below-is-an-example-to-create-user-bytebase-with-password-clickhouse": "Below is an example to create user 'bytebase' with password",
     "your_db_pwd": "YOUR_DB_PWD",
     "no-read-only-data-source-warn": "The instance has not configured read-only user, please consider adding one.",
     "sentence": {
@@ -647,7 +647,10 @@
       "confirm-password": "Confirm Password",
       "confirm-password-placeholder": "Confirm password",
       "password-mismatch": "mismatch",
-      "existing-user": "Already have an account?"
+      "existing-user": "Already have an account?",
+      "accept-terms-and-policy": "I accept Bytebase's {terms} and {policy}",
+      "terms-of-service": "Terms of Service",
+      "privacy-policy": "Privacy Policy"
     },
     "sign-in": {
       "title": "Sign in to your account",
@@ -1340,6 +1343,7 @@
     "self": "Sheets",
     "my-sheets": "My Sheets",
     "shared-with-me": "Shared with me",
+    "starred": "Starred",
     "actions": {
       "sync-from-vcs": "Sync from VCS"
     },

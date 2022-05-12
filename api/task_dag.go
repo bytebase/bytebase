@@ -30,7 +30,8 @@ type TaskDAGFind struct {
 }
 
 // TaskIndexDAG describes task dependency relationship using array index to represent task.
-// It is needed because we don't know task id before insertion.
+// It is needed because we don't know task id before insertion, so we describe the dependency
+// using the in-memory representation, i.e, the array index.
 type TaskIndexDAG struct {
 	FromIndex int
 	ToIndex   int

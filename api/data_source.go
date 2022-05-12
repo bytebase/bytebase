@@ -92,6 +92,10 @@ type DataSourceCreate struct {
 	Type     DataSourceType `jsonapi:"attr,type"`
 	Username string         `jsonapi:"attr,username"`
 	Password string         `jsonapi:"attr,password"`
+	// If true, syncs the schema after creating the data source. The client
+	// may set to false if the target data source's instance contains too many databases
+	// to avoid the request timeout.
+	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }
 
 // DataSourceFind is the API message for finding data sources.
@@ -126,4 +130,8 @@ type DataSourcePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
+	// If true, syncs the schema after patching the data source. The client
+	// may set to false if the target data source's instance contains too many databases
+	// to avoid the request timeout.
+	SyncSchema bool `jsonapi:"attr,syncSchema"`
 }

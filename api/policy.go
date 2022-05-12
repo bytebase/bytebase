@@ -25,9 +25,9 @@ const (
 	// PolicyTypeSchemaReview is the schema review policy type.
 	PolicyTypeSchemaReview PolicyType = "bb.policy.schema-review"
 
-	// PipelineApprovalValueManualNever is MANUAL_APPROVAL_NEVER approval policy value.
+	// PipelineApprovalValueManualNever means the pipeline will automatically be approved without user intervention.
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
-	// PipelineApprovalValueManualAlways is MANUAL_APPROVAL_ALWAYS approval policy value.
+	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
 
 	// BackupPlanPolicyScheduleUnset is NEVER backup plan policy value.
@@ -129,7 +129,7 @@ func (pa PipelineApprovalPolicy) String() (string, error) {
 func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, error) {
 	var pa PipelineApprovalPolicy
 	if err := json.Unmarshal([]byte(payload), &pa); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q: %q", payload, err)
+		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q, error[%w]", payload, err)
 	}
 	return &pa, nil
 }

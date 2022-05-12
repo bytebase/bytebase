@@ -129,6 +129,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLWhereRequirement, nil
 		}
+	case api.SchemaRuleStatementNoSelectAll:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLNoSelectAll, nil
+		}
 	case api.SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
 		case db.MySQL, db.TiDB:
@@ -168,6 +173,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLColumnRequirement, nil
+		}
+	case api.SchemaRuleColumnNotNull:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLColumnNoNull, nil
 		}
 	case api.SchemaRuleMySQLEngine:
 		switch engine {
