@@ -149,9 +149,9 @@ type UpdateSchemaDetail struct {
 type UpdateSchemaContext struct {
 	// MigrationType is the type of a migration.
 	MigrationType db.MigrationType `json:"migrationType"`
-	// UpdateSchemaDetail is the details of schema update.
+	// DetailList is the details of schema update.
 	// When a project is in tenant mode, there should be one item in the list.
-	UpdateSchemaDetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
+	DetailList []*UpdateSchemaDetail `json:"updateSchemaDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
 }

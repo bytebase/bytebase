@@ -179,7 +179,7 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
 		indexBlockedByIndex := make(map[int][]int)
 		for _, indexDAG := range sc.TaskIndexDAGList {
-			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
+			indexBlockedByIndex[indexDAG.To] = append(indexBlockedByIndex[indexDAG.To], indexDAG.From)
 		}
 		idOffset := id + 1
 		// The ID of sc.TaskList[index].ID equals index + idOffset.

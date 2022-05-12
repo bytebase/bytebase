@@ -60,7 +60,7 @@ func GetPostgresSocketDir() string {
 }
 
 // DefaultMigrationVersion returns the default migration version string.
-// Use the concatenation of current time in second to guarantee uniqueness in a monotonic increasing way.
+// Use the current time in second to guarantee uniqueness in a monotonic increasing way.
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
 func DefaultMigrationVersion() string {
 	return time.Now().Format("20060102150405")
