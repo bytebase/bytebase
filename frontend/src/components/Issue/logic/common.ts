@@ -31,13 +31,6 @@ export const useCommonLogic = () => {
     if (create.value) {
       return true;
     }
-    const checkTask = (task: Task) => {
-      return (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "FAILED"
-      );
-    };
 
     // if not creating, we are allowed to edit sql statement only when:
     // 1. issue.status is OPEN
@@ -55,6 +48,13 @@ export const useCommonLogic = () => {
     }
 
     // check `selectedTask`, expected to be PENDING or PENDING_APPROVAL or FAILED
+    const checkTask = (task: Task) => {
+      return (
+        task.status == "PENDING" ||
+        task.status == "PENDING_APPROVAL" ||
+        task.status == "FAILED"
+      );
+    };
     return checkTask(selectedTask.value as Task);
   });
 
