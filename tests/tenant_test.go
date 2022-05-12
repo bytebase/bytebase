@@ -149,7 +149,7 @@ func TestTenant(t *testing.T) {
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseName: databaseName,
 				Statement:    migrationStatement,
@@ -539,7 +539,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseName: baseDatabaseName,
 				Statement:    migrationStatement,
