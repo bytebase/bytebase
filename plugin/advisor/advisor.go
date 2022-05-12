@@ -91,6 +91,9 @@ const (
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 
+	// MySQLColumnNoNull is an advisor type for MySQL column no NULL value.
+	MySQLColumnNoNull Type = "bb.plugin.advisor.mysql.column.no-null"
+
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
 )
