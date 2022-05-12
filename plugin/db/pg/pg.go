@@ -876,6 +876,10 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	if err != nil {
 		return err
 	}
+	semverVersion, err := semver.ParseTolerant(version)
+	if err != nil {
+		return err
+	}
 
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -995,7 +999,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get event triggers from database %q: %s", database, err)
 	}
 	for _, evt := range events {
-		if _, err := io.WriteString(out, evt.Statement(version)); err != nil {
+		if _, err := io.WriteString(out, evt.Statement(semverVersion.Major)); err != nil {
 			return err
 		}
 	}
@@ -1280,7 +1284,7 @@ func (t triggerSchema) Statement() string {
 }
 
 // Statement returns the create statement of an event trigger.
-func (t eventTriggerSchema) Statement(serverVersion string) string {
+func (t eventTriggerSchema) Statement(majorVersion uint64) string {
 	s := fmt.Sprintf(""+
 		"--\n"+
 		"-- Event trigger structure for %s\n"+
@@ -1292,8 +1296,7 @@ func (t eventTriggerSchema) Statement(serverVersion string) string {
 	}
 
 	functionSyntax := "FUNCTION"
-	version, _ := semver.ParseTolerant(serverVersion)
-	if version.Major == 10 {
+	if majorVersion == 10 {
 		functionSyntax = "PROCEDURE"
 	}
 
