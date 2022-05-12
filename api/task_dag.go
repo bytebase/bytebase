@@ -33,6 +33,6 @@ type TaskDAGFind struct {
 // It is needed because we don't know task id before insertion, so we describe the dependency
 // using the in-memory representation, i.e, the array index.
 type TaskIndexDAG struct {
-	From int
-	To   int
+	FromIndex int
+	ToIndex   int
 }

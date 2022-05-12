@@ -384,8 +384,8 @@ func (s *Server) createPipelineFromIssue(ctx context.Context, issueCreate *api.I
 
 		for _, indexDAG := range stageCreate.TaskIndexDAGList {
 			taskDAGCreate := api.TaskDAGCreate{
-				FromTaskID: taskID[indexDAG.From],
-				ToTaskID:   taskID[indexDAG.To],
+				FromTaskID: taskID[indexDAG.FromIndex],
+				ToTaskID:   taskID[indexDAG.ToIndex],
 				Payload:    "{}",
 			}
 			if _, err := s.store.CreateTaskDAG(ctx, &taskDAGCreate); err != nil {
@@ -901,8 +901,8 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	// The below list means that taskCreateList[0] blocks taskCreateList[1], and taskCreateList[1] blocks taskCreateList[2].
 	// In other words, task "sync" blocks task "cutover", and task "cutover" blocks task "drop original table".
 	taskIndexDAGList := []api.TaskIndexDAG{
-		{From: 0, To: 1},
-		{From: 1, To: 2},
+		{FromIndex: 0, ToIndex: 1},
+		{FromIndex: 1, ToIndex: 2},
 	}
 	return taskCreateList, taskIndexDAGList, nil
 }
