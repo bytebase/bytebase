@@ -101,8 +101,6 @@
 </template>
 
 <script lang="ts" setup>
-/* eslint-disable vue/no-mutating-props */
-
 import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import {
