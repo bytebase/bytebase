@@ -4,7 +4,9 @@ import TenantModeProvider from "./TenantModeProvider";
 import GhostModeProvider from "./GhostModeProvider";
 import StandardModeProvider from "./StandardModeProvider";
 
+export * from "./base";
 export * from "./common";
+export * from "./extra";
 
 export {
   IssueLogic,

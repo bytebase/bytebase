@@ -59,10 +59,12 @@ type IssueLogic = {
   doCreate(): any;
 
   // events
+  onStatusChanged: (eager: boolean) => void;
   selectStageOrTask: (
     stageIdOrIndex: number,
     taskSlug?: string | undefined
   ) => void;
+  selectTask: (task: Task) => void;
 };
 
 export default IssueLogic;
