@@ -1295,6 +1295,8 @@ func (t eventTriggerSchema) Statement(majorVersion uint64) string {
 		s += fmt.Sprintf("\n         WHEN TAG IN (%s)", t.tags)
 	}
 
+	// See https://www.postgresql.org/docs/10/sql-createeventtrigger.html,
+	// of the versions that support event triggers, only 10 use PROCEDURE.
 	functionSyntax := "FUNCTION"
 	if majorVersion == 10 {
 		functionSyntax = "PROCEDURE"
