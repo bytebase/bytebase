@@ -12,7 +12,7 @@
           </div>
           <BBTextField
             class="ml-2 my-0.5 w-full text-lg font-bold"
-            :disabled="!allowEdit"
+            :disabled="!allowEditNameAndDescription"
             :required="true"
             :focus-on-mount="create"
             :bordered="false"
@@ -76,107 +76,82 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, watch, PropType, computed, defineComponent } from "vue";
+<script lang="ts" setup>
+import { reactive, watch, computed, Ref } from "vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
-import { activeTask } from "../../utils";
+import { activeTask } from "@/utils";
 import {
   TaskDatabaseSchemaUpdatePayload,
   TaskDatabaseDataUpdatePayload,
   Issue,
   VCSPushEvent,
-} from "../../types";
+} from "@/types";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 interface LocalState {
   editing: boolean;
   name: string;
 }
 
-export default defineComponent({
-  name: "IssueHighlightPanel",
-  components: { IssueStatusIcon },
-  props: {
-    issue: {
-      required: true,
-      type: Object as PropType<Issue>,
-    },
-    create: {
-      required: true,
-      type: Boolean,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
-  },
-  emits: ["update-name"],
-  setup(props, { emit }) {
-    const state = reactive<LocalState>({
-      editing: false,
-      name: props.issue.name,
-    });
+const logic = useIssueLogic();
+const create = logic.create;
+const issue = logic.issue as Ref<Issue>;
+const { allowEditNameAndDescription, updateName } = useExtraIssueLogic();
 
-    watch(
-      () => props.issue,
-      (curIssue) => {
-        state.name = curIssue.name;
-      }
-    );
-
-    const pushEvent = computed((): VCSPushEvent | undefined => {
-      if (props.issue.type == "bb.issue.database.schema.update") {
-        const payload = activeTask(props.issue.pipeline)
-          .payload as TaskDatabaseSchemaUpdatePayload;
-        return payload?.pushEvent;
-      } else if (props.issue.type == "bb.issue.database.data.update") {
-        const payload = activeTask(props.issue.pipeline)
-          .payload as TaskDatabaseDataUpdatePayload;
-        return payload?.pushEvent;
-      }
-      return undefined;
-    });
-
-    const vcsType = computed((): string => {
-      if (pushEvent.value) {
-        if (pushEvent.value.vcsType.startsWith("GITLAB")) {
-          return "GitLab";
-        }
-      }
-      return "";
-    });
-
-    const vcsBranch = computed((): string => {
-      if (pushEvent.value) {
-        return pushEvent.value.ref.replace(/^refs\/heads\//g, "");
-      }
-      return "";
-    });
-
-    const vcsBranchUrl = computed((): string => {
-      if (pushEvent.value) {
-        if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
-          return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
-        }
-      }
-      return "";
-    });
-
-    const trySaveName = (text: string) => {
-      state.name = text;
-      if (text != props.issue.name) {
-        emit("update-name", state.name);
-      }
-    };
-
-    return {
-      state,
-      activeTask,
-      pushEvent,
-      vcsType,
-      vcsBranch,
-      vcsBranchUrl,
-      trySaveName,
-    };
-  },
+const state = reactive<LocalState>({
+  editing: false,
+  name: issue.value.name,
 });
+
+watch(
+  () => issue.value,
+  (curIssue) => {
+    state.name = curIssue.name;
+  }
+);
+
+const pushEvent = computed((): VCSPushEvent | undefined => {
+  if (issue.value.type == "bb.issue.database.schema.update") {
+    const payload = activeTask(issue.value.pipeline)
+      .payload as TaskDatabaseSchemaUpdatePayload;
+    return payload?.pushEvent;
+  } else if (issue.value.type == "bb.issue.database.data.update") {
+    const payload = activeTask(issue.value.pipeline)
+      .payload as TaskDatabaseDataUpdatePayload;
+    return payload?.pushEvent;
+  }
+  return undefined;
+});
+
+const vcsType = computed((): string => {
+  if (pushEvent.value) {
+    if (pushEvent.value.vcsType.startsWith("GITLAB")) {
+      return "GitLab";
+    }
+  }
+  return "";
+});
+
+const vcsBranch = computed((): string => {
+  if (pushEvent.value) {
+    return pushEvent.value.ref.replace(/^refs\/heads\//g, "");
+  }
+  return "";
+});
+
+const vcsBranchUrl = computed((): string => {
+  if (pushEvent.value) {
+    if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
+      return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+    }
+  }
+  return "";
+});
+
+const trySaveName = (text: string) => {
+  state.name = text;
+  if (text != issue.value.name) {
+    updateName(state.name);
+  }
+};
 </script>

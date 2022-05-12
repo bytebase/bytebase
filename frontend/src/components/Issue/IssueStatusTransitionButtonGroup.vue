@@ -140,6 +140,7 @@ import {
   flattenTaskList,
   IssueTypeWithStatement,
   TaskTypeWithStatement,
+  useExtraIssueLogic,
   useIssueLogic,
 } from "./logic";
 
@@ -159,8 +160,6 @@ interface UpdateStatusModalState {
   payload?: Task;
 }
 
-const emit = defineEmits(["change-issue-status", "change-task-status"]);
-
 const { t } = useI18n();
 const menu = ref<InstanceType<typeof BBContextMenu>>();
 
@@ -171,6 +170,7 @@ const {
   activeTaskOfPipeline,
   doCreate,
 } = useIssueLogic();
+const { changeIssueStatus, changeTaskStatus } = useExtraIssueLogic();
 
 const updateStatusModalState = reactive<UpdateStatusModalState>({
   mode: "ISSUE",
@@ -255,7 +255,7 @@ const doTaskStatusTransition = (
   task: Task,
   comment: string
 ) => {
-  emit("change-task-status", task, transition.to, comment);
+  changeTaskStatus(task, transition.to, comment);
 };
 
 const applicableIssueStatusTransitionList = computed(
@@ -358,7 +358,7 @@ const doIssueStatusTransition = (
   transition: IssueStatusTransition,
   comment: string
 ) => {
-  emit("change-issue-status", transition.to, comment);
+  changeIssueStatus(transition.to, comment);
 };
 
 const allowCreate = computed(() => {

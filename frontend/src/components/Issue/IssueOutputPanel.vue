@@ -7,7 +7,7 @@
   </h2>
 
   <div class="my-2 mx-4 space-y-2">
-    <template v-for="(field, index) in outputFieldList" :key="index">
+    <template v-for="(field, index) in template.outputFieldList" :key="index">
       <div class="flex flex-col space-y-1">
         <div class="textlabel">
           {{ field.name }}
@@ -26,11 +26,11 @@
             <input
               type="text"
               class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-r border-control-border focus:mr-0.5 focus:ring-control focus:border-control sm:text-sm disabled:bg-gray-50"
-              :disabled="!allowEdit"
+              :disabled="!allowEditOutput"
               :name="field.id"
               :value="fieldValue(field)"
               autocomplete="off"
-              @blur="(e: any) => $emit('update-custom-field', field, e.target.value)"
+              @blur="(e: any) => updateCustomField(field, e.target.value)"
             />
             <!-- Disallow tabbing since the focus ring is partially covered by the text field due to overlaying -->
             <button
@@ -61,7 +61,7 @@
             :disabled="!allowEditDatabase"
             :mode="'ENVIRONMENT'"
             :environmentId="environmentId"
-            :selectedId="fieldValue(field) || UNKNOWN_ID"
+            :selectedId="parseInt(fieldValue(field), 10) || UNKNOWN_ID"
             @select-database-id="
               (databaseId: number) => {
                 trySaveCustomField(field, databaseId);
@@ -88,120 +88,83 @@
   </div>
 </template>
 
-<script lang="ts">
-import { PropType, computed, reactive, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed, Ref } from "vue";
 import { useRouter } from "vue-router";
-import isEqual from "lodash-es/isEqual";
+import { isEqual } from "lodash-es";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import DatabaseSelect from "../DatabaseSelect.vue";
-import { activeEnvironment } from "../../utils";
-import { OutputField, IssueContext } from "../../plugins";
-import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "../../types";
+import { activeEnvironment } from "@/utils";
+import { OutputField, IssueContext } from "@/plugins";
+import { DatabaseId, EnvironmentId, Issue, UNKNOWN_ID } from "@/types";
 import { pushNotification, useCurrentUser } from "@/store";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+const router = useRouter();
+const logic = useIssueLogic();
+const issue = logic.issue as Ref<Issue>;
+const template = logic.template;
+const { allowEditOutput, updateCustomField } = useExtraIssueLogic();
 
-export default defineComponent({
-  name: "IssueOutputPanel",
-  components: { DatabaseSelect },
-  props: {
-    issue: {
-      required: true,
-      type: Object as PropType<Issue>,
-    },
-    outputFieldList: {
-      required: true,
-      type: Object as PropType<OutputField[]>,
-    },
-    allowEdit: {
-      required: true,
-      type: Boolean,
-    },
-  },
-  emits: ["update-custom-field"],
-  setup(props, { emit }) {
-    const router = useRouter();
+const currentUser = useCurrentUser();
 
-    const state = reactive<LocalState>({});
-
-    const currentUser = useCurrentUser();
-
-    const environmentId = computed((): EnvironmentId => {
-      return activeEnvironment(props.issue.pipeline).id;
-    });
-
-    const fieldValue = (field: OutputField): string => {
-      return props.issue.payload[field.id];
-    };
-
-    const issueContext = computed((): IssueContext => {
-      return {
-        currentUser: currentUser.value,
-        create: false,
-        issue: props.issue,
-      };
-    });
-
-    const allowEditDatabase = computed((): boolean => {
-      if (!props.allowEdit) {
-        return false;
-      }
-      return (
-        props.issue.type == "bb.issue.database.create" ||
-        props.issue.type == "bb.issue.database.grant"
-      );
-    });
-
-    const isValidLink = (link: string): boolean => {
-      return link?.trim().length > 0;
-    };
-
-    const copyText = (field: OutputField) => {
-      toClipboard(props.issue.payload[field.id]).then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: `${field.name} copied to clipboard.`,
-        });
-      });
-    };
-
-    const goToLink = (link: string) => {
-      const myLink = link.trim();
-      const parts = myLink.split("://");
-      if (parts.length > 1) {
-        window.open(myLink, "_blank");
-      } else {
-        if (!myLink.startsWith("/")) {
-          router.push("/" + myLink);
-        } else {
-          router.push(myLink);
-        }
-      }
-    };
-
-    const trySaveCustomField = (
-      field: OutputField,
-      value: string | DatabaseId
-    ) => {
-      if (!isEqual(value, fieldValue(field))) {
-        emit("update-custom-field", field, value);
-      }
-    };
-
-    return {
-      UNKNOWN_ID,
-      state,
-      environmentId,
-      fieldValue,
-      issueContext,
-      allowEditDatabase,
-      isValidLink,
-      copyText,
-      goToLink,
-      trySaveCustomField,
-    };
-  },
+const environmentId = computed((): EnvironmentId => {
+  return activeEnvironment(issue.value.pipeline).id;
 });
+
+const fieldValue = (field: OutputField): string => {
+  return issue.value.payload[field.id];
+};
+
+const issueContext = computed((): IssueContext => {
+  return {
+    currentUser: currentUser.value,
+    create: false,
+    issue: issue.value,
+  };
+});
+
+const allowEditDatabase = computed((): boolean => {
+  if (!allowEditOutput.value) {
+    return false;
+  }
+  return (
+    issue.value.type == "bb.issue.database.create" ||
+    issue.value.type == "bb.issue.database.grant"
+  );
+});
+
+const isValidLink = (link: string): boolean => {
+  return link?.trim().length > 0;
+};
+
+const copyText = (field: OutputField) => {
+  toClipboard(issue.value.payload[field.id]).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: `${field.name} copied to clipboard.`,
+    });
+  });
+};
+
+const goToLink = (link: string) => {
+  const myLink = link.trim();
+  const parts = myLink.split("://");
+  if (parts.length > 1) {
+    window.open(myLink, "_blank");
+  } else {
+    if (!myLink.startsWith("/")) {
+      router.push("/" + myLink);
+    } else {
+      router.push(myLink);
+    }
+  }
+};
+
+const trySaveCustomField = (field: OutputField, value: string | DatabaseId) => {
+  if (!isEqual(value, fieldValue(field))) {
+    updateCustomField(field, value);
+  }
+};
 </script>

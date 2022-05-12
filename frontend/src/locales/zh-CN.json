@@ -562,6 +562,7 @@
     "connection-info": "连接信息",
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
+    "your_db_pwd": "YOUR_DB_PWD",
     "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
     "sentence": {
       "host": {
@@ -596,7 +597,6 @@
         }
       }
     },
-    "your_db_pwd": "YOUR_DB_PWD",
     "no-password": "无密码",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
@@ -859,8 +859,7 @@
       "view-diff": "查看差异"
     },
     "last-seen": "上次出现",
-    "first-seen": "首次出现",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "first-seen": "首次出现"
   },
   "project": {
     "dashboard": {

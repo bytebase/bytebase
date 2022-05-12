@@ -156,7 +156,7 @@
                       <template
                         v-if="
                           state.editCommentMode &&
-                          state.activeActivity.id == activity.id
+                          state.activeActivity?.id === activity.id
                         "
                       >
                         <button
@@ -204,7 +204,7 @@
                     <template
                       v-if="
                         state.editCommentMode &&
-                        state.activeActivity.id == activity.id
+                        state.activeActivity?.id === activity.id
                       "
                     >
                       <label for="comment" class="sr-only">
@@ -217,12 +217,12 @@
                         class="textarea block w-full resize-none"
                         :placeholder="$t('issue.leave-a-comment')"
                         @input="
-                          (e) => {
+                          (e: any) => {
                             sizeToFit(e.target);
                           }
                         "
                         @focus="
-                          (e) => {
+                          (e: any) => {
                             sizeToFit(e.target);
                           }
                         "
@@ -235,7 +235,7 @@
                       v-if="activity.type == 'bb.pipeline.task.file.commit'"
                     >
                       <a
-                        :href="`${activity.payload.vcsInstanceUrl}/${activity.payload.repositoryFullPath}/-/commit/${activity.payload.commitId}`"
+                        :href="fileCommitActivityUrl(activity)"
                         target="__blank"
                         class="normal-link flex flex-row items-center"
                       >
@@ -276,7 +276,7 @@
                 class="textarea block w-full resize-none whitespace-pre-wrap"
                 :placeholder="$t('issue.leave-a-comment')"
                 @input="
-                  (e) => {
+                  (e: any) => {
                     sizeToFit(e.target);
                   }
                 "
@@ -305,9 +305,9 @@
     :description="'You cannot undo this action.'"
     @ok="
       () => {
-        doDeleteComment(state.activeActivity);
+        doDeleteComment(state.activeActivity!);
         state.showDeleteCommentModal = false;
-        state.activeActivity = null;
+        state.activeActivity = undefined;
       }
     "
     @cancel="state.showDeleteCommentModal = false"
@@ -315,42 +315,30 @@
   </BBAlert>
 </template>
 
-<script lang="ts">
-import {
-  onMounted,
-  onUnmounted,
-  computed,
-  nextTick,
-  ref,
-  reactive,
-  watchEffect,
-  PropType,
-  defineComponent,
-} from "vue";
+<script lang="ts" setup>
+import { computed, nextTick, ref, reactive, watchEffect, Ref } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "../PrincipalAvatar.vue";
-import {
+import type {
   Issue,
   Activity,
   ActivityIssueFieldUpdatePayload,
   ActivityTaskStatusUpdatePayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskEarliestAllowedTimeUpdatePayload,
-  UNKNOWN_ID,
-  EMPTY_ID,
-  SYSTEM_BOT_ID,
   ActivityCreate,
   IssueSubscriber,
   ActivityTaskFileCommitPayload,
-} from "../../types";
+} from "@/types";
+import { UNKNOWN_ID, EMPTY_ID, SYSTEM_BOT_ID } from "@/types";
 import {
   findTaskById,
   issueActivityActionSentence,
   issueSlug,
   sizeToFit,
   taskSlug,
-} from "../../utils";
-import { IssueTemplate, IssueBuiltinFieldId } from "../../plugins";
+} from "@/utils";
+import { IssueBuiltinFieldId } from "@/plugins";
 import { useI18n } from "vue-i18n";
 import dayjs from "dayjs";
 import {
@@ -359,6 +347,8 @@ import {
   useIssueSubscriberStore,
   useActivityStore,
 } from "@/store";
+import { useEventListener } from "@vueuse/core";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 interface LocalState {
   showDeleteCommentModal: boolean;
@@ -383,330 +373,292 @@ type ActionIconType =
   | "complete"
   | "commit";
 
-export default defineComponent({
-  name: "IssueActivityPanel",
-  components: { PrincipalAvatar },
-  props: {
-    issue: {
-      required: true,
-      type: Object as PropType<Issue>,
-    },
-    issueTemplate: {
-      required: true,
-      type: Object as PropType<IssueTemplate>,
-    },
-  },
-  emits: ["add-subscriber-id"],
-  setup(props, { emit }) {
-    const { t } = useI18n();
-    const activityStore = useActivityStore();
-    const router = useRouter();
+const { t } = useI18n();
+const activityStore = useActivityStore();
+const router = useRouter();
 
-    const newComment = ref("");
-    const newCommentTextArea = ref();
-    const editComment = ref("");
-    const editCommentTextArea = ref();
+const newComment = ref("");
+const newCommentTextArea = ref();
+const editComment = ref("");
+const editCommentTextArea = ref();
 
-    const state = reactive<LocalState>({
-      showDeleteCommentModal: false,
-      editCommentMode: false,
-    });
+const logic = useIssueLogic();
+const issue = logic.issue as Ref<Issue>;
+const { addSubscriberId } = useExtraIssueLogic();
 
-    const keyboardHandler = (e: KeyboardEvent) => {
-      if (
-        state.editCommentMode &&
-        editCommentTextArea.value === document.activeElement
-      ) {
-        if (e.code == "Escape") {
-          cancelEditComment();
-        } else if (e.code == "Enter" && e.metaKey) {
-          if (allowUpdateComment.value) {
-            doUpdateComment();
-          }
-        }
-      } else if (newCommentTextArea.value === document.activeElement) {
-        if (e.code == "Enter" && e.metaKey) {
-          doCreateComment();
-        }
-      }
-    };
-
-    onMounted(() => {
-      document.addEventListener("keydown", keyboardHandler);
-    });
-
-    onUnmounted(() => {
-      document.removeEventListener("keydown", keyboardHandler);
-    });
-
-    const currentUser = useCurrentUser();
-
-    const prepareActivityList = () => {
-      activityStore.fetchActivityListForIssue(props.issue.id);
-    };
-
-    watchEffect(prepareActivityList);
-
-    // The activity list and its anchor is not immediately available when the issue shows up.
-    // Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
-    // So we manually use scrollIntoView after rendering the activity list.
-    nextTick(() => {
-      if (router.currentRoute.value.hash) {
-        const el = document.getElementById(
-          router.currentRoute.value.hash.slice(1)
-        );
-        el?.scrollIntoView();
-      }
-    });
-
-    // Need to use computed to make list reactive to activity list changes.
-    const activityList = computed((): Activity[] => {
-      const list = activityStore.getActivityListByIssue(props.issue.id);
-      return list.filter((activity: Activity) => {
-        if (activity.type == "bb.issue.field.update") {
-          let containUserVisibleChange =
-            (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
-            IssueBuiltinFieldId.SUBSCRIBER_LIST;
-          return containUserVisibleChange;
-        }
-        return true;
-      });
-    });
-
-    const subscriberList = computed((): IssueSubscriber[] => {
-      return useIssueSubscriberStore().subscriberListByIssue(props.issue.id);
-    });
-
-    const cancelEditComment = () => {
-      editComment.value = "";
-      state.activeActivity = undefined;
-      state.editCommentMode = false;
-    };
-
-    const doCreateComment = () => {
-      const createActivity: ActivityCreate = {
-        type: "bb.issue.comment.create",
-        containerId: props.issue.id,
-        comment: newComment.value,
-      };
-      activityStore.createActivity(createActivity).then(() => {
-        useUIStateStore().saveIntroStateByKey({
-          key: "comment.create",
-          newState: true,
-        });
-
-        newComment.value = "";
-        nextTick(() => sizeToFit(newCommentTextArea.value));
-
-        // Because the user just added a comment and we assume she is interested in this
-        // issue, and we add her to the subscriber list if she is not there
-        let isSubscribed = false;
-        for (const subscriber of subscriberList.value) {
-          if (subscriber.subscriber.id == currentUser.value.id) {
-            isSubscribed = true;
-            break;
-          }
-        }
-        if (!isSubscribed) {
-          emit("add-subscriber-id", currentUser.value.id);
-        }
-      });
-    };
-
-    const onUpdateComment = (activity: Activity) => {
-      editComment.value = activity.comment;
-      state.activeActivity = activity;
-      state.editCommentMode = true;
-      nextTick(() => {
-        editCommentTextArea.value.focus();
-      });
-    };
-
-    const doUpdateComment = () => {
-      activityStore
-        .updateComment({
-          activityId: state.activeActivity!.id,
-          updatedComment: editComment.value,
-        })
-        .then(() => {
-          cancelEditComment();
-        });
-    };
-
-    const allowUpdateComment = computed(() => {
-      return editComment.value != state.activeActivity!.comment;
-    });
-
-    const doDeleteComment = (activity: Activity) => {
-      activityStore.deleteActivity(activity);
-    };
-
-    const actionIcon = (activity: Activity): ActionIconType => {
-      if (activity.type == "bb.issue.create") {
-        return "create";
-      } else if (activity.type == "bb.issue.field.update") {
-        return "update";
-      } else if (activity.type == "bb.pipeline.task.status.update") {
-        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-        switch (payload.newStatus) {
-          case "PENDING": {
-            if (payload.oldStatus == "RUNNING") {
-              return "cancel";
-            } else if (payload.oldStatus == "PENDING_APPROVAL") {
-              return "approve";
-            }
-            break;
-          }
-          case "RUNNING": {
-            return "run";
-          }
-          case "DONE": {
-            return "complete";
-          }
-          case "FAILED": {
-            return "fail";
-          }
-        }
-      } else if (activity.type == "bb.pipeline.task.file.commit") {
-        return "commit";
-      } else if (activity.type == "bb.pipeline.task.statement.update") {
-        return "update";
-      } else if (
-        activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
-      ) {
-        return "update";
-      }
-
-      return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
-    };
-
-    const actionSubjectPrefix = (activity: Activity): string => {
-      if (activity.creator.id == SYSTEM_BOT_ID) {
-        if (activity.type == "bb.pipeline.task.status.update") {
-          return `${t("activity.subject-prefix.task")} `;
-        }
-      }
-      return "";
-    };
-
-    const actionSubject = (activity: Activity): ActionSubject => {
-      if (activity.creator.id == SYSTEM_BOT_ID) {
-        if (activity.type == "bb.pipeline.task.status.update") {
-          if (props.issue.pipeline.id != EMPTY_ID) {
-            const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-            const task = findTaskById(props.issue.pipeline, payload.taskId);
-            var link = "";
-            if (task.id != UNKNOWN_ID) {
-              link = `/issue/${issueSlug(
-                props.issue.name,
-                props.issue.id
-              )}?task=${taskSlug(task.name, task.id)}`;
-            }
-            return {
-              name: `${task.name} (${task.stage.name})`,
-              link,
-            };
-          }
-        }
-      }
-      return {
-        name: activity.creator.name,
-        link: `/u/${activity.creator.id}`,
-      };
-    };
-
-    const actionSentence = (activity: Activity): string => {
-      if (activity.type.startsWith("bb.issue.")) {
-        const [tid, params] = issueActivityActionSentence(activity);
-        return t(tid, params);
-      }
-      switch (activity.type) {
-        case "bb.pipeline.task.status.update": {
-          const payload = activity.payload as ActivityTaskStatusUpdatePayload;
-          let str = t("activity.sentence.changed");
-          switch (payload.newStatus) {
-            case "PENDING": {
-              if (payload.oldStatus == "RUNNING") {
-                str = t("activity.sentence.canceled");
-              } else if (payload.oldStatus == "PENDING_APPROVAL") {
-                str = t("activity.sentence.approved");
-              }
-              break;
-            }
-            case "RUNNING": {
-              str = t("activity.sentence.started");
-              break;
-            }
-            case "DONE": {
-              str = t("activity.sentence.completed");
-              break;
-            }
-            case "FAILED": {
-              str = t("activity.sentence.failed");
-              break;
-            }
-          }
-          if (activity.creator.id != SYSTEM_BOT_ID) {
-            // If creator is not the robot (which means we do NOT use task name in the subject),
-            // then we append the task name here.
-            const task = findTaskById(props.issue.pipeline, payload.taskId);
-            str += t("activity.sentence.task-name", { name: task.name });
-          }
-          return str;
-        }
-        case "bb.pipeline.task.file.commit": {
-          const payload = activity.payload as ActivityTaskFileCommitPayload;
-          // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
-          return t("activity.sentence.committed-to-at", {
-            file: payload.filePath,
-            branch: payload.branch,
-            repo: payload.repositoryFullPath,
-          });
-        }
-        case "bb.pipeline.task.statement.update": {
-          const payload =
-            activity.payload as ActivityTaskStatementUpdatePayload;
-          return t("activity.sentence.changed-from-to", {
-            name: "SQL",
-            oldValue: payload.oldStatement,
-            newValue: payload.newStatement,
-          });
-        }
-        case "bb.pipeline.task.general.earliest-allowed-time.update": {
-          const payload =
-            activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
-          const newVal = payload.newEarliestAllowedTs;
-          const oldVal = payload.oldEarliestAllowedTs;
-          return t("activity.sentence.changed-from-to", {
-            name: "earliest allowed time",
-            oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
-            newValue: newVal ? dayjs(newVal * 1000) : "Unset",
-          });
-        }
-      }
-      return "";
-    };
-
-    return {
-      SYSTEM_BOT_ID,
-      state,
-      activityList,
-      newComment,
-      newCommentTextArea,
-      editComment,
-      editCommentTextArea,
-      currentUser,
-      actionIcon,
-      actionSubjectPrefix,
-      actionSubject,
-      actionSentence,
-      doCreateComment,
-      cancelEditComment,
-      onUpdateComment,
-      doUpdateComment,
-      allowUpdateComment,
-      doDeleteComment,
-    };
-  },
+const state = reactive<LocalState>({
+  showDeleteCommentModal: false,
+  editCommentMode: false,
 });
+
+const keyboardHandler = (e: KeyboardEvent) => {
+  if (
+    state.editCommentMode &&
+    editCommentTextArea.value === document.activeElement
+  ) {
+    if (e.code == "Escape") {
+      cancelEditComment();
+    } else if (e.code == "Enter" && e.metaKey) {
+      if (allowUpdateComment.value) {
+        doUpdateComment();
+      }
+    }
+  } else if (newCommentTextArea.value === document.activeElement) {
+    if (e.code == "Enter" && e.metaKey) {
+      doCreateComment();
+    }
+  }
+};
+
+useEventListener("keydown", keyboardHandler);
+
+const currentUser = useCurrentUser();
+
+const prepareActivityList = () => {
+  activityStore.fetchActivityListForIssue(issue.value.id);
+};
+
+watchEffect(prepareActivityList);
+
+// The activity list and its anchor is not immediately available when the issue shows up.
+// Thus the scrollBehavior set in the vue router won't work (also tried promise to resolve async with no luck either)
+// So we manually use scrollIntoView after rendering the activity list.
+nextTick(() => {
+  if (router.currentRoute.value.hash) {
+    const el = document.getElementById(router.currentRoute.value.hash.slice(1));
+    el?.scrollIntoView();
+  }
+});
+
+// Need to use computed to make list reactive to activity list changes.
+const activityList = computed((): Activity[] => {
+  const list = activityStore.getActivityListByIssue(issue.value.id);
+  return list.filter((activity: Activity) => {
+    if (activity.type == "bb.issue.field.update") {
+      let containUserVisibleChange =
+        (activity.payload as ActivityIssueFieldUpdatePayload).fieldId !=
+        IssueBuiltinFieldId.SUBSCRIBER_LIST;
+      return containUserVisibleChange;
+    }
+    return true;
+  });
+});
+
+const subscriberList = computed((): IssueSubscriber[] => {
+  return useIssueSubscriberStore().subscriberListByIssue(issue.value.id);
+});
+
+const cancelEditComment = () => {
+  editComment.value = "";
+  state.activeActivity = undefined;
+  state.editCommentMode = false;
+};
+
+const doCreateComment = () => {
+  const createActivity: ActivityCreate = {
+    type: "bb.issue.comment.create",
+    containerId: issue.value.id,
+    comment: newComment.value,
+  };
+  activityStore.createActivity(createActivity).then(() => {
+    useUIStateStore().saveIntroStateByKey({
+      key: "comment.create",
+      newState: true,
+    });
+
+    newComment.value = "";
+    nextTick(() => sizeToFit(newCommentTextArea.value));
+
+    // Because the user just added a comment and we assume she is interested in this
+    // issue, and we add her to the subscriber list if she is not there
+    let isSubscribed = false;
+    for (const subscriber of subscriberList.value) {
+      if (subscriber.subscriber.id == currentUser.value.id) {
+        isSubscribed = true;
+        break;
+      }
+    }
+    if (!isSubscribed) {
+      addSubscriberId(currentUser.value.id);
+    }
+  });
+};
+
+const onUpdateComment = (activity: Activity) => {
+  editComment.value = activity.comment;
+  state.activeActivity = activity;
+  state.editCommentMode = true;
+  nextTick(() => {
+    editCommentTextArea.value?.focus();
+  });
+};
+
+const doUpdateComment = () => {
+  activityStore
+    .updateComment({
+      activityId: state.activeActivity!.id,
+      updatedComment: editComment.value,
+    })
+    .then(() => {
+      cancelEditComment();
+    });
+};
+
+const allowUpdateComment = computed(() => {
+  return editComment.value != state.activeActivity!.comment;
+});
+
+const doDeleteComment = (activity: Activity) => {
+  activityStore.deleteActivity(activity);
+};
+
+const actionIcon = (activity: Activity): ActionIconType => {
+  if (activity.type == "bb.issue.create") {
+    return "create";
+  } else if (activity.type == "bb.issue.field.update") {
+    return "update";
+  } else if (activity.type == "bb.pipeline.task.status.update") {
+    const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+    switch (payload.newStatus) {
+      case "PENDING": {
+        if (payload.oldStatus == "RUNNING") {
+          return "cancel";
+        } else if (payload.oldStatus == "PENDING_APPROVAL") {
+          return "approve";
+        }
+        break;
+      }
+      case "RUNNING": {
+        return "run";
+      }
+      case "DONE": {
+        return "complete";
+      }
+      case "FAILED": {
+        return "fail";
+      }
+    }
+  } else if (activity.type == "bb.pipeline.task.file.commit") {
+    return "commit";
+  } else if (activity.type == "bb.pipeline.task.statement.update") {
+    return "update";
+  } else if (
+    activity.type == "bb.pipeline.task.general.earliest-allowed-time.update"
+  ) {
+    return "update";
+  }
+
+  return activity.creator.id == SYSTEM_BOT_ID ? "system" : "avatar";
+};
+
+const actionSubjectPrefix = (activity: Activity): string => {
+  if (activity.creator.id == SYSTEM_BOT_ID) {
+    if (activity.type == "bb.pipeline.task.status.update") {
+      return `${t("activity.subject-prefix.task")} `;
+    }
+  }
+  return "";
+};
+
+const actionSubject = (activity: Activity): ActionSubject => {
+  if (activity.creator.id == SYSTEM_BOT_ID) {
+    if (activity.type == "bb.pipeline.task.status.update") {
+      if (issue.value.pipeline.id != EMPTY_ID) {
+        const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+        const task = findTaskById(issue.value.pipeline, payload.taskId);
+        var link = "";
+        if (task.id != UNKNOWN_ID) {
+          link = `/issue/${issueSlug(
+            issue.value.name,
+            issue.value.id
+          )}?task=${taskSlug(task.name, task.id)}`;
+        }
+        return {
+          name: `${task.name} (${task.stage.name})`,
+          link,
+        };
+      }
+    }
+  }
+  return {
+    name: activity.creator.name,
+    link: `/u/${activity.creator.id}`,
+  };
+};
+
+const actionSentence = (activity: Activity): string => {
+  if (activity.type.startsWith("bb.issue.")) {
+    const [tid, params] = issueActivityActionSentence(activity);
+    return t(tid, params);
+  }
+  switch (activity.type) {
+    case "bb.pipeline.task.status.update": {
+      const payload = activity.payload as ActivityTaskStatusUpdatePayload;
+      let str = t("activity.sentence.changed");
+      switch (payload.newStatus) {
+        case "PENDING": {
+          if (payload.oldStatus == "RUNNING") {
+            str = t("activity.sentence.canceled");
+          } else if (payload.oldStatus == "PENDING_APPROVAL") {
+            str = t("activity.sentence.approved");
+          }
+          break;
+        }
+        case "RUNNING": {
+          str = t("activity.sentence.started");
+          break;
+        }
+        case "DONE": {
+          str = t("activity.sentence.completed");
+          break;
+        }
+        case "FAILED": {
+          str = t("activity.sentence.failed");
+          break;
+        }
+      }
+      if (activity.creator.id != SYSTEM_BOT_ID) {
+        // If creator is not the robot (which means we do NOT use task name in the subject),
+        // then we append the task name here.
+        const task = findTaskById(issue.value.pipeline, payload.taskId);
+        str += t("activity.sentence.task-name", { name: task.name });
+      }
+      return str;
+    }
+    case "bb.pipeline.task.file.commit": {
+      const payload = activity.payload as ActivityTaskFileCommitPayload;
+      // return `committed ${payload.filePath} to ${payload.branch}@${payload.repositoryFullPath}`;
+      return t("activity.sentence.committed-to-at", {
+        file: payload.filePath,
+        branch: payload.branch,
+        repo: payload.repositoryFullPath,
+      });
+    }
+    case "bb.pipeline.task.statement.update": {
+      const payload = activity.payload as ActivityTaskStatementUpdatePayload;
+      return t("activity.sentence.changed-from-to", {
+        name: "SQL",
+        oldValue: payload.oldStatement,
+        newValue: payload.newStatement,
+      });
+    }
+    case "bb.pipeline.task.general.earliest-allowed-time.update": {
+      const payload =
+        activity.payload as ActivityTaskEarliestAllowedTimeUpdatePayload;
+      const newVal = payload.newEarliestAllowedTs;
+      const oldVal = payload.oldEarliestAllowedTs;
+      return t("activity.sentence.changed-from-to", {
+        name: "earliest allowed time",
+        oldValue: oldVal ? dayjs(oldVal * 1000) : "Unset",
+        newValue: newVal ? dayjs(newVal * 1000) : "Unset",
+      });
+    }
+  }
+  return "";
+};
+
+const fileCommitActivityUrl = (activity: Activity) => {
+  const payload = activity.payload as ActivityTaskFileCommitPayload;
+  return `${payload.vcsInstanceUrl}/${payload.repositoryFullPath}/-/commit/${payload.commitId}`;
+};
 </script>
