@@ -45,6 +45,7 @@ type IssueLogic = {
     issuePatch: IssuePatch,
     postUpdated?: (updatedIssue: Issue) => void
   ) => any;
+  createIssue: (issueCreate: IssueCreate) => any;
 
   // edit logic
   allowEditStatement: Ref<boolean>;

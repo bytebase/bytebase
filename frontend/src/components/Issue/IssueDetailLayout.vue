@@ -168,6 +168,7 @@ import {
   isDev,
   activeTaskInStage,
   activeTask,
+  issueSlug,
 } from "@/utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -466,6 +467,19 @@ const patchTask = (
     });
 };
 
+const createIssue = (issue: IssueCreate) => {
+  // Set issue.pipeline and issue.payload to empty
+  // because we are no longer passing parameters via issue.pipeline
+  // we are using issue.createContext instead
+  delete issue.pipeline;
+  issue.payload = {};
+
+  issueStore.createIssue(issue).then((createdIssue) => {
+    // Use replace to omit the new issue url in the navigation history.
+    router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
+  });
+};
+
 const currentPipelineType = computed((): PipelineType => {
   return pipelineType(props.issue.pipeline!);
 });
@@ -735,6 +749,7 @@ provideIssueLogic(
     selectStageOrTask: selectStageOrTask,
     patchTask,
     patchIssue,
+    createIssue,
   },
   true
   // This is the root logic, could be overwritten by other (standard, gh-ost, tenant...) logic providers.

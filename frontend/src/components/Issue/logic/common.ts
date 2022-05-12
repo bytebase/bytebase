@@ -1,12 +1,7 @@
 import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import {
-  useCurrentUser,
-  useDatabaseStore,
-  useIssueStore,
-  useUIStateStore,
-} from "@/store";
+import { useCurrentUser, useDatabaseStore, useUIStateStore } from "@/store";
 import {
   Database,
   Issue,
@@ -23,11 +18,11 @@ import {
   UpdateSchemaDetail,
 } from "@/types";
 import { useIssueLogic } from "./index";
-import { isDev, issueSlug } from "@/utils";
-import { router } from "@/router";
+import { isDev } from "@/utils";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, patchTask } = useIssueLogic();
+  const { create, issue, selectedTask, patchTask, createIssue } =
+    useIssueLogic();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
 
@@ -136,7 +131,7 @@ export const useCommonLogic = () => {
       updateSchemaDetailList: detailList,
     };
 
-    saveIssue(issueCreate);
+    createIssue(issueCreate);
   };
 
   return {
@@ -172,21 +167,6 @@ export const flattenTaskList = <T extends Task | TaskCreate>(
     (stage) => stage.taskList as T[]
   );
   return taskList || [];
-};
-
-export const saveIssue = (issue: IssueCreate) => {
-  // Set issue.pipeline and issue.payload to empty
-  // because we are no longer passing parameters via issue.pipeline
-  // we are using issue.createContext instead
-  delete issue.pipeline;
-  issue.payload = {};
-
-  useIssueStore()
-    .createIssue(issue)
-    .then((createdIssue) => {
-      // Use replace to omit the new issue url in the navigation history.
-      router.replace(`/issue/${issueSlug(createdIssue.name, createdIssue.id)}`);
-    });
 };
 
 export const formatStatementIfNeeded = (

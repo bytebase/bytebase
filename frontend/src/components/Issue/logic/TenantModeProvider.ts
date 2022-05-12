@@ -12,7 +12,6 @@ import {
   errorAssertion,
   flattenTaskList,
   formatStatementIfNeeded,
-  saveIssue,
   useCommonLogic,
 } from "./common";
 import { provideIssueLogic, useIssueLogic } from "./index";
@@ -20,7 +19,7 @@ import { provideIssueLogic, useIssueLogic } from "./index";
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue } = useIssueLogic();
+    const { create, issue, createIssue } = useIssueLogic();
     const databaseStore = useDatabaseStore();
 
     const allowEditStatement = computed(() => {
@@ -80,7 +79,7 @@ export default defineComponent({
         detail.statement = formatStatementIfNeeded(detail.statement, db);
       });
 
-      saveIssue(issueCreate);
+      createIssue(issueCreate);
     };
 
     const logic = {
