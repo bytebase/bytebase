@@ -32,11 +32,18 @@ export const useCommonLogic = () => {
       return true;
     }
 
+    const issueEntity = issue.value as Issue;
+
+    // For Create DB issues ,statement is not editable.
+    // Since the server-side seems won't do a patch really.
+    if (issueEntity.type === "bb.issue.database.create") {
+      return false;
+    }
+
     // if not creating, we are allowed to edit sql statement only when:
     // 1. issue.status is OPEN
     // 2. AND currentUser is the creator
     // 3. AND workflowType is UI
-    const issueEntity = issue.value as Issue;
     if (issueEntity.status !== "OPEN") {
       return false;
     }
