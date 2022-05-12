@@ -64,6 +64,7 @@ export const useCommonLogic = () => {
       return (task as TaskCreate).statement;
     }
 
+    // Extract statement from different types of payloads
     return statementOfTask(task as Task);
   });
 
