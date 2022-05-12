@@ -1,10 +1,10 @@
 <template>
-  <div
-    id="issue-detail-top"
-    class="flex-1 overflow-auto focus:outline-none"
-    tabindex="0"
-  >
-    <component :is="logicProviderType" ref="issueLogic">
+  <component :is="logicProviderType" ref="issueLogic">
+    <div
+      id="issue-detail-top"
+      class="flex-1 overflow-auto focus:outline-none"
+      tabindex="0"
+    >
       <IssueBanner v-if="!create" />
 
       <!-- Highlight Panel -->
@@ -96,8 +96,8 @@
           </div>
         </div>
       </main>
-    </component>
-  </div>
+    </div>
+  </component>
 </template>
 
 <script lang="ts" setup>
