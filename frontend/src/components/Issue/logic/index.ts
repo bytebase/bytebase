@@ -5,6 +5,7 @@ import GhostModeProvider from "./GhostModeProvider";
 import StandardModeProvider from "./StandardModeProvider";
 
 export * from "./common";
+export * from "./extra";
 
 export {
   IssueLogic,
