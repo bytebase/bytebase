@@ -85,7 +85,7 @@ func (receiver *CustomReceiver) post(context Context) error {
 	}
 
 	if webhookResponse.Code != 0 {
-		return fmt.Errorf("%s", webhookResponse.Message)
+		return fmt.Errorf("receive error code sent by webhook server, code %d, msg: %s", webhookResponse.Code, webhookResponse.Message)
 	}
 
 	return nil
