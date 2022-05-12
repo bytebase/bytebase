@@ -5,20 +5,12 @@
     tabindex="0"
   >
     <component :is="logicProviderType" ref="issueLogic">
-      <IssueBanner v-if="!create" :issue="(issue as Issue)" />
+      <IssueBanner v-if="!create" />
 
       <!-- Highlight Panel -->
       <div class="bg-white px-4 pb-4">
-        <IssueHighlightPanel
-          :issue="(issue as Issue)"
-          :create="create"
-          :allow-edit="allowEditNameAndDescription"
-          @update-name="updateName"
-        >
-          <IssueStatusTransitionButtonGroup
-            @change-issue-status="changeIssueStatus"
-            @change-task-status="changeTaskStatus"
-          />
+        <IssueHighlightPanel>
+          <IssueStatusTransitionButtonGroup />
         </IssueHighlightPanel>
       </div>
 
@@ -48,12 +40,7 @@
         </template>
 
         <div v-if="!create" class="px-4 py-4 md:flex md:flex-col border-b">
-          <IssueStagePanel
-            :stage="(selectedStage as Stage)"
-            :selected-task="(selectedTask as Task)"
-            :is-tenant-mode="isTenantMode"
-            :is-ghost-mode="isGhostMode"
-          />
+          <IssueStagePanel />
         </div>
       </template>
 
@@ -64,12 +51,7 @@
         class="px-2 py-4 md:flex md:flex-col"
         :class="showPipelineFlowBar ? '' : 'lg:border-t'"
       >
-        <IssueOutputPanel
-          :issue="(issue as Issue)"
-          :output-field-list="issueTemplate.outputFieldList"
-          :allow-edit="allowEditOutput"
-          @update-custom-field="updateCustomField"
-        />
+        <IssueOutputPanel />
       </div>
 
       <!-- Main Content -->
@@ -118,22 +100,14 @@
                 <IssueTaskStatementPanel :sql-hint="sqlHint()" />
               </section>
 
-              <IssueDescriptionPanel
-                :issue="issue"
-                :create="create"
-                :allow-edit="allowEditNameAndDescription"
-                @update-description="updateDescription"
-              />
+              <IssueDescriptionPanel />
+
               <section
                 v-if="!create"
                 aria-labelledby="activity-title"
                 class="mt-4"
               >
-                <IssueActivityPanel
-                  :issue="(issue as Issue)"
-                  :issue-template="issueTemplate"
-                  @add-subscriber-id="addSubscriberId"
-                />
+                <IssueActivityPanel />
               </section>
             </div>
           </div>
@@ -146,15 +120,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import {
-  computed,
-  nextTick,
-  onMounted,
-  PropType,
-  ref,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, onMounted, PropType, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import {
@@ -192,11 +158,7 @@ import type {
   Instance,
   Stage,
   StageId,
-  IssueStatus,
   TaskId,
-  TaskStatusPatch,
-  TaskStatus,
-  IssueStatusPatch,
   Task,
   TaskDatabaseSchemaUpdatePayload,
   StageCreate,
@@ -260,7 +222,7 @@ const issue = computed(() => props.issue);
 
 const issueLogic = ref<IssueLogic>();
 
-watchEffect(function prepare() {
+watchEffect(() => {
   if (props.create) {
     projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
   }
@@ -276,38 +238,6 @@ const project = computed((): Project => {
   }
   return (props.issue as Issue).project;
 });
-
-const updateName = (
-  newName: string,
-  postUpdated: (updatedIssue: Issue) => void
-) => {
-  if (props.create) {
-    props.issue.name = newName;
-  } else {
-    patchIssue(
-      {
-        name: newName,
-      },
-      postUpdated
-    );
-  }
-};
-
-const updateDescription = (
-  newDescription: string,
-  postUpdated: (updatedIssue: Issue) => void
-) => {
-  if (props.create) {
-    props.issue.description = newDescription;
-  } else {
-    patchIssue(
-      {
-        description: newDescription,
-      },
-      postUpdated
-    );
-  }
-};
 
 const updateAssigneeId = (newAssigneeId: PrincipalId) => {
   if (props.create) {
@@ -367,49 +297,6 @@ const updateCustomField = (field: InputField | OutputField, value: any) => {
       });
     }
   }
-};
-
-const changeIssueStatus = (newStatus: IssueStatus, comment: string) => {
-  const issueStatusPatch: IssueStatusPatch = {
-    status: newStatus,
-    comment: comment,
-  };
-  issueStore
-    .updateIssueStatus({
-      issueId: (props.issue as Issue).id,
-      issueStatusPatch,
-    })
-    .then(() => {
-      // pollIssue(POST_CHANGE_POLL_INTERVAL);
-    });
-};
-
-const changeTaskStatus = (
-  task: Task,
-  newStatus: TaskStatus,
-  comment: string
-) => {
-  // Switch to the stage view containing this task
-  selectStageOrTask(task.stage.id);
-  nextTick().then(() => {
-    selectTaskId(task.id);
-  });
-
-  const taskStatusPatch: TaskStatusPatch = {
-    status: newStatus,
-    comment: comment,
-  };
-  taskStore
-    .updateStatus({
-      issueId: (props.issue as Issue).id,
-      pipelineId: (props.issue as Issue).pipeline.id,
-      taskId: task.id,
-      taskStatusPatch,
-    })
-    .then(() => {
-      // pollIssue(POST_CHANGE_POLL_INTERVAL);
-      emit("status-changed", true);
-    });
 };
 
 const runTaskChecks = (task: Task) => {
@@ -549,6 +436,19 @@ const selectTaskId = (taskId: TaskId) => {
   selectStageOrTask(stage.id, slug);
 };
 
+const selectTask = (task: Task) => {
+  if (!create.value) return;
+
+  const stage = (issue.value as Issue).pipeline?.stageList.find(
+    (t) => t.id === task.id
+  );
+  if (!stage) {
+    return;
+  }
+  const slug = taskSlug(task.name, task.id);
+  selectStageOrTask(stage.id, slug);
+};
+
 const selectedTask = computed((): Task | TaskCreate => {
   const taskSlug = route.query.task as string;
   const { taskList } = selectedStage.value;
@@ -605,23 +505,6 @@ const allowEditSidebar = computed(() => {
     props.create ||
     ((props.issue as Issue).status == "OPEN" &&
       (props.issue as Issue).assignee?.id == currentUser.value.id)
-  );
-});
-
-const allowEditOutput = computed(() => {
-  return (
-    props.create ||
-    ((props.issue as Issue).status == "OPEN" &&
-      (props.issue as Issue).assignee?.id == currentUser.value.id)
-  );
-});
-
-const allowEditNameAndDescription = computed(() => {
-  return (
-    props.create ||
-    ((props.issue as Issue).status == "OPEN" &&
-      ((props.issue as Issue).assignee?.id == currentUser.value.id ||
-        (props.issue as Issue).creator.id == currentUser.value.id))
   );
 });
 
@@ -730,6 +613,7 @@ watch(
     }
   }
 );
+const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
 
 provideIssueLogic(
   {
@@ -746,7 +630,9 @@ provideIssueLogic(
     activeStageOfPipeline: activeStage,
     activeTaskOfPipeline: activeTask,
     activeTaskOfStage: activeTaskInStage,
-    selectStageOrTask: selectStageOrTask,
+    selectStageOrTask,
+    selectTask,
+    onStatusChanged,
     patchTask,
     patchIssue,
     createIssue,
