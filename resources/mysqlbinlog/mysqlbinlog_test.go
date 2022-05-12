@@ -28,8 +28,7 @@ func TestRunBinary(t *testing.T) {
 		tarName = "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64.tar.gz"
 		version = "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64"
 	default:
-		t.Logf("Unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
-		t.Fail()
+		t.Fatalf("Unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
 	}
 
 	tarF, err := resources.Open(tarName)
