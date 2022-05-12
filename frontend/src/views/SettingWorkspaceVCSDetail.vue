@@ -285,7 +285,7 @@ export default defineComponent({
         }
         const newWindow = openWindowForOAuth(
           authorizeUrl,
-          vcs.value.applicationId,
+          state.applicationId,
           "bb.oauth.register-vcs"
         );
         if (newWindow) {
