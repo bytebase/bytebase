@@ -15,9 +15,9 @@ import (
 
 func (s *Server) registerOAuthRoutes(g *echo.Group) {
 	// This is a generic endpoint of exchanging access token for VCS providers. It
-	// requires either the "vcsId" to infer the details from an existing VCS
-	// provider or "vcsType", "instanceURL", "clientId" and "clientSecret" to
-	// directly compose the request to the VCS host.
+	// requires either the "vcsId", "clientId", "clientSecret" to infer the other details
+	// from an existing VCS provider or "vcsType", "instanceURL", "clientId" and "clientSecret"
+	// to directly compose the request to the VCS host.
 	g.POST("/oauth/vcs/exchange-token", func(c echo.Context) error {
 		req := &api.VCSExchangeToken{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, req); err != nil {
@@ -39,8 +39,8 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			vcsType = vcs.Type
 			instanceURL = vcs.InstanceURL
 			oauthExchange = &common.OAuthExchange{
-				ClientID:     vcs.ApplicationID,
-				ClientSecret: vcs.Secret,
+				ClientID:     req.ClientID,
+				ClientSecret: req.ClientSecret,
 				Code:         req.Code,
 			}
 		} else {
