@@ -184,8 +184,8 @@ type UpdateSchemaGhostContext struct {
 type PITRContext struct {
 	DatabaseID int `json:"databaseId"`
 	// After the PITR operations, the database will be recovered to the state at this time.
-	// Represented in UNIX timestamp.
-	RecoveryTime int `json:"recoveryTime"`
+	// Represented in UNIX timestamp in seconds.
+	PointInTimeTs int `json:"pointInTimeTs"`
 }
 
 // IssueFind is the API message for finding issues.

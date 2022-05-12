@@ -513,12 +513,13 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			schemaVersion = common.DefaultMigrationVersion()
 		}
 
-		payload := api.TaskDatabaseCreatePayload{}
-		payload.ProjectID = issueCreate.ProjectID
-		payload.CharacterSet = c.CharacterSet
-		payload.Collation = c.Collation
-		payload.Labels = c.Labels
-		payload.SchemaVersion = schemaVersion
+		payload := api.TaskDatabaseCreatePayload{
+			ProjectID:     issueCreate.ProjectID,
+			CharacterSet:  c.CharacterSet,
+			Collation:     c.Collation,
+			Labels:        c.Labels,
+			SchemaVersion: schemaVersion,
+		}
 		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
@@ -608,12 +609,6 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			return nil, err
 		}
 
-		payload := api.TaskDatabasePITRPayload(c)
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-		}
-
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", c.DatabaseID)).SetInternal(err)
@@ -627,54 +622,22 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			return nil, err
 		}
 
-		pitrTimestamp := time.Now().Unix()
-		pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
+		taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, taskStatus, c.PointInTimeTs)
+		if err != nil {
+			return nil, err
+		}
 
-		create := &api.PipelineCreate{
+		return &api.PipelineCreate{
 			Name: "Database Point-in-time Recovery pipeline",
 			StageList: []api.StageCreate{
 				{
-					Name:          "PITR",
-					EnvironmentID: database.Instance.Environment.ID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID: database.InstanceID,
-							Name:       fmt.Sprintf("Check PITR requirements for database %s", database.Name),
-							Status:     taskStatus,
-							Type:       api.TaskDatabaseCreate,
-							Payload:    string(payloadBytes),
-						},
-						{
-							InstanceID: database.InstanceID,
-							Name:       fmt.Sprintf("Create PITR database %s", pitrDatabaseName),
-							Status:     taskStatus,
-							Type:       api.TaskDatabaseCreate,
-							Payload:    string(payloadBytes),
-						},
-						{
-							InstanceID: database.InstanceID,
-							Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
-							Status:     taskStatus,
-							Type:       api.TaskDatabaseCreate,
-							Payload:    string(payloadBytes),
-						},
-						{
-							InstanceID: database.InstanceID,
-							Name:       fmt.Sprintf("Swap PITR database %s", pitrDatabaseName),
-							Status:     taskStatus,
-							Type:       api.TaskDatabaseCreate,
-							Payload:    string(payloadBytes),
-						},
-					},
-					TaskIndexDAGList: []api.TaskIndexDAG{
-						{FromIndex: 0, ToIndex: 1},
-						{FromIndex: 1, ToIndex: 2},
-						{FromIndex: 2, ToIndex: 3},
-					},
+					Name:             "PITR",
+					EnvironmentID:    database.Instance.Environment.ID,
+					TaskList:         taskCreateList,
+					TaskIndexDAGList: taskIndexDAGList,
 				},
 			},
-		}
-		return create, nil
+		}, nil
 
 	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
 		c := api.UpdateSchemaContext{}
@@ -906,15 +869,111 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// creates ghost TaskCreate list and dependency
+// creates PITR TaskCreate list and dependency
+func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, recoveryTime int) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	var taskCreateList []api.TaskCreate
+
+	pitrTimestamp := time.Now().Unix()
+	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
+
+	// task: PITR requirements check
+	{
+		payload := api.TaskDatabasePITRCheckPayload{}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR check task, unable to marshal payload, error[%w]", err)
+		}
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Check PITR requirements for database %s", database.Name),
+			InstanceID: database.InstanceID,
+			DatabaseID: &database.ID,
+			Status:     taskStatus,
+			Type:       api.TaskDatabasePITRCheck,
+			Payload:    string(payloadBytes),
+		})
+	}
+
+	// task: create PITR database
+	{
+		schemaVersion := common.DefaultMigrationVersion()
+		payload := api.TaskDatabaseCreatePayload{
+			ProjectID:     projectID,
+			CharacterSet:  database.CharacterSet,
+			Collation:     database.Collation,
+			Labels:        database.Labels,
+			SchemaVersion: schemaVersion,
+		}
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(database.Instance.Engine, database.Name, database.CharacterSet, database.Collation, "")
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload, error[%w]", err)
+		}
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Create PITR database %s", pitrDatabaseName),
+			InstanceID: database.InstanceID,
+			Status:     taskStatus,
+			Type:       api.TaskDatabaseCreate,
+			Payload:    string(payloadBytes),
+		})
+	}
+
+	// task: restore to PITR database
+	{
+		payload := api.TaskDatabasePITRRestorePayload{
+			PointInTimeTs: recoveryTime,
+		}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error[%w]", err)
+		}
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
+			InstanceID: database.InstanceID,
+			DatabaseID: &database.ID,
+			Status:     taskStatus,
+			Type:       api.TaskDatabaseCreate,
+			Payload:    string(payloadBytes),
+		})
+	}
+
+	// task: cutover
+	{
+		payload := api.TaskDatabasePITRCutoverPayload{}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error[%w]", err)
+		}
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Cutover PITR database %s", pitrDatabaseName),
+			InstanceID: database.InstanceID,
+			DatabaseID: &database.ID,
+			Status:     taskStatus,
+			Type:       api.TaskDatabaseCreate,
+			Payload:    string(payloadBytes),
+		})
+	}
+
+	taskIndexDAGList := []api.TaskIndexDAG{
+		{FromIndex: 0, ToIndex: 1},
+		{FromIndex: 1, ToIndex: 2},
+		{FromIndex: 2, ToIndex: 3},
+	}
+
+	return taskCreateList, taskIndexDAGList, nil
+}
+
+// creates gh-ost TaskCreate list and dependency
 func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	{ // task "sync"
-		payload := api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-		payload.Statement = detail.Statement
-		payload.SchemaVersion = schemaVersion
-		if vcsPushEvent != nil {
-			payload.VCSPushEvent = vcsPushEvent
+		payload := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
+			Statement:     detail.Statement,
+			SchemaVersion: schemaVersion,
+			VCSPushEvent:  vcsPushEvent,
 		}
 		bytes, err := json.Marshal(payload)
 		if err != nil {
