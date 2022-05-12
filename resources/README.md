@@ -24,7 +24,7 @@ macos11-arm64 used for MacOS Apple Silicon development (MD5 f1943053b12428e4c0e4
 
 ### mysqlbinlog
 
-We embed mysqlbinlog for PITR. MySQL does not provide a separate mysqlbinlog binary, we need to manually extract our files from the mysql distribution.
+We embed mysqlbinlog for PITR. MySQL does not provide a separate mysqlbinlog binary, and we need to extract our files from the MySQL distribution manually.
 
 linux-glibc2.17-x86_64 used for Linux (MD5 55a7759e25cc527416150c8181ce3f6d): https://cdn.mysql.com//Downloads/MySQL-8.0/mysql-8.0.28-linux-glibc2.17-x86_64-minimal.tar.xz, extract bin/mysqlbinlog, lib/private/libcrypto.so.1.1 and lib/private/libssl.so.1.1.
 
