@@ -279,7 +279,8 @@ export default defineComponent({
           AuthProviderConfig[authProvider.type].apiPath
         }`,
         authProvider.applicationId,
-        "bb.oauth.signin"
+        "bb.oauth.signin",
+        authProvider.type
       );
     };
 
