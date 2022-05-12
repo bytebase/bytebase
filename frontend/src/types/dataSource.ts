@@ -44,6 +44,7 @@ export type DataSourceCreate = {
   type: DataSourceType;
   username?: string;
   password?: string;
+  syncSchema: boolean;
 };
 
 export type DataSourcePatch = {
@@ -52,6 +53,7 @@ export type DataSourcePatch = {
   username?: string;
   password?: string;
   useEmptyPassword?: boolean;
+  syncSchema: boolean;
 };
 
 export type DataSourceMember = {
