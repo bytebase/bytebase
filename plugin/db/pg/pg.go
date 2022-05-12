@@ -1434,6 +1434,8 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.column_default,
 		cols.is_nullable,
 		cols.collation_name,
+		cols.udt_schema,
+		cols.udt_name,
 		(
 			SELECT
 					pg_catalog.col_description(c.oid, cols.ordinal_position::int)
@@ -1454,9 +1456,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 	var columns []*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
-		var characterMaximumLength, columnDefault, collationName, comment sql.NullString
+		var characterMaximumLength, columnDefault, collationName, udtSchema, udtName, comment sql.NullString
 		var ordinalPosition int
-		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &comment); err != nil {
+		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -1472,6 +1474,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			isNullable:             isNullBool,
 			collationName:          collationName.String,
 			comment:                comment.String,
+		}
+		if dataType == "USER-DEFINED" {
+			c.dataType = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		}
 		columns = append(columns, &c)
 	}
