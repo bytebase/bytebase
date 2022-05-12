@@ -232,8 +232,10 @@ export default defineComponent({
         ) {
           useOAuthStore()
             .exchangeVCSTokenWithID({
-              vcsId: idFromSlug(props.vcsSlug),
               code: payload.code,
+              vcsId: idFromSlug(props.vcsSlug),
+              clientId: state.applicationId,
+              clientSecret: state.secret,
             })
             .then((token: OAuthToken) => {
               state.oAuthResultCallback!(token);
