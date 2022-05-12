@@ -270,16 +270,6 @@ export default defineComponent({
       }
     };
 
-    const changePassword = (value: string) => {
-      state.password = value;
-      refreshPasswordValidation();
-    };
-
-    const changePasswordConfirm = (value: string) => {
-      state.passwordConfirm = value;
-      refreshPasswordValidation();
-    };
-
     const onTextEmail = () => {
       const email = state.email.trim();
       if (!state.nameManuallyEdited) {
@@ -336,8 +326,6 @@ export default defineComponent({
       state,
       needAdminSetup,
       allowSignup,
-      changePassword,
-      changePasswordConfirm,
       onTextEmail,
       onTextName,
       onToggleAcceptTermsAndPolicyCheckbox,
