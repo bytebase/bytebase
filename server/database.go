@@ -718,6 +718,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create data source").SetInternal(err)
 		}
 
+		if dataSourceCreate.SyncSchema {
+			// Refetches the instance to get the updated data source.
+			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
+			}
+			s.syncEngineVersionAndSchema(ctx, updatedInstance)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, dataSource); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal create data source response").SetInternal(err)
@@ -775,6 +784,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		dataSourceNew, err := s.store.PatchDataSource(ctx, dataSourcePatch)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to update data source with ID %d", dataSourceID)).SetInternal(err)
+		}
+
+		if dataSourcePatch.SyncSchema {
+			// Refetches the instance to get the updated data source.
+			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
+			}
+			s.syncEngineVersionAndSchema(ctx, updatedInstance)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
