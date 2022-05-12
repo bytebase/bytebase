@@ -282,7 +282,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		VCSPushEvent:  &vcsPushEvent,
 	}
 	for _, database := range filteredDatabaseList {
-		m.UpdateSchemaDetailList = append(m.UpdateSchemaDetailList,
+		m.DetailList = append(m.DetailList,
 			&api.UpdateSchemaDetail{
 				DatabaseID: database.ID,
 				Statement:  statement,
@@ -303,7 +303,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	m := &api.UpdateSchemaContext{
 		MigrationType: mi.Type,
 		VCSPushEvent:  &vcsPushEvent,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseName: mi.Database,
 				Statement:    statement,
