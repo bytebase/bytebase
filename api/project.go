@@ -311,14 +311,13 @@ func getTemplateTokens(template string) ([]string, []string) {
 	tokens := r.FindAllString(template, -1)
 	if len(tokens) > 0 {
 		split := r.Split(template, -1)
-		fixed := make([]string, 0, len(split)-len(tokens))
+		var fixed []string
 		for _, s := range split {
 			if s != "" {
 				fixed = append(fixed, s)
 			}
 		}
 		return tokens, fixed
-
 	}
 	return nil, nil
 }
