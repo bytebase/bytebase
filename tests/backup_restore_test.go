@@ -209,6 +209,7 @@ func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.D
 
 	return db, stopFn
 }
+
 func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	a := require.New(t)
 
@@ -226,6 +227,7 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	err = tx.Commit()
 	a.NoError(err)
 }
+
 func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
 	rows, err := db.Query("SELECT * FROM tbl0")
@@ -240,6 +242,7 @@ func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a.NoError(rows.Err())
 	a.Equal(numRows, i)
 }
+
 func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
 	rows, err := db.Query("SELECT * FROM tbl1")
