@@ -190,6 +190,13 @@ const {
 
 const issueLogic = ref<IssueLogic>();
 
+// Determine which type of IssueLogicProvider should be used
+const logicProviderType = computed(() => {
+  if (isTenantMode.value) return TenantModeProvider;
+  if (isGhostMode.value) return GhostModeProvider;
+  return StandardModeProvider;
+});
+
 watchEffect(() => {
   if (props.create) {
     projectStore.fetchProjectById((props.issue as IssueCreate).projectId);
@@ -291,13 +298,6 @@ const hasBackwardCompatibilityFeature = featureToRef(
 const supportBackwardCompatibilityFeature = computed((): boolean => {
   const engine = database.value?.instance.engine;
   return engine === "MYSQL" || engine === "TIDB";
-});
-
-// Determine which type of IssueLogicProvider should be used
-const logicProviderType = computed(() => {
-  if (isTenantMode.value) return TenantModeProvider;
-  if (isGhostMode.value) return GhostModeProvider;
-  return StandardModeProvider;
 });
 
 watch(
