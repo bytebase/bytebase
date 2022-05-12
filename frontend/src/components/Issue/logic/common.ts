@@ -1,11 +1,18 @@
 import { computed } from "vue";
 import { cloneDeep } from "lodash-es";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { useCurrentUser, useDatabaseStore, useUIStateStore } from "@/store";
+import {
+  useCurrentUser,
+  useDatabaseStore,
+  useIssueStore,
+  useTaskStore,
+  useUIStateStore,
+} from "@/store";
 import {
   Database,
   Issue,
   IssueCreate,
+  IssuePatch,
   IssueType,
   SQLDialect,
   Task,
@@ -14,6 +21,8 @@ import {
   TaskDatabaseDataUpdatePayload,
   TaskDatabaseSchemaUpdatePayload,
   TaskGeneralPayload,
+  TaskId,
+  TaskPatch,
   TaskType,
   UpdateSchemaDetail,
 } from "@/types";
@@ -21,10 +30,53 @@ import { useIssueLogic } from "./index";
 import { isDev } from "@/utils";
 
 export const useCommonLogic = () => {
-  const { create, issue, selectedTask, patchTask, createIssue } =
+  const { create, issue, selectedTask, createIssue, onStatusChanged } =
     useIssueLogic();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
+  const issueStore = useIssueStore();
+  const taskStore = useTaskStore();
+
+  const patchIssue = (
+    issuePatch: IssuePatch,
+    postUpdated?: (updatedIssue: Issue) => void
+  ) => {
+    issueStore
+      .patchIssue({
+        issueId: (issue.value as Issue).id,
+        issuePatch,
+      })
+      .then((updatedIssue) => {
+        // issue/patchIssue already fetches the new issue, so we schedule
+        // the next poll in NORMAL_POLL_INTERVAL
+        onStatusChanged(false);
+        if (postUpdated) {
+          postUpdated(updatedIssue);
+        }
+      });
+  };
+
+  const patchTask = (
+    taskId: TaskId,
+    taskPatch: TaskPatch,
+    postUpdated?: (updatedTask: Task) => void
+  ) => {
+    taskStore
+      .patchTask({
+        issueId: (issue.value as Issue).id,
+        pipelineId: (issue.value as Issue).pipeline.id,
+        taskId,
+        taskPatch,
+      })
+      .then((updatedTask) => {
+        // For now, the only task/patchTask is to change statement, which will trigger async task check.
+        // Thus we use the short poll interval
+        onStatusChanged(true);
+        if (postUpdated) {
+          postUpdated(updatedTask);
+        }
+      });
+  };
 
   const allowEditStatement = computed(() => {
     // if creating an issue, it's editable
@@ -148,6 +200,7 @@ export const useCommonLogic = () => {
   };
 
   return {
+    patchIssue,
     patchTask,
     allowEditStatement,
     selectedStatement,
