@@ -49,8 +49,9 @@ const (
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
 
-	StatementNoWhere   Code = 10101
-	StatementSelectAll Code = 10102
+	StatementNoWhere             Code = 10101
+	StatementSelectAll           Code = 10102
+	StatementLeadingWildcardLike Code = 10103
 
 	// 10201 table naming advisor error code
 	NamingTableConventionMismatch Code = 10201

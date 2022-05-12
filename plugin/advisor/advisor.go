@@ -70,6 +70,9 @@ const (
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 
+	// MySQLNoLeadingWildcardLike is an advisor type for MySQL no leading wildcard LIKE.
+	MySQLNoLeadingWildcardLike Type = "bb.plugin.advisor.mysql.where.no-leading-wildcard-like"
+
 	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
 	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
 

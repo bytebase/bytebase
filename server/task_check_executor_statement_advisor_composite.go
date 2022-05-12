@@ -129,6 +129,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLWhereRequirement, nil
 		}
+	case api.SchemaRuleStatementNoLeadingWildcardLike:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLNoLeadingWildcardLike, nil
+		}
 	case api.SchemaRuleStatementNoSelectAll:
 		switch engine {
 		case db.MySQL, db.TiDB:
