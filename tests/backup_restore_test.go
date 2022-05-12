@@ -125,24 +125,6 @@ func TestPITR(t *testing.T) {
 	)
 	port := getTestPort(t.Name())
 
-	insertRangeData := func(t *testing.T, db *sql.DB, begin, end int) {
-		a := require.New(t)
-
-		tx, err := db.Begin()
-		a.NoError(err)
-		defer tx.Rollback()
-
-		for i := begin; i < end; i++ {
-			_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d)", i))
-			a.NoError(err)
-			_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d)", i, i))
-			a.NoError(err)
-		}
-
-		err = tx.Commit()
-		a.NoError(err)
-	}
-
 	// test cases
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Parallel()
@@ -226,6 +208,23 @@ func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.D
 	a.NoError(err)
 
 	return db, stopFn
+}
+func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
+	a := require.New(t)
+
+	tx, err := db.Begin()
+	a.NoError(err)
+	defer tx.Rollback()
+
+	for i := begin; i < end; i++ {
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d)", i))
+		a.NoError(err)
+		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d)", i, i))
+		a.NoError(err)
+	}
+
+	err = tx.Commit()
+	a.NoError(err)
 }
 func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
