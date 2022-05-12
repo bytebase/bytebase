@@ -52,7 +52,7 @@ import {
 import { activeTask, activeTaskInStage, taskSlug } from "@/utils";
 import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
-import { useIssueContext } from "./context";
+import { useIssueLogic } from "./logic";
 
 const {
   create,
@@ -61,7 +61,7 @@ const {
   selectedStage,
   selectedTask,
   selectStageOrTask,
-} = useIssueContext();
+} = useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
 

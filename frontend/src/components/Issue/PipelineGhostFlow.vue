@@ -87,7 +87,7 @@ import TaskStatusIcon from "./TaskStatusIcon.vue";
 import { useDatabaseStore } from "@/store";
 import { BBProgressPie } from "@/bbkit";
 import PipelineStageList from "./PipelineStageList.vue";
-import { useIssueContext } from "./context";
+import { useIssueLogic } from "./logic";
 
 const { t } = useI18n();
 const databaseStore = useDatabaseStore();
@@ -99,7 +99,7 @@ const {
   selectedStage,
   selectedTask,
   selectStageOrTask,
-} = useIssueContext();
+} = useIssueLogic();
 
 const pipeline = computed(() => issue.value.pipeline!);
 

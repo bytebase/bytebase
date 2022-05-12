@@ -11,9 +11,9 @@
 <script lang="ts" setup>
 import type { Stage, StageCreate } from "@/types";
 import { activeTaskInStage } from "@/utils";
-import { useIssueContext } from "./context";
+import { useIssueLogic } from "./logic";
 
-const { create } = useIssueContext();
+const { create } = useIssueLogic();
 
 const taskNameOfStage = (stage: Stage | StageCreate) => {
   if (create.value) {
