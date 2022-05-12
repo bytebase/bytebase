@@ -33,13 +33,13 @@
           :allowed-role-list="['OWNER', 'DBA']"
           @select-principal-id="
             (principalId: number) => {
-              $emit('update-assignee-id', principalId);
+              updateAssigneeId(principalId)
             }
           "
         />
       </div>
 
-      <template v-for="(field, index) in inputFieldList" :key="index">
+      <template v-for="(field, index) in template.inputFieldList" :key="index">
         <h2 class="textlabel flex items-center col-span-1 col-start-1">
           {{ field.name }}
           <span v-if="field.required" class="text-red-600">*</span>
@@ -78,9 +78,9 @@
         </h2>
         <div class="col-span-2">
           <StageSelect
-            :pipeline="(issue.pipeline as Pipeline)"
+            :pipeline="(issue as Issue).pipeline"
             :selected-id="(selectedStage as Stage).id"
-            @select-stage-id="(stageId) => $emit('select-stage-id', stageId)"
+            @select-stage-id="(stageId) => selectStageOrTask(stageId)"
           />
         </div>
       </template>
@@ -91,15 +91,15 @@
         </h2>
         <div class="col-span-2">
           <TaskSelect
-            :pipeline="(issue.pipeline as Pipeline)"
+            :pipeline="(issue as Issue).pipeline"
             :stage="(selectedStage as Stage)"
-            :selected-id="(task as Task).id"
-            @select-task-id="(taskId) => $emit('select-task-id', taskId)"
+            :selected-id="(selectedTask as Task).id"
+            @select-task-id="(taskId) => selectTaskId(taskId)"
           />
         </div>
       </template>
 
-      <template v-if="!isTenantDeployMode">
+      <template v-if="!isTenantMode">
         <!--
           earliest-allowed-time is disabled in tenant mode for now
           we will provide more powerful deployment schedule in deployment config
@@ -140,9 +140,9 @@
             }}</span>
             <span class="textfield col-span-2 text-sm font-medium text-main">
               {{
-                task.earliestAllowedTs === 0
+                selectedTask.earliestAllowedTs === 0
                   ? $t("task.earliest-allowed-time-unset")
-                  : dayjs(task.earliestAllowedTs * 1000).format("LLL")
+                  : dayjs(selectedTask.earliestAllowedTs * 1000).format("LLL")
               }}
             </span>
           </div>
@@ -257,12 +257,8 @@
     <IssueSubscriberPanel
       v-if="!create"
       :issue="(issue as Issue)"
-      @add-subscriber-id="
-        (subscriberId) => $emit('add-subscriber-id', subscriberId)
-      "
-      @remove-subscriber-id="
-        (subscriberId) => $emit('remove-subscriber-id', subscriberId)
-      "
+      @add-subscriber-id="(subscriberId) => addSubscriberId(subscriberId)"
+      @remove-subscriber-id="(subscriberId) => removeSubscriberId(subscriberId)"
     />
     <FeatureModal
       v-if="state.showFeatureModal"
@@ -294,17 +290,13 @@ import type {
   Project,
   Issue,
   IssueCreate,
-  Pipeline,
   Task,
-  TaskCreate,
   TaskId,
   Stage,
   StageCreate,
-  StageId,
   Instance,
   TaskDatabaseCreatePayload,
   DatabaseLabel,
-  PrincipalId,
 } from "@/types";
 import { ONBOARDING_ISSUE_ID } from "@/types";
 import {
@@ -313,6 +305,7 @@ import {
   isDBAOrOwner,
   isReservedDatabaseLabel,
   hidePrefix,
+  taskSlug,
 } from "@/utils";
 import {
   hasFeature,
@@ -322,6 +315,7 @@ import {
   useLabelList,
   useProjectStore,
 } from "@/store";
+import { useExtraIssueLogic, useIssueLogic } from "./logic";
 
 dayjs.extend(isSameOrAfter);
 
@@ -331,37 +325,9 @@ interface LocalState {
 }
 
 const props = defineProps({
-  issue: {
-    required: true,
-    type: Object as PropType<Issue | IssueCreate>,
-  },
-  task: {
-    required: true,
-    type: Object as PropType<Task | TaskCreate>,
-  },
-  create: {
-    required: true,
-    type: Boolean,
-  },
-  selectedStage: {
-    required: true,
-    type: Object as PropType<Stage | StageCreate>,
-  },
-  inputFieldList: {
-    required: true,
-    type: Object as PropType<InputField[]>,
-  },
-  allowEdit: {
-    required: true,
-    type: Boolean,
-  },
-  isTenantDeployMode: {
-    type: Boolean,
-    default: false,
-  },
   database: {
-    required: true,
     type: Object as PropType<Database | undefined>,
+    default: undefined,
   },
   instance: {
     required: true,
@@ -369,37 +335,58 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits<{
-  (e: "update-assignee-id", assigneeId: PrincipalId): void;
-  (e: "update-earliest-allowed-time", newTs: number): void;
-  (e: "add-subscriber-id", subscriberId: PrincipalId): void;
-  (e: "remove-subscriber-id", subscriberId: PrincipalId): void;
-  (e: "update-custom-field", field: InputField, value: any): void;
-  (e: "select-stage-id", stageId: StageId): void;
-  (e: "select-task-id", taskId: TaskId): void;
-}>();
-
 const router = useRouter();
 const projectStore = useProjectStore();
 
+const {
+  create,
+  issue,
+  template,
+  isTenantMode,
+  selectedStage,
+  selectedTask,
+  selectStageOrTask,
+} = useIssueLogic();
+const {
+  updateEarliestAllowedTime,
+  updateAssigneeId,
+  updateCustomField,
+  addSubscriberId,
+  removeSubscriberId,
+} = useExtraIssueLogic();
+
+const allowEdit = computed(() => {
+  if (create.value) {
+    return true;
+  }
+  // For now, we only allow assignee to update the field when the issue
+  // is 'OPEN'. This reduces flexibility as creator must ask assignee to
+  // change any fields if there is typo. On the other hand, this avoids
+  // the trouble that the creator changes field value when the creator
+  // is performing the issue based on the old value.
+  // For now, we choose to be on the safe side at the cost of flexibility.
+  const issueEntity = issue.value as Issue;
+  return (
+    issueEntity.status == "OPEN" &&
+    issueEntity.assignee?.id == currentUser.value.id
+  );
+});
+
 const now = new Date();
 const state = reactive<LocalState>({
-  earliestAllowedTs: props.task.earliestAllowedTs,
+  earliestAllowedTs: selectedTask.value.earliestAllowedTs,
   showFeatureModal: false,
 });
 
-watch(
-  () => props.task,
-  (cur) => {
-    // we show user local time
-    state.earliestAllowedTs = cur.earliestAllowedTs;
-  }
-);
+watch(selectedTask, (cur) => {
+  // we show user local time
+  state.earliestAllowedTs = cur.earliestAllowedTs;
+});
 
 const currentUser = useCurrentUser();
 
 const fieldValue = <T = string>(field: InputField): T => {
-  return props.issue.payload[field.id] as T;
+  return issue.value.payload[field.id] as T;
 };
 
 const databaseName = computed((): string | undefined => {
@@ -407,13 +394,13 @@ const databaseName = computed((): string | undefined => {
     return props.database.name;
   }
 
-  const stage = props.selectedStage as Stage;
+  const stage = selectedStage.value as Stage;
   if (
     stage.taskList[0].type == "bb.task.database.create" ||
     stage.taskList[0].type == "bb.task.database.restore"
   ) {
-    if (props.create) {
-      const stage = props.selectedStage as StageCreate;
+    if (create.value) {
+      const stage = selectedStage.value as StageCreate;
       return stage.taskList[0].databaseName;
     }
     return ((stage.taskList[0] as Task).payload as TaskDatabaseCreatePayload)
@@ -423,19 +410,19 @@ const databaseName = computed((): string | undefined => {
 });
 
 const environment = computed((): Environment => {
-  if (props.create) {
-    const stage = props.selectedStage as StageCreate;
+  if (create.value) {
+    const stage = selectedStage.value as StageCreate;
     return useEnvironmentStore().getEnvironmentById(stage.environmentId);
   }
-  const stage = props.selectedStage as Stage;
+  const stage = selectedStage.value as Stage;
   return stage.environment;
 });
 
 const project = computed((): Project => {
-  if (props.create) {
-    return projectStore.getProjectById((props.issue as IssueCreate).projectId);
+  if (create.value) {
+    return projectStore.getProjectById((issue.value as IssueCreate).projectId);
   }
-  return (props.issue as Issue).project;
+  return (issue.value as Issue).project;
 });
 
 const labelList = useLabelList();
@@ -452,13 +439,15 @@ const visibleLabelList = computed((): DatabaseLabel[] => {
 
 const showStageSelect = computed((): boolean => {
   return (
-    !props.create && allTaskList((props.issue as Issue).pipeline).length > 1
+    !create.value && allTaskList((issue.value as Issue).pipeline).length > 1
   );
 });
 
 const showTaskSelect = computed((): boolean => {
-  if (props.create) return false;
-  const { taskList } = props.selectedStage;
+  if (create.value) {
+    return false;
+  }
+  const { taskList } = selectedStage.value;
   return taskList.length > 1;
 });
 
@@ -467,47 +456,51 @@ const showInstance = computed((): boolean => {
 });
 
 const allowEditAssignee = computed(() => {
-  const issue = props.issue as Issue;
+  if (create.value) {
+    return true;
+  }
   // We allow the current assignee or DBA to re-assign the issue.
   // Though only DBA can be assigned to the issue, the current
   // assignee might not have DBA role in case its role is revoked after
   // being assigned to the issue.
+  const issueEntity = issue.value as Issue;
   return (
-    props.create ||
-    (issue.id != ONBOARDING_ISSUE_ID &&
-      issue.status == "OPEN" &&
-      (currentUser.value.id == issue.assignee?.id ||
-        isDBAOrOwner(currentUser.value.role)))
+    issueEntity.id !== ONBOARDING_ISSUE_ID &&
+    issueEntity.status == "OPEN" &&
+    (currentUser.value.id == issueEntity.assignee.id ||
+      isDBAOrOwner(currentUser.value.role))
   );
 });
 
 const allowEditEarliestAllowedTime = computed(() => {
-  const issue = props.issue as Issue;
-  const task = props.task as Task;
+  if (create.value) {
+    return true;
+  }
   // only the assignee is allowed to modify EarliestAllowedTime
+  const issueEntity = issue.value as Issue;
+  const task = selectedTask.value as Task;
   return (
-    props.create ||
-    (issue.id != ONBOARDING_ISSUE_ID &&
-      issue.status == "OPEN" &&
-      (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
-      currentUser.value.id == issue.assignee?.id)
+    issueEntity.id != ONBOARDING_ISSUE_ID &&
+    issueEntity.status == "OPEN" &&
+    (task.status == "PENDING" || task.status == "PENDING_APPROVAL") &&
+    currentUser.value.id == issueEntity.assignee.id
   );
 });
 
 const allowEditCustomField = (field: InputField) => {
-  return props.allowEdit && (props.create || field.allowEditAfterCreation);
+  return allowEdit.value && (create.value || field.allowEditAfterCreation);
 };
 
 const trySaveCustomField = (field: InputField, value: string | boolean) => {
   if (!isEqual(value, fieldValue(field))) {
-    emit("update-custom-field", field, value);
+    updateCustomField(field, value);
   }
 };
 
 const isDatabaseCreated = computed(() => {
-  const stage = props.selectedStage as Stage;
+  const stage = selectedStage.value as Stage;
   if (stage.taskList[0].type == "bb.task.database.create") {
-    if (props.create) {
+    if (create.value) {
       return false;
     }
     return stage.taskList[0].status == "DONE";
@@ -517,8 +510,8 @@ const isDatabaseCreated = computed(() => {
 
 // We only show creation label for database create task
 const showDatabaseCreationLabel = computed(() => {
-  const stage = props.selectedStage as Stage;
-  if (stage.taskList[0].type != "bb.task.database.create") {
+  const stage = selectedStage.value as Stage;
+  if (stage.taskList[0].type !== "bb.task.database.create") {
     return "";
   }
   return isDatabaseCreated.value ? "(created)" : "(pending create)";
@@ -562,6 +555,15 @@ const updateEarliestAllowedTs = (newTimestampMS: number) => {
   // We divide it by 1000 to get timestamp in second
   const newTs = newTimestampMS / 1000;
   state.earliestAllowedTs = newTs;
-  emit("update-earliest-allowed-time", newTs);
+  updateEarliestAllowedTime(newTs);
+};
+
+const selectTaskId = (taskId: TaskId) => {
+  const taskList = (selectedStage.value as Stage).taskList;
+  const task = taskList.find((t) => t.id === taskId);
+  if (!task) return;
+  const slug = taskSlug(task.name, task.id);
+  const stage = selectedStage.value as Stage;
+  selectStageOrTask(stage.id, slug);
 };
 </script>
