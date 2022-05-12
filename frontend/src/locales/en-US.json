@@ -529,6 +529,7 @@
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-now": "Sync Now",
+    "sync-schema-afterward": "Sync schema afterward",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
