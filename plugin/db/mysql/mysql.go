@@ -50,7 +50,7 @@ type Driver struct {
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
-	DB *sql.DB
+	db *sql.DB
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -106,7 +106,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		panic(err)
 	}
 	driver.dbType = dbType
-	driver.DB = db
+	driver.db = db
 	driver.connectionCtx = connCtx
 
 	return driver, nil
@@ -114,23 +114,23 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 
 // Close closes the driver.
 func (driver *Driver) Close(ctx context.Context) error {
-	return driver.DB.Close()
+	return driver.db.Close()
 }
 
 // Ping pings the database.
 func (driver *Driver) Ping(ctx context.Context) error {
-	return driver.DB.PingContext(ctx)
+	return driver.db.PingContext(ctx)
 }
 
 // GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
-	return driver.DB, nil
+	return driver.db, nil
 }
 
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
-	versionRow, err := driver.DB.QueryContext(ctx, query)
+	versionRow, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
@@ -201,7 +201,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			FROM information_schema.STATISTICS
 			WHERE ` + indexWhere
 	}
-	indexRows, err := driver.DB.QueryContext(ctx, query)
+	indexRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -260,7 +260,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				COLUMN_COMMENT
 			FROM information_schema.COLUMNS
 			WHERE ` + columnWhere
-	columnRows, err := driver.DB.QueryContext(ctx, query)
+	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -320,7 +320,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				IFNULL(TABLE_COMMENT, '')
 			FROM information_schema.TABLES
 			WHERE ` + tableWhere
-	tableRows, err := driver.DB.QueryContext(ctx, query)
+	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -391,7 +391,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				VIEW_DEFINITION
 			FROM information_schema.VIEWS
 			WHERE ` + viewWhere
-	viewRows, err := driver.DB.QueryContext(ctx, query)
+	viewRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -431,7 +431,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE ` + where
-	rows, err := driver.DB.QueryContext(ctx, query)
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -470,7 +470,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		WHERE user NOT LIKE 'mysql.%'
 	`
 	var userList []*db.User
-	userRows, err := driver.DB.QueryContext(ctx, query)
+	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -492,7 +492,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
 		name := fmt.Sprintf("'%s'@'%s'", user, host)
 		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
-		grantRows, err := driver.DB.QueryContext(ctx,
+		grantRows, err := driver.db.QueryContext(ctx,
 			query,
 		)
 		if err != nil {
@@ -519,7 +519,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
-	tx, err := driver.DB.BeginTx(ctx, nil)
+	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -538,7 +538,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.DB, statement, limit)
+	return util.Query(ctx, driver.l, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -549,7 +549,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = 'bytebase' AND TABLE_NAME = 'migration_history'
 		`
-	return util.NeedsSetupMigrationSchema(ctx, driver.DB, query)
+	return util.NeedsSetupMigrationSchema(ctx, driver.db, query)
 }
 
 // SetupMigrationIfNeeded sets up migration if needed.
@@ -567,7 +567,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		// Do not wrap it in a single transaction here because:
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
 		// 2. For TiDB, the created database/table is not visible to the followup statements from the same transaction.
-		if _, err := driver.DB.ExecContext(ctx, migrationSchema); err != nil {
+		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
 			driver.l.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -897,7 +897,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	txn, err := driver.DB.BeginTx(ctx, &options)
+	txn, err := driver.db.BeginTx(ctx, &options)
 	if err != nil {
 		return err
 	}
@@ -916,7 +916,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error) {
-	txn, err := driver.DB.BeginTx(ctx, nil)
+	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

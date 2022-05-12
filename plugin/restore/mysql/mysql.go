@@ -50,7 +50,12 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 		// We should turn it on after we the restore the full backup.
 		"SET foreign_key_checks=OFF",
 		pitrDatabaseName, pitrDatabaseName)
-	if _, err := r.driver.DB.ExecContext(ctx, query); err != nil {
+
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, query); err != nil {
 		return err
 	}
 
@@ -59,7 +64,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 	}
 
 	// The full backup is restored successfully, enable foreign key constraints as normal.
-	if _, err := r.driver.DB.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
+	if _, err := db.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
 		return err
 	}
 
@@ -71,7 +76,11 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error {
-	txn, err := r.driver.DB.BeginTx(ctx, nil)
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return err
+	}
+	txn, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
