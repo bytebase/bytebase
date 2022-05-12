@@ -15,11 +15,15 @@ export const useOAuthStore = defineStore("oauth", {
   actions: {
     // exchangeVCSTokenWithID uses "vcsId" to let the backend infer the details from an existing VCS provider.
     async exchangeVCSTokenWithID({
-      vcsId,
       code,
+      vcsId,
+      clientId,
+      clientSecret,
     }: {
-      vcsId: VCSId;
       code: string;
+      vcsId: VCSId;
+      clientId: string;
+      clientSecret: string;
     }): Promise<OAuthToken> {
       const data = (
         await axios.post(`/api/oauth/vcs/exchange-token`, {
@@ -28,6 +32,8 @@ export const useOAuthStore = defineStore("oauth", {
             attributes: {
               code,
               vcsId,
+              clientId,
+              clientSecret,
             },
           },
         })
