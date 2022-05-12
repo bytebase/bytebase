@@ -54,12 +54,12 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="password"
+                v-model="state.password"
                 type="password"
                 autocomplete="off"
-                :value="state.password"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
-                @input="changePassword($event.target.value)"
+                @input="refreshPasswordValidation"
               />
             </div>
           </div>
@@ -82,13 +82,13 @@
             <div class="mt-1 rounded-md shadow-sm">
               <input
                 id="password-confirm"
+                v-model="state.passwordConfirm"
                 type="password"
                 autocomplete="off"
                 :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
-                :value="state.passwordConfirm"
                 required
                 class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
-                @input="changePasswordConfirm($event.target.value)"
+                @input="refreshPasswordValidation"
               />
             </div>
           </div>
@@ -110,6 +110,34 @@
                 @input="onTextName"
               />
             </div>
+          </div>
+
+          <div
+            v-if="needAdminSetup"
+            class="w-full flex flex-row justify-start items-start"
+          >
+            <BBCheckbox
+              :value="state.acceptTermsAndPolicy"
+              class="mt-0.5"
+              @toggle="onToggleAcceptTermsAndPolicyCheckbox"
+            />
+            <i18n-t
+              tag="span"
+              keypath="auth.sign-up.accept-term-of-service-and-privacy"
+              class="ml-1 select-none"
+              @click="onToggleAcceptTermsAndPolicyCheckbox"
+            >
+              <template #terms>
+                <a href="https://www.bytebase.com/terms" class="text-accent">{{
+                  $t("auth.sign-up.terms-of-service")
+                }}</a>
+              </template>
+              <template #privacy>
+                <a href="https://www.bytebase.com/terms" class="text-accent">{{
+                  $t("auth.sign-up.privacy-policy")
+                }}</a>
+              </template>
+            </i18n-t>
           </div>
 
           <div>
@@ -150,13 +178,19 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onUnmounted, reactive } from "vue";
+import {
+  computed,
+  defineComponent,
+  onMounted,
+  onUnmounted,
+  reactive,
+} from "vue";
 import { useRouter } from "vue-router";
-import { SignupInfo, TEXT_VALIDATION_DELAY } from "../../types";
-import { isValidEmail } from "../../utils";
-import AuthFooter from "./AuthFooter.vue";
-import { useActuatorStore, useAuthStore } from "@/store";
 import { storeToRefs } from "pinia";
+import { useActuatorStore, useAuthStore } from "@/store";
+import { SignupInfo, TEXT_VALIDATION_DELAY } from "@/types";
+import { isValidEmail } from "@/utils";
+import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
   email: string;
@@ -166,6 +200,7 @@ interface LocalState {
   showPasswordMismatchError: boolean;
   name: string;
   nameManuallyEdited: boolean;
+  acceptTermsAndPolicy: boolean;
 }
 
 export default defineComponent({
@@ -182,6 +217,7 @@ export default defineComponent({
       showPasswordMismatchError: false,
       name: "",
       nameManuallyEdited: false,
+      acceptTermsAndPolicy: true,
     });
 
     onUnmounted(() => {
@@ -196,12 +232,19 @@ export default defineComponent({
       return (
         isValidEmail(state.email) &&
         state.password &&
-        !state.showPasswordMismatchError
+        !state.showPasswordMismatchError &&
+        state.acceptTermsAndPolicy
       );
     });
 
     const passwordMatch = computed(() => {
       return state.password == state.passwordConfirm;
+    });
+
+    onMounted(() => {
+      if (needAdminSetup.value) {
+        state.acceptTermsAndPolicy = false;
+      }
     });
 
     const refreshPasswordValidation = () => {
@@ -263,6 +306,10 @@ export default defineComponent({
       state.nameManuallyEdited = name.length > 0;
     };
 
+    const onToggleAcceptTermsAndPolicyCheckbox = () => {
+      state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy;
+    };
+
     const trySignup = () => {
       if (!passwordMatch.value) {
         state.showPasswordMismatchError = true;
@@ -293,7 +340,9 @@ export default defineComponent({
       changePasswordConfirm,
       onTextEmail,
       onTextName,
+      onToggleAcceptTermsAndPolicyCheckbox,
       trySignup,
+      refreshPasswordValidation,
     };
   },
 });
