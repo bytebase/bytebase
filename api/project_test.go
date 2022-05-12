@@ -237,6 +237,14 @@ func TestGetBaseDatabaseName(t *testing.T) {
 		},
 		{
 			"tenant_label_success",
+			"db1_tenant123",
+			"{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"tenant_label_inculde_meta_success",
 			"db1$tenant123",
 			"{{DB_NAME}}${{TENANT}}",
 			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",

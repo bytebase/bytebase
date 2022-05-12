@@ -262,7 +262,7 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 	for _, key := range fixed {
 		quoteKey := regexp.QuoteMeta(key)
 		if quoteKey != key {
-			template = strings.ReplaceAll(template, key, quoteKey)
+			template = strings.Replace(template, key, quoteKey, 1)
 		}
 
 	}
