@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <template v-if="mode === 'single'">
-      <TaskRunTable :task-list="[selectedTask || stage.taskList[0]]" />
+      <TaskRunTable :task-list="[task || stage.taskList[0]]" />
     </template>
     <template v-else-if="mode === 'merged'">
       <TaskRunTable :task-list="stage.taskList" />
@@ -26,55 +26,36 @@
   </div>
 </template>
 
-<script lang="ts">
-import { PropType, computed, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed, Ref } from "vue";
 import TaskRunTable from "./TaskRunTable.vue";
-import { Stage, Task } from "../../types";
-import { activeTaskInStage } from "../../utils";
+import { Stage, Task } from "@/types";
+import { useIssueLogic } from "./logic";
 
 type Mode = "normal" | "single" | "merged";
 
-export default defineComponent({
-  name: "IssueStagePanel",
-  components: { TaskRunTable },
-  props: {
-    stage: {
-      required: true,
-      type: Object as PropType<Stage>,
-    },
-    selectedTask: {
-      type: Object as PropType<Task>,
-      default: undefined,
-    },
-    isTenantMode: {
-      type: Boolean,
-      default: false,
-    },
-    isGhostMode: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  setup(props) {
-    const activeTask = computed((): Task => {
-      return activeTaskInStage(props.stage);
-    });
+const {
+  selectedStage,
+  selectedTask,
+  isGhostMode,
+  isTenantMode,
+  activeTaskOfStage,
+} = useIssueLogic();
+const stage = selectedStage as Ref<Stage>;
+const task = selectedTask as Ref<Task>;
 
-    /**
-     * normal mode: display multiple tables for each task in stage.taskList
-     * merged mode: merge all tasks' activities into one table
-     * single mode: show only selected task's activities
-     */
-    const mode = computed((): Mode => {
-      if (props.isGhostMode) return "merged";
-      if (props.isTenantMode) return "single";
-      return "normal";
-    });
+const activeTask = computed((): Task => {
+  return activeTaskOfStage(stage.value);
+});
 
-    return {
-      activeTask,
-      mode,
-    };
-  },
+/**
+ * normal mode: display multiple tables for each task in stage.taskList
+ * merged mode: merge all tasks' activities into one table
+ * single mode: show only selected task's activities
+ */
+const mode = computed((): Mode => {
+  if (isGhostMode.value) return "merged";
+  if (isTenantMode.value) return "single";
+  return "normal";
 });
 </script>
