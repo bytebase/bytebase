@@ -19,11 +19,11 @@ func init() {
 	advisor.Register(db.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
-// WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement for UPDATE/DELETE.
+// WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
 type WhereRequirementAdvisor struct {
 }
 
-// Check checks for the WHERE clause requirement for UPDATE/DELETE.
+// Check checks for the WHERE clause requirement.
 func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
@@ -32,7 +32,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 
 	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
-		return []advisor.Advice{}, err
+		return nil, err
 	}
 	we := &whereRequirementChecker{level: level}
 	for _, stmtNode := range root {
@@ -66,6 +66,11 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	// UPDATE
 	case *ast.UpdateStmt:
+		if node.Where == nil {
+			code = common.StatementNoWhere
+		}
+	// SELECT
+	case *ast.SelectStmt:
 		if node.Where == nil {
 			code = common.StatementNoWhere
 		}
