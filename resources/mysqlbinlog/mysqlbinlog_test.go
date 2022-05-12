@@ -1,6 +1,7 @@
 package mysqlbinlog
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +19,7 @@ func TestRunBinary(t *testing.T) {
 
 	var tarName string
 	var version string
-
+	fmt.Println(runtime.GOOS, runtime.GOARCH)
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysqlbinlog-8.0.28-macos11-arm64.tar.gz"
