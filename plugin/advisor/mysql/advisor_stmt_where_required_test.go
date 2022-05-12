@@ -54,6 +54,28 @@ func TestWhereRequirement(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT a FROM t",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    common.StatementNoWhere,
+					Title:   "Require WHERE clause",
+					Content: "\"SELECT a FROM t\" requires WHERE clause",
+				},
+			},
+		},
+		{
+			statement: "SELECT a FROM t WHERE a > 0",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 
 	runSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &api.SchemaReviewRule{
