@@ -171,7 +171,7 @@ var (
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
 func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
-	tokens := getTemplateTokens(filePathTemplate)
+	tokens, _ := getTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -202,7 +202,7 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 	if schemaPathTemplate == "" {
 		return nil
 	}
-	tokens := getTemplateTokens(schemaPathTemplate)
+	tokens, _ := getTemplateTokens(schemaPathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -233,7 +233,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 	if template == "" {
 		return nil
 	}
-	tokens := getTemplateTokens(template)
+	tokens, _ := getTemplateTokens(template)
 	// Must contain {{DB_NAME}}
 	hasDBName := false
 	for _, token := range tokens {
@@ -252,12 +252,19 @@ func ValidateProjectDBNameTemplate(template string) error {
 
 // FormatTemplate formats the template.
 func FormatTemplate(template string, tokens map[string]string) (string, error) {
-	keys := getTemplateTokens(template)
+	keys, fixed := getTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
 			return "", fmt.Errorf("token %q not found", key)
 		}
 		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	for _, key := range fixed {
+		quoteKey := regexp.QuoteMeta(key)
+		if quoteKey != key {
+			template = strings.ReplaceAll(template, key, quoteKey)
+		}
+
 	}
 	return template, nil
 }
@@ -299,7 +306,19 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	return names[1], nil
 }
 
-func getTemplateTokens(template string) []string {
+func getTemplateTokens(template string) ([]string, []string) {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
-	return r.FindAllString(template, -1)
+	tokens := r.FindAllString(template, -1)
+	if len(tokens) > 0 {
+		split := r.Split(template, -1)
+		fixed := make([]string, 0, len(split)-len(tokens))
+		for _, s := range split {
+			if s != "" {
+				fixed = append(fixed, s)
+			}
+		}
+		return tokens, fixed
+
+	}
+	return nil, nil
 }

@@ -10,26 +10,31 @@ func TestGetTemplateTokens(t *testing.T) {
 	tests := []struct {
 		name     string
 		template string
-		want     []string
+		tokens   []string
+		fixed    []string
 	}{
 		{
 			"NoToken",
 			"helloworld",
 			nil,
+			nil,
 		}, {
 			"TwoTokens",
 			"{{DB_NAME}}_{{LOCATION}}",
 			[]string{"{{DB_NAME}}", "{{LOCATION}}"},
+			[]string{"_"},
 		}, {
 			"ExtraPrefix",
 			"hello_{{DB_NAME}}_{{LOCATION}}",
 			[]string{"{{DB_NAME}}", "{{LOCATION}}"},
+			[]string{"hello_", "_"},
 		},
 	}
 
 	for _, test := range tests {
-		tokens := getTemplateTokens(test.template)
-		require.Equal(t, tokens, test.want)
+		tokens, fixed := getTemplateTokens(test.template)
+		require.Equal(t, test.tokens, tokens)
+		require.Equal(t, test.fixed, fixed)
 	}
 }
 
@@ -232,8 +237,8 @@ func TestGetBaseDatabaseName(t *testing.T) {
 		},
 		{
 			"tenant_label_success",
-			"db1_tenant123",
-			"{{DB_NAME}}_{{TENANT}}",
+			"db1$tenant123",
+			"{{DB_NAME}}${{TENANT}}",
 			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 			"db1",
 			"",

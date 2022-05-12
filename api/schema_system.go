@@ -173,7 +173,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	}
 
 	template := nr.Format
-	keys := getTemplateTokens(template)
+	keys, _ := getTemplateTokens(template)
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
