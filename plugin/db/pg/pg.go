@@ -1296,9 +1296,9 @@ func (t eventTriggerSchema) Statement(majorVersion uint64) string {
 	}
 
 	// See https://www.postgresql.org/docs/10/sql-createeventtrigger.html,
-	// of the versions that support event triggers, only 10 use PROCEDURE.
+	// pg with major version below 10 uses PROCEDURE syntax.
 	functionSyntax := "FUNCTION"
-	if majorVersion == 10 {
+	if majorVersion <= 10 {
 		functionSyntax = "PROCEDURE"
 	}
 
