@@ -1,6 +1,8 @@
 <template>
-  <div class="flex justify-between">
-    <div class="flex space-x-4">
+  <div
+    class="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4"
+  >
+    <div class="flex space-x-4 flex-1">
       <div
         class="text-sm font-medium"
         :class="isEmpty(state.editStatement) ? 'text-red-600' : 'text-control'"
