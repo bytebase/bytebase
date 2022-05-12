@@ -27,7 +27,6 @@ func TestRunBinary(t *testing.T) {
 	}
 
 	tarF, err := resources.Open(tarName)
-
 	require.NoError(t, err)
 
 	defer tarF.Close()
