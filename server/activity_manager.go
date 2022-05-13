@@ -247,16 +247,6 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		}
 	}
 
-	metaList := []webhook.Meta{
-		{
-			Name:  "Issue",
-			Value: meta.issue.Name,
-		},
-		{
-			Name:  "Project",
-			Value: meta.issue.Project.Name,
-		},
-	}
 	webhookCtx = webhook.Context{
 		Level:        level,
 		ActivityType: string(activity.Type),
@@ -277,7 +267,6 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		CreatorID:    updater.ID,
 		CreatorName:  updater.Name,
 		CreatorEmail: updater.Email,
-		MetaList:     metaList,
 	}
 	return webhookCtx, nil
 }

@@ -198,13 +198,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 				CreatorName:  "Bytebase",
 				CreatorEmail: "support@bytebase.com",
 				CreatedTs:    time.Now().Unix(),
-				MetaList: []webhookPlugin.Meta{
-					{
-						Name:  "Project",
-						Value: project.Name,
-					},
-				},
-				Project: &webhookPlugin.Project{Name: project.Name},
+				Project:      &webhookPlugin.Project{Name: project.Name},
 			},
 		)
 
