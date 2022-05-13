@@ -23,7 +23,7 @@ func NewInstanceTask(l *zap.Logger) Executor {
 }
 
 // RunOnce will exec the segment task for instance
-func (t *InstanceTask) RunOnce(ctx context.Context, store *store.Store, segment *segment.Segment) error {
+func (t *InstanceTask) Run(ctx context.Context, store *store.Store, segment *segment.Segment) error {
 	status := api.Normal
 	count, err := store.CountInstance(ctx, &api.InstanceFind{
 		RowStatus: &status,

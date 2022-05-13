@@ -75,7 +75,13 @@ func (s *SegmentScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				for _, e := range s.executors {
 					go func(executor task.Executor) {
 						s.l.Info("Run segment task", zap.String("task", reflect.TypeOf(executor).String()))
-						executor.RunOnce(ctx, s.server.store, s.segment)
+						if err := executor.Run(ctx, s.server.store, s.segment); err != nil {
+							s.l.Info(
+								"Failed to run segment task",
+								zap.String("task", reflect.TypeOf(executor).String()),
+								zap.Error(err),
+							)
+						}
 					}(e)
 				}
 			}()

@@ -9,5 +9,5 @@ import (
 
 // Executor is the API message for segment task
 type Executor interface {
-	RunOnce(ctx context.Context, store *store.Store, segment *segment.Segment) error
+	Run(ctx context.Context, store *store.Store, segment *segment.Segment) error
 }
