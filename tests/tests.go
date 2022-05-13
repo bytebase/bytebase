@@ -134,7 +134,7 @@ func getTestPort(testName string) int {
 		return 1262
 	case "TestBootWithExternalPg":
 		return 1265
-	case "TestSheetVCSIntegration":
+	case "TestSheetVCS":
 		return 1268
 	case "NEXT": // TestBootWithExternalPg need 4 ports for test, modify here for your test.
 		return 1272

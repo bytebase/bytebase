@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSheetVCSIntegration(t *testing.T) {
+func TestSheetVCS(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
