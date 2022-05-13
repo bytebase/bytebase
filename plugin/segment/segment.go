@@ -21,6 +21,7 @@ var (
 )
 
 const (
+	// IdentifyTraitForPlan is the trait key for subscription plan.
 	IdentifyTraitForPlan = "plan"
 )
 
