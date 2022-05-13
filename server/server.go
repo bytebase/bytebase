@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
+	segmentTask "github.com/bytebase/bytebase/plugin/segment/task"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -31,6 +32,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
+	SegmentScheduler   *SegmentScheduler
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
@@ -295,16 +297,28 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
 
-	s.InitSubscription()
+	s.initSubscription()
+	s.initSegmentScheduler()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
 	return s, nil
 }
 
-// InitSubscription will initial the subscription cache in memory.
-func (server *Server) InitSubscription() {
+// initSubscription will initial the subscription cache in memory.
+func (server *Server) initSubscription() {
 	server.subscription = server.loadSubscription()
+}
+
+// initSegmentScheduler will initial the segment scheduler.
+func (server *Server) initSegmentScheduler() {
+	segmentScheduler, err := NewSegmentScheduler(server.l, server)
+	if err != nil {
+		server.l.Debug("failed to start segment scheduler, error: %w", zap.Error(err))
+		return
+	}
+	server.SegmentScheduler = segmentScheduler
+	server.SegmentScheduler.Register(segmentTask.NewInstanceTask(server.l))
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
@@ -353,6 +367,8 @@ func (server *Server) Run(ctx context.Context) error {
 		go server.BackupRunner.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
+		server.runnerWG.Add(1)
+		go server.SegmentScheduler.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
 	}
 

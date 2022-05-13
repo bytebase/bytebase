@@ -20,7 +20,7 @@ const (
 
 // NewSegmentScheduler creates a new segment scheduler.
 func NewSegmentScheduler(logger *zap.Logger, server *Server) (*SegmentScheduler, error) {
-	segmentService, err := segment.NewService(logger, server.profile.DataDir, server.profile.Mode)
+	segmentService, err := segment.NewService(logger, server.profile.DataDir, server.profile.SegmentKey)
 	if err != nil {
 		return nil, err
 	}
