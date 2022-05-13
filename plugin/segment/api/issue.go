@@ -15,5 +15,5 @@ func (i *IssueEvent) GetType() EventType {
 
 // GetProperties returns the event properties
 func (i *IssueEvent) GetProperties() analytics.Properties {
-	return getProperties(i)
+	return getEventProperties(i)
 }

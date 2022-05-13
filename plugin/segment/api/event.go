@@ -15,7 +15,7 @@ var (
 	// InstanceEventType is the track event for instance.
 	InstanceEventType EventType = "instance"
 	// IssueEventType is the track event for issue.
-	IssueEventType EventType = "instance"
+	IssueEventType EventType = "issue"
 )
 
 // Event is the API message for Track.
@@ -24,7 +24,7 @@ type Event interface {
 	GetProperties() analytics.Properties
 }
 
-func getProperties(data interface{}) analytics.Properties {
+func getEventProperties(data interface{}) analytics.Properties {
 	res := analytics.NewProperties()
 
 	s := reflect.ValueOf(data).Elem()
