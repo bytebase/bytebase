@@ -89,8 +89,7 @@ const (
 // TaskDatabasePITRRestorePayload is the task payload for database PITR restore.
 type TaskDatabasePITRRestorePayload struct {
 	// The project owning the database.
-	ProjectID     int    `json:"projectId,omitempty"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
+	ProjectID int `json:"projectId,omitempty"`
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs int `json:"pointInTimeTs,omitempty"`
