@@ -156,7 +156,6 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
         [
           "naming.table",
           "naming.column",
-          "naming.index.pk",
           "naming.index.uk",
           "naming.index.fk",
           "naming.index.idx",
@@ -191,7 +190,6 @@ const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
         [
           "naming.table",
           "naming.column",
-          "naming.index.pk",
           "naming.index.uk",
           "naming.index.fk",
           "naming.index.idx",
