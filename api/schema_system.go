@@ -27,8 +27,6 @@ const (
 	SchemaRuleTableNaming SchemaReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format
 	SchemaRuleColumnNaming SchemaReviewRuleType = "naming.column"
-	// SchemaRulePKNaming enforce the primary key name formaty.
-	SchemaRulePKNaming SchemaReviewRuleType = "naming.index.pk"
 	// SchemaRuleUKNaming enforce the unique key name format.
 	SchemaRuleUKNaming SchemaReviewRuleType = "naming.index.uk"
 	// SchemaRuleFKNaming enforce the foreign key name format.
@@ -71,10 +69,6 @@ const (
 var (
 	// TemplateNamingTokens is the mapping for rule type to template token
 	TemplateNamingTokens = map[SchemaReviewRuleType]map[string]bool{
-		SchemaRulePKNaming: {
-			TableNameTemplateToken:  true,
-			ColumnListTemplateToken: true,
-		},
 		SchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
@@ -128,7 +122,7 @@ func (rule *SchemaReviewRule) Validate() error {
 		if _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
-	case SchemaRulePKNaming, SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
+	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
 		if _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}

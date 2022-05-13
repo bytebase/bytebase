@@ -59,12 +59,10 @@ const (
 	NamingColumnConventionMismatch Code = 10202
 	// 10203 index naming advisor error code
 	NamingIndexConventionMismatch Code = 10203
-	// 10203 unique key naming advisor error code
+	// 10204 unique key naming advisor error code
 	NamingUKConventionMismatch Code = 10204
-	// 10203 primary key naming advisor error code
-	NamingPKConventionMismatch Code = 10205
-	// 10203 foreign key naming advisor error code
-	NamingFKConventionMismatch Code = 10206
+	// 10205 foreign key naming advisor error code
+	NamingFKConventionMismatch Code = 10205
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
