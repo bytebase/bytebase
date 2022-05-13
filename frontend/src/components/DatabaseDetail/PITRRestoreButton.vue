@@ -17,7 +17,7 @@
     @close="state.showDatabasePITRModal = false"
   >
     <div class="w-112 flex flex-col items-center gap-4">
-      <div class="w-full textinfolabel px-2">
+      <div class="w-full textinfolabel">
         <i18n-t keypath="database.pitr.help-info" tag="p">
           <template #link>
             <a
