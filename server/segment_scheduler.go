@@ -3,24 +3,22 @@ package server
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/segment"
-	segmentAPI "github.com/bytebase/bytebase/plugin/segment/api"
-	"github.com/bytebase/bytebase/plugin/segment/task"
+
 	"go.uber.org/zap"
 )
 
 const (
-	segmentSchedulerInterval = time.Duration(24) * time.Hour
+	segmentSchedulerInterval = time.Duration(1) * time.Second
 )
 
 // NewSegmentScheduler creates a new segment scheduler.
 func NewSegmentScheduler(logger *zap.Logger, server *Server) (*SegmentScheduler, error) {
-	segmentService, err := segment.NewService(logger, server.profile.DataDir, server.profile.SegmentKey)
+	segmentService, err := segment.NewService(logger, server.profile.SegmentKey, server.store)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +27,7 @@ func NewSegmentScheduler(logger *zap.Logger, server *Server) (*SegmentScheduler,
 	if server.subscription != nil {
 		license = server.subscription.Plan.String()
 	}
-	segmentService.Identify(&segmentAPI.WorkspaceIdentify{
+	segmentService.Identify(&segment.Workspace{
 		License: license,
 	})
 
@@ -44,9 +42,8 @@ func NewSegmentScheduler(logger *zap.Logger, server *Server) (*SegmentScheduler,
 type SegmentScheduler struct {
 	l *zap.Logger
 
-	server    *Server
-	segment   *segment.Segment
-	executors []task.Executor
+	server  *Server
+	segment segment.Service
 }
 
 // Run will run the task scheduler.
@@ -68,33 +65,14 @@ func (s *SegmentScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 						s.l.Error("Task scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
+					s.segment.Close()
 				}()
 
 				ctx := context.Background()
-
-				for _, e := range s.executors {
-					go func(executor task.Executor) {
-						s.l.Info("Run segment task", zap.String("task", reflect.TypeOf(executor).String()))
-						if err := executor.Run(ctx, s.server.store, s.segment); err != nil {
-							s.l.Info(
-								"Failed to run segment task",
-								zap.String("task", reflect.TypeOf(executor).String()),
-								zap.Error(err),
-							)
-						}
-					}(e)
-				}
+				s.segment.Report(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
 	}
-}
-
-// Register will register a task executor.
-func (s *SegmentScheduler) Register(executor task.Executor) {
-	if executor == nil {
-		panic("segment scheduler: Register executor is nil")
-	}
-	s.executors = append(s.executors, executor)
 }

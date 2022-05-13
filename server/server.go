@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
-	segmentTask "github.com/bytebase/bytebase/plugin/segment/task"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/labstack/echo/v4"
@@ -318,7 +317,6 @@ func (server *Server) initSegmentScheduler() {
 		return
 	}
 	server.SegmentScheduler = segmentScheduler
-	server.SegmentScheduler.Register(segmentTask.NewInstanceTask(server.l))
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {

@@ -12,6 +12,8 @@ const (
 	SettingAuthSecret SettingName = "bb.auth.secret"
 	// SettingBrandingLogo is the setting name for branding logo.
 	SettingBrandingLogo SettingName = "bb.branding.logo"
+	// SettingSegmentIdentify is the setting name for segment identify.
+	SettingSegmentIdentify SettingName = "bb.segment.identify"
 )
 
 // Setting is the API message for a setting.
