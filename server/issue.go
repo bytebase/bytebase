@@ -876,52 +876,10 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	pitrTimestamp := time.Now().Unix()
 	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
 
-	// task: PITR requirements check
-	{
-		payload := api.TaskDatabasePITRCheckPayload{}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR check task, unable to marshal payload, error[%w]", err)
-		}
-
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Check PITR requirements for database %s", database.Name),
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabasePITRCheck,
-			Payload:    string(payloadBytes),
-		})
-	}
-
-	// task: create PITR database
-	{
-		schemaVersion := common.DefaultMigrationVersion()
-		payload := api.TaskDatabaseCreatePayload{
-			ProjectID:     projectID,
-			CharacterSet:  database.CharacterSet,
-			Collation:     database.Collation,
-			Labels:        database.Labels,
-			SchemaVersion: schemaVersion,
-		}
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(database.Instance.Engine, database.Name, database.CharacterSet, database.Collation, "")
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create database creation task, unable to marshal payload, error[%w]", err)
-		}
-
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Create PITR database %s", pitrDatabaseName),
-			InstanceID: database.InstanceID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabaseCreate,
-			Payload:    string(payloadBytes),
-		})
-	}
-
-	// task: restore to PITR database
+	// task: create and restore to PITR database
 	{
 		payload := api.TaskDatabasePITRRestorePayload{
+			ProjectID:     projectID,
 			PointInTimeTs: recoveryTime,
 		}
 		payloadBytes, err := json.Marshal(payload)
@@ -934,12 +892,12 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 			InstanceID: database.InstanceID,
 			DatabaseID: &database.ID,
 			Status:     taskStatus,
-			Type:       api.TaskDatabaseCreate,
+			Type:       api.TaskDatabasePITRRestore,
 			Payload:    string(payloadBytes),
 		})
 	}
 
-	// task: cutover
+	// task: swap PITR and the original database
 	{
 		payload := api.TaskDatabasePITRCutoverPayload{}
 		payloadBytes, err := json.Marshal(payload)
@@ -948,11 +906,29 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 		}
 
 		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Cutover PITR database %s", pitrDatabaseName),
+			Name:       fmt.Sprintf("Swap PITR and the original database %s", pitrDatabaseName),
 			InstanceID: database.InstanceID,
 			DatabaseID: &database.ID,
 			Status:     taskStatus,
-			Type:       api.TaskDatabaseCreate,
+			Type:       api.TaskDatabasePITRCutover,
+			Payload:    string(payloadBytes),
+		})
+	}
+
+	// task: delete the original database
+	{
+		payload := api.TaskDatabasePITRDeletePayload{}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create PITR delete task, unable to marshal payload, error[%w]", err)
+		}
+
+		taskCreateList = append(taskCreateList, api.TaskCreate{
+			Name:       fmt.Sprintf("Delete the original database %s", pitrDatabaseName),
+			InstanceID: database.InstanceID,
+			DatabaseID: &database.ID,
+			Status:     taskStatus,
+			Type:       api.TaskDatabasePITRDelete,
 			Payload:    string(payloadBytes),
 		})
 	}
@@ -960,7 +936,6 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	taskIndexDAGList := []api.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
 		{FromIndex: 1, ToIndex: 2},
-		{FromIndex: 2, ToIndex: 3},
 	}
 
 	return taskCreateList, taskIndexDAGList, nil

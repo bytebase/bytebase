@@ -74,24 +74,23 @@ const (
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
 	TaskDatabaseRestore TaskType = "bb.task.database.restore"
-	// TaskDatabasePITRCheck is the task type for checking PITR requirements.
-	TaskDatabasePITRCheck TaskType = "bb.task.database.pitr.check"
 	// TaskDatabasePITRRestore is the task type for restoring databases using PITR.
 	TaskDatabasePITRRestore TaskType = "bb.task.database.pitr.restore"
-	// TaskDatabasePITRCutover is the task type
+	// TaskDatabasePITRCutover is the task type for swapping the pitr and original database.
 	TaskDatabasePITRCutover TaskType = "bb.task.database.pitr.cutover"
+	// TaskDatabasePITRDelete is the task type fo deleting the original database.
+	TaskDatabasePITRDelete TaskType = "bb.task.database.pitr.delete"
 )
 
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention
 
-// TaskDatabasePITRCheckPayload is the task payload for PITR requirements check.
-// It is currently only a placeholder.
-type TaskDatabasePITRCheckPayload struct{}
-
 // TaskDatabasePITRRestorePayload is the task payload for database PITR restore.
 type TaskDatabasePITRRestorePayload struct {
+	// The project owning the database.
+	ProjectID     int    `json:"projectId,omitempty"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
 	PointInTimeTs int `json:"pointInTimeTs,omitempty"`
@@ -100,6 +99,9 @@ type TaskDatabasePITRRestorePayload struct {
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
 // It is currently only a placeholder.
 type TaskDatabasePITRCutoverPayload struct{}
+
+// TaskDatabasePITRDeletePayload is the task payload for deleting the original database after a successful PITR cutover.
+type TaskDatabasePITRDeletePayload struct{}
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {
