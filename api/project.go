@@ -251,6 +251,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 }
 
 // FormatTemplate formats the template by using the tokens as a replacement mapping.
+// Note that the returned (modified) template should not be used as a regexp.
 func FormatTemplate(template string, tokens map[string]string) (string, error) {
 	keys, _ := parseTemplateTokens(template)
 	for _, key := range keys {
@@ -263,8 +264,8 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 }
 
 // Similar to FormatTemplate, except that it will also escape special regexp characters in the delimiters
-// of the template string.
-func formatTemplateRegexpEscaped(template string, tokens map[string]string) (string, error) {
+// of the template string, which will produce the correct regexp string.
+func formatTemplateRegexp(template string, tokens map[string]string) (string, error) {
 	keys, delimiters := parseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
@@ -304,7 +305,7 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	}
 	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
 
-	expr, err := formatTemplateRegexpEscaped(dbNameTemplate, labelMap)
+	expr, err := formatTemplateRegexp(dbNameTemplate, labelMap)
 	if err != nil {
 		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
 	}

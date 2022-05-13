@@ -253,7 +253,7 @@ func TestBuildTemplateExpr(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := formatTemplateRegexpEscaped(test.template, test.tokens)
+		got, err := formatTemplateRegexp(test.template, test.tokens)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
