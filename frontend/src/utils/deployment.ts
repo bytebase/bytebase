@@ -95,6 +95,11 @@ export const buildDatabaseNameRegExpByTemplate = (
   labelList: Label[]
 ): RegExp => {
   let regexpString = template.replace("{{DB_NAME}}", "(?<name>.+?)");
+
+  const fixed = template.split(/{{[^{}]+}}/).filter((template) => template);
+  for (const s of fixed) {
+    regexpString = regexpString.replace(s, s.replace(/\W/g, "\\$&"));
+  }
   /*
     Rewrite the placeholder-based template to a big RegExp
     e.g. template = "{{DB_NAME}}_{{TENANT}}"

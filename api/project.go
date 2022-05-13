@@ -252,6 +252,17 @@ func ValidateProjectDBNameTemplate(template string) error {
 
 // FormatTemplate formats the template.
 func FormatTemplate(template string, tokens map[string]string) (string, error) {
+	keys, _ := getTemplateTokens(template)
+	for _, key := range keys {
+		if _, ok := tokens[key]; !ok {
+			return "", fmt.Errorf("token %q not found", key)
+		}
+		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	return template, nil
+}
+
+func buildTemplateExpr(template string, tokens map[string]string) (string, error) {
 	keys, fixed := getTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
@@ -264,7 +275,6 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 		if quoteKey != key {
 			template = strings.Replace(template, key, quoteKey, 1)
 		}
-
 	}
 	return template, nil
 }
@@ -291,7 +301,7 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	}
 	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
 
-	expr, err := FormatTemplate(dbNameTemplate, labelMap)
+	expr, err := buildTemplateExpr(dbNameTemplate, labelMap)
 	if err != nil {
 		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
 	}
