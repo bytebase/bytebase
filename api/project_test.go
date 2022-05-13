@@ -8,10 +8,10 @@ import (
 
 func TestGetTemplateTokens(t *testing.T) {
 	tests := []struct {
-		name     string
-		template string
-		tokens   []string
-		fixed    []string
+		name       string
+		template   string
+		tokens     []string
+		delimiters []string
 	}{
 		{
 			"NoToken",
@@ -32,9 +32,9 @@ func TestGetTemplateTokens(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tokens, fixed := getTemplateTokens(test.template)
+		tokens, delimiters := parseTemplateTokens(test.template)
 		require.Equal(t, test.tokens, tokens)
-		require.Equal(t, test.fixed, fixed)
+		require.Equal(t, test.delimiters, delimiters)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestBuildTemplateExpr(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got, err := buildTemplateExpr(test.template, test.tokens)
+		got, err := formatTemplateRegexpEscaped(test.template, test.tokens)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
