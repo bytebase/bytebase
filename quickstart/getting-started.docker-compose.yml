@@ -1,0 +1,32 @@
+version: '3.7'
+
+services:
+  bytebase:
+    image: bytebase/bytebase:1.0.5
+    init: true
+    container_name: bytebase
+    restart: always
+    ports:
+      - 5678:5678
+    # # Uncomment the following lines to persist data
+    # volumes:
+    #   - ~/.bytebase/data:/var/opt/bytebase
+    command:
+      [
+        "--data",
+        "/var/opt/bytebase",
+        "--host",
+        "http://localhost",
+        "--port",
+        "5678"
+      ]
+
+  employee-prod:
+    image: bytebase/sample-database:mysql-employee-small
+    ports:
+      - 3306:3306
+
+  employee-test:
+    image: bytebase/sample-database:mysql-employee-small
+    ports:
+      - 3307:3306
