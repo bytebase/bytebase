@@ -82,9 +82,6 @@ const (
 	// MySQLNamingUKConvention is an advisor type for MySQL unique key naming convention.
 	MySQLNamingUKConvention Type = "bb.plugin.advisor.mysql.naming.uk"
 
-	// MySQLNamingPKConvention is an advisor type for MySQL primary key naming convention.
-	MySQLNamingPKConvention Type = "bb.plugin.advisor.mysql.naming.pk"
-
 	// MySQLNamingFKConvention is an advisor type for MySQL foreign key naming convention.
 	MySQLNamingFKConvention Type = "bb.plugin.advisor.mysql.naming.fk"
 
