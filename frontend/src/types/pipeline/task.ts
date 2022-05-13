@@ -74,7 +74,6 @@ export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
 
 export type TaskDatabasePITRRestorePayload = {
   projectId: ProjectId;
-  schemaVersion: string;
   pointInTimeTs: number; // UNIX timestamp
 };
 
