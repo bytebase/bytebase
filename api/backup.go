@@ -102,6 +102,7 @@ type Backup struct {
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
 	FileSize                int64  `jsonapi:"attr,fileSize"`
+	Payload                 string `jsonapi:"attr,payload"`
 }
 
 // BackupCreate is the API message for creating a backup.

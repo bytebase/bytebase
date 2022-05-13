@@ -514,7 +514,8 @@ CREATE TABLE backup (
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT '',
-    file_size BIGINT NOT NULL
+    file_size BIGINT NOT NULL,
+    payload TEXT NOT NULL
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);

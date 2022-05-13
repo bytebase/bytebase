@@ -88,7 +88,7 @@ Currently, we keep the logical backup and binlog together in the local disk wher
 
 The partial backup dump should be discarded if Bytebase encounters an unrecoverable error during the full backup process. The system should report a failed backup, and the user could choose to start another backup task manually. The partially dumped logical backup file will be automatically deleted by Bytebase.
 
-To check the integrity of the logical dump, Bytebase will write file size along with the table data into the backup file. When using a logical backup to recover, we should first validate the file size.
+To check the integrity of the logical dump, Bytebase will save file size in the backup metadata. When using a logical backup to recover, we should first validate the file size of the dump file and the metadata matches.
 
 ## Incremental Backup
 
@@ -173,11 +173,12 @@ An example of the PITR information is like this:
 }
 ```
 
-We will add a field in api.Backup:
+We will add two fields in api.Backup:
 
 ```go
 type Backup struct {
 	...
+	FileSize int64
 	// Payload contains arbitrary string message with following cases
 	// 1. contains the starting position of incremental backup when this backup snapshot is taken.
 	// This field is not returned to the frontend.
@@ -190,6 +191,7 @@ We will add a column in table backup:
 ```sql
 CREATE TABLE backup (
     ...
+    file_size BIGINT NOT NULL,
     payload TEXT NOT NULL
 );
 ```
