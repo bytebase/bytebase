@@ -16,16 +16,16 @@ type CustomWebhookResponse struct {
 
 // CustomWebhookRequest is the API message for Custom webhook request.
 type CustomWebhookRequest struct {
-	Level        Level   `json:"level"`
-	ActivityType string  `json:"activity_type"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	Link         string  `json:"link"`
-	CreatorID    int     `json:"creator_id"`
-	CreatorName  string  `json:"creator_name"`
-	CreatedTS    int64   `json:"created_ts"`
-	Issue        Issue   `json:"issue"`
-	Project      Project `json:"project"`
+	Level        Level    `json:"level"`
+	ActivityType string   `json:"activity_type"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Link         string   `json:"link"`
+	CreatorID    int      `json:"creator_id"`
+	CreatorName  string   `json:"creator_name"`
+	CreatedTS    int64    `json:"created_ts"`
+	Issue        *Issue   `json:"issue"`
+	Project      *Project `json:"project"`
 }
 
 func init() {

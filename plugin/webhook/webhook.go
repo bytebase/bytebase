@@ -62,8 +62,8 @@ type Context struct {
 	CreatorEmail string
 	CreatedTs    int64
 	MetaList     []Meta
-	Issue        Issue
-	Project      Project
+	Issue        *Issue
+	Project      *Project
 }
 
 // Receiver is the webhook receiver.

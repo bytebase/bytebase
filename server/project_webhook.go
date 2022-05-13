@@ -204,7 +204,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 						Value: project.Name,
 					},
 				},
-				Project: webhookPlugin.Project{Name: project.Name},
+				Project: &webhookPlugin.Project{Name: project.Name},
 			},
 		)
 
