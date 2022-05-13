@@ -54,7 +54,7 @@ func (receiver *DiscordReceiver) post(context Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.genMeta() {
 		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
 	}
 

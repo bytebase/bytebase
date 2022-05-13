@@ -38,7 +38,7 @@ type DingTalkReceiver struct {
 
 func (receiver *DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.genMeta() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))

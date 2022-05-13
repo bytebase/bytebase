@@ -37,7 +37,7 @@ type WeComReceiver struct {
 
 func (receiver *WeComReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.genMeta() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))
