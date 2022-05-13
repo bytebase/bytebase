@@ -143,11 +143,11 @@ working on the code:
 
 **Tech Stack**
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/techstack.webp)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/techstack.webp)
 
 **Data Model**
 
-![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/design/datamodel_v1.png)
+![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/datamodel_v1.png)
 
 ### Prerequisites
 
