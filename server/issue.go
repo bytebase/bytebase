@@ -692,9 +692,6 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			}
 
 			baseDBName := d.DatabaseName
-			if err != nil {
-				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q) failed, error: %v", d.DatabaseName, project.DBNameTemplate, err)
-			}
 			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
 			if err != nil {
 				return nil, err
