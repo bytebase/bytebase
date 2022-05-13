@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/store"
+	"github.com/google/uuid"
 
 	// embed will embeds the acl policy.
 	_ "embed"
@@ -31,7 +32,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
-	SegmentScheduler   *SegmentScheduler
+	MetricScheduler    *MetricScheduler
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
@@ -137,6 +138,10 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	err = s.initBranding(ctx, storeInstance)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init branding: %w", err)
+	}
+	deploymentID, err := s.initDeploymentID(ctx, storeInstance)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init deployment ID: %w", err)
 	}
 
 	e := echo.New()
@@ -297,7 +302,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.initSubscription()
-	s.initSegmentScheduler()
+	s.initMetricScheduler(deploymentID)
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
@@ -309,14 +314,25 @@ func (server *Server) initSubscription() {
 	server.subscription = server.loadSubscription()
 }
 
-// initSegmentScheduler will initial the segment scheduler.
-func (server *Server) initSegmentScheduler() {
-	segmentScheduler, err := NewSegmentScheduler(server.l, server)
-	if err != nil {
-		server.l.Debug("failed to start segment scheduler, error: %w", zap.Error(err))
-		return
+// initMetricScheduler will initial the metric scheduler.
+func (server *Server) initMetricScheduler(deploymentID string) {
+	metricScheduler := NewMetricScheduler(server.l, server, deploymentID)
+	server.MetricScheduler = metricScheduler
+}
+
+func (server *Server) initDeploymentID(ctx context.Context, store *store.Store) (string, error) {
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingDeploymentID,
+		Value:       uuid.New().String(),
+		Description: "The segment identify",
 	}
-	server.SegmentScheduler = segmentScheduler
+	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
+	if err != nil {
+		return "", err
+	}
+
+	return config.Value, nil
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
@@ -366,7 +382,7 @@ func (server *Server) Run(ctx context.Context) error {
 		server.runnerWG.Add(1)
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
-		go server.SegmentScheduler.Run(ctx, &server.runnerWG)
+		go server.MetricScheduler.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
 	}
 
