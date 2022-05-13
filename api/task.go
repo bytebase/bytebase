@@ -101,6 +101,7 @@ type TaskDatabasePITRRestorePayload struct {
 type TaskDatabasePITRCutoverPayload struct{}
 
 // TaskDatabasePITRDeletePayload is the task payload for deleting the original database after a successful PITR cutover.
+// It is currently only a placeholder.
 type TaskDatabasePITRDeletePayload struct{}
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.

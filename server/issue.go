@@ -877,61 +877,55 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
 
 	// task: create and restore to PITR database
-	{
-		payload := api.TaskDatabasePITRRestorePayload{
-			ProjectID:     projectID,
-			PointInTimeTs: recoveryTime,
-		}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error[%w]", err)
-		}
-
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabasePITRRestore,
-			Payload:    string(payloadBytes),
-		})
+	payloadRestore := api.TaskDatabasePITRRestorePayload{
+		ProjectID:     projectID,
+		PointInTimeTs: recoveryTime,
 	}
+	bytesRestore, err := json.Marshal(payloadRestore)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error[%w]", err)
+	}
+
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
+		InstanceID: database.InstanceID,
+		DatabaseID: &database.ID,
+		Status:     taskStatus,
+		Type:       api.TaskDatabasePITRRestore,
+		Payload:    string(bytesRestore),
+	})
 
 	// task: swap PITR and the original database
-	{
-		payload := api.TaskDatabasePITRCutoverPayload{}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error[%w]", err)
-		}
-
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Swap PITR and the original database %s", pitrDatabaseName),
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabasePITRCutover,
-			Payload:    string(payloadBytes),
-		})
+	payloadCutover := api.TaskDatabasePITRCutoverPayload{}
+	bytesCutover, err := json.Marshal(payloadCutover)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error[%w]", err)
 	}
+
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:       fmt.Sprintf("Swap PITR and the original database %s", pitrDatabaseName),
+		InstanceID: database.InstanceID,
+		DatabaseID: &database.ID,
+		Status:     taskStatus,
+		Type:       api.TaskDatabasePITRCutover,
+		Payload:    string(bytesCutover),
+	})
 
 	// task: delete the original database
-	{
-		payload := api.TaskDatabasePITRDeletePayload{}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create PITR delete task, unable to marshal payload, error[%w]", err)
-		}
-
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:       fmt.Sprintf("Delete the original database %s", pitrDatabaseName),
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     taskStatus,
-			Type:       api.TaskDatabasePITRDelete,
-			Payload:    string(payloadBytes),
-		})
+	payloadDelete := api.TaskDatabasePITRDeletePayload{}
+	BytesDelete, err := json.Marshal(payloadDelete)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create PITR delete task, unable to marshal payload, error[%w]", err)
 	}
+
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:       fmt.Sprintf("Delete the original database %s", pitrDatabaseName),
+		InstanceID: database.InstanceID,
+		DatabaseID: &database.ID,
+		Status:     taskStatus,
+		Type:       api.TaskDatabasePITRDelete,
+		Payload:    string(BytesDelete),
+	})
 
 	taskIndexDAGList := []api.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
@@ -944,68 +938,68 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 // creates gh-ost TaskCreate list and dependency
 func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
-	{ // task "sync"
-		payload := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
-			Statement:     detail.Statement,
-			SchemaVersion: schemaVersion,
-			VCSPushEvent:  vcsPushEvent,
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
-		}
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
-			InstanceID:        database.InstanceID,
-			DatabaseID:        &database.ID,
-			Status:            taskStatus,
-			Type:              api.TaskDatabaseSchemaUpdateGhostSync,
-			Statement:         detail.Statement,
-			EarliestAllowedTs: detail.EarliestAllowedTs,
-			MigrationType:     db.Migrate,
-			Payload:           string(bytes),
-		})
+	// task "sync"
+	payloadSync := api.TaskDatabaseSchemaUpdateGhostSyncPayload{
+		Statement:     detail.Statement,
+		SchemaVersion: schemaVersion,
+		VCSPushEvent:  vcsPushEvent,
 	}
-	{ // task "cutover"
-		payload := api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
-		}
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
-			InstanceID:        database.InstanceID,
-			DatabaseID:        &database.ID,
-			Status:            taskStatus,
-			Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
-			EarliestAllowedTs: detail.EarliestAllowedTs,
-			Payload:           string(bytes),
-		})
+	bytesSync, err := json.Marshal(payloadSync)
+	if err != nil {
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update gh-ost sync payload, error: %v", err))
 	}
-	{ // task "drop original table"
-		parser := ghostsql.NewParserFromAlterStatement(detail.Statement)
-		tableName := ""
-		if parser.HasExplicitTable() {
-			tableName = fmt.Sprintf("_%v_del", parser.GetExplicitTable())
-		}
-		payload := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
-			DatabaseName: database.Name,
-			TableName:    tableName,
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost drop original table payload, error: %v", err))
-		}
-		taskCreateList = append(taskCreateList, api.TaskCreate{
-			Name:              "Update %q schema gh-ost drop original table",
-			InstanceID:        database.Instance.ID,
-			DatabaseID:        &database.ID,
-			Status:            taskStatus,
-			Type:              api.TaskDatabaseSchemaUpdateGhostDropOriginalTable,
-			EarliestAllowedTs: detail.EarliestAllowedTs,
-			Payload:           string(bytes),
-		})
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:              fmt.Sprintf("Update %q schema gh-ost sync", database.Name),
+		InstanceID:        database.InstanceID,
+		DatabaseID:        &database.ID,
+		Status:            taskStatus,
+		Type:              api.TaskDatabaseSchemaUpdateGhostSync,
+		Statement:         detail.Statement,
+		EarliestAllowedTs: detail.EarliestAllowedTs,
+		MigrationType:     db.Migrate,
+		Payload:           string(bytesSync),
+	})
+
+	// task "cutover"
+	payloadCutover := api.TaskDatabaseSchemaUpdateGhostCutoverPayload{}
+	bytesCutover, err := json.Marshal(payloadCutover)
+	if err != nil {
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost cutover payload, error: %v", err))
 	}
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:              fmt.Sprintf("Update %q schema gh-ost cutover", database.Name),
+		InstanceID:        database.InstanceID,
+		DatabaseID:        &database.ID,
+		Status:            taskStatus,
+		Type:              api.TaskDatabaseSchemaUpdateGhostCutover,
+		EarliestAllowedTs: detail.EarliestAllowedTs,
+		Payload:           string(bytesCutover),
+	})
+
+	// task "drop original table"
+	parser := ghostsql.NewParserFromAlterStatement(detail.Statement)
+	tableName := ""
+	if parser.HasExplicitTable() {
+		tableName = fmt.Sprintf("_%v_del", parser.GetExplicitTable())
+	}
+	payloadDrop := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
+		DatabaseName: database.Name,
+		TableName:    tableName,
+	}
+	bytesDrop, err := json.Marshal(payloadDrop)
+	if err != nil {
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost drop original table payload, error: %v", err))
+	}
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		Name:              "Update %q schema gh-ost drop original table",
+		InstanceID:        database.Instance.ID,
+		DatabaseID:        &database.ID,
+		Status:            taskStatus,
+		Type:              api.TaskDatabaseSchemaUpdateGhostDropOriginalTable,
+		EarliestAllowedTs: detail.EarliestAllowedTs,
+		Payload:           string(bytesDrop),
+	})
+
 	// The below list means that taskCreateList[0] blocks taskCreateList[1], and taskCreateList[1] blocks taskCreateList[2].
 	// In other words, task "sync" blocks task "cutover", and task "cutover" blocks task "drop original table".
 	taskIndexDAGList := []api.TaskIndexDAG{
