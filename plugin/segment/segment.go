@@ -3,16 +3,19 @@ package segment
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/segment/api"
 	"github.com/google/uuid"
 	"github.com/segmentio/analytics-go"
+
 	"go.uber.org/zap"
 )
 
 // Segment is the metrics collector https://segment.com/.
 type Segment struct {
-	logger   *zap.Logger
+	l        *zap.Logger
 	identify string
 	mode     common.ReleaseMode
 	client   analytics.Client
@@ -25,7 +28,7 @@ type Service interface {
 }
 
 // NewService creates a new instance of Segment
-func NewService(logger *zap.Logger, dataDir string, mode common.ReleaseMode) (*Segment, error) {
+func NewService(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*Segment, error) {
 	identify, err := getIdentify(dataDir)
 	if err != nil {
 		return nil, err
@@ -34,7 +37,7 @@ func NewService(logger *zap.Logger, dataDir string, mode common.ReleaseMode) (*S
 	client := analytics.New("SEGMENT_WRITE_KEY")
 
 	return &Segment{
-		logger:   logger,
+		l:        l,
 		identify: identify,
 		mode:     mode,
 		client:   client,
@@ -60,6 +63,23 @@ func (s *Segment) Close() {
 }
 
 // Track will collect the metrics.
-func (s *Segment) Track() {
+func (s *Segment) Track(event api.Event) {
+	if s.mode != common.ReleaseModeProd {
 
+	}
+	s.client.Enqueue(analytics.Track{
+		UserId:     s.identify,
+		Event:      string(event.GetType()),
+		Properties: event.GetProperties(),
+		Timestamp:  time.Now().UTC(),
+	})
+}
+
+// Identify will identify the user with specific fields.
+func (s *Segment) Identify(identify api.Identify) {
+	s.client.Enqueue(analytics.Identify{
+		UserId:    s.identify,
+		Traits:    identify.GetTraits(),
+		Timestamp: time.Now().UTC(),
+	})
 }
