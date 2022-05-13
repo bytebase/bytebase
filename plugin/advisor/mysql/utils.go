@@ -21,7 +21,7 @@ func (t tableState) tableList() []string {
 	return tableList
 }
 
-func resotreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
+func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
 	var buffer strings.Builder
 	ctx := format.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {

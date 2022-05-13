@@ -94,7 +94,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, variable := range node.Variables {
 			if strings.ToLower(variable.Name) == defaultStorageEngin {
 				// Return lowercase
-				text, err := resotreNode(variable.Value, format.RestoreNameLowercase)
+				text, err := restoreNode(variable.Value, format.RestoreNameLowercase)
 				if err != nil {
 					v.adviceList = append(v.adviceList, advisor.Advice{
 						Status:  v.level,

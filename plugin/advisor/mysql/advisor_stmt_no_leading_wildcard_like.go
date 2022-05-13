@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	wildcard byte = '%'
+	wildcard string = "%"
 )
 
 var (
@@ -77,7 +77,7 @@ type noLeadingWildcardLikeChecker struct {
 // Enter implements the ast.Visitor interface
 func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.PatternLikeExpr); !v.leadingWildcardLike && ok {
-		pattern, err := resotreNode(node.Pattern, format.RestoreStringWithoutCharset)
+		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
 		if err != nil {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
@@ -86,7 +86,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Content: fmt.Sprintf("%q meet internal error %q", v.text, err.Error()),
 			})
 		}
-		if len(pattern) > 0 && pattern[0] == wildcard {
+		if len(pattern) > 0 && pattern[:1] == wildcard {
 			v.leadingWildcardLike = true
 		}
 	}
