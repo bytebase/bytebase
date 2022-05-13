@@ -518,8 +518,7 @@ VALUES
         '{"migrationType":"MIGRATE","statement":"CREATE TABLE testdb_prod.tbl2 (name TEXT);"}'
     );
 
--- Task for task dependency
-
+-- Tasks for task dependency, which is a gh-ost migration pipeline
 INSERT INTO
     task (
         id,
@@ -607,5 +606,60 @@ VALUES
         '{"databaseName":"testdb_prod","tableName":"_tbl1_del"}'
     );
 
+-- Tasks for PITR pipeline
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
+    (
+        11020,
+        1,
+        1,
+        9011,
+        10018,
+        6001,
+        7002,
+        'Restore PITR database testdb_dev',
+        'bb.task.database.pitr.restore',
+        'PENDING_APPROVAL',
+        '{"projectId":3001,"pointInTimeTs":1652429962}'
+    ),
+    (
+        11021,
+        1,
+        1,
+        9011,
+        10018,
+        6001,
+        7002,
+        'Swap PITR and the original database testdb_dev',
+        'bb.task.database.pitr.cutover',
+        'PENDING_APPROVAL',
+        '{}'
+    ),
+    (
+        11022,
+        1,
+        1,
+        9011,
+        10018,
+        6001,
+        7002,
+        'Delete the original database testdb_dev',
+        'bb.task.database.pitr.delete',
+        'PENDING_APPROVAL',
+        '{}'
+    );
 
-ALTER SEQUENCE task_id_seq RESTART WITH 11020;
+ALTER SEQUENCE task_id_seq RESTART WITH 11023;
