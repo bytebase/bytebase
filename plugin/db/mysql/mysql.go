@@ -889,7 +889,7 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (int64, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	options := sql.TxOptions{}
@@ -899,19 +899,20 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	txn, err := driver.db.BeginTx(ctx, &options)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
-		return err
+	cw := util.NewCountWriter(out)
+	if err := dumpTxn(ctx, txn, database, cw, schemaOnly); err != nil {
+		return 0, err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return cw.Count(), nil
 }
 
 // Restore restores a database.
@@ -977,6 +978,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if _, err := io.WriteString(out, header); err != nil {
 				return err
 			}
+
 			dbStmt, err := getDatabaseStmt(txn, dbName)
 			if err != nil {
 				return fmt.Errorf("failed to get database %q: %s", dbName, err)
@@ -984,6 +986,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if _, err := io.WriteString(out, dbStmt); err != nil {
 				return err
 			}
+
 			// Use database statement.
 			useStmt := fmt.Sprintf(useDatabaseFmt, dbName)
 			if _, err := io.WriteString(out, useStmt); err != nil {

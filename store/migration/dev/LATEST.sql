@@ -513,7 +513,8 @@ CREATE TABLE backup (
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT ''
+    comment TEXT NOT NULL DEFAULT '',
+    file_size BIGINT NOT NULL
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);

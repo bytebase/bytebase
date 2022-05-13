@@ -1,0 +1,1 @@
+ALTER TABLE ADD file_size BIGINT NOT NULL;

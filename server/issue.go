@@ -1247,7 +1247,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	}
 
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil

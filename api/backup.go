@@ -101,6 +101,7 @@ type Backup struct {
 	MigrationHistoryVersion string `jsonapi:"attr,migrationHistoryVersion"`
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
+	FileSize                int64  `jsonapi:"attr,fileSize"`
 }
 
 // BackupCreate is the API message for creating a backup.
@@ -149,8 +150,9 @@ type BackupPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	Status  string
-	Comment string
+	Status   string
+	Comment  string
+	FileSize int64
 }
 
 // BackupSetting is the backup setting for a database.

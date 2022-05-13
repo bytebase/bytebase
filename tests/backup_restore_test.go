@@ -288,7 +288,8 @@ func doBackup(ctx context.Context, t *testing.T, driver dbplugin.Driver, databas
 	a := require.New(t)
 
 	var buf bytes.Buffer
-	err := driver.Dump(ctx, database, &buf, false)
+	dumpSize, err := driver.Dump(ctx, database, &buf, false)
+	a.Equal(dumpSize, int64(buf.Len()))
 	a.NoError(err)
 
 	return &buf

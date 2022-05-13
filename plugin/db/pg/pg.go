@@ -800,13 +800,13 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 // Dump and restore
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (int64, error) {
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return 0, fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	var dumpableDbNames []string
@@ -819,7 +819,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			}
 		}
 		if !exist {
-			return fmt.Errorf("database %s not found", database)
+			return 0, fmt.Errorf("database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -831,14 +831,15 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		}
 	}
 
+	cw := util.NewCountWriter(out)
 	for _, dbName := range dumpableDbNames {
 		includeUseDatabase := len(dumpableDbNames) > 1
-		if err := driver.dumpOneDatabase(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
-			return err
+		if err := driver.dumpOneDatabase(ctx, dbName, cw, schemaOnly, includeUseDatabase); err != nil {
+			return 0, err
 		}
 	}
 
-	return nil
+	return cw.Count(), nil
 }
 
 // Restore restores a database.

@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +16,30 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
+
+// CountWriter counts the written bytes to the embedded io.Writer.
+// CountWriter itself is also a io.Writer, which makes it a drop-in replacement where an io.Writer is requested.
+type CountWriter struct {
+	w          io.Writer
+	bytesCount int64
+}
+
+// NewCountWriter returns a new instance of CountWriter.
+func NewCountWriter(w io.Writer) *CountWriter {
+	return &CountWriter{w: w}
+}
+
+// Write implements the io.Writer interface
+func (w *CountWriter) Write(p []byte) (int, error) {
+	n, err := w.w.Write(p)
+	w.bytesCount += int64(n)
+	return n, err
+}
+
+// Count returns the total bytes count.
+func (w *CountWriter) Count() int64 {
+	return w.bytesCount
+}
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
@@ -131,7 +156,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	if !m.CreateDatabase {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
 			return -1, "", FormatError(err)
 		}
 	}
@@ -172,7 +197,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", FormatError(err)
 	}
 

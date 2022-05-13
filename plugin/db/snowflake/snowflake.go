@@ -142,7 +142,7 @@ func (driver *Driver) useRole(ctx context.Context, role string) error {
 	return nil
 }
 
-// SyncSchema synces the schema.
+// SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
@@ -868,22 +868,23 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (int64, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
-		return err
+	cw := util.NewCountWriter(out)
+	if err := dumpTxn(ctx, txn, database, cw, schemaOnly); err != nil {
+		return 0, err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return cw.Count(), nil
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.

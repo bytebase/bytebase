@@ -419,7 +419,8 @@ type Driver interface {
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.
-	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
+	// dumpSize is the count of bytes dumpped into the io.Writer.
+	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (dumpSize int64, err error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 }
