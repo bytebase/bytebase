@@ -197,13 +197,63 @@ func TestFormatTemplate(t *testing.T) {
 				"{{DB_NAME}}":  "db1",
 				"{{LOCATION}}": "us-central1",
 			},
-			"db1_hello_\\$us-central1",
+			"db1_hello_$us-central1",
 			"",
 		},
 	}
 
 	for _, test := range tests {
 		got, err := FormatTemplate(test.template, test.tokens)
+		if test.errPart == "" {
+			require.NoError(t, err)
+		} else {
+			require.Contains(t, err.Error(), test.errPart)
+		}
+		require.Equal(t, got, test.want)
+	}
+}
+
+func TestBuildTemplateExpr(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		tokens   map[string]string
+		want     string
+		errPart  string
+	}{
+		{
+			"valid",
+			"{{DB_NAME}}_hello-{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello-us-central1",
+			"",
+		},
+		{
+			"tokenNotFound",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}": "db1",
+			},
+			"",
+			"not found",
+		},
+		{
+			"template with regex meta",
+			"{{DB_NAME}}_hello_${{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello_\\$us-central1",
+			"",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := buildTemplateExpr(test.template, test.tokens)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
