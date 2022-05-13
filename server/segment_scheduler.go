@@ -51,10 +51,10 @@ type SegmentScheduler struct {
 
 // Run will run the task scheduler.
 func (s *SegmentScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(taskSchedulerInterval)
+	ticker := time.NewTicker(segmentSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
+	s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", segmentSchedulerInterval))
 
 	for {
 		select {

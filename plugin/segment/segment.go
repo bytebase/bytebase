@@ -61,19 +61,23 @@ func (s *Segment) Close() {
 
 // Track will collect the metrics.
 func (s *Segment) Track(event api.Event) {
-	s.client.Enqueue(analytics.Track{
+	if err := s.client.Enqueue(analytics.Track{
 		UserId:     s.identify,
 		Event:      string(event.GetType()),
 		Properties: event.GetProperties(),
 		Timestamp:  time.Now().UTC(),
-	})
+	}); err != nil {
+		s.l.Debug("segment track failed", zap.Error(err))
+	}
 }
 
 // Identify will identify the user with specific fields.
 func (s *Segment) Identify(identify api.Identify) {
-	s.client.Enqueue(analytics.Identify{
+	if err := s.client.Enqueue(analytics.Identify{
 		UserId:    s.identify,
 		Traits:    identify.GetTraits(),
 		Timestamp: time.Now().UTC(),
-	})
+	}); err != nil {
+		s.l.Debug("segment identify failed", zap.Error(err))
+	}
 }
