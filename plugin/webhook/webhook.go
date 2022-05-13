@@ -70,7 +70,7 @@ type Receiver interface {
 	post(context Context) error
 }
 
-func (c *Context) genMeta() []meta {
+func (c *Context) getMetaList() []meta {
 	m := []meta{}
 
 	if c.Project != nil {

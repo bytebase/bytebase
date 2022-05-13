@@ -75,7 +75,7 @@ func (receiver *FeishuReceiver) post(context Context) error {
 		contentList = append(contentList, sectionList)
 	}
 
-	for _, meta := range context.genMeta() {
+	for _, meta := range context.getMetaList() {
 		sectionList := []FeishuWebhookPostSection{}
 		sectionList = append(sectionList, FeishuWebhookPostSection{
 			Tag:  "text",
