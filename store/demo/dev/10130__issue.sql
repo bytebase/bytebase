@@ -302,4 +302,32 @@ VALUES
         101
     );
 
-ALTER SEQUENCE issue_id_seq RESTART WITH 13011;
+-- Issue for PITR
+INSERT INTO
+    issue (
+        id,
+        creator_id,
+        updater_id,
+        project_id,
+        pipeline_id,
+        name,
+        status,
+        type,
+        description,
+        assignee_id
+    )
+VALUES
+    (
+        13011,
+        1,
+        1,
+        3001,
+        9011,
+        'Hello PITR!',
+        'OPEN',
+        'bb.issue.database.pitr',
+        'This issue is to demonstrate PITR.',
+        101
+    );
+
+ALTER SEQUENCE issue_id_seq RESTART WITH 13012;
