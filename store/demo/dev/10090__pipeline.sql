@@ -210,4 +210,26 @@ VALUES
         'OPEN'
     );
 
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 9011;
+-- Pipeline for PITR tasks
+INSERT INTO
+    pipeline (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        name,
+        status
+    )
+VALUES
+    (
+        9011,
+        1,
+        1652429962,
+        1,
+        1652429962,
+        'Pipeline - PITR',
+        'OPEN'
+    );
+
+ALTER SEQUENCE pipeline_id_seq RESTART WITH 9012;
