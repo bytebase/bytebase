@@ -253,7 +253,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
-	_, err = ctl.listSheets(database.ID)
+	_, err = ctl.listSheets(api.SheetFind{
+		DatabaseID: &database.ID,
+	})
 	a.NoError(err)
 
 	// Test if POST /api/database/:id/data-source api is working right.
