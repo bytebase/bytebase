@@ -634,7 +634,23 @@ VALUES
         'bb.task.database.pitr.restore',
         'PENDING_APPROVAL',
         '{"projectId":3001,"pointInTimeTs":1652429962}'
-    ),
+    );
+
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
     (
         11021,
         1,
@@ -647,7 +663,23 @@ VALUES
         'bb.task.database.pitr.cutover',
         'PENDING_APPROVAL',
         '{}'
-    ),
+    );
+
+INSERT INTO
+    task (
+        id,
+        creator_id,
+        updater_id,
+        pipeline_id,
+        stage_id,
+        instance_id,
+        database_id,
+        name,
+        type,
+        status,
+        payload
+    )
+VALUES
     (
         11022,
         1,
