@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -180,7 +181,7 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 		FileName:     fileName,
 		FilePath:     filePath,
 		Content:      content,
-		LastCommitID: "1",
+		LastCommitID: "fake_gitlab_commit_id",
 	})
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal FileMeta, error %v", err))
@@ -198,9 +199,9 @@ func (gl *GitLab) getFakeCommit(c echo.Context) error {
 	}
 
 	commit := gitlab.Commit{
-		ID:         "1",
+		ID:         "fake_gitlab_commit_id",
 		AuthorName: "fake_gitlab_bot",
-		CreatedAt:  "2006-01-02T15:04:05Z",
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
 	buf, err := json.Marshal(commit)
 	if err != nil {
