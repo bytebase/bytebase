@@ -50,6 +50,7 @@ func NewGitLab(port int) *GitLab {
 	// Routes
 	projectGroup := e.Group("/api/v4")
 	projectGroup.POST("/projects/:id/hooks", gl.createProjectHook)
+	projectGroup.GET("/projects/:id/repository/commits/:commitID", gl.getFakeCommit)
 	projectGroup.GET("/projects/:id/repository/tree", gl.readProjectTree)
 	projectGroup.GET("/projects/:id/repository/files/:filePath/raw", gl.readProjectFile)
 	projectGroup.GET("/projects/:id/repository/files/:filePath", gl.readProjectFileMetadata)
@@ -176,12 +177,34 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	content := pd.files[filePath]
 
 	buf, err := json.Marshal(&gitlab.File{
-		FileName: fileName,
-		FilePath: filePath,
-		Content:  content,
+		FileName:     fileName,
+		FilePath:     filePath,
+		Content:      content,
+		LastCommitID: "1",
 	})
 	if err != nil {
 		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal FileMeta, error %v", err))
+	}
+
+	return c.String(http.StatusOK, string(buf))
+}
+
+// getFakeCommit get a fake commit data
+func (gl *GitLab) getFakeCommit(c echo.Context) error {
+	gitlabProjectID := c.Param("id")
+	_, ok := gl.projects[gitlabProjectID]
+	if !ok {
+		return c.String(http.StatusBadRequest, fmt.Sprintf("gitlab project %q doesn't exist", gitlabProjectID))
+	}
+
+	commit := gitlab.Commit{
+		ID:         "1",
+		AuthorName: "fake_gitlab_bot",
+		CreatedAt:  "2006-01-02T15:04:05Z",
+	}
+	buf, err := json.Marshal(commit)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal commit, error %v", err))
 	}
 
 	return c.String(http.StatusOK, string(buf))
