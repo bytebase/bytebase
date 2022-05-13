@@ -73,17 +73,17 @@ type Receiver interface {
 func (c *Context) genMeta() []meta {
 	m := []meta{}
 
-	if c.Issue != nil {
-		m = append(m, meta{
-			Name:  "Isuue",
-			Value: c.Issue.Name,
-		})
-	}
-
 	if c.Project != nil {
 		m = append(m, meta{
 			Name:  "Project",
 			Value: c.Project.Name,
+		})
+	}
+
+	if c.Issue != nil {
+		m = append(m, meta{
+			Name:  "Isuue",
+			Value: c.Issue.Name,
 		})
 	}
 
