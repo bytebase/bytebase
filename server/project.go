@@ -11,11 +11,12 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
 func (s *Server) registerProjectRoutes(g *echo.Group) {
@@ -23,7 +24,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		projectCreate := &api.ProjectCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project request").SetInternal(err)
 		}
 		if projectCreate.TenantMode == api.TenantModeTenant && !s.feature(api.FeatureMultiTenancy) {
 			return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
@@ -33,7 +34,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			projectCreate.TenantMode = api.TenantModeDisabled
 		}
 		if err := api.ValidateProjectDBNameTemplate(projectCreate.DBNameTemplate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create project request: %s", err.Error()))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create project request: %s", err.Error()))
 		}
 		if projectCreate.TenantMode != api.TenantModeTenant && projectCreate.DBNameTemplate != "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "database name template can only be set for tenant mode project")
@@ -154,7 +155,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch project request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
 		project, err := s.store.PatchProject(ctx, projectPatch)
@@ -184,7 +185,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repositoryCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create linked repository request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create linked repository request").SetInternal(err)
 		}
 
 		project, err := s.store.GetProjectByID(ctx, projectID)
@@ -196,11 +197,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 		}
 
 		if err := api.ValidateRepositorySchemaPathTemplate(repositoryCreate.SchemaPathTemplate, project.TenantMode); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 		}
 
 		vcs, err := s.store.GetVCSByID(ctx, repositoryCreate.VCSID)
@@ -307,7 +308,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, repoPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch linked repository request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch linked repository request").SetInternal(err)
 		}
 		project, err := s.store.GetProjectByID(ctx, projectID)
 		if err != nil {
@@ -319,13 +320,13 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		if repoPatch.FilePathTemplate != nil {
 			if err := api.ValidateRepositoryFilePathTemplate(*repoPatch.FilePathTemplate, project.TenantMode); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted patch linked repository request: %s", err.Error()))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed patch linked repository request: %s", err.Error()))
 			}
 		}
 
 		if repoPatch.SchemaPathTemplate != nil {
 			if err := api.ValidateRepositorySchemaPathTemplate(*repoPatch.SchemaPathTemplate, project.TenantMode); err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformatted create linked repository request: %s", err.Error()))
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Malformed create linked repository request: %s", err.Error()))
 			}
 		}
 
@@ -485,7 +486,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		deploymentConfigUpsert := &api.DeploymentConfigUpsert{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, deploymentConfigUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set deployment configuration request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set deployment configuration request").SetInternal(err)
 		}
 		deploymentConfigUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 

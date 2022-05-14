@@ -7,10 +7,11 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
@@ -18,7 +19,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		envCreate := &api.EnvironmentCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create environment request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create environment request").SetInternal(err)
 		}
 
 		envCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -69,7 +70,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, envPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch environment request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
 		}
 
 		env, err := s.store.PatchEnvironment(ctx, envPatch)
@@ -91,13 +92,13 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		patchList, err := jsonapi.UnmarshalManyPayload(c.Request().Body, reflect.TypeOf(new(api.EnvironmentPatch)))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed environment reorder request").SetInternal(err)
 		}
 
 		for _, item := range patchList {
 			envPatch, ok := item.(*api.EnvironmentPatch)
 			if !ok {
-				return echo.NewHTTPError(http.StatusBadRequest, "Malformatted environment reorder request").SetInternal(errors.New("failed to convert request item to *api.EnvironmentPatch"))
+				return echo.NewHTTPError(http.StatusBadRequest, "Malformed environment reorder request").SetInternal(errors.New("failed to convert request item to *api.EnvironmentPatch"))
 			}
 			envPatch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 			if _, err := s.store.PatchEnvironment(ctx, envPatch); err != nil {

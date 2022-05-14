@@ -10,14 +10,15 @@ import (
 	"strings"
 	"time"
 
+	ghostsql "github.com/github/gh-ost/go/sql"
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/plugin/vcs"
-	ghostsql "github.com/github/gh-ost/go/sql"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) registerIssueRoutes(g *echo.Group) {
@@ -25,7 +26,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		issueCreate := &api.IssueCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issue request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issue request").SetInternal(err)
 		}
 
 		issue, err := s.createIssue(ctx, issueCreate, c.Get(getPrincipalIDContextKey()).(int))
@@ -120,7 +121,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issuePatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue request").SetInternal(err)
 		}
 
 		if issuePatch.AssigneeID != nil {
@@ -215,7 +216,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueStatusPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update issue status request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue status request").SetInternal(err)
 		}
 
 		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})

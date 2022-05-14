@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) registerSheetRoutes(g *echo.Group) {
@@ -26,11 +27,11 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			CreatorID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create sheet request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create sheet request").SetInternal(err)
 		}
 
 		if sheetCreate.Name == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sheet request, missing name")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sheet request, missing name")
 		}
 
 		// If sheetCreate.DatabaseID is not nil, use its associated ProjectID as the new sheet's ProjectID.
@@ -402,7 +403,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch sheet request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch sheet request").SetInternal(err)
 		}
 
 		sheet, err := s.store.PatchSheet(ctx, sheetPatch)
