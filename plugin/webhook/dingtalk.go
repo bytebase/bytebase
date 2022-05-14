@@ -87,7 +87,7 @@ func (receiver *DingTalkReceiver) post(context Context) error {
 
 	webhookResponse := &DingTalkWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.ErrorCode != 0 {

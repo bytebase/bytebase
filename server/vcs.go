@@ -21,7 +21,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create VCS request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create VCS request").SetInternal(err)
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
@@ -85,7 +85,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, vcsPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change VCS request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed change VCS request").SetInternal(err)
 		}
 
 		vcs, err := s.store.PatchVCS(ctx, vcsPatch)

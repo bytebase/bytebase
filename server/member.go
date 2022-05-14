@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerMemberRoutes(g *echo.Group) {
@@ -17,7 +18,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		memberCreate := &api.MemberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create member request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create member request").SetInternal(err)
 		}
 
 		memberCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -105,7 +106,7 @@ func (s *Server) registerMemberRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, memberPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch member request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch member request").SetInternal(err)
 		}
 
 		updatedMember, err := s.store.PatchMember(ctx, memberPatch)

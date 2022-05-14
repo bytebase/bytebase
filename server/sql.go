@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		connectionInfo := &api.ConnectionInfo{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql ping request").SetInternal(err)
 		}
 		if err := s.disallowBytebaseStore(connectionInfo.Engine, connectionInfo.Host, connectionInfo.Port); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
@@ -81,7 +82,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql sync schema request").SetInternal(err)
 		}
 
 		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
@@ -105,20 +106,20 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request").SetInternal(err)
 		}
 
 		if exec.InstanceID == 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing instanceId")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing instanceId")
 		}
 		if len(exec.Statement) == 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing sql statement")
 		}
 		if !exec.Readonly {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support readonly sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support readonly sql statement")
 		}
 		if !validateSQLSelectStatement(exec.Statement) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
 		}
 
 		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
