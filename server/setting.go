@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 var (
@@ -55,7 +56,7 @@ func (s *Server) registerSettingRoutes(g *echo.Group) {
 		}
 
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, settingPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update setting request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update setting request").SetInternal(err)
 		}
 
 		setting, err := s.store.PatchSetting(ctx, settingPatch)

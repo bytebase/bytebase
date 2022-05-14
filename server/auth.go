@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
 func (s *Server) registerAuthRoutes(g *echo.Group) {
@@ -55,7 +56,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			{
 				login := &api.Login{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted login request").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed login request").SetInternal(err)
 				}
 
 				var err error
@@ -77,7 +78,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 			{
 				gitlabLogin := &api.GitlabLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted gitlab login request").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed gitlab login request").SetInternal(err)
 				}
 				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.VCSID)
 				if err != nil {
@@ -196,7 +197,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		signUp := &api.SignUp{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, signUp); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sign up request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sign up request").SetInternal(err)
 		}
 
 		user, err := trySignUp(ctx, s, signUp, api.SystemBotID)

@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
 )
 
 func (s *Server) registerSheetOrganizerRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerSheetOrganizerRoutes(g *echo.Group) {
 			PrincipalID: principalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sheetOrganizerUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch sheet organizer request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch sheet organizer request").SetInternal(err)
 		}
 
 		if _, err := s.store.UpsertSheetOrganizer(ctx, sheetOrganizerUpsert); err != nil {

@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerInboxRoutes(g *echo.Group) {
@@ -69,7 +70,7 @@ func (s *Server) registerInboxRoutes(g *echo.Group) {
 			ID: id,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, inboxPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch inbox request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch inbox request").SetInternal(err)
 		}
 
 		inbox, err := s.store.PatchInbox(ctx, inboxPatch)

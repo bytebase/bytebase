@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	webhookPlugin "github.com/bytebase/bytebase/plugin/webhook"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
@@ -48,7 +49,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			ProjectID: projectID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, hookCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project webhook request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project webhook request").SetInternal(err)
 		}
 
 		webhook, err := s.store.CreateProjectWebhook(ctx, hookCreate)
@@ -110,7 +111,7 @@ func (s *Server) registerProjectWebhookRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, hookPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project webhook").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed change project webhook").SetInternal(err)
 		}
 
 		webhook, err := s.store.PatchProjectWebhook(ctx, hookPatch)
