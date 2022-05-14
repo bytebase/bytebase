@@ -520,6 +520,7 @@
     "select-environment-first": "先选择环境",
     "tables": "表",
     "views": "视图",
+    "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态"

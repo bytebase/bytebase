@@ -33,6 +33,7 @@ export * from "./table";
 export * from "./tableIndex";
 export * from "./vcs";
 export * from "./view";
+export * from "./extension";
 export * from "./label";
 export * from "./deployment";
 export * from "./sqlEditor";

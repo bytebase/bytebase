@@ -95,6 +95,13 @@
         {{ $t("db.views") }}
       </div>
       <ViewTable :view-list="viewList" />
+
+      <template v-if="database.instance.engine == 'POSTGRES' && isDev">
+        <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          {{ $t("db.extensions") }}
+        </div>
+        <ExtensionTable :extension-list="extensionList" />
+      </template>
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -203,7 +210,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
+import { timezoneString, instanceSlug, isDBAOrOwner, isDev } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -213,6 +220,7 @@ import {
   useDataSourceStore,
   useTableStore,
   useViewStore,
+  useExtensionStore,
 } from "@/store";
 
 interface LocalState {
@@ -243,6 +251,7 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const tableStore = useTableStore();
     const viewStore = useViewStore();
+    const extensionStore = useExtensionStore();
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -255,6 +264,12 @@ export default defineComponent({
     };
 
     watchEffect(prepareViewList);
+
+    const prepareExtensionList = () => {
+      extensionStore.fetchExtensionListByDatabaseId(props.database.id);
+    };
+
+    watchEffect(prepareExtensionList);
 
     const anomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
@@ -277,6 +292,10 @@ export default defineComponent({
 
     const viewList = computed(() => {
       return viewStore.getViewListByDatabaseId(props.database.id);
+    });
+
+    const extensionList = computed(() => {
+      return extensionStore.getExtensionListByDatabaseId(props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -370,6 +389,7 @@ export default defineComponent({
       anomalySectionList,
       tableList,
       viewList,
+      extensionList,
       hasDataSourceFeature,
       allowConfigInstance,
       allowViewDataSource,

@@ -520,6 +520,7 @@
     "select-environment-first": "Select environment first",
     "tables": "Tables",
     "views": "Views",
+    "extensions": "Extensions",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status"

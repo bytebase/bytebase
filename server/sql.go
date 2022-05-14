@@ -278,6 +278,17 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return createView, nil
 			}
 
+			var createExtension = func(database *api.Database, extensionCreate *api.ExtensionCreate) (*api.Extension, error) {
+				createExtension, err := s.store.CreateExtension(ctx, extensionCreate)
+				if err != nil {
+					if common.ErrorCode(err) == common.Conflict {
+						return nil, fmt.Errorf("failed to sync extension for instance: %s, database: %s. Extension name and schema already exists: %s", instance.Name, database.Name, extensionCreate.Name)
+					}
+					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, extensionCreate.Name, err)
+				}
+				return createExtension, nil
+			}
+
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
 				_, err := s.store.CreateColumn(ctx, columnCreate)
 				if err != nil {
@@ -407,6 +418,23 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
+			var recreateExtensionSchema = func(database *api.Database, extension db.Extension) error {
+				// Extension
+				extensionCreate := &api.ExtensionCreate{
+					CreatorID:   api.SystemBotID,
+					DatabaseID:  database.ID,
+					Name:        extension.Name,
+					Version:     extension.Version,
+					Schema:      extension.Schema,
+					Description: extension.Description,
+				}
+				_, err := createExtension(database, extensionCreate)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
 			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
@@ -527,6 +555,20 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 							return err
 						}
 					}
+
+					extensionDelete := &api.ExtensionDelete{
+						DatabaseID: dbPatched.ID,
+					}
+					if err := s.store.DeleteExtension(ctx, extensionDelete); err != nil {
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset extension info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
+					}
+
+					for _, extension := range schema.ExtensionList {
+						err = recreateExtensionSchema(dbPatched, extension)
+						if err != nil {
+							return err
+						}
+					}
 				} else {
 					// Case 2, only appear in the synced db schema
 					databaseCreate := &api.DatabaseCreate{
@@ -556,6 +598,13 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 
 					for _, view := range schema.ViewList {
 						err = recreateViewSchema(database, view)
+						if err != nil {
+							return err
+						}
+					}
+
+					for _, extension := range schema.ExtensionList {
+						err = recreateExtensionSchema(database, extension)
 						if err != nil {
 							return err
 						}
