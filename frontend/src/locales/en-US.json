@@ -533,7 +533,7 @@
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance. Without setting up migration schema, you cannot alter schema or change data for any databases on the instance.",
     "please-contact-your-dba-to-configure-it": "Please contact your DBA to configure it.",
     "please-check-the-instance-connection-info-is-correct": "Please check the instance connection info is correct.",
     "users": "Users",
