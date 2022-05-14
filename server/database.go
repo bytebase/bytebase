@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func (s *Server) registerDatabaseRoutes(g *echo.Group) {
@@ -21,7 +22,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		databaseCreate := &api.DatabaseCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, databaseCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create database request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create database request").SetInternal(err)
 		}
 
 		databaseCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -171,7 +172,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dbPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch database request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch database request").SetInternal(err)
 		}
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
@@ -467,7 +468,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupCreate := &api.BackupCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create backup request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create backup request").SetInternal(err)
 		}
 		backupCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 
@@ -591,7 +592,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupSettingUpsert := &api.BackupSettingUpsert{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, backupSettingUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set backup setting request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set backup setting request").SetInternal(err)
 		}
 		backupSettingUpsert.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
@@ -707,7 +708,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		dataSourceCreate := &api.DataSourceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourceCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create data source request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create data source request").SetInternal(err)
 		}
 
 		dataSourceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -770,7 +771,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		dataSourcePatch := &api.DataSourcePatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, dataSourcePatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch data source request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch data source request").SetInternal(err)
 		}
 
 		dataSourcePatch.ID = dataSourceID

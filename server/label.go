@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerLabelRoutes(g *echo.Group) {
@@ -53,7 +54,7 @@ func (s *Server) registerLabelRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch label key request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch label key request").SetInternal(err)
 		}
 
 		if err := patch.Validate(); err != nil {

@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerBookmarkRoutes(g *echo.Group) {
@@ -16,7 +17,7 @@ func (s *Server) registerBookmarkRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		bookmarkCreate := &api.BookmarkCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, bookmarkCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create bookmark request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create bookmark request").SetInternal(err)
 		}
 
 		bookmarkCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
