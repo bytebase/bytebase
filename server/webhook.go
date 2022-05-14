@@ -12,13 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 var (
@@ -36,7 +37,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		pushEvent := &gitlab.WebhookPushEvent{}
 		if err := json.Unmarshal(b, pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted push event").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.

@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerPrincipalRoutes(g *echo.Group) {
@@ -17,7 +18,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		principalCreate := &api.PrincipalCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create principal request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create principal request").SetInternal(err)
 		}
 
 		principalCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
@@ -93,7 +94,7 @@ func (s *Server) registerPrincipalRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, principalPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch principal request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch principal request").SetInternal(err)
 		}
 		if principalPatch.Password != nil && *principalPatch.Password != "" {
 			passwordHash, err := bcrypt.GenerateFromPassword([]byte(*principalPatch.Password), bcrypt.DefaultCost)
