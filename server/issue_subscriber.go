@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
@@ -21,7 +22,7 @@ func (s *Server) registerIssueSubscriberRoutes(g *echo.Group) {
 
 		issueSubscriberCreate := &api.IssueSubscriberCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, issueSubscriberCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create issueSubscriber request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create issueSubscriber request").SetInternal(err)
 		}
 
 		issueSubscriberCreate.IssueID = issueID

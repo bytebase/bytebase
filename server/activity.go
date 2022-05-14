@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 func (s *Server) registerActivityRoutes(g *echo.Group) {
@@ -17,7 +18,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		activityCreate := &api.ActivityCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create activity request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create activity request").SetInternal(err)
 		}
 
 		activityCreate.Level = api.ActivityInfo
@@ -114,7 +115,7 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, activityPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch activity request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch activity request").SetInternal(err)
 		}
 
 		activity, err := s.store.PatchActivity(ctx, activityPatch)

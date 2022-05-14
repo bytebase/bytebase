@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 )
 
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.PATCH("/subscription", func(c echo.Context) error {
 		patch := &enterpriseAPI.SubscriptionPatch{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create subscription request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create subscription request").SetInternal(err)
 		}
 
 		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
