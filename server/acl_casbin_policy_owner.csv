@@ -49,6 +49,7 @@ p, OWNER, /database/{id}, PATCH
 p, OWNER, /database/{id}/table, GET
 p, OWNER, /database/{id}/table/{tableName}, GET
 p, OWNER, /database/{id}/view, GET
+p, OWNER, /database/{id}/extension, GET
 p, OWNER, /database/{id}/backup, GET
 p, OWNER, /database/{id}/backup, POST
 p, OWNER, /database/{id}/backup-setting, GET

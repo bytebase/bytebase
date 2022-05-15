@@ -95,6 +95,13 @@
         {{ $t("db.views") }}
       </div>
       <ViewTable :view-list="viewList" />
+
+      <template v-if="database.instance.engine == 'POSTGRES' && isDev">
+        <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+          {{ $t("db.extensions") }}
+        </div>
+        <DBExtensionTable :db-extension-list="dbExtensionList" />
+      </template>
     </div>
 
     <!-- Hide data source list for now, as we don't allow adding new data source after creating the database. -->
@@ -213,6 +220,7 @@ import {
   useDataSourceStore,
   useTableStore,
   useViewStore,
+  useDBExtensionStore,
 } from "@/store";
 
 interface LocalState {
@@ -243,6 +251,7 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const tableStore = useTableStore();
     const viewStore = useViewStore();
+    const dbExtensionStore = useDBExtensionStore();
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -255,6 +264,12 @@ export default defineComponent({
     };
 
     watchEffect(prepareViewList);
+
+    const prepareDBExtensionList = () => {
+      dbExtensionStore.fetchdbExtensionListByDatabaseId(props.database.id);
+    };
+
+    watchEffect(prepareDBExtensionList);
 
     const anomalySectionList = computed(
       (): BBTableSectionDataSource<Anomaly>[] => {
@@ -277,6 +292,10 @@ export default defineComponent({
 
     const viewList = computed(() => {
       return viewStore.getViewListByDatabaseId(props.database.id);
+    });
+
+    const dbExtensionList = computed(() => {
+      return dbExtensionStore.getDBExtensionListByDatabaseId(props.database.id);
     });
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -370,6 +389,7 @@ export default defineComponent({
       anomalySectionList,
       tableList,
       viewList,
+      dbExtensionList,
       hasDataSourceFeature,
       allowConfigInstance,
       allowViewDataSource,
