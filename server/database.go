@@ -465,17 +465,17 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
 		}
 
-		extensionFind := &api.ExtensionFind{
+		dbExtensionFind := &api.DBExtensionFind{
 			DatabaseID: &id,
 		}
-		extensionList, err := s.store.FindExtension(ctx, extensionFind)
+		dbExtensionList, err := s.store.FindDBExtension(ctx, dbExtensionFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch extension list for database ID: %d", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch dbExtension list for database ID: %d", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, extensionList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch extension list response: %v", id)).SetInternal(err)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dbExtensionList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch dbExtension list response: %v", id)).SetInternal(err)
 		}
 		return nil
 	})

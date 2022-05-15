@@ -1,10 +1,10 @@
 import { Database } from "./database";
-import { ExtensionId } from "./id";
+import { DBExtensionId } from "./id";
 import { Principal } from "./principal";
 
-// Extension
-export type Extension = {
-  id: ExtensionId;
+// DBExtension
+export type DBExtension = {
+  id: DBExtensionId;
 
   // Related fields
   database: Database;

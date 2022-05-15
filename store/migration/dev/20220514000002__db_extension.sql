@@ -1,6 +1,6 @@
--- extension stores the extensions for a particular database.
+-- db_extension stores the extensions for a particular database.
 -- data is synced periodically from the instance.
-CREATE TABLE extension (
+CREATE TABLE db_extension (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
@@ -14,14 +14,14 @@ CREATE TABLE extension (
     description TEXT NOT NULL
 );
 
-CREATE INDEX idx_extension_database_id ON extension(database_id);
+CREATE INDEX idx_db_extension_database_id ON db_extension(database_id);
 
-CREATE UNIQUE INDEX idx_extension_unique_database_id_name_schema ON extension(database_id, name, schema);
+CREATE UNIQUE INDEX idx_db_extension_unique_database_id_name_schema ON db_extension(database_id, name, schema);
 
-ALTER SEQUENCE extension_id_seq RESTART WITH 101;
+ALTER SEQUENCE db_extension_id_seq RESTART WITH 101;
 
-CREATE TRIGGER update_extension_updated_ts
+CREATE TRIGGER update_db_extension_updated_ts
 BEFORE
 UPDATE
-    ON extension FOR EACH ROW
+    ON db_extension FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();

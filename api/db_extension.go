@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 )
 
-// Extension is the API message for an extension.
-type Extension struct {
-	ID int `jsonapi:"primary,extension"`
+// DBExtension is the API message for a database extension.
+type DBExtension struct {
+	ID int `jsonapi:"primary,dbExtension"`
 
 	// Standard fields
 	CreatorID int
@@ -27,8 +27,8 @@ type Extension struct {
 	Description string `jsonapi:"attr,description"`
 }
 
-// ExtensionCreate is the API message for creating an extension.
-type ExtensionCreate struct {
+// DBExtensionCreate is the API message for creating a database extension.
+type DBExtensionCreate struct {
 	// Standard fields
 	// Value is assigned from the jwt subject field passed by the client.
 	CreatorID int
@@ -45,8 +45,8 @@ type ExtensionCreate struct {
 	Description string
 }
 
-// ExtensionFind is the API message for finding extensions.
-type ExtensionFind struct {
+// DBExtensionFind is the API message for finding extensions.
+type DBExtensionFind struct {
 	ID *int
 
 	// Related fields
@@ -55,7 +55,7 @@ type ExtensionFind struct {
 	// Domain specific fields
 }
 
-func (find *ExtensionFind) String() string {
+func (find *DBExtensionFind) String() string {
 	str, err := json.Marshal(*find)
 	if err != nil {
 		return err.Error()
@@ -63,8 +63,8 @@ func (find *ExtensionFind) String() string {
 	return string(str)
 }
 
-// ExtensionDelete is the API message for deleting an extension.
-type ExtensionDelete struct {
+// DBExtensionDelete is the API message for deleting a database extension.
+type DBExtensionDelete struct {
 	// Related fields
 	DatabaseID int
 }

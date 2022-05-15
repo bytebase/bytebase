@@ -1,24 +1,24 @@
 <template>
   <BBTable
     :column-list="COLUMN_LIST"
-    :data-source="extensionList"
+    :data-source="dbExtensionList"
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
     :row-clickable="false"
   >
-    <template #body="{ rowData: extension }">
+    <template #body="{ rowData: dbExtension }">
       <BBTableCell :left-padding="4" class="w-16">
-        {{ extension.name }}
+        {{ dbExtension.name }}
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ extension.version }}
+        {{ dbExtension.version }}
       </BBTableCell>
       <BBTableCell class="w-8">
-        {{ extension.schema }}
+        {{ dbExtension.schema }}
       </BBTableCell>
       <BBTableCell class="w-64">
-        {{ extension.description }}
+        {{ dbExtension.description }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -27,16 +27,16 @@
 <script lang="ts">
 import { PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
-import { Extension } from "../types";
+import { DBExtension } from "../types";
 import { useI18n } from "vue-i18n";
 
 export default {
-  name: "ExtensionTable",
+  name: "DbExtensionTable",
   components: {},
   props: {
-    extensionList: {
+    dbExtensionList: {
       required: true,
-      type: Object as PropType<Extension[]>,
+      type: Object as PropType<DBExtension[]>,
     },
   },
   setup() {

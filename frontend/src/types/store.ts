@@ -7,7 +7,7 @@ import {
   PolicyType,
   QueryHistory,
   View,
-  Extension,
+  DBExtension,
   Sheet,
 } from ".";
 import { Activity } from "./activity";
@@ -151,8 +151,8 @@ export interface ViewState {
   viewListByDatabaseId: Map<DatabaseId, View[]>;
 }
 
-export interface ExtensionState {
-  extensionListByDatabaseId: Map<DatabaseId, Extension[]>;
+export interface DBExtensionState {
+  dbExtensionListByDatabaseId: Map<DatabaseId, DBExtension[]>;
 }
 
 export interface BackupState {

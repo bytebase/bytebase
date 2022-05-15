@@ -6,18 +6,18 @@ import {
   ResourceIdentifier,
   ResourceObject,
   unknown,
-  Extension,
-  ExtensionState,
+  DBExtension,
+  DBExtensionState,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
 import { useDatabaseStore } from "./database";
 
 function convert(
-  extension: ResourceObject,
+  dbExtension: ResourceObject,
   includedList: ResourceObject[]
-): Extension {
+): DBExtension {
   const databaseId = (
-    extension.relationships!.database.data as ResourceIdentifier
+    dbExtension.relationships!.database.data as ResourceIdentifier
   ).id;
 
   let database: Database = unknown("DATABASE") as Database;
@@ -30,42 +30,42 @@ function convert(
   }
 
   return {
-    ...(extension.attributes as Omit<
-      Extension,
+    ...(dbExtension.attributes as Omit<
+      DBExtension,
       "id" | "database" | "creator" | "updater"
     >),
-    id: parseInt(extension.id),
+    id: parseInt(dbExtension.id),
     creator: getPrincipalFromIncludedList(
-      extension.relationships!.creator.data,
+      dbExtension.relationships!.creator.data,
       includedList
     ),
     updater: getPrincipalFromIncludedList(
-      extension.relationships!.updater.data,
+      dbExtension.relationships!.updater.data,
       includedList
     ),
     database,
   };
 }
 
-export const useExtensionStore = defineStore("extension", {
-  state: (): ExtensionState => ({
-    extensionListByDatabaseId: new Map(),
+export const useDBExtensionStore = defineStore("dbExtension", {
+  state: (): DBExtensionState => ({
+    dbExtensionListByDatabaseId: new Map(),
   }),
 
   actions: {
-    getExtensionListByDatabaseId(databaseId: DatabaseId): Extension[] {
-      return this.extensionListByDatabaseId.get(databaseId) || [];
+    getDBExtensionListByDatabaseId(databaseId: DatabaseId): DBExtension[] {
+      return this.dbExtensionListByDatabaseId.get(databaseId) || [];
     },
 
-    async fetchExtensionListByDatabaseId(databaseId: DatabaseId) {
+    async fetchdbExtensionListByDatabaseId(databaseId: DatabaseId) {
       const data = (await axios.get(`/api/database/${databaseId}/extension`))
         .data;
-      const extensionList = data.data.map((extension: ResourceObject) => {
-        return convert(extension, data.included);
+      const dbExtensionList = data.data.map((dbExtension: ResourceObject) => {
+        return convert(dbExtension, data.included);
       });
 
-      this.extensionListByDatabaseId.set(databaseId, extensionList);
-      return extensionList;
+      this.dbExtensionListByDatabaseId.set(databaseId, dbExtensionList);
+      return dbExtensionList;
     },
   },
 });

@@ -49,7 +49,7 @@ export type TableId = IdType;
 
 export type ViewId = IdType;
 
-export type ExtensionId = IdType;
+export type DBExtensionId = IdType;
 
 export type ColumnId = IdType;
 

@@ -10,9 +10,9 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
-// extensionRaw is the store model for an Extension.
-// Fields have exactly the same meanings as Extension.
-type extensionRaw struct {
+// dbExtensionRaw is the store model for an DBExtension.
+// Fields have exactly the same meanings as DBExtension.
+type dbExtensionRaw struct {
 	ID int
 
 	// Standard fields
@@ -31,10 +31,10 @@ type extensionRaw struct {
 	Description string
 }
 
-// toExtension creates an instance of Extension based on the extensionRaw.
-// This is intended to be called when we need to compose an Extension relationship.
-func (raw *extensionRaw) toExtension() *api.Extension {
-	return &api.Extension{
+// toDBExtension creates an instance of DBExtension based on the dbExtensionRaw.
+// This is intended to be called when we need to compose an DBExtension relationship.
+func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
+	return &api.DBExtension{
 		ID: raw.ID,
 
 		// Standard fields
@@ -54,44 +54,44 @@ func (raw *extensionRaw) toExtension() *api.Extension {
 	}
 }
 
-// CreateExtension creates an instance of Extension
-func (s *Store) CreateExtension(ctx context.Context, create *api.ExtensionCreate) (*api.Extension, error) {
+// CreateDBExtension creates an instance of DBExtension
+func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCreate) (*api.DBExtension, error) {
 	if s.db.mode == common.ReleaseModeProd {
 		return nil, nil
 	}
-	extensionRaw, err := s.createExtensionRaw(ctx, create)
+	dbExtensionRaw, err := s.createDBExtensionRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Extension with ExtensionCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error[%w]", create, err)
 	}
-	extension, err := s.composeExtension(ctx, extensionRaw)
+	dbExtension, err := s.composeDBExtension(ctx, dbExtensionRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Extension with extensionRaw[%+v], error[%w]", extensionRaw, err)
+		return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", dbExtensionRaw, err)
 	}
-	return extension, nil
+	return dbExtension, nil
 }
 
-// FindExtension finds a list of Extension instances
-func (s *Store) FindExtension(ctx context.Context, find *api.ExtensionFind) ([]*api.Extension, error) {
+// FindDBExtension finds a list of dbExtension instances
+func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
 	if s.db.mode == common.ReleaseModeProd {
 		return nil, nil
 	}
-	extensionRawList, err := s.findExtensionRaw(ctx, find)
+	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Extension list with ExtensionFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error[%w]", find, err)
 	}
-	var extensionList []*api.Extension
-	for _, raw := range extensionRawList {
-		extension, err := s.composeExtension(ctx, raw)
+	var dbExtensionList []*api.DBExtension
+	for _, raw := range dbExtensionRawList {
+		dbExtension, err := s.composeDBExtension(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Extension with extensionRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", raw, err)
 		}
-		extensionList = append(extensionList, extension)
+		dbExtensionList = append(dbExtensionList, dbExtension)
 	}
-	return extensionList, nil
+	return dbExtensionList, nil
 }
 
-// DeleteExtension deletes an existing extension by ID.
-func (s *Store) DeleteExtension(ctx context.Context, delete *api.ExtensionDelete) error {
+// DeleteDBExtension deletes an existing dbExtension by ID.
+func (s *Store) DeleteDBExtension(ctx context.Context, delete *api.DBExtensionDelete) error {
 	if s.db.mode == common.ReleaseModeProd {
 		return nil
 	}
@@ -101,7 +101,7 @@ func (s *Store) DeleteExtension(ctx context.Context, delete *api.ExtensionDelete
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteExtensionImpl(ctx, tx.PTx, delete); err != nil {
+	if err := deleteDBExtensionImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -116,39 +116,39 @@ func (s *Store) DeleteExtension(ctx context.Context, delete *api.ExtensionDelete
 // private functions
 //
 
-func (s *Store) composeExtension(ctx context.Context, raw *extensionRaw) (*api.Extension, error) {
-	extension := raw.toExtension()
+func (s *Store) composeDBExtension(ctx context.Context, raw *dbExtensionRaw) (*api.DBExtension, error) {
+	dbExtension := raw.toDBExtension()
 
-	creator, err := s.GetPrincipalByID(ctx, extension.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, dbExtension.CreatorID)
 	if err != nil {
 		return nil, err
 	}
-	extension.Creator = creator
+	dbExtension.Creator = creator
 
-	updater, err := s.GetPrincipalByID(ctx, extension.UpdaterID)
+	updater, err := s.GetPrincipalByID(ctx, dbExtension.UpdaterID)
 	if err != nil {
 		return nil, err
 	}
-	extension.Updater = updater
+	dbExtension.Updater = updater
 
-	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &extension.DatabaseID})
+	database, err := s.GetDatabase(ctx, &api.DatabaseFind{ID: &dbExtension.DatabaseID})
 	if err != nil {
 		return nil, err
 	}
-	extension.Database = database
+	dbExtension.Database = database
 
-	return extension, nil
+	return dbExtension, nil
 }
 
-// createExtensionRaw creates a new extension.
-func (s *Store) createExtensionRaw(ctx context.Context, create *api.ExtensionCreate) (*extensionRaw, error) {
+// createDBExtensionRaw creates a new DBExtension.
+func (s *Store) createDBExtensionRaw(ctx context.Context, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	extension, err := s.createExtensionImpl(ctx, tx.PTx, create)
+	dbExtension, err := s.createDBExtensionImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -157,18 +157,18 @@ func (s *Store) createExtensionRaw(ctx context.Context, create *api.ExtensionCre
 		return nil, FormatError(err)
 	}
 
-	return extension, nil
+	return dbExtension, nil
 }
 
-// findExtensionRaw retrieves a list of extensions based on find.
-func (s *Store) findExtensionRaw(ctx context.Context, find *api.ExtensionFind) ([]*extensionRaw, error) {
+// findDBExtensionRaw retrieves a list of DBExtensions based on find.
+func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findExtensionImpl(ctx, tx.PTx, find)
+	list, err := s.findDBExtensionImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -176,11 +176,11 @@ func (s *Store) findExtensionRaw(ctx context.Context, find *api.ExtensionFind) (
 	return list, nil
 }
 
-// createExtensionImpl creates a new extension.
-func (s *Store) createExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.ExtensionCreate) (*extensionRaw, error) {
-	// Insert row into extension.
+// createDBExtensionImpl creates a new DBExtension.
+func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
+	// Insert row into db_extension.
 	row, err := tx.QueryContext(ctx, `
-		INSERT INTO extension (
+		INSERT INTO db_extension (
 			creator_id,
 			created_ts,
 			updater_id,
@@ -211,26 +211,26 @@ func (s *Store) createExtensionImpl(ctx context.Context, tx *sql.Tx, create *api
 	defer row.Close()
 
 	row.Next()
-	var extensionRaw extensionRaw
+	var dbExtensionRaw dbExtensionRaw
 	if err := row.Scan(
-		&extensionRaw.ID,
-		&extensionRaw.CreatorID,
-		&extensionRaw.CreatedTs,
-		&extensionRaw.UpdaterID,
-		&extensionRaw.UpdatedTs,
-		&extensionRaw.DatabaseID,
-		&extensionRaw.Name,
-		&extensionRaw.Version,
-		&extensionRaw.Schema,
-		&extensionRaw.Description,
+		&dbExtensionRaw.ID,
+		&dbExtensionRaw.CreatorID,
+		&dbExtensionRaw.CreatedTs,
+		&dbExtensionRaw.UpdaterID,
+		&dbExtensionRaw.UpdatedTs,
+		&dbExtensionRaw.DatabaseID,
+		&dbExtensionRaw.Name,
+		&dbExtensionRaw.Version,
+		&dbExtensionRaw.Schema,
+		&dbExtensionRaw.Description,
 	); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return &extensionRaw, nil
+	return &dbExtensionRaw, nil
 }
 
-func (s *Store) findExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.ExtensionFind) ([]*extensionRaw, error) {
+func (s *Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -252,7 +252,7 @@ func (s *Store) findExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.Ext
 			version,
 			schema,
 			description
-		FROM extension
+		FROM db_extension
 		WHERE `+strings.Join(where, " AND ")+`
 		ORDER BY database_id, name ASC`,
 		args...,
@@ -262,38 +262,38 @@ func (s *Store) findExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.Ext
 	}
 	defer rows.Close()
 
-	// Iterate over result set and deserialize rows into extensionRawList.
-	var extensionRawList []*extensionRaw
+	// Iterate over result set and deserialize rows into DBExtensionRawList.
+	var dbExtensionRawList []*dbExtensionRaw
 	for rows.Next() {
-		var extensionRaw extensionRaw
+		var dbExtensionRaw dbExtensionRaw
 		if err := rows.Scan(
-			&extensionRaw.ID,
-			&extensionRaw.CreatorID,
-			&extensionRaw.CreatedTs,
-			&extensionRaw.UpdaterID,
-			&extensionRaw.UpdatedTs,
-			&extensionRaw.DatabaseID,
-			&extensionRaw.Name,
-			&extensionRaw.Version,
-			&extensionRaw.Schema,
-			&extensionRaw.Description,
+			&dbExtensionRaw.ID,
+			&dbExtensionRaw.CreatorID,
+			&dbExtensionRaw.CreatedTs,
+			&dbExtensionRaw.UpdaterID,
+			&dbExtensionRaw.UpdatedTs,
+			&dbExtensionRaw.DatabaseID,
+			&dbExtensionRaw.Name,
+			&dbExtensionRaw.Version,
+			&dbExtensionRaw.Schema,
+			&dbExtensionRaw.Description,
 		); err != nil {
 			return nil, FormatError(err)
 		}
 
-		extensionRawList = append(extensionRawList, &extensionRaw)
+		dbExtensionRawList = append(dbExtensionRawList, &dbExtensionRaw)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	return extensionRawList, nil
+	return dbExtensionRawList, nil
 }
 
-// deleteExtensionImpl permanently deletes extensions from a database.
-func deleteExtensionImpl(ctx context.Context, tx *sql.Tx, delete *api.ExtensionDelete) error {
+// deleteDBExtensionImpl permanently deletes DBExtensions from a database.
+func deleteDBExtensionImpl(ctx context.Context, tx *sql.Tx, delete *api.DBExtensionDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM extension WHERE database_id = $1`, delete.DatabaseID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM db_extension WHERE database_id = $1`, delete.DatabaseID); err != nil {
 		return FormatError(err)
 	}
 	return nil

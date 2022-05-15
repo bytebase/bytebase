@@ -278,15 +278,15 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return createView, nil
 			}
 
-			var createExtension = func(database *api.Database, extensionCreate *api.ExtensionCreate) (*api.Extension, error) {
-				createExtension, err := s.store.CreateExtension(ctx, extensionCreate)
+			var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) (*api.DBExtension, error) {
+				createDBExtension, err := s.store.CreateDBExtension(ctx, dbExtensionCreate)
 				if err != nil {
 					if common.ErrorCode(err) == common.Conflict {
-						return nil, fmt.Errorf("failed to sync extension for instance: %s, database: %s. Extension name and schema already exists: %s", instance.Name, database.Name, extensionCreate.Name)
+						return nil, fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", instance.Name, database.Name, dbExtensionCreate.Name)
 					}
-					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, extensionCreate.Name, err)
+					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, dbExtensionCreate.Name, err)
 				}
-				return createExtension, nil
+				return createDBExtension, nil
 			}
 
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
@@ -418,17 +418,17 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
-			var recreateExtensionSchema = func(database *api.Database, extension db.Extension) error {
-				// Extension
-				extensionCreate := &api.ExtensionCreate{
+			var recreateDBExtensionSchema = func(database *api.Database, dbExtension db.Extension) error {
+				// dbExtension
+				dbExtensionCreate := &api.DBExtensionCreate{
 					CreatorID:   api.SystemBotID,
 					DatabaseID:  database.ID,
-					Name:        extension.Name,
-					Version:     extension.Version,
-					Schema:      extension.Schema,
-					Description: extension.Description,
+					Name:        dbExtension.Name,
+					Version:     dbExtension.Version,
+					Schema:      dbExtension.Schema,
+					Description: dbExtension.Description,
 				}
-				_, err := createExtension(database, extensionCreate)
+				_, err := createDBExtension(database, dbExtensionCreate)
 				if err != nil {
 					return err
 				}
@@ -556,15 +556,15 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						}
 					}
 
-					extensionDelete := &api.ExtensionDelete{
+					dbExtensionDelete := &api.DBExtensionDelete{
 						DatabaseID: dbPatched.ID,
 					}
-					if err := s.store.DeleteExtension(ctx, extensionDelete); err != nil {
-						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset extension info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
+					if err := s.store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset dbExtension info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
 					}
 
-					for _, extension := range schema.ExtensionList {
-						err = recreateExtensionSchema(dbPatched, extension)
+					for _, dbExtension := range schema.ExtensionList {
+						err = recreateDBExtensionSchema(dbPatched, dbExtension)
 						if err != nil {
 							return err
 						}
@@ -603,8 +603,8 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 						}
 					}
 
-					for _, extension := range schema.ExtensionList {
-						err = recreateExtensionSchema(database, extension)
+					for _, dbExtension := range schema.ExtensionList {
+						err = recreateDBExtensionSchema(database, dbExtension)
 						if err != nil {
 							return err
 						}
