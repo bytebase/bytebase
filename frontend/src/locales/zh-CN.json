@@ -792,7 +792,13 @@
     "indexes": "索引",
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
-    "go-to-transfer": "前去转移"
+    "go-to-transfer": "前去转移",
+    "pitr": {
+      "restore": "@:common.restore@:common.database",
+      "no-available-backup": "没有可用的备份",
+      "point-in-time": "时间点",
+      "help-info": "将数据库的状态恢复到一个时间点。{link}。"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
