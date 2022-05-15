@@ -210,7 +210,7 @@ import DataSourceTable from "../components/DataSourceTable.vue";
 import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.vue";
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
-import { timezoneString, instanceSlug, isDBAOrOwner, isDev } from "../utils";
+import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
 import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
