@@ -22,7 +22,10 @@ export type TaskType =
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
-  | "bb.task.database.schema.update.ghost.drop-original-table";
+  | "bb.task.database.schema.update.ghost.drop-original-table"
+  | "bb.task.database.pitr.restore"
+  | "bb.task.database.pitr.cutover"
+  | "bb.task.database.pitr.delete";
 
 export type TaskStatus =
   | "PENDING"
@@ -69,6 +72,21 @@ export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
   tableName: string;
 };
 
+export type TaskDatabasePITRRestorePayload = {
+  projectId: ProjectId;
+  pointInTimeTs: number; // UNIX timestamp
+};
+
+export type TaskDatabasePITRCutoverPayload = {
+  // empty by now
+  // more input and output parameters in the future
+};
+
+export type TaskDatabasePITRDeletePayload = {
+  // empty by now
+  // more input and output parameters in the future
+};
+
 export type TaskDatabaseDataUpdatePayload = {
   statement: string;
   pushEvent?: VCSPushEvent;
@@ -88,7 +106,10 @@ export type TaskPayload =
   | TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
-  | TaskEarliestAllowedTimePayload;
+  | TaskEarliestAllowedTimePayload
+  | TaskDatabasePITRRestorePayload
+  | TaskDatabasePITRCutoverPayload
+  | TaskDatabasePITRDeletePayload;
 
 export type Task = {
   id: TaskId;
