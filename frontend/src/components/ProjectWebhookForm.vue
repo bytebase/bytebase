@@ -369,7 +369,8 @@ export default defineComponent({
       return (
         !isEmpty(state.webhook.type) &&
         !isEmpty(state.webhook.name) &&
-        !isEmpty(state.webhook.url)
+        !isEmpty(state.webhook.url) &&
+        !isEmpty(state.webhook.activityList)
       );
     });
 
