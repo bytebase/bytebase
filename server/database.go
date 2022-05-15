@@ -459,6 +459,28 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		return nil
 	})
 
+	g.GET("/database/:id/extension", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("id"))).SetInternal(err)
+		}
+
+		dbExtensionFind := &api.DBExtensionFind{
+			DatabaseID: &id,
+		}
+		dbExtensionList, err := s.store.FindDBExtension(ctx, dbExtensionFind)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch dbExtension list for database ID: %d", id)).SetInternal(err)
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dbExtensionList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal fetch dbExtension list response: %v", id)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.POST("/database/:id/backup", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		id, err := strconv.Atoi(c.Param("id"))
