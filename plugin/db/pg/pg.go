@@ -320,6 +320,12 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 			schema.ViewList = append(schema.ViewList, dbView)
 		}
+		// Extensions.
+		extensions, err := getExtensions(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
+		}
+		schema.ExtensionList = extensions
 
 		if err := txn.Commit(); err != nil {
 			return nil, nil, err
@@ -1593,6 +1599,34 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		view.comment = comment.String
 	}
 	return nil
+}
+
+func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
+	query := "" +
+		"SELECT e.extname, e.extversion, n.nspname, c.description " +
+		"FROM pg_catalog.pg_extension e " +
+		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
+		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass;"
+
+	var extensions []db.Extension
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e db.Extension
+		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
+			return nil, err
+		}
+		if pgSystemSchema(e.Schema) {
+			continue
+		}
+		extensions = append(extensions, e)
+	}
+
+	return extensions, nil
 }
 
 // getIndices gets all indices of a database.

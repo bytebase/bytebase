@@ -51,6 +51,14 @@ type View struct {
 	Comment    string
 }
 
+// Extension is the database extension.
+type Extension struct {
+	Name        string
+	Version     string
+	Schema      string
+	Description string
+}
+
 // Index is the database index.
 type Index struct {
 	Name string
@@ -116,10 +124,11 @@ type Schema struct {
 	// CharacterSet isn't supported for ClickHouse, Snowflake.
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake.
-	Collation string
-	UserList  []User
-	TableList []Table
-	ViewList  []View
+	Collation     string
+	UserList      []User
+	TableList     []Table
+	ViewList      []View
+	ExtensionList []Extension
 }
 
 var (
