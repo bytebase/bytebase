@@ -792,7 +792,13 @@
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
     "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",
-    "go-to-transfer": "Go to transfer"
+    "go-to-transfer": "Go to transfer",
+    "pitr": {
+      "restore": "@:common.restore @:common.database",
+      "no-available-backup": "No available backup",
+      "point-in-time": "Point in time",
+      "help-info": "Restore the database state to a point in time. {link}."
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

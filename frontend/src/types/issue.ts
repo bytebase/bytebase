@@ -18,7 +18,8 @@ type IssueTypeDatabase =
   | "bb.issue.database.grant"
   | "bb.issue.database.schema.update"
   | "bb.issue.database.data.update"
-  | "bb.issue.database.schema.update.ghost";
+  | "bb.issue.database.schema.update.ghost"
+  | "bb.issue.database.pitr";
 
 type IssueTypeDataSource = "bb.issue.data-source.request";
 
@@ -60,6 +61,11 @@ export type UpdateSchemaGhostContext = {
   updateSchemaDetailList: UpdateSchemaGhostDetail[];
 };
 
+export type PITRContext = {
+  databaseId: DatabaseId;
+  pointInTimeTs: number; // UNIX timestamp
+};
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type EmptyContext = {};
 
@@ -67,6 +73,7 @@ export type IssueCreateContext =
   | CreateDatabaseContext
   | UpdateSchemaContext
   | UpdateSchemaGhostContext
+  | PITRContext
   | EmptyContext;
 
 export type IssuePayload = { [key: string]: any };
