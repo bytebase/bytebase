@@ -62,6 +62,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backupErr != nil {
 		newBackupStatus = string(api.BackupStatusFailed)
 		comment = backupErr.Error()
+		backupPayload = "{}"
 	}
 	if _, err := server.store.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,

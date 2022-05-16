@@ -521,7 +521,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 	row, err := tx.QueryContext(ctx, `
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = $4
+		WHERE id = $5
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 	`,
 		args...,
