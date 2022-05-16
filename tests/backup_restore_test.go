@@ -132,7 +132,7 @@ func TestPITR(t *testing.T) {
 		ctx := context.Background()
 
 		t.Log("initialize database")
-		// For parallel sub-tests, we use different port
+		// For parallel sub-tests, we use different port for MySQL
 		mysqlPort := port
 		db, stopFn := initTIPRDB(t, localhost, username, database, mysqlPort)
 		defer stopFn()
