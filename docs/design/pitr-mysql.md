@@ -168,13 +168,13 @@ An example of the PITR information is like this:
     "binlog_info": {
         "binlog_name": "binlog.000001",
         "binlog_position": 1234,
-        "timestamp": 1650957790,
+        "ts": 1650957790,
     },
     "file_size": 10240
 }
 ```
 
-where the timestamp is a UNIX timestamp in seconds, indicating the binlog event time in binlog.000001 at the position 1234.
+where the `ts` field is a UNIX timestamp in seconds, indicating the binlog event time in binlog.000001 at the position 1234.
 
 We will add a field in api.Backup:
 

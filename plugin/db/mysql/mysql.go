@@ -57,7 +57,7 @@ type backupPayload struct {
 	BinlogInfo BinlogInfo `json:"binlog_info"`
 	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
 	// Mainly for UI purpose.
-	ImpreciseTs int64 `json:"imprecise_ts"`
+	Ts int64 `json:"ts"`
 }
 
 // Driver is the MySQL driver.
@@ -935,8 +935,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 
 	payload := backupPayload{
-		BinlogInfo:  *binlog,
-		ImpreciseTs: nowMySQL,
+		BinlogInfo: *binlog,
+		Ts:         nowMySQL,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
