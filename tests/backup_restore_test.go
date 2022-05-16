@@ -184,6 +184,7 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table _update_row_")
 	})
 }
+
 func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
 	a := require.New(t)
 
