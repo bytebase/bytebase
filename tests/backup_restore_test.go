@@ -185,7 +185,7 @@ func TestPITR(t *testing.T) {
 	})
 }
 
-func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
+func initPITRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
 	a := require.New(t)
 
 	_, stopFn := resourcemysql.SetupTestInstance(t, port)
