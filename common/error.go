@@ -69,6 +69,9 @@ const (
 	ColumnCanNull    Code = 10302
 
 	NotInnoDBEngine Code = 10401
+
+	// 10501 table rule advisor error code
+	TableNoPK Code = 10501
 )
 
 // Error represents an application-specific error. Application errors can be

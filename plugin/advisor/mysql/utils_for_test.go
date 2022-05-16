@@ -18,6 +18,7 @@ type MockCatalogService struct{}
 const (
 	MockOldIndexName = "old_index"
 	MockOldUKName    = "old_uk"
+	MockOldPKName    = "PRIMARY"
 )
 
 var (
@@ -35,6 +36,12 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 		return &catalog.Index{
 			Unique:            true,
 			Name:              MockOldIndexName,
+			ColumnExpressions: MockIndexColumnList,
+		}, nil
+	case MockOldPKName:
+		return &catalog.Index{
+			Unique:            true,
+			Name:              MockOldPKName,
 			ColumnExpressions: MockIndexColumnList,
 		}, nil
 	}
