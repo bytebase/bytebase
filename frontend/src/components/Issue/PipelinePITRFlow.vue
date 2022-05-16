@@ -17,11 +17,11 @@
     <div
       class="task-list p-2 lg:flex lg:items-center relative space-y-2 lg:space-y-0"
     >
-      <template v-for="(task, j) in taskList" :key="j">
+      <template v-for="(task, i) in taskList" :key="i">
         <div
           class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
           :class="taskClass(task)"
-          @click="onClickTask(task, j)"
+          @click="onClickTask(task, i)"
         >
           <div class="flex-1">
             <div class="flex items-center pb-1">
@@ -57,7 +57,7 @@
         </div>
 
         <div
-          v-if="j < taskList.length - 1"
+          v-if="i < taskList.length - 1"
           class="hidden lg:flex items-center justify-center w-4 h-2 overflow-visible relative"
         >
           <!-- show an arrow indicator between tasks -->
