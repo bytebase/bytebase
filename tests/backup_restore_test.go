@@ -241,7 +241,7 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		// Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
+		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
 		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
 		a.NoError(err)
 
