@@ -34,9 +34,9 @@ func (t *InstanceReporter) Report(ctx context.Context, store *store.Store, segme
 		properties.Set(string(engine), count)
 	}
 
-	return segment.client.Enqueue(analytics.Track{
+	return segment.client.Enqueue(analytics.Page{
+		Name:       string(InstanceEventName),
 		UserId:     segment.identifier,
-		Event:      string(InstanceEventType),
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
 	})

@@ -12,14 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// EventType is the segment track event name.
-type EventType string
+// EventName is the segment track event name.
+type EventName string
 
 var (
-	// InstanceEventType is the track event for instance.
-	InstanceEventType EventType = "bb_instance"
-	// IssueEventType is the track event for issue.
-	IssueEventType EventType = "bb_issue"
+	// InstanceEventName is the event for instance.
+	InstanceEventName EventName = "bb.instance"
+	// IssueEventName is the event for issue.
+	IssueEventName EventName = "bb.issue"
 )
 
 const (
@@ -74,7 +74,7 @@ func (s *segment) Report(ctx context.Context) {
 		reporterType := reflect.TypeOf(reporter).String()
 		s.l.Debug("Run segment reporter", zap.String("reporter", reporterType))
 		if err := reporter.Report(ctx, s.store, s); err != nil {
-			s.l.Info(
+			s.l.Error(
 				"Failed to report to segment",
 				zap.String("reporter", reporterType),
 				zap.Error(err),
