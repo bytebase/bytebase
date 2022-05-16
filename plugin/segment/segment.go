@@ -18,8 +18,6 @@ type EventType string
 var (
 	// InstanceEventType is the track event for instance.
 	InstanceEventType EventType = "bb_instance"
-	// WorkspaceEventType is the track event for workspace.
-	WorkspaceEventType EventType = "bb.workspace"
 )
 
 const (
