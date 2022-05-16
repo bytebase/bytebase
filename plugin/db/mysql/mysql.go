@@ -997,7 +997,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 
 func mysqlNowUnix(ctx context.Context, db *sql.DB) (int64, error) {
 	var timestamp int64
-	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())")
+	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
 	if err != nil {
 		return 0, err
 	}
@@ -1029,7 +1029,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	for _, table := range tables {
 		tableNames = append(tableNames, table.Name)
 	}
-	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK", strings.Join(tableNames, ", "))
+	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
 
 	if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
 		return err
@@ -1177,7 +1177,7 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 }
 
 func showMasterStatus(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) {
-	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS")
+	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
 		return nil, err
 	}
