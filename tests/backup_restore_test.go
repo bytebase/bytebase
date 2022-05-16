@@ -135,8 +135,8 @@ func TestPITR(t *testing.T) {
 		// For parallel sub-tests, we use different port
 		mysqlPort := port
 		db, stopFn := initTIPRDB(t, localhost, username, database, mysqlPort)
-		defer db.Close()
 		defer stopFn()
+		defer db.Close()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
