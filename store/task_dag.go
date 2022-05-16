@@ -71,6 +71,9 @@ func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate)
 	if err != nil {
 		return nil, err
 	}
+	if err := tx.PTx.Commit(); err != nil {
+		return nil, FormatError(err)
+	}
 	return taskDAG, nil
 }
 
