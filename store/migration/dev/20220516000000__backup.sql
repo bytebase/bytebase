@@ -1,1 +1,1 @@
-ALTER TABLE backup ADD payload JSON NOT NULL DEFAULT '{}';
+ALTER TABLE backup ADD payload JSONB NOT NULL DEFAULT '{}';
