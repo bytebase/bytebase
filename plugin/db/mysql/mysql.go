@@ -944,7 +944,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		options.ReadOnly = true
 	}
 	// Now we are still holding the tables' exclusive locks.
-	// Begining a transaction in the same session will implicitly release existing table locks.
+	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	txn, err := conn.BeginTx(ctx, &options)
 	if err != nil {
