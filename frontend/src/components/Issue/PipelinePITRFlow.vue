@@ -6,14 +6,6 @@
       </template>
     </PipelineStageList>
 
-    <!--
-      We don't parse the tasks' dependency relationships here, since we have exactly 1
-      [sync->cutover->drop-original-table] thread in each stage.
-
-      If we support multi-tenant-gh-ost mode in the future, we may have more than
-      one series of [sync->cutover->drop-original-table] threads.
-      Then we may repeat the horizon scroller. Each row is a thread of gh-ost migration.
-    -->
     <div
       class="task-list p-2 lg:flex lg:items-center relative space-y-2 lg:space-y-0"
     >
@@ -42,17 +34,6 @@
             >
               {{ taskNameOfTask(task) }}
             </div>
-          </div>
-          <div v-if="getTaskProgress(task) > 0">
-            <BBProgressPie
-              class="w-9 h-9 text-info"
-              :thickness="2"
-              :percent="getTaskProgress(task)"
-            >
-              <template #default="{ percent }">
-                <span class="text-xs scale-90">{{ percent }}%</span>
-              </template>
-            </BBProgressPie>
           </div>
         </div>
 
@@ -156,23 +137,6 @@ const selectedStageIdOrIndex = computed(() => {
     selectedStage.value as StageCreate
   );
 });
-
-const getTaskProgress = (task: Task | TaskCreate) => {
-  if (create.value) {
-    return 0;
-  }
-  if (task.type !== "bb.task.database.schema.update.ghost.sync") return 0;
-  const taskRun = (task as Task).taskRunList.find((run) => {
-    // TODO(Jim): find the correct taskRun which indicates the sync progress.
-    return false;
-  });
-  if (taskRun) {
-    // TODO(Jim): get progress from taskRun.result.detail
-  }
-
-  // nothing found
-  return 0;
-};
 
 const taskClass = (task: Task | TaskCreate): string[] => {
   const classes: string[] = [];
