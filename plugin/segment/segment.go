@@ -18,6 +18,8 @@ type EventType string
 var (
 	// InstanceEventType is the track event for instance.
 	InstanceEventType EventType = "bb_instance"
+	// IssueEventType is the track event for issue.
+	IssueEventType EventType = "bb_issue"
 )
 
 const (
@@ -45,6 +47,7 @@ func NewService(l *zap.Logger, key string, identifier string, store *store.Store
 		store:      store,
 		reporterList: []Reporter{
 			&InstanceReporter{},
+			&IssueReporter{},
 		},
 	}
 }

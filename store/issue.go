@@ -122,6 +122,37 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 	return issue, nil
 }
 
+// CountIssue counts the number of issue.
+func (s *Store) CountIssue(ctx context.Context, find *api.IssueFind) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	where, args := findIssueQuery(find)
+
+	row, err := tx.PTx.QueryContext(ctx, `
+		SELECT COUNT(*)
+		FROM issue
+		WHERE `+where,
+		args...,
+	)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer row.Close()
+
+	count := 0
+	if row.Next() {
+		if err := row.Scan(&count); err != nil {
+			return 0, FormatError(err)
+		}
+	}
+
+	return count, nil
+}
+
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database
 func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {
@@ -473,7 +504,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	return &issueRaw, nil
 }
 
-func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
+func findIssueQuery(find *api.IssueFind) (string, []interface{}) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -491,6 +522,9 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 		args = append(args, *v)
 		args = append(args, *v)
 	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.StatusList; v != nil {
 		list := []string{}
 		for _, status := range *v {
@@ -499,6 +533,12 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 		}
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
+
+	return strings.Join(where, " AND "), args
+}
+
+func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
+	where, args := findIssueQuery(find)
 
 	var query = `
 		SELECT
@@ -516,7 +556,7 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 			assignee_id,
 			payload
 		FROM issue
-		WHERE ` + strings.Join(where, " AND ")
+		WHERE ` + where
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}

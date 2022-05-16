@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	metricSchedulerInterval = time.Duration(1) * time.Second
+	metricSchedulerInterval = time.Duration(24) * time.Hour
 )
 
 // MetricScheduler is the metric scheduler.
