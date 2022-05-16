@@ -96,6 +96,9 @@ const (
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
+
+	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
+	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 )
 
 // Advice is the result of an advisor.
