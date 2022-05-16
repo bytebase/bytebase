@@ -50,15 +50,14 @@ func init() {
 type BinlogInfo struct {
 	Filename string `json:"file_name"`
 	Position int64  `json:"position"`
-	// The binlog event time corresponding to the filename and position on the MySQL server.
-	// This can be used to navigate to the nearest full backup given a specific PITR target time.
-	// Encoded in UNIX timestamp in second.
-	Timestamp int64 `json:"timestamp"`
 }
 
 // This is encoded in JSON and stored in the backup table, representing PITR related info.
 type backupPayload struct {
 	BinlogInfo BinlogInfo `json:"binlog_info"`
+	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
+	// Mainly for UI purpose.
+	ImpreciseTs int64 `json:"imprecise_ts"`
 }
 
 // Driver is the MySQL driver.
@@ -930,8 +929,14 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		zap.String("filename", binlog.Filename),
 		zap.Int64("position", binlog.Position))
 
+	nowMySQL, err := mysqlNowUnix(ctx, driver.db)
+	if err != nil {
+		return "", err
+	}
+
 	payload := backupPayload{
-		BinlogInfo: *binlog,
+		BinlogInfo:  *binlog,
+		ImpreciseTs: nowMySQL,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -988,6 +993,19 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
+}
+
+func mysqlNowUnix(ctx context.Context, db *sql.DB) (int64, error) {
+	var timestamp int64
+	rows, err := db.QueryContext(ctx, "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())")
+	if err != nil {
+		return 0, err
+	}
+	rows.Next()
+	if err := rows.Scan(&timestamp); err != nil {
+		return 0, err
+	}
+	return timestamp, nil
 }
 
 func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
