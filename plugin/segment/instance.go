@@ -29,7 +29,8 @@ func (t *InstanceReporter) Report(ctx context.Context, store *store.Store, segme
 		instanceEngineMap[instance.Engine] = instanceEngineMap[instance.Engine] + 1
 	}
 
-	properties := analytics.NewProperties().Set("count", len(instanceList))
+	properties := analytics.NewProperties().Set("total", len(instanceList))
+
 	for engine, count := range instanceEngineMap {
 		properties.Set(string(engine), count)
 	}

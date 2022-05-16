@@ -31,7 +31,7 @@ func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment 
 		return err
 	}
 
-	properties := analytics.NewProperties().Set("count", total)
+	properties := analytics.NewProperties().Set("total", total)
 
 	for _, issueType := range issueTypeList {
 		count, err := store.CountIssue(ctx, &api.IssueFind{
@@ -40,7 +40,17 @@ func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment 
 		if err != nil {
 			return err
 		}
-		properties.Set(string(issueType), count)
+		// We need to skip the empty value, otherwise the Segment cannot sync the event to Google Analytics 4
+		if count <= 0 {
+			continue
+		}
+
+		key := getIssueType(issueType)
+		if key == "" {
+			continue
+		}
+
+		properties.Set(key, count)
 	}
 
 	return segment.client.Enqueue(analytics.Page{
@@ -49,4 +59,29 @@ func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment 
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
 	})
+}
+
+// getIssueType returns the issue type.
+// We need to convert the type manually instead of using the string(issueType) because
+// 1. NOT support dot in the key name.
+// 2. Key length is limited.
+func getIssueType(issueType api.IssueType) string {
+	switch issueType {
+	case api.IssueGeneral:
+		return "general"
+	case api.IssueDatabaseCreate:
+		return "database_create"
+	case api.IssueDatabaseGrant:
+		return "database_grant"
+	case api.IssueDatabaseSchemaUpdate:
+		return "schema_update"
+	case api.IssueDatabaseSchemaUpdateGhost:
+		return "schema_update_ghost"
+	case api.IssueDatabaseDataUpdate:
+		return "data_update"
+	case api.IssueDataSourceRequest:
+		return "datasource_request"
+	}
+
+	return ""
 }
