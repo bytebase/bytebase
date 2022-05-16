@@ -179,6 +179,11 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLColumnNoNull, nil
 		}
+	case api.SchemaRuleTableRequirePK:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return advisor.MySQLTableRequirePK, nil
+		}
 	case api.SchemaRuleMySQLEngine:
 		switch engine {
 		case db.MySQL:
