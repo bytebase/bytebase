@@ -2,6 +2,7 @@ package segment
 
 import (
 	"context"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/store"
@@ -21,9 +22,11 @@ func (t *InstanceReporter) Report(ctx context.Context, store *store.Store, segme
 	if err != nil {
 		return err
 	}
-	segment.Track(
-		InstanceEventType,
-		analytics.NewProperties().Set("count", count),
-	)
-	return nil
+
+	return segment.client.Enqueue(analytics.Track{
+		UserId:     segment.identifier,
+		Event:      string(InstanceEventType),
+		Properties: analytics.NewProperties().Set("count", count),
+		Timestamp:  time.Now().UTC(),
+	})
 }

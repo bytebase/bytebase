@@ -426,6 +426,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	// Shutdown postgres server if embed.
 	server.metaDB.Close()
 
+	// Close the metric
+	server.MetricScheduler.Close()
+
 	server.l.Info("Bytebase stopped properly")
 
 	return nil

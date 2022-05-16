@@ -17,7 +17,9 @@ type EventType string
 
 var (
 	// InstanceEventType is the track event for instance.
-	InstanceEventType EventType = "bb.instance"
+	InstanceEventType EventType = "bb_instance"
+	// WorkspaceEventType is the track event for workspace.
+	WorkspaceEventType EventType = "bb.workspace"
 )
 
 const (
@@ -52,18 +54,6 @@ func NewService(l *zap.Logger, key string, identifier string, store *store.Store
 // Close will close the segment client.
 func (s *segment) Close() {
 	s.client.Close()
-}
-
-// Track will collect the metrics.
-func (s *segment) Track(event EventType, properties analytics.Properties) {
-	if err := s.client.Enqueue(analytics.Track{
-		UserId:     s.identifier,
-		Event:      string(event),
-		Properties: properties,
-		Timestamp:  time.Now().UTC(),
-	}); err != nil {
-		s.l.Debug("segment track failed", zap.Error(err))
-	}
 }
 
 // Identify will identify the workspace with license.

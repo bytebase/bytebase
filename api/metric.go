@@ -4,7 +4,8 @@ import "context"
 
 // Workspace is the instance for console application.
 type Workspace struct {
-	Plan string
+	Plan         string
+	DeploymentID string
 }
 
 // MetricService is the service for metrics.
