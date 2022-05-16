@@ -997,7 +997,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 
 func mysqlNowUnix(ctx context.Context, db *sql.DB) (int64, error) {
 	var timestamp int64
-	rows, err := db.QueryContext(ctx, "UNIX_TIMESTAMP(CURRENT_TIMESTAMP())")
+	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())")
 	if err != nil {
 		return 0, err
 	}
@@ -1186,7 +1186,8 @@ func showMasterStatus(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) 
 	rows.Next()
 	// TODO(dragonly): Fill the `Timestamp` field.
 	binlogConfig := BinlogInfo{}
-	if err := rows.Scan(&binlogConfig.Filename, &binlogConfig.Position); err != nil {
+	var unused interface{}
+	if err := rows.Scan(&binlogConfig.Filename, &binlogConfig.Position, &unused, &unused, &unused); err != nil {
 		return nil, err
 	}
 
