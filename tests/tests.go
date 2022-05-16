@@ -135,8 +135,8 @@ func getTestPort(testName string) int {
 	case "TestBootWithExternalPg":
 		return 1265
 	case "TestSheetVCS":
-		return 1268
-	case "NEXT": // TestBootWithExternalPg need 4 ports for test, modify here for your test.
+		return 1269
+	case "NEXT":
 		return 1272
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
