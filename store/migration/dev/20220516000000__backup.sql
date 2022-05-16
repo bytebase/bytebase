@@ -1,0 +1,1 @@
+ALTER TABLE backup ADD payload JSON NOT NULL DEFAULT '{}';

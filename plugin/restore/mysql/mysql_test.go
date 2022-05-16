@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -58,4 +59,18 @@ func TestGetPITRDatabaseName(t *testing.T) {
 		name := GetPITRDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
 	}
+}
+
+func TestJSON(t *testing.T) {
+	type in struct {
+		Val int `json:"val"`
+	}
+	type out struct {
+		In  in
+		Key int `json:"key"`
+	}
+	o := out{In: in{Val: 1}, Key: 1}
+
+	bytes, _ := json.Marshal(o)
+	t.Log(string(bytes))
 }

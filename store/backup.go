@@ -32,6 +32,7 @@ type backupRaw struct {
 	MigrationHistoryVersion string
 	Path                    string
 	Comment                 string
+	Payload                 string
 }
 
 // toBackup creates an instance of Backup based on the backupRaw.
@@ -512,6 +513,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	set, args = append(set, "comment = $3"), append(args, patch.Comment)
+	set, args = append(set, "payload = $4"), append(args, patch.Payload)
 
 	args = append(args, patch.ID)
 
@@ -520,7 +522,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 		UPDATE backup
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $4
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 	`,
 		args...,
 	)
@@ -545,6 +547,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 			&backupRaw.MigrationHistoryVersion,
 			&backupRaw.Path,
 			&backupRaw.Comment,
+			&backupRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
