@@ -141,7 +141,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(tasks.running, task.ID)
 							tasks.mu.Unlock()
 						}()
-						done, result, err := executor.RunOnce(ctx, s.server, task)
+						done, result, err := RunTaskExecutorOnce(ctx, s.l, executor, s.server, task)
 						if done {
 							if err == nil {
 								bytes, err := json.Marshal(*result)
