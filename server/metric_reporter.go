@@ -51,10 +51,12 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	if m.server.subscription != nil {
 		plan = m.server.subscription.Plan.String()
 	}
-	m.reporter.Identify(&api.Workspace{
+	if err := m.reporter.Identify(&api.Workspace{
 		Plan:         plan,
 		DeploymentID: m.deploymentID,
-	})
+	}); err != nil {
+		m.l.Debug("reporter identify failed", zap.Error(err))
+	}
 
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
