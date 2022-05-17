@@ -173,7 +173,7 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	executor := driver.(util.MigrationExecutor)
 
 	var prevSchemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
+	if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
 		return -1, "", err
 	}
 
@@ -198,7 +198,7 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	}
 
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", util.FormatError(err)
 	}
 

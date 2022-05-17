@@ -151,6 +151,7 @@ type BackupPatch struct {
 	// Domain specific fields
 	Status  string
 	Comment string
+	Payload string
 }
 
 // BackupSetting is the backup setting for a database.
