@@ -7,20 +7,20 @@
       <TaskRunTable :task-list="stage.taskList" />
     </template>
     <template v-else>
-      <template v-for="(task, index) in stage.taskList" :key="index">
+      <template v-for="(taskInStage, index) in stage.taskList" :key="index">
         <div class="flex flex-row items-center space-x-1">
           <heroicons-solid:arrow-narrow-right
-            v-if="stage.taskList.length > 1 && activeTask.id == task.id"
+            v-if="stage.taskList.length > 1 && activeTask.id == taskInStage.id"
             class="w-5 h-5 text-info"
           />
           <div v-if="stage.taskList.length > 1" class="textlabel">
             <span v-if="stage.taskList.length > 1">
               Step {{ index + 1 }} -
             </span>
-            {{ task.name }}
+            {{ taskInStage.name }}
           </div>
         </div>
-        <TaskRunTable :task-list="[task]" />
+        <TaskRunTable :task-list="[taskInStage]" />
       </template>
     </template>
   </div>
@@ -39,6 +39,7 @@ const {
   selectedTask,
   isGhostMode,
   isTenantMode,
+  isPITRMode,
   activeTaskOfStage,
 } = useIssueLogic();
 const stage = selectedStage as Ref<Stage>;
@@ -55,6 +56,7 @@ const activeTask = computed((): Task => {
  */
 const mode = computed((): Mode => {
   if (isGhostMode.value) return "merged";
+  if (isPITRMode.value) return "merged";
   if (isTenantMode.value) return "single";
   return "normal";
 });
