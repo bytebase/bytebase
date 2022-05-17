@@ -915,13 +915,13 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer conn.Close()
 
-	driver.l.Debug("FLUSH TABLES WITH READ LOCK",
+	driver.l.Debug("flush tables in database with read locks",
 		zap.String("database", database))
 	if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
 		return "", err
 	}
 
-	binlog, err := showMasterStatus(ctx, conn)
+	binlog, err := getBinlogInfo(ctx, conn)
 	if err != nil {
 		return "", err
 	}
@@ -929,14 +929,14 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		zap.String("filename", binlog.Filename),
 		zap.Int64("position", binlog.Position))
 
-	nowMySQL, err := mysqlNowUnix(ctx, driver.db)
+	ts, err := getServerTime(ctx, driver.db)
 	if err != nil {
 		return "", err
 	}
 
 	payload := backupPayload{
 		BinlogInfo: *binlog,
-		Ts:         nowMySQL,
+		Ts:         ts,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -995,7 +995,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
-func mysqlNowUnix(ctx context.Context, db *sql.DB) (int64, error) {
+func getServerTime(ctx context.Context, db *sql.DB) (int64, error) {
 	var timestamp int64
 	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
 	if err != nil {
@@ -1176,7 +1176,7 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-func showMasterStatus(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) {
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
 		return nil, err
@@ -1184,14 +1184,13 @@ func showMasterStatus(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) 
 	defer rows.Close()
 
 	rows.Next()
-	// TODO(dragonly): Fill the `Timestamp` field.
-	binlogConfig := BinlogInfo{}
+	binlogInfo := BinlogInfo{}
 	var unused interface{}
-	if err := rows.Scan(&binlogConfig.Filename, &binlogConfig.Position, &unused, &unused, &unused); err != nil {
+	if err := rows.Scan(&binlogInfo.Filename, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
 		return nil, err
 	}
 
-	return &binlogConfig, nil
+	return &binlogInfo, nil
 }
 
 // getDatabaseStmt gets the create statement of a database.
