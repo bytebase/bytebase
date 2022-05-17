@@ -8,14 +8,16 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 	"github.com/segmentio/analytics-go"
+	"go.uber.org/zap"
 )
 
 // InstanceReporter is the segment reporter for instance.
 type InstanceReporter struct {
+	l *zap.Logger
 }
 
 // Report will exec the segment reporter for instance
-func (t *InstanceReporter) Report(ctx context.Context, store *store.Store, segment *segment) error {
+func (r *InstanceReporter) Report(ctx context.Context, store *store.Store, segment *segment) error {
 	status := api.Normal
 	instanceList, err := store.FindInstance(ctx, &api.InstanceFind{
 		RowStatus: &status,
@@ -29,16 +31,21 @@ func (t *InstanceReporter) Report(ctx context.Context, store *store.Store, segme
 		instanceEngineMap[instance.Engine] = instanceEngineMap[instance.Engine] + 1
 	}
 
-	properties := analytics.NewProperties().Set("total", len(instanceList))
-
 	for engine, count := range instanceEngineMap {
-		properties.Set(string(engine), count)
+		properties := analytics.NewProperties().
+			Set("database", string(engine)).
+			Set("count", count)
+
+		err := segment.client.Enqueue(analytics.Track{
+			Event:      string(InstanceEventName),
+			UserId:     segment.identifier,
+			Properties: properties,
+			Timestamp:  time.Now().UTC(),
+		})
+		if err != nil {
+			r.l.Debug("failed to enqueue report event for instance", zap.String("database", string(engine)))
+		}
 	}
 
-	return segment.client.Enqueue(analytics.Track{
-		Event:      string(InstanceEventName),
-		UserId:     segment.identifier,
-		Properties: properties,
-		Timestamp:  time.Now().UTC(),
-	})
+	return nil
 }

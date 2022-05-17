@@ -7,10 +7,12 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/store"
 	"github.com/segmentio/analytics-go"
+	"go.uber.org/zap"
 )
 
 // IssueReporter is the segment reporter for issue.
 type IssueReporter struct {
+	l *zap.Logger
 }
 
 var issueTypeList = []api.IssueType{
@@ -25,14 +27,7 @@ var issueTypeList = []api.IssueType{
 }
 
 // Report will exec the segment reporter for issue
-func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment *segment) error {
-	total, err := store.CountIssue(ctx, &api.IssueFind{})
-	if err != nil {
-		return err
-	}
-
-	properties := analytics.NewProperties().Set("total", total)
-
+func (r *IssueReporter) Report(ctx context.Context, store *store.Store, segment *segment) error {
 	for _, issueType := range issueTypeList {
 		count, err := store.CountIssue(ctx, &api.IssueFind{
 			Type: &issueType,
@@ -50,15 +45,20 @@ func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment 
 			continue
 		}
 
-		properties.Set(key, count)
+		properties := analytics.NewProperties().
+			Set("type", key).
+			Set("count", count)
+		if err := segment.client.Enqueue(analytics.Track{
+			UserId:     segment.identifier,
+			Event:      string(IssueEventName),
+			Properties: properties,
+			Timestamp:  time.Now().UTC(),
+		}); err != nil {
+			r.l.Debug("failed to enqueue report event for issue", zap.String("type", string(issueType)))
+		}
 	}
 
-	return segment.client.Enqueue(analytics.Track{
-		UserId:     segment.identifier,
-		Event:      string(IssueEventName),
-		Properties: properties,
-		Timestamp:  time.Now().UTC(),
-	})
+	return nil
 }
 
 // getIssueType returns the issue type.

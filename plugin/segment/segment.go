@@ -46,8 +46,12 @@ func NewService(l *zap.Logger, key string, identifier string, store *store.Store
 		client:     client,
 		store:      store,
 		reporterList: []Reporter{
-			&InstanceReporter{},
-			&IssueReporter{},
+			&InstanceReporter{
+				l: l,
+			},
+			&IssueReporter{
+				l: l,
+			},
 		},
 	}
 }
