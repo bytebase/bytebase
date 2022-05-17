@@ -122,18 +122,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			panicErr, ok := r.(error)
-			if !ok {
-				panicErr = fmt.Errorf("%v", r)
-			}
-			exec.l.Error("SchemaUpdateGhostSyncTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
-			terminated = true
-			err = fmt.Errorf("encounter internal error when executing migration using gh-ost")
-		}
-	}()
-
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
