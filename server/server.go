@@ -139,7 +139,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	if err := s.store.BootSchemaReviewPolicyIfNeeded(ctx); err != nil {
-		return nil, fmt.Errorf("faild to boot schema review policy: %w", err)
+		return nil, fmt.Errorf("failed to boot schema review policy: %w", err)
 	}
 
 	e := echo.New()
