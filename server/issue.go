@@ -94,7 +94,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -130,7 +130,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
@@ -219,7 +219,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
