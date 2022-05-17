@@ -868,22 +868,22 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer txn.Rollback()
 
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return "", nil
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
