@@ -15,6 +15,8 @@ const (
 type config struct {
 	// secret used to sign the JWT auth token
 	secret string
+	// deploymentID used to initial the identify for a new deployment.
+	deploymentID string
 }
 
 // Profile is the configuration to start main server.

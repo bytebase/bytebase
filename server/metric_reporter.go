@@ -20,33 +20,34 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
-	server  *Server
-	metrics api.MetricService
+	server       *Server
+	metrics      api.MetricService
+	deploymentID string
 }
 
 // NewMetricScheduler creates a new metric scheduler.
 func NewMetricScheduler(logger *zap.Logger, server *Server, deploymentID string) *MetricScheduler {
 	segmentService := segment.NewService(logger, server.profile.SegmentKey, deploymentID, server.store)
 
-	plan := api.FREE.String()
-	if server.subscription != nil {
-		plan = server.subscription.Plan.String()
-	}
-
-	segmentService.Identify(&api.Workspace{
-		Plan:         plan,
-		DeploymentID: deploymentID,
-	})
-
 	return &MetricScheduler{
-		l:       logger,
-		server:  server,
-		metrics: segmentService,
+		l:            logger,
+		server:       server,
+		metrics:      segmentService,
+		deploymentID: deploymentID,
 	}
 }
 
 // Run will run the metric scheduler.
 func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+	plan := api.FREE.String()
+	if m.server.subscription != nil {
+		plan = m.server.subscription.Plan.String()
+	}
+	m.metrics.Identify(&api.Workspace{
+		Plan:         plan,
+		DeploymentID: m.deploymentID,
+	})
+
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()

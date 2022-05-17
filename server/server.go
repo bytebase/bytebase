@@ -135,15 +135,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 	s.secret = config.secret
 
-	err = s.initBranding(ctx, storeInstance)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init branding: %w", err)
-	}
-	deploymentID, err := s.initDeploymentID(ctx, storeInstance)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init deployment ID: %w", err)
-	}
-
 	e := echo.New()
 	e.Debug = prof.Debug
 	e.HideBanner = true
@@ -302,7 +293,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.initSubscription()
-	s.initMetricScheduler(deploymentID)
+	s.initMetricScheduler(config.deploymentID)
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
@@ -310,8 +301,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 }
 
 // initSubscription will initial the subscription cache in memory.
-func (server *Server) initSubscription() {
+func (server *Server) initSubscription() *enterpriseAPI.Subscription {
 	server.subscription = server.loadSubscription()
+	return server.subscription
 }
 
 // initMetricScheduler will initial the metric scheduler.
@@ -325,7 +317,7 @@ func (server *Server) initDeploymentID(ctx context.Context, store *store.Store) 
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingDeploymentID,
 		Value:       uuid.New().String(),
-		Description: "The segment identify",
+		Description: "The deployment identify",
 	}
 	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
 	if err != nil {
@@ -336,34 +328,44 @@ func (server *Server) initDeploymentID(ctx context.Context, store *store.Store) 
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
-	conf := &config{}
-	configCreate := &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
-		Name:        api.SettingAuthSecret,
-		Value:       common.RandomString(secreatLength),
-		Description: "Random string used to sign the JWT auth token.",
-	}
-	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
-	if err != nil {
-		return nil, err
-	}
-	conf.secret = config.Value
-
-	return conf, nil
-}
-
-func (server *Server) initBranding(ctx context.Context, store *store.Store) error {
-	configCreate := &api.SettingCreate{
+	// initial branding
+	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
-	}
-	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	conf := &config{}
+
+	// initial JWT token
+	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingAuthSecret,
+		Value:       common.RandomString(secreatLength),
+		Description: "Random string used to sign the JWT auth token.",
+	})
+	if err != nil {
+		return nil, err
+	}
+	conf.secret = authSetting.Value
+
+	// initial deployment
+	deploymentSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingDeploymentID,
+		Value:       uuid.New().String(),
+		Description: "The deployment identify",
+	})
+	if err != nil {
+		return nil, err
+	}
+	conf.deploymentID = deploymentSetting.Value
+
+	return conf, nil
 }
 
 // Run will run the server.
