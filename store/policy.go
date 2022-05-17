@@ -481,7 +481,7 @@ func (s *Store) bootSchemaReviewPolicy(ctx context.Context) error {
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.Rollback()
+	defer tx.PTx.Rollback()
 
 	rowStatus := api.Normal
 	envList, err := s.findEnvironmentImpl(ctx, tx.PTx, &api.EnvironmentFind{RowStatus: &rowStatus})
