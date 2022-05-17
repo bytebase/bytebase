@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	metricSchedulerInterval = time.Duration(24) * time.Hour
+	metricSchedulerInterval = time.Duration(1) * time.Hour
 )
 
 // MetricScheduler is the metric scheduler.
@@ -52,8 +52,8 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 		plan = m.server.subscription.Plan.String()
 	}
 	if err := m.reporter.Identify(&api.Workspace{
-		Plan:         plan,
-		DeploymentID: m.deploymentID,
+		Plan: plan,
+		ID:   m.deploymentID,
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))
 	}

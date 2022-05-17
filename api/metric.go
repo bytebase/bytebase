@@ -6,8 +6,8 @@ import (
 
 // Workspace is the instance for console application.
 type Workspace struct {
-	Plan         string
-	DeploymentID string
+	Plan string
+	ID   string
 }
 
 // MetricEventName is the segment track event name.
