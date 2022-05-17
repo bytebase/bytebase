@@ -124,7 +124,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	if err != nil || issue == nil {
 		exec.l.Error("failed to get issue by PipelineID",
 			zap.Int("PipelineID", task.PipelineID),
-			zap.Any("issue", *issue),
 			zap.Error(err))
 		return fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
 	}
