@@ -53,9 +53,9 @@ func (t *IssueReporter) Report(ctx context.Context, store *store.Store, segment 
 		properties.Set(key, count)
 	}
 
-	return segment.client.Enqueue(analytics.Page{
+	return segment.client.Enqueue(analytics.Track{
 		UserId:     segment.identifier,
-		Name:       string(IssueEventName),
+		Event:      string(IssueEventName),
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
 	})
