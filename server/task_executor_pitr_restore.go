@@ -77,7 +77,7 @@ func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.
 
 	executor := driver.(util.MigrationExecutor)
 	var prevSchemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, migrationInfo.Database, &prevSchemaBuf, true); err != nil {
+	if _, err := driver.Dump(ctx, migrationInfo.Database, &prevSchemaBuf, true); err != nil {
 		return true, nil, err
 	}
 
@@ -90,7 +90,7 @@ func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.
 	startedNs := time.Now().UnixNano()
 
 	var updatedSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, migrationInfo.Database, &updatedSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, migrationInfo.Database, &updatedSchemaBuf, true /*schemaOnly*/); err != nil {
 		return true, nil, util.FormatError(err)
 	}
 	updatedSchema := updatedSchemaBuf.String()
@@ -136,7 +136,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	mysqlRestore := restoremysql.New(mysqlDriver)
-	config := restoremysql.BinlogConfig{}
+	config := pluginmysql.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
 	// Currently, let's just use the empty backup dump as a placeholder.
 	var buf bytes.Buffer

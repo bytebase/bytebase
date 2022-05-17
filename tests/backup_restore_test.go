@@ -236,7 +236,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
-		config := restoremysql.BinlogConfig{}
+		config := pluginmysql.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
