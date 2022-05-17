@@ -48,13 +48,13 @@ func init() {
 
 // BinlogInfo is the binlog coordination for MySQL.
 type BinlogInfo struct {
-	Filename string `json:"file_name"`
+	Filename string `json:"fileName"`
 	Position int64  `json:"position"`
 }
 
 // This is encoded in JSON and stored in the backup table, representing PITR related info.
 type backupPayload struct {
-	BinlogInfo BinlogInfo `json:"binlog_info"`
+	BinlogInfo BinlogInfo `json:"binlogInfo"`
 	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
 	// Mainly for UI purpose.
 	Ts int64 `json:"ts"`
