@@ -158,6 +158,12 @@ export const useBaseIssueLogic = (params: {
     return issue.value.type === "bb.issue.database.schema.update.ghost";
   });
 
+  const isPITRMode = computed((): boolean => {
+    if (!isDev()) return false;
+
+    return issue.value.type === "bb.issue.database.pitr";
+  });
+
   const taskStatusOfStage = (stage: Stage | StageCreate) => {
     if (create.value) {
       return stage.taskList[0].status;
@@ -185,6 +191,7 @@ export const useBaseIssueLogic = (params: {
     project,
     isTenantMode,
     isGhostMode,
+    isPITRMode,
     createIssue,
     selectedStage,
     selectedTask,
