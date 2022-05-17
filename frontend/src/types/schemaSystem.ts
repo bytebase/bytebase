@@ -68,7 +68,6 @@ export type RuleType =
   | "table.require-pk"
   | "naming.table"
   | "naming.column"
-  | "naming.index.pk"
   | "naming.index.uk"
   | "naming.index.fk"
   | "naming.index.idx"
@@ -158,31 +157,6 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           payload: {
             type: "STRING",
             default: "^[a-z]+(_[a-z]+)?$",
-          },
-        },
-      ],
-    ],
-    [
-      "naming.index.pk",
-      [
-        {
-          title: "pk-name-format",
-          description: "",
-          payload: {
-            type: "TEMPLATE",
-            default: "^pk_{{table}}_{{column_list}}$",
-            templateList: [
-              {
-                id: "table",
-                description:
-                  "schema-review-policy.payload-config.template.table-name",
-              },
-              {
-                id: "column_list",
-                description:
-                  "schema-review-policy.payload-config.template.column-list",
-              },
-            ],
           },
         },
       ],
@@ -325,13 +299,6 @@ export const ruleTemplateList: RuleTemplate[] = [
     level: RuleLevel.ERROR,
   },
   {
-    type: "naming.index.pk",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.pk") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
     type: "naming.index.uk",
     category: "NAMING",
     engine: "COMMON",
@@ -469,7 +436,6 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     case "naming.index.idx":
-    case "naming.index.pk":
     case "naming.index.uk":
     case "naming.index.fk":
       const templateComponent = ruleTemplate.componentList[0];
@@ -530,7 +496,6 @@ export const convertRuleTemplateToPolicyRule = (
         },
       };
     case "naming.index.idx":
-    case "naming.index.pk":
     case "naming.index.uk":
     case "naming.index.fk":
       const templatePayload = rule.componentList[0].payload as TemplatePayload;

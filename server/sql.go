@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonapi"
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
-	"github.com/google/jsonapi"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		connectionInfo := &api.ConnectionInfo{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, connectionInfo); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql ping request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql ping request").SetInternal(err)
 		}
 		if err := s.disallowBytebaseStore(connectionInfo.Engine, connectionInfo.Host, connectionInfo.Port); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
@@ -81,7 +82,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		sync := &api.SQLSyncSchema{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql sync schema request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql sync schema request").SetInternal(err)
 		}
 
 		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
@@ -105,20 +106,20 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		exec := &api.SQLExecute{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, exec); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request").SetInternal(err)
 		}
 
 		if exec.InstanceID == 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing instanceId")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing instanceId")
 		}
 		if len(exec.Statement) == 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, missing sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, missing sql statement")
 		}
 		if !exec.Readonly {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support readonly sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support readonly sql statement")
 		}
 		if !validateSQLSelectStatement(exec.Statement) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted sql execute request, only support SELECT sql statement")
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql execute request, only support SELECT sql statement")
 		}
 
 		instance, err := s.store.GetInstanceByID(ctx, exec.InstanceID)
@@ -278,6 +279,17 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return createView, nil
 			}
 
+			var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) (*api.DBExtension, error) {
+				createDBExtension, err := s.store.CreateDBExtension(ctx, dbExtensionCreate)
+				if err != nil {
+					if common.ErrorCode(err) == common.Conflict {
+						return nil, fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", instance.Name, database.Name, dbExtensionCreate.Name)
+					}
+					return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, dbExtensionCreate.Name, err)
+				}
+				return createDBExtension, nil
+			}
+
 			var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
 				_, err := s.store.CreateColumn(ctx, columnCreate)
 				if err != nil {
@@ -407,6 +419,23 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				return nil
 			}
 
+			var recreateDBExtensionSchema = func(database *api.Database, dbExtension db.Extension) error {
+				// dbExtension
+				dbExtensionCreate := &api.DBExtensionCreate{
+					CreatorID:   api.SystemBotID,
+					DatabaseID:  database.ID,
+					Name:        dbExtension.Name,
+					Version:     dbExtension.Version,
+					Schema:      dbExtension.Schema,
+					Description: dbExtension.Description,
+				}
+				_, err := createDBExtension(database, dbExtensionCreate)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
 			instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
@@ -527,6 +556,20 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 							return err
 						}
 					}
+
+					dbExtensionDelete := &api.DBExtensionDelete{
+						DatabaseID: dbPatched.ID,
+					}
+					if err := s.store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
+						return fmt.Errorf("failed to sync database for instance: %s. Failed to reset dbExtension info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
+					}
+
+					for _, dbExtension := range schema.ExtensionList {
+						err = recreateDBExtensionSchema(dbPatched, dbExtension)
+						if err != nil {
+							return err
+						}
+					}
 				} else {
 					// Case 2, only appear in the synced db schema
 					databaseCreate := &api.DatabaseCreate{
@@ -556,6 +599,13 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 
 					for _, view := range schema.ViewList {
 						err = recreateViewSchema(database, view)
+						if err != nil {
+							return err
+						}
+					}
+
+					for _, dbExtension := range schema.ExtensionList {
+						err = recreateDBExtensionSchema(database, dbExtension)
 						if err != nil {
 							return err
 						}

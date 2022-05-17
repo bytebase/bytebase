@@ -39,6 +39,7 @@ p, DEVELOPER, /database/{id}, PATCH
 p, DEVELOPER, /database/{id}/table, GET
 p, DEVELOPER, /database/{id}/table/{tableName}, GET
 p, DEVELOPER, /database/{id}/view, GET
+p, DEVELOPER, /database/{id}/extension, GET
 p, DEVELOPER, /database/{id}/backup, GET
 p, DEVELOPER, /database/{id}/backup, POST
 p, DEVELOPER, /database/{id}/backup-setting, GET

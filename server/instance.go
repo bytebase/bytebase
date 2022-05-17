@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 func (s *Server) registerInstanceRoutes(g *echo.Group) {
@@ -24,7 +25,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		instanceCreate := &api.InstanceCreate{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instanceCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create instance request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create instance request").SetInternal(err)
 		}
 		instanceCreate.CreatorID = c.Get(getPrincipalIDContextKey()).(int)
 		if err := s.disallowBytebaseStore(instanceCreate.Engine, instanceCreate.Host, instanceCreate.Port); err != nil {
@@ -116,7 +117,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, instancePatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted patch instance request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch instance request").SetInternal(err)
 		}
 
 		instance, err := s.store.GetInstanceByID(ctx, id)

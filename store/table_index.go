@@ -30,7 +30,7 @@ func (s *Store) CreateIndex(ctx context.Context, create *api.IndexCreate) (*api.
 	return index, nil
 }
 
-// FindIndex retrieves a list of indexes based on find.
+// FindIndex retrieves a list of indices based on find.
 func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *Store) GetIndex(ctx context.Context, find *api.IndexFind) (*api.Index, 
 	if len(list) == 0 {
 		return nil, nil
 	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indexs with filter %+v, expect 1", len(list), find)}
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indices with filter %+v, expect 1", len(list), find)}
 	}
 	return list[0], nil
 }

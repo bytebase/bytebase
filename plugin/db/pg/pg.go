@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 
 	// embed will embeds the migration schema.
@@ -319,6 +320,12 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 			schema.ViewList = append(schema.ViewList, dbView)
 		}
+		// Extensions.
+		extensions, err := getExtensions(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
+		}
+		schema.ExtensionList = extensions
 
 		if err := txn.Commit(); err != nil {
 			return nil, nil, err
@@ -871,6 +878,15 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return err
 	}
 
+	version, err := driver.GetVersion(ctx)
+	if err != nil {
+		return err
+	}
+	semverVersion, err := semver.ParseTolerant(version)
+	if err != nil {
+		return err
+	}
+
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -989,7 +1005,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get event triggers from database %q: %s", database, err)
 	}
 	for _, evt := range events {
-		if _, err := io.WriteString(out, evt.Statement()); err != nil {
+		if _, err := io.WriteString(out, evt.Statement(semverVersion.Major)); err != nil {
 			return err
 		}
 	}
@@ -1274,7 +1290,7 @@ func (t triggerSchema) Statement() string {
 }
 
 // Statement returns the create statement of an event trigger.
-func (t eventTriggerSchema) Statement() string {
+func (t eventTriggerSchema) Statement(majorVersion uint64) string {
 	s := fmt.Sprintf(""+
 		"--\n"+
 		"-- Event trigger structure for %s\n"+
@@ -1284,7 +1300,15 @@ func (t eventTriggerSchema) Statement() string {
 	if t.tags != "" {
 		s += fmt.Sprintf("\n         WHEN TAG IN (%s)", t.tags)
 	}
-	s += fmt.Sprintf("\n   EXECUTE FUNCTION %s();\n", t.funcName)
+
+	// See https://www.postgresql.org/docs/10/sql-createeventtrigger.html,
+	// pg with major version below 10 uses PROCEDURE syntax.
+	functionSyntax := "FUNCTION"
+	if majorVersion == 10 {
+		functionSyntax = "PROCEDURE"
+	}
+
+	s += fmt.Sprintf("\n   EXECUTE %s %s();\n", functionSyntax, t.funcName)
 
 	if t.enabled != "O" {
 		s += fmt.Sprintf("ALTER EVENT TRIGGER %s ", t.name)
@@ -1575,6 +1599,34 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		view.comment = comment.String
 	}
 	return nil
+}
+
+func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
+	query := "" +
+		"SELECT e.extname, e.extversion, n.nspname, c.description " +
+		"FROM pg_catalog.pg_extension e " +
+		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
+		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass;"
+
+	var extensions []db.Extension
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e db.Extension
+		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
+			return nil, err
+		}
+		if pgSystemSchema(e.Schema) {
+			continue
+		}
+		extensions = append(extensions, e)
+	}
+
+	return extensions, nil
 }
 
 // getIndices gets all indices of a database.

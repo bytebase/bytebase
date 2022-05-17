@@ -520,6 +520,7 @@
     "select-environment-first": "先选择环境",
     "tables": "表",
     "views": "视图",
+    "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态"
@@ -533,7 +534,7 @@
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase需要@:{'common.migration'} @:{'common.schema'} 来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema @:common.migration",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「迁移 schema」来记录这个实例上的数据库 schema 迁移。如果没有设置「迁移 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
     "please-contact-your-dba-to-configure-it": "请联系 DBA 配置。",
     "please-check-the-instance-connection-info-is-correct": "请检查实例连接信息是否正确。",
     "users": "用户",
@@ -791,7 +792,13 @@
     "indexes": "索引",
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
-    "go-to-transfer": "前去转移"
+    "go-to-transfer": "前去转移",
+    "pitr": {
+      "restore": "@:common.restore@:common.database",
+      "no-available-backup": "没有可用的备份",
+      "point-in-time": "时间点",
+      "help-info": "将数据库的状态恢复到一个时间点。{link}。"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

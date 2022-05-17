@@ -75,7 +75,7 @@ func (receiver *FeishuReceiver) post(context Context) error {
 		contentList = append(contentList, sectionList)
 	}
 
-	for _, meta := range context.MetaList {
+	for _, meta := range context.getMetaList() {
 		sectionList := []FeishuWebhookPostSection{}
 		sectionList = append(sectionList, FeishuWebhookPostSection{
 			Tag:  "text",
@@ -154,7 +154,7 @@ func (receiver *FeishuReceiver) post(context Context) error {
 
 	webhookResponse := &FeishuWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.Code != 0 {

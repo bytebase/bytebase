@@ -158,6 +158,12 @@
               </div>
             </template>
           </BBTooltipButton>
+
+          <PITRRestoreButton
+            v-if="isDev()"
+            :database="database"
+            :allow-admin="allowAdmin"
+          />
         </div>
       </div>
     </main>
@@ -284,23 +290,16 @@
   <GhostDialog ref="ghostDialog" />
 </template>
 
-<script lang="ts">
-import {
-  computed,
-  onMounted,
-  reactive,
-  watch,
-  defineComponent,
-  ref,
-} from "vue";
+<script lang="ts" setup>
+import { computed, onMounted, reactive, watch, ref } from "vue";
 import { useRouter } from "vue-router";
-import ProjectSelect from "../components/ProjectSelect.vue";
-import DatabaseBackupPanel from "../components/DatabaseBackupPanel.vue";
-import DatabaseMigrationHistoryPanel from "../components/DatabaseMigrationHistoryPanel.vue";
-import DatabaseOverviewPanel from "../components/DatabaseOverviewPanel.vue";
-import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
-import { DatabaseLabelProps } from "../components/DatabaseLabels";
-import { SelectDatabaseLabel } from "../components/TransferDatabaseForm";
+import ProjectSelect from "@/components/ProjectSelect.vue";
+import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
+import DatabaseMigrationHistoryPanel from "@/components/DatabaseMigrationHistoryPanel.vue";
+import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
+import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
+import { DatabaseLabelProps } from "@/components/DatabaseLabels";
+import { SelectDatabaseLabel } from "@/components/TransferDatabaseForm";
 import {
   idFromSlug,
   isDBAOrOwner,
@@ -308,7 +307,7 @@ import {
   hidePrefix,
   isDev,
   allowGhostMigration,
-} from "../utils";
+} from "@/utils";
 import {
   ProjectId,
   UNKNOWN_ID,
@@ -317,10 +316,11 @@ import {
   baseDirectoryWebUrl,
   Database,
   DatabaseLabel,
-} from "../types";
-import { BBTabFilterItem } from "../bbkit/types";
+} from "@/types";
+import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
+import { PITRRestoreButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUser,
@@ -344,352 +344,301 @@ interface LocalState {
   selectedIndex: number;
 }
 
-export default defineComponent({
-  name: "DatabaseDetail",
-  components: {
-    ProjectSelect,
-    DatabaseOverviewPanel,
-    DatabaseMigrationHistoryPanel,
-    DatabaseBackupPanel,
-    InstanceEngineIcon,
-    DatabaseLabelProps,
-    SelectDatabaseLabel,
-    GhostDialog,
-  },
-  props: {
-    databaseSlug: {
-      required: true,
-      type: String,
-    },
-  },
-  setup(props) {
-    const databaseStore = useDatabaseStore();
-    const repositoryStore = useRepositoryStore();
-    const router = useRouter();
-    const { t } = useI18n();
-    const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
-
-    const databaseTabItemList: DatabaseTabItem[] = [
-      { name: t("common.overview"), hash: "overview" },
-      { name: t("migration-history.self"), hash: "migration-history" },
-      { name: t("common.backups"), hash: "backup" },
-    ];
-
-    const state = reactive<LocalState>({
-      showTransferDatabaseModal: false,
-      showIncorrectProjectModal: false,
-      editingProjectId: UNKNOWN_ID,
-      selectedIndex: OVERVIEW_TAB,
-    });
-
-    const currentUser = useCurrentUser();
-
-    const database = computed((): Database => {
-      return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
-    });
-
-    const isTenantProject = computed(() => {
-      return database.value.project.tenantMode === "TENANT";
-    });
-
-    const isCurrentUserDBAOrOwner = computed((): boolean => {
-      return isDBAOrOwner(currentUser.value.role);
-    });
-
-    // Project can be transferred if meets either of the condition below:
-    // - Database is in default project
-    // - Workspace owner, dba
-    // - db's project owner
-    const allowChangeProject = computed(() => {
-      if (database.value.project.id == DEFAULT_PROJECT_ID) {
-        return true;
-      }
-
-      if (isCurrentUserDBAOrOwner.value) {
-        return true;
-      }
-
-      for (const member of database.value.project.memberList) {
-        if (
-          member.role == "OWNER" &&
-          member.principal.id == currentUser.value.id
-        ) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-
-    // Database can be admined if meets either of the condition below:
-    // - Workspace owner, dba
-    // - db's project owner
-    //
-    // The admin operation includes
-    // - Transfer project
-    // - Enable/disable backup
-    const allowAdmin = computed(() => {
-      if (isCurrentUserDBAOrOwner.value) {
-        return true;
-      }
-
-      for (const member of database.value.project.memberList) {
-        if (
-          member.role == "OWNER" &&
-          member.principal.id == currentUser.value.id
-        ) {
-          return true;
-        }
-      }
-      return false;
-    });
-
-    // Database can be edited if meets either of the condition below:
-    // - Workspace owner, dba
-    // - db's project member
-    //
-    // The edit operation includes
-    // - Take manual backup
-    const allowEdit = computed(() => {
-      if (isCurrentUserDBAOrOwner.value) {
-        return true;
-      }
-
-      for (const member of database.value.project.memberList) {
-        if (member.principal.id == currentUser.value.id) {
-          return true;
-        }
-      }
-      return false;
-    });
-
-    const allowMigrate = computed(() => {
-      if (!allowEdit.value) return false;
-
-      // Migrating single database in tenant mode is not allowed
-      // Since this will probably cause different migration version across a group of tenant databases
-      return database.value.project.tenantMode === "DISABLED";
-    });
-
-    const allowEditDatabaseLabels = computed((): boolean => {
-      // only allowed to edit database labels when allowAdmin
-      return allowAdmin.value;
-    });
-
-    const alterSchemaText = computed(() => {
-      if (database.value.project.workflowType == "VCS") {
-        return t("database.alter-schema-in-vcs");
-      }
-      return t("database.alter-schema");
-    });
-
-    const changeDataText = computed(() => {
-      if (database.value.project.workflowType == "VCS") {
-        return t("database.change-data-in-vcs");
-      }
-      return t("database.change-data");
-    });
-
-    const tabItemList = computed((): BBTabFilterItem[] => {
-      return databaseTabItemList.map((item) => {
-        return { title: item.name, alert: false };
-      });
-    });
-
-    const tryTransferProject = () => {
-      state.editingProjectId = database.value.project.id;
-      state.showTransferDatabaseModal = true;
-    };
-
-    // 'normal' -> normal migration
-    // 'online' -> online migration
-    // false -> user clicked cancel button
-    const isUsingGhostMigration = async (databaseList: Database[]) => {
-      if (!isDev()) {
-        return "normal";
-      }
-
-      // check if all selected databases supports gh-ost
-      if (allowGhostMigration(databaseList)) {
-        // open the dialog to ask the user
-        const { result, mode } = await ghostDialog.value!.open();
-        if (!result) {
-          return false; // return false when user clicked the cancel button
-        }
-        return mode;
-      }
-
-      // fallback to normal
-      return "normal";
-    };
-
-    const alterSchema = async () => {
-      if (database.value.project.workflowType == "UI") {
-        const mode = await isUsingGhostMigration([database.value]);
-        if (mode === false) return;
-        const query: Record<string, any> = {
-          template: "bb.issue.database.schema.update",
-          name: `[${database.value.name}] Alter schema`,
-          project: database.value.project.id,
-          databaseList: database.value.id,
-        };
-        if (mode === "online") {
-          query.ghost = "1";
-        }
-        router.push({
-          name: "workspace.issue.detail",
-          params: {
-            issueSlug: "new",
-          },
-          query,
-        });
-      } else if (database.value.project.workflowType == "VCS") {
-        repositoryStore
-          .fetchRepositoryByProjectId(database.value.project.id)
-          .then((repository: Repository) => {
-            window.open(baseDirectoryWebUrl(repository), "_blank");
-          });
-      }
-    };
-
-    const changeData = () => {
-      if (database.value.project.workflowType == "UI") {
-        router.push({
-          name: "workspace.issue.detail",
-          params: {
-            issueSlug: "new",
-          },
-          query: {
-            template: "bb.issue.database.data.update",
-            name: `[${database.value.name}] Change data`,
-            project: database.value.project.id,
-            databaseList: database.value.id,
-          },
-        });
-      } else if (database.value.project.workflowType == "VCS") {
-        repositoryStore
-          .fetchRepositoryByProjectId(database.value.project.id)
-          .then((repository: Repository) => {
-            window.open(baseDirectoryWebUrl(repository), "_blank");
-          });
-      }
-    };
-
-    const updateProject = (
-      newProjectId: ProjectId,
-      labels?: DatabaseLabel[]
-    ) => {
-      databaseStore
-        .transferProject({
-          databaseId: database.value.id,
-          projectId: newProjectId,
-          labels,
-        })
-        .then((updatedDatabase) => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "database.successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name",
-              [updatedDatabase.name, updatedDatabase.project.name]
-            ),
-          });
-        });
-    };
-
-    const updateLabels = (labels: DatabaseLabel[]) => {
-      databaseStore.patchDatabaseLabels({
-        databaseId: database.value.id,
-        labels,
-      });
-    };
-
-    const selectTab = (index: number) => {
-      state.selectedIndex = index;
-      router.replace({
-        name: "workspace.database.detail",
-        hash: "#" + databaseTabItemList[index].hash,
-      });
-    };
-
-    const selectDatabaseTabOnHash = () => {
-      if (router.currentRoute.value.hash) {
-        for (let i = 0; i < databaseTabItemList.length; i++) {
-          if (
-            databaseTabItemList[i].hash ==
-            router.currentRoute.value.hash.slice(1)
-          ) {
-            selectTab(i);
-            break;
-          }
-        }
-      } else {
-        selectTab(OVERVIEW_TAB);
-      }
-    };
-
-    const gotoSQLEditor = () => {
-      // SQL editors can only query databases in the projects available to the user.
-      if (
-        database.value.projectId === UNKNOWN_ID ||
-        database.value.projectId === DEFAULT_PROJECT_ID
-      ) {
-        state.editingProjectId = database.value.project.id;
-        state.showIncorrectProjectModal = true;
-      } else {
-        router.push({
-          name: "sql-editor.detail",
-          params: {
-            connectionSlug: connectionSlug(database.value),
-          },
-        });
-      }
-    };
-
-    onMounted(() => {
-      selectDatabaseTabOnHash();
-    });
-
-    watch(
-      () => router.currentRoute.value.hash,
-      () => {
-        if (router.currentRoute.value.name == "workspace.database.detail") {
-          selectDatabaseTabOnHash();
-        }
-      }
-    );
-
-    const doTransfer = (labels: DatabaseLabel[]) => {
-      updateProject(state.editingProjectId, labels);
-      state.showTransferDatabaseModal = false;
-    };
-
-    return {
-      OVERVIEW_TAB,
-      MIGRATION_HISTORY_TAB,
-      BACKUP_TAB,
-      state,
-      ghostDialog,
-      isTenantProject,
-      database,
-      allowChangeProject,
-      allowAdmin,
-      allowEdit,
-      allowMigrate,
-      allowEditDatabaseLabels,
-      tabItemList,
-      tryTransferProject,
-      alterSchema,
-      changeData,
-      alterSchemaText,
-      changeDataText,
-      updateProject,
-      updateLabels,
-      selectTab,
-      gotoSQLEditor,
-      doTransfer,
-      hidePrefix,
-    };
+const props = defineProps({
+  databaseSlug: {
+    required: true,
+    type: String,
   },
 });
+
+const databaseStore = useDatabaseStore();
+const repositoryStore = useRepositoryStore();
+const router = useRouter();
+const { t } = useI18n();
+const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
+
+const databaseTabItemList: DatabaseTabItem[] = [
+  { name: t("common.overview"), hash: "overview" },
+  { name: t("migration-history.self"), hash: "migration-history" },
+  { name: t("common.backups"), hash: "backup" },
+];
+
+const state = reactive<LocalState>({
+  showTransferDatabaseModal: false,
+  showIncorrectProjectModal: false,
+  editingProjectId: UNKNOWN_ID,
+  selectedIndex: OVERVIEW_TAB,
+});
+
+const currentUser = useCurrentUser();
+
+const database = computed((): Database => {
+  return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
+});
+
+const isTenantProject = computed(() => {
+  return database.value.project.tenantMode === "TENANT";
+});
+
+const isCurrentUserDBAOrOwner = computed((): boolean => {
+  return isDBAOrOwner(currentUser.value.role);
+});
+
+// Project can be transferred if meets either of the condition below:
+// - Database is in default project
+// - Workspace owner, dba
+// - db's project owner
+const allowChangeProject = computed(() => {
+  if (database.value.project.id == DEFAULT_PROJECT_ID) {
+    return true;
+  }
+
+  if (isCurrentUserDBAOrOwner.value) {
+    return true;
+  }
+
+  for (const member of database.value.project.memberList) {
+    if (member.role == "OWNER" && member.principal.id == currentUser.value.id) {
+      return true;
+    }
+  }
+
+  return false;
+});
+
+// Database can be admined if meets either of the condition below:
+// - Workspace owner, dba
+// - db's project owner
+//
+// The admin operation includes
+// - Transfer project
+// - Enable/disable backup
+const allowAdmin = computed(() => {
+  if (isCurrentUserDBAOrOwner.value) {
+    return true;
+  }
+
+  for (const member of database.value.project.memberList) {
+    if (member.role == "OWNER" && member.principal.id == currentUser.value.id) {
+      return true;
+    }
+  }
+  return false;
+});
+
+// Database can be edited if meets either of the condition below:
+// - Workspace owner, dba
+// - db's project member
+//
+// The edit operation includes
+// - Take manual backup
+const allowEdit = computed(() => {
+  if (isCurrentUserDBAOrOwner.value) {
+    return true;
+  }
+
+  for (const member of database.value.project.memberList) {
+    if (member.principal.id == currentUser.value.id) {
+      return true;
+    }
+  }
+  return false;
+});
+
+const allowMigrate = computed(() => {
+  if (!allowEdit.value) return false;
+
+  // Migrating single database in tenant mode is not allowed
+  // Since this will probably cause different migration version across a group of tenant databases
+  return database.value.project.tenantMode === "DISABLED";
+});
+
+const allowEditDatabaseLabels = computed((): boolean => {
+  // only allowed to edit database labels when allowAdmin
+  return allowAdmin.value;
+});
+
+const alterSchemaText = computed(() => {
+  if (database.value.project.workflowType == "VCS") {
+    return t("database.alter-schema-in-vcs");
+  }
+  return t("database.alter-schema");
+});
+
+const changeDataText = computed(() => {
+  if (database.value.project.workflowType == "VCS") {
+    return t("database.change-data-in-vcs");
+  }
+  return t("database.change-data");
+});
+
+const tabItemList = computed((): BBTabFilterItem[] => {
+  return databaseTabItemList.map((item) => {
+    return { title: item.name, alert: false };
+  });
+});
+
+const tryTransferProject = () => {
+  state.editingProjectId = database.value.project.id;
+  state.showTransferDatabaseModal = true;
+};
+
+// 'normal' -> normal migration
+// 'online' -> online migration
+// false -> user clicked cancel button
+const isUsingGhostMigration = async (databaseList: Database[]) => {
+  if (!isDev()) {
+    return "normal";
+  }
+
+  // check if all selected databases supports gh-ost
+  if (allowGhostMigration(databaseList)) {
+    // open the dialog to ask the user
+    const { result, mode } = await ghostDialog.value!.open();
+    if (!result) {
+      return false; // return false when user clicked the cancel button
+    }
+    return mode;
+  }
+
+  // fallback to normal
+  return "normal";
+};
+
+const alterSchema = async () => {
+  if (database.value.project.workflowType == "UI") {
+    const mode = await isUsingGhostMigration([database.value]);
+    if (mode === false) return;
+    const query: Record<string, any> = {
+      template: "bb.issue.database.schema.update",
+      name: `[${database.value.name}] Alter schema`,
+      project: database.value.project.id,
+      databaseList: database.value.id,
+    };
+    if (mode === "online") {
+      query.ghost = "1";
+    }
+    router.push({
+      name: "workspace.issue.detail",
+      params: {
+        issueSlug: "new",
+      },
+      query,
+    });
+  } else if (database.value.project.workflowType == "VCS") {
+    repositoryStore
+      .fetchRepositoryByProjectId(database.value.project.id)
+      .then((repository: Repository) => {
+        window.open(baseDirectoryWebUrl(repository), "_blank");
+      });
+  }
+};
+
+const changeData = () => {
+  if (database.value.project.workflowType == "UI") {
+    router.push({
+      name: "workspace.issue.detail",
+      params: {
+        issueSlug: "new",
+      },
+      query: {
+        template: "bb.issue.database.data.update",
+        name: `[${database.value.name}] Change data`,
+        project: database.value.project.id,
+        databaseList: database.value.id,
+      },
+    });
+  } else if (database.value.project.workflowType == "VCS") {
+    repositoryStore
+      .fetchRepositoryByProjectId(database.value.project.id)
+      .then((repository: Repository) => {
+        window.open(baseDirectoryWebUrl(repository), "_blank");
+      });
+  }
+};
+
+const updateProject = (newProjectId: ProjectId, labels?: DatabaseLabel[]) => {
+  databaseStore
+    .transferProject({
+      databaseId: database.value.id,
+      projectId: newProjectId,
+      labels,
+    })
+    .then((updatedDatabase) => {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t(
+          "database.successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name",
+          [updatedDatabase.name, updatedDatabase.project.name]
+        ),
+      });
+    });
+};
+
+const updateLabels = (labels: DatabaseLabel[]) => {
+  databaseStore.patchDatabaseLabels({
+    databaseId: database.value.id,
+    labels,
+  });
+};
+
+const selectTab = (index: number) => {
+  state.selectedIndex = index;
+  router.replace({
+    name: "workspace.database.detail",
+    hash: "#" + databaseTabItemList[index].hash,
+  });
+};
+
+const selectDatabaseTabOnHash = () => {
+  if (router.currentRoute.value.hash) {
+    for (let i = 0; i < databaseTabItemList.length; i++) {
+      if (
+        databaseTabItemList[i].hash == router.currentRoute.value.hash.slice(1)
+      ) {
+        selectTab(i);
+        break;
+      }
+    }
+  } else {
+    selectTab(OVERVIEW_TAB);
+  }
+};
+
+const gotoSQLEditor = () => {
+  // SQL editors can only query databases in the projects available to the user.
+  if (
+    database.value.projectId === UNKNOWN_ID ||
+    database.value.projectId === DEFAULT_PROJECT_ID
+  ) {
+    state.editingProjectId = database.value.project.id;
+    state.showIncorrectProjectModal = true;
+  } else {
+    router.push({
+      name: "sql-editor.detail",
+      params: {
+        connectionSlug: connectionSlug(database.value),
+      },
+    });
+  }
+};
+
+onMounted(() => {
+  selectDatabaseTabOnHash();
+});
+
+watch(
+  () => router.currentRoute.value.hash,
+  () => {
+    if (router.currentRoute.value.name == "workspace.database.detail") {
+      selectDatabaseTabOnHash();
+    }
+  }
+);
+
+const doTransfer = (labels: DatabaseLabel[]) => {
+  updateProject(state.editingProjectId, labels);
+  state.showTransferDatabaseModal = false;
+};
 </script>

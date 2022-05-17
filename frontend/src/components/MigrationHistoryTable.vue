@@ -42,7 +42,7 @@
         <MigrationHistoryStatusIcon :status="history.status" />
       </BBTableCell>
       <BBTableCell v-if="mode == 'DATABASE'">
-        {{ history.engine }}
+        {{ history.source }}
       </BBTableCell>
       <BBTableCell>
         {{ history.version }}

@@ -35,6 +35,8 @@ const (
 	IssueDatabaseDataUpdate IssueType = "bb.issue.database.data.update"
 	// IssueDataSourceRequest is the issue type for requesting database sources.
 	IssueDataSourceRequest IssueType = "bb.issue.data-source.request"
+	// IssueDatabasePITR is the issue type for performing a Point-in-time Recovery.
+	IssueDatabasePITR IssueType = "bb.issue.database.pitr"
 )
 
 // IssueFieldID is the field ID for an issue.
@@ -176,6 +178,14 @@ type UpdateSchemaGhostContext struct {
 	DetailList []*UpdateSchemaGhostDetail `json:"updateSchemaGhostDetailList"`
 	// VCSPushEvent is the event information for VCS push.
 	VCSPushEvent *vcs.PushEvent
+}
+
+// PITRContext is the issue create context for performing a PITR in a database.
+type PITRContext struct {
+	DatabaseID int `json:"databaseId"`
+	// After the PITR operations, the database will be recovered to the state at this time.
+	// Represented in UNIX timestamp in seconds.
+	PointInTimeTs int `json:"pointInTimeTs"`
 }
 
 // IssueFind is the API message for finding issues.

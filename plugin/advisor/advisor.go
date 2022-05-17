@@ -70,6 +70,9 @@ const (
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 
+	// MySQLNoLeadingWildcardLike is an advisor type for MySQL no leading wildcard LIKE.
+	MySQLNoLeadingWildcardLike Type = "bb.plugin.advisor.mysql.where.no-leading-wildcard-like"
+
 	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
 	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
 
@@ -78,9 +81,6 @@ const (
 
 	// MySQLNamingUKConvention is an advisor type for MySQL unique key naming convention.
 	MySQLNamingUKConvention Type = "bb.plugin.advisor.mysql.naming.uk"
-
-	// MySQLNamingPKConvention is an advisor type for MySQL primary key naming convention.
-	MySQLNamingPKConvention Type = "bb.plugin.advisor.mysql.naming.pk"
 
 	// MySQLNamingFKConvention is an advisor type for MySQL foreign key naming convention.
 	MySQLNamingFKConvention Type = "bb.plugin.advisor.mysql.naming.fk"
@@ -96,6 +96,9 @@ const (
 
 	// MySQLNoSelectAll is an advisor type for MySQL no select all.
 	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
+
+	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
+	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 )
 
 // Advice is the result of an advisor.

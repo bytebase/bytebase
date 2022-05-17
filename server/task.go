@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -48,7 +49,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
 		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
@@ -93,7 +94,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			case api.TaskDatabaseSchemaUpdate:
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
 				}
 				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
@@ -110,7 +111,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
 				}
 				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
@@ -295,7 +296,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task status request").SetInternal(err)
 		}
 
 		task, err := s.store.GetTaskByID(ctx, taskID)

@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 )
 
 func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
@@ -230,7 +231,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			CreatorID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberCreate); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted create project membership request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create project membership request").SetInternal(err)
 		}
 
 		projectMember, err := s.store.CreateProjectMember(ctx, projectMemberCreate)
@@ -293,7 +294,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectMemberPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted change project membership").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed change project membership").SetInternal(err)
 		}
 
 		projectMember, err := s.store.PatchProjectMember(ctx, projectMemberPatch)

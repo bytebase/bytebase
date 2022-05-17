@@ -10,11 +10,11 @@ Currently, bytebase runs DDL statements directly on databases. With this feature
 
 gh-ost has three operation modes. It's recommended to connect to replica and migrate on primary (master). See the picture below.
 
-![gh-ost-operation-modes](./gh-ost-operation-modes.png)
+![gh-ost-operation-modes](./assets/gh-ost-operation-modes.png)
 
 Here's how gh-ost migrates.
 
-![gh-ost general flow](./gh-ost-general-flow.png)
+![gh-ost general flow](./assets/gh-ost-general-flow.png)
 
 You can find usage in this [cheatsheet](https://github.com/github/gh-ost/blob/master/doc/cheatsheet.md). Below is an example.
 

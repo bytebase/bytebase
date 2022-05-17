@@ -14,8 +14,8 @@ var (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-// Meta is the webhook metadata.
-type Meta struct {
+// meta is the webhook metadata.
+type meta struct {
 	Name  string
 	Value string
 }
@@ -61,14 +61,33 @@ type Context struct {
 	CreatorName  string
 	CreatorEmail string
 	CreatedTs    int64
-	MetaList     []Meta
-	Issue        Issue
-	Project      Project
+	Issue        *Issue
+	Project      *Project
 }
 
 // Receiver is the webhook receiver.
 type Receiver interface {
 	post(context Context) error
+}
+
+func (c *Context) getMetaList() []meta {
+	m := []meta{}
+
+	if c.Project != nil {
+		m = append(m, meta{
+			Name:  "Project",
+			Value: c.Project.Name,
+		})
+	}
+
+	if c.Issue != nil {
+		m = append(m, meta{
+			Name:  "Isuue",
+			Value: c.Issue.Name,
+		})
+	}
+
+	return m
 }
 
 // Register makes a receiver available by the url host

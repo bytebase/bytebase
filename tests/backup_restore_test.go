@@ -132,15 +132,17 @@ func TestPITR(t *testing.T) {
 		ctx := context.Background()
 
 		t.Log("initialize database")
-		db, stopFn := initTIPRDB(t, localhost, username, database, port)
-		defer db.Close()
+		// For parallel sub-tests, we use different port for MySQL
+		mysqlPort := port
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
 		defer stopFn()
+		defer db.Close()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
 
 		t.Log("make a full backup")
-		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", port), username, database)
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
 		defer func() {
 			err := driver.Close(ctx)
 			a.NoError(err)
@@ -153,7 +155,7 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, port)
+		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
 		t.Log("restore to pitr database")
@@ -181,8 +183,79 @@ func TestPITR(t *testing.T) {
 		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
 		t.Log("validate table _update_row_")
 	})
+
+	t.Run("Drop Database", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+
+		t.Logf("test %s initialize database %s", t.Name(), database)
+
+		// 1. create database for PITR test
+		// For parallel sub-tests, we use different port for MySQL
+		mysqlPort := port + 1
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
+		defer stopFn()
+		defer db.Close()
+
+		// 2. insert data for full backup
+		t.Log("insert data")
+		insertRangeData(t, db, 0, numRowsTime0)
+
+		t.Log("make a full backup")
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
+		defer func() {
+			err := driver.Close(ctx)
+			a.NoError(err)
+		}()
+
+		buf := doBackup(ctx, t, driver, database)
+		t.Logf("backup content:\n%s", buf.String())
+
+		// 3. insert more data for incremental restore
+		t.Log("insert more data")
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+
+		// 4. drop database
+		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database)
+		_, err := db.ExecContext(ctx, dropStmt)
+		a.NoError(err)
+
+		// 5. check that query from the database that had dropped will fail
+		rows, err := db.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, database))
+		a.NoError(err)
+		defer rows.Close()
+		for rows.Next() {
+			var s string
+			rows.Scan(&s)
+			a.FailNow("Database still exists after dropped")
+		}
+
+		// 6. restore
+		t.Log("restore to pitr database")
+		timestamp := time.Now().Unix()
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := restoremysql.BinlogConfig{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
+		a.NoError(err)
+
+		t.Log("cutover stage")
+		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		a.NoError(err)
+
+		t.Log("validate table tbl0")
+		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
+		t.Log("validate table tbl1")
+		validateTbl1(t, db, numRowsTime0)
+		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
+		t.Log("validate table _update_row_")
+	})
 }
-func initTIPRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
+
+func initPITRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
 	a := require.New(t)
 
 	_, stopFn := resourcemysql.SetupTestInstance(t, port)

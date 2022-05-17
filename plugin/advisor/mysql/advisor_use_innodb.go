@@ -93,10 +93,9 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	case *ast.SetStmt:
 		for _, variable := range node.Variables {
 			if strings.ToLower(variable.Name) == defaultStorageEngin {
-				var buffer strings.Builder
 				// Return lowercase
-				ctx := format.NewRestoreCtx(format.RestoreNameLowercase, &buffer)
-				if err := variable.Value.Restore(ctx); err != nil {
+				text, err := restoreNode(variable.Value, format.RestoreNameLowercase)
+				if err != nil {
 					v.adviceList = append(v.adviceList, advisor.Advice{
 						Status:  v.level,
 						Code:    common.Internal,
@@ -105,7 +104,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 					})
 					continue
 				}
-				if buffer.String() != innoDB {
+				if text != innoDB {
 					code = common.NotInnoDBEngine
 					break
 				}
