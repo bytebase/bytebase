@@ -43,7 +43,7 @@ func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*
 	return taskDAG, nil
 }
 
-// FindTaskDAGList finds TaskDAG list by FromTaskID.
+// FindTaskDAGList finds TaskDAG list by ToTaskID.
 func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
 	// TODO(xz): remove this release guard once the gh-ost feature is ready to release.
 	if s.db.mode != common.ReleaseModeDev {

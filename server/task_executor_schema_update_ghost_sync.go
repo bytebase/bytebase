@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -33,14 +34,15 @@ type SchemaUpdateGhostSyncTaskExecutor struct {
 }
 
 type ghostConfig struct {
-	host           string
-	port           string
-	user           string
-	password       string
-	database       string
-	table          string
-	alterStatement string
-	noop           bool
+	host             string
+	port             string
+	user             string
+	password         string
+	database         string
+	table            string
+	alterStatement   string
+	filenameTemplate string
+	noop             bool
 }
 
 func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
@@ -101,7 +103,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
 	// TODO(p0ny): change file name according to design doc.
-	migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
+	migrationContext.ServeSocketFile = fmt.Sprintf(config.filenameTemplate, migrationContext.OriginalTableName, "sock")
+	migrationContext.PostponeCutOverFlagFile = fmt.Sprintf(config.filenameTemplate, migrationContext.OriginalTableName, "postponeFlag")
 	// TODO(p0ny): set OkToDropTable to false and drop table in dropOriginalTable Task.
 	migrationContext.OkToDropTable = true
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
@@ -143,17 +146,29 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 
 func runGhostMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	mi, err := preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeSync(ctx, l, task, mi, statement)
-	if err != nil {
-		return true, nil, err
-	}
-	return postMigration(ctx, l, server, task, vcsPushEvent, mi, migrationID, schema)
+	syncDone := make(chan struct{})
+	go func(syncDone chan<- struct{}) {
+		migrationID, schema, err := executeSync(ctx, l, task, mi, statement, syncDone)
+		if err != nil {
+			l.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
+			return
+		}
+		_, _, err = postMigration(ctx, l, server, task, vcsPushEvent, mi, migrationID, schema)
+		if err != nil {
+			l.Error("failed to execute schema update gh-ost sync postMigration", zap.Error(err))
+		}
+	}(syncDone)
+
+	<-syncDone
+
+	return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 }
 
-func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string, syncDone chan<- struct{}) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
 	databaseName := db.BytebaseDatabase
 
@@ -192,7 +207,7 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 		}
 	}()
 
-	err = executeGhost(task.Instance, task.Database.Name, statement)
+	err = executeGhost(l, task, startedNs, statement, syncDone)
 	if err != nil {
 		return -1, "", err
 	}
@@ -205,26 +220,48 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func executeGhost(instance *api.Instance, databaseName string, statement string) error {
+func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement string, syncDone chan<- struct{}) error {
+	instance := task.Instance
+	databaseName := task.Database.Name
+
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
-		host:           instance.Host,
-		port:           instance.Port,
-		user:           adminDataSource.Username,
-		password:       adminDataSource.Password,
-		database:       databaseName,
-		alterStatement: statement,
-		noop:           false,
+		host:             instance.Host,
+		port:             instance.Port,
+		user:             adminDataSource.Username,
+		password:         adminDataSource.Password,
+		database:         databaseName,
+		alterStatement:   statement,
+		filenameTemplate: fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%%v.%%v", task.ID, task.Database.ID, databaseName),
+		noop:             false,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	migrator := logic.NewMigrator(migrationContext)
+
+	go func(ctx context.Context, migrationContext *base.MigrationContext, l *zap.Logger, syncDone chan<- struct{}) {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
+					syncDone <- struct{}{}
+					return
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}(ctx, migrationContext, l, syncDone)
+
 	if err = migrator.Migrate(); err != nil {
 		return fmt.Errorf("failed to run gh-ost, error: %w", err)
 	}
