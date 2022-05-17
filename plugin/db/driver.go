@@ -428,7 +428,9 @@ type Driver interface {
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.
-	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
+	// The returned string is the JSON encoded metadata for the logical dump.
+	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
+	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 }
