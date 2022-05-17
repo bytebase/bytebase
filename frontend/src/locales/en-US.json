@@ -797,7 +797,8 @@
       "restore": "@:common.restore @:common.database",
       "no-available-backup": "No available backup",
       "point-in-time": "Point in time",
-      "help-info": "Restore the database state to a point in time. {link}."
+      "help-info": "Restore the database state to a point in time. {link}.",
+      "minimum-supported-engine-and-version": "{engine} >= {min_version} required"
     }
   },
   "repository": {

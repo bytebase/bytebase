@@ -797,7 +797,8 @@
       "restore": "@:common.restore@:common.database",
       "no-available-backup": "没有可用的备份",
       "point-in-time": "时间点",
-      "help-info": "将数据库的状态恢复到一个时间点。{link}。"
+      "help-info": "将数据库的状态恢复到一个时间点。{link}。",
+      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}"
     }
   },
   "repository": {
