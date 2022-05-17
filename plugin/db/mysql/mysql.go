@@ -48,7 +48,7 @@ func init() {
 
 // BinlogInfo is the binlog coordination for MySQL.
 type BinlogInfo struct {
-	Filename string `json:"fileName"`
+	FileName string `json:"fileName"`
 	Position int64  `json:"position"`
 }
 
@@ -926,7 +926,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		return "", err
 	}
 	driver.l.Debug("binlog config at dump time",
-		zap.String("filename", binlog.Filename),
+		zap.String("filename", binlog.FileName),
 		zap.Int64("position", binlog.Position))
 
 	ts, err := getServerTime(ctx, driver.db)
@@ -935,7 +935,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 
 	payload := backupPayload{
-		BinlogInfo: *binlog,
+		BinlogInfo: binlog,
 		Ts:         ts,
 	}
 	payloadBytes, err := json.Marshal(payload)
@@ -1027,7 +1027,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 
 	var tableNames []string
 	for _, table := range tables {
-		tableNames = append(tableNames, table.Name)
+		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
 	}
 	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
 
@@ -1176,21 +1176,21 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (*BinlogInfo, error) {
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
-		return nil, err
+		return BinlogInfo{}, err
 	}
 	defer rows.Close()
 
 	rows.Next()
 	binlogInfo := BinlogInfo{}
 	var unused interface{}
-	if err := rows.Scan(&binlogInfo.Filename, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
-		return nil, err
+	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
+		return BinlogInfo{}, err
 	}
 
-	return &binlogInfo, nil
+	return binlogInfo, nil
 }
 
 // getDatabaseStmt gets the create statement of a database.
