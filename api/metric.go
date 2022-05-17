@@ -1,6 +1,8 @@
 package api
 
-import "context"
+import (
+	"context"
+)
 
 // Workspace is the instance for console application.
 type Workspace struct {
@@ -8,9 +10,23 @@ type Workspace struct {
 	DeploymentID string
 }
 
-// MetricService is the service for metrics.
-type MetricService interface {
+// MetricEventName is the segment track event name.
+type MetricEventName string
+
+// Metric is the API message for metric
+type Metric struct {
+	EventName  MetricEventName
+	Properties map[string]interface{}
+}
+
+// MetricReporter is the API message for metric reporter.
+type MetricReporter interface {
 	Close()
-	Report(ctx context.Context)
-	Identify(workspace *Workspace)
+	Report(metric *Metric) error
+	Identify(workspace *Workspace) error
+}
+
+// MetricCollector is the API message for metric collector.
+type MetricCollector interface {
+	Collect(ctx context.Context) ([]*Metric, error)
 }

@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/segment"
+	metricCollector "github.com/bytebase/bytebase/plugin/metric/collector"
+	metricReporter "github.com/bytebase/bytebase/plugin/metric/reporter"
 
 	"go.uber.org/zap"
 )
@@ -20,20 +22,26 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
-	server       *Server
-	metrics      api.MetricService
-	deploymentID string
+	server        *Server
+	reporter      api.MetricReporter
+	deploymentID  string
+	collectorList []api.MetricCollector
 }
 
 // NewMetricScheduler creates a new metric scheduler.
 func NewMetricScheduler(logger *zap.Logger, server *Server, deploymentID string) *MetricScheduler {
-	segmentService := segment.NewService(logger, server.profile.SegmentKey, deploymentID, server.store)
+	reporter := metricReporter.NewSegmentReporter(logger, server.profile.SegmentKey, deploymentID)
+	collectorList := []api.MetricCollector{
+		metricCollector.NewInstanceCollector(logger, server.store),
+		metricCollector.NewIssueCollector(logger, server.store),
+	}
 
 	return &MetricScheduler{
-		l:            logger,
-		server:       server,
-		metrics:      segmentService,
-		deploymentID: deploymentID,
+		l:             logger,
+		server:        server,
+		deploymentID:  deploymentID,
+		reporter:      reporter,
+		collectorList: collectorList,
 	}
 }
 
@@ -43,7 +51,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	if m.server.subscription != nil {
 		plan = m.server.subscription.Plan.String()
 	}
-	m.metrics.Identify(&api.Workspace{
+	m.reporter.Identify(&api.Workspace{
 		Plan:         plan,
 		DeploymentID: m.deploymentID,
 	})
@@ -68,7 +76,26 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				m.metrics.Report(ctx)
+				for _, collector := range m.collectorList {
+					metricList, err := collector.Collect(ctx)
+					if err != nil {
+						m.l.Error(
+							"Failed to collect metric",
+							zap.String("collector", reflect.TypeOf(collector).String()),
+							zap.Error(err),
+						)
+						continue
+					}
+					for _, metric := range metricList {
+						if err := m.reporter.Report(metric); err != nil {
+							m.l.Error(
+								"Failed to report metric",
+								zap.String("metric", string(metric.EventName)),
+								zap.Error(err),
+							)
+						}
+					}
+				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
@@ -78,5 +105,5 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // Close will close the metric client.
 func (m *MetricScheduler) Close() {
-	m.metrics.Close()
+	m.reporter.Close()
 }
