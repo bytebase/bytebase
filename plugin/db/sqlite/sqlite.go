@@ -634,13 +634,13 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	if database == "" {
-		return "{}", fmt.Errorf("SQLite can dump one database only at a time")
+		return "", fmt.Errorf("SQLite can dump one database only at a time")
 	}
 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return "{}", fmt.Errorf("failed to get databases: %s", err)
+		return "", fmt.Errorf("failed to get databases: %s", err)
 	}
 	exist := false
 	for _, n := range databases {
@@ -650,14 +650,14 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		}
 	}
 	if !exist {
-		return "{}", fmt.Errorf("database %s not found", database)
+		return "", fmt.Errorf("database %s not found", database)
 	}
 
 	if err := driver.dumpOneDatabase(ctx, database, out, schemaOnly); err != nil {
-		return "{}", err
+		return "", err
 	}
 
-	return "{}", nil
+	return "", nil
 }
 
 type sqliteSchema struct {

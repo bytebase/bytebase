@@ -911,19 +911,19 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// We must use the same MySQL connection to lock and unlock tables.
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
-		return "{}", err
+		return "", err
 	}
 	defer conn.Close()
 
 	driver.l.Debug("FLUSH TABLES WITH READ LOCK",
 		zap.String("database", database))
 	if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-		return "{}", err
+		return "", err
 	}
 
 	binlog, err := showMasterStatus(ctx, conn)
 	if err != nil {
-		return "{}", err
+		return "", err
 	}
 	driver.l.Debug("binlog config at dump time",
 		zap.String("filename", binlog.Filename),
@@ -931,7 +931,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 
 	nowMySQL, err := mysqlNowUnix(ctx, driver.db)
 	if err != nil {
-		return "{}", err
+		return "", err
 	}
 
 	payload := backupPayload{
@@ -940,7 +940,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return "{}", err
+		return "", err
 	}
 
 	options := sql.TxOptions{}
@@ -953,17 +953,17 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	txn, err := conn.BeginTx(ctx, &options)
 	if err != nil {
-		return "{}", err
+		return "", err
 	}
 	defer txn.Rollback()
 
 	driver.l.Debug("begin to dump database")
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
-		return "{}", err
+		return "", err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return "{}", err
+		return "", err
 	}
 
 	return string(payloadBytes), nil

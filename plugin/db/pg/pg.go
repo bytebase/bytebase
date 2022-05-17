@@ -812,7 +812,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Find all dumpable databases
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return "{}", fmt.Errorf("failed to get databases: %s", err)
+		return "", fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	var dumpableDbNames []string
@@ -825,7 +825,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			}
 		}
 		if !exist {
-			return "{}", fmt.Errorf("database %s not found", database)
+			return "", fmt.Errorf("database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -840,11 +840,11 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	for _, dbName := range dumpableDbNames {
 		includeUseDatabase := len(dumpableDbNames) > 1
 		if err := driver.dumpOneDatabase(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
-			return "{}", err
+			return "", err
 		}
 	}
 
-	return "{}", nil
+	return "", nil
 }
 
 // Restore restores a database.

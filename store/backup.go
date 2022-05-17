@@ -513,6 +513,9 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	set, args = append(set, "comment = $3"), append(args, patch.Comment)
+	if patch.Payload == "" {
+		patch.Payload = "{}"
+	}
 	set, args = append(set, "payload = $4"), append(args, patch.Payload)
 
 	args = append(args, patch.ID)
