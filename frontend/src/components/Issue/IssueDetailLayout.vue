@@ -35,6 +35,9 @@
         <template v-else-if="isGhostMode">
           <PipelineGhostFlow v-if="project" class="border-t border-b" />
         </template>
+        <template v-else-if="isPITRMode">
+          <PipelinePITRFlow v-if="project" class="border-t border-b" />
+        </template>
         <template v-else>
           <PipelineSimpleFlow class="border-t border-b" />
         </template>
@@ -122,6 +125,7 @@ import IssueActivityPanel from "./IssueActivityPanel.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import PipelineTenantFlow from "./PipelineTenantFlow.vue";
 import PipelineGhostFlow from "./PipelineGhostFlow.vue";
+import PipelinePITRFlow from "./PipelinePITRFlow.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import type {
   Issue,
@@ -179,6 +183,7 @@ const {
   project,
   isTenantMode,
   isGhostMode,
+  isPITRMode,
   createIssue,
   selectedStage,
   selectedTask,
@@ -324,6 +329,7 @@ provideIssueLogic(
     selectedTask,
     isTenantMode,
     isGhostMode,
+    isPITRMode,
     isValidStage,
     taskStatusOfStage,
     activeStageOfPipeline: activeStage,
