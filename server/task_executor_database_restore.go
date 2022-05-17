@@ -155,10 +155,7 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 	}
 	defer targetDriver.Close(ctx)
 
-	issueFind := &api.IssueFind{
-		PipelineID: &task.PipelineID,
-	}
-	issue, err := server.store.GetIssue(ctx, issueFind)
+	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to fetch containing issue when creating the migration history: %v, err: %w", task.Name, err)
 	}
