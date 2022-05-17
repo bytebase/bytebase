@@ -12,6 +12,8 @@ const (
 	SettingAuthSecret SettingName = "bb.auth.secret"
 	// SettingBrandingLogo is the setting name for branding logo.
 	SettingBrandingLogo SettingName = "bb.branding.logo"
+	// SettingSchemaSystemBoot it the setting name for schema system that needs to boot.
+	SettingSchemaSystemBoot SettingName = "bb.schema-system.boot"
 )
 
 // Setting is the API message for a setting.

@@ -211,6 +211,24 @@ func (s *Store) GetSchemaReviewPolicyByID(ctx context.Context, id int) (*api.Sch
 	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }
 
+// BootSchemaReviewPolicyIfNeeded will check the boot setting flag.
+// If no flag, it will create ProdSchemaReviewPolicy for each environment, and then create the boot setting flag.
+func (s *Store) BootSchemaReviewPolicyIfNeeded(ctx context.Context) error {
+	settingName := api.SettingSchemaSystemBoot
+	find := &api.SettingFind{
+		Name: &settingName,
+	}
+	setting, err := s.FindSetting(ctx, find)
+	if err != nil {
+		return err
+	}
+	if setting != nil {
+		return nil
+	}
+
+	return s.bootSchemaReviewPolicy(ctx)
+}
+
 //
 // private functions
 //
@@ -454,5 +472,57 @@ func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete)
 	); err != nil {
 		return FormatError(err)
 	}
+	return nil
+}
+
+// bootSchemaReviewPolicy will create ProdSchemaReviewPolicy for each environment, and then create the boot setting flag.
+func (s *Store) bootSchemaReviewPolicy(ctx context.Context) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return FormatError(err)
+	}
+
+	rowStatus := api.Normal
+	envList, err := s.findEnvironmentImpl(ctx, tx.PTx, &api.EnvironmentFind{RowStatus: &rowStatus})
+	if err != nil {
+		return err
+	}
+
+	payload, err := api.ProdTemplateSchemaReviewPolicy()
+	if err != nil {
+		return err
+	}
+
+	for _, env := range envList {
+		if err := s.cache.UpsertCache(api.EnvironmentCache, env.ID, env); err != nil {
+			return err
+		}
+
+		policyUpsert := &api.PolicyUpsert{
+			UpdaterID:     api.SystemBotID,
+			EnvironmentID: env.ID,
+			Type:          api.PolicyTypeSchemaReview,
+			Payload:       &payload,
+		}
+
+		if _, err := upsertPolicyImpl(ctx, tx.PTx, policyUpsert); err != nil {
+			return err
+		}
+	}
+
+	configCreate := &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingSchemaSystemBoot,
+		Value:       "",
+		Description: "The schema system boots successfully",
+	}
+	if _, err := createSettingImpl(ctx, tx.PTx, configCreate); err != nil {
+		return err
+	}
+
+	if err := tx.PTx.Commit(); err != nil {
+		return FormatError(err)
+	}
+
 	return nil
 }

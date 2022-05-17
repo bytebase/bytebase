@@ -138,6 +138,10 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("failed to init branding: %w", err)
 	}
 
+	if err := s.store.BootSchemaReviewPolicyIfNeeded(ctx); err != nil {
+		return nil, fmt.Errorf("faild to boot schema review policy: %w", err)
+	}
+
 	e := echo.New()
 	e.Debug = prof.Debug
 	e.HideBanner = true
