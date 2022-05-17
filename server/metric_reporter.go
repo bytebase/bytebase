@@ -79,11 +79,14 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				for _, collector := range m.collectorList {
+					collectorName := reflect.TypeOf(collector).String()
+					m.l.Debug("Run metric collector", zap.String("collector", collectorName))
 					metricList, err := collector.Collect(ctx)
+
 					if err != nil {
 						m.l.Error(
 							"Failed to collect metric",
-							zap.String("collector", reflect.TypeOf(collector).String()),
+							zap.String("collector", collectorName),
 							zap.Error(err),
 						)
 						continue
