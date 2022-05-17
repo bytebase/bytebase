@@ -239,7 +239,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					}
 
 					var schemaBuf bytes.Buffer
-					if err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
 					}
 					if peerSchema != schemaBuf.String() {
