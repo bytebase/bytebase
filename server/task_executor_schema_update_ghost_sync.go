@@ -129,18 +129,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			panicErr, ok := r.(error)
-			if !ok {
-				panicErr = fmt.Errorf("%v", r)
-			}
-			exec.l.Error("SchemaUpdateGhostSyncTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
-			terminated = true
-			err = fmt.Errorf("encounter internal error when executing migration using gh-ost")
-		}
-	}()
-
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
@@ -176,50 +164,47 @@ func runGhostMigration(ctx context.Context, l *zap.Logger, server *Server, task 
 
 func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string, waitSync *sync.WaitGroup) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
-	databaseName := db.BytebaseDatabase
 
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, l)
 	if err != nil {
 		return -1, "", err
 	}
 	defer driver.Close(ctx)
-	setup, err := driver.NeedsSetupMigration(ctx)
+	needsSetup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
 		return -1, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
-	if setup {
+	if needsSetup {
 		return -1, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
 	}
 
 	executor := driver.(util.MigrationExecutor)
 
 	var prevSchemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
+	if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
 		return -1, "", err
 	}
 
-	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, databaseName)
+	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
 	if err != nil {
 		return -1, "", err
 	}
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+		if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
 			l.Error("failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
 			)
 		}
 	}()
-
-	err = executeGhost(l, task, startedNs, statement, waitSync)
-	if err != nil {
+	if err = executeGhost(l, task, startedNs, statement, waitSync); err != nil {
 		return -1, "", err
 	}
 
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", util.FormatError(err)
 	}
 

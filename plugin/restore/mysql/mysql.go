@@ -14,12 +14,6 @@ const (
 	MaxDatabaseNameLength = 64
 )
 
-// BinlogConfig is the binlog coordination for MySQL.
-type BinlogConfig struct {
-	Filename string
-	Position int64
-}
-
 // Restore implements recovery functions for MySQL
 type Restore struct {
 	driver *mysql.Driver
@@ -33,13 +27,13 @@ func New(driver *mysql.Driver) *Restore {
 }
 
 // RestoreBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) RestoreBinlog(ctx context.Context, config BinlogConfig) error {
+func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, config BinlogConfig, database string, timestamp int64) error {
-	pitrDatabaseName := GetPITRDatabaseName(database, timestamp)
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
+	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
@@ -69,7 +63,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, co
 	}
 
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, config)
+	_ = r.RestoreBinlog(ctx, binlog)
 
 	return nil
 }
@@ -87,7 +81,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	defer txn.Rollback()
 
 	pitrOldDatabase := getSafeName(database, "old")
-	pitrDatabaseName := GetPITRDatabaseName(database, timestamp)
+	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return err
@@ -123,8 +117,8 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	return nil
 }
 
-// GetPITRDatabaseName composes a pitr database name
-func GetPITRDatabaseName(database string, timestamp int64) string {
+// getPITRDatabaseName composes a pitr database name
+func getPITRDatabaseName(database string, timestamp int64) string {
 	suffix := fmt.Sprintf("pitr_%d", timestamp)
 	return getSafeName(database, suffix)
 }

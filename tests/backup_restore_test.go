@@ -163,7 +163,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
-		config := restoremysql.BinlogConfig{}
+		config := pluginmysql.BinlogInfo{}
 		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
@@ -236,7 +236,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
-		config := restoremysql.BinlogConfig{}
+		config := pluginmysql.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
@@ -361,7 +361,7 @@ func doBackup(ctx context.Context, t *testing.T, driver dbplugin.Driver, databas
 	a := require.New(t)
 
 	var buf bytes.Buffer
-	err := driver.Dump(ctx, database, &buf, false)
+	_, err := driver.Dump(ctx, database, &buf, false)
 	a.NoError(err)
 
 	return &buf

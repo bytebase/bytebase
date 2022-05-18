@@ -25,18 +25,6 @@ type DatabaseBackupTaskExecutor struct {
 
 // RunOnce will run database backup once.
 func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			panicErr, ok := r.(error)
-			if !ok {
-				panicErr = fmt.Errorf("%v", r)
-			}
-			exec.l.Error("DatabaseBackupTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
-			terminated = true
-			err = fmt.Errorf("encounter internal error when backing database")
-		}
-	}()
-
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
@@ -55,19 +43,21 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir)
+	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
 	comment := ""
 	if backupErr != nil {
 		newBackupStatus = string(api.BackupStatusFailed)
 		comment = backupErr.Error()
+		backupPayload = "{}"
 	}
 	if _, err := server.store.PatchBackup(ctx, &api.BackupPatch{
 		ID:        backup.ID,
 		Status:    newBackupStatus,
 		UpdaterID: api.SystemBotID,
 		Comment:   comment,
+		Payload:   backupPayload,
 	}); err != nil {
 		return true, nil, fmt.Errorf("failed to patch backup: %w", err)
 	}
@@ -82,24 +72,25 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
+func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) (string, error) {
 	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer driver.Close(ctx)
 
 	f, err := os.Create(filepath.Join(dataDir, backup.Path))
 	if err != nil {
-		return fmt.Errorf("failed to open backup path: %s", backup.Path)
+		return "", fmt.Errorf("failed to open backup path: %s", backup.Path)
 	}
 	defer f.Close()
 
-	if err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */); err != nil {
-		return err
+	payload, err := driver.Dump(ctx, databaseName, f, false /* schemaOnly */)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return payload, nil
 }
 
 // getAndCreateBackupDirectory returns the path of a database backup.
