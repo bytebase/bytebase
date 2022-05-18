@@ -23,7 +23,8 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
-	// subscription is the pointer to the server.subscription. This can be updated by users so we need to update the identify in each schedule.
+	// subscription is the pointer to the server.subscription.
+	// the subscription can be updated by users so we need the pointer to get the newest value.
 	subscription  *enterpriseAPI.Subscription
 	reporter      reporter.MetricReporter
 	workspaceID   string
@@ -32,7 +33,7 @@ type MetricScheduler struct {
 
 // NewMetricScheduler creates a new metric scheduler.
 func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) *MetricScheduler {
-	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, workspaceID)
+	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, workspaceID, server.profile.Mode)
 	collectorList := []collector.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
@@ -56,6 +57,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
 
 	for {
+		// identify will be triggered in every schedule loop so that we can update the newest workspace profile like subscription plan.
 		m.identify()
 
 		select {

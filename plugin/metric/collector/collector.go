@@ -15,7 +15,8 @@ var (
 // Metric is the API message for metric
 type Metric struct {
 	Name       MetricName
-	Properties map[string]interface{}
+	Value      int
+	Dimensions map[string]interface{}
 }
 
 // MetricCollector is the API message for metric collector.

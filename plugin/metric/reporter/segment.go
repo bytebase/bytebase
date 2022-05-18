@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 
 	"github.com/segmentio/analytics-go"
@@ -12,24 +13,30 @@ import (
 
 // Segment is the metrics collector https://segment.com/.
 type segment struct {
-	l          *zap.Logger
-	identifier string
-	client     analytics.Client
+	l           *zap.Logger
+	identifier  string
+	environment common.ReleaseMode
+	client      analytics.Client
 }
 
 const (
-	// IdentifyTraitForPlan is the trait key for subscription plan.
-	IdentifyTraitForPlan = "plan"
+	// identifyTraitForPlan is the trait key for subscription plan.
+	identifyTraitForPlan = "plan"
+	// metricValueField is the property key for value
+	metricValueField = "value"
+	// metricEnvironmentField is the property key for environment
+	metricEnvironmentField = "environment"
 )
 
 // NewSegmentReporter creates a new instance of segment
-func NewSegmentReporter(l *zap.Logger, key string, identifier string) MetricReporter {
+func NewSegmentReporter(l *zap.Logger, key string, identifier string, mode common.ReleaseMode) MetricReporter {
 	client := analytics.New(key)
 
 	return &segment{
-		l:          l,
-		identifier: identifier,
-		client:     client,
+		l:           l,
+		identifier:  identifier,
+		environment: mode,
+		client:      client,
 	}
 }
 
@@ -40,8 +47,11 @@ func (s *segment) Close() {
 
 // Report will exec all the segment reporter.
 func (s *segment) Report(metric *collector.Metric) error {
-	properties := analytics.NewProperties()
-	for key, value := range metric.Properties {
+	properties := analytics.NewProperties().
+		Set(metricValueField, metric.Value).
+		Set(metricEnvironmentField, s.environment)
+
+	for key, value := range metric.Dimensions {
 		properties.Set(key, value)
 	}
 
@@ -57,7 +67,7 @@ func (s *segment) Report(metric *collector.Metric) error {
 func (s *segment) Identify(workspace *api.Workspace) error {
 	return s.client.Enqueue(analytics.Identify{
 		UserId:    s.identifier,
-		Traits:    analytics.NewTraits().Set(IdentifyTraitForPlan, workspace.Plan),
+		Traits:    analytics.NewTraits().Set(identifyTraitForPlan, workspace.Plan),
 		Timestamp: time.Now().UTC(),
 	})
 }

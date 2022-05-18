@@ -32,10 +32,10 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 
 	for issueType, count := range issueCountMap {
 		res = append(res, &Metric{
-			Name: issueCountMetricName,
-			Properties: map[string]interface{}{
-				"type":  string(issueType),
-				"count": count,
+			Name:  issueCountMetricName,
+			Value: count,
+			Dimensions: map[string]string{
+				"type": string(issueType),
 			},
 		})
 	}
