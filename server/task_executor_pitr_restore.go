@@ -63,12 +63,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil || issue == nil {
-		exec.l.Error("failed to get issue by PipelineID",
-			zap.Int("PipelineID", task.PipelineID),
-			zap.Error(err))
-		return fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
+	issue, err := getIssueByPipelineID(ctx, store, exec.l, task.PipelineID)
+	if err != nil {
+		return err
 	}
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
@@ -102,4 +99,17 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
+}
+
+func getIssueByPipelineID(ctx context.Context, store *store.Store, l *zap.Logger, pid int) (*api.Issue, error) {
+	issue, err := store.GetIssueByPipelineID(ctx, pid)
+	if err != nil {
+		l.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
+		return nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", pid, err)
+	}
+	if issue == nil {
+		l.Error("issue not found with PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
+		return nil, fmt.Errorf("issue not found with PipelineID[%d], error[%w]", pid, err)
+	}
+	return issue, nil
 }

@@ -55,12 +55,9 @@ func (exec *PITRCutoverTaskExecutor) doPITRCutover(ctx context.Context, task *ap
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil || issue == nil {
-		exec.l.Error("failed to get issue by PipelineID",
-			zap.Int("PipelineID", task.PipelineID),
-			zap.Error(err))
-		return fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
+	issue, err := getIssueByPipelineID(ctx, store, exec.l, task.PipelineID)
+	if err != nil {
+		return err
 	}
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
