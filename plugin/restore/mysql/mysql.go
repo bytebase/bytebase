@@ -16,7 +16,7 @@ import (
 )
 
 // TODO(zp): refactor this when sure the mysqlbinlog path
-var mysqlbinlogPath = "UNKNOWN"
+var mysqlbinlogBinPath = "UNKNOWN"
 
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
@@ -202,7 +202,7 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
 	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogPath, "bin", "mysqlbinlog"),
+	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogBinPath, "bin", "mysqlbinlog"),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
