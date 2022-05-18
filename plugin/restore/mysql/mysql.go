@@ -144,7 +144,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		return err
 	}
 
-	latest, err := r.showLatestBinlogFile(ctx)
+	latestBinlogFileOnServer, err := r.showLatestBinlogFile(ctx)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	downloadedIndex := make(map[int]struct{})
 	for index, serverFile := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncBinlogs()
-		if serverFile.Name == latest.Name {
+		if serverFile.Name == latestBinlogFileOnServer.Name {
 			continue
 		}
 		for _, localFile := range binlogFilesLocal {
