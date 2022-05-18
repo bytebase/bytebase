@@ -38,23 +38,15 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		}
 	}()
 
-	taskDAGList, err := server.store.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: task.ID})
+	taskDAG, err := server.store.FindTaskDAG(ctx, &api.TaskDAGFind{ToTaskID: task.ID})
 	if err != nil {
-		return true, nil, fmt.Errorf("failed to fetch taskDAG for schema update gh-ost cutover task, id: %v", task.ID)
+		return true, nil, fmt.Errorf("failed to get a single taskDAG for schema update gh-ost cutover task, id: %v, error: %w", task.ID, err)
 	}
-	if len(taskDAGList) != 1 {
-		return true, nil, fmt.Errorf("expected to have one taskDAG in taskDAGList, get %v", len(taskDAGList))
-	}
-	syncTaskID := taskDAGList[0].FromTaskID
-	taskList, err := server.store.FindTask(ctx, &api.TaskFind{ID: &syncTaskID}, true)
+	syncTaskID := taskDAG.FromTaskID
+	syncTask, err := server.store.GetTaskByID(ctx, syncTaskID)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to get schema update gh-ost sync task for cutover task, error: %w", err)
 	}
-	if len(taskList) != 1 {
-		return true, nil, fmt.Errorf("expected to have one task in taskList, get %v", len(taskList))
-	}
-	syncTask := taskList[0]
-
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(syncTask.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
