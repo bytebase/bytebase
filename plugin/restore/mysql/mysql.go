@@ -150,6 +150,9 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	}
 
 	// compare file sizes and names to decide which files to download
+	// downloadedIndex maintains the index of BinlogFile slice, for example:
+	// `SHOW MASTER LOGS` return ["binlog.000001", "binlog.000002"],
+	// if we had downloaded binlog.000001 and file size match, {0:struct{}{}} will be involved in downloadedIndex.
 	downloadedIndex := make(map[int]struct{})
 	for index, serverFile := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncArchivedBinlogFiles()
