@@ -52,6 +52,12 @@ type BinlogInfo struct {
 	Position int64  `json:"position"`
 }
 
+// BinlogFile is the metadata of the MySQL binlog file
+type BinlogFile struct {
+	Name string
+	Size int64
+}
+
 // This is encoded in JSON and stored in the backup table, representing PITR related info.
 type backupPayload struct {
 	BinlogInfo BinlogInfo `json:"binlogInfo"`

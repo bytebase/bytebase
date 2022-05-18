@@ -4,10 +4,19 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/api"
+	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
 )
+
+// TODO(zp): refactor this when sure the mysqlbinlog path
+var mysqlbinlogPath = "UNKNOWN"
 
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
@@ -121,6 +130,170 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 func GetPITRDatabaseName(database string, timestamp int64) string {
 	suffix := fmt.Sprintf("pitr_%d", timestamp)
 	return getSafeName(database, suffix)
+}
+
+// SyncBinlogs syncs the binlogs between the instance and `saveDir`, but exclude latest binlog
+func (r *Restore) SyncBinlogs(ctx context.Context, instance *api.Instance, saveDir string) error {
+	// 1. read the binlog file in saveDir
+	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
+	if err != nil {
+		return err
+	}
+
+	// 2. get the metadata of binlogs on the server
+	binlogFilesOnServer, err := r.showBinlogFiles(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 3. get meta of the latest binlog
+	latest, err := r.showLatestBinlogFile(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 4. compare file sizes and name to decide which files to download
+	downloadedIndex := make(map[int]struct{})
+	for index, serverFile := range binlogFilesOnServer {
+		// We don't download the latest binlog in SyncBinlogs()
+		if serverFile.Name == latest.Name {
+			continue
+		}
+		for _, localFile := range binlogFilesLocal {
+			localFileName := localFile.Name()
+			if localFileName == serverFile.Name {
+				// binlog file exists on local
+				if localFile.Size() != serverFile.Size {
+					// File size not match, delete and then download it
+					if err := os.Remove(filepath.Join(saveDir, localFileName)); err != nil {
+						return fmt.Errorf("cannot remove %s, error: %w", localFileName, err)
+					}
+				} else {
+					// File size match, record it in downloadedIndex
+					downloadedIndex[index] = struct{}{}
+				}
+			}
+		}
+	}
+
+	// 6. download the binlog that not record in downloadedIndex
+	for i, serverFile := range binlogFilesOnServer {
+		if _, ok := downloadedIndex[i]; ok {
+			continue
+		}
+		if err := r.syncBinlog(ctx, instance, saveDir, serverFile); err != nil {
+			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// SyncLatestBinlog syncs the latest binlog between the instance and `saveDir`
+func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, saveDir string) error {
+	latest, err := r.showLatestBinlogFile(ctx)
+	if err != nil {
+		return err
+	}
+	return r.syncBinlog(ctx, instance, saveDir, *latest)
+}
+
+// syncBinlog syncs the binlog specified by `meta` between the instance and local.
+func (r *Restore) syncBinlog(ctx context.Context, instance *api.Instance, saveDir string, meta mysql.BinlogFile) error {
+	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
+	// TODO(zp): support ssl?
+	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogPath, "bin", "mysqlbinlog"),
+		meta.Name,
+		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
+		"--raw",
+		// Note, recheck here when upgrade embedding mysqlbinlog binary
+		// for mysqlbinlog with binlog.000001 --result-file=a_, it will save it as a_binlog.000001
+		fmt.Sprintf("--result-file=%s", filepath.Join(saveDir, tmpFilePrefix)),
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+
+	var runErr error
+	defer func() {
+		tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, meta.Name)
+		tmpFilePath := filepath.Join(saveDir, tmpFileName)
+		if runErr != nil {
+			// delete the download binlog if some error occur
+			_ = os.Remove(tmpFilePath)
+			return
+		}
+
+		fi, err := os.Stat(tmpFilePath)
+		if err != nil {
+			// delete the download binlog if cannot stat it
+			_ = os.Remove(tmpFilePath)
+			return
+		}
+		if fi.Size() != meta.Size {
+			// delete the download binlog if filesize not match
+			_ = os.Remove(tmpFilePath)
+			return
+		}
+
+		// no error, rename it
+		_ = os.Rename(tmpFilePath, filepath.Join(saveDir, meta.Name))
+	}()
+
+	if runErr = cmd.Run(); runErr != nil {
+		return fmt.Errorf("cannot run mysqlbinlog, error: %w", runErr)
+	}
+	return nil
+}
+
+// showBinlogFiles returns the metadata of binlogs
+func (r *Restore) showBinlogFiles(ctx context.Context) ([]mysql.BinlogFile, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	// https://dev.mysql.com/doc/refman/8.0/en/show-binary-logs.html
+	stmt := `SHOW BINARY LOGS;`
+	rows, err := db.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var binlogFiles []mysql.BinlogFile
+	for rows.Next() {
+		var binlogFile mysql.BinlogFile
+		var unused interface{}
+		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused /*Encrypted column*/); err != nil {
+			return nil, err
+		}
+		binlogFiles = append(binlogFiles, binlogFile)
+	}
+	return binlogFiles, nil
+}
+
+// showLatestBinlogFile returns the metadata of latest binlog
+func (r *Restore) showLatestBinlogFile(ctx context.Context) (*mysql.BinlogFile, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := `SHOW MASTER STATUS;`
+	rows, err := db.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var meta mysql.BinlogFile
+	if rows.Next() {
+		var unused [3]interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
+		if err := rows.Scan(&meta.Name, &meta.Size, &unused[0], &unused[1], &unused[2]); err != nil {
+			return nil, err
+		}
+		return &meta, nil
+	}
+	return nil, fmt.Errorf("cannot find latest binlog on instance")
 }
 
 func getSafeName(baseName, suffix string) string {
