@@ -24,13 +24,13 @@ type MetricScheduler struct {
 
 	server        *Server
 	reporter      reporter.MetricReporter
-	deploymentID  string
+	workspaceID   string
 	collectorList []collector.MetricCollector
 }
 
 // NewMetricScheduler creates a new metric scheduler.
-func NewMetricScheduler(logger *zap.Logger, server *Server, deploymentID string) *MetricScheduler {
-	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, deploymentID)
+func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) *MetricScheduler {
+	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, workspaceID)
 	collectorList := []collector.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
@@ -39,7 +39,7 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, deploymentID string)
 	return &MetricScheduler{
 		l:             logger,
 		server:        server,
-		deploymentID:  deploymentID,
+		workspaceID:   workspaceID,
 		reporter:      reporter,
 		collectorList: collectorList,
 	}
@@ -53,7 +53,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 	if err := m.reporter.Identify(&api.Workspace{
 		Plan: plan,
-		ID:   m.deploymentID,
+		ID:   m.workspaceID,
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))
 	}
@@ -80,8 +80,8 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				ctx := context.Background()
 				for _, collector := range m.collectorList {
 					collectorName := reflect.TypeOf(collector).String()
-
 					m.l.Debug("Run metric collector", zap.String("collector", collectorName))
+
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
 						m.l.Error(
