@@ -506,7 +506,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	return &issueRaw, nil
 }
 
-func findIssueQuery(find *api.IssueFind) (string, []interface{}) {
+func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -533,12 +533,6 @@ func findIssueQuery(find *api.IssueFind) (string, []interface{}) {
 		where = append(where, fmt.Sprintf("status in (%s)", strings.Join(list, ",")))
 	}
 
-	return strings.Join(where, " AND "), args
-}
-
-func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
-	where, args := findIssueQuery(find)
-
 	var query = `
 		SELECT
 			id,
@@ -555,7 +549,7 @@ func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFi
 			assignee_id,
 			payload
 		FROM issue
-		WHERE ` + where
+		WHERE ` + strings.Join(where, " AND ")
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
 	}
