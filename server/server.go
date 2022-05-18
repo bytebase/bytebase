@@ -307,8 +307,11 @@ func (server *Server) initSubscription() {
 
 // initMetricScheduler will initial the metric scheduler.
 func (server *Server) initMetricScheduler(workspaceID string) {
-	metricScheduler := NewMetricScheduler(server.l, server, workspaceID)
-	server.MetricScheduler = metricScheduler
+	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
+	if enabled {
+		metricScheduler := NewMetricScheduler(server.l, server, workspaceID)
+		server.MetricScheduler = metricScheduler
+	}
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
@@ -368,8 +371,11 @@ func (server *Server) Run(ctx context.Context) error {
 		server.runnerWG.Add(1)
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
-		go server.MetricScheduler.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
+
+		if server.MetricScheduler != nil {
+			go server.MetricScheduler.Run(ctx, &server.runnerWG)
+			server.runnerWG.Add(1)
+		}
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.

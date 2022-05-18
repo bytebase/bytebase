@@ -46,7 +46,7 @@ func (s *segment) Report(metric *collector.Metric) error {
 	}
 
 	return s.client.Enqueue(analytics.Track{
-		Event:      string(metric.EventName),
+		Event:      string(metric.Name),
 		UserId:     s.identifier,
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),

@@ -14,9 +14,6 @@ type instanceCollector struct {
 	store *store.Store
 }
 
-// instanceEventName is the MetricEventName for instance
-var instanceEventName MetricEventName = "bb.instance"
-
 // NewInstanceCollector creates a new instance of instanceCollector
 func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	return &instanceCollector{
@@ -36,7 +33,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 
 	for engine, count := range instanceCountMap {
 		res = append(res, &Metric{
-			EventName: instanceEventName,
+			Name: instanceCountMetricName,
 			Properties: map[string]interface{}{
 				"database": string(engine),
 				"count":    count,

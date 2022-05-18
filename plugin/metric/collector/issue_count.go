@@ -13,9 +13,6 @@ type issueCollector struct {
 	store *store.Store
 }
 
-// issueEventName is the MetricEventName for issue
-var issueEventName MetricEventName = "bb.issue"
-
 // NewIssueCollector creates a new instance of issueCollector
 func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	return &issueCollector{
@@ -35,7 +32,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 
 	for issueType, count := range issueCountMap {
 		res = append(res, &Metric{
-			EventName: issueEventName,
+			Name: issueCountMetricName,
 			Properties: map[string]interface{}{
 				"type":  string(issueType),
 				"count": count,

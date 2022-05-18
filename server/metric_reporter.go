@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
@@ -24,7 +23,6 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
-	enabled bool
 	// subscription is the pointer to the server.subscription. This can be updated by users so we need to update the identify in each schedule.
 	subscription  *enterpriseAPI.Subscription
 	reporter      reporter.MetricReporter
@@ -39,11 +37,9 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) 
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
 	}
-	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 
 	return &MetricScheduler{
 		l:             logger,
-		enabled:       enabled,
 		subscription:  &server.subscription,
 		workspaceID:   workspaceID,
 		reporter:      reporter,
@@ -57,10 +53,6 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	if !m.enabled {
-		m.l.Debug("Metrics scheduler is disabled")
-		return
-	}
 	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
 
 	for {
@@ -97,7 +89,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if err := m.reporter.Report(metric); err != nil {
 							m.l.Error(
 								"Failed to report metric",
-								zap.String("metric", string(metric.EventName)),
+								zap.String("metric", string(metric.Name)),
 								zap.Error(err),
 							)
 						}
