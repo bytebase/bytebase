@@ -132,8 +132,8 @@ func getPITRDatabaseName(database string, timestamp int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncBinlogs syncs the binlogs between the instance and `saveDir`, but exclude latest binlog
-func (r *Restore) SyncBinlogs(ctx context.Context, instance *api.Instance, saveDir string) error {
+// SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`, but exclude latest binlog
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
 	// 1. read the binlog file in saveDir
 	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
 	if err != nil {
