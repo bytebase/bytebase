@@ -116,6 +116,7 @@ func Install(basedir, datadir, user string) (*Instance, error) {
 basedir=%s
 datadir=%s
 socket=mysql.sock
+mysqlx=0
 user=%s
 `
 	defaultCfgFile, err := os.Create(filepath.Join(basedir, "my.cnf"))
