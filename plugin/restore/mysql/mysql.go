@@ -69,7 +69,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
-func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timestamp int64) error {
+func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	defer txn.Rollback()
 
 	pitrOldDatabase := getSafeName(database, "old")
-	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
+	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return err

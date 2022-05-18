@@ -185,6 +185,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
+		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
+
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
