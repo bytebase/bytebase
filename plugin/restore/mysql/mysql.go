@@ -251,7 +251,7 @@ func (r *Restore) showBinlogFiles(ctx context.Context) ([]mysql.BinlogFile, erro
 	if err != nil {
 		return nil, err
 	}
-	// https://dev.mysql.com/doc/refman/8.0/en/show-binary-logs.html
+
 	rows, err := db.QueryContext(ctx, `SHOW BINARY LOGS;`)
 	if err != nil {
 		return nil, err
