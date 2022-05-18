@@ -121,21 +121,52 @@ func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*a
 	return instance, nil
 }
 
+// CountInstance counts the number of instances.
+func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	where, args := findInstanceQuery(find)
+
+	row, err := tx.PTx.QueryContext(ctx, `
+		SELECT COUNT(*)
+		FROM instance
+		WHERE `+where,
+		args...,
+	)
+	if err != nil {
+		return 0, FormatError(err)
+	}
+	defer row.Close()
+
+	count := 0
+	if row.Next() {
+		if err := row.Scan(&count); err != nil {
+			return 0, FormatError(err)
+		}
+	}
+
+	return count, nil
+}
+
 // CountInstanceGroupByEngine counts the number of instances and group by engine.
-func (s *Store) CountInstanceGroupByEngine(ctx context.Context, find *api.InstanceFind) (map[db.Type]int, error) {
+// Used by the metric collector.
+func (s *Store) CountInstanceGroupByEngine(ctx context.Context, rowStatus api.RowStatus) (map[db.Type]int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	where, args := findInstanceQuery(find)
-
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT engine, COUNT(*)
 		FROM instance
-		WHERE `+where+" GROUP BY engine",
-		args...,
+		WHERE row_status = $1
+		GROUP BY engine`,
+		rowStatus,
 	)
 	if err != nil {
 		return nil, FormatError(err)

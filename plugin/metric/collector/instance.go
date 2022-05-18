@@ -29,10 +29,7 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
 func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
-	status := api.Normal
-	instanceCountMap, err := c.store.CountInstanceGroupByEngine(ctx, &api.InstanceFind{
-		RowStatus: &status,
-	})
+	instanceCountMap, err := c.store.CountInstanceGroupByEngine(ctx, api.Normal)
 	if err != nil {
 		return nil, err
 	}

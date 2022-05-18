@@ -416,19 +416,15 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 // We only count instances with NORMAL status since users cannot make any operations for ARCHIVED one.
 func (s *Server) instanceCountGuard(ctx context.Context) error {
 	status := api.Normal
-	engineCountMap, err := s.store.CountInstanceGroupByEngine(ctx, &api.InstanceFind{
+	count, err := s.store.CountInstance(ctx, &api.InstanceFind{
 		RowStatus: &status,
 	})
-	total := 0
-	for _, count := range engineCountMap {
-		total += count
-	}
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to count instance").SetInternal(err)
 	}
 	subscription := s.loadSubscription()
-	if total >= subscription.InstanceCount {
+	if count >= subscription.InstanceCount {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf("You have reached the maximum instance count %d.", subscription.InstanceCount))
 	}
 

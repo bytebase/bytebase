@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -29,7 +28,7 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
-	issueCountMap, err := c.store.CountIssueGroupByType(ctx, &api.IssueFind{})
+	issueCountMap, err := c.store.CountIssueGroupByType(ctx)
 	if err != nil {
 		return nil, err
 	}

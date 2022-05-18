@@ -306,8 +306,8 @@ func (server *Server) initSubscription() {
 }
 
 // initMetricScheduler will initial the metric scheduler.
-func (server *Server) initMetricScheduler(deploymentID string) {
-	metricScheduler := NewMetricScheduler(server.l, server, deploymentID)
+func (server *Server) initMetricScheduler(workspaceID string) {
+	metricScheduler := NewMetricScheduler(server.l, server, workspaceID)
 	server.MetricScheduler = metricScheduler
 }
 
