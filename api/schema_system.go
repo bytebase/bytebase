@@ -94,7 +94,7 @@ type SchemaReviewPolicy struct {
 
 // Validate validates the SchemaReviewPolicy. It also validates the each review rule.
 func (policy *SchemaReviewPolicy) Validate() error {
-	if policy.Name == "" || len(policy.RuleList) == 0 {
+	if policy.Empty() {
 		return fmt.Errorf("invalid payload, name or rule list cannot be empty")
 	}
 	for _, rule := range policy.RuleList {
@@ -103,6 +103,11 @@ func (policy *SchemaReviewPolicy) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Empty will check if the SchemaReviewPolicy is empty.
+func (policy *SchemaReviewPolicy) Empty() bool {
+	return policy.Name == "" || len(policy.RuleList) == 0
 }
 
 // SchemaReviewRule is the rule for schema review policy.

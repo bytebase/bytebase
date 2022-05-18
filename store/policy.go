@@ -189,8 +189,9 @@ func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentI
 	return policy.ID, nil
 }
 
-// GetSchemaReviewPolicyByID will get the schema review policy for an environment.
-func (s *Store) GetSchemaReviewPolicyByID(ctx context.Context, id int) (*api.SchemaReviewPolicy, error) {
+// GetSchemaReviewPolicyNormalByID will get the schema review policy for an environment.
+// If policy.ID is DefaultPolicyID or policy is archived, return the default empty policy.
+func (s *Store) GetSchemaReviewPolicyNormalByID(ctx context.Context, id int) (*api.SchemaReviewPolicy, error) {
 	pType := api.PolicyTypeSchemaReview
 
 	if id == api.DefaultPolicyID {
@@ -207,6 +208,13 @@ func (s *Store) GetSchemaReviewPolicyByID(ctx context.Context, id int) (*api.Sch
 	})
 	if err != nil {
 		return nil, err
+	}
+	if policy.RowStatus == api.Archived {
+		defaultPolicy, err := api.GetDefaultPolicy(pType)
+		if err != nil {
+			return nil, err
+		}
+		return api.UnmarshalSchemaReviewPolicy(defaultPolicy)
 	}
 	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }

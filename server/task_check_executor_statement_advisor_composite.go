@@ -50,9 +50,20 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	policy, err := server.store.GetSchemaReviewPolicyByID(ctx, payload.PolicyID)
+	policy, err := server.store.GetSchemaReviewPolicyNormalByID(ctx, payload.PolicyID)
 	if err != nil {
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
+	}
+
+	if policy.Empty() {
+		return []api.TaskCheckResult{
+			{
+				Status:  api.TaskCheckStatusWarn,
+				Code:    common.TaskCheckEmptySchemaReviewPolicy,
+				Title:   "Empty schema review policy",
+				Content: "",
+			},
+		}, nil
 	}
 
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
