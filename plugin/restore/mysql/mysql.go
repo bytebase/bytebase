@@ -149,7 +149,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		return err
 	}
 
-	// compare file sizes and name to decide which files to download
+	// compare file sizes and names to decide which files to download
 	downloadedIndex := make(map[int]struct{})
 	for index, serverFile := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncBinlogs()
