@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
@@ -17,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -871,9 +869,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, recoveryTime int) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
-	pitrTimestamp := time.Now().Unix()
-	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
-
 	// task: create and restore to PITR database
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID:     projectID,
@@ -885,7 +880,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Restore PITR database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
@@ -901,7 +896,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Swap PITR and the original database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Swap PITR and the original database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
@@ -917,7 +912,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Delete the original database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Delete the original database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
