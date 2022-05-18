@@ -6,13 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/plugin/db/util"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
@@ -42,66 +39,23 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return exec.pitrRestore(ctx, task, server)
 }
 
+// TODO(dragonly): Should establish a BASELINE migration in the swap database task.
+// And what's the right schema version in tenant mode?
 func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	schemaVersion := common.DefaultMigrationVersion()
-	migrationInfo, err := preMigration(ctx, exec.l, server, task, db.Baseline, "", schemaVersion, nil)
-	if err != nil {
-		exec.l.Error("failed in preMigration stage", zap.Error(err))
-		return true, nil, fmt.Errorf("failed in preMigration stage, error[%w]", err)
-	}
-
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	needsSetup, err := driver.NeedsSetupMigration(ctx)
-	if err != nil {
-		return true, nil, fmt.Errorf("failed to check migration setup for instance %q, error[%w]", task.Instance.Name, err)
-	}
-	if needsSetup {
-		return true, nil, common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
-	}
-
-	executor := driver.(util.MigrationExecutor)
-	var prevSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, migrationInfo.Database, &prevSchemaBuf, true); err != nil {
-		return true, nil, err
-	}
-
-	// Insert a pending baseline migration record into the migration_history table.
-	// The whole PITR process can be regarded as a data change followed by a schema sync.
-	migrationHistoryID, err := util.BeginMigration(ctx, executor, migrationInfo, prevSchemaBuf.String(), "", migrationInfo.Database)
-	if err != nil {
-		return true, nil, err
-	}
-	startedNs := time.Now().UnixNano()
-
-	var updatedSchemaBuf bytes.Buffer
-	if _, err := executor.Dump(ctx, migrationInfo.Database, &updatedSchemaBuf, true /*schemaOnly*/); err != nil {
-		return true, nil, util.FormatError(err)
-	}
-	updatedSchema := updatedSchemaBuf.String()
-
 	if err := exec.doPITRRestore(ctx, task, server.store, driver); err != nil {
 		return true, nil, err
 	}
 
-	// TODO(dragonly): Fix this using shared context between tasks.
-	if err := util.EndMigration(ctx, exec.l, executor, startedNs, migrationHistoryID, updatedSchema, db.BytebaseDatabase, true /*isDone*/); err != nil {
-		exec.l.Error("failed to update migration history record",
-			zap.Int64("migration_id", migrationHistoryID),
-			zap.Error(err),
-		)
-	}
-
-	exec.l.Info("created PITR database", zap.String("target database", migrationInfo.Database))
+	exec.l.Info("created PITR database", zap.String("target database", task.Database.Name))
 
 	return true, &api.TaskRunResultPayload{
-		Detail:      fmt.Sprintf("Created PITR database for target database %q", migrationInfo.Database),
-		MigrationID: migrationHistoryID,
-		Version:     migrationInfo.Version,
+		Detail: fmt.Sprintf("Created PITR database for target database %q", task.Database.Name),
 	}, nil
 }
 
