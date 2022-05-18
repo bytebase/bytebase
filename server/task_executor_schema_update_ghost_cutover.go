@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	ghostsql "github.com/github/gh-ost/go/sql"
@@ -60,10 +61,19 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 	tableName := parser.GetExplicitTable()
 
-	filename := fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", syncTask.ID, task.Database.ID, task.Database.Name, tableName)
+	socketFilename := fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", syncTask.ID, task.Database.ID, task.Database.Name, tableName)
+	postponeFilename := fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", syncTask.ID, task.Database.ID, task.Database.Name, tableName)
 
-	if err := os.Remove(filename); err != nil {
+	if err := os.Remove(postponeFilename); err != nil {
 		return true, nil, fmt.Errorf("failed to remove postpone flag file, error: %w", err)
+	}
+
+	ticker := time.NewTicker(time.Second * 1)
+
+	for range ticker.C {
+		if _, err := os.Stat(socketFilename); err != nil {
+			break
+		}
 	}
 
 	return true, &api.TaskRunResultPayload{Detail: "cutover done"}, nil
