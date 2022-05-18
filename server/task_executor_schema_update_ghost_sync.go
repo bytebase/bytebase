@@ -34,6 +34,8 @@ type SchemaUpdateGhostSyncTaskExecutor struct {
 }
 
 type ghostConfig struct {
+	// serverID should be unique
+	serverID         uint
 	host             string
 	port             string
 	user             string
@@ -77,6 +79,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.OriginalTableName = config.table
 	migrationContext.AlterStatement = config.alterStatement
 	migrationContext.Noop = config.noop
+	migrationContext.ReplicaServerId = config.serverID
 	// set defaults
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
@@ -238,6 +241,7 @@ func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement stri
 		alterStatement:   statement,
 		filenameTemplate: fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%%v.%%v", task.ID, task.Database.ID, databaseName),
 		noop:             false,
+		serverID:         10000000 + uint(task.ID),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
