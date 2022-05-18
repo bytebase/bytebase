@@ -173,7 +173,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		}
 	}
 
-	// download the binlog that not record in downloadedIndex
+	// download the binlog files not recorded in downloadedIndex
 	for i, serverFile := range binlogFilesOnServer {
 		if _, ok := downloadedIndex[i]; ok {
 			continue
