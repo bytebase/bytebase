@@ -55,6 +55,7 @@ execute() {
     echo "Completed extracting tarball"
 
     echo "Start installing bb..."
+    echo "Requesting root privilege..." 
     sudo install "${tmpdir}/bb" "/usr/local/bin"
     echo "Installed bb to /usr/local/bin"
 
