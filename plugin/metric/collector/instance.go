@@ -16,10 +16,10 @@ type instanceCollector struct {
 }
 
 // instanceEventName is the MetricEventName for instance
-var instanceEventName api.MetricEventName = "bb.instance"
+var instanceEventName MetricEventName = "bb.instance"
 
 // NewInstanceCollector creates a new instance of instanceCollector
-func NewInstanceCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
+func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	return &instanceCollector{
 		l:     l,
 		store: store,
@@ -27,8 +27,8 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) api.MetricCollector
 }
 
 // Collect will collect the netric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
-	var res []*api.Metric
+func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
+	var res []*Metric
 
 	status := api.Normal
 	instanceList, err := c.store.FindInstance(ctx, &api.InstanceFind{
@@ -44,7 +44,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*api.Metric, error) 
 	}
 
 	for engine, count := range instanceEngineMap {
-		res = append(res, &api.Metric{
+		res = append(res, &Metric{
 			EventName: instanceEventName,
 			Properties: map[string]interface{}{
 				"database": string(engine),

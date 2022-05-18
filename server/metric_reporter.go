@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	metricCollector "github.com/bytebase/bytebase/plugin/metric/collector"
-	metricReporter "github.com/bytebase/bytebase/plugin/metric/reporter"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
+	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
 	"go.uber.org/zap"
 )
@@ -23,17 +23,17 @@ type MetricScheduler struct {
 	l *zap.Logger
 
 	server        *Server
-	reporter      api.MetricReporter
+	reporter      reporter.MetricReporter
 	deploymentID  string
-	collectorList []api.MetricCollector
+	collectorList []collector.MetricCollector
 }
 
 // NewMetricScheduler creates a new metric scheduler.
 func NewMetricScheduler(logger *zap.Logger, server *Server, deploymentID string) *MetricScheduler {
-	reporter := metricReporter.NewSegmentReporter(logger, server.profile.SegmentKey, deploymentID)
-	collectorList := []api.MetricCollector{
-		metricCollector.NewInstanceCollector(logger, server.store),
-		metricCollector.NewIssueCollector(logger, server.store),
+	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, deploymentID)
+	collectorList := []collector.MetricCollector{
+		collector.NewInstanceCollector(logger, server.store),
+		collector.NewIssueCollector(logger, server.store),
 	}
 
 	return &MetricScheduler{
@@ -80,9 +80,9 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				ctx := context.Background()
 				for _, collector := range m.collectorList {
 					collectorName := reflect.TypeOf(collector).String()
+
 					m.l.Debug("Run metric collector", zap.String("collector", collectorName))
 					metricList, err := collector.Collect(ctx)
-
 					if err != nil {
 						m.l.Error(
 							"Failed to collect metric",

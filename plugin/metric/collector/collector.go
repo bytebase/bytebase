@@ -1,14 +1,6 @@
-package api
+package collector
 
-import (
-	"context"
-)
-
-// Workspace is the instance for console application.
-type Workspace struct {
-	Plan string
-	ID   string
-}
+import "context"
 
 // MetricEventName is the segment track event name.
 type MetricEventName string
@@ -17,13 +9,6 @@ type MetricEventName string
 type Metric struct {
 	EventName  MetricEventName
 	Properties map[string]interface{}
-}
-
-// MetricReporter is the API message for metric reporter.
-type MetricReporter interface {
-	Close()
-	Report(metric *Metric) error
-	Identify(workspace *Workspace) error
 }
 
 // MetricCollector is the API message for metric collector.

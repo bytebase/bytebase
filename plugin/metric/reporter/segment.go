@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
+
 	"github.com/segmentio/analytics-go"
 	"go.uber.org/zap"
 )
@@ -21,7 +23,7 @@ const (
 )
 
 // NewSegmentReporter creates a new instance of segment
-func NewSegmentReporter(l *zap.Logger, key string, identifier string) api.MetricReporter {
+func NewSegmentReporter(l *zap.Logger, key string, identifier string) MetricReporter {
 	client := analytics.New(key)
 
 	return &segment{
@@ -37,7 +39,7 @@ func (s *segment) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (s *segment) Report(metric *api.Metric) error {
+func (s *segment) Report(metric *collector.Metric) error {
 	properties := analytics.NewProperties()
 	for key, value := range metric.Properties {
 		properties.Set(key, value)

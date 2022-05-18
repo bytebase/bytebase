@@ -15,7 +15,7 @@ type issueCollector struct {
 }
 
 // issueEventName is the MetricEventName for issue
-var issueEventName api.MetricEventName = "bb.issue"
+var issueEventName MetricEventName = "bb.issue"
 
 var issueTypeList = []api.IssueType{
 	api.IssueGeneral,
@@ -29,7 +29,7 @@ var issueTypeList = []api.IssueType{
 }
 
 // NewIssueCollector creates a new instance of issueCollector
-func NewIssueCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
+func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	return &issueCollector{
 		l:     l,
 		store: store,
@@ -37,8 +37,8 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
 }
 
 // Collect will collect the netric for issue
-func (c *issueCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
-	var res []*api.Metric
+func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
+	var res []*Metric
 
 	for _, issueType := range issueTypeList {
 		count, err := c.store.CountIssue(ctx, &api.IssueFind{
@@ -52,7 +52,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
 			continue
 		}
 
-		res = append(res, &api.Metric{
+		res = append(res, &Metric{
 			EventName: issueEventName,
 			Properties: map[string]interface{}{
 				"type":  string(issueType),

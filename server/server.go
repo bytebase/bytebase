@@ -293,7 +293,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.initSubscription()
-	s.initMetricScheduler(config.deploymentID)
+	s.initMetricScheduler(config.workspaceID)
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
@@ -310,21 +310,6 @@ func (server *Server) initSubscription() *enterpriseAPI.Subscription {
 func (server *Server) initMetricScheduler(deploymentID string) {
 	metricScheduler := NewMetricScheduler(server.l, server, deploymentID)
 	server.MetricScheduler = metricScheduler
-}
-
-func (server *Server) initDeploymentID(ctx context.Context, store *store.Store) (string, error) {
-	configCreate := &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
-		Name:        api.SettingDeploymentID,
-		Value:       uuid.New().String(),
-		Description: "The deployment identify",
-	}
-	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
-	if err != nil {
-		return "", err
-	}
-
-	return config.Value, nil
 }
 
 func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
@@ -353,17 +338,17 @@ func (server *Server) initSetting(ctx context.Context, store *store.Store) (*con
 	}
 	conf.secret = authSetting.Value
 
-	// initial deployment
-	deploymentSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+	// initial workspace
+	workspaceSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
-		Name:        api.SettingDeploymentID,
+		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
-		Description: "The deployment identify",
+		Description: "The workspace identify",
 	})
 	if err != nil {
 		return nil, err
 	}
-	conf.deploymentID = deploymentSetting.Value
+	conf.workspaceID = workspaceSetting.Value
 
 	return conf, nil
 }
