@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -31,19 +30,14 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
 	status := api.Normal
-	instanceList, err := c.store.FindInstance(ctx, &api.InstanceFind{
+	instanceCountMap, err := c.store.CountInstanceGroupByEngine(ctx, &api.InstanceFind{
 		RowStatus: &status,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	instanceEngineMap := make(map[db.Type]int)
-	for _, instance := range instanceList {
-		instanceEngineMap[instance.Engine] = instanceEngineMap[instance.Engine] + 1
-	}
-
-	for engine, count := range instanceEngineMap {
+	for engine, count := range instanceCountMap {
 		res = append(res, &Metric{
 			EventName: instanceEventName,
 			Properties: map[string]interface{}{

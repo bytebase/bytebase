@@ -122,35 +122,39 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 	return issue, nil
 }
 
-// CountIssue counts the number of issue.
-func (s *Store) CountIssue(ctx context.Context, find *api.IssueFind) (int, error) {
+// CountIssueGroupByType counts the number of issue and group by type.
+func (s *Store) CountIssueGroupByType(ctx context.Context, find *api.IssueFind) (map[api.IssueType]int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, FormatError(err)
+		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
 	where, args := findIssueQuery(find)
 
-	row, err := tx.PTx.QueryContext(ctx, `
-		SELECT COUNT(*)
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT type, COUNT(*)
 		FROM issue
-		WHERE `+where,
+		WHERE `+where+" GROUP BY type",
 		args...,
 	)
 	if err != nil {
-		return 0, FormatError(err)
+		return nil, FormatError(err)
 	}
-	defer row.Close()
+	defer rows.Close()
 
-	count := 0
-	if row.Next() {
-		if err := row.Scan(&count); err != nil {
-			return 0, FormatError(err)
+	res := make(map[api.IssueType]int)
+
+	for rows.Next() {
+		count := 0
+		var issueType api.IssueType
+		if err := rows.Scan(&issueType, &count); err != nil {
+			return nil, FormatError(err)
 		}
+		res[issueType] = count
 	}
 
-	return count, nil
+	return res, nil
 }
 
 // CreateIssueValidateOnly creates an issue for validation purpose
@@ -521,9 +525,6 @@ func findIssueQuery(find *api.IssueFind) (string, []interface{}) {
 		args = append(args, *v)
 		args = append(args, *v)
 		args = append(args, *v)
-	}
-	if v := find.Type; v != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.StatusList; v != nil {
 		list := []string{}

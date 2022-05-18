@@ -17,17 +17,6 @@ type issueCollector struct {
 // issueEventName is the MetricEventName for issue
 var issueEventName MetricEventName = "bb.issue"
 
-var issueTypeList = []api.IssueType{
-	api.IssueGeneral,
-	api.IssueDatabaseCreate,
-	api.IssueDatabaseGrant,
-	api.IssueDatabaseSchemaUpdate,
-	api.IssueDatabaseSchemaUpdate,
-	api.IssueDatabaseSchemaUpdateGhost,
-	api.IssueDatabaseDataUpdate,
-	api.IssueDataSourceRequest,
-}
-
 // NewIssueCollector creates a new instance of issueCollector
 func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	return &issueCollector{
@@ -40,18 +29,12 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
-	for _, issueType := range issueTypeList {
-		count, err := c.store.CountIssue(ctx, &api.IssueFind{
-			Type: &issueType,
-		})
-		if err != nil {
-			c.l.Debug("failed to count issue", zap.String("type", string(issueType)))
-			continue
-		}
-		if count <= 0 {
-			continue
-		}
+	issueCountMap, err := c.store.CountIssueGroupByType(ctx, &api.IssueFind{})
+	if err != nil {
+		return nil, err
+	}
 
+	for issueType, count := range issueCountMap {
 		res = append(res, &Metric{
 			EventName: issueEventName,
 			Properties: map[string]interface{}{

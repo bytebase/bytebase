@@ -202,8 +202,6 @@ type IssueFind struct {
 	StatusList  *[]IssueStatus
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit *int
-	// Find issue by type.
-	Type *IssueType
 }
 
 // IssuePatch is the API message for patching an issue.

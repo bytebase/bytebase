@@ -121,35 +121,39 @@ func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*a
 	return instance, nil
 }
 
-// CountInstance counts the number of instances.
-func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
+// CountInstanceGroupByEngine counts the number of instances and group by engine.
+func (s *Store) CountInstanceGroupByEngine(ctx context.Context, find *api.InstanceFind) (map[db.Type]int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, FormatError(err)
+		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
 	where, args := findInstanceQuery(find)
 
-	row, err := tx.PTx.QueryContext(ctx, `
-		SELECT COUNT(*)
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT engine, COUNT(*)
 		FROM instance
-		WHERE `+where,
+		WHERE `+where+" GROUP BY engine",
 		args...,
 	)
 	if err != nil {
-		return 0, FormatError(err)
+		return nil, FormatError(err)
 	}
-	defer row.Close()
+	defer rows.Close()
 
-	count := 0
-	if row.Next() {
-		if err := row.Scan(&count); err != nil {
-			return 0, FormatError(err)
+	res := make(map[db.Type]int)
+
+	for rows.Next() {
+		count := 0
+		var engine db.Type
+		if err := rows.Scan(&engine, &count); err != nil {
+			return nil, FormatError(err)
 		}
+		res[engine] = count
 	}
 
-	return count, nil
+	return res, nil
 }
 
 // GetInstanceAdminPasswordByID gets admin password of instance
