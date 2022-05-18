@@ -51,7 +51,7 @@ func (s *segment) Report(metric *collector.Metric) error {
 		Set(metricValueField, metric.Value).
 		Set(metricEnvironmentField, s.environment)
 
-	for key, value := range metric.Dimensions {
+	for key, value := range metric.Label {
 		properties.Set(key, value)
 	}
 

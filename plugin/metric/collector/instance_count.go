@@ -35,7 +35,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 		res = append(res, &Metric{
 			Name:  instanceCountMetricName,
 			Value: count,
-			Dimensions: map[string]string{
+			Label: map[string]string{
 				"database": string(engine),
 			},
 		})
