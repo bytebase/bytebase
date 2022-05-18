@@ -32,8 +32,8 @@ func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) er
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, timestamp int64) error {
-	pitrDatabaseName := getPITRDatabaseName(database, timestamp)
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
+	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
