@@ -280,13 +280,13 @@ func (r *Restore) showLatestBinlogFile(ctx context.Context) (*mysql.BinlogFile, 
 	}
 	defer rows.Close()
 
-	var meta mysql.BinlogFile
+	var binlogFile mysql.BinlogFile
 	if rows.Next() {
 		var unused interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
-		if err := rows.Scan(&meta.Name, &meta.Size, &unused, &unused, &unused); err != nil {
+		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused, &unused, &unused); err != nil {
 			return nil, err
 		}
-		return &meta, nil
+		return &binlogFile, nil
 	}
 	return nil, fmt.Errorf("cannot find latest binlog on instance")
 }
