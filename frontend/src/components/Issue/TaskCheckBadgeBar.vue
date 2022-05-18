@@ -199,22 +199,14 @@ export default defineComponent({
     };
 
     const name = (taskCheckRun: TaskCheckRun): string => {
-      switch (taskCheckRun.type) {
-        case "bb.task-check.database.statement.fake-advise":
-          return t("task.check-type.fake");
-        case "bb.task-check.database.statement.syntax":
-          return t("task.check-type.syntax");
-        case "bb.task-check.database.statement.compatibility":
-          return t("task.check-type.compatibility");
-        case "bb.task-check.database.statement.advise":
-          return t("task.check-type.sql-review");
-        case "bb.task-check.database.connect":
-          return t("task.check-type.connection");
-        case "bb.task-check.instance.migration-schema":
-          return t("task.check-type.migration-schema");
-        case "bb.task-check.general.earliest-allowed-time":
-          return t("task.check-type.earliest-allowed-time");
+      const { type } = taskCheckRun;
+      const has = TaskCheckTypeNameDict.has(type);
+      console.assert(has, `Missing TaskCheckType name of "${type}"`);
+      if (has) {
+        const key = TaskCheckTypeNameDict.get(type)!;
+        return t(key);
       }
+      return type;
     };
 
     const selectTaskCheckRun = (taskCheckRun: TaskCheckRun) => {
@@ -249,4 +241,24 @@ TaskCheckTypeOrderDict.set(
   "bb.task-check.database.statement.fake-advise",
   FAKE_MAX_TASK_CHECK_TYPE_ORDER
 );
+
+// Defines the mapping from TaskCheckType to an i18n resource keypath
+const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
+  ["bb.task-check.database.statement.fake-advise", "task.check-type.fake"],
+  ["bb.task-check.database.statement.syntax", "task.check-type.syntax"],
+  [
+    "bb.task-check.database.statement.compatibility",
+    "task.check-type.compatibility",
+  ],
+  ["bb.task-check.database.statement.advise", "task.check-type.sql-review"],
+  ["bb.task-check.database.connect", "task.check-type.connection"],
+  [
+    "bb.task-check.instance.migration-schema",
+    "task.check-type.migration-schema",
+  ],
+  [
+    "bb.task-check.general.earliest-allowed-time",
+    "task.check-type.earliest-allowed-time",
+  ],
+]);
 </script>
