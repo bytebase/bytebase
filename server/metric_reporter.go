@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
@@ -23,6 +24,8 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
+	mode common.ReleaseMode
+	// subscription is the pointer to the server.subscription. This can be updated by users so we need to update the identify in each schedule.
 	subscription  *enterpriseAPI.Subscription
 	reporter      reporter.MetricReporter
 	workspaceID   string
@@ -39,6 +42,7 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) 
 
 	return &MetricScheduler{
 		l:             logger,
+		mode:          server.profile.Mode,
 		subscription:  &server.subscription,
 		workspaceID:   workspaceID,
 		reporter:      reporter,
@@ -54,6 +58,10 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
 
 	for {
+		if m.mode != common.ReleaseModeProd {
+			return
+		}
+
 		m.identify()
 
 		select {
