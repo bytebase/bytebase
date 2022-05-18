@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
-	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
@@ -40,47 +38,36 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRCutover(ctx, task, server.store, driver); err != nil {
-		return true, nil, err
-	}
-
-	exec.l.Info("swap PITR database done", zap.String("target database", task.Database.Name))
-
-	return true, &api.TaskRunResultPayload{
-		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
-	}, nil
-}
-
-func (exec *PITRCutoverTaskExecutor) doPITRCutover(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver) error {
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := getIssueByPipelineID(ctx, store, exec.l, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, server.store, exec.l, task.PipelineID)
 	if err != nil {
-		return err
+		return true, nil, err
 	}
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	if !ok {
 		exec.l.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
-		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
+		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-
 	mysqlRestore := restoremysql.New(mysqlDriver)
 
 	exec.l.Debug("Start swapping the original and PITR database",
 		zap.String("instance", instance.Name),
 		zap.String("database", database.Name),
 	)
-
 	if err := mysqlRestore.SwapPITRDatabase(ctx, database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
 			zap.Stack("stack"),
 			zap.Error(err))
-		return fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
+		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
 	}
 
-	return nil
+	exec.l.Info("swap PITR database done", zap.String("target database", task.Database.Name))
+	return true, &api.TaskRunResultPayload{
+		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
+	}, nil
 }
