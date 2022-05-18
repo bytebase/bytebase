@@ -47,6 +47,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
+import { groupBy, maxBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
@@ -152,15 +153,21 @@ export default defineComponent({
 
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
-      const result: TaskCheckRun[] = [];
-      for (const run of props.taskCheckRunList) {
-        const index = result.findIndex((item) => item.type == run.type);
-        if (index < 0) {
-          result.push(run);
-        } else if (result[index].updatedTs < run.updatedTs) {
-          result[index] = run;
+      /*
+        `groupByType` looks like: {
+          "bb.task-check.general.earliest-allowed-time": [run1, run2, ...],
+          "bb.task-check.database.statement.compatibility": [run1, run2, ...],
+          "bb.task-check.database.statement.syntax": [run1, run2, ...],
+          ...
         }
-      }
+      */
+      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
+      // `result` is an array of the most recent TaskCheckRun in each group
+      const result = Object.keys(groupByType).map((type) => {
+        const groupList = groupByType[type];
+        const latestInGroup = maxBy(groupList, (run) => run.updatedTs)!;
+        return latestInGroup;
+      });
 
       return result.sort((a: TaskCheckRun, b: TaskCheckRun) => {
         // Put likely failure first.
