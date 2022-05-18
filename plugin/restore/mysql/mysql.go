@@ -139,7 +139,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		return err
 	}
 
-	binlogFilesOnServer, err := r.showBinlogFiles(ctx)
+	binlogFilesOnServer, err := r.getBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
@@ -242,8 +242,8 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	return nil
 }
 
-// showBinlogFiles returns the metadata of binlogs
-func (r *Restore) showBinlogFiles(ctx context.Context) ([]mysql.BinlogFile, error) {
+// getBinlogFilesMetaOnServer returns the metadata of binlogs
+func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
