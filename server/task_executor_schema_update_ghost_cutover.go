@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	ghostsql "github.com/github/gh-ost/go/sql"
 	"go.uber.org/zap"
 )
 
@@ -54,15 +53,13 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 
 	statement := strings.TrimSpace(payload.Statement)
-
-	parser := ghostsql.NewParserFromAlterStatement(statement)
-	if !parser.HasExplicitTable() {
-		return true, nil, fmt.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
+	tableName, err := getTableNameFromStatement(statement)
+	if err != nil {
+		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
 	}
-	tableName := parser.GetExplicitTable()
 
-	socketFilename := fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", syncTask.ID, task.Database.ID, task.Database.Name, tableName)
-	postponeFilename := fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", syncTask.ID, task.Database.ID, task.Database.Name, tableName)
+	socketFilename := getSocketFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
+	postponeFilename := getPostponeFlagFilename(syncTaskID, task.Database.ID, task.Database.Name, tableName)
 
 	if err := os.Remove(postponeFilename); err != nil {
 		return true, nil, fmt.Errorf("failed to remove postpone flag file, error: %w", err)

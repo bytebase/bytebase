@@ -34,18 +34,44 @@ type SchemaUpdateGhostSyncTaskExecutor struct {
 	l *zap.Logger
 }
 
+// RunOnce will run SchemaUpdateGhostSync task once.
+func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
+	}
+	return runGhostMigration(ctx, exec.l, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+}
+
+func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
+	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", taskID, databaseID, databaseName, tableName)
+}
+
+func getPostponeFlagFilename(taskID int, databaseID int, databaseName string, tableName string) string {
+	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", taskID, databaseID, databaseName, tableName)
+}
+
+func getTableNameFromStatement(statement string) (string, error) {
+	parser := ghostsql.NewParserFromAlterStatement(statement)
+	if !parser.HasExplicitTable() {
+		return "", fmt.Errorf("failed to parse table name from statement, statement: %v", statement)
+	}
+	return parser.GetExplicitTable(), nil
+}
+
 type ghostConfig struct {
 	// serverID should be unique
-	serverID         uint
-	host             string
-	port             string
-	user             string
-	password         string
-	database         string
-	table            string
-	alterStatement   string
-	filenameTemplate string
-	noop             bool
+	serverID             uint
+	host                 string
+	port                 string
+	user                 string
+	password             string
+	database             string
+	table                string
+	alterStatement       string
+	socketFilename       string
+	postponeFlagFilename string
+	noop                 bool
 }
 
 func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
@@ -106,9 +132,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
-	// TODO(p0ny): change file name according to design doc.
-	migrationContext.ServeSocketFile = fmt.Sprintf(config.filenameTemplate, migrationContext.OriginalTableName, "sock")
-	migrationContext.PostponeCutOverFlagFile = fmt.Sprintf(config.filenameTemplate, migrationContext.OriginalTableName, "postponeFlag")
+	migrationContext.ServeSocketFile = config.socketFilename
+	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
 	// TODO(p0ny): set OkToDropTable to false and drop table in dropOriginalTable Task.
 	migrationContext.OkToDropTable = true
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
@@ -125,15 +150,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		return nil, err
 	}
 	return migrationContext, nil
-}
-
-// RunOnce will run SchemaUpdateGhostSync task once.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
-	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
-	}
-	return runGhostMigration(ctx, exec.l, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 func runGhostMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
@@ -215,21 +231,28 @@ func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement stri
 	instance := task.Instance
 	databaseName := task.Database.Name
 
+	tableName, err := getTableNameFromStatement(statement)
+	if err != nil {
+		return err
+	}
+
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
-		host:             instance.Host,
-		port:             instance.Port,
-		user:             adminDataSource.Username,
-		password:         adminDataSource.Password,
-		database:         databaseName,
-		alterStatement:   statement,
-		filenameTemplate: fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%%v.%%v", task.ID, task.Database.ID, databaseName),
-		noop:             false,
-		serverID:         10000000 + uint(task.ID),
+		host:           instance.Host,
+		port:           instance.Port,
+		user:           adminDataSource.Username,
+		password:       adminDataSource.Password,
+		database:       databaseName,
+		table:          tableName,
+		alterStatement: statement,
+		socketFilename: getSocketFilename(task.ID, task.Database.ID, databaseName, tableName),
+		noop:           false,
+		// serverID should be unique
+		serverID: 10000000 + uint(task.ID),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to init migrationContext for gh-ost, error: %w", err)
