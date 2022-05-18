@@ -134,25 +134,22 @@ func getPITRDatabaseName(database string, timestamp int64) string {
 
 // SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`, but exclude latest binlog
 func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
-	// 1. read the binlog file in saveDir
 	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
 	if err != nil {
 		return err
 	}
 
-	// 2. get the metadata of binlogs on the server
 	binlogFilesOnServer, err := r.showBinlogFiles(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 3. get meta of the latest binlog
 	latest, err := r.showLatestBinlogFile(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 4. compare file sizes and name to decide which files to download
+	// compare file sizes and name to decide which files to download
 	downloadedIndex := make(map[int]struct{})
 	for index, serverFile := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncBinlogs()
@@ -169,14 +166,14 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 						return fmt.Errorf("cannot remove %s, error: %w", localFileName, err)
 					}
 				} else {
-					// File size match, record it in downloadedIndex
+					// file size match, record it in downloadedIndex
 					downloadedIndex[index] = struct{}{}
 				}
 			}
 		}
 	}
 
-	// 6. download the binlog that not record in downloadedIndex
+	// download the binlog that not record in downloadedIndex
 	for i, serverFile := range binlogFilesOnServer {
 		if _, ok := downloadedIndex[i]; ok {
 			continue
@@ -198,7 +195,7 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 	return r.downloadBinlogFile(ctx, instance, saveDir, *latest)
 }
 
-// syncBinlog syncs the binlog specified by `meta` between the instance and local.
+// downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
 func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, meta mysql.BinlogFile) error {
 	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
 	// TODO(zp): support ssl?
@@ -285,8 +282,8 @@ func (r *Restore) showLatestBinlogFile(ctx context.Context) (*mysql.BinlogFile, 
 
 	var meta mysql.BinlogFile
 	if rows.Next() {
-		var unused [3]interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
-		if err := rows.Scan(&meta.Name, &meta.Size, &unused[0], &unused[1], &unused[2]); err != nil {
+		var unused interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
+		if err := rows.Scan(&meta.Name, &meta.Size, &unused, &unused, &unused); err != nil {
 			return nil, err
 		}
 		return &meta, nil
