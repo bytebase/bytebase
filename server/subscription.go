@@ -44,8 +44,8 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 
 // loadLicense will load current subscription by license.
 // Return subscription with free plan if no license found.
-func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
-	subscription := &enterpriseAPI.Subscription{
+func (s *Server) loadSubscription() enterpriseAPI.Subscription {
+	subscription := enterpriseAPI.Subscription{
 		Plan: api.FREE,
 		// -1 means not expire, just for free plan
 		ExpiresTs:     -1,
@@ -53,7 +53,7 @@ func (s *Server) loadSubscription() *enterpriseAPI.Subscription {
 	}
 	license, _ := s.loadLicense()
 	if license != nil {
-		subscription = &enterpriseAPI.Subscription{
+		subscription = enterpriseAPI.Subscription{
 			Plan:          license.Plan,
 			ExpiresTs:     license.ExpiresTs,
 			StartedTs:     license.IssuedTs,

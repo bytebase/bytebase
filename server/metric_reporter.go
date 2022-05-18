@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
@@ -22,7 +23,7 @@ const (
 type MetricScheduler struct {
 	l *zap.Logger
 
-	server        *Server
+	subscription  *enterpriseAPI.Subscription
 	reporter      reporter.MetricReporter
 	workspaceID   string
 	collectorList []collector.MetricCollector
@@ -38,7 +39,7 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) 
 
 	return &MetricScheduler{
 		l:             logger,
-		server:        server,
+		subscription:  &server.subscription,
 		workspaceID:   workspaceID,
 		reporter:      reporter,
 		collectorList: collectorList,
@@ -47,23 +48,14 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) 
 
 // Run will run the metric scheduler.
 func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
-	plan := api.FREE.String()
-	if m.server.subscription != nil {
-		plan = m.server.subscription.Plan.String()
-	}
-	if err := m.reporter.Identify(&api.Workspace{
-		Plan: plan,
-		ID:   m.workspaceID,
-	}); err != nil {
-		m.l.Debug("reporter identify failed", zap.Error(err))
-	}
-
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
 	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
 
 	for {
+		m.identify()
+
 		select {
 		case <-ticker.C:
 			func() {
@@ -111,4 +103,18 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 // Close will close the metric client.
 func (m *MetricScheduler) Close() {
 	m.reporter.Close()
+}
+
+// Identify will identify the workspace and update the subscription plan.
+func (m *MetricScheduler) identify() {
+	plan := api.FREE.String()
+	if m.subscription != nil {
+		plan = m.subscription.Plan.String()
+	}
+	if err := m.reporter.Identify(&api.Workspace{
+		Plan: plan,
+		ID:   m.workspaceID,
+	}); err != nil {
+		m.l.Debug("reporter identify failed", zap.Error(err))
+	}
 }

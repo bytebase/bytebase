@@ -41,7 +41,7 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	LicenseService enterpriseAPI.LicenseService
-	subscription   *enterpriseAPI.Subscription
+	subscription   enterpriseAPI.Subscription
 
 	profile   Profile
 	e         *echo.Echo
@@ -301,9 +301,8 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 }
 
 // initSubscription will initial the subscription cache in memory.
-func (server *Server) initSubscription() *enterpriseAPI.Subscription {
+func (server *Server) initSubscription() {
 	server.subscription = server.loadSubscription()
-	return server.subscription
 }
 
 // initMetricScheduler will initial the metric scheduler.
