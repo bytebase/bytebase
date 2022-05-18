@@ -32,17 +32,6 @@ type PITRRestoreTaskExecutor struct {
 
 // RunOnce will run the PITR restore task executor once.
 func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			panicErr, ok := r.(error)
-			if !ok {
-				panicErr = fmt.Errorf("%v", r)
-			}
-			exec.l.Error("PITRRestoreTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
-			terminated = true
-			err = fmt.Errorf("encounter internal error when executing sql")
-		}
-	}()
 	exec.l.Info("Run PITR restore task", zap.String("task", task.Name))
 
 	payload := api.TaskDatabasePITRRestorePayload{}
