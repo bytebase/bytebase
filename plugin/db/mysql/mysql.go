@@ -921,32 +921,38 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer conn.Close()
 
-	driver.l.Debug("flush tables in database with read locks",
-		zap.String("database", database))
-	if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-		return "", err
-	}
+	var payloadBytes []byte
+	// Before we dump the real data, we should record the binlog position for PITR.
+	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
+	if !schemaOnly {
+		driver.l.Debug("flush tables in database with read locks",
+			zap.String("database", database))
+		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+			driver.l.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
+			return "", err
+		}
 
-	binlog, err := getBinlogInfo(ctx, conn)
-	if err != nil {
-		return "", err
-	}
-	driver.l.Debug("binlog config at dump time",
-		zap.String("filename", binlog.FileName),
-		zap.Int64("position", binlog.Position))
+		binlog, err := getBinlogInfo(ctx, conn)
+		if err != nil {
+			return "", err
+		}
+		driver.l.Debug("binlog config at dump time",
+			zap.String("filename", binlog.FileName),
+			zap.Int64("position", binlog.Position))
 
-	ts, err := getServerTime(ctx, driver.db)
-	if err != nil {
-		return "", err
-	}
+		ts, err := getServerTime(ctx, driver.db)
+		if err != nil {
+			return "", err
+		}
 
-	payload := backupPayload{
-		BinlogInfo: binlog,
-		Ts:         ts,
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
+		payload := backupPayload{
+			BinlogInfo: binlog,
+			Ts:         ts,
+		}
+		payloadBytes, err = json.Marshal(payload)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	options := sql.TxOptions{}
@@ -954,7 +960,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	// Now we are still holding the tables' exclusive locks.
+	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	txn, err := conn.BeginTx(ctx, &options)
