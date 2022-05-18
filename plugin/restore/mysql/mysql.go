@@ -199,11 +199,11 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, meta mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
 	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogPath, "bin", "mysqlbinlog"),
-		meta.Name,
+		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
 		// Note, recheck here when upgrade embedding mysqlbinlog binary
@@ -215,7 +215,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 
 	var runErr error
 	defer func() {
-		tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, meta.Name)
+		tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, binlog.Name)
 		tmpFilePath := filepath.Join(saveDir, tmpFileName)
 		if runErr != nil {
 			// delete the download binlog if some error occur
@@ -229,14 +229,14 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 			_ = os.Remove(tmpFilePath)
 			return
 		}
-		if fi.Size() != meta.Size {
+		if fi.Size() != binlog.Size {
 			// delete the download binlog if filesize not match
 			_ = os.Remove(tmpFilePath)
 			return
 		}
 
 		// no error, rename it
-		if err := os.Rename(tmpFilePath, filepath.Join(saveDir, meta.Name)); err != nil {
+		if err := os.Rename(tmpFilePath, filepath.Join(saveDir, binlog.Name)); err != nil {
 			_ = os.Remove(tmpFilePath)
 		}
 	}()
