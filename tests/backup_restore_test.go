@@ -12,11 +12,13 @@ import (
 	"testing"
 	"time"
 
-	dbPlugin "github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
+	dbplugin "github.com/bytebase/bytebase/plugin/db"
+	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
+	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 
-	"github.com/bytebase/bytebase/resources/mysql"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // TestBackupRestoreBasic tests basic backup and restore behavior
@@ -30,6 +32,7 @@ import (
 func TestBackupRestoreBasic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
+	ctx := context.Background()
 
 	localhost := "127.0.0.1"
 	port := getTestPort(t.Name())
@@ -37,29 +40,25 @@ func TestBackupRestoreBasic(t *testing.T) {
 	database := "backup_restore"
 	table := "backup_restore"
 
-	_, stop := mysql.SetupTestInstance(t, port)
+	_, stop := resourcemysql.SetupTestInstance(t, port)
 	defer stop()
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, localhost, port))
 	a.NoError(err)
 	defer db.Close()
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	a.NoError(err)
-
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	a.NoError(err)
-
 	_, err = db.Exec(fmt.Sprintf(`
+	CREATE DATABASE %s;
+	USE %s;
 	CREATE TABLE %s (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`, table))
+	`, database, database, table))
 	a.NoError(err)
 
-	const numRecords = 100
+	const numRecords = 10
 	tx, err := db.Begin()
 	a.NoError(err)
 	defer tx.Rollback()
@@ -71,21 +70,21 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
+	driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", port), username, database)
 	defer func() {
-		err := driver.Close(context.TODO())
+		err := driver.Close(ctx)
 		a.NoError(err)
 	}()
 
-	buf := backup(a, driver, database)
-	// t.Logf("dump:\n%s", buf.String())
+	buf := doBackup(ctx, t, driver, database)
+	t.Logf("backup content:\n%s", buf.String())
 
 	// drop all tables
 	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", table))
 	a.NoError(err)
 
 	// restore
-	err = driver.Restore(context.TODO(), bufio.NewScanner(buf))
+	err = driver.Restore(ctx, bufio.NewScanner(buf))
 	a.NoError(err)
 
 	// validate data
@@ -94,9 +93,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 	i := 0
 	for rows.Next() {
 		var col int
-		err := rows.Scan(&col)
-		a.NoError(err)
-		a.Equal(col, i)
+		a.NoError(rows.Scan(&col))
+		a.Equal(i, col)
 		i++
 	}
 	a.NoError(rows.Err())
@@ -110,180 +108,298 @@ func TestBackupRestoreBasic(t *testing.T) {
 // 2. insert more data, and this is the point-in-time (denoted as t1) that we want to recover
 // 3. keep inserting data into the original tables
 // 4.1. set foreign_key_checks=OFF
-// 4.2. restore full backup at t0 to ghost tables
-// 4.3. apply binlog from t0 to t1 to ghost tables
+// 4.2. restore full backup at t0 to pitr tables
+// 4.3. apply binlog from t0 to t1 to pitr tables
 // 4.4. foreign_key_checks=ON
-// 5. lock tables and atomically swap original and ghost tables
+// 5. lock tables and atomically swap original and pitr tables
 func TestPITR(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 
-	localhost := "127.0.0.1"
+	// common configs
+	const (
+		localhost    = "127.0.0.1"
+		username     = "root"
+		database     = "backup_restore"
+		numRowsTime0 = 10
+		numRowsTime1 = 20
+	)
 	port := getTestPort(t.Name())
-	username := "root"
-	database := "backup_restore"
 
-	insertData := func(db *sql.DB, a *require.Assertions, begin, end int) {
-		tx, err := db.Begin()
+	// test cases
+	t.Run("Buggy Application", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+
+		t.Log("initialize database")
+		// For parallel sub-tests, we use different port for MySQL
+		mysqlPort := port
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
+		defer stopFn()
+		defer db.Close()
+
+		t.Log("insert data")
+		insertRangeData(t, db, 0, numRowsTime0)
+
+		t.Log("make a full backup")
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
+		defer func() {
+			err := driver.Close(ctx)
+			a.NoError(err)
+		}()
+
+		buf := doBackup(ctx, t, driver, database)
+		t.Logf("backup content:\n%s", buf.String())
+
+		t.Log("insert more data")
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
+		t.Logf("start to concurrently update data at t1: %v", t1)
+
+		t.Log("restore to pitr database")
+		timestamp := time.Now().Unix()
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := pluginmysql.BinlogInfo{}
+		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
-		defer tx.Rollback()
 
-		for i := begin; i < end; i++ {
-			_, err := tx.Exec(fmt.Sprintf("INSERT INTO t0 VALUES (%d)", i))
+		t.Log("cutover stage")
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		a.NoError(err)
+
+		t.Log("validate table tbl0")
+		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
+		t.Log("validate table tbl1")
+		validateTbl1(t, db, numRowsTime0)
+		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
+		t.Log("validate table _update_row_")
+	})
+
+	t.Run("Drop Database", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+
+		t.Logf("test %s initialize database %s", t.Name(), database)
+
+		// 1. create database for PITR test
+		// For parallel sub-tests, we use different port for MySQL
+		mysqlPort := port + 1
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
+		defer stopFn()
+		defer db.Close()
+
+		// 2. insert data for full backup
+		t.Log("insert data")
+		insertRangeData(t, db, 0, numRowsTime0)
+
+		t.Log("make a full backup")
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
+		defer func() {
+			err := driver.Close(ctx)
 			a.NoError(err)
-			_, err = tx.Exec(fmt.Sprintf("INSERT INTO t1 VALUES (%d, %d)", i, i))
-			a.NoError(err)
+		}()
+
+		buf := doBackup(ctx, t, driver, database)
+		t.Logf("backup content:\n%s", buf.String())
+
+		// 3. insert more data for incremental restore
+		t.Log("insert more data")
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+
+		// 4. drop database
+		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database)
+		_, err := db.ExecContext(ctx, dropStmt)
+		a.NoError(err)
+
+		// 5. check that query from the database that had dropped will fail
+		rows, err := db.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, database))
+		a.NoError(err)
+		defer rows.Close()
+		for rows.Next() {
+			var s string
+			rows.Scan(&s)
+			a.FailNow("Database still exists after dropped")
 		}
 
-		err = tx.Commit()
+		// 6. restore
+		t.Log("restore to pitr database")
+		timestamp := time.Now().Unix()
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := restoremysql.BinlogConfig{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
-	}
 
-	_, stop := mysql.SetupTestInstance(t, port)
-	defer stop()
+		t.Log("cutover stage")
+		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		a.NoError(err)
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
+		t.Log("validate table tbl0")
+		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
+		t.Log("validate table tbl1")
+		validateTbl1(t, db, numRowsTime0)
+		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
+		t.Log("validate table _update_row_")
+	})
+}
+
+func initPITRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
+	a := require.New(t)
+
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+
+	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql?multiStatements=true", username, host, port))
 	a.NoError(err)
-	defer db.Close()
 
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
-	a.NoError(err)
-
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
-	a.NoError(err)
-
-	_, err = db.Exec(`
-	CREATE TABLE t0 (
+	_, err = db.Exec(fmt.Sprintf(`
+	CREATE DATABASE %s;
+	USE %s;
+	CREATE TABLE tbl0 (
 		id INT,
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`)
-	a.NoError(err)
-	_, err = db.Exec(`
-	CREATE TABLE t1 (
+	CREATE TABLE tbl1 (
 		id INT,
 		pid INT,
 		PRIMARY KEY (id),
 		UNIQUE INDEX (pid),
-		CONSTRAINT FOREIGN KEY (pid) REFERENCES t0(id) ON DELETE NO ACTION
+		CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
 	);
-	`)
+	`, database, database))
 	a.NoError(err)
 
-	// insert data to make time point t0
-	insertData(db, a, 0, 10)
+	return db, stopFn
+}
 
-	// make a full backup of t0
-	driverBackup := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, database)
-	defer func() {
-		err := driverBackup.Close(context.TODO())
+func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
+	a := require.New(t)
+
+	tx, err := db.Begin()
+	a.NoError(err)
+	defer tx.Rollback()
+
+	for i := begin; i < end; i++ {
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d)", i))
 		a.NoError(err)
-	}()
-
-	buf := backup(a, driverBackup, database)
-	t.Log(buf.String())
-
-	// insert more data to make time point t1
-	insertData(db, a, 10, 20)
-
-	// concurrently update data
-	stopChan := make(chan bool)
-	go updateRow(t, username, localhost, database, port, stopChan)
-	defer func() { stopChan <- true }()
-
-	// restore to ghost database
-	_, err = db.Exec("SET foreign_key_checks=OFF")
-	a.NoError(err)
-
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_ghost", database))
-	a.NoError(err)
-	_, err = db.Exec(fmt.Sprintf("USE %s_ghost", database))
-	a.NoError(err)
-
-	driverRestore := getDbDriver(a, localhost, fmt.Sprintf("%d", port), username, fmt.Sprintf("%s_ghost", database))
-	defer func() {
-		err := driverRestore.Close(context.TODO())
+		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d)", i, i))
 		a.NoError(err)
-	}()
-	err = driverRestore.Restore(context.TODO(), bufio.NewScanner(buf))
-	a.NoError(err)
+	}
 
-	// TODO(dragonly): validate ghost table data and schema
-
-	// TODO(dragonly): apply binlog from full backup to
-	// need to use binlog package from gh-ost or go-mysql
-
-	_, err = db.Exec("SET foreign_key_checks=ON")
-	a.NoError(err)
-
-	// the user can inspect the ghost table for now, and decide whether to execute the cut over
-	// cut over stage, swap tables
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s_old", database))
-	a.NoError(err)
-	queryRename := fmt.Sprintf("RENAME TABLE"+
-		" `%s`.`t0` TO `%s_old`.`t0`, `%s`.`t1` TO `%s_old`.`t1`,"+
-		" `%s_ghost`.`t0` TO `%s`.`t0`, `%s_ghost`.`t1` TO `%s`.`t1`",
-		database, database, database, database, database, database, database, database)
-	t.Log(queryRename)
-	_, err = db.Exec(queryRename)
+	err = tx.Commit()
 	a.NoError(err)
 }
 
-func getDbDriver(a *require.Assertions, host, port, username, database string) dbPlugin.Driver {
+func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
+	a := require.New(t)
+	rows, err := db.Query("SELECT * FROM tbl0")
+	a.NoError(err)
+	i := 0
+	for rows.Next() {
+		var col int
+		a.NoError(rows.Scan(&col))
+		a.Equal(i, col)
+		i++
+	}
+	a.NoError(rows.Err())
+	a.Equal(numRows, i)
+}
+
+func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
+	a := require.New(t)
+	rows, err := db.Query("SELECT * FROM tbl1")
+	a.NoError(err)
+	i := 0
+	for rows.Next() {
+		var col1, col2 int
+		a.NoError(rows.Scan(&col1, &col2))
+		a.Equal(i, col1)
+		a.Equal(i, col2)
+		i++
+	}
+	a.NoError(rows.Err())
+	// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+	a.Equal(numRows, i)
+}
+
+func getMySQLDriver(ctx context.Context, t *testing.T, host, port, username, database string) dbplugin.Driver {
+	a := require.New(t)
+
 	logger, err := zap.NewDevelopment()
 	a.NoError(err)
-	driver, err := dbPlugin.Open(
-		context.TODO(),
-		dbPlugin.MySQL,
-		dbPlugin.DriverConfig{Logger: logger},
-		dbPlugin.ConnectionConfig{
+	driver, err := dbplugin.Open(
+		ctx,
+		dbplugin.MySQL,
+		dbplugin.DriverConfig{Logger: logger},
+		dbplugin.ConnectionConfig{
 			Host:      host,
 			Port:      port,
 			Username:  username,
 			Password:  "",
 			Database:  database,
-			TLSConfig: dbPlugin.TLSConfig{},
+			TLSConfig: dbplugin.TLSConfig{},
 		},
-		dbPlugin.ConnectionContext{},
+		dbplugin.ConnectionContext{},
 	)
 	a.NoError(err)
 	return driver
 }
 
-func backup(a *require.Assertions, driver dbPlugin.Driver, database string) *bytes.Buffer {
+func doBackup(ctx context.Context, t *testing.T, driver dbplugin.Driver, database string) *bytes.Buffer {
+	a := require.New(t)
+
 	var buf bytes.Buffer
-	err := driver.Dump(context.TODO(), database, &buf, false)
+	_, err := driver.Dump(ctx, database, &buf, false)
 	a.NoError(err)
 
 	return &buf
 }
 
-func updateRow(t *testing.T, username, localhost, database string, port int, stopChan chan bool) {
+func startUpdateRow(ctx context.Context, t *testing.T, username, localhost, database string, port int) int64 {
 	a := require.New(t)
 	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
-	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf("USE %s", database))
 	a.NoError(err)
 
 	t.Log("Start updating data")
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS _update_row_ (id INT PRIMARY KEY)")
+	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY)")
 	a.NoError(err)
-	_, err = db.Exec("REPLACE INTO _update_row_ VALUES (0)")
+
+	// init value is (0)
+	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0)")
 	a.NoError(err)
-	i := 0
-	for {
-		select {
-		case <-stopChan:
-			t.Log("Stop updating data")
-			return
-		default:
+	initTimestamp := time.Now().Unix()
+
+	go func() {
+		defer db.Close()
+		ticker := time.NewTicker(10 * time.Millisecond)
+		i := 0
+		for {
+			select {
+			case <-ticker.C:
+				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d", i))
+				a.NoError(err)
+				i++
+			case <-ctx.Done():
+				t.Log("Stop updating data")
+				return
+			}
 		}
-		_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d", i))
-		a.NoError(err)
-		i++
-		time.Sleep(10 * time.Millisecond)
-	}
+	}()
+
+	return initTimestamp
 }

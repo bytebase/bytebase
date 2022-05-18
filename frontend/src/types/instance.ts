@@ -79,6 +79,7 @@ export type InstanceCreate = {
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
+  syncSchema: boolean;
 };
 
 export type InstancePatch = {
@@ -90,6 +91,7 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
+  syncSchema: boolean;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

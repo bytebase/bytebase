@@ -520,6 +520,7 @@
     "select-environment-first": "Select environment first",
     "tables": "Tables",
     "views": "Views",
+    "extensions": "Extensions",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
     "sync-status": "Sync status"
@@ -529,10 +530,11 @@
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-now": "Sync Now",
+    "sync-schema-afterward": "Sync schema afterward",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to manage version control based schema migration for databases belonged to this instance.",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase relies on migration schema to record database schema migration on this instance. Without setting up the migration schema, you cannot alter schema or change data for any databases on the instance.",
     "please-contact-your-dba-to-configure-it": "Please contact your DBA to configure it.",
     "please-check-the-instance-connection-info-is-correct": "Please check the instance connection info is correct.",
     "users": "Users",
@@ -561,7 +563,6 @@
     "connection-info": "Connection info",
     "show-how-to-create": "Show how to create",
     "below-is-an-example-to-create-user-bytebase-with-password": "Below is an example to create user 'bytebase{'@'}%' with password",
-    "below-is-an-example-to-create-user-bytebase-with-password-clickhouse": "Below is an example to create user 'bytebase' with password",
     "your_db_pwd": "YOUR_DB_PWD",
     "no-read-only-data-source-warn": "The instance has not configured read-only user, please consider adding one.",
     "sentence": {
@@ -647,7 +648,10 @@
       "confirm-password": "Confirm Password",
       "confirm-password-placeholder": "Confirm password",
       "password-mismatch": "mismatch",
-      "existing-user": "Already have an account?"
+      "existing-user": "Already have an account?",
+      "accept-terms-and-policy": "I accept Bytebase's {terms} and {policy}",
+      "terms-of-service": "Terms of Service",
+      "privacy-policy": "Privacy Policy"
     },
     "sign-in": {
       "title": "Sign in to your account",
@@ -788,7 +792,14 @@
     "indexes": "Indexes",
     "row-count-est": "Row count est.",
     "incorrect-project-warning": "SQL editor can only query databases in projects available to the user. You should first transfer this database into a project.",
-    "go-to-transfer": "Go to transfer"
+    "go-to-transfer": "Go to transfer",
+    "pitr": {
+      "restore": "@:common.restore @:common.database",
+      "no-available-backup": "No available backup",
+      "point-in-time": "Point in time",
+      "help-info": "Restore the database state to a point in time. {link}.",
+      "minimum-supported-engine-and-version": "{engine} >= {min_version} required"
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1340,6 +1351,7 @@
     "self": "Sheets",
     "my-sheets": "My Sheets",
     "shared-with-me": "Shared with me",
+    "starred": "Starred",
     "actions": {
       "sync-from-vcs": "Sync from VCS"
     },

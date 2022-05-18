@@ -97,7 +97,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		s.metaDB, err = store.NewMetadataDBWithExternalPg(logger, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot create metadatadb instance, error: %w", err)
+		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
 	}
 
 	// New store.DB instance that represents the db connection.
@@ -176,11 +176,11 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostSync), schemaUpdateGhostSyncExecutor)
 
-		schemaUpdateTaskGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor(logger)
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateTaskGhostCutoverExecutor)
+		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateGhostCutoverExecutor)
 
-		schemaUpdateTaskGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateTaskGhostDropOriginalTableExecutor)
+		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
 		s.TaskScheduler = taskScheduler
 

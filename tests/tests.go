@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"io"
 	"io/fs"
@@ -108,7 +109,7 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3 for bytebase, Postgres, and GitLab.
+	// The port should be incremented by 3 for bytebase, Postgres, and GitLab, unless documented otherwise.
 	switch testName {
 	case "TestServiceRestart":
 		return 1234
@@ -122,18 +123,21 @@ func getTestPort(testName string) int {
 		return 1246
 	case "TestTenantDatabaseNameTemplate":
 		return 1249
-	case "TestGhostSimpleNoop":
+	// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
+	case "TestGhostSchemaUpdate":
 		return 1252
 	case "TestBackupRestoreBasic":
-		return 1255
+		return 1256
 	case "TestPITR":
-		return 1258
+		return 1259
 	case "TestTenantVCSDatabaseNameTemplate":
-		return 1261
+		return 1262
 	case "TestBootWithExternalPg":
-		return 1264
-	case "NEXT": // TestBootWithExternalPg need 4 ports for test, modify here for your test.
-		return 1268
+		return 1265
+	case "TestSheetVCS":
+		return 1269
+	case "NEXT":
+		return 1272
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -308,6 +312,7 @@ func (ctl *controller) waitForHealthz() error {
 
 }
 
+// Close closes long running resources
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
@@ -883,6 +888,8 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 		InstanceID:   instance.ID,
 		DatabaseName: databaseName,
 		Labels:       labels,
+		CharacterSet: "utf8mb4",
+		Collation:    "utf8mb4_general_ci",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct database creation issue CreateContext payload, error: %w", err)
@@ -1172,8 +1179,16 @@ func (ctl *controller) createSheet(sheetCreate api.SheetCreate) (*api.Sheet, err
 }
 
 // listSheets lists sheets for a database.
-func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
-	body, err := ctl.get(fmt.Sprintf("/sheet/my?databaseId=%d", databaseID), nil)
+func (ctl *controller) listSheets(sheetFind api.SheetFind) ([]*api.Sheet, error) {
+	params := map[string]string{}
+	if sheetFind.ProjectID != nil {
+		params["projectId"] = strconv.Itoa(*sheetFind.ProjectID)
+	}
+	if sheetFind.DatabaseID != nil {
+		params["databaseId"] = strconv.Itoa(*sheetFind.DatabaseID)
+	}
+
+	body, err := ctl.get("/sheet/my", params)
 	if err != nil {
 		return nil, err
 	}
@@ -1191,6 +1206,12 @@ func (ctl *controller) listSheets(databaseID int) ([]*api.Sheet, error) {
 		sheets = append(sheets, sheet)
 	}
 	return sheets, nil
+}
+
+// syncSheet syncs sheets with project.
+func (ctl *controller) syncSheet(projectID int) error {
+	_, err := ctl.post(fmt.Sprintf("/sheet/project/%d/sync", projectID), nil)
+	return err
 }
 
 func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) error {

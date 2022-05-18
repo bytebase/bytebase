@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/store"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/store"
 )
 
 const (
@@ -221,7 +222,7 @@ func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.Handler
 			ctx := c.Request().Context()
 			principalID, err := strconv.Atoi(claims.Subject)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Malformatted ID in the token.")
+				return echo.NewHTTPError(http.StatusUnauthorized, "Malformed ID in the token.")
 			}
 
 			// Even if there is no error, we still need to make sure the user still exists.

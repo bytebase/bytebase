@@ -100,7 +100,8 @@ const selectVCS = (vcs: VCS) => {
   openWindowForOAuth(
     `${vcs.instanceUrl}/oauth/authorize`,
     vcs.applicationId,
-    "bb.oauth.link-vcs-repository"
+    "bb.oauth.link-vcs-repository",
+    vcs.type
   );
 };
 </script>

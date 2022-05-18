@@ -164,6 +164,10 @@ export const useSheetStore = defineStore("sheet", {
       });
     },
     async createSheet(sheetCreate: SheetCreate): Promise<Sheet> {
+      if (sheetCreate.databaseId === UNKNOWN_ID) {
+        sheetCreate.databaseId = undefined;
+      }
+
       const resData = (
         await axios.post(`/api/sheet`, {
           data: {

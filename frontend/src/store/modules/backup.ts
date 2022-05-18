@@ -1,3 +1,4 @@
+import { computed, Ref, watchEffect } from "vue";
 import { defineStore } from "pinia";
 import axios from "axios";
 import {
@@ -12,6 +13,7 @@ import {
   unknown,
 } from "@/types";
 import { getPrincipalFromIncludedList } from "./principal";
+import { useAuthStore } from "./auth";
 
 export function convertBackup(
   backup: ResourceObject,
@@ -193,3 +195,16 @@ export const useBackupStore = defineStore("backup", {
     },
   },
 });
+
+export const useBackupListByDatabaseId = (databaseId: Ref<DatabaseId>) => {
+  const store = useBackupStore();
+  const authStore = useAuthStore();
+  watchEffect(() => {
+    if (!authStore.isLoggedIn()) {
+      return;
+    }
+    store.fetchBackupListByDatabaseId(databaseId.value);
+  });
+
+  return computed(() => store.backupListByDatabaseId(databaseId.value));
+};

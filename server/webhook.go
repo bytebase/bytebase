@@ -12,13 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 var (
@@ -36,7 +37,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		pushEvent := &gitlab.WebhookPushEvent{}
 		if err := json.Unmarshal(b, pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted push event").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
@@ -282,7 +283,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 		VCSPushEvent:  &vcsPushEvent,
 	}
 	for _, database := range filteredDatabaseList {
-		m.UpdateSchemaDetailList = append(m.UpdateSchemaDetailList,
+		m.DetailList = append(m.DetailList,
 			&api.UpdateSchemaDetail{
 				DatabaseID: database.ID,
 				Statement:  statement,
@@ -303,7 +304,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	m := &api.UpdateSchemaContext{
 		MigrationType: mi.Type,
 		VCSPushEvent:  &vcsPushEvent,
-		UpdateSchemaDetailList: []*api.UpdateSchemaDetail{
+		DetailList: []*api.UpdateSchemaDetail{
 			{
 				DatabaseName: mi.Database,
 				Statement:    statement,

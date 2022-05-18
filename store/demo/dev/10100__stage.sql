@@ -387,4 +387,28 @@ VALUES
         'Dev'
     );
 
-ALTER SEQUENCE stage_id_seq RESTART WITH 10018;
+-- Stage for task dependency
+INSERT INTO
+    stage (
+        id,
+        creator_id,
+        created_ts,
+        updater_id,
+        updated_ts,
+        pipeline_id,
+        environment_id,
+        name
+    )
+VALUES
+    (
+        10018,
+        1,
+        1652429962,
+        1,
+        1652429962,
+        9011,
+        5001,
+        'Dev'
+    );
+
+ALTER SEQUENCE stage_id_seq RESTART WITH 10019;

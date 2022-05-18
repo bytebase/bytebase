@@ -37,7 +37,7 @@ type WeComReceiver struct {
 
 func (receiver *WeComReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.getMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))
@@ -94,7 +94,7 @@ func (receiver *WeComReceiver) post(context Context) error {
 
 	webhookResponse := &WeComWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.ErrorCode != 0 {

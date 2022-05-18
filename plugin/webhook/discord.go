@@ -54,7 +54,7 @@ func (receiver *DiscordReceiver) post(context Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.getMetaList() {
 		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
 	}
 
@@ -113,7 +113,7 @@ func (receiver *DiscordReceiver) post(context Context) error {
 
 	webhookResponse := &DiscordWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.Code != 0 {

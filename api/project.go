@@ -171,7 +171,7 @@ var (
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
 func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
-	tokens := getTemplateTokens(filePathTemplate)
+	tokens, _ := parseTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -202,7 +202,7 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 	if schemaPathTemplate == "" {
 		return nil
 	}
-	tokens := getTemplateTokens(schemaPathTemplate)
+	tokens, _ := parseTemplateTokens(schemaPathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -233,7 +233,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 	if template == "" {
 		return nil
 	}
-	tokens := getTemplateTokens(template)
+	tokens, _ := parseTemplateTokens(template)
 	// Must contain {{DB_NAME}}
 	hasDBName := false
 	for _, token := range tokens {
@@ -250,14 +250,35 @@ func ValidateProjectDBNameTemplate(template string) error {
 	return nil
 }
 
-// FormatTemplate formats the template.
+// FormatTemplate formats the template by using the tokens as a replacement mapping.
+// Note that the returned (modified) template should not be used as a regexp.
 func FormatTemplate(template string, tokens map[string]string) (string, error) {
-	keys := getTemplateTokens(template)
+	keys, _ := parseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
 			return "", fmt.Errorf("token %q not found", key)
 		}
 		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	return template, nil
+}
+
+// Similar to FormatTemplate, except that it will also escape special regexp characters in the delimiters
+// of the template string, which will produce the correct regexp string.
+func formatTemplateRegexp(template string, tokens map[string]string) (string, error) {
+	keys, delimiters := parseTemplateTokens(template)
+	for _, key := range keys {
+		if _, ok := tokens[key]; !ok {
+			return "", fmt.Errorf("token %q not found", key)
+		}
+		template = strings.ReplaceAll(template, key, tokens[key])
+	}
+	for _, delimiter := range delimiters {
+		quoted := regexp.QuoteMeta(delimiter)
+		if quoted != delimiter {
+			// The delimiter is a special regexp character, we should escape it.
+			template = strings.Replace(template, delimiter, quoted, 1)
+		}
 	}
 	return template, nil
 }
@@ -284,7 +305,7 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	}
 	labelMap["{{DB_NAME}}"] = "(?P<NAME>.+)"
 
-	expr, err := FormatTemplate(dbNameTemplate, labelMap)
+	expr, err := formatTemplateRegexp(dbNameTemplate, labelMap)
 	if err != nil {
 		return "", fmt.Errorf("FormatTemplate(%q, %+v) failed with error: %v", dbNameTemplate, labelMap, err)
 	}
@@ -299,7 +320,23 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 	return names[1], nil
 }
 
-func getTemplateTokens(template string) []string {
+// Parses the template and returns template tokens and their delimiters.
+// For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
+// and the delimiters will be ["_hello_"].
+// The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
+// if there are special regexp characters like "$" in the delimiters. The caller should escape the delimiters in such cases.
+func parseTemplateTokens(template string) ([]string, []string) {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
-	return r.FindAllString(template, -1)
+	tokens := r.FindAllString(template, -1)
+	if len(tokens) > 0 {
+		split := r.Split(template, -1)
+		var delimiters []string
+		for _, s := range split {
+			if s != "" {
+				delimiters = append(delimiters, s)
+			}
+		}
+		return tokens, delimiters
+	}
+	return nil, nil
 }

@@ -35,7 +35,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	format, err := api.UnmarshalNamingRulePayloadFormat(ctx.Rule.Payload)
+	format, err := api.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +64,7 @@ type namingTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
+// Enter implements the ast.Visitor interface
 func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var tableNames []string
 	switch node := in.(type) {
@@ -99,6 +100,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

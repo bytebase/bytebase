@@ -35,7 +35,7 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 	if err != nil {
 		return nil, err
 	}
-	format, err := api.UnmarshalNamingRulePayloadFormat(ctx.Rule.Payload)
+	format, err := api.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,7 @@ type namingColumnConventionChecker struct {
 	tables     tableState
 }
 
+// Enter implements the ast.Visitor interface
 func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []string
 	var tableName string
@@ -112,6 +113,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
+// Leave implements the ast.Visitor interface
 func (v *namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

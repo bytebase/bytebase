@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -48,7 +49,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
 		}
 
 		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
@@ -63,10 +64,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Task ID not found: %d", taskID))
 		}
 
-		issueFind := &api.IssueFind{
-			PipelineID: &task.PipelineID,
-		}
-		issue, err := s.store.GetIssue(ctx, issueFind)
+		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
 		}
@@ -93,7 +91,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			case api.TaskDatabaseSchemaUpdate:
 				payload := &api.TaskDatabaseSchemaUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database schema update payload").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database schema update payload").SetInternal(err)
 				}
 				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
@@ -110,7 +108,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformatted database data update payload").SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
 				}
 				oldStatement = payload.Statement
 				payload.Statement = *taskPatch.Statement
@@ -295,7 +293,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			UpdaterID: currentPrincipalID,
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskStatusPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted update task status request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task status request").SetInternal(err)
 		}
 
 		task, err := s.store.GetTaskByID(ctx, taskID)
@@ -306,10 +304,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issueFind := &api.IssueFind{
-			PipelineID: &task.PipelineID,
-		}
-		issue, err := s.store.GetIssue(ctx, issueFind)
+		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
 		}
@@ -409,10 +404,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// Most tasks belong to a pipeline which in turns belongs to an issue. The followup code
 	// behaves differently depending on whether the task is wrapped in an issue.
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
-	issueFind := &api.IssueFind{
-		PipelineID: &task.PipelineID,
-	}
-	issue, err := s.store.GetIssue(ctx, issueFind)
+	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)

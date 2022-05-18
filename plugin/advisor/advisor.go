@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -22,6 +23,9 @@ const (
 	Warn Status = "WARN"
 	// Error is the advisor status for errors.
 	Error Status = "ERROR"
+
+	// SyntaxErrorTitle is the error title for syntax error.
+	SyntaxErrorTitle string = "Syntax error"
 )
 
 func (e Status) String() string {
@@ -57,19 +61,44 @@ const (
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
 
+	// MySQLUseInnoDB is an advisor type for MySQL InnoDB Engine.
+	MySQLUseInnoDB Type = "bb.plugin.advisor.mysql.use-innodb"
+
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 
 	// MySQLWhereRequirement is an advisor type for MySQL WHERE clause requirement.
 	MySQLWhereRequirement Type = "bb.plugin.advisor.mysql.where.require"
 
+	// MySQLNoLeadingWildcardLike is an advisor type for MySQL no leading wildcard LIKE.
+	MySQLNoLeadingWildcardLike Type = "bb.plugin.advisor.mysql.where.no-leading-wildcard-like"
+
 	// MySQLNamingTableConvention is an advisor type for MySQL table naming convention.
 	MySQLNamingTableConvention Type = "bb.plugin.advisor.mysql.naming.table"
+
+	// MySQLNamingIndexConvention is an advisor type for MySQL index key naming convention.
+	MySQLNamingIndexConvention Type = "bb.plugin.advisor.mysql.naming.index"
+
+	// MySQLNamingUKConvention is an advisor type for MySQL unique key naming convention.
+	MySQLNamingUKConvention Type = "bb.plugin.advisor.mysql.naming.uk"
+
+	// MySQLNamingFKConvention is an advisor type for MySQL foreign key naming convention.
+	MySQLNamingFKConvention Type = "bb.plugin.advisor.mysql.naming.fk"
+
 	// MySQLNamingColumnConvention is an advisor type for MySQL column naming convention.
 	MySQLNamingColumnConvention Type = "bb.plugin.advisor.mysql.naming.column"
 
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
+
+	// MySQLColumnNoNull is an advisor type for MySQL column no NULL value.
+	MySQLColumnNoNull Type = "bb.plugin.advisor.mysql.column.no-null"
+
+	// MySQLNoSelectAll is an advisor type for MySQL no select all.
+	MySQLNoSelectAll Type = "bb.plugin.advisor.mysql.select.no-select-all"
+
+	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
+	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 )
 
 // Advice is the result of an advisor.
@@ -87,7 +116,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule *api.SchemaReviewRule
+	Rule    *api.SchemaReviewRule
+	Catalog catalog.Service
 }
 
 // Advisor is the interface for advisor.

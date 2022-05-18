@@ -49,14 +49,29 @@ const (
 	CompatibilityAlterCheck    Code = 10010
 	CompatibilityAlterColumn   Code = 10011
 
-	StatementNoWhere Code = 10101
+	StatementNoWhere             Code = 10101
+	StatementSelectAll           Code = 10102
+	StatementLeadingWildcardLike Code = 10103
 
-	// 10201 naming advisor error code
-	NamingTableConventionMismatch  Code = 10201
+	// 10201 table naming advisor error code
+	NamingTableConventionMismatch Code = 10201
+	// 10202 column naming advisor error code
 	NamingColumnConventionMismatch Code = 10202
+	// 10203 index naming advisor error code
+	NamingIndexConventionMismatch Code = 10203
+	// 10204 unique key naming advisor error code
+	NamingUKConventionMismatch Code = 10204
+	// 10205 foreign key naming advisor error code
+	NamingFKConventionMismatch Code = 10205
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
+	ColumnCanNull    Code = 10302
+
+	NotInnoDBEngine Code = 10401
+
+	// 10501 table rule advisor error code
+	TableNoPK Code = 10501
 )
 
 // Error represents an application-specific error. Application errors can be

@@ -27,6 +27,24 @@ type TaskExecutor interface {
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
 }
 
+// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery
+func RunTaskExecutorOnce(ctx context.Context, l *zap.Logger, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = fmt.Errorf("%v", r)
+			}
+			l.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
+			terminated = true
+			result = nil
+			err = fmt.Errorf("encounter internal error when executing task")
+		}
+	}()
+
+	return exec.RunOnce(ctx, server, task)
+}
+
 func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (*db.MigrationInfo, error) {
 	if task.Database == nil {
 		msg := "missing database when updating schema"
@@ -279,10 +297,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 }
 
 func findIssueByTask(ctx context.Context, l *zap.Logger, server *Server, task *api.Task) (*api.Issue, error) {
-	issueFind := &api.IssueFind{
-		PipelineID: &task.PipelineID,
-	}
-	issue, err := server.store.GetIssue(ctx, issueFind)
+	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
 		// If somehow we cannot find the issue, emit the error since it's not fatal.
 		return nil, fmt.Errorf("failed to fetch containing issue for composing the migration info, task_id: %v, error: %w", task.ID, err)

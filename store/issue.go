@@ -76,11 +76,29 @@ func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.
 	return issue, nil
 }
 
-// GetIssue gets an instance of Issue
-func (s *Store) GetIssue(ctx context.Context, find *api.IssueFind) (*api.Issue, error) {
+// GetIssueByID gets an instance of Issue
+func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
+	find := &api.IssueFind{ID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Issue with IssueFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Issue with ID[%d], error[%w]", id, err)
+	}
+	if issueRaw == nil {
+		return nil, nil
+	}
+	issue, err := s.composeIssue(ctx, issueRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+	}
+	return issue, nil
+}
+
+// GetIssueByPipelineID gets an instance of Issue
+func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
+	find := &api.IssueFind{PipelineID: &id}
+	issueRaw, err := s.getIssueRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Issue with PipelineID[%d], error[%w]", id, err)
 	}
 	if issueRaw == nil {
 		return nil, nil
@@ -176,7 +194,7 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 			EnvironmentID: sc.EnvironmentID,
 		}
 		// We don't know IDs before inserting, so we use array index instead.
-		// indexBlockedByIndex[indexA] holds indexes of the tasks that block taskList[indexA]
+		// indexBlockedByIndex[indexA] holds indices of the tasks that block taskList[indexA]
 		indexBlockedByIndex := make(map[int][]int)
 		for _, indexDAG := range sc.TaskIndexDAGList {
 			indexBlockedByIndex[indexDAG.ToIndex] = append(indexBlockedByIndex[indexDAG.ToIndex], indexDAG.FromIndex)
@@ -224,22 +242,23 @@ func (s *Store) CreatePipelineValidateOnly(ctx context.Context, create *api.Pipe
 //
 
 func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) error {
-	var err error
-
-	issue.Creator, err = s.GetPrincipalByID(ctx, issue.CreatorID)
+	creator, err := s.GetPrincipalByID(ctx, issue.CreatorID)
 	if err != nil {
 		return err
 	}
+	issue.Creator = creator
 
-	issue.Updater, err = s.GetPrincipalByID(ctx, issue.UpdaterID)
+	updater, err := s.GetPrincipalByID(ctx, issue.UpdaterID)
 	if err != nil {
 		return err
 	}
+	issue.Updater = updater
 
-	issue.Assignee, err = s.GetPrincipalByID(ctx, issue.AssigneeID)
+	assignee, err := s.GetPrincipalByID(ctx, issue.AssigneeID)
 	if err != nil {
 		return err
 	}
+	issue.Assignee = assignee
 
 	issueSubscriberFind := &api.IssueSubscriberFind{
 		IssueID: &issue.ID,
@@ -266,50 +285,7 @@ func (s *Store) composeIssueValidateOnly(ctx context.Context, issue *api.Issue) 
 	return nil
 }
 
-func (s *Store) composePipelineValidateOnly(ctx context.Context, pipeline *api.Pipeline) error {
-	var err error
-
-	pipeline.Creator, err = s.GetPrincipalByID(ctx, pipeline.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	pipeline.Updater, err = s.GetPrincipalByID(ctx, pipeline.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	for _, stage := range pipeline.StageList {
-		if err := s.composeStageValidateOnly(ctx, stage); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *Store) composeStageValidateOnly(ctx context.Context, stage *api.Stage) error {
-	var err error
-	stage.Creator, err = s.GetPrincipalByID(ctx, stage.CreatorID)
-	if err != nil {
-		return err
-	}
-
-	stage.Updater, err = s.GetPrincipalByID(ctx, stage.UpdaterID)
-	if err != nil {
-		return err
-	}
-
-	stage.Environment, err = s.GetEnvironmentByID(ctx, stage.EnvironmentID)
-	if err != nil {
-		return err
-	}
-
-	// Note: stage.TaskList is already composed in CreatePipelineValidateOnly(). Do not need to compose here.
-
-	return nil
-}
-
+// Note: MUST keep in sync with composeIssueValidateOnly
 func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, error) {
 	issue := raw.toIssue()
 

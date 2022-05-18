@@ -131,14 +131,14 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	if !m.CreateDatabase {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
-			return -1, "", formatError(err)
+		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+			return -1, "", FormatError(err)
 		}
 	}
 
 	// Phase 1 - Precheck before executing migration
 	// Phase 2 - Record migration history as PENDING
-	insertedID, err := beginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
+	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
 		return -1, "", err
 	}
@@ -146,7 +146,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+		if err := EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
 			l.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
@@ -166,21 +166,21 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 			}
 		}
 		if err := executor.Execute(ctx, statement); err != nil {
-			return -1, "", formatError(err)
+			return -1, "", FormatError(err)
 		}
 	}
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return -1, "", formatError(err)
+	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+		return -1, "", FormatError(err)
 	}
 
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-// beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
+// BeginMigration checks before executing migration and inserts a migration history record with pending status.
+func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, prevSchema string, statement string, databaseName string) (insertedID int64, err error) {
 	// Convert version to stored version.
 	storedVersion, err := ToStoredVersion(m.UseSemanticVersion, m.Version, m.SemanticVersionSuffix)
 	if err != nil {
@@ -246,8 +246,8 @@ func beginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	return insertedID, nil
 }
 
-// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+// EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
 	sqldb, err := executor.GetDbConnection(ctx, databaseName)
@@ -296,12 +296,12 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 
 	columnNames, err := rows.Columns()
 	if err != nil {
-		return nil, formatError(err)
+		return nil, FormatError(err)
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, formatError(err)
+		return nil, FormatError(err)
 	}
 
 	colCount := len(columnTypes)
@@ -334,7 +334,7 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 		}
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, formatError(err)
+			return nil, FormatError(err)
 		}
 
 		rowData := []interface{}{}
@@ -375,8 +375,8 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 
 // FindMigrationHistoryList will find the list of migration history.
 func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
-	// To support `pg` option, util layer will not know which database `migration_history` is located in,
-	// so wo need connect database provided by params.
+	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
+	// so we need to connect to the database provided by params.
 	sqldb, err := driver.GetDbConnection(ctx, database)
 	if err != nil {
 		return nil, err
@@ -440,7 +440,8 @@ func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery
 	return migrationHistoryList, nil
 }
 
-func formatError(err error) error {
+// FormatError formats schema migration errors
+func FormatError(err error) error {
 	if err == nil {
 		return nil
 	}

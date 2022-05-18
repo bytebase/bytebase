@@ -38,7 +38,7 @@ type DingTalkReceiver struct {
 
 func (receiver *DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.MetaList {
+	for _, meta := range context.getMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))
@@ -87,7 +87,7 @@ func (receiver *DingTalkReceiver) post(context Context) error {
 
 	webhookResponse := &DingTalkWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.ErrorCode != 0 {

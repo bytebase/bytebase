@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"go.uber.org/zap"
@@ -10,17 +9,17 @@ import (
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
 func NewSchemaUpdateGhostCutoverTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SchemaUpdateTaskExecutor{
+	return &SchemaUpdateGhostCutoverTaskExecutor{
 		l: logger,
 	}
 }
 
-// SchemaUpdateGhostCutoverTaskExecutorExecutor is the schema update (gh-ost) cutover task executor.
-type SchemaUpdateGhostCutoverTaskExecutorExecutor struct {
+// SchemaUpdateGhostCutoverTaskExecutor is the schema update (gh-ost) cutover task executor.
+type SchemaUpdateGhostCutoverTaskExecutor struct {
 	l *zap.Logger //nolint
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
-func (exec *SchemaUpdateGhostCutoverTaskExecutorExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	return true, nil, fmt.Errorf("not implemented yet")
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	return true, &api.TaskRunResultPayload{Detail: "not implemented yet"}, nil
 }

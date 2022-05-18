@@ -8,28 +8,33 @@ import (
 
 func TestGetTemplateTokens(t *testing.T) {
 	tests := []struct {
-		name     string
-		template string
-		want     []string
+		name       string
+		template   string
+		tokens     []string
+		delimiters []string
 	}{
 		{
 			"NoToken",
 			"helloworld",
 			nil,
+			nil,
 		}, {
 			"TwoTokens",
 			"{{DB_NAME}}_{{LOCATION}}",
 			[]string{"{{DB_NAME}}", "{{LOCATION}}"},
+			[]string{"_"},
 		}, {
 			"ExtraPrefix",
 			"hello_{{DB_NAME}}_{{LOCATION}}",
 			[]string{"{{DB_NAME}}", "{{LOCATION}}"},
+			[]string{"hello_", "_"},
 		},
 	}
 
 	for _, test := range tests {
-		tokens := getTemplateTokens(test.template)
-		require.Equal(t, tokens, test.want)
+		tokens, delimiters := parseTemplateTokens(test.template)
+		require.Equal(t, test.tokens, tokens)
+		require.Equal(t, test.delimiters, delimiters)
 	}
 }
 
@@ -175,7 +180,8 @@ func TestFormatTemplate(t *testing.T) {
 			},
 			"db1_hello_us-central1",
 			"",
-		}, {
+		},
+		{
 			"tokenNotFound",
 			"{{DB_NAME}}_hello_{{LOCATION}}",
 			map[string]string{
@@ -184,10 +190,70 @@ func TestFormatTemplate(t *testing.T) {
 			"",
 			"not found",
 		},
+		{
+			"template with regex meta",
+			"{{DB_NAME}}_hello_${{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello_$us-central1",
+			"",
+		},
 	}
 
 	for _, test := range tests {
 		got, err := FormatTemplate(test.template, test.tokens)
+		if test.errPart == "" {
+			require.NoError(t, err)
+		} else {
+			require.Contains(t, err.Error(), test.errPart)
+		}
+		require.Equal(t, got, test.want)
+	}
+}
+
+func TestBuildTemplateExpr(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		tokens   map[string]string
+		want     string
+		errPart  string
+	}{
+		{
+			"valid",
+			"{{DB_NAME}}_hello-{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello-us-central1",
+			"",
+		},
+		{
+			"tokenNotFound",
+			"{{DB_NAME}}_hello_{{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}": "db1",
+			},
+			"",
+			"not found",
+		},
+		{
+			"template with regex meta",
+			"{{DB_NAME}}_hello_${{LOCATION}}",
+			map[string]string{
+				"{{DB_NAME}}":  "db1",
+				"{{LOCATION}}": "us-central1",
+			},
+			"db1_hello_\\$us-central1",
+			"",
+		},
+	}
+
+	for _, test := range tests {
+		got, err := formatTemplateRegexp(test.template, test.tokens)
 		if test.errPart == "" {
 			require.NoError(t, err)
 		} else {
@@ -234,6 +300,14 @@ func TestGetBaseDatabaseName(t *testing.T) {
 			"tenant_label_success",
 			"db1_tenant123",
 			"{{DB_NAME}}_{{TENANT}}",
+			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
+			"db1",
+			"",
+		},
+		{
+			"tenant_label_inculde_meta_success",
+			"db1$tenant123",
+			"{{DB_NAME}}${{TENANT}}",
 			"[{\"key\":\"bb.location\",\"value\":\"us-central1\"},{\"key\":\"bb.tenant\",\"value\":\"tenant123\"},{\"key\":\"bb.environment\",\"value\":\"Dev\"}]",
 			"db1",
 			"",

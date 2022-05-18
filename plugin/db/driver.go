@@ -51,6 +51,14 @@ type View struct {
 	Comment    string
 }
 
+// Extension is the database extension.
+type Extension struct {
+	Name        string
+	Version     string
+	Schema      string
+	Description string
+}
+
 // Index is the database index.
 type Index struct {
 	Name string
@@ -116,10 +124,11 @@ type Schema struct {
 	// CharacterSet isn't supported for ClickHouse, Snowflake.
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake.
-	Collation string
-	UserList  []User
-	TableList []Table
-	ViewList  []View
+	Collation     string
+	UserList      []User
+	TableList     []Table
+	ViewList      []View
+	ExtensionList []Extension
 }
 
 var (
@@ -419,8 +428,10 @@ type Driver interface {
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.
-	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error
-	// Restore the database from sc.
+	// The returned string is the JSON encoded metadata for the logical dump.
+	// For MySQL, the payload contains the binlog filename and position when the dump is generated.
+	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
+	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
 }
 

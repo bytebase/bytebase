@@ -16,16 +16,16 @@ type CustomWebhookResponse struct {
 
 // CustomWebhookRequest is the API message for Custom webhook request.
 type CustomWebhookRequest struct {
-	Level        Level   `json:"level"`
-	ActivityType string  `json:"activity_type"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	Link         string  `json:"link"`
-	CreatorID    int     `json:"creator_id"`
-	CreatorName  string  `json:"creator_name"`
-	CreatedTS    int64   `json:"created_ts"`
-	Issue        Issue   `json:"issue"`
-	Project      Project `json:"project"`
+	Level        Level    `json:"level"`
+	ActivityType string   `json:"activity_type"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Link         string   `json:"link"`
+	CreatorID    int      `json:"creator_id"`
+	CreatorName  string   `json:"creator_name"`
+	CreatedTS    int64    `json:"created_ts"`
+	Issue        *Issue   `json:"issue"`
+	Project      *Project `json:"project"`
 }
 
 func init() {
@@ -81,11 +81,11 @@ func (receiver *CustomReceiver) post(context Context) error {
 
 	webhookResponse := &CustomWebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
-		return fmt.Errorf("malformatted webhook response %v (%w)", context.URL, err)
+		return fmt.Errorf("malformed webhook response %v (%w)", context.URL, err)
 	}
 
 	if webhookResponse.Code != 0 {
-		return fmt.Errorf("%s", webhookResponse.Message)
+		return fmt.Errorf("receive error code sent by webhook server, code %d, msg: %s", webhookResponse.Code, webhookResponse.Message)
 	}
 
 	return nil

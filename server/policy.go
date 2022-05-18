@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // hasAccessToUpdatePolicy checks if user can access to policy control feature.
@@ -54,7 +55,7 @@ func (s *Server) registerPolicyRoutes(g *echo.Group) {
 
 		policyUpsert := &api.PolicyUpsert{}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, policyUpsert); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformatted set policy request").SetInternal(err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed set policy request").SetInternal(err)
 		}
 		pType := api.PolicyType(c.QueryParam("type"))
 		if err := api.ValidatePolicy(pType, ""); err != nil {

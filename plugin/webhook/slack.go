@@ -79,7 +79,7 @@ func (receiver *SlackReceiver) post(context Context) error {
 		})
 	}
 
-	for _, meta := range context.MetaList {
+	for _, meta := range context.getMetaList() {
 		blockList = append(blockList, SlackWebhookBlock{
 			Type: "section",
 			Text: &SlackWebhookBlockMarkdown{

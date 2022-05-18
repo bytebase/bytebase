@@ -520,6 +520,7 @@
     "select-environment-first": "先选择环境",
     "tables": "表",
     "views": "视图",
+    "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态"
@@ -529,10 +530,11 @@
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-now": "现在同步",
+    "sync-schema-afterward": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase需要@:{'common.migration'} @:{'common.schema'} 来管理属于这个@:{'common.instance'}的@:{'common.database'}的基于版本管理的 schema @:common.migration",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「迁移 schema」来记录这个实例上的数据库 schema 迁移。如果没有设置「迁移 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
     "please-contact-your-dba-to-configure-it": "请联系 DBA 配置。",
     "please-check-the-instance-connection-info-is-correct": "请检查实例连接信息是否正确。",
     "users": "用户",
@@ -561,6 +563,7 @@
     "connection-info": "连接信息",
     "show-how-to-create": "如何创建",
     "below-is-an-example-to-create-user-bytebase-with-password": "创建用户 'bytebase{'@'}%' 及其密码的例子如下",
+    "your_db_pwd": "YOUR_DB_PWD",
     "no-read-only-data-source-warn": "该实例没有配置只读用户，请考虑配置。",
     "sentence": {
       "host": {
@@ -595,7 +598,6 @@
         }
       }
     },
-    "your_db_pwd": "YOUR_DB_PWD",
     "no-password": "无密码",
     "password-write-only": "YOUR_DB_PWD - 仅写入",
     "test-connection": "测试连接",
@@ -646,7 +648,10 @@
       "confirm-password": "确认密码",
       "confirm-password-placeholder": "确认您的密码",
       "password-mismatch": "不匹配",
-      "existing-user": "已有账号?"
+      "existing-user": "已有账号?",
+      "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
+      "terms-of-service": "服务条款",
+      "privacy-policy": "隐私政策"
     },
     "sign-in": {
       "title": "登录您的账号",
@@ -787,7 +792,14 @@
     "indexes": "索引",
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
-    "go-to-transfer": "前去转移"
+    "go-to-transfer": "前去转移",
+    "pitr": {
+      "restore": "@:common.restore@:common.database",
+      "no-available-backup": "没有可用的备份",
+      "point-in-time": "时间点",
+      "help-info": "将数据库的状态恢复到一个时间点。{link}。",
+      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}"
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -858,8 +870,7 @@
       "view-diff": "查看差异"
     },
     "last-seen": "上次出现",
-    "first-seen": "首次出现",
-    "contact-dba": "请联系您的 DBA 进行配置。"
+    "first-seen": "首次出现"
   },
   "project": {
     "dashboard": {

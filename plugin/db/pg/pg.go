@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
 
 	// embed will embeds the migration schema.
@@ -319,6 +320,12 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 			schema.ViewList = append(schema.ViewList, dbView)
 		}
+		// Extensions.
+		extensions, err := getExtensions(txn)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
+		}
+		schema.ExtensionList = extensions
 
 		if err := txn.Commit(); err != nil {
 			return nil, nil, err
@@ -799,13 +806,13 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 // Dump and restore
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return fmt.Errorf("failed to get databases: %s", err)
+		return "", fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	var dumpableDbNames []string
@@ -818,7 +825,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			}
 		}
 		if !exist {
-			return fmt.Errorf("database %s not found", database)
+			return "", fmt.Errorf("database %s not found", database)
 		}
 		dumpableDbNames = []string{database}
 	} else {
@@ -833,11 +840,11 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	for _, dbName := range dumpableDbNames {
 		includeUseDatabase := len(dumpableDbNames) > 1
 		if err := driver.dumpOneDatabase(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return nil
+	return "", nil
 }
 
 // Restore restores a database.
@@ -868,6 +875,15 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	if err := driver.switchDatabase(database); err != nil {
+		return err
+	}
+
+	version, err := driver.GetVersion(ctx)
+	if err != nil {
+		return err
+	}
+	semverVersion, err := semver.ParseTolerant(version)
+	if err != nil {
 		return err
 	}
 
@@ -989,7 +1005,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		return fmt.Errorf("failed to get event triggers from database %q: %s", database, err)
 	}
 	for _, evt := range events {
-		if _, err := io.WriteString(out, evt.Statement()); err != nil {
+		if _, err := io.WriteString(out, evt.Statement(semverVersion.Major)); err != nil {
 			return err
 		}
 	}
@@ -1274,7 +1290,7 @@ func (t triggerSchema) Statement() string {
 }
 
 // Statement returns the create statement of an event trigger.
-func (t eventTriggerSchema) Statement() string {
+func (t eventTriggerSchema) Statement(majorVersion uint64) string {
 	s := fmt.Sprintf(""+
 		"--\n"+
 		"-- Event trigger structure for %s\n"+
@@ -1284,7 +1300,15 @@ func (t eventTriggerSchema) Statement() string {
 	if t.tags != "" {
 		s += fmt.Sprintf("\n         WHEN TAG IN (%s)", t.tags)
 	}
-	s += fmt.Sprintf("\n   EXECUTE FUNCTION %s();\n", t.funcName)
+
+	// See https://www.postgresql.org/docs/10/sql-createeventtrigger.html,
+	// pg with major version below 10 uses PROCEDURE syntax.
+	functionSyntax := "FUNCTION"
+	if majorVersion == 10 {
+		functionSyntax = "PROCEDURE"
+	}
+
+	s += fmt.Sprintf("\n   EXECUTE %s %s();\n", functionSyntax, t.funcName)
 
 	if t.enabled != "O" {
 		s += fmt.Sprintf("ALTER EVENT TRIGGER %s ", t.name)
@@ -1434,6 +1458,8 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.column_default,
 		cols.is_nullable,
 		cols.collation_name,
+		cols.udt_schema,
+		cols.udt_name,
 		(
 			SELECT
 					pg_catalog.col_description(c.oid, cols.ordinal_position::int)
@@ -1454,9 +1480,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 	var columns []*columnSchema
 	for rows.Next() {
 		var columnName, dataType, isNullable string
-		var characterMaximumLength, columnDefault, collationName, comment sql.NullString
+		var characterMaximumLength, columnDefault, collationName, udtSchema, udtName, comment sql.NullString
 		var ordinalPosition int
-		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &comment); err != nil {
+		if err := rows.Scan(&columnName, &dataType, &ordinalPosition, &characterMaximumLength, &columnDefault, &isNullable, &collationName, &udtSchema, &udtName, &comment); err != nil {
 			return nil, err
 		}
 		isNullBool, err := convertBoolFromYesNo(isNullable)
@@ -1472,6 +1498,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			isNullable:             isNullBool,
 			collationName:          collationName.String,
 			comment:                comment.String,
+		}
+		if dataType == "USER-DEFINED" {
+			c.dataType = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
 		}
 		columns = append(columns, &c)
 	}
@@ -1570,6 +1599,34 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		view.comment = comment.String
 	}
 	return nil
+}
+
+func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
+	query := "" +
+		"SELECT e.extname, e.extversion, n.nspname, c.description " +
+		"FROM pg_catalog.pg_extension e " +
+		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
+		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass;"
+
+	var extensions []db.Extension
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e db.Extension
+		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
+			return nil, err
+		}
+		if pgSystemSchema(e.Schema) {
+			continue
+		}
+		extensions = append(extensions, e)
+	}
+
+	return extensions, nil
 }
 
 // getIndices gets all indices of a database.

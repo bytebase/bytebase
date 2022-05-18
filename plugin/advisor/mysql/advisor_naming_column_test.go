@@ -159,5 +159,5 @@ func TestNamingColumnConvention(t *testing.T) {
 		Type:    api.SchemaRuleColumnNaming,
 		Level:   api.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	})
+	}, &MockCatalogService{})
 }
