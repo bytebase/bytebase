@@ -213,37 +213,32 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
-	var runErr error
-	defer func() {
-		tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, binlog.Name)
-		tmpFilePath := filepath.Join(saveDir, tmpFileName)
-		if runErr != nil {
-			// delete the download binlog if some error occur
-			_ = os.Remove(tmpFilePath)
-			return
-		}
-
-		fi, err := os.Stat(tmpFilePath)
-		if err != nil {
-			// delete the download binlog if cannot stat it
-			_ = os.Remove(tmpFilePath)
-			return
-		}
-		if fi.Size() != binlog.Size {
-			// delete the download binlog if filesize not match
-			_ = os.Remove(tmpFilePath)
-			return
-		}
-
-		// no error, rename it
-		if err := os.Rename(tmpFilePath, filepath.Join(saveDir, binlog.Name)); err != nil {
-			_ = os.Remove(tmpFilePath)
-		}
-	}()
-
-	if runErr = cmd.Run(); runErr != nil {
-		return fmt.Errorf("cannot run mysqlbinlog, error: %w", runErr)
+	tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, binlog.Name)
+	tmpFilePath := filepath.Join(saveDir, tmpFileName)
+	if err := cmd.Run(); err != nil {
+		// delete the download binlog if some error occur
+		_ = os.Remove(tmpFilePath)
+		return fmt.Errorf("cannot run mysqlbinlog, error: %w", err)
 	}
+
+	fi, err := os.Stat(tmpFilePath)
+	if err != nil {
+		// delete the download binlog if cannot stat it
+		_ = os.Remove(tmpFilePath)
+		return fmt.Errorf("cannot stat %s, error: %w", tmpFilePath, err)
+	}
+	if fi.Size() != binlog.Size {
+		// delete the download binlog if filesize not match
+		_ = os.Remove(tmpFilePath)
+		return fmt.Errorf("download file %s size not match", tmpFileName)
+	}
+
+	// no error, rename it
+	if err := os.Rename(tmpFilePath, filepath.Join(saveDir, binlog.Name)); err != nil {
+		_ = os.Remove(tmpFilePath)
+		return fmt.Errorf("cannot rename tmp binlog %s, err :%w", binlog.Name, err)
+	}
+
 	return nil
 }
 
