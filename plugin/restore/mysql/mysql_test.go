@@ -55,7 +55,7 @@ func TestGetPITRDatabaseName(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		name := GetPITRDatabaseName(test.database, int64(test.timestamp))
+		name := getPITRDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
 	}
 }
