@@ -153,6 +153,7 @@ export default defineComponent({
 
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
+      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
       /*
         `groupByType` looks like: {
           "bb.task-check.general.earliest-allowed-time": [run1, run2, ...],
@@ -160,13 +161,12 @@ export default defineComponent({
           "bb.task-check.database.statement.syntax": [run1, run2, ...],
           ...
         }
+        `result` is an array of the most recent TaskCheckRun in each group
       */
-      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
-      // `result` is an array of the most recent TaskCheckRun in each group
       const result = Object.keys(groupByType).map((type) => {
         const groupList = groupByType[type];
-        const latestInGroup = maxBy(groupList, (run) => run.updatedTs)!;
-        return latestInGroup;
+        const mostRecentInGroup = maxBy(groupList, (run) => run.updatedTs)!;
+        return mostRecentInGroup;
       });
 
       return result.sort((a: TaskCheckRun, b: TaskCheckRun) => {
