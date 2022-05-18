@@ -243,15 +243,7 @@ func TestPITR(t *testing.T) {
 		t.Log("cutover stage")
 		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
 		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
-		a.NoError(err)
-
-		t.Log("validate table tbl0")
-		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
-		validateTbl0(t, db, numRowsTime0)
-		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime0)
-		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
-		t.Log("validate table _update_row_")
+		a.Error(err)
 	})
 }
 
