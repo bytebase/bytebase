@@ -53,7 +53,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 	i.proc = cmd.Process
 
 	// wait for mysql to start
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", i.port))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", i.port))
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (i *Instance) Import(path string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/?multiStatements=true", i.port))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/?multiStatements=true", i.port))
 	if err != nil {
 		return err
 	}
