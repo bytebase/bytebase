@@ -181,7 +181,7 @@ func (r *Restore) SyncBinlogs(ctx context.Context, instance *api.Instance, saveD
 		if _, ok := downloadedIndex[i]; ok {
 			continue
 		}
-		if err := r.syncBinlog(ctx, instance, saveDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -195,11 +195,11 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 	if err != nil {
 		return err
 	}
-	return r.syncBinlog(ctx, instance, saveDir, *latest)
+	return r.downloadBinlogFile(ctx, instance, saveDir, *latest)
 }
 
 // syncBinlog syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) syncBinlog(ctx context.Context, instance *api.Instance, saveDir string, meta mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, meta mysql.BinlogFile) error {
 	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogPath, "bin", "mysqlbinlog"),
