@@ -170,24 +170,14 @@ export default defineComponent({
       });
 
       return result.sort((a: TaskCheckRun, b: TaskCheckRun) => {
-        // Put likely failure first.
         const taskCheckRunTypeOrder = (type: TaskCheckType) => {
-          switch (type) {
-            case "bb.task-check.general.earliest-allowed-time":
-              return 0;
-            case "bb.task-check.database.statement.compatibility":
-              return 1;
-            case "bb.task-check.database.statement.syntax":
-              return 2;
-            case "bb.task-check.database.connect":
-              return 3;
-            case "bb.task-check.instance.migration-schema":
-              return 4;
-            case "bb.task-check.database.statement.advise":
-              return 5;
-            case "bb.task-check.database.statement.fake-advise":
-              return 100;
+          const has = TaskCheckTypeOrderDict.has(type);
+          console.assert(has, `Missing TaskCheckType order of "${type}"`);
+          if (has) {
+            return TaskCheckTypeOrderDict.get(type)!;
           }
+          // Fallback, types not defined in the dictionary will go to the tail.
+          return FAKE_MAX_TASK_CHECK_TYPE_ORDER;
         };
 
         return taskCheckRunTypeOrder(a.type) - taskCheckRunTypeOrder(b.type);
@@ -241,4 +231,22 @@ export default defineComponent({
     };
   },
 });
+
+// Defines the order of TaskCheckType
+const TaskCheckTypeOrderList: TaskCheckType[] = [
+  "bb.task-check.general.earliest-allowed-time",
+  "bb.task-check.database.statement.compatibility",
+  "bb.task-check.database.statement.syntax",
+  "bb.task-check.database.connect",
+  "bb.task-check.instance.migration-schema",
+  "bb.task-check.database.statement.advise",
+];
+const TaskCheckTypeOrderDict = new Map<TaskCheckType, number>(
+  TaskCheckTypeOrderList.map((type, index) => [type, index])
+);
+const FAKE_MAX_TASK_CHECK_TYPE_ORDER = 100;
+TaskCheckTypeOrderDict.set(
+  "bb.task-check.database.statement.fake-advise",
+  FAKE_MAX_TASK_CHECK_TYPE_ORDER
+);
 </script>
