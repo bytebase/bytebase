@@ -144,7 +144,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		return err
 	}
 
-	latestBinlogFileOnServer, err := r.showLatestBinlogFile(ctx)
+	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	// compare file sizes and names to decide which files to download
 	downloadedIndex := make(map[int]struct{})
 	for index, serverFile := range binlogFilesOnServer {
-		// We don't download the latest binlog in SyncBinlogs()
+		// We don't download the latest binlog in SyncArchivedBinlogFiles()
 		if serverFile.Name == latestBinlogFileOnServer.Name {
 			continue
 		}
@@ -188,11 +188,11 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 
 // SyncLatestBinlog syncs the latest binlog between the instance and `saveDir`
 func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, saveDir string) error {
-	latest, err := r.showLatestBinlogFile(ctx)
+	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, instance, saveDir, *latest)
+	return r.downloadBinlogFile(ctx, instance, saveDir, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
@@ -233,7 +233,9 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 		}
 
 		// no error, rename it
-		_ = os.Rename(tmpFilePath, filepath.Join(saveDir, meta.Name))
+		if err := os.Rename(tmpFilePath, filepath.Join(saveDir, meta.Name)); err != nil {
+			_ = os.Remove(tmpFilePath)
+		}
 	}()
 
 	if runErr = cmd.Run(); runErr != nil {
@@ -268,7 +270,7 @@ func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.Binlo
 }
 
 // showLatestBinlogFile returns the metadata of latest binlog
-func (r *Restore) showLatestBinlogFile(ctx context.Context) (*mysql.BinlogFile, error) {
+func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
