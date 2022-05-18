@@ -252,8 +252,7 @@ func (r *Restore) showBinlogFiles(ctx context.Context) ([]mysql.BinlogFile, erro
 		return nil, err
 	}
 	// https://dev.mysql.com/doc/refman/8.0/en/show-binary-logs.html
-	stmt := `SHOW BINARY LOGS;`
-	rows, err := db.QueryContext(ctx, stmt)
+	rows, err := db.QueryContext(ctx, `SHOW BINARY LOGS;`)
 	if err != nil {
 		return nil, err
 	}
@@ -278,8 +277,7 @@ func (r *Restore) showLatestBinlogFile(ctx context.Context) (*mysql.BinlogFile, 
 		return nil, err
 	}
 
-	stmt := `SHOW MASTER STATUS;`
-	rows, err := db.QueryContext(ctx, stmt)
+	rows, err := db.QueryContext(ctx, `SHOW MASTER STATUS;`)
 	if err != nil {
 		return nil, err
 	}
