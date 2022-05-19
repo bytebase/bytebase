@@ -56,7 +56,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	_, stopInstance := mysql.SetupTestInstance(t, port)
 	defer stopInstance()
 
-	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/mysql", port))
+	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", port))
 	a.NoError(err)
 	defer mysqlDB.Close()
 
@@ -164,7 +164,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	// Status will be FAILED because not implemented
+
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
