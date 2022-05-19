@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType } from "vue";
+import { reactive, PropType, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { VCS, redirectUrl } from "../types";
 import { vcsSlug } from "../utils";
@@ -62,7 +62,7 @@ import { vcsSlug } from "../utils";
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "VCSCard",
   components: {},
   props: {
@@ -91,5 +91,5 @@ export default {
       editVCS,
     };
   },
-};
+});
 </script>
