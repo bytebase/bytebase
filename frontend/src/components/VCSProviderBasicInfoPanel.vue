@@ -80,7 +80,7 @@
     :value="config.instanceUrl"
     :placeholder="instanceUrlPlaceholder"
     :disabled="instanceUrlDisabled"
-    @input="changeUrl($event.target.value)"
+    @input="changeUrl(($event.target as HTMLInputElement).value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
     {{
@@ -103,7 +103,7 @@
     class="mt-2 w-full"
     :placeholder="namePlaceholder"
     :value="config.name"
-    @input="config.name = $event.target.value"
+    @input="config.name = ($event.target as HTMLInputElement).value"
   />
 </template>
 
