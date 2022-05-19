@@ -157,7 +157,6 @@ interface LocalState {
 export default defineComponent({
   name: "RequestDatabasePrepForm",
   components: { ProjectSelect, DatabaseSelect, EnvironmentSelect },
-  props: {},
   emits: ["dismiss"],
   setup(props, { emit }) {
     const databaseStore = useDatabaseStore();

@@ -146,7 +146,6 @@ interface LocalState {
 
 export default defineComponent({
   name: "ProjectCreate",
-  props: {},
   emits: ["dismiss"],
   setup(props, { emit }) {
     const router = useRouter();
