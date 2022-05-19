@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 
 	"github.com/segmentio/analytics-go"
@@ -13,10 +12,9 @@ import (
 
 // Segment is the metrics collector https://segment.com/.
 type segment struct {
-	l           *zap.Logger
-	identifier  string
-	releaseMode common.ReleaseMode
-	client      analytics.Client
+	l          *zap.Logger
+	identifier string
+	client     analytics.Client
 }
 
 const (
@@ -24,19 +22,16 @@ const (
 	identifyTraitForPlan = "plan"
 	// metricValueField is the property key for value
 	metricValueField = "value"
-	// metricEnvironmentField is the property key for environment
-	metricEnvironmentField = "environment"
 )
 
 // NewSegmentReporter creates a new instance of segment
-func NewSegmentReporter(l *zap.Logger, key string, identifier string, mode common.ReleaseMode) MetricReporter {
+func NewSegmentReporter(l *zap.Logger, key string, identifier string) MetricReporter {
 	client := analytics.New(key)
 
 	return &segment{
-		l:           l,
-		identifier:  identifier,
-		releaseMode: mode,
-		client:      client,
+		l:          l,
+		identifier: identifier,
+		client:     client,
 	}
 }
 
@@ -48,8 +43,7 @@ func (s *segment) Close() {
 // Report will exec all the segment reporter.
 func (s *segment) Report(metric *collector.Metric) error {
 	properties := analytics.NewProperties().
-		Set(metricValueField, metric.Value).
-		Set(metricEnvironmentField, s.releaseMode)
+		Set(metricValueField, metric.Value)
 
 	for key, value := range metric.Labels {
 		properties.Set(key, value)

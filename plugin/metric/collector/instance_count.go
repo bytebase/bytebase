@@ -26,17 +26,24 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
 func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
-	instanceCountMap, err := c.store.CountInstanceGroupByEngine(ctx, api.Normal)
+	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
 	if err != nil {
 		return nil, err
 	}
 
-	for engine, count := range instanceCountMap {
+	for _, instanceCountMetric := range instanceCountMetricList {
+		env, err := c.store.GetEnvironmentByID(ctx, instanceCountMetric.EnvironmentID)
+		if err != nil {
+			c.l.Debug("failed to get environment by id", zap.Int("id", instanceCountMetric.EnvironmentID))
+			continue
+		}
+
 		res = append(res, &Metric{
 			Name:  instanceCountMetricName,
-			Value: count,
+			Value: instanceCountMetric.Count,
 			Labels: map[string]string{
-				"engine": string(engine),
+				"engine":      string(instanceCountMetric.Engine),
+				"environment": env.Name,
 			},
 		})
 	}
