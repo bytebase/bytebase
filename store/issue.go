@@ -140,6 +140,38 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 	return issue, nil
 }
 
+// CountIssueGroupByType counts the number of issue and group by type.
+// Used by the metric collector.
+func (s *Store) CountIssueGroupByType(ctx context.Context) ([]*api.IssueCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT type, COUNT(*)
+		FROM issue
+		GROUP BY type`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*api.IssueCountMetric
+
+	for rows.Next() {
+		var metric api.IssueCountMetric
+		if err := rows.Scan(&metric.Type, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
+}
+
 // CreateIssueValidateOnly creates an issue for validation purpose
 // Do NOT write to the database
 func (s *Store) CreateIssueValidateOnly(ctx context.Context, pipeline *api.Pipeline, create *api.IssueCreate, creatorID int) (*api.Issue, error) {

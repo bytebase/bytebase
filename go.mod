@@ -6,6 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
@@ -22,11 +23,14 @@ require (
 	github.com/pingcap/tidb/parser v0.0.0-20211209055157-9f744cdf8266
 	github.com/pkg/errors v0.9.1
 	github.com/qiangmzsx/string-adapter/v2 v2.1.0
+	github.com/segmentio/analytics-go v3.1.0+incompatible
+	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.3
 	github.com/spf13/cobra v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.9.1
+	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
