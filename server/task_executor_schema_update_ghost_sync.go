@@ -272,6 +272,7 @@ func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement stri
 		for {
 			select {
 			case <-ticker.C:
+				// Since we are using postpone flag file to postpone cutover, it's gh-ost mechanism to set migrationContext.IsPostponingCutOver to 1 after synced and before postpone flag file is removed. We utilize this mechanism here to check if synced.
 				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
 					return
 				}
