@@ -26,17 +26,6 @@ type SchemaUpdateGhostCutoverTaskExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostCutover task once.
 func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			panicErr, ok := r.(error)
-			if !ok {
-				panicErr = fmt.Errorf("%v", r)
-			}
-			exec.l.Error("SchemaUpdateGhostCutoverTaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
-			terminated = true
-			err = fmt.Errorf("encounter internal error when executing schema update cutover task")
-		}
-	}()
 
 	taskDAG, err := server.store.GetTaskDAGByToTaskID(ctx, task.ID)
 	if err != nil {
