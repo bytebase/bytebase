@@ -52,6 +52,7 @@ func getPostponeFlagFilename(taskID int, databaseID int, databaseName string, ta
 }
 
 func getTableNameFromStatement(statement string) (string, error) {
+	statement = strings.TrimSpace(statement)
 	parser := ghostsql.NewParserFromAlterStatement(statement)
 	if !parser.HasExplicitTable() {
 		return "", fmt.Errorf("failed to parse table name from statement, statement: %v", statement)
@@ -242,16 +243,19 @@ func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement stri
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
-		host:           instance.Host,
-		port:           instance.Port,
-		user:           adminDataSource.Username,
-		password:       adminDataSource.Password,
-		database:       databaseName,
-		table:          tableName,
-		alterStatement: statement,
-		socketFilename: getSocketFilename(task.ID, task.Database.ID, databaseName, tableName),
-		noop:           false,
-		// serverID should be unique
+		host:                 instance.Host,
+		port:                 instance.Port,
+		user:                 adminDataSource.Username,
+		password:             adminDataSource.Password,
+		database:             databaseName,
+		table:                tableName,
+		alterStatement:       statement,
+		socketFilename:       getSocketFilename(task.ID, task.Database.ID, databaseName, tableName),
+		postponeFlagFilename: getPostponeFlagFilename(task.ID, task.Database.ID, databaseName, tableName),
+		noop:                 false,
+		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
+		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
+		// Here we use serverID = offset + task.ID to avoid potential conflicts.
 		serverID: 10000000 + uint(task.ID),
 	})
 	if err != nil {
