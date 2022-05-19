@@ -33,7 +33,7 @@ type MetricReporter struct {
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, workspaceID)
+	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
 	collectorList := []collector.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),

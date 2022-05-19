@@ -34,6 +34,6 @@ func activeProfile(dataDir string) server.Profile {
 		BackupRunnerInterval: 10 * time.Minute,
 		Version:              version,
 		PgURL:                flags.pgURL,
-		SegmentKey:           "",
+		MetricConnectionKey:  "",
 	}
 }

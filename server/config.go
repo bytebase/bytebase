@@ -55,8 +55,8 @@ type Profile struct {
 	Version string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
-	// SegmentKey is the key for segment.
-	SegmentKey string
+	// MetricConnectionKey is the connection key for metric.
+	MetricConnectionKey string
 }
 
 func (prof *Profile) useEmbedDB() bool {
