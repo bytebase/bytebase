@@ -21,7 +21,7 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) MetricCollector {
 	}
 }
 
-// Collect will collect the netric for issue
+// Collect will collect the metric for issue
 func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	var res []*Metric
 
