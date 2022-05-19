@@ -20,7 +20,6 @@ import { useCurrentUser, useProjectStore } from "@/store";
 
 export default defineComponent({
   name: "ProjectListSidePanel",
-  props: {},
   setup() {
     const { t } = useI18n();
     const router = useRouter();

@@ -91,7 +91,7 @@ import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
 import { isAncestorOf, scrollIntoViewIfNeeded } from "./BBUtil";
 
-export type ItemType = number | string | object;
+export type ItemType = number | string | object | any;
 
 type LocalState = {
   open: boolean;

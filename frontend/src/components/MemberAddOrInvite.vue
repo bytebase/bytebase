@@ -136,7 +136,6 @@ interface LocalState {
 export default defineComponent({
   name: "MemberAddOrInvite",
   components: { RoleSelect },
-  props: {},
   setup() {
     const memberStore = useMemberStore();
 

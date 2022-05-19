@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import { BBTableColumn } from "../bbkit/types";
@@ -36,7 +36,7 @@ import { projectSlug } from "../utils";
 import { Repository } from "../types";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "RepositoryTable",
   components: { PrincipalAvatar },
   props: {
@@ -77,5 +77,5 @@ export default {
       clickRepository,
     };
   },
-};
+});
 </script>
