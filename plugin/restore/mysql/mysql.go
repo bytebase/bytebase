@@ -125,9 +125,30 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	return nil
 }
 
+// DeleteOldDatabase deletes the old database after the PITR swap task.
+func (r *Restore) DeleteOldDatabase(ctx context.Context, database string, suffixTs int64) error {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrOldDatabase)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // getPITRDatabaseName composes a pitr database name
-func getPITRDatabaseName(database string, timestamp int64) string {
-	suffix := fmt.Sprintf("pitr_%d", timestamp)
+func getPITRDatabaseName(database string, suffixTs int64) string {
+	suffix := fmt.Sprintf("pitr_%d", suffixTs)
+	return getSafeName(database, suffix)
+}
+
+// getPITROldDatabaseName composes a pitr database name
+func getPITROldDatabaseName(database string, suffixTs int64) string {
+	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
 	return getSafeName(database, suffix)
 }
 
