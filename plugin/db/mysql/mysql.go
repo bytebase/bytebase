@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
+	"time"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -42,6 +44,20 @@ var (
 func init() {
 	db.Register(db.MySQL, newDriver)
 	db.Register(db.TiDB, newDriver)
+}
+
+// BinlogInfo is the binlog coordination for MySQL.
+type BinlogInfo struct {
+	FileName string `json:"fileName"`
+	Position int64  `json:"position"`
+}
+
+// This is encoded in JSON and stored in the backup table, representing PITR related info.
+type backupPayload struct {
+	BinlogInfo BinlogInfo `json:"binlogInfo"`
+	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
+	// Mainly for UI purpose.
+	Ts int64 `json:"ts"`
 }
 
 // Driver is the MySQL driver.
@@ -889,29 +905,74 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
+
+	// We must use the same MySQL connection to lock and unlock tables.
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	var payloadBytes []byte
+	// Before we dump the real data, we should record the binlog position for PITR.
+	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
+	if !schemaOnly {
+		driver.l.Debug("flush tables in database with read locks",
+			zap.String("database", database))
+		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+			driver.l.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
+			return "", err
+		}
+
+		binlog, err := getBinlogInfo(ctx, conn)
+		if err != nil {
+			return "", err
+		}
+		driver.l.Debug("binlog config at dump time",
+			zap.String("filename", binlog.FileName),
+			zap.Int64("position", binlog.Position))
+
+		ts, err := getServerTime(ctx, driver.db)
+		if err != nil {
+			return "", err
+		}
+
+		payload := backupPayload{
+			BinlogInfo: binlog,
+			Ts:         ts,
+		}
+		payloadBytes, err = json.Marshal(payload)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	options := sql.TxOptions{}
 	// TiDB does not support readonly, so we only set for MySQL.
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	txn, err := driver.db.BeginTx(ctx, &options)
+	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
+	// Beginning a transaction in the same session will implicitly release existing table locks.
+	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
+	txn, err := conn.BeginTx(ctx, &options)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer txn.Rollback()
 
+	driver.l.Debug("begin to dump database")
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return string(payloadBytes), nil
 }
 
 // Restore restores a database.
@@ -940,9 +1001,56 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+func getServerTime(ctx context.Context, db *sql.DB) (int64, error) {
+	var timestamp int64
+	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
+	if err != nil {
+		return 0, err
+	}
+	rows.Next()
+	if err := rows.Scan(&timestamp); err != nil {
+		return 0, err
+	}
+	return timestamp, nil
+}
+
+func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
+	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	txn, err := conn.BeginTx(ctxWithTimeout, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	tables, err := GetTables(txn, database)
+	if err != nil {
+		return err
+	}
+
+	var tableNames []string
+	for _, table := range tables {
+		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
+	}
+	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
+
+	if _, err := txn.ExecContext(ctxWithTimeout, flushTableStmt); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
-	dbNames, err := getDatabases(txn)
+	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -1056,9 +1164,9 @@ func excludeSchemaAutoIncrementValue(s string) string {
 }
 
 // getDatabases gets all databases of an instance.
-func getDatabases(txn *sql.Tx) ([]string, error) {
+func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	var dbNames []string
-	rows, err := txn.Query("SHOW DATABASES;")
+	rows, err := txn.QueryContext(ctx, "SHOW DATABASES;")
 	if err != nil {
 		return nil, err
 	}
@@ -1072,6 +1180,23 @@ func getDatabases(txn *sql.Tx) ([]string, error) {
 		dbNames = append(dbNames, name)
 	}
 	return dbNames, nil
+}
+
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (BinlogInfo, error) {
+	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
+	if err != nil {
+		return BinlogInfo{}, err
+	}
+	defer rows.Close()
+
+	rows.Next()
+	binlogInfo := BinlogInfo{}
+	var unused interface{}
+	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
+		return BinlogInfo{}, err
+	}
+
+	return binlogInfo, nil
 }
 
 // getDatabaseStmt gets the create statement of a database.

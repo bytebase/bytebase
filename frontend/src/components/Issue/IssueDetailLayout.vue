@@ -35,6 +35,9 @@
         <template v-else-if="isGhostMode">
           <PipelineGhostFlow v-if="project" class="border-t border-b" />
         </template>
+        <template v-else-if="isPITRMode">
+          <PipelinePITRFlow v-if="project" class="border-t border-b" />
+        </template>
         <template v-else>
           <PipelineSimpleFlow class="border-t border-b" />
         </template>
@@ -106,9 +109,9 @@ import { useRoute } from "vue-router";
 import {
   pipelineType,
   PipelineType,
-  activeStage,
+  activeStage as activeStageOfPipeline,
   activeTaskInStage,
-  activeTask,
+  activeTask as activeTaskOfPipeline,
 } from "@/utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -122,6 +125,7 @@ import IssueActivityPanel from "./IssueActivityPanel.vue";
 import PipelineSimpleFlow from "./PipelineSimpleFlow.vue";
 import PipelineTenantFlow from "./PipelineTenantFlow.vue";
 import PipelineGhostFlow from "./PipelineGhostFlow.vue";
+import PipelinePITRFlow from "./PipelinePITRFlow.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
 import type {
   Issue,
@@ -179,6 +183,7 @@ const {
   project,
   isTenantMode,
   isGhostMode,
+  isPITRMode,
   createIssue,
   selectedStage,
   selectedTask,
@@ -312,7 +317,34 @@ watch(
   }
 );
 
+// When activeTask is changed, we automatically select it.
+// This enables users to know the pipeline status has changed and we may move forward.
+const autoSelectWhenStatusChanged = () => {
+  const activeTask = computed((): Task | undefined => {
+    if (create.value) return undefined;
+    const { pipeline } = issue.value as Issue;
+    if (!pipeline) return undefined;
+    const task = activeTaskOfPipeline(pipeline);
+    return task;
+  });
+
+  watch(
+    // Watch the task.id instead of the task object itself, Since the object might
+    // sometimes drift to another object reference when polling the issue.
+    () => activeTask.value?.id,
+    () => {
+      const task = activeTask.value;
+      if (!task) return;
+      selectTask(task);
+    },
+    // Also triggered when the first time the page is loaded.
+    { immediate: true }
+  );
+};
+
 const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
+
+autoSelectWhenStatusChanged();
 
 provideIssueLogic(
   {
@@ -324,10 +356,11 @@ provideIssueLogic(
     selectedTask,
     isTenantMode,
     isGhostMode,
+    isPITRMode,
     isValidStage,
     taskStatusOfStage,
-    activeStageOfPipeline: activeStage,
-    activeTaskOfPipeline: activeTask,
+    activeStageOfPipeline,
+    activeTaskOfPipeline,
     activeTaskOfStage: activeTaskInStage,
     selectStageOrTask,
     selectTask,

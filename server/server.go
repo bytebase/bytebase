@@ -179,6 +179,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger)
+		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
+
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler

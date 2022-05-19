@@ -113,10 +113,11 @@ export const useBaseIssueLogic = (params: {
   };
 
   const selectTask = (task: Task) => {
-    if (!create.value) return;
+    if (create.value) return;
 
+    // Find the stage which the task belongs to
     const stage = (issue.value as Issue).pipeline?.stageList.find(
-      (t) => t.id === task.id
+      (s) => s.taskList.findIndex((t) => t.id === task.id) >= 0
     );
     if (!stage) {
       return;
@@ -158,6 +159,12 @@ export const useBaseIssueLogic = (params: {
     return issue.value.type === "bb.issue.database.schema.update.ghost";
   });
 
+  const isPITRMode = computed((): boolean => {
+    if (!isDev()) return false;
+
+    return issue.value.type === "bb.issue.database.pitr";
+  });
+
   const taskStatusOfStage = (stage: Stage | StageCreate) => {
     if (create.value) {
       return stage.taskList[0].status;
@@ -185,6 +192,7 @@ export const useBaseIssueLogic = (params: {
     project,
     isTenantMode,
     isGhostMode,
+    isPITRMode,
     createIssue,
     selectedStage,
     selectedTask,

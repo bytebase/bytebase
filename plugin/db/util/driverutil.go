@@ -131,7 +131,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	if !m.CreateDatabase {
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
+		if _, err := executor.Dump(ctx, m.Database, &prevSchemaBuf, true /*schemaOnly*/); err != nil {
 			return -1, "", FormatError(err)
 		}
 	}
@@ -172,7 +172,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	if err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
+	if _, err := executor.Dump(ctx, m.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
 		return -1, "", FormatError(err)
 	}
 

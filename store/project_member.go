@@ -310,6 +310,8 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
+	defer txRead.PTx.Rollback()
+
 	findProjectMember := &api.ProjectMemberFind{
 		ProjectID:    &batchUpdate.ID,
 		RoleProvider: &batchUpdate.RoleProvider,

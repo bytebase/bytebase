@@ -76,11 +76,29 @@ func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.
 	return issue, nil
 }
 
-// GetIssue gets an instance of Issue
-func (s *Store) GetIssue(ctx context.Context, find *api.IssueFind) (*api.Issue, error) {
+// GetIssueByID gets an instance of Issue
+func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
+	find := &api.IssueFind{ID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Issue with IssueFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Issue with ID[%d], error[%w]", id, err)
+	}
+	if issueRaw == nil {
+		return nil, nil
+	}
+	issue, err := s.composeIssue(ctx, issueRaw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+	}
+	return issue, nil
+}
+
+// GetIssueByPipelineID gets an instance of Issue
+func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, error) {
+	find := &api.IssueFind{PipelineID: &id}
+	issueRaw, err := s.getIssueRaw(ctx, find)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Issue with PipelineID[%d], error[%w]", id, err)
 	}
 	if issueRaw == nil {
 		return nil, nil

@@ -36,6 +36,9 @@ const (
 	// 301 task error
 	TaskTimingNotAllowed Code = 301
 
+	// 401 task check error
+	TaskCheckEmptySchemaReviewPolicy Code = 401
+
 	// 10001 advisor error code
 	CompatibilityDropDatabase  Code = 10001
 	CompatibilityRenameTable   Code = 10002

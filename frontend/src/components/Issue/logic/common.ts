@@ -124,7 +124,7 @@ export const useCommonLogic = () => {
     }
 
     // Extract statement from different types of payloads
-    return statementOfTask(task as Task);
+    return statementOfTask(task as Task) || "";
   });
 
   const updateStatement = (

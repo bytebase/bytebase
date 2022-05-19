@@ -8,16 +8,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
-	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -94,7 +91,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("issueID"))).SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -130,7 +127,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			}
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID when updating issue: %v", id)).SetInternal(err)
 		}
@@ -219,7 +216,7 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update issue status request").SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssue(ctx, &api.IssueFind{ID: &id})
+		issue, err := s.store.GetIssueByID(ctx, id)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue ID: %v", id)).SetInternal(err)
 		}
@@ -871,9 +868,6 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, recoveryTime int) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
-	pitrTimestamp := time.Now().Unix()
-	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, pitrTimestamp)
-
 	// task: create and restore to PITR database
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID:     projectID,
@@ -885,7 +879,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Restore PITR database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Restore PITR database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
@@ -901,7 +895,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Swap PITR and the original database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Swap PITR and the original database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
@@ -917,7 +911,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Delete the original database %s", pitrDatabaseName),
+		Name:       fmt.Sprintf("Delete the original database %s", database.Name),
 		InstanceID: database.InstanceID,
 		DatabaseID: &database.ID,
 		Status:     taskStatus,
@@ -975,11 +969,12 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	})
 
 	// task "drop original table"
-	parser := ghostsql.NewParserFromAlterStatement(detail.Statement)
-	tableName := ""
-	if parser.HasExplicitTable() {
-		tableName = fmt.Sprintf("_%v_del", parser.GetExplicitTable())
+	tableName, err := getTableNameFromStatement(detail.Statement)
+	if err != nil {
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to parse table name, error: %v", err))
 	}
+	tableName = fmt.Sprintf("_%v_del", tableName)
+
 	payloadDrop := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
 		DatabaseName: database.Name,
 		TableName:    tableName,
@@ -1248,7 +1243,7 @@ func (s *Server) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *
 	}
 
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
+	if _, err := driver.Dump(ctx, similarDB.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 		return "", "", err
 	}
 	return schemaVersion, schemaBuf.String(), nil

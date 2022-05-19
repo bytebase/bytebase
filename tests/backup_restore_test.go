@@ -163,7 +163,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
-		config := restoremysql.BinlogConfig{}
+		config := pluginmysql.BinlogInfo{}
 		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
@@ -236,22 +236,14 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
-		config := restoremysql.BinlogConfig{}
+		config := pluginmysql.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
 		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
 		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
-		a.NoError(err)
-
-		t.Log("validate table tbl0")
-		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
-		validateTbl0(t, db, numRowsTime0)
-		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime0)
-		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
-		t.Log("validate table _update_row_")
+		a.Error(err)
 	})
 }
 
@@ -361,7 +353,7 @@ func doBackup(ctx context.Context, t *testing.T, driver dbplugin.Driver, databas
 	a := require.New(t)
 
 	var buf bytes.Buffer
-	err := driver.Dump(ctx, database, &buf, false)
+	_, err := driver.Dump(ctx, database, &buf, false)
 	a.NoError(err)
 
 	return &buf

@@ -2,12 +2,12 @@
   <BBTooltipButton
     type="normal"
     tooltip-mode="DISABLED-ONLY"
-    :disabled="!allowAdmin || !pitrAvailable"
+    :disabled="!allowAdmin || !pitrAvailable.result"
     @click="state.showDatabasePITRModal = true"
   >
     {{ $t("common.restore") }}
-    <template v-if="allowAdmin && !pitrAvailable" #tooltip>
-      {{ $t("database.pitr.no-available-backup") }}
+    <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
+      {{ pitrAvailable.message }}
     </template>
   </BBTooltipButton>
 

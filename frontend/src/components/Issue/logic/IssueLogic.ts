@@ -29,6 +29,7 @@ type IssueLogic = {
   // ui state logic
   isTenantMode: Ref<boolean>;
   isGhostMode: Ref<boolean>;
+  isPITRMode: Ref<boolean>;
   isValidStage: (stage: Stage | StageCreate, index: number) => boolean;
   activeStageOfPipeline: (pipeline: Pipeline) => Stage;
   activeTaskOfPipeline: (pipeline: Pipeline) => Task;
