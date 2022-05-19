@@ -159,12 +159,12 @@ func TestPITR(t *testing.T) {
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
 		t.Log("restore to pitr database")
-		timestamp := time.Now().Unix()
+		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
 		config := pluginmysql.BinlogInfo{}
-		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
+		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -172,7 +172,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -232,18 +232,81 @@ func TestPITR(t *testing.T) {
 
 		// 6. restore
 		t.Log("restore to pitr database")
-		timestamp := time.Now().Unix()
+		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
 		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
 		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.Error(err)
+	})
+
+	t.Run("Schema Migration Failure", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+
+		t.Logf("test %s initialize database %s", t.Name(), database)
+
+		mysqlPort := port + 2
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
+		defer stopFn()
+		defer db.Close()
+
+		t.Log("insert data")
+		insertRangeData(t, db, 0, numRowsTime0)
+
+		t.Log("make a full backup")
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
+		defer func() {
+			err := driver.Close(ctx)
+			a.NoError(err)
+		}()
+
+		buf := doBackup(ctx, t, driver, database)
+		t.Logf("backup content:\n%s\n", buf.String())
+
+		t.Log("insert more data")
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
+		t.Logf("start to concurrently update data at t1: %v", t1)
+
+		createPITRIssueTimestamp := time.Now().Unix()
+
+		t.Log("mimics schema migration")
+		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
+		_, err := db.ExecContext(ctx, dropColumnStmt)
+		a.NoError(err)
+
+		t.Log("restore to pitr database")
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := pluginmysql.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		a.NoError(err)
+
+		t.Log("cutover stage")
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		a.NoError(err)
+
+		t.Log("validate table tbl0")
+		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
+		t.Log("validate table tbl1")
+		validateTbl1(t, db, numRowsTime0)
+		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
+		t.Log("validate table _update_row_")
 	})
 }
 
@@ -284,9 +347,9 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	defer tx.Rollback()
 
 	for i := begin; i < end; i++ {
-		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d)", i))
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d);", i))
 		a.NoError(err)
-		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d)", i, i))
+		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d);", i, i))
 		a.NoError(err)
 	}
 
@@ -296,7 +359,7 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 
 func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl0")
+	rows, err := db.Query("SELECT * FROM tbl0;")
 	a.NoError(err)
 	i := 0
 	for rows.Next() {
@@ -311,7 +374,7 @@ func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 
 func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl1")
+	rows, err := db.Query("SELECT * FROM tbl1;")
 	a.NoError(err)
 	i := 0
 	for rows.Next() {
@@ -364,15 +427,15 @@ func startUpdateRow(ctx context.Context, t *testing.T, username, localhost, data
 	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
 
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
+	_, err = db.Exec(fmt.Sprintf("USE %s;", database))
 	a.NoError(err)
 
 	t.Log("Start updating data")
-	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY)")
+	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
 	a.NoError(err)
 
 	// init value is (0)
-	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0)")
+	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
 	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
@@ -383,7 +446,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, username, localhost, data
 		for {
 			select {
 			case <-ticker.C:
-				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d", i))
+				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i))
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
