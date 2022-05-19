@@ -11,7 +11,7 @@
           :required="true"
           :placeholder="'Project name'"
           :value="state.project.name"
-          @input="state.project.name = $event.target.value"
+          @input="state.project.name = ($event.target as HTMLInputElement).value"
         />
       </div>
       <div class="col-span-1">
@@ -26,7 +26,7 @@
           class="mt-4 w-full uppercase"
           :required="true"
           :value="state.project.key"
-          @input="state.project.key = $event.target.value"
+          @input="state.project.key = ($event.target as HTMLInputElement).value"
         />
       </div>
       <div class="col-span-1">
@@ -94,7 +94,7 @@
           :required="true"
           :value="state.project.dbNameTemplate"
           placeholder="e.g. {{DB_NAME}}_{{TENANT}}"
-          @input="state.project.dbNameTemplate = $event.target.value"
+          @input="state.project.dbNameTemplate = ($event.target as HTMLInputElement).value"
         />
       </div>
     </div>
