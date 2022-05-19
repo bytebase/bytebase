@@ -26,15 +26,15 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription  *enterpriseAPI.Subscription
-	reporter      reporter.MetricReporter
+	reporter      api.MetricReporter
 	workspaceID   string
-	collectorList []collector.MetricCollector
+	collectorList []api.MetricCollector
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
 	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
-	collectorList := []collector.MetricCollector{
+	collectorList := []api.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
 	}

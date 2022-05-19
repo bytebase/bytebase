@@ -15,7 +15,7 @@ type instanceCollector struct {
 }
 
 // NewInstanceCollector creates a new instance of instanceCollector
-func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
+func NewInstanceCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
 	return &instanceCollector{
 		l:     l,
 		store: store,
@@ -23,8 +23,8 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
 }
 
 // Collect will collect the netric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
-	var res []*Metric
+func (c *instanceCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
+	var res []*api.Metric
 
 	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
 	if err != nil {
@@ -38,8 +38,8 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 			continue
 		}
 
-		res = append(res, &Metric{
-			Name:  instanceCountMetricName,
+		res = append(res, &api.Metric{
+			Name:  api.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]string{
 				"engine":      string(instanceCountMetric.Engine),
