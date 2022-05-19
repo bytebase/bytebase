@@ -88,8 +88,8 @@
   </BBTable>
 </template>
 
-<script lang="ts" setup>
-import { PropType } from "vue";
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
 import { Database, MigrationHistory } from "../types";
 import {
   databaseSlug,
@@ -103,89 +103,98 @@ import { useI18n } from "vue-i18n";
 
 type Mode = "DATABASE" | "PROJECT";
 
-const props = defineProps({
-  mode: {
-    default: "DATABASE",
-    type: String as PropType<Mode>,
+export default defineComponent({
+  name: "MigrationHistoryTable",
+  components: { MigrationHistoryStatusIcon },
+  props: {
+    mode: {
+      default: "DATABASE",
+      type: String as PropType<Mode>,
+    },
+    databaseSectionList: {
+      required: true,
+      type: Array as PropType<Database[]>,
+    },
+    historySectionList: {
+      required: true,
+      type: Array as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
+    },
   },
-  databaseSectionList: {
-    required: true,
-    type: Array as PropType<Database[]>,
-  },
-  historySectionList: {
-    required: true,
-    type: Array as PropType<BBTableSectionDataSource<MigrationHistory>[]>,
+  setup(props) {
+    const router = useRouter();
+
+    const { t } = useI18n();
+
+    const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
+      [
+        "DATABASE",
+        [
+          {
+            title: "",
+          },
+          {
+            title: t("migration-history.workflow"),
+          },
+          {
+            title: t("common.version"),
+          },
+          {
+            title: t("common.issue"),
+          },
+          {
+            title: "SQL",
+          },
+          {
+            title: t("common.duration"),
+          },
+          {
+            title: t("common.created-at"),
+          },
+          {
+            title: t("common.creator"),
+          },
+        ],
+      ],
+      [
+        "PROJECT",
+        [
+          { title: "" },
+          {
+            title: t("common.version"),
+          },
+          {
+            title: t("common.issue"),
+          },
+          {
+            title: "SQL",
+          },
+          {
+            title: t("common.duration"),
+          },
+          {
+            title: t("common.created-at"),
+          },
+          {
+            title: t("common.creator"),
+          },
+        ],
+      ],
+    ]);
+
+    const clickHistory = function (section: number, row: number) {
+      const history = props.historySectionList[section].list[row];
+      router.push(
+        `/db/${databaseSlug(
+          props.databaseSectionList[section]
+        )}/history/${migrationHistorySlug(history.id, history.version)}`
+      );
+    };
+
+    return {
+      columnList: columnListMap.get(props.mode)!,
+      nanosecondsToString,
+      clickHistory,
+    };
   },
 });
-
-const router = useRouter();
-
-const { t } = useI18n();
-
-const columnListMap: Map<Mode, BBTableColumn[]> = new Map([
-  [
-    "DATABASE",
-    [
-      {
-        title: "",
-      },
-      {
-        title: t("migration-history.workflow"),
-      },
-      {
-        title: t("common.version"),
-      },
-      {
-        title: t("common.issue"),
-      },
-      {
-        title: "SQL",
-      },
-      {
-        title: t("common.duration"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-      {
-        title: t("common.creator"),
-      },
-    ],
-  ],
-  [
-    "PROJECT",
-    [
-      { title: "" },
-      {
-        title: t("common.version"),
-      },
-      {
-        title: t("common.issue"),
-      },
-      {
-        title: "SQL",
-      },
-      {
-        title: t("common.duration"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-      {
-        title: t("common.creator"),
-      },
-    ],
-  ],
-]);
-
-const clickHistory = function (section: number, row: number) {
-  const history = props.historySectionList[section].list[row];
-  router.push(
-    `/db/${databaseSlug(
-      props.databaseSectionList[section]
-    )}/history/${migrationHistorySlug(history.id, history.version)}`
-  );
-};
-
-const columnList = columnListMap.get(props.mode)!;
 </script>
