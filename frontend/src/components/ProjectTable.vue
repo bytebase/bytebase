@@ -50,13 +50,13 @@
 </template>
 
 <script lang="ts">
-import { PropType, computed } from "vue";
+import { PropType, computed, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { projectSlug } from "../utils";
 import { Project } from "../types";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "ProjectTable",
   components: {},
   props: {
@@ -91,5 +91,5 @@ export default {
       clickProject,
     };
   },
-};
+});
 </script>
