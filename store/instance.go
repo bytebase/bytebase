@@ -35,13 +35,6 @@ type instanceRaw struct {
 	Port          string
 }
 
-// InstanceCountMetric is the API message for instance count metric, used by CountInstanceGroupByEngineAndEnvironmentID
-type InstanceCountMetric struct {
-	Engine        db.Type
-	EnvironmentID int
-	Count         int
-}
-
 // toInstance creates an instance of Instance based on the instanceRaw.
 // This is intended to be called when we need to compose an Instance relationship.
 func (raw *instanceRaw) toInstance() *api.Instance {
@@ -161,7 +154,7 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*InstanceCountMetric, error) {
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*api.InstanceCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -180,10 +173,10 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 	}
 	defer rows.Close()
 
-	var res []*InstanceCountMetric
+	var res []*api.InstanceCountMetric
 
 	for rows.Next() {
-		var metric InstanceCountMetric
+		var metric api.InstanceCountMetric
 		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}

@@ -124,7 +124,7 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 
 // CountIssueGroupByType counts the number of issue and group by type.
 // Used by the metric collector.
-func (s *Store) CountIssueGroupByType(ctx context.Context) (map[api.IssueType]int, error) {
+func (s *Store) CountIssueGroupByType(ctx context.Context) ([]*api.IssueCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -141,15 +141,14 @@ func (s *Store) CountIssueGroupByType(ctx context.Context) (map[api.IssueType]in
 	}
 	defer rows.Close()
 
-	res := make(map[api.IssueType]int)
+	var res []*api.IssueCountMetric
 
 	for rows.Next() {
-		count := 0
-		var issueType api.IssueType
-		if err := rows.Scan(&issueType, &count); err != nil {
+		var metric api.IssueCountMetric
+		if err := rows.Scan(&metric.Type, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
-		res[issueType] = count
+		res = append(res, &metric)
 	}
 
 	return res, nil
