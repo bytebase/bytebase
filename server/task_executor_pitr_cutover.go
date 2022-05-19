@@ -53,9 +53,11 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	mysqlRestore := restoremysql.New(mysqlDriver)
 
-	exec.l.Debug("Start swapping the original and PITR database",
+	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, issue.CreatedTs)
+	exec.l.Info("Start swapping the original and PITR database",
 		zap.String("instance", instance.Name),
-		zap.String("database", database.Name),
+		zap.String("original_database", database.Name),
+		zap.String("pitr_database", pitrDatabaseName),
 	)
 	if err := mysqlRestore.SwapPITRDatabase(ctx, database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to swap the original and PITR database",
@@ -66,7 +68,9 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
 	}
 
-	exec.l.Info("Finish swapping the original and PITR database", zap.String("target_database", task.Database.Name))
+	// TODO(dragonly): log the _old database
+	exec.l.Info("Finish swapping the original and PITR database",
+		zap.String("database", task.Database.Name))
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
