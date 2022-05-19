@@ -152,7 +152,8 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`, but exclude latest binlog
+// SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`,
+// but exclude latest binlog. We will download the latest binlog only when doing PITR.
 func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
 	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
 	if err != nil {
