@@ -6,7 +6,7 @@ import Icons from "unplugin-icons/vite";
 import IconsResolver from "unplugin-icons/resolver";
 import Components from "unplugin-vue-components/vite";
 
-const SERVER_PORT = process.env.PORT || 3000;
+const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
 const HTTPS_PORT = 443;
 const r = (...args: string[]) => resolve(__dirname, ...args);
 
@@ -34,9 +34,6 @@ export default defineConfig(() => {
       }),
       Icons(),
     ],
-    optimizeDeps: {
-      allowNodeBuiltins: ["postcss", "bytebase"],
-    },
     server: {
       port: SERVER_PORT,
       proxy: {
