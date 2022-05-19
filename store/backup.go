@@ -383,7 +383,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 // createBackupImpl creates a new backup.
 func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO backup (
 			creator_id,
 			updater_id,
@@ -395,13 +395,14 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 			migration_history_version,
 			path
 		)
-		VALUES ($1, $2, $3, $4, '%s', $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
-	`, api.BackupStatusPendingCreate),
+	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
 		create.Name,
+		api.BackupStatusPendingCreate,
 		create.Type,
 		create.StorageBackend,
 		create.MigrationHistoryVersion,
