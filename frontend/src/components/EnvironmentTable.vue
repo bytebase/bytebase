@@ -24,50 +24,41 @@
   </BBTable>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import { Environment } from "../types";
 import { environmentSlug } from "../utils";
 import { useI18n } from "vue-i18n";
 
-export default {
-  name: "EnvironmentTable",
-  props: {
-    environmentList: {
-      required: true,
-      type: Object as PropType<Environment[]>,
-    },
+const props = defineProps({
+  environmentList: {
+    required: true,
+    type: Object as PropType<Environment[]>,
   },
-  setup(props) {
-    const router = useRouter();
+});
 
-    const { t } = useI18n();
+const router = useRouter();
 
-    const COLUMN_LIST = [
-      {
-        title: t("common.id"),
-      },
-      {
-        title: t("common.name"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-      {
-        title: t("common.updated-at"),
-      },
-    ];
+const { t } = useI18n();
 
-    const clickEnvironment = function (section: number, row: number) {
-      const environment = props.environmentList[row];
-      router.push(`/environment/${environmentSlug(environment)}`);
-    };
-
-    return {
-      COLUMN_LIST,
-      clickEnvironment,
-    };
+const COLUMN_LIST = [
+  {
+    title: t("common.id"),
   },
+  {
+    title: t("common.name"),
+  },
+  {
+    title: t("common.created-at"),
+  },
+  {
+    title: t("common.updated-at"),
+  },
+];
+
+const clickEnvironment = function (section: number, row: number) {
+  const environment = props.environmentList[row];
+  router.push(`/environment/${environmentSlug(environment)}`);
 };
 </script>
