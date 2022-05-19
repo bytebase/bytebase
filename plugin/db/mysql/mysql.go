@@ -58,8 +58,8 @@ type BinlogFile struct {
 	Size int64
 }
 
-// This is encoded in JSON and stored in the backup table, representing PITR related info.
-type backupPayload struct {
+// BackupPayload is encoded in JSON and stored in the backup table, representing PITR related info.
+type BackupPayload struct {
 	BinlogInfo BinlogInfo `json:"binlogInfo"`
 	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
 	// Mainly for UI purpose.
@@ -71,6 +71,7 @@ type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
+	config        db.ConnectionConfig
 
 	db *sql.DB
 }
@@ -83,6 +84,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a MySQL driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+	driver.config = config
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -147,6 +149,11 @@ func (driver *Driver) Ping(ctx context.Context) error {
 // GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	return driver.db, nil
+}
+
+// GetConnectionConfig gets the connection config
+func (driver *Driver) GetConnectionConfig() db.ConnectionConfig {
+	return driver.config
 }
 
 // GetVersion gets the version.
@@ -945,7 +952,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			return "", err
 		}
 
-		payload := backupPayload{
+		payload := BackupPayload{
 			BinlogInfo: binlog,
 			Ts:         ts,
 		}
@@ -969,7 +976,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	driver.l.Debug("begin to dump database")
+	driver.l.Debug("begin to dump database", zap.String("database", database))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}

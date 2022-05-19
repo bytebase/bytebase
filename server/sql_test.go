@@ -1,7 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateSQLSelectStatement(t *testing.T) {
@@ -93,4 +96,14 @@ func TestValidateSQLSelectStatement(t *testing.T) {
 			t.Errorf("Validate SQLStatement %q: got result %v, want %v.", test.sqlStatement, result, test.want)
 		}
 	}
+}
+
+func TestXxx(t *testing.T) {
+	type S struct {
+		A string `json:"a"`
+	}
+	s := S{}
+	err := json.Unmarshal([]byte("{}"), &s)
+	require.NoError(t, err)
+	t.Logf("s: %+v\n", s)
 }

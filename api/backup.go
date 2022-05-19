@@ -101,6 +101,9 @@ type Backup struct {
 	MigrationHistoryVersion string `jsonapi:"attr,migrationHistoryVersion"`
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
+	// Payload contains data like PITR info, which will not be created at first.
+	// When backup runner executes the real backup job, it will fill this field.
+	Payload string `jsonapi:"attr,payload"`
 }
 
 // BackupCreate is the API message for creating a backup.

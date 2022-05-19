@@ -32,7 +32,9 @@ type backupRaw struct {
 	MigrationHistoryVersion string
 	Path                    string
 	Comment                 string
-	Payload                 string
+	// Payload contains data like PITR info, which will not be created at first.
+	// When backup runner executes the real backup job, it will fill this field.
+	Payload string
 }
 
 // toBackup creates an instance of Backup based on the backupRaw.
@@ -58,6 +60,7 @@ func (raw *backupRaw) toBackup() *api.Backup {
 		MigrationHistoryVersion: raw.MigrationHistoryVersion,
 		Path:                    raw.Path,
 		Comment:                 raw.Comment,
+		Payload:                 raw.Payload,
 	}
 }
 
@@ -467,7 +470,8 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 			storage_backend,
 			migration_history_version,
 			path,
-			comment
+			comment,
+			payload
 		FROM backup
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
 		args...,
@@ -495,6 +499,7 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 			&backupRaw.MigrationHistoryVersion,
 			&backupRaw.Path,
 			&backupRaw.Comment,
+			&backupRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}

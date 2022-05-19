@@ -125,7 +125,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		}
 	}()
 
-	cacheService := NewCacheService(logger)
+	cacheService := NewCacheService()
 	storeInstance := store.New(logger, storeDB, cacheService)
 	s.store = storeInstance
 
