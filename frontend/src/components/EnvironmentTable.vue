@@ -25,13 +25,13 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import { Environment } from "../types";
 import { environmentSlug } from "../utils";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "EnvironmentTable",
   props: {
     environmentList: {
@@ -69,5 +69,5 @@ export default {
       clickEnvironment,
     };
   },
-};
+});
 </script>

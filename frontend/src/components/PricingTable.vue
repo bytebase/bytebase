@@ -118,7 +118,7 @@
                   <span
                     v-if="getFeature(plan, feature)?.content"
                     class="block text-sm"
-                    >{{ $t(getFeature(plan, feature)?.content) }}</span
+                    >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
                   >
                   <heroicons-solid:check v-else class="w-5 h-5" />
                 </template>
@@ -131,7 +131,7 @@
                     v-if="getFeature(plan, feature)?.tooltip"
                     class="tooltip whitespace-nowrap"
                   >
-                    {{ $t(getFeature(plan, feature)?.tooltip) }}
+                    {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
                   </span>
                 </template>
               </div>
@@ -251,7 +251,7 @@
                     <span
                       v-if="getFeature(plan, feature)?.content"
                       class="block text-sm"
-                      >{{ $t(getFeature(plan, feature)?.content) }}</span
+                      >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
                     >
                     <heroicons-solid:check v-else class="w-5 h-5" />
                   </template>
@@ -266,7 +266,7 @@
                       v-if="getFeature(plan, feature)?.tooltip"
                       class="tooltip whitespace-nowrap"
                     >
-                      {{ $t(getFeature(plan, feature)?.tooltip) }}
+                      {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
                     </span>
                   </template>
                 </div>
@@ -293,7 +293,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watch, PropType } from "vue";
+import { reactive, computed, watch, PropType, defineComponent } from "vue";
 import {
   Plan,
   Subscription,
@@ -322,7 +322,7 @@ interface LocalPlan extends Plan {
 
 const minimumInstanceCount = 5;
 
-export default {
+export default defineComponent({
   name: "PricingTable",
   props: {
     subscription: {
@@ -397,7 +397,10 @@ export default {
 
     const onButtonClick = (plan: Plan) => {
       if (plan.type === PlanType.TEAM) {
-        window.open("https://hub.bytebase.com/pricing?plan=team&source=console.subscription", "__blank");
+        window.open(
+          "https://hub.bytebase.com/pricing?plan=team&source=console.subscription",
+          "__blank"
+        );
       } else if (plan.type === PlanType.ENTERPRISE) {
         window.open(
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
@@ -416,5 +419,5 @@ export default {
       minimumInstanceCount,
     };
   },
-};
+});
 </script>

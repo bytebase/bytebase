@@ -11,6 +11,7 @@ import {
   isDMLStatement,
 } from "../components/MonacoEditor/sqlParser";
 import { pushNotification, useTabStore, useSQLEditorStore } from "@/store";
+import { BBNotificationStyle } from "@/bbkit/types";
 
 type ExecuteConfig = {
   databaseType: string;
@@ -29,7 +30,11 @@ const useExecuteSQL = () => {
     isLoadingData: false,
   });
 
-  const notify = (type: string, title: string, description?: string) => {
+  const notify = (
+    type: BBNotificationStyle,
+    title: string,
+    description?: string
+  ) => {
     pushNotification({
       module: "bytebase",
       style: type,

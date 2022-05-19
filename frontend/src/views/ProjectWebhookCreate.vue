@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { computed } from "vue";
+import { computed, defineComponent } from "vue";
 import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
 import { idFromSlug } from "../utils";
 import { ProjectWebhookCreate } from "../types";
@@ -26,7 +26,7 @@ const DEFAULT_NEW_WEBHOOK: ProjectWebhookCreate = {
   activityList: ["bb.issue.status.update"],
 };
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookCreate",
   components: { ProjectWebhookForm },
   props: {
@@ -47,5 +47,5 @@ export default {
       project,
     };
   },
-};
+});
 </script>

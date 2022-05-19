@@ -234,6 +234,7 @@ export default defineComponent({
     };
 
     const goProject = () => {
+      if (!project.value) return;
       router.push({
         name: "workspace.project.detail",
         params: {
