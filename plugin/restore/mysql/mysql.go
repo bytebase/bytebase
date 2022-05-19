@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
@@ -200,39 +199,32 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
 func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
-	tmpFilePrefix := fmt.Sprintf("tmp_%d_", time.Now().UnixNano())
+	// for mysqlbinlog binary, --result-file must end with '/'
+	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogBinPath, "bin", "mysqlbinlog"),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
-		// Note, recheck here when upgrade embedding mysqlbinlog binary
-		// for mysqlbinlog with binlog.000001 --result-file=a_, it will save it as a_binlog.000001
-		fmt.Sprintf("--result-file=%s", filepath.Join(saveDir, tmpFilePrefix)),
+		fmt.Sprintf("--result-file=%s", resultFileDir),
 	)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
-	tmpFileName := fmt.Sprintf("%s%s", tmpFilePrefix, binlog.Name)
-	tmpFilePath := filepath.Join(saveDir, tmpFileName)
+	resultFilePath := filepath.Join(resultFileDir, binlog.Name)
 	if err := cmd.Run(); err != nil {
-		_ = os.Remove(tmpFilePath)
+		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("cannot run mysqlbinlog, error: %w", err)
 	}
 
-	fi, err := os.Stat(tmpFilePath)
+	fi, err := os.Stat(resultFilePath)
 	if err != nil {
-		_ = os.Remove(tmpFilePath)
-		return fmt.Errorf("cannot stat %s, error: %w", tmpFilePath, err)
+		_ = os.Remove(resultFilePath)
+		return fmt.Errorf("cannot stat %s, error: %w", resultFilePath, err)
 	}
 	if fi.Size() != binlog.Size {
-		_ = os.Remove(tmpFilePath)
-		return fmt.Errorf("download file %s size not match", tmpFileName)
-	}
-
-	if err := os.Rename(tmpFilePath, filepath.Join(saveDir, binlog.Name)); err != nil {
-		_ = os.Remove(tmpFilePath)
-		return fmt.Errorf("cannot rename tmp binlog %s, err :%w", binlog.Name, err)
+		_ = os.Remove(resultFilePath)
+		return fmt.Errorf("download file %s size not match", resultFilePath)
 	}
 
 	return nil
