@@ -395,7 +395,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	server.l.Info("Trying to gracefully shutdown server")
 
 	// Close the metric reporter
-	server.MetricReporter.Close()
+	if server.MetricReporter != nil {
+		server.MetricReporter.Close()
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
