@@ -113,10 +113,11 @@ export const useBaseIssueLogic = (params: {
   };
 
   const selectTask = (task: Task) => {
-    if (!create.value) return;
+    if (create.value) return;
 
+    // Find the stage which the task belongs to
     const stage = (issue.value as Issue).pipeline?.stageList.find(
-      (t) => t.id === task.id
+      (s) => s.taskList.findIndex((t) => t.id === task.id) >= 0
     );
     if (!stage) {
       return;
