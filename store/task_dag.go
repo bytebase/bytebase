@@ -43,7 +43,7 @@ func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*
 	return taskDAG, nil
 }
 
-// FindTaskDAGList finds TaskDAG list by FromTaskID.
+// FindTaskDAGList finds a TaskDAG list by ToTaskID.
 func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
 	// TODO(xz): remove this release guard once the gh-ost feature is ready to release.
 	if s.db.mode != common.ReleaseModeDev {
@@ -58,6 +58,18 @@ func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*
 		taskDAGList = append(taskDAGList, taskDAGRaw.toTaskDAG())
 	}
 	return taskDAGList, nil
+}
+
+// GetTaskDAGByToTaskID gets a single TaskDAG by ToTaskID
+func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG, error) {
+	taskDAGList, err := s.FindTaskDAGList(ctx, &api.TaskDAGFind{ToTaskID: id})
+	if err != nil {
+		return nil, err
+	}
+	if len(taskDAGList) != 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d tasks with ToTaskID %v, expect 1", len(taskDAGList), id)}
+	}
+	return taskDAGList[0], nil
 }
 
 func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
