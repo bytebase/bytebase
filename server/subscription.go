@@ -16,7 +16,7 @@ import (
 func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 	g.GET("/subscription", func(c echo.Context) error {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil
@@ -35,7 +35,7 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		s.subscription = s.loadSubscription()
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, s.subscription); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &s.subscription); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal subscription response").SetInternal(err)
 		}
 		return nil

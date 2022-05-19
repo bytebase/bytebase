@@ -6,6 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
