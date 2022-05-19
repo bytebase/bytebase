@@ -337,7 +337,7 @@ const autoSelectWhenStatusChanged = () => {
       if (!task) return;
       selectTask(task);
     },
-    // Also triggered when the first time the page loaded.
+    // Also triggered when the first time the page is loaded.
     { immediate: true }
   );
 };
