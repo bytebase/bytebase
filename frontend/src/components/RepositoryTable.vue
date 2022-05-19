@@ -27,7 +27,7 @@
   </BBTable>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
@@ -36,46 +36,33 @@ import { projectSlug } from "../utils";
 import { Repository } from "../types";
 import { useI18n } from "vue-i18n";
 
-export default {
-  name: "RepositoryTable",
-  components: { PrincipalAvatar },
-  props: {
-    repositoryList: {
-      required: true,
-      type: Object as PropType<Repository[]>,
-    },
+const props = defineProps({
+  repositoryList: {
+    required: true,
+    type: Object as PropType<Repository[]>,
   },
-  setup(props) {
-    const { t } = useI18n();
+});
+const { t } = useI18n();
 
-    const router = useRouter();
+const router = useRouter();
 
-    const columnList: BBTableColumn[] = [
-      {
-        title: t("common.project"),
-      },
-      {
-        title: t("common.repository"),
-      },
-      {
-        title: t("common.creator"),
-      },
-      {
-        title: t("common.created-at"),
-      },
-    ];
-
-    const clickRepository = function (section: number, row: number) {
-      const repository = props.repositoryList[row];
-      router.push(
-        `/project/${projectSlug(repository.project)}#version-control`
-      );
-    };
-
-    return {
-      columnList,
-      clickRepository,
-    };
+const columnList: BBTableColumn[] = [
+  {
+    title: t("common.project"),
   },
+  {
+    title: t("common.repository"),
+  },
+  {
+    title: t("common.creator"),
+  },
+  {
+    title: t("common.created-at"),
+  },
+];
+
+const clickRepository = function (section: number, row: number) {
+  const repository = props.repositoryList[row];
+  router.push(`/project/${projectSlug(repository.project)}#version-control`);
 };
 </script>
