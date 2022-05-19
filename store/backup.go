@@ -395,13 +395,14 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 			migration_history_version,
 			path
 		)
-		VALUES ($1, $2, $3, $4, 'PENDING_CREATE', $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
 	`,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
 		create.Name,
+		api.BackupStatusPendingCreate,
 		create.Type,
 		create.StorageBackend,
 		create.MigrationHistoryVersion,
