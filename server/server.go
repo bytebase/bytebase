@@ -32,7 +32,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
-	MetricScheduler    *MetricScheduler
+	MetricReporter     *MetricReporter
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
@@ -293,7 +293,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.initSubscription()
-	s.initMetricScheduler(config.workspaceID)
+	// the metric reporter needs to get the pointer of server.subscription
+	// so we should make sure the server.subscription is initialized before init the metric reporter.
+	s.initMetricReporter(config.workspaceID)
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
@@ -305,12 +307,12 @@ func (server *Server) initSubscription() {
 	server.subscription = server.loadSubscription()
 }
 
-// initMetricScheduler will initial the metric scheduler.
-func (server *Server) initMetricScheduler(workspaceID string) {
+// initMetricReporter will initial the metric scheduler.
+func (server *Server) initMetricReporter(workspaceID string) {
 	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 	if enabled {
-		metricScheduler := NewMetricScheduler(server.l, server, workspaceID)
-		server.MetricScheduler = metricScheduler
+		metricReporter := NewMetricReporter(server.l, server, workspaceID)
+		server.MetricReporter = metricReporter
 	}
 }
 
@@ -372,8 +374,8 @@ func (server *Server) Run(ctx context.Context) error {
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
 
-		if server.MetricScheduler != nil {
-			go server.MetricScheduler.Run(ctx, &server.runnerWG)
+		if server.MetricReporter != nil {
+			go server.MetricReporter.Run(ctx, &server.runnerWG)
 			server.runnerWG.Add(1)
 		}
 	}
@@ -389,8 +391,8 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	server.l.Info("Trying to stop Bytebase ....")
 	server.l.Info("Trying to gracefully shutdown server")
 
-	// Close the metric
-	server.MetricScheduler.Close()
+	// Close the metric reporter
+	server.MetricReporter.Close()
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

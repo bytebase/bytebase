@@ -19,8 +19,8 @@ const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
 )
 
-// MetricScheduler is the metric scheduler.
-type MetricScheduler struct {
+// MetricReporter is the metric reporter.
+type MetricReporter struct {
 	l *zap.Logger
 
 	// subscription is the pointer to the server.subscription.
@@ -31,15 +31,15 @@ type MetricScheduler struct {
 	collectorList []collector.MetricCollector
 }
 
-// NewMetricScheduler creates a new metric scheduler.
-func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) *MetricScheduler {
+// NewMetricReporter creates a new metric scheduler.
+func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
 	reporter := reporter.NewSegmentReporter(logger, server.profile.SegmentKey, workspaceID)
 	collectorList := []collector.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
 	}
 
-	return &MetricScheduler{
+	return &MetricReporter{
 		l:             logger,
 		subscription:  &server.subscription,
 		workspaceID:   workspaceID,
@@ -48,8 +48,8 @@ func NewMetricScheduler(logger *zap.Logger, server *Server, workspaceID string) 
 	}
 }
 
-// Run will run the metric scheduler.
-func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
+// Run will run the metric reporter.
+func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -104,13 +104,13 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// Close will close the metric client.
-func (m *MetricScheduler) Close() {
+// Close will close the metric reporter.
+func (m *MetricReporter) Close() {
 	m.reporter.Close()
 }
 
 // Identify will identify the workspace and update the subscription plan.
-func (m *MetricScheduler) identify() {
+func (m *MetricReporter) identify() {
 	plan := api.FREE.String()
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
