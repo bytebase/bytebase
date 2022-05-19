@@ -32,6 +32,8 @@ const i18n = createI18n({
   fallbackLocale: "en-US",
 });
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 export const t = i18n.global.t;
 
 export const curLocale = i18n.global.locale;

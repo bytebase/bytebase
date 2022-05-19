@@ -148,8 +148,6 @@ const useMonaco = async (lang: string) => {
     // load workers
     (async () => {
       const [{ default: EditorWorker }] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
         import("monaco-editor/esm/vs/editor/editor.worker.js?worker"),
       ]);
 

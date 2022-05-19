@@ -10,12 +10,12 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { FeatureType } from "../types";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
-export default {
+export default defineComponent({
   props: {
     feature: {
       required: true,
@@ -47,5 +47,5 @@ export default {
       titleKey: `subscription.features.${featureKey}.title`,
     };
   },
-};
+});
 </script>

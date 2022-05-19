@@ -1,4 +1,3 @@
-import { Store } from "vuex";
 import {
   Database,
   Environment,

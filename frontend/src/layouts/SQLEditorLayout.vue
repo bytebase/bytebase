@@ -55,7 +55,7 @@ const ping = () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: info,
+      title: JSON.stringify(info),
     });
   });
 };
