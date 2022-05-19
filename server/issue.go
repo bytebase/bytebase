@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	ghostsql "github.com/github/gh-ost/go/sql"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 
@@ -970,11 +969,12 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	})
 
 	// task "drop original table"
-	parser := ghostsql.NewParserFromAlterStatement(detail.Statement)
-	tableName := ""
-	if parser.HasExplicitTable() {
-		tableName = fmt.Sprintf("_%v_del", parser.GetExplicitTable())
+	tableName, err := getTableNameFromStatement(detail.Statement)
+	if err != nil {
+		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to parse table name, error: %v", err))
 	}
+	tableName = fmt.Sprintf("_%v_del", tableName)
+
 	payloadDrop := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
 		DatabaseName: database.Name,
 		TableName:    tableName,
