@@ -102,7 +102,8 @@
 import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { connectionSlug, databaseSlug } from "../utils";
-import { Database, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
+import type { Database } from "../types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { cloneDeep } from "lodash-es";
