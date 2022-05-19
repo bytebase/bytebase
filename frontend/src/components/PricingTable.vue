@@ -118,7 +118,7 @@
                   <span
                     v-if="getFeature(plan, feature)?.content"
                     class="block text-sm"
-                    >{{ $t(getFeature(plan, feature)?.content) }}</span
+                    >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
                   >
                   <heroicons-solid:check v-else class="w-5 h-5" />
                 </template>
@@ -131,7 +131,7 @@
                     v-if="getFeature(plan, feature)?.tooltip"
                     class="tooltip whitespace-nowrap"
                   >
-                    {{ $t(getFeature(plan, feature)?.tooltip) }}
+                    {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
                   </span>
                 </template>
               </div>
@@ -251,7 +251,7 @@
                     <span
                       v-if="getFeature(plan, feature)?.content"
                       class="block text-sm"
-                      >{{ $t(getFeature(plan, feature)?.content) }}</span
+                      >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
                     >
                     <heroicons-solid:check v-else class="w-5 h-5" />
                   </template>
@@ -266,7 +266,7 @@
                       v-if="getFeature(plan, feature)?.tooltip"
                       class="tooltip whitespace-nowrap"
                     >
-                      {{ $t(getFeature(plan, feature)?.tooltip) }}
+                      {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
                     </span>
                   </template>
                 </div>
@@ -292,16 +292,16 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { reactive, computed, watch, PropType } from "vue";
 import {
   Plan,
   Subscription,
   PlanType,
-  FEATURE_SECTIONS,
   FREE_PLAN,
   TEAM_PLAN,
   ENTERPRISE_PLAN,
+  FEATURE_SECTIONS,
 } from "../types";
 import { useI18n } from "vue-i18n";
 
@@ -322,99 +322,88 @@ interface LocalPlan extends Plan {
 
 const minimumInstanceCount = 5;
 
-export default {
-  name: "PricingTable",
-  props: {
-    subscription: {
-      required: false,
-      default: undefined,
-      type: Object as PropType<Subscription>,
-    },
+const props = defineProps({
+  subscription: {
+    required: false,
+    default: undefined,
+    type: Object as PropType<Subscription>,
   },
-  setup(props) {
-    const { t } = useI18n();
-    const state = reactive<LocalState>({
-      isMonthly: false,
-      instanceCount: props.subscription?.instanceCount ?? minimumInstanceCount,
-    });
+});
 
-    watch(
-      () => props.subscription,
-      (val) =>
-        (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
+const sections = FEATURE_SECTIONS;
+
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  isMonthly: false,
+  instanceCount: props.subscription?.instanceCount ?? minimumInstanceCount,
+});
+
+watch(
+  () => props.subscription,
+  (val) => (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
+);
+
+const getInstancePricePerYear = (plan: Plan): number => {
+  return (
+    (state.instanceCount - minimumInstanceCount) *
+    plan.pricePerInstancePerMonth *
+    12
+  );
+};
+
+const getPlanPrice = (plan: Plan): number => {
+  if (plan.type !== PlanType.TEAM) return plan.unitPrice;
+  return plan.unitPrice + getInstancePricePerYear(plan);
+};
+
+const plans = computed((): LocalPlan[] => {
+  return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
+    ...plan,
+    image: new URL(
+      `../assets/plan-${plan.title.toLowerCase()}.png`,
+      import.meta.url
+    ).href,
+    price:
+      plan.type === PlanType.ENTERPRISE
+        ? t("subscription.contact-us")
+        : t("subscription.price", { price: getPlanPrice(plan) }),
+    buttonText: getButtonText(plan),
+    highlight: plan.type === PlanType.TEAM,
+    isAvailable: plan.type === PlanType.TEAM,
+    isFreePlan: plan.type === PlanType.FREE,
+    label: t(`subscription.plan.${plan.title}.label`),
+  }));
+});
+
+const getFeature = (plan: Plan, feature: string) => {
+  return plan.features.find((f) => f.id === feature);
+};
+
+const getButtonText = (plan: Plan): string => {
+  if (plan.type === PlanType.FREE) return t("subscription.deploy");
+  if (plan.type === PlanType.ENTERPRISE) return t("subscription.contact-us");
+  if (plan.type === props.subscription?.plan) return t("subscription.upgrade");
+  if (plan.trialDays && plan.trialPrice) {
+    return t("subscription.start-trial", {
+      price: plan.trialPrice,
+      days: plan.trialDays,
+    });
+  }
+  return t("subscription.subscribe");
+};
+
+const onButtonClick = (plan: Plan) => {
+  if (plan.type === PlanType.TEAM) {
+    window.open(
+      "https://hub.bytebase.com/pricing?plan=team&source=console.subscription",
+      "__blank"
     );
-
-    const getInstancePricePerYear = (plan: Plan): number => {
-      return (
-        (state.instanceCount - minimumInstanceCount) *
-        plan.pricePerInstancePerMonth *
-        12
-      );
-    };
-
-    const getPlanPrice = (plan: Plan): number => {
-      if (plan.type !== PlanType.TEAM) return plan.unitPrice;
-      return plan.unitPrice + getInstancePricePerYear(plan);
-    };
-
-    const plans = computed((): LocalPlan[] => {
-      return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
-        ...plan,
-        image: new URL(
-          `../assets/plan-${plan.title.toLowerCase()}.png`,
-          import.meta.url
-        ).href,
-        price:
-          plan.type === PlanType.ENTERPRISE
-            ? t("subscription.contact-us")
-            : t("subscription.price", { price: getPlanPrice(plan) }),
-        buttonText: getButtonText(plan),
-        highlight: plan.type === PlanType.TEAM,
-        isAvailable: plan.type === PlanType.TEAM,
-        isFreePlan: plan.type === PlanType.FREE,
-        label: t(`subscription.plan.${plan.title}.label`),
-      }));
-    });
-
-    const getFeature = (plan: Plan, feature: string) => {
-      return plan.features.find((f) => f.id === feature);
-    };
-
-    const getButtonText = (plan: Plan): string => {
-      if (plan.type === PlanType.FREE) return t("subscription.deploy");
-      if (plan.type === PlanType.ENTERPRISE)
-        return t("subscription.contact-us");
-      if (plan.type === props.subscription?.plan)
-        return t("subscription.upgrade");
-      if (plan.trialDays && plan.trialPrice) {
-        return t("subscription.start-trial", {
-          price: plan.trialPrice,
-          days: plan.trialDays,
-        });
-      }
-      return t("subscription.subscribe");
-    };
-
-    const onButtonClick = (plan: Plan) => {
-      if (plan.type === PlanType.TEAM) {
-        window.open("https://hub.bytebase.com/pricing?plan=team&source=console.subscription", "__blank");
-      } else if (plan.type === PlanType.ENTERPRISE) {
-        window.open(
-          "mailto:support@bytebase.com?subject=Request for enterprise plan"
-        );
-      } else {
-        window.open("https://bytebase.com/docs", "_self");
-      }
-    };
-
-    return {
-      state,
-      plans,
-      sections: FEATURE_SECTIONS,
-      getFeature,
-      onButtonClick,
-      minimumInstanceCount,
-    };
-  },
+  } else if (plan.type === PlanType.ENTERPRISE) {
+    window.open(
+      "mailto:support@bytebase.com?subject=Request for enterprise plan"
+    );
+  } else {
+    window.open("https://bytebase.com/docs", "_self");
+  }
 };
 </script>
