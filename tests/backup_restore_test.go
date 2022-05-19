@@ -277,13 +277,14 @@ func TestPITR(t *testing.T) {
 		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
+		timestamp := time.Now().Unix()
+
 		t.Log("mimics schema migration")
 		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 		_, err := db.ExecContext(ctx, dropColumnStmt)
 		a.NoError(err)
 
 		t.Log("restore to pitr database")
-		timestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
