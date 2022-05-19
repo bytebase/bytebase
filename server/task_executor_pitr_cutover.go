@@ -38,9 +38,6 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	instance := task.Instance
-	database := task.Database
-
 	issue, err := getIssueByPipelineID(ctx, server.store, exec.l, task.PipelineID)
 	if err != nil {
 		return true, nil, err
@@ -53,24 +50,25 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	mysqlRestore := restoremysql.New(mysqlDriver)
 
-	pitrDatabaseName := restoremysql.GetPITRDatabaseName(database.Name, issue.CreatedTs)
+	pitrDatabaseName := restoremysql.GetPITRDatabaseName(task.Database.Name, issue.CreatedTs)
+	pitrOldDatabaseName := restoremysql.GetPITROldDatabaseName(task.Database.Name, issue.CreatedTs)
 	exec.l.Info("Start swapping the original and PITR database",
-		zap.String("instance", instance.Name),
-		zap.String("original_database", database.Name),
+		zap.String("instance", task.Instance.Name),
+		zap.String("original_database", task.Database.Name),
 		zap.String("pitr_database", pitrDatabaseName),
 	)
-	if err := mysqlRestore.SwapPITRDatabase(ctx, database.Name, issue.CreatedTs); err != nil {
+	if err := mysqlRestore.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
-			zap.String("database", database.Name),
+			zap.String("database", task.Database.Name),
 			zap.Stack("stack"),
 			zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
 	}
 
-	// TODO(dragonly): log the _old database
 	exec.l.Info("Finish swapping the original and PITR database",
-		zap.String("database", task.Database.Name))
+		zap.String("target_database", task.Database.Name),
+		zap.String("old_database", pitrOldDatabaseName))
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
