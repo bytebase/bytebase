@@ -159,12 +159,12 @@ func TestPITR(t *testing.T) {
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
 		t.Log("restore to pitr database")
-		suffixTs := time.Now().Unix()
+		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
 		config := pluginmysql.BinlogInfo{}
-		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, suffixTs)
+		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -172,7 +172,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -232,17 +232,17 @@ func TestPITR(t *testing.T) {
 
 		// 6. restore
 		t.Log("restore to pitr database")
-		suffixTs := time.Now().Unix()
+		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
 		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, suffixTs)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
 		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.Error(err)
 	})
 
@@ -277,7 +277,7 @@ func TestPITR(t *testing.T) {
 		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
-		suffixTs := time.Now().Unix()
+		createPITRIssueTimestamp := time.Now().Unix()
 
 		t.Log("mimics schema migration")
 		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
@@ -289,7 +289,7 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver)
 		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, suffixTs)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -297,7 +297,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
