@@ -245,6 +245,68 @@ func TestPITR(t *testing.T) {
 		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
 		a.Error(err)
 	})
+
+	t.Run("Schema Migration Failure", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+
+		t.Logf("test %s initialize database %s", t.Name(), database)
+
+		mysqlPort := port + 2
+		db, stopFn := initPITRDB(t, localhost, username, database, mysqlPort)
+		defer stopFn()
+		defer db.Close()
+
+		t.Log("insert data")
+		insertRangeData(t, db, 0, numRowsTime0)
+
+		t.Log("make a full backup")
+		driver := getMySQLDriver(ctx, t, localhost, fmt.Sprintf("%d", mysqlPort), username, database)
+		defer func() {
+			err := driver.Close(ctx)
+			a.NoError(err)
+		}()
+
+		buf := doBackup(ctx, t, driver, database)
+		t.Logf("backup content:\n%s\n", buf.String())
+
+		t.Log("insert more data")
+		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		t1 := startUpdateRow(ctxUpdateRow, t, username, localhost, database, mysqlPort)
+		t.Logf("start to concurrently update data at t1: %v", t1)
+
+		t.Log("mimics schema migration")
+		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id`
+		_, err := db.ExecContext(ctx, dropColumnStmt)
+		a.NoError(err)
+
+		t.Log("restore to pitr database")
+		timestamp := time.Now().Unix()
+		mysqlDriver, ok := driver.(*pluginmysql.Driver)
+		a.Equal(true, ok)
+		mysqlRestore := restoremysql.New(mysqlDriver)
+		config := pluginmysql.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, timestamp)
+		a.NoError(err)
+
+		t.Log("cutover stage")
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		a.NoError(err)
+
+		t.Log("validate table tbl0")
+		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		validateTbl0(t, db, numRowsTime0)
+		t.Log("validate table tbl1")
+		validateTbl1(t, db, numRowsTime0)
+		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
+		t.Log("validate table _update_row_")
+	})
 }
 
 func initPITRDB(t *testing.T, host, username, database string, port int) (*sql.DB, func()) {
