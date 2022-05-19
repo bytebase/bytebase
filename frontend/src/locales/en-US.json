@@ -1251,9 +1251,9 @@
         "title": "Backup policy",
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
-      "bb-feature-backward-compatibility": {
-        "title": "Backward compatibility",
-        "desc": "MySQL and TiDB support checking whether the schema change is backward compatible. @:{'subscription.upgrade'} to unlock this feature."
+      "bb-feature-schema-review-policy": {
+        "title": "Schema review policy",
+        "desc": "Customize the schema review policy for different environments. @:{'subscription.upgrade'} to unlock this feature."
       },
       "bb-feature-rbac": {
         "title": "Role management",

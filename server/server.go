@@ -193,8 +193,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
-		// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementSimpleExecutor)
 
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)

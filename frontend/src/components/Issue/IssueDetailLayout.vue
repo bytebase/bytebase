@@ -14,16 +14,13 @@
         </IssueHighlightPanel>
       </div>
 
-      <!-- Remind banner for bb.feature.backward-compatibility -->
+      <!-- Remind banner for bb.feature.schema-review-policy -->
       <FeatureAttention
-        v-if="
-          !hasBackwardCompatibilityFeature &&
-          supportBackwardCompatibilityFeature
-        "
+        v-if="!hasSchemaReviewPolicyFeature"
         custom-class="m-5 mt-0"
-        feature="bb.feature.backward-compatibility"
+        feature="bb.feature.schema-review-policy"
         :description="
-          $t('subscription.features.bb-feature-backward-compatibility.desc')
+          $t('subscription.features.bb-feature-schema-review-policy.desc')
         "
       />
 
@@ -296,14 +293,9 @@ onMounted(() => {
   document.getElementById("issue-detail-top")!.scrollIntoView();
 });
 
-const hasBackwardCompatibilityFeature = featureToRef(
-  "bb.feature.backward-compatibility"
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
 );
-
-const supportBackwardCompatibilityFeature = computed((): boolean => {
-  const engine = database.value?.instance.engine;
-  return engine === "MYSQL" || engine === "TIDB";
-});
 
 watch(
   [create, issue, () => route.query.sql as string, issueLogic],
