@@ -171,35 +171,36 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	}
 
 	// compare file sizes and names to decide which files to download
-	// downloadedIndex maintains the index of BinlogFile slice, for example:
+	// downloadedName maintains the name of BinlogFile slice, for example:
 	// `SHOW MASTER LOGS` return ["binlog.000001", "binlog.000002"],
-	// if we had downloaded binlog.000001 and file size match, {0:struct{}{}} will be involved in downloadedIndex.
-	downloadedIndex := make(map[int]struct{})
-	for index, serverFile := range binlogFilesOnServer {
+	// if we had downloaded binlog.000001 and file size match, {"binlog.000001":struct{}{}} will be involved in downloadedName.
+	downloadedName := make(map[string]struct{})
+	for _, serverFile := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncArchivedBinlogFiles()
 		if serverFile.Name == latestBinlogFileOnServer.Name {
 			continue
 		}
 		for _, localFile := range binlogFilesLocal {
 			localFileName := localFile.Name()
-			if localFileName == serverFile.Name {
-				// binlog file exists on local
-				if localFile.Size() != serverFile.Size {
-					// File size not match, delete and then download it
-					if err := os.Remove(filepath.Join(saveDir, localFileName)); err != nil {
-						return fmt.Errorf("cannot remove %s, error: %w", localFileName, err)
-					}
-				} else {
-					// file size match, record it in downloadedIndex
-					downloadedIndex[index] = struct{}{}
+			if localFileName != serverFile.Name {
+				continue
+			}
+			// binlog file exists on local
+			if localFile.Size() != serverFile.Size {
+				// File size not match, delete and then download it
+				if err := os.Remove(filepath.Join(saveDir, localFileName)); err != nil {
+					return fmt.Errorf("cannot remove %s, error: %w", localFileName, err)
 				}
+			} else {
+				// file size match, record it in downloadedIndex
+				downloadedName[serverFile.Name] = struct{}{}
 			}
 		}
 	}
 
 	// download the binlog files not recorded in downloadedIndex
-	for i, serverFile := range binlogFilesOnServer {
-		if _, ok := downloadedIndex[i]; ok {
+	for _, serverFile := range binlogFilesOnServer {
+		if _, ok := downloadedName[serverFile.Name]; ok {
 			continue
 		}
 		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
