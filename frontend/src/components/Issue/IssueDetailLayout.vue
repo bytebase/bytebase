@@ -318,7 +318,7 @@ watch(
 );
 
 // When activeTask changed, we automatically select it.
-// This enables user to know the status of pipeline has changed and we may move forward.
+// This enables users to know the pipeline status has changed and we may move forward.
 const autoSelectWhenStatusChanged = () => {
   const activeTask = computed((): Task | undefined => {
     if (create.value) return undefined;
