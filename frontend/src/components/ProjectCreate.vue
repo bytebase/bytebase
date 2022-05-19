@@ -159,6 +159,7 @@ export default defineComponent({
         key: randomString(3).toUpperCase(),
         tenantMode: "DISABLED",
         dbNameTemplate: "",
+        roleProvider: "BYTEBASE",
       },
       showFeatureModal: false,
       enableDbNameTemplate: false,
