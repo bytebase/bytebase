@@ -80,7 +80,7 @@
     :value="config.instanceUrl"
     :placeholder="instanceUrlPlaceholder"
     :disabled="instanceUrlDisabled"
-    @input="changeUrl($event.target.value)"
+    @input="changeUrl(($event.target as HTMLInputElement).value)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
     {{
@@ -103,12 +103,18 @@
     class="mt-2 w-full"
     :placeholder="namePlaceholder"
     :value="config.name"
-    @input="config.name = $event.target.value"
+    @input="config.name = ($event.target as HTMLInputElement).value"
   />
 </template>
 
 <script lang="ts">
-import { computed, onUnmounted, PropType, reactive } from "vue";
+import {
+  computed,
+  defineComponent,
+  onUnmounted,
+  PropType,
+  reactive,
+} from "vue";
 import isEmpty from "lodash-es/isEmpty";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "../types";
 import { isUrl, isDev } from "../utils";
@@ -119,7 +125,7 @@ interface LocalState {
   showUrlError: boolean;
 }
 
-export default {
+export default defineComponent({
   name: "VCSProviderBasicInfoPanel",
   props: {
     config: {
@@ -224,5 +230,5 @@ export default {
       changeType,
     };
   },
-};
+});
 </script>

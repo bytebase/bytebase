@@ -22,7 +22,7 @@
         <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
-    <template #placeholder="{ placeholder }">
+    <template #placeholder="{ placeholder }: { placeholder: string }">
       <!--TODO(tianzhou): Have to set a fixed width, otherwise the width would change based on the selected text.
           Likely, there is a better solution, while the author doesn't want to fight with CSS for now.
           The specific value and breakpoint is to make it align with other select in the issue sidebar.

@@ -33,14 +33,14 @@
 </template>
 
 <script lang="ts">
-import { PropType, reactive } from "vue";
+import { defineComponent, PropType, reactive } from "vue";
 import { Database } from "../types";
 
 interface LocalState {
   selectedId?: number;
 }
 
-export default {
+export default defineComponent({
   name: "DataSourceSelect",
   props: {
     selectedId: {
@@ -64,5 +64,5 @@ export default {
       state,
     };
   },
-};
+});
 </script>

@@ -2,12 +2,7 @@
   <select
     class="btn-select disabled:cursor-not-allowed"
     :disabled="disabled"
-    @change="
-      (e) => {
-        state.selectedId = e.target.value;
-        $emit('select-database-id', parseInt(e.target.value));
-      }
-    "
+    @change="onSelectChange"
   >
     <option disabled :selected="UNKNOWN_ID === state.selectedId">
       <template v-if="mode == 'INSTANCE' && instanceId == UNKNOWN_ID">
@@ -143,6 +138,12 @@ export default defineComponent({
       }
     };
 
+    const onSelectChange = (e: Event) => {
+      const id = parseInt((e.target as HTMLSelectElement).value, 10);
+      state.selectedId = id;
+      emit("select-database-id", id);
+    };
+
     // The database list might change if environmentId changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
@@ -164,6 +165,7 @@ export default defineComponent({
       UNKNOWN_ID,
       state,
       databaseList,
+      onSelectChange,
     };
   },
 });

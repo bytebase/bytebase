@@ -18,16 +18,17 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import IssueStatusIcon from "./Issue/IssueStatusIcon.vue";
 import { IssueStatus, IssueStatusTransitionType } from "../types";
 
-export default {
+export default defineComponent({
   name: "IssueStatusSelect",
   components: { IssueStatusIcon },
   props: {
     selectedStatus: {
       type: String as PropType<IssueStatus>,
+      default: undefined,
     },
     disabled: {
       default: false,
@@ -54,5 +55,5 @@ export default {
 
     return { changeStatus };
   },
-};
+});
 </script>
