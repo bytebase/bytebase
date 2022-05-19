@@ -330,7 +330,7 @@ const autoSelectWhenStatusChanged = () => {
 
   watch(
     // Watch the task.id instead of the task object itself, Since the object might
-    // sometimes drift to another object reference when we polling the issue.
+    // sometimes drift to another object reference when polling the issue.
     () => activeTask.value?.id,
     () => {
       const task = activeTask.value;
