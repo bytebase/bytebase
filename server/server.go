@@ -212,6 +212,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(logger, s)
+
+		// Metric reporter
+		s.initMetricReporter(config.workspaceID)
 	}
 
 	// Middleware
@@ -293,9 +296,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.initSubscription()
-	// the metric reporter needs to get the pointer of server.subscription
-	// so we should make sure the server.subscription is initialized before init the metric reporter.
-	s.initMetricReporter(config.workspaceID)
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true

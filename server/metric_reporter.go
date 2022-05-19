@@ -54,7 +54,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
+	m.l.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
 		// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
