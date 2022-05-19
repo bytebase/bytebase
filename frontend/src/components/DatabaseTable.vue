@@ -9,9 +9,7 @@
     :bottom-bordered="bordered"
     @click-row="clickDatabase"
   >
-    <template
-      #body="{ rowData: database }: { rowData: (typeof databaseList)[number] }"
-    >
+    <template #body="{ rowData: database }: { rowData: Database }">
       <BBTableCell :left-padding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
           <span>{{ database.name }}</span>
