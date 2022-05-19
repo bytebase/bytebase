@@ -300,11 +300,11 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
+		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
 		validateTbl0(t, db, numRowsTime0)
 		t.Log("validate table tbl1")
 		validateTbl1(t, db, numRowsTime0)
-		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
+		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
 		t.Log("validate table _update_row_")
 	})
 }
