@@ -108,8 +108,8 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, l *zap.Logger
 		return nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", pid, err)
 	}
 	if issue == nil {
-		l.Error("issue not found with PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
-		return nil, fmt.Errorf("issue not found with PipelineID[%d], error[%w]", pid, err)
+		l.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
+		return nil, fmt.Errorf("issue not found with PipelineID[%d]", pid)
 	}
 	return issue, nil
 }
