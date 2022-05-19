@@ -12,6 +12,8 @@ const (
 	SettingAuthSecret SettingName = "bb.auth.secret"
 	// SettingBrandingLogo is the setting name for branding logo.
 	SettingBrandingLogo SettingName = "bb.branding.logo"
+	// SettingWorkspaceID is the setting name for workspace identifier.
+	SettingWorkspaceID SettingName = "bb.workspace.id"
 )
 
 // Setting is the API message for a setting.
