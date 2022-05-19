@@ -106,9 +106,9 @@ import { useRoute } from "vue-router";
 import {
   pipelineType,
   PipelineType,
-  activeStage,
+  activeStage as activeStageOfPipeline,
   activeTaskInStage,
-  activeTask,
+  activeTask as activeTaskOfPipeline,
 } from "@/utils";
 import IssueBanner from "./IssueBanner.vue";
 import IssueHighlightPanel from "./IssueHighlightPanel.vue";
@@ -309,7 +309,34 @@ watch(
   }
 );
 
+// When activeTask is changed, we automatically select it.
+// This enables users to know the pipeline status has changed and we may move forward.
+const autoSelectWhenStatusChanged = () => {
+  const activeTask = computed((): Task | undefined => {
+    if (create.value) return undefined;
+    const { pipeline } = issue.value as Issue;
+    if (!pipeline) return undefined;
+    const task = activeTaskOfPipeline(pipeline);
+    return task;
+  });
+
+  watch(
+    // Watch the task.id instead of the task object itself, Since the object might
+    // sometimes drift to another object reference when polling the issue.
+    () => activeTask.value?.id,
+    () => {
+      const task = activeTask.value;
+      if (!task) return;
+      selectTask(task);
+    },
+    // Also triggered when the first time the page is loaded.
+    { immediate: true }
+  );
+};
+
 const onStatusChanged = (eager: boolean) => emit("status-changed", eager);
+
+autoSelectWhenStatusChanged();
 
 provideIssueLogic(
   {
@@ -324,8 +351,8 @@ provideIssueLogic(
     isPITRMode,
     isValidStage,
     taskStatusOfStage,
-    activeStageOfPipeline: activeStage,
-    activeTaskOfPipeline: activeTask,
+    activeStageOfPipeline,
+    activeTaskOfPipeline,
     activeTaskOfStage: activeTaskInStage,
     selectStageOrTask,
     selectTask,

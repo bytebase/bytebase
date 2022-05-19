@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/store"
+	"github.com/google/uuid"
 
 	// embed will embeds the acl policy.
 	_ "embed"
@@ -31,6 +32,7 @@ type Server struct {
 	// Asynchronous runners.
 	TaskScheduler      *TaskScheduler
 	TaskCheckScheduler *TaskCheckScheduler
+	MetricReporter     *MetricReporter
 	SchemaSyncer       *SchemaSyncer
 	BackupRunner       *BackupRunner
 	AnomalyScanner     *AnomalyScanner
@@ -39,7 +41,7 @@ type Server struct {
 	ActivityManager *ActivityManager
 
 	LicenseService enterpriseAPI.LicenseService
-	subscription   *enterpriseAPI.Subscription
+	subscription   enterpriseAPI.Subscription
 
 	profile   Profile
 	e         *echo.Echo
@@ -133,11 +135,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 	s.secret = config.secret
 
-	err = s.initBranding(ctx, storeInstance)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init branding: %w", err)
-	}
-
 	e := echo.New()
 	e.Debug = prof.Debug
 	e.HideBanner = true
@@ -216,6 +213,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(logger, s)
+
+		// Metric reporter
+		s.initMetricReporter(config.workspaceID)
 	}
 
 	// Middleware
@@ -296,47 +296,66 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
 
-	s.InitSubscription()
+	s.initSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	s.boot = true
 	return s, nil
 }
 
-// InitSubscription will initial the subscription cache in memory.
-func (server *Server) InitSubscription() {
+// initSubscription will initial the subscription cache in memory.
+func (server *Server) initSubscription() {
 	server.subscription = server.loadSubscription()
 }
 
-func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
-	conf := &config{}
-	configCreate := &api.SettingCreate{
-		CreatorID:   api.SystemBotID,
-		Name:        api.SettingAuthSecret,
-		Value:       common.RandomString(secreatLength),
-		Description: "Random string used to sign the JWT auth token.",
+// initMetricReporter will initial the metric scheduler.
+func (server *Server) initMetricReporter(workspaceID string) {
+	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
+	if enabled {
+		metricReporter := NewMetricReporter(server.l, server, workspaceID)
+		server.MetricReporter = metricReporter
 	}
-	config, err := store.CreateSettingIfNotExist(ctx, configCreate)
-	if err != nil {
-		return nil, err
-	}
-	conf.secret = config.Value
-
-	return conf, nil
 }
 
-func (server *Server) initBranding(ctx context.Context, store *store.Store) error {
-	configCreate := &api.SettingCreate{
+func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
+	// initial branding
+	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingBrandingLogo,
 		Value:       "",
 		Description: "The branding logo image in base64 string format.",
-	}
-	_, err := store.CreateSettingIfNotExist(ctx, configCreate)
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	conf := &config{}
+
+	// initial JWT token
+	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingAuthSecret,
+		Value:       common.RandomString(secreatLength),
+		Description: "Random string used to sign the JWT auth token.",
+	})
+	if err != nil {
+		return nil, err
+	}
+	conf.secret = authSetting.Value
+
+	// initial workspace
+	workspaceSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingWorkspaceID,
+		Value:       uuid.New().String(),
+		Description: "The workspace identifier",
+	})
+	if err != nil {
+		return nil, err
+	}
+	conf.workspaceID = workspaceSetting.Value
+
+	return conf, nil
 }
 
 // Run will run the server.
@@ -355,6 +374,11 @@ func (server *Server) Run(ctx context.Context) error {
 		server.runnerWG.Add(1)
 		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
 		server.runnerWG.Add(1)
+
+		if server.MetricReporter != nil {
+			go server.MetricReporter.Run(ctx, &server.runnerWG)
+			server.runnerWG.Add(1)
+		}
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.
@@ -367,6 +391,11 @@ func (server *Server) Run(ctx context.Context) error {
 func (server *Server) Shutdown(ctx context.Context) error {
 	server.l.Info("Trying to stop Bytebase ....")
 	server.l.Info("Trying to gracefully shutdown server")
+
+	// Close the metric reporter
+	if server.MetricReporter != nil {
+		server.MetricReporter.Close()
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

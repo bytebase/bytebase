@@ -9,9 +9,7 @@
     :bottom-bordered="bordered"
     @click-row="clickDatabase"
   >
-    <template
-      #body="{ rowData: database }: { rowData: (typeof databaseList)[number] }"
-    >
+    <template #body="{ rowData: database }: { rowData: Database }">
       <BBTableCell :left-padding="4" class="w-16">
         <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
           <span>{{ database.name }}</span>
@@ -104,7 +102,8 @@
 import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { connectionSlug, databaseSlug } from "../utils";
-import { Database, DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
+import type { Database } from "../types";
+import { DEFAULT_PROJECT_ID, UNKNOWN_ID } from "../types";
 import { BBTableColumn } from "../bbkit/types";
 import InstanceEngineIcon from "./InstanceEngineIcon.vue";
 import { cloneDeep } from "lodash-es";

@@ -390,7 +390,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 		return false, err
 	}
 	for _, result := range checkResult.ResultList {
-		if result.Status == api.TaskCheckStatusError || result.Status == api.TaskCheckStatusWarn {
+		if result.Status == api.TaskCheckStatusError {
 			server.l.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),

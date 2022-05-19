@@ -3,16 +3,16 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { BBAvatarSizeType } from "../bbkit/types";
-import { Principal, UNKNOWN_ID } from "../types";
+import { Principal, unknown, UNKNOWN_ID } from "../types";
 
-export default {
+export default defineComponent({
   name: "PrincipalAvatar",
   props: {
     principal: {
       type: Object as PropType<Principal>,
-      default: "", // This line raises an eslint ERROR. But I won't change it this time.
+      default: () => unknown("PRINCIPAL"),
     },
     size: {
       type: String as PropType<BBAvatarSizeType>,
@@ -28,5 +28,5 @@ export default {
     });
     return { username };
   },
-};
+});
 </script>
