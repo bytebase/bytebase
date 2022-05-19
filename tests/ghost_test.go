@@ -164,7 +164,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 		CreateContext: string(createContext),
 	})
 	a.NoError(err)
-	// Status will be FAILED because not implemented
+
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
 	a.Equal(api.TaskDone, status)
