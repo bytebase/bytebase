@@ -66,7 +66,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
 	}
 
-	exec.l.Info("swap PITR database done", zap.String("target database", task.Database.Name))
+	exec.l.Info("Finish swapping the original and PITR database", zap.String("target_database", task.Database.Name))
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
