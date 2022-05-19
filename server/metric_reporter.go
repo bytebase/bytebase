@@ -24,7 +24,7 @@ type MetricScheduler struct {
 	l *zap.Logger
 
 	// subscription is the pointer to the server.subscription.
-	// the subscription can be updated by users so we need the pointer to get the newest value.
+	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription  *enterpriseAPI.Subscription
 	reporter      reporter.MetricReporter
 	workspaceID   string
@@ -57,7 +57,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	m.l.Debug(fmt.Sprintf("Metrics scheduler started and will run every %v", metricSchedulerInterval))
 
 	for {
-		// identify will be triggered in every schedule loop so that we can update the newest workspace profile like subscription plan.
+		// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
 		m.identify()
 
 		select {
@@ -69,7 +69,7 @@ func (m *MetricScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						m.l.Error("Metrics scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						m.l.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 

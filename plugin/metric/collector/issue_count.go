@@ -34,7 +34,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*Metric, error) {
 		res = append(res, &Metric{
 			Name:  issueCountMetricName,
 			Value: count,
-			Label: map[string]string{
+			Labels: map[string]string{
 				"type": string(issueType),
 			},
 		})

@@ -14,9 +14,9 @@ var (
 
 // Metric is the API message for metric
 type Metric struct {
-	Name  MetricName
-	Value int
-	Label map[string]string
+	Name   MetricName
+	Value  int
+	Labels map[string]string
 }
 
 // MetricCollector is the API message for metric collector.

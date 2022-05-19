@@ -345,7 +345,7 @@ func (server *Server) initSetting(ctx context.Context, store *store.Store) (*con
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
-		Description: "The workspace identify",
+		Description: "The workspace identifier",
 	})
 	if err != nil {
 		return nil, err
@@ -389,6 +389,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	server.l.Info("Trying to stop Bytebase ....")
 	server.l.Info("Trying to gracefully shutdown server")
 
+	// Close the metric
+	server.MetricScheduler.Close()
+
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -417,9 +420,6 @@ func (server *Server) Shutdown(ctx context.Context) error {
 
 	// Shutdown postgres server if embed.
 	server.metaDB.Close()
-
-	// Close the metric
-	server.MetricScheduler.Close()
 
 	server.l.Info("Bytebase stopped properly")
 

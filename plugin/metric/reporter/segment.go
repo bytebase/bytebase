@@ -15,7 +15,7 @@ import (
 type segment struct {
 	l           *zap.Logger
 	identifier  string
-	environment common.ReleaseMode
+	releaseMode common.ReleaseMode
 	client      analytics.Client
 }
 
@@ -35,7 +35,7 @@ func NewSegmentReporter(l *zap.Logger, key string, identifier string, mode commo
 	return &segment{
 		l:           l,
 		identifier:  identifier,
-		environment: mode,
+		releaseMode: mode,
 		client:      client,
 	}
 }
@@ -49,9 +49,9 @@ func (s *segment) Close() {
 func (s *segment) Report(metric *collector.Metric) error {
 	properties := analytics.NewProperties().
 		Set(metricValueField, metric.Value).
-		Set(metricEnvironmentField, s.environment)
+		Set(metricEnvironmentField, s.releaseMode)
 
-	for key, value := range metric.Label {
+	for key, value := range metric.Labels {
 		properties.Set(key, value)
 	}
 
