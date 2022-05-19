@@ -44,7 +44,9 @@ jobs:
       - name: Cache MySQL
         uses: actions/cache@v3
         with:
-          path: ./resources/mysql/*.tar.gz
+          path: |
+            ./resources/mysql/*.tar.gz
+            ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
       - name: Install dependencies and run all tests
         run: |
