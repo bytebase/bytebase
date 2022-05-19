@@ -8,18 +8,12 @@
     @click-row="clickProject"
   >
     <template #header>
-      <BBTableHeaderCell
-        class="w-4 table-cell"
-        :title="state.columnList[0].title"
-      />
+      <BBTableHeaderCell class="w-4 table-cell" :title="COLUMN_LIST[0].title" />
       <BBTableHeaderCell
         class="w-24 table-cell"
-        :title="state.columnList[1].title"
+        :title="COLUMN_LIST[1].title"
       />
-      <BBTableHeaderCell
-        class="w-8 table-cell"
-        :title="state.columnList[2].title"
-      />
+      <BBTableHeaderCell class="w-8 table-cell" :title="COLUMN_LIST[2].title" />
     </template>
     <template #body="{ rowData: project }">
       <BBTableCell :left-padding="4" class="table-cell text-gray-500">
