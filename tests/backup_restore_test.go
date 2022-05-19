@@ -278,7 +278,7 @@ func TestPITR(t *testing.T) {
 		t.Logf("start to concurrently update data at t1: %v", t1)
 
 		t.Log("mimics schema migration")
-		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id`
+		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
 		_, err := db.ExecContext(ctx, dropColumnStmt)
 		a.NoError(err)
 
@@ -346,9 +346,9 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	defer tx.Rollback()
 
 	for i := begin; i < end; i++ {
-		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d)", i))
+		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d);", i))
 		a.NoError(err)
-		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d)", i, i))
+		_, err = tx.Exec(fmt.Sprintf("INSERT INTO tbl1 VALUES (%d, %d);", i, i))
 		a.NoError(err)
 	}
 
@@ -358,7 +358,7 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 
 func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl0")
+	rows, err := db.Query("SELECT * FROM tbl0;")
 	a.NoError(err)
 	i := 0
 	for rows.Next() {
@@ -373,7 +373,7 @@ func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 
 func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl1")
+	rows, err := db.Query("SELECT * FROM tbl1;")
 	a.NoError(err)
 	i := 0
 	for rows.Next() {
@@ -426,15 +426,15 @@ func startUpdateRow(ctx context.Context, t *testing.T, username, localhost, data
 	db, err := sql.Open("mysql", fmt.Sprintf("%s@tcp(%s:%d)/mysql", username, localhost, port))
 	a.NoError(err)
 
-	_, err = db.Exec(fmt.Sprintf("USE %s", database))
+	_, err = db.Exec(fmt.Sprintf("USE %s;", database))
 	a.NoError(err)
 
 	t.Log("Start updating data")
-	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY)")
+	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
 	a.NoError(err)
 
 	// init value is (0)
-	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0)")
+	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
 	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
@@ -445,7 +445,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, username, localhost, data
 		for {
 			select {
 			case <-ticker.C:
-				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d", i))
+				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i))
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
