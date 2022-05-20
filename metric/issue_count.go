@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
-	"github.com/bytebase/bytebase/plugin/metric/reporter"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -25,8 +25,8 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) collector.MetricCollec
 }
 
 // Collect will collect the metric for issue
-func (c *issueCollector) Collect(ctx context.Context) ([]*reporter.Metric, error) {
-	var res []*reporter.Metric
+func (c *issueCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+	var res []*metric.Metric
 
 	issueCountMetricList, err := c.store.CountIssueGroupByType(ctx)
 	if err != nil {
@@ -34,7 +34,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*reporter.Metric, error
 	}
 
 	for _, issueCountMetric := range issueCountMetricList {
-		res = append(res, &reporter.Metric{
+		res = append(res, &metric.Metric{
 			Name:  api.IssueCountMetricName,
 			Value: issueCountMetric.Count,
 			Labels: map[string]string{

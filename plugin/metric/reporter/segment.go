@@ -3,6 +3,8 @@ package reporter
 import (
 	"time"
 
+	"github.com/bytebase/bytebase/plugin/metric"
+
 	"github.com/segmentio/analytics-go"
 	"go.uber.org/zap"
 )
@@ -36,7 +38,7 @@ func (s *segment) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (s *segment) Report(metric *Metric) error {
+func (s *segment) Report(metric *metric.Metric) error {
 	properties := analytics.NewProperties().
 		Set(metricValueField, metric.Value)
 
@@ -53,7 +55,7 @@ func (s *segment) Report(metric *Metric) error {
 }
 
 // Identify will identify the workspace with license.
-func (s *segment) Identify(identifier *MetricIdentifier) error {
+func (s *segment) Identify(identifier *metric.Identifier) error {
 	traits := analytics.NewTraits()
 	for key, value := range identifier.Labels {
 		traits.Set(key, value)

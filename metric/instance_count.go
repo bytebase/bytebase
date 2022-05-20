@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
-	"github.com/bytebase/bytebase/plugin/metric/reporter"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -25,8 +25,8 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) collector.MetricCol
 }
 
 // Collect will collect the netric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*reporter.Metric, error) {
-	var res []*reporter.Metric
+func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+	var res []*metric.Metric
 
 	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*reporter.Metric, er
 			continue
 		}
 
-		res = append(res, &reporter.Metric{
+		res = append(res, &metric.Metric{
 			Name:  api.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]string{

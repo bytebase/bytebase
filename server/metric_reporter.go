@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	metricAPI "github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
@@ -107,7 +108,7 @@ func (m *MetricReporter) Close() {
 }
 
 // Register will register a metric collector.
-func (m *MetricReporter) Register(metricName reporter.MetricName, collector collector.MetricCollector) {
+func (m *MetricReporter) Register(metricName metricAPI.Name, collector collector.MetricCollector) {
 	m.collectors[string(metricName)] = collector
 }
 
@@ -117,7 +118,7 @@ func (m *MetricReporter) identify() {
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 	}
-	if err := m.reporter.Identify(&reporter.MetricIdentifier{
+	if err := m.reporter.Identify(&metricAPI.Identifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
 			identifyTraitForPlan: plan,
