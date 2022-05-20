@@ -35,7 +35,7 @@ type MetricReporter interface {
 	Identify(workspace *Workspace) error
 }
 
-// InstanceCountMetric is the API message for instance count metric
+// InstanceCountMetric is the API message for bb.instance.count
 type InstanceCountMetric struct {
 	Engine        db.Type
 	EnvironmentID int
