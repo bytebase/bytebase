@@ -11,6 +11,7 @@ type InstanceCountMetric struct {
 
 // IssueCountMetric is the API message for issue count metric
 type IssueCountMetric struct {
-	Type  IssueType
-	Count int
+	Type   IssueType
+	Status IssueStatus
+	Count  int
 }
