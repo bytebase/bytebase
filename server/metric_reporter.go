@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
@@ -26,17 +27,17 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription  *enterpriseAPI.Subscription
-	reporter      api.MetricReporter
+	reporter      reporter.MetricReporter
 	workspaceID   string
-	collectorList []api.MetricCollector
+	collectorList []collector.MetricCollector
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
 	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
-	collectorList := []api.MetricCollector{
-		collector.NewInstanceCollector(logger, server.store),
-		collector.NewIssueCollector(logger, server.store),
+	collectorList := []collector.MetricCollector{
+		metric.NewInstanceCollector(logger, server.store),
+		metric.NewIssueCollector(logger, server.store),
 	}
 
 	return &MetricReporter{
@@ -115,9 +116,11 @@ func (m *MetricReporter) identify() {
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 	}
-	if err := m.reporter.Identify(&api.Workspace{
-		Plan: plan,
-		ID:   m.workspaceID,
+	if err := m.reporter.Identify(&reporter.MetricIdentifier{
+		ID: m.workspaceID,
+		Labels: map[string]string{
+			"plan": plan,
+		},
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))
 	}

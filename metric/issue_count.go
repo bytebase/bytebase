@@ -1,9 +1,10 @@
-package collector
+package metric
 
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
+	"github.com/bytebase/bytebase/plugin/metric/reporter"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -15,7 +16,7 @@ type issueCollector struct {
 }
 
 // NewIssueCollector creates a new instance of issueCollector
-func NewIssueCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
+func NewIssueCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
 	return &issueCollector{
 		l:     l,
 		store: store,
@@ -23,8 +24,8 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) api.MetricCollector {
 }
 
 // Collect will collect the metric for issue
-func (c *issueCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
-	var res []*api.Metric
+func (c *issueCollector) Collect(ctx context.Context) ([]*reporter.Metric, error) {
+	var res []*reporter.Metric
 
 	issueCountMetricList, err := c.store.CountIssueGroupByType(ctx)
 	if err != nil {
@@ -32,8 +33,8 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*api.Metric, error) {
 	}
 
 	for _, issueCountMetric := range issueCountMetricList {
-		res = append(res, &api.Metric{
-			Name:  api.IssueCountMetricName,
+		res = append(res, &reporter.Metric{
+			Name:  reporter.IssueCountMetricName,
 			Value: issueCountMetric.Count,
 			Labels: map[string]string{
 				"type": string(issueCountMetric.Type),
