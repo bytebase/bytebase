@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/bytebase/bytebase/resources/utils"
 )
@@ -13,18 +14,16 @@ import (
 // Install will extract the mysqlbinlog tar in resourceDir, returns the mysqlbinlog binary directory if no error occur.
 func Install(resourceDir string) (string, error) {
 	var tarName string
-	var version string
 	switch {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysqlbinlog-8.0.28-macos11-arm64.tar.gz"
-		version = "mysqlbinlog-8.0.28-macos11-arm64"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64.tar.gz"
-		version = "mysqlbinlog-8.0.28-linux-glibc-2.17-x86_64"
 	default:
 		return "", fmt.Errorf("Unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
 	}
 
+	version := strings.TrimRight(tarName, "tar.gz")
 	mysqlbinlogDir := path.Join(resourceDir, version)
 	if _, err := os.Stat(mysqlbinlogDir); err != nil {
 		if !os.IsNotExist(err) {
