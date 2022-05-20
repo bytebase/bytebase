@@ -48,7 +48,7 @@ func (exec *PITRDeleteTaskExecutor) RunOnce(ctx context.Context, server *Server,
 	}
 
 	mysqlRestore := restoremysql.New(mysqlDriver)
-	if err := mysqlRestore.DeleteOldDatabase(ctx, task.Database.Name, issue.CreatedTs); err != nil {
+	if err := mysqlRestore.DeletePITRDatabases(ctx, task.Database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to delete the original database after PITR swap",
 			zap.String("instance", task.Instance.Name),
 			zap.String("original database", task.Database.Name))
