@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
+	metricPlugin "github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
 	"go.uber.org/zap"
@@ -28,25 +28,22 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
-	reporter     reporter.MetricReporter
 	workspaceID  string
-	collector    *collector.MetricCollectorController
+	reporter     *metricPlugin.Metric
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
+	r := metricPlugin.NewMetric(logger, server.profile.MetricConnectionKey, workspaceID)
 
-	c := collector.NewController(logger)
-	c.Register(api.InstanceCountMetricName, metric.NewInstanceCollector(logger, server.store))
-	c.Register(api.IssueCountMetricName, metric.NewIssueCollector(logger, server.store))
+	r.Register(api.InstanceCountMetricName, metric.NewInstanceCollector(logger, server.store))
+	r.Register(api.IssueCountMetricName, metric.NewIssueCollector(logger, server.store))
 
 	return &MetricReporter{
 		l:            logger,
 		subscription: &server.subscription,
 		workspaceID:  workspaceID,
-		reporter:     reporter,
-		collector:    c,
+		reporter:     r,
 	}
 }
 
@@ -76,17 +73,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				metricList := m.collector.Collect(ctx)
-
-				for _, metric := range metricList {
-					if err := m.reporter.Report(metric); err != nil {
-						m.l.Error(
-							"Failed to report metric",
-							zap.String("metric", string(metric.Name)),
-							zap.Error(err),
-						)
-					}
-				}
+				m.reporter.CollectAndReport(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
