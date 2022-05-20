@@ -17,6 +17,8 @@ import (
 
 const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
+	// identifyTraitForPlan is the trait key for subscription plan.
+	identifyTraitForPlan = "plan"
 )
 
 // MetricReporter is the metric reporter.
@@ -106,7 +108,7 @@ func (m *MetricReporter) identify() {
 	if err := m.reporter.Identify(&reporter.MetricIdentifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
-			"plan": plan,
+			identifyTraitForPlan: plan,
 		},
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))

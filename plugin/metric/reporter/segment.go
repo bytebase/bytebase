@@ -15,8 +15,6 @@ type segment struct {
 }
 
 const (
-	// identifyTraitForPlan is the trait key for subscription plan.
-	identifyTraitForPlan = "plan"
 	// metricValueField is the property key for value
 	metricValueField = "value"
 )
