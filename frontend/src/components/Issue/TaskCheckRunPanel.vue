@@ -59,6 +59,7 @@ import {
   TaskCheckResult,
   ErrorCode,
   ERROR_LIST,
+  GeneralErrorCode,
   SchemaReviewPolicyErrorCode,
 } from "../../types";
 
@@ -131,6 +132,8 @@ export default defineComponent({
 
     const errorCodeLink = (code: ErrorCode): ErrorCodeLink | undefined => {
       switch (code) {
+        case GeneralErrorCode.OK:
+          return;
         case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
           return {
             title: t("schema-review-policy.create-policy"),
