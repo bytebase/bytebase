@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 	"github.com/bytebase/bytebase/store"
 	"github.com/google/uuid"
 
@@ -53,7 +55,9 @@ type Server struct {
 	startedTs int64
 	secret    string
 
-	// boot specifies that the server
+	mysqlbinlogDir string
+
+	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
 	boot   bool
 }
@@ -91,8 +95,16 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	fmt.Printf("debug=%t\n", prof.Debug)
 	fmt.Println("-----Config END-------")
 
-	// New MetadataDB instance.
 	var err error
+	// TODO(zp): refactor to keep consistency with embedded Postgres.
+	// Install mysqlbinlog.
+	mysqlbinlogDir, err := mysqlbinlog.Install(path.Join(prof.DataDir, "resources"))
+	if err != nil {
+		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
+	}
+	s.mysqlbinlogDir = mysqlbinlogDir
+
+	// New MetadataDB instance.
 	if prof.useEmbedDB() {
 		s.metaDB, err = store.NewMetadataDBWithEmbedPg(logger, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
 	} else {
