@@ -3,13 +3,6 @@ package reporter
 // MetricName is the metric name.
 type MetricName string
 
-var (
-	// InstanceCountMetricName is the MetricName for instance count
-	InstanceCountMetricName MetricName = "bb.instance.count"
-	// IssueCountMetricName is the MetricName for issue count
-	IssueCountMetricName MetricName = "bb.issue.count"
-)
-
 // Metric is the API message for metric.
 type Metric struct {
 	Name   MetricName

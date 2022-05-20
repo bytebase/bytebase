@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -26,26 +25,26 @@ type MetricReporter struct {
 
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
-	subscription  *enterpriseAPI.Subscription
-	reporter      reporter.MetricReporter
-	workspaceID   string
-	collectorList []collector.MetricCollector
+	subscription *enterpriseAPI.Subscription
+	reporter     reporter.MetricReporter
+	workspaceID  string
+	collector    *collector.MetricCollectorController
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
 	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
-	collectorList := []collector.MetricCollector{
-		metric.NewInstanceCollector(logger, server.store),
-		metric.NewIssueCollector(logger, server.store),
-	}
+
+	c := collector.NewController(logger)
+	c.Register(api.InstanceCountMetricName, metric.NewInstanceCollector(logger, server.store))
+	c.Register(api.IssueCountMetricName, metric.NewIssueCollector(logger, server.store))
 
 	return &MetricReporter{
-		l:             logger,
-		subscription:  &server.subscription,
-		workspaceID:   workspaceID,
-		reporter:      reporter,
-		collectorList: collectorList,
+		l:            logger,
+		subscription: &server.subscription,
+		workspaceID:  workspaceID,
+		reporter:     reporter,
+		collector:    c,
 	}
 }
 
@@ -75,27 +74,15 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				for _, collector := range m.collectorList {
-					collectorName := reflect.TypeOf(collector).String()
-					m.l.Debug("Run metric collector", zap.String("collector", collectorName))
+				metricList := m.collector.Collect(ctx)
 
-					metricList, err := collector.Collect(ctx)
-					if err != nil {
+				for _, metric := range metricList {
+					if err := m.reporter.Report(metric); err != nil {
 						m.l.Error(
-							"Failed to collect metric",
-							zap.String("collector", collectorName),
+							"Failed to report metric",
+							zap.String("metric", string(metric.Name)),
 							zap.Error(err),
 						)
-						continue
-					}
-					for _, metric := range metricList {
-						if err := m.reporter.Report(metric); err != nil {
-							m.l.Error(
-								"Failed to report metric",
-								zap.String("metric", string(metric.Name)),
-								zap.Error(err),
-							)
-						}
 					}
 				}
 			}()

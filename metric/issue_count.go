@@ -3,6 +3,7 @@ package metric
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 	"github.com/bytebase/bytebase/store"
@@ -34,7 +35,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*reporter.Metric, error
 
 	for _, issueCountMetric := range issueCountMetricList {
 		res = append(res, &reporter.Metric{
-			Name:  reporter.IssueCountMetricName,
+			Name:  api.IssueCountMetricName,
 			Value: issueCountMetric.Count,
 			Labels: map[string]string{
 				"type": string(issueCountMetric.Type),

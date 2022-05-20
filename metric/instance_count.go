@@ -41,7 +41,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*reporter.Metric, er
 		}
 
 		res = append(res, &reporter.Metric{
-			Name:  reporter.InstanceCountMetricName,
+			Name:  api.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]string{
 				"engine":      string(instanceCountMetric.Engine),
