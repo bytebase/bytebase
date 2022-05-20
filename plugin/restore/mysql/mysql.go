@@ -33,7 +33,7 @@ func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) er
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
-	pitrDatabaseName := GetPITRDatabaseName(database, suffixTs)
+	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
 		"CREATE DATABASE `%s`;"+
@@ -69,32 +69,33 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
-func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) error {
+// It returns the pitr and old database names after swap.
+func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) (string, string, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	txn, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	defer txn.Rollback()
 
 	pitrOldDatabase := getSafeName(database, "old")
-	pitrDatabaseName := GetPITRDatabaseName(database, suffixTs)
+	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
-		return err
+		return "", "", err
 	}
 
 	// TODO(dragonly): handle the case that the original database does not exist
 	tables, err := mysql.GetTables(txn, database)
 	if err != nil {
-		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
+		return "", "", fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
 	tablesPITR, err := mysql.GetTables(txn, pitrDatabaseName)
 	if err != nil {
-		return fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
+		return "", "", fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
 	}
 
 	var tableRenames []string
@@ -107,14 +108,14 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
 
 	if _, err := txn.ExecContext(ctx, renameStmt); err != nil {
-		return err
+		return "", "", err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return err
+		return "", "", err
 	}
 
-	return nil
+	return pitrDatabaseName, pitrOldDatabase, nil
 }
 
 // DeleteOldDatabase deletes the old database after the PITR swap task.
@@ -124,7 +125,7 @@ func (r *Restore) DeleteOldDatabase(ctx context.Context, database string, suffix
 		return err
 	}
 
-	pitrOldDatabase := GetPITROldDatabaseName(database, suffixTs)
+	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrOldDatabase)); err != nil {
 		return err
 	}
@@ -132,14 +133,14 @@ func (r *Restore) DeleteOldDatabase(ctx context.Context, database string, suffix
 	return nil
 }
 
-// GetPITRDatabaseName composes a pitr database name
-func GetPITRDatabaseName(database string, suffixTs int64) string {
+// getPITRDatabaseName composes a pitr database name
+func getPITRDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d", suffixTs)
 	return getSafeName(database, suffix)
 }
 
-// GetPITROldDatabaseName composes a pitr database name
-func GetPITROldDatabaseName(database string, suffixTs int64) string {
+// getPITROldDatabaseName composes a pitr database name
+func getPITROldDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
 	return getSafeName(database, suffix)
 }

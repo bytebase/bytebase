@@ -172,7 +172,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -242,7 +242,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, timestamp)
 		a.Error(err)
 	})
 }
