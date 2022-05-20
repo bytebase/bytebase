@@ -370,7 +370,7 @@ const onRemove = () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("schema-review-policy.remove-review"),
+    title: t("schema-review-policy.policy-removed"),
   });
 };
 </script>
