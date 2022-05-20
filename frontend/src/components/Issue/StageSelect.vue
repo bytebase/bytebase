@@ -3,7 +3,7 @@
     class="btn-select w-full disabled:cursor-not-allowed"
     @change="
       (e) => {
-        $emit('select-stage-id', parseInt(e.target.value));
+        $emit('select-stage-id', parseInt((e.target as HTMLSelectElement).value, 10));
       }
     "
   >

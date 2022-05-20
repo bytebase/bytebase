@@ -89,7 +89,7 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { Database, MigrationHistory } from "../types";
 import {
   databaseSlug,
@@ -103,7 +103,7 @@ import { useI18n } from "vue-i18n";
 
 type Mode = "DATABASE" | "PROJECT";
 
-export default {
+export default defineComponent({
   name: "MigrationHistoryTable",
   components: { MigrationHistoryStatusIcon },
   props: {
@@ -191,10 +191,10 @@ export default {
     };
 
     return {
-      columnList: columnListMap.get(props.mode),
+      columnList: columnListMap.get(props.mode)!,
       nanosecondsToString,
       clickHistory,
     };
   },
-};
+});
 </script>

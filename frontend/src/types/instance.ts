@@ -91,7 +91,7 @@ export type InstancePatch = {
   externalLink?: string;
   host?: string;
   port?: string;
-  syncSchema: boolean;
+  syncSchema?: boolean;
 };
 
 export type MigrationSchemaStatus = "UNKNOWN" | "OK" | "NOT_EXIST";

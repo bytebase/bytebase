@@ -152,6 +152,40 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	return count, nil
 }
 
+// CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
+// Used by the metric collector.
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*api.InstanceCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT engine, environment_id, COUNT(*)
+		FROM instance
+		WHERE row_status = $1
+		GROUP BY engine, environment_id`,
+		rowStatus,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*api.InstanceCountMetric
+
+	for rows.Next() {
+		var metric api.InstanceCountMetric
+		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
+}
+
 // GetInstanceAdminPasswordByID gets admin password of instance
 func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
 	dataSourceFind := &api.DataSourceFind{

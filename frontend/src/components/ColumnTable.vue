@@ -43,12 +43,12 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Column, EngineType } from "../types";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "ColumnTable",
   components: {},
   props: {
@@ -139,5 +139,5 @@ export default {
       columnNameList,
     };
   },
-};
+});
 </script>
