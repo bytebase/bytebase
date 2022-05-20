@@ -94,11 +94,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		for _, project := range projectList {
-			projectList = append(projectList, project)
-			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
-			if projectFind.PrincipalID != nil {
-				principalID := *projectFind.PrincipalID
+		// if principalID is passed, we will enable the filter logic
+		if projectFind.PrincipalID != nil {
+			principalID := *projectFind.PrincipalID
+			for _, project := range projectList {
+				// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
 					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
@@ -107,10 +107,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					}
 				}
 			}
-		}
-
-		// if principalID is not passed, we will disable the filter logic
-		if projectFind.PrincipalID == nil {
+		} else {
 			activeProjectList = projectList
 		}
 
