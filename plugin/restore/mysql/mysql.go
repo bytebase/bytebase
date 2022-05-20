@@ -170,37 +170,39 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		return err
 	}
 
-	// compare file sizes and names to decide which files to download
-	// downloadedName maintains the name of BinlogFile slice, for example:
-	// `SHOW MASTER LOGS` return ["binlog.000001", "binlog.000002"],
-	// if we had downloaded binlog.000001 and file size match, {"binlog.000001":struct{}{}} will be involved in downloadedName.
-	downloadedName := make(map[string]struct{})
-	for _, serverFile := range binlogFilesOnServer {
+	// build a local file size map from file name to size
+	localFileMap := make(map[string]int64)
+
+	for _, localFile := range binlogFilesLocal {
+		localFileMap[localFile.Name()] = localFile.Size()
+	}
+
+	todo := make(map[string]bool)
+
+	for _, serverBinlog := range binlogFilesOnServer {
 		// We don't download the latest binlog in SyncArchivedBinlogFiles()
-		if serverFile.Name == latestBinlogFileOnServer.Name {
+		if serverBinlog.Name == latestBinlogFileOnServer.Name {
 			continue
 		}
-		for _, localFile := range binlogFilesLocal {
-			localFileName := localFile.Name()
-			if localFileName != serverFile.Name {
-				continue
+
+		localBinlogSize, ok := localFileMap[serverBinlog.Name]
+		if !ok {
+			todo[serverBinlog.Name] = true
+			continue
+		}
+
+		if localBinlogSize != serverBinlog.Size {
+			// exist on local and file size not match, delete and then download it
+			if err := os.Remove(filepath.Join(saveDir, serverBinlog.Name)); err != nil {
+				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
-			// binlog file exists on local
-			if localFile.Size() != serverFile.Size {
-				// File size not match, delete and then download it
-				if err := os.Remove(filepath.Join(saveDir, localFileName)); err != nil {
-					return fmt.Errorf("cannot remove %s, error: %w", localFileName, err)
-				}
-			} else {
-				// file size match, record it in downloadedIndex
-				downloadedName[serverFile.Name] = struct{}{}
-			}
+			todo[serverBinlog.Name] = true
 		}
 	}
 
 	// download the binlog files not recorded in downloadedIndex
 	for _, serverFile := range binlogFilesOnServer {
-		if _, ok := downloadedName[serverFile.Name]; ok {
+		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
 		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
