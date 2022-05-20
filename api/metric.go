@@ -42,7 +42,7 @@ type InstanceCountMetric struct {
 	Count         int
 }
 
-// IssueCountMetric is the API message for issue count metric
+// IssueCountMetric is the API message for bb.issue.count
 type IssueCountMetric struct {
 	Type  IssueType
 	Count int
