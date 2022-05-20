@@ -36,7 +36,6 @@ func (m *Metric) Register(metricName reporter.MetricName, collector collector.Me
 
 // CollectAndReport will exec all collectors and report metric.
 func (m *Metric) CollectAndReport(ctx context.Context) {
-
 	for name, collector := range m.executors {
 		m.l.Debug("Run metric collector", zap.String("collector", name))
 
@@ -62,7 +61,7 @@ func (m *Metric) CollectAndReport(ctx context.Context) {
 	}
 }
 
-// Identify will identify the workspace with license.
+// Identify will identify the metric with id.
 func (m *Metric) Identify(identifier *reporter.MetricIdentifier) error {
 	return m.reporter.Identify(identifier)
 }
