@@ -312,7 +312,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t(
-      `schema-review-policy.${props.policyId ? "update" : "create"}-review`
+      `schema-review-policy.policy-${props.policyId ? "updated" : "created"}`
     ),
   });
 
