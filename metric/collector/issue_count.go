@@ -1,9 +1,9 @@
-package metric
+package collector
 
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
@@ -35,7 +35,7 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*metric.Metric, error) 
 
 	for _, issueCountMetric := range issueCountMetricList {
 		res = append(res, &metric.Metric{
-			Name:  api.IssueCountMetricName,
+			Name:  metricAPI.IssueCountMetricName,
 			Value: issueCountMetric.Count,
 			Labels: map[string]string{
 				"type": string(issueCountMetric.Type),

@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/metric"
+	metricCollector "github.com/bytebase/bytebase/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"github.com/google/uuid"
 
@@ -316,8 +317,8 @@ func (server *Server) initMetricReporter(workspaceID string) {
 	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 	if enabled {
 		metricReporter := NewMetricReporter(server.l, server, workspaceID)
-		metricReporter.Register(api.InstanceCountMetricName, metric.NewInstanceCollector(server.l, server.store))
-		metricReporter.Register(api.IssueCountMetricName, metric.NewIssueCollector(server.l, server.store))
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCollector(server.l, server.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCollector(server.l, server.store))
 		server.MetricReporter = metricReporter
 	}
 }

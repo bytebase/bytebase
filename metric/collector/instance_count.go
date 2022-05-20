@@ -1,9 +1,10 @@
-package metric
+package collector
 
 import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
@@ -41,7 +42,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, erro
 		}
 
 		res = append(res, &metric.Metric{
-			Name:  api.InstanceCountMetricName,
+			Name:  metricAPI.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]string{
 				"engine":      string(instanceCountMetric.Engine),

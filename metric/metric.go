@@ -1,6 +1,7 @@
-package api
+package metric
 
 import (
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 )
@@ -21,6 +22,6 @@ type InstanceCountMetric struct {
 
 // IssueCountMetric is the API message for bb.issue.count
 type IssueCountMetric struct {
-	Type  IssueType
+	Type  api.IssueType
 	Count int
 }
