@@ -133,13 +133,13 @@ func (r *Restore) DeleteOldDatabase(ctx context.Context, database string, suffix
 	return nil
 }
 
-// getPITRDatabaseName composes a pitr database name
+// Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
 func getPITRDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d", suffixTs)
 	return getSafeName(database, suffix)
 }
 
-// getPITROldDatabaseName composes a pitr database name
+// Composes a database name that we use as the target database for swapping out the original database.
 func getPITROldDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
 	return getSafeName(database, suffix)
