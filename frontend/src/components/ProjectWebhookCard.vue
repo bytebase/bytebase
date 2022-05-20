@@ -83,7 +83,7 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, computed } from "vue";
+import { reactive, PropType, computed, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
 import {
@@ -96,7 +96,7 @@ import { projectWebhookSlug } from "../utils";
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
 
-export default {
+export default defineComponent({
   name: "ProjectWebhookCard",
   components: { PrincipalAvatar },
   props: {
@@ -139,5 +139,5 @@ export default {
       activityListStr,
     };
   },
-};
+});
 </script>

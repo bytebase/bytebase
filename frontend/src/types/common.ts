@@ -476,7 +476,9 @@ const makeUnknown = (type: ResourceType) => {
 
   const UNKNOWN_SHEET: Sheet = {
     id: UNKNOWN_ID,
+    rowStatus: "NORMAL",
     creator: UNKNOWN_PRINCIPAL,
+    creatorId: UNKNOWN_ID,
     createdTs: 0,
     updater: UNKNOWN_PRINCIPAL,
     updatedTs: 0,
@@ -487,6 +489,10 @@ const makeUnknown = (type: ResourceType) => {
     name: "<<Unknown sheet>>",
     statement: "",
     visibility: "PRIVATE",
+    source: "BYTEBASE",
+    type: "SQL",
+    starred: false,
+    pinned: false,
   };
 
   const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
@@ -862,7 +868,9 @@ const makeEmpty = (type: ResourceType) => {
 
   const EMPTY_SHEET: Sheet = {
     id: EMPTY_ID,
+    rowStatus: "NORMAL",
     creator: EMPTY_PRINCIPAL,
+    creatorId: EMPTY_ID,
     createdTs: 0,
     updater: EMPTY_PRINCIPAL,
     updatedTs: 0,
@@ -873,6 +881,10 @@ const makeEmpty = (type: ResourceType) => {
     name: "<<Empty sheet>>",
     statement: "",
     visibility: "PRIVATE",
+    source: "BYTEBASE",
+    type: "SQL",
+    starred: false,
+    pinned: false,
   };
 
   const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {

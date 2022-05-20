@@ -32,12 +32,12 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { TaskStatus, IssueStatus } from "../../types";
 
 type SizeType = "small" | "normal";
 
-export default {
+export default defineComponent({
   name: "IssueStatusIcon",
   props: {
     issueStatus: {
@@ -73,5 +73,5 @@ export default {
       issueIconClass,
     };
   },
-};
+});
 </script>

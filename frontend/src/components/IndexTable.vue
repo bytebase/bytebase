@@ -37,12 +37,12 @@
 </template>
 
 <script lang="ts">
-import { computed, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { TableIndex } from "../types";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "IndexTable",
   components: {},
   props: {
@@ -93,5 +93,5 @@ export default {
       sectionList,
     };
   },
-};
+});
 </script>
