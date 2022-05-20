@@ -8,8 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	"github.com/bytebase/bytebase/metric"
-	metricPlugin "github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
 	"go.uber.org/zap"
@@ -29,21 +28,20 @@ type MetricReporter struct {
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
 	workspaceID  string
-	reporter     *metricPlugin.Metric
+	reporter     reporter.MetricReporter
+	collectors   map[string]collector.MetricCollector
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	r := metricPlugin.NewMetric(logger, server.profile.MetricConnectionKey, workspaceID)
-
-	r.Register(api.InstanceCountMetricName, metric.NewInstanceCollector(logger, server.store))
-	r.Register(api.IssueCountMetricName, metric.NewIssueCollector(logger, server.store))
+	r := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
 		l:            logger,
 		subscription: &server.subscription,
 		workspaceID:  workspaceID,
 		reporter:     r,
+		collectors:   make(map[string]collector.MetricCollector),
 	}
 }
 
@@ -73,7 +71,29 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				m.reporter.CollectAndReport(ctx)
+				for name, collector := range m.collectors {
+					m.l.Debug("Run metric collector", zap.String("collector", name))
+
+					metricList, err := collector.Collect(ctx)
+					if err != nil {
+						m.l.Error(
+							"Failed to collect metric",
+							zap.String("collector", name),
+							zap.Error(err),
+						)
+						continue
+					}
+
+					for _, metric := range metricList {
+						if err := m.reporter.Report(metric); err != nil {
+							m.l.Error(
+								"Failed to report metric",
+								zap.String("metric", string(metric.Name)),
+								zap.Error(err),
+							)
+						}
+					}
+				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
@@ -84,6 +104,11 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 // Close will close the metric reporter.
 func (m *MetricReporter) Close() {
 	m.reporter.Close()
+}
+
+// Register will register a metric collector.
+func (m *MetricReporter) Register(metricName reporter.MetricName, collector collector.MetricCollector) {
+	m.collectors[string(metricName)] = collector
 }
 
 // Identify will identify the workspace and update the subscription plan.
