@@ -54,7 +54,7 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 		(stmtNode).Accept(checker)
 	}
 
-	return checker.generateAdvisorList(), nil
+	return checker.generateAdviceList(), nil
 }
 
 type columnRequirementChecker struct {
@@ -70,6 +70,11 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		v.createTable(node)
+	// DROP TABLE
+	case *ast.DropTableStmt:
+		for _, table := range node.Tables {
+			delete(v.tables, table.Name.String())
+		}
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		table := node.Table.Name.O
@@ -100,7 +105,7 @@ func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (v *columnRequirementChecker) generateAdvisorList() []advisor.Advice {
+func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 	tableList := v.tables.tableList()
 	for _, tableName := range tableList {

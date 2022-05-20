@@ -200,6 +200,23 @@ func TestColumnRequirement(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: `CREATE TABLE book(
+							id int,
+							creator int,
+							created_ts timestamp,
+							updater_id int,
+							updated_ts timestamp);
+						DROP TABLE book;`,
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
 	}
 	payload, err := json.Marshal(api.RequiredColumnRulePayload{
 		ColumnList: []string{
