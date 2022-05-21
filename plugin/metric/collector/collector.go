@@ -1,29 +1,12 @@
 package collector
 
-import "context"
+import (
+	"context"
 
-// MetricName is the metric name.
-type MetricName string
-
-var (
-	// instanceMetricName is the MetricName for instance count
-	instanceCountMetricName MetricName = "bb.instance.count"
-	// issueCountMetricName is the MetricName for issue count
-	issueCountMetricName MetricName = "bb.issue.count"
-	// projectCountMetricName is the MetricName for project count
-	projectCountMetricName MetricName = "bb.project.count"
-	// policyCountMetricName is the MetricName for policy count
-	policyCountMetricName MetricName = "bb.policy.count"
+	"github.com/bytebase/bytebase/plugin/metric"
 )
-
-// Metric is the API message for metric
-type Metric struct {
-	Name   MetricName
-	Value  int
-	Labels map[string]string
-}
 
 // MetricCollector is the API message for metric collector.
 type MetricCollector interface {
-	Collect(ctx context.Context) ([]*Metric, error)
+	Collect(ctx context.Context) ([]*metric.Metric, error)
 }
