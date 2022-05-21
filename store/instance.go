@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -154,7 +155,7 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*api.InstanceCountMetric, error) {
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*metric.InstanceCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -173,10 +174,10 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 	}
 	defer rows.Close()
 
-	var res []*api.InstanceCountMetric
+	var res []*metric.InstanceCountMetric
 
 	for rows.Next() {
-		var metric api.InstanceCountMetric
+		var metric metric.InstanceCountMetric
 		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
