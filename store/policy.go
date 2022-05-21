@@ -211,6 +211,40 @@ func (s *Store) GetSchemaReviewPolicyNormalByID(ctx context.Context, id int) (*a
 	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }
 
+// CountPolicyGroupByTypeAndEnvironmentID counts the number of policy and group by type and environment id.
+// Used by the metric collector.
+func (s *Store) CountPolicyGroupByTypeAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*api.PolicyCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT type, environment_id, COUNT(*)
+		FROM policy
+		WHERE row_status = $1
+		GROUP BY type, environment_id`,
+		rowStatus,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*api.PolicyCountMetric
+
+	for rows.Next() {
+		var metric api.PolicyCountMetric
+		if err := rows.Scan(&metric.Type, &metric.EnvironmentID, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
+}
+
 //
 // private functions
 //

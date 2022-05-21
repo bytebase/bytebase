@@ -37,6 +37,8 @@ func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *
 	collectorList := []collector.MetricCollector{
 		collector.NewInstanceCollector(logger, server.store),
 		collector.NewIssueCollector(logger, server.store),
+		collector.NewProjectCollector(logger, server.store),
+		collector.NewPolicyCollector(logger, server.store),
 	}
 
 	return &MetricReporter{

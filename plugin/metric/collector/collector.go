@@ -10,6 +10,10 @@ var (
 	instanceCountMetricName MetricName = "bb.instance.count"
 	// issueCountMetricName is the MetricName for issue count
 	issueCountMetricName MetricName = "bb.issue.count"
+	// projectCountMetricName is the MetricName for project count
+	projectCountMetricName MetricName = "bb.project.count"
+	// policyCountMetricName is the MetricName for policy count
+	policyCountMetricName MetricName = "bb.policy.count"
 )
 
 // Metric is the API message for metric

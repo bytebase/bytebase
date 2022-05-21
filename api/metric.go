@@ -15,3 +15,17 @@ type IssueCountMetric struct {
 	Status IssueStatus
 	Count  int
 }
+
+// ProjectCountMetric is the API message for project count metric
+type ProjectCountMetric struct {
+	TenantMode   ProjectTenantMode
+	WorkflowType ProjectWorkflowType
+	Count        int
+}
+
+// PolicyCountMetric is the API message for policy count metric
+type PolicyCountMetric struct {
+	Type          PolicyType
+	EnvironmentID int
+	Count         int
+}

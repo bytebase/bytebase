@@ -114,6 +114,40 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 	return project, nil
 }
 
+// CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
+// Used by the metric collector.
+func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, rowStatus api.RowStatus) ([]*api.ProjectCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT tenant_mode, workflow_type, COUNT(*)
+		FROM project
+		WHERE row_status = $1
+		GROUP BY tenant_mode, workflow_type`,
+		rowStatus,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*api.ProjectCountMetric
+
+	for rows.Next() {
+		var metric api.ProjectCountMetric
+		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
+}
+
 //
 // private functions
 //
