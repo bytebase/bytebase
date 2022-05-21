@@ -117,7 +117,7 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 
 // CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
 // Used by the metric collector.
-func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, rowStatus api.RowStatus) ([]*metric.ProjectCountMetric, error) {
+func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -125,11 +125,9 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, ro
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT tenant_mode, workflow_type, COUNT(*)
+		SELECT tenant_mode, workflow_type, row_status, COUNT(*)
 		FROM project
-		WHERE row_status = $1
-		GROUP BY tenant_mode, workflow_type`,
-		rowStatus,
+		GROUP BY tenant_mode, workflow_type, row_status`,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -140,7 +138,7 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, ro
 
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
-		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.Count); err != nil {
+		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)

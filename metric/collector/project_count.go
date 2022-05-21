@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
@@ -29,7 +28,7 @@ func NewProjectCollector(l *zap.Logger, store *store.Store) collector.MetricColl
 func (c *projectCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	projectCountMetricList, err := c.store.CountProjectGroupByTenantModeAndWorkflow(ctx, api.Normal)
+	projectCountMetricList, err := c.store.CountProjectGroupByTenantModeAndWorkflow(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +40,7 @@ func (c *projectCollector) Collect(ctx context.Context) ([]*metric.Metric, error
 			Labels: map[string]string{
 				"tenant_mode": string(projectCountMetric.TenantMode),
 				"workflow":    projectCountMetric.WorkflowType.String(),
+				"status":      projectCountMetric.RowStatus.String(),
 			},
 		})
 	}

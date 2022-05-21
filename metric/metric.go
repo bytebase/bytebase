@@ -35,6 +35,7 @@ type IssueCountMetric struct {
 type ProjectCountMetric struct {
 	TenantMode   api.ProjectTenantMode
 	WorkflowType api.ProjectWorkflowType
+	RowStatus    api.RowStatus
 	Count        int
 }
 
