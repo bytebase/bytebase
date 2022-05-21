@@ -41,7 +41,8 @@ type ProjectCountMetric struct {
 
 // PolicyCountMetric is the API message for policy count metric
 type PolicyCountMetric struct {
-	Type          api.PolicyType
-	EnvironmentID int
-	Count         int
+	Type            api.PolicyType
+	Value           string
+	EnvironmentName string
+	Count           int
 }

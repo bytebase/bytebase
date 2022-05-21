@@ -8,7 +8,6 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
 )
 
 // policyRaw is the store model for an Policy.
@@ -210,40 +209,6 @@ func (s *Store) GetSchemaReviewPolicyNormalByID(ctx context.Context, id int) (*a
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy with ID %d is archived", id)}
 	}
 	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
-}
-
-// CountPolicyGroupByTypeAndEnvironmentID counts the number of policy and group by type and environment id.
-// Used by the metric collector.
-func (s *Store) CountPolicyGroupByTypeAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*metric.PolicyCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT type, environment_id, COUNT(*)
-		FROM policy
-		WHERE row_status = $1
-		GROUP BY type, environment_id`,
-		rowStatus,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
-
-	var res []*metric.PolicyCountMetric
-
-	for rows.Next() {
-		var metric metric.PolicyCountMetric
-		if err := rows.Scan(&metric.Type, &metric.EnvironmentID, &metric.Count); err != nil {
-			return nil, FormatError(err)
-		}
-		res = append(res, &metric)
-	}
-
-	return res, nil
 }
 
 //
