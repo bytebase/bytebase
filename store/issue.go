@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // issueRaw is the store model for an Issue.
@@ -142,7 +143,7 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 
 // CountIssueGroupByType counts the number of issue and group by type.
 // Used by the metric collector.
-func (s *Store) CountIssueGroupByType(ctx context.Context) ([]*api.IssueCountMetric, error) {
+func (s *Store) CountIssueGroupByType(ctx context.Context) ([]*metric.IssueCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -159,10 +160,10 @@ func (s *Store) CountIssueGroupByType(ctx context.Context) ([]*api.IssueCountMet
 	}
 	defer rows.Close()
 
-	var res []*api.IssueCountMetric
+	var res []*metric.IssueCountMetric
 
 	for rows.Next() {
-		var metric api.IssueCountMetric
+		var metric metric.IssueCountMetric
 		if err := rows.Scan(&metric.Type, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
