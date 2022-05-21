@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // projectRaw is the store model for a Project.
@@ -116,7 +117,7 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 
 // CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
 // Used by the metric collector.
-func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, rowStatus api.RowStatus) ([]*api.ProjectCountMetric, error) {
+func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, rowStatus api.RowStatus) ([]*metric.ProjectCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -135,10 +136,10 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context, ro
 	}
 	defer rows.Close()
 
-	var res []*api.ProjectCountMetric
+	var res []*metric.ProjectCountMetric
 
 	for rows.Next() {
-		var metric api.ProjectCountMetric
+		var metric metric.ProjectCountMetric
 		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}

@@ -163,7 +163,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	var res []*metric.IssueCountMetric
 
 	for rows.Next() {
-		var metric api.IssueCountMetric
+		var metric metric.IssueCountMetric
 		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}

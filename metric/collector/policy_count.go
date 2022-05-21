@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -15,7 +18,7 @@ type policyCollector struct {
 }
 
 // NewPolicyCollector creates a new instance of policyCollector
-func NewPolicyCollector(l *zap.Logger, store *store.Store) MetricCollector {
+func NewPolicyCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
 	return &policyCollector{
 		l:     l,
 		store: store,
@@ -23,8 +26,8 @@ func NewPolicyCollector(l *zap.Logger, store *store.Store) MetricCollector {
 }
 
 // Collect will collect the netric for policy
-func (c *policyCollector) Collect(ctx context.Context) ([]*Metric, error) {
-	var res []*Metric
+func (c *policyCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+	var res []*metric.Metric
 
 	policyCountMetricList, err := c.store.CountPolicyGroupByTypeAndEnvironmentID(ctx, api.Normal)
 	if err != nil {
@@ -38,8 +41,8 @@ func (c *policyCollector) Collect(ctx context.Context) ([]*Metric, error) {
 			continue
 		}
 
-		res = append(res, &Metric{
-			Name:  policyCountMetricName,
+		res = append(res, &metric.Metric{
+			Name:  metricAPI.PolicyCountMetricName,
 			Value: policyCountMetric.Count,
 			Labels: map[string]string{
 				"type":        string(policyCountMetric.Type),

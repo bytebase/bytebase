@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -15,7 +18,7 @@ type projectCollector struct {
 }
 
 // NewProjectCollector creates a new instance of projectCollector
-func NewProjectCollector(l *zap.Logger, store *store.Store) MetricCollector {
+func NewProjectCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
 	return &projectCollector{
 		l:     l,
 		store: store,
@@ -23,8 +26,8 @@ func NewProjectCollector(l *zap.Logger, store *store.Store) MetricCollector {
 }
 
 // Collect will collect the netric for project
-func (c *projectCollector) Collect(ctx context.Context) ([]*Metric, error) {
-	var res []*Metric
+func (c *projectCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+	var res []*metric.Metric
 
 	projectCountMetricList, err := c.store.CountProjectGroupByTenantModeAndWorkflow(ctx, api.Normal)
 	if err != nil {
@@ -32,8 +35,8 @@ func (c *projectCollector) Collect(ctx context.Context) ([]*Metric, error) {
 	}
 
 	for _, projectCountMetric := range projectCountMetricList {
-		res = append(res, &Metric{
-			Name:  projectCountMetricName,
+		res = append(res, &metric.Metric{
+			Name:  metricAPI.ProjectCountMetricName,
 			Value: projectCountMetric.Count,
 			Labels: map[string]string{
 				"tenant_mode": string(projectCountMetric.TenantMode),
