@@ -151,7 +151,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT type, status COUNT(*)
+		SELECT type, status, COUNT(*)
 		FROM issue
 		GROUP BY type, status`,
 	)
