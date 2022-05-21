@@ -196,7 +196,8 @@
     "duplicate": "Duplicate",
     "clear-search": "Clear search",
     "enable": "Enable",
-    "disable": "Disable"
+    "disable": "Disable",
+    "view-doc": "View doc"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1368,11 +1369,11 @@
   "schema-review-policy": {
     "title": "Schema Review",
     "no-policy-set": "No schema review policy",
-    "add-review": "Add policy",
+    "create-policy": "Create policy",
     "search-rule-name": "Search rule name",
-    "remove-review": "Successfully removed the review policy.",
-    "create-review": "Successfully created the review policy.",
-    "update-review": "Successfully updated the review policy.",
+    "policy-removed": "Successfully removed the review policy.",
+    "policy-created": "Successfully created the review policy.",
+    "policy-updated": "Successfully updated the review policy.",
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",

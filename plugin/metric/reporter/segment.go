@@ -3,8 +3,7 @@ package reporter
 import (
 	"time"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
+	"github.com/bytebase/bytebase/plugin/metric"
 
 	"github.com/segmentio/analytics-go"
 	"go.uber.org/zap"
@@ -18,8 +17,6 @@ type segment struct {
 }
 
 const (
-	// identifyTraitForPlan is the trait key for subscription plan.
-	identifyTraitForPlan = "plan"
 	// metricValueField is the property key for value
 	metricValueField = "value"
 )
@@ -41,7 +38,7 @@ func (s *segment) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (s *segment) Report(metric *collector.Metric) error {
+func (s *segment) Report(metric *metric.Metric) error {
 	properties := analytics.NewProperties().
 		Set(metricValueField, metric.Value)
 
@@ -58,10 +55,15 @@ func (s *segment) Report(metric *collector.Metric) error {
 }
 
 // Identify will identify the workspace with license.
-func (s *segment) Identify(workspace *api.Workspace) error {
+func (s *segment) Identify(identifier *metric.Identifier) error {
+	traits := analytics.NewTraits()
+	for key, value := range identifier.Labels {
+		traits.Set(key, value)
+	}
+
 	return s.client.Enqueue(analytics.Identify{
 		UserId:    s.identifier,
-		Traits:    analytics.NewTraits().Set(identifyTraitForPlan, workspace.Plan),
+		Traits:    traits,
 		Timestamp: time.Now().UTC(),
 	})
 }
