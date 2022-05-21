@@ -25,7 +25,7 @@ func NewPolicyCollector(l *zap.Logger, store *store.Store) collector.MetricColle
 	}
 }
 
-// Collect will collect the netric for policy
+// Collect will collect the metric for policy
 func (c *policyCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

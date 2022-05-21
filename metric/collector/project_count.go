@@ -25,7 +25,7 @@ func NewProjectCollector(l *zap.Logger, store *store.Store) collector.MetricColl
 	}
 }
 
-// Collect will collect the netric for project
+// Collect will collect the metric for project
 func (c *projectCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
