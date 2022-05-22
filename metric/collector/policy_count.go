@@ -35,42 +35,42 @@ func (c *policyCollector) Collect(ctx context.Context) ([]*metric.Metric, error)
 		return nil, err
 	}
 
-	policyCountMap := make(map[string]metricAPI.PolicyCountMetric)
+	policyCountMap := make(map[string]*metricAPI.PolicyCountMetric)
 
 	for _, policy := range policyList {
-		key := fmt.Sprintf("%s_%s", policy.Type, policy.Environment.Name)
-		value := ""
+		var key string
+		var value string
+
 		switch policy.Type {
 		case api.PolicyTypePipelineApproval:
 			payload, err := api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 			if err != nil {
 				continue
 			}
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Value)
-			key = fmt.Sprintf("%s_%s", key, value)
 		case api.PolicyTypeBackupPlan:
 			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
 			if err != nil {
 				continue
 			}
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Schedule)
-			key = fmt.Sprintf("%s_%s", key, value)
 		case api.PolicyTypeSchemaReview:
+			key = fmt.Sprintf("%s_%s", policy.Type, policy.Environment.Name)
 			// schema review policy don't need to set the value.
 			value = ""
 		}
 
-		policyCountMetric, ok := policyCountMap[key]
-		if !ok {
-			policyCountMetric = metricAPI.PolicyCountMetric{
+		if _, ok := policyCountMap[key]; !ok {
+			policyCountMap[key] = &metricAPI.PolicyCountMetric{
 				Type:            policy.Type,
 				Value:           value,
 				EnvironmentName: policy.Environment.Name,
 				Count:           0,
 			}
 		}
-		policyCountMetric.Count++
-		policyCountMap[key] = policyCountMetric
+		policyCountMap[key].Count++
 	}
 
 	for _, policyCountMetric := range policyCountMap {
