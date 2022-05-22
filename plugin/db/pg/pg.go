@@ -384,8 +384,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			// We don't use transaction for creating databases in Postgres.
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") || (strings.HasPrefix(stmt, "ALTER DATABASE  ") && strings.Contains(stmt, " OWNER TO ")) {
+			// We don't use transaction for creating / altering databases in Postgres.
 			// https://github.com/bytebase/bytebase/issues/202
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
