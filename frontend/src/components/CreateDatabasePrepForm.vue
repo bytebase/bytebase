@@ -66,6 +66,24 @@
         </span>
       </div>
 
+      <div
+        v-if="selectedInstance.engine == 'POSTGRES'"
+        class="col-span-2 col-start-2 w-64"
+      >
+        <label for="name" class="textlabel">
+          {{ $t("create-db.database-owner-name") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="name"
+          v-model="state.databaseOwnerName"
+          required
+          name="ownerName"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
+
       <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
       <DatabaseLabelForm
         v-if="isTenantProject"
@@ -259,6 +277,7 @@ interface LocalState {
   instanceId?: InstanceId;
   labelList: DatabaseLabel[];
   databaseName: string;
+  databaseOwnerName: string;
   characterSet: string;
   collation: string;
   assigneeId?: PrincipalId;
@@ -322,6 +341,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       databaseName: "",
+      databaseOwnerName: "",
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
@@ -379,6 +399,7 @@ export default defineComponent({
         : true;
       return (
         !isEmpty(state.databaseName) &&
+        !isEmpty(state.databaseOwnerName) &&
         !isReservedName.value &&
         isLabelValid &&
         state.projectId &&
@@ -449,7 +470,8 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName,
+            databaseName: databaseName,
+            owner: state.databaseOwnerName,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -474,7 +496,8 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName,
+            databaseName: databaseName,
+            owner: state.databaseOwnerName,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),

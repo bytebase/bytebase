@@ -467,9 +467,15 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 					fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", c.Collation),
 				)
 			}
-
 			// Snowflake needs to use upper case of DatabaseName.
 			c.DatabaseName = strings.ToUpper(c.DatabaseName)
+		case db.Postgres:
+			if c.Owner == "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					"Failed to create issue, database owner is required for postgres",
+				)
+			}
 		case db.SQLite:
 			// no-op.
 		default:
@@ -518,7 +524,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			Labels:        c.Labels,
 			SchemaVersion: schemaVersion,
 		}
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, schema)
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, c.Owner, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
@@ -1002,7 +1008,7 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, owner, schema string) (string, string) {
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
@@ -1021,6 +1027,15 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 		} else {
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
+		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
+		// For tenant project, the schema for the newly created database will belong to the same owner.
+		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, owner)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}
