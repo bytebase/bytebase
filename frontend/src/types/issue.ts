@@ -33,6 +33,7 @@ export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 export type CreateDatabaseContext = {
   instanceId: InstanceId;
   databaseName: string;
+  owner: string;
   characterSet: string;
   collation: string;
   backupId: BackupId;
