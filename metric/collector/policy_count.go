@@ -62,6 +62,10 @@ func (c *policyCollector) Collect(ctx context.Context) ([]*metric.Metric, error)
 			value = ""
 		}
 
+		if key == "" {
+			continue
+		}
+
 		if _, ok := policyCountMap[key]; !ok {
 			policyCountMap[key] = &metricAPI.PolicyCountMetric{
 				Type:            policy.Type,
