@@ -473,7 +473,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			if c.Owner == "" {
 				return nil, echo.NewHTTPError(
 					http.StatusBadRequest,
-					fmt.Sprintf("Failed to create issue, database owner is required for postgres"),
+					"Failed to create issue, database owner is required for postgres",
 				)
 			}
 		case db.SQLite:
