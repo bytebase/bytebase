@@ -1028,6 +1028,12 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
 		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
 		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, owner)
 		if schema != "" {
