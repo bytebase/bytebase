@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -56,9 +55,6 @@ func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
 
 // CreateDBExtension creates an instance of DBExtension
 func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCreate) (*api.DBExtension, error) {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil, nil
-	}
 	dbExtensionRaw, err := s.createDBExtensionRaw(ctx, create)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error[%w]", create, err)
@@ -72,9 +68,6 @@ func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCr
 
 // FindDBExtension finds a list of dbExtension instances
 func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil, nil
-	}
 	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error[%w]", find, err)
@@ -92,9 +85,6 @@ func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) 
 
 // DeleteDBExtension deletes an existing dbExtension by ID.
 func (s *Store) DeleteDBExtension(ctx context.Context, delete *api.DBExtensionDelete) error {
-	if s.db.mode == common.ReleaseModeProd {
-		return nil
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
