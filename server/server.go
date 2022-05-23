@@ -98,8 +98,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
-	err := mysqlbinlog.Install(resourceDir)
-	if err != nil {
+	if err := mysqlbinlog.Install(resourceDir); err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
 
