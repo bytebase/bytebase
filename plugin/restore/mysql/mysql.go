@@ -122,7 +122,7 @@ func parseBinlogFileNameIndex(filename string) (int64, error) {
 }
 
 // Parse the binlog at position, and return the timestamp in the binlog event.
-// The current mechanism is by invoking mysqlbinlog with -v and parse the output string.
+// The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
 func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (timestamp int64, err error) {
