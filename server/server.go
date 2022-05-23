@@ -331,6 +331,8 @@ func (server *Server) initMetricReporter(workspaceID string) {
 		metricReporter := NewMetricReporter(server.l, server, workspaceID)
 		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCollector(server.l, server.store))
 		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCollector(server.l, server.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCollector(server.l, server.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCollector(server.l, server.store))
 		server.MetricReporter = metricReporter
 	}
 }

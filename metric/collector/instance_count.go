@@ -25,7 +25,7 @@ func NewInstanceCollector(l *zap.Logger, store *store.Store) collector.MetricCol
 	}
 }
 
-// Collect will collect the netric for instance
+// Collect will collect the metric for instance
 func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
