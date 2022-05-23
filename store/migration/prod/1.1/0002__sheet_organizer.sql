@@ -1,7 +1,7 @@
 -- sheet_organizer table stores the sheet status for a principal.
 CREATE TABLE sheet_organizer (
     id SERIAL PRIMARY KEY,
-    sheet_id INTEGER NOT NULL REFERENCES sheet (id),
+    sheet_id INTEGER NOT NULL REFERENCES sheet (id) ON DELETE CASCADE,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     starred BOOLEAN NOT NULL DEFAULT false,
     pinned BOOLEAN NOT NULL DEFAULT false
