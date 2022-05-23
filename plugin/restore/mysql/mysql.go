@@ -136,7 +136,19 @@ func (r *Restore) DeletePITRDatabases(ctx context.Context, database string, suff
 
 	// Since the old database contains user data, we do not automatically drop it.
 	// We only drop the empty ephemeral pitr database.
-	// TODO(dragonly): check empty before delete.
+	txn, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+	tables, err := mysql.GetTables(txn, database)
+	if err != nil {
+		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
+	}
+	if len(tables) != 0 {
+		return fmt.Errorf("the PITR database must be empty, but has tables[%v]", tables)
+	}
+
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrDatabaseName)); err != nil {
 		return err
