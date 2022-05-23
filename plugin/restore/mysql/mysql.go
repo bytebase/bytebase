@@ -24,6 +24,9 @@ import (
 // TODO(zp): refactor this when sure the mysqlbinlog path
 var mysqlbinlogBinPath = "UNKNOWN"
 
+// matches server time pattern in binlog text output like "#220421 14:49:26", which is basically "#YYMMDD hh:mm:ss"
+var reServerTime = regexp.MustCompile(`^#(\d{2})(\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})`)
+
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
@@ -122,7 +125,7 @@ func parseBinlogFileNameIndex(filename string) (int64, error) {
 // The current mechanism is by invoking mysqlbinlog with -v and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (int64, error) {
+func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (timestamp int64, err error) {
 	connConfig := r.driver.GetConnectionConfig()
 	mysqlbinlogBinPath := "fake"
 	args := []string{
@@ -137,16 +140,34 @@ func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (int64
 	if err != nil {
 		return -1, err
 	}
+	defer func() {
+		if err = output.Close(); err != nil {
+			// TODO(dragonly): log the error, but still return true since we get the binlog event timestamp anyway.
+			err = nil
+		}
+	}()
+
 	if err := cmd.Start(); err != nil {
 		return -1, err
 	}
 
+	timestamp, err = parseBinlogEventTimestampImpl(output)
+	if err != nil {
+		return
+	}
+
+	// We eagerly exit the mysqlbinlog process as long as we get the timestamp to save resources.
+	if err := cmd.Process.Kill(); err != nil {
+		return -1, err
+	}
+
+	return timestamp, nil
+}
+
+func parseBinlogEventTimestampImpl(output io.Reader) (int64, error) {
 	buf := make([]byte, 1024)
 	var lineBuf bytes.Buffer
 	var line string
-	var timestamp int64
-	// matches server time pattern like "#220421 14:49:26", which is basically "#YYMMDD hh:mm:ss"
-	reServerTime := regexp.MustCompile(`^#(\d{2})(\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})`)
 
 	// Read lines from mysqlbinlog text output
 	for {
@@ -206,20 +227,12 @@ func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (int64
 				if err != nil {
 					return -1, err
 				}
-				timestamp = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix()
-				break
+				return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), nil
 			}
-			// clear current line and enters the state of processing the next line
+			// No matches found, clear the current line and process the next line.
 			line = ""
 		}
 	}
-
-	// We eagerly exit the mysqlbinlog process as long as we get the timestamp to save resources.
-	if err := cmd.Process.Kill(); err != nil {
-		return -1, err
-	}
-
-	return timestamp, nil
 }
 
 // Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
