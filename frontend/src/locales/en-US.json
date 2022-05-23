@@ -1414,10 +1414,6 @@
         "title": "Column naming check",
         "description": "Enforce the column name format. Default snake_lower_case."
       },
-      "naming-index-pk": {
-        "title": "Primary key naming check",
-        "description": "Enforce the primary key name format. Default pk_{table_name}_{column_name}."
-      },
       "naming-index-uk": {
         "title": "Unique key naming check",
         "description": "Enforce the unique key name format. Default uk_{table_name}_{column_name}."
@@ -1458,9 +1454,9 @@
     "payload-config": {
       "table-name-format": "Table name format (regex)",
       "column-name-format": "Column name format (regex)",
-      "pk-name-format": "Primary key name format",
       "uk-name-format": "Unique key name format",
       "idx-name-format": "Index name format",
+      "fk-name-format": "Foreign key name format",
       "required-column": "Required column names",
       "input-then-press-enter": "Input the value then press enter to add",
       "template": {
