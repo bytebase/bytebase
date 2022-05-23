@@ -10,7 +10,7 @@
             <heroicons-outline:plus-sm class="w-6 h-6" />
           </button>
           <h3 class="mt-1 text-base font-normal text-main tracking-tight">
-            {{ $t("schema-review-policy.add-review") }}
+            {{ $t("schema-review-policy.create-policy") }}
           </h3>
         </div>
       </div>

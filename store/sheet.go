@@ -205,7 +205,7 @@ func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*s
 	}
 	defer tx.PTx.Rollback()
 
-	sheet, err := createSheetImpl(ctx, tx.PTx, create, s.db.mode)
+	sheet, err := createSheetImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 	}
 	defer tx.PTx.Rollback()
 
-	sheet, err := patchSheetImpl(ctx, tx.PTx, patch, s.db.mode)
+	sheet, err := patchSheetImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findSheetImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findSheetImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -276,13 +276,12 @@ func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw
 }
 
 // createSheetImpl creates a new sheet.
-func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, mode common.ReleaseMode) (*sheetRaw, error) {
-	if mode == common.ReleaseModeDev {
-		if create.Payload == "" {
-			create.Payload = "{}"
-		}
+func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (*sheetRaw, error) {
+	if create.Payload == "" {
+		create.Payload = "{}"
+	}
 
-		row, err := tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -298,24 +297,92 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, m
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
 	`,
-			create.CreatorID,
-			create.CreatorID,
-			create.ProjectID,
-			create.DatabaseID,
-			create.Name,
-			create.Statement,
-			create.Visibility,
-			create.Source,
-			create.Type,
-			create.Payload,
-		)
+		create.CreatorID,
+		create.CreatorID,
+		create.ProjectID,
+		create.DatabaseID,
+		create.Name,
+		create.Statement,
+		create.Visibility,
+		create.Source,
+		create.Type,
+		create.Payload,
+	)
 
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
 
-		row.Next()
+	row.Next()
+	var sheetRaw sheetRaw
+	databaseID := sql.NullInt32{}
+	if err := row.Scan(
+		&sheetRaw.ID,
+		&sheetRaw.RowStatus,
+		&sheetRaw.CreatorID,
+		&sheetRaw.CreatedTs,
+		&sheetRaw.UpdaterID,
+		&sheetRaw.UpdatedTs,
+		&sheetRaw.ProjectID,
+		&databaseID,
+		&sheetRaw.Name,
+		&sheetRaw.Statement,
+		&sheetRaw.Visibility,
+		&sheetRaw.Source,
+		&sheetRaw.Type,
+		&sheetRaw.Payload,
+	); err != nil {
+		return nil, FormatError(err)
+	}
+
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		sheetRaw.DatabaseID = &value
+	}
+
+	return &sheetRaw, nil
+}
+
+// patchSheetImpl updates a sheet's name/statement/visibility.
+func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sheetRaw, error) {
+	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
+	if v := patch.RowStatus; v != nil {
+		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
+	}
+	if v := patch.DatabaseID; v != nil {
+		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Name; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Statement; v != nil {
+		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Visibility; v != nil {
+		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Payload; v != nil {
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
+	}
+
+	args = append(args, patch.ID)
+
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		UPDATE sheet
+		SET `+strings.Join(set, ", ")+`
+		WHERE id = $%d
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
+	`, len(args)),
+		args...,
+	)
+
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer row.Close()
+
+	if row.Next() {
 		var sheetRaw sheetRaw
 		databaseID := sql.NullInt32{}
 		if err := row.Scan(
@@ -344,178 +411,12 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate, m
 
 		return &sheetRaw, nil
 	}
-	row, err := tx.QueryContext(ctx, `
-	INSERT INTO sheet (
-		creator_id,
-		updater_id,
-		project_id,
-		database_id,
-		name,
-		statement,
-		visibility
-	)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
-`,
-		create.CreatorID,
-		create.CreatorID,
-		create.ProjectID,
-		create.DatabaseID,
-		create.Name,
-		create.Statement,
-		create.Visibility,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var sheetRaw sheetRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&sheetRaw.ID,
-		&sheetRaw.RowStatus,
-		&sheetRaw.CreatorID,
-		&sheetRaw.CreatedTs,
-		&sheetRaw.UpdaterID,
-		&sheetRaw.UpdatedTs,
-		&sheetRaw.ProjectID,
-		&databaseID,
-		&sheetRaw.Name,
-		&sheetRaw.Statement,
-		&sheetRaw.Visibility,
-	); err != nil {
-		return nil, FormatError(err)
-	}
-
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheetRaw.DatabaseID = &value
-	}
-
-	return &sheetRaw, nil
-}
-
-// patchSheetImpl updates a sheet's name/statement/visibility.
-func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch, mode common.ReleaseMode) (*sheetRaw, error) {
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.RowStatus(*v))
-	}
-	if v := patch.DatabaseID; v != nil {
-		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Name; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Statement; v != nil {
-		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Visibility; v != nil {
-		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
-	}
-	if mode == common.ReleaseModeDev {
-		if v := patch.Payload; v != nil {
-			set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-		}
-	}
-
-	args = append(args, patch.ID)
-
-	if mode == common.ReleaseModeDev {
-		row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-		UPDATE sheet
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
-	`, len(args)),
-			args...,
-		)
-
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
-
-		if row.Next() {
-			var sheetRaw sheetRaw
-			databaseID := sql.NullInt32{}
-			if err := row.Scan(
-				&sheetRaw.ID,
-				&sheetRaw.RowStatus,
-				&sheetRaw.CreatorID,
-				&sheetRaw.CreatedTs,
-				&sheetRaw.UpdaterID,
-				&sheetRaw.UpdatedTs,
-				&sheetRaw.ProjectID,
-				&databaseID,
-				&sheetRaw.Name,
-				&sheetRaw.Statement,
-				&sheetRaw.Visibility,
-				&sheetRaw.Source,
-				&sheetRaw.Type,
-				&sheetRaw.Payload,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-
-			if databaseID.Valid {
-				value := int(databaseID.Int32)
-				sheetRaw.DatabaseID = &value
-			}
-
-			return &sheetRaw, nil
-		}
-
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
-	}
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-	UPDATE sheet
-	SET `+strings.Join(set, ", ")+`
-	WHERE id = $%d
-	RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility
-`, len(args)),
-		args...,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var sheetRaw sheetRaw
-		databaseID := sql.NullInt32{}
-		if err := row.Scan(
-			&sheetRaw.ID,
-			&sheetRaw.RowStatus,
-			&sheetRaw.CreatorID,
-			&sheetRaw.CreatedTs,
-			&sheetRaw.UpdaterID,
-			&sheetRaw.UpdatedTs,
-			&sheetRaw.ProjectID,
-			&databaseID,
-			&sheetRaw.Name,
-			&sheetRaw.Statement,
-			&sheetRaw.Visibility,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if databaseID.Valid {
-			value := int(databaseID.Int32)
-			sheetRaw.DatabaseID = &value
-		}
-
-		return &sheetRaw, nil
-	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
+
 }
 
-func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode common.ReleaseMode) ([]*sheetRaw, error) {
+func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*sheetRaw, error) {
 	where, args := []string{"1 = 1"}, []interface{}{}
 
 	if v := find.ID; v != nil {
@@ -545,18 +446,18 @@ func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 	if v := find.PrincipalID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
-	if mode == common.ReleaseModeDev {
-		if v := find.OrganizerID; v != nil {
-			// For now, we only need the starred sheets.
-			where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
-		}
-		if v := find.Source; v != nil {
-			where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
-		}
-		if v := find.Type; v != nil {
-			where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
-		}
-		rows, err := tx.QueryContext(ctx, `
+	if v := find.OrganizerID; v != nil {
+		// For now, we only need the starred sheets.
+		where, args = append(where, fmt.Sprintf("id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+	}
+	if v := find.Source; v != nil {
+		where, args = append(where, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Type; v != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
+	}
+
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			row_status,
@@ -574,65 +475,6 @@ func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 			payload
 		FROM sheet
 		WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer rows.Close()
-
-		var sheetRawList []*sheetRaw
-		for rows.Next() {
-			var sheetRaw sheetRaw
-			databaseID := sql.NullInt32{}
-			if err := rows.Scan(
-				&sheetRaw.ID,
-				&sheetRaw.RowStatus,
-				&sheetRaw.CreatorID,
-				&sheetRaw.CreatedTs,
-				&sheetRaw.UpdaterID,
-				&sheetRaw.UpdatedTs,
-				&sheetRaw.ProjectID,
-				&databaseID,
-				&sheetRaw.Name,
-				&sheetRaw.Statement,
-				&sheetRaw.Visibility,
-				&sheetRaw.Source,
-				&sheetRaw.Type,
-				&sheetRaw.Payload,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-
-			if databaseID.Valid {
-				value := int(databaseID.Int32)
-				sheetRaw.DatabaseID = &value
-			}
-
-			sheetRawList = append(sheetRawList, &sheetRaw)
-		}
-		if err := rows.Err(); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return sheetRawList, nil
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-	SELECT
-		id,
-		row_status,
-		creator_id,
-		created_ts,
-		updater_id,
-		updated_ts,
-		project_id,
-		database_id,
-		name,
-		statement,
-		visibility
-	FROM sheet
-	WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
@@ -656,6 +498,9 @@ func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind, mode co
 			&sheetRaw.Name,
 			&sheetRaw.Statement,
 			&sheetRaw.Visibility,
+			&sheetRaw.Source,
+			&sheetRaw.Type,
+			&sheetRaw.Payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}

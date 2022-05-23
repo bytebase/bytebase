@@ -196,7 +196,8 @@
     "duplicate": "拷贝",
     "clear-search": "清空搜索",
     "enable": "开启",
-    "disable": "禁用"
+    "disable": "禁用",
+    "view-doc": "查看文档"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -506,6 +507,7 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
+    "database-owner-name": "数据库所有者",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
@@ -1368,11 +1370,11 @@
   "schema-review-policy": {
     "title": "Schema 审核策略",
     "no-policy-set": "没有 schema 审核策略",
-    "add-review": "新增审核策略",
+    "create-policy": "创建审核策略",
     "search-rule-name": "搜索规则名称",
-    "remove-review": "审核策略已删除",
-    "create-review": "审核策略已创建",
-    "update-review": "审核策略已更新",
+    "policy-removed": "审核策略已删除",
+    "policy-created": "审核策略已创建",
+    "policy-updated": "审核策略已更新",
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",

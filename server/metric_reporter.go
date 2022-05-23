@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	metricAPI "github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/plugin/metric/reporter"
 
@@ -17,6 +17,8 @@ import (
 
 const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
+	// identifyTraitForPlan is the trait key for subscription plan.
+	identifyTraitForPlan = "plan"
 )
 
 // MetricReporter is the metric reporter.
@@ -25,26 +27,22 @@ type MetricReporter struct {
 
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
-	subscription  *enterpriseAPI.Subscription
-	reporter      reporter.MetricReporter
-	workspaceID   string
-	collectorList []collector.MetricCollector
+	subscription *enterpriseAPI.Subscription
+	workspaceID  string
+	reporter     reporter.MetricReporter
+	collectors   map[string]collector.MetricCollector
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	reporter := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
-	collectorList := []collector.MetricCollector{
-		collector.NewInstanceCollector(logger, server.store),
-		collector.NewIssueCollector(logger, server.store),
-	}
+	r := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
-		l:             logger,
-		subscription:  &server.subscription,
-		workspaceID:   workspaceID,
-		reporter:      reporter,
-		collectorList: collectorList,
+		l:            logger,
+		subscription: &server.subscription,
+		workspaceID:  workspaceID,
+		reporter:     r,
+		collectors:   make(map[string]collector.MetricCollector),
 	}
 }
 
@@ -74,19 +72,19 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
-				for _, collector := range m.collectorList {
-					collectorName := reflect.TypeOf(collector).String()
-					m.l.Debug("Run metric collector", zap.String("collector", collectorName))
+				for name, collector := range m.collectors {
+					m.l.Debug("Run metric collector", zap.String("collector", name))
 
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
 						m.l.Error(
 							"Failed to collect metric",
-							zap.String("collector", collectorName),
+							zap.String("collector", name),
 							zap.Error(err),
 						)
 						continue
 					}
+
 					for _, metric := range metricList {
 						if err := m.reporter.Report(metric); err != nil {
 							m.l.Error(
@@ -109,15 +107,22 @@ func (m *MetricReporter) Close() {
 	m.reporter.Close()
 }
 
+// Register will register a metric collector.
+func (m *MetricReporter) Register(metricName metricAPI.Name, collector collector.MetricCollector) {
+	m.collectors[string(metricName)] = collector
+}
+
 // Identify will identify the workspace and update the subscription plan.
 func (m *MetricReporter) identify() {
 	plan := api.FREE.String()
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 	}
-	if err := m.reporter.Identify(&api.Workspace{
-		Plan: plan,
-		ID:   m.workspaceID,
+	if err := m.reporter.Identify(&metricAPI.Identifier{
+		ID: m.workspaceID,
+		Labels: map[string]string{
+			identifyTraitForPlan: plan,
+		},
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))
 	}
