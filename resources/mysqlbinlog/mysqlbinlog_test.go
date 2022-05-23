@@ -16,8 +16,7 @@ func TestRunBinary(t *testing.T) {
 	err := Install(tmpDir)
 	a.NoError(err)
 
-	bin := GetMySQLBinlog()
-	cmd := exec.Command(bin.GetPath(), "-V")
+	cmd := exec.Command(GetBinPath(), "-V")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 

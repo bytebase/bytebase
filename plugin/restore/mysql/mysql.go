@@ -224,10 +224,8 @@ func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, 
 func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
-
-	mysqlbinlog := mysqlbinlog.GetMySQLBinlog()
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlog.GetPath(), "bin", "mysqlbinlog"),
+	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlog.GetBinPath(), "bin", "mysqlbinlog"),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",

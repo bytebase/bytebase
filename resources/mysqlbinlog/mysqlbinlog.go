@@ -11,22 +11,22 @@ import (
 	"github.com/bytebase/bytebase/resources/utils"
 )
 
-var bin *MySQLBinlog
+var bin *mysqlBinlog
 
-// MySQLBinlog involve the path of
-type MySQLBinlog struct {
+// mysqlBinlog involve the path of mysqlbinlog binary.
+type mysqlBinlog struct {
 	binPath string
 }
 
-// GetPath return the mysqlbinlog binary path.
-func (m *MySQLBinlog) GetPath() string {
-	return m.binPath
+// GetBinPath return the mysqlbinlog binary path.
+func GetBinPath() string {
+	return getMySQLBinlog().binPath
 }
 
-// GetMySQLBinlog returns MySQLBinlog singleton.
-func GetMySQLBinlog() *MySQLBinlog {
+// getMySQLBinlog returns the MySQLBinlog singleton.
+func getMySQLBinlog() *mysqlBinlog {
 	if bin == nil {
-		bin = &MySQLBinlog{
+		bin = &mysqlBinlog{
 			binPath: "UNKNOWN",
 		}
 	}
@@ -72,7 +72,7 @@ func Install(resourceDir string) error {
 		}
 	}
 
-	bin = &MySQLBinlog{
+	bin = &mysqlBinlog{
 		binPath: filepath.Join(mysqlbinlogDir, version, "bin", "mysqlbinlog"),
 	}
 	return nil
