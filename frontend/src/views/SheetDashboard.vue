@@ -157,15 +157,11 @@ const navigationList = computed(() => {
       path: "/sheets/shared",
       label: t("sheet.shared-with-me"),
     },
-  ];
-
-  // TODO(steven): remove this release guard once ready to release.
-  if (isDev()) {
-    list.push({
+    {
       path: "/sheets/starred",
       label: t("common.starred"),
-    });
-  }
+    },
+  ];
 
   return list;
 });
@@ -315,11 +311,6 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    // TODO(steven): remove this release guard once ready to release.
-    if (isDev()) {
-      return;
-    }
-
     const sheetOrganizerUpsert: SheetOrganizerUpsert = {
       sheeId: sheet.id,
     };
@@ -362,19 +353,16 @@ const handleDropDownActionBtnClick = async (key: string, sheet: Sheet) => {
 const getSheetDropDownOptions = (sheet: Sheet) => {
   const options = [];
 
-  // TODO(steven): remove this release guard once ready to release.
-  if (isDev()) {
-    if (sheet.starred) {
-      options.push({
-        key: "unstar",
-        label: t("common.unstar"),
-      });
-    } else {
-      options.push({
-        key: "star",
-        label: t("common.star"),
-      });
-    }
+  if (sheet.starred) {
+    options.push({
+      key: "unstar",
+      label: t("common.unstar"),
+    });
+  } else {
+    options.push({
+      key: "star",
+      label: t("common.star"),
+    });
   }
 
   if (currentSubPath.value === "my" || currentSubPath.value === "starred") {
