@@ -54,6 +54,7 @@ func TestGetPITRDatabaseName(t *testing.T) {
 			expected:  "long_database_name123456789012345678901234567890_pitr_1652237293",
 		},
 	}
+
 	for _, test := range tests {
 		name := getPITRDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
@@ -78,8 +79,44 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_old",
 		},
 	}
+
 	for _, test := range tests {
 		name := getPITROldDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
+	}
+}
+
+func TestParseBinlogFileNameIndex(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		filename string
+		expected int64
+		err      bool
+	}{
+		{
+			filename: "binlog.000001",
+			expected: 1,
+			err:      false,
+		},
+		{
+			filename: "binlog.000001.ext",
+			expected: -1,
+			err:      true,
+		},
+		{
+			filename: "binlog.ext",
+			expected: -1,
+			err:      true,
+		},
+	}
+
+	for _, test := range tests {
+		index, err := parseBinlogFileNameIndex(test.filename)
+		a.Equal(test.expected, index)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
 	}
 }

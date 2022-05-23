@@ -106,7 +106,6 @@ func (b backupSorter) Less(i, j int) bool {
 }
 
 // parse the numeric extension part of the binlog file names, e.g., binlog.000001 -> 1
-// nolint
 func parseBinlogFileNameIndex(filename string) (int64, error) {
 	parts := strings.Split(filename, ".")
 	if len(parts) != 2 {
