@@ -28,7 +28,7 @@ func NewIssueCollector(l *zap.Logger, store *store.Store) collector.MetricCollec
 func (c *issueCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	issueCountMetricList, err := c.store.CountIssueGroupByType(ctx)
+	issueCountMetricList, err := c.store.CountIssueGroupByTypeAndStatus(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,8 @@ func (c *issueCollector) Collect(ctx context.Context) ([]*metric.Metric, error) 
 			Name:  metricAPI.IssueCountMetricName,
 			Value: issueCountMetric.Count,
 			Labels: map[string]string{
-				"type": string(issueCountMetric.Type),
+				"type":   string(issueCountMetric.Type),
+				"status": string(issueCountMetric.Status),
 			},
 		})
 	}
