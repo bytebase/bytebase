@@ -469,6 +469,9 @@ export default defineComponent({
       const databaseName = isDbNameTemplateMode.value
         ? generatedDatabaseName.value
         : state.databaseName;
+      const owner = requireDatabaseOwnerName.value
+        ? state.databaseOwnerName
+        : "";
 
       if (props.backup) {
         newIssue = {
@@ -484,7 +487,7 @@ export default defineComponent({
           createContext: {
             instanceId: state.instanceId!,
             databaseName: databaseName,
-            owner: state.databaseOwnerName,
+            owner,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -510,7 +513,7 @@ export default defineComponent({
           createContext: {
             instanceId: state.instanceId!,
             databaseName: databaseName,
-            owner: state.databaseOwnerName,
+            owner,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
