@@ -153,7 +153,7 @@ func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (times
 
 	timestamp, err = parseBinlogEventTimestampImpl(output)
 	if err != nil {
-		return
+		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename[%s], position[%d], error[%w]", binlogInfo.FileName, binlogInfo.Position, err)
 	}
 
 	// We eagerly exit the mysqlbinlog process as long as we get the timestamp to save resources.
@@ -167,72 +167,91 @@ func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (times
 func parseBinlogEventTimestampImpl(output io.Reader) (int64, error) {
 	buf := make([]byte, 1024)
 	var lineBuf bytes.Buffer
-	var line string
 
 	// Read lines from mysqlbinlog text output
 	for {
 		n, err := output.Read(buf)
 		if n > 0 {
+			// It may contain multiple lines, so we loop until all complete lines are matched against
 			bytesRead := buf[:n]
 			index := bytes.Index(bytesRead, []byte("\n"))
-			// no complete line found, append
-			if index == -1 {
-				lineBuf.Write(bytesRead)
-			} else {
+			for index != -1 {
 				// complete line found
 				lineBuf.Write(bytesRead[:index])
-				line = lineBuf.String()
-				lineBuf.Reset()
-				// write the rest of the next line into buffer
-				if index < len(bytesRead)-1 {
-					lineBuf.Write(bytesRead[index+1:])
+				line := lineBuf.String()
+
+				// parse timestamp from new complete line
+				timestamp, found, err := parseBinlogEventTimestampFromTextOutputLine(line)
+				if err != nil {
+					return -1, err
 				}
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				line = lineBuf.String()
+				if found {
+					return timestamp, nil
+				}
+
+				// write the rest of the next line into buffer
 				lineBuf.Reset()
-			} else {
-				return -1, err
+				if index < len(bytesRead)-1 {
+					// exclude the '\n' character
+					bytesRead = bytesRead[index+1:]
+				}
+				index = bytes.Index(bytesRead, []byte("\n"))
+			}
+			// no complete line found, append to the line buffer
+			if index == -1 {
+				lineBuf.Write(bytesRead)
 			}
 		}
 
-		// parse timestamp from new complete line
-		if len(line) != 0 {
-			matches := reServerTime.FindStringSubmatch(line)
-			if matches != nil {
-				year, err := strconv.Atoi(matches[1])
+		if err != nil {
+			if err == io.EOF {
+				// parse timestamp from the last complete line
+				line := lineBuf.String()
+				timestamp, found, err := parseBinlogEventTimestampFromTextOutputLine(line)
 				if err != nil {
 					return -1, err
 				}
-				year += 2000
-				month, err := strconv.Atoi(matches[2])
-				if err != nil {
-					return -1, err
+				if found {
+					return timestamp, nil
 				}
-				day, err := strconv.Atoi(matches[3])
-				if err != nil {
-					return -1, err
-				}
-				hour, err := strconv.Atoi(matches[4])
-				if err != nil {
-					return -1, err
-				}
-				minute, err := strconv.Atoi(matches[5])
-				if err != nil {
-					return -1, err
-				}
-				second, err := strconv.Atoi(matches[6])
-				if err != nil {
-					return -1, err
-				}
-				return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), nil
+				return -1, fmt.Errorf("timestamp not found in binlog")
 			}
-			// No matches found, clear the current line and process the next line.
-			line = ""
+			return -1, err
 		}
 	}
+}
+
+func parseBinlogEventTimestampFromTextOutputLine(line string) (int64, bool, error) {
+	matches := reServerTime.FindStringSubmatch(line)
+	if matches != nil {
+		year, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return -1, false, err
+		}
+		year += 2000
+		month, err := strconv.Atoi(matches[2])
+		if err != nil {
+			return -1, false, err
+		}
+		day, err := strconv.Atoi(matches[3])
+		if err != nil {
+			return -1, false, err
+		}
+		hour, err := strconv.Atoi(matches[4])
+		if err != nil {
+			return -1, false, err
+		}
+		minute, err := strconv.Atoi(matches[5])
+		if err != nil {
+			return -1, false, err
+		}
+		second, err := strconv.Atoi(matches[6])
+		if err != nil {
+			return -1, false, err
+		}
+		return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), true, nil
+	}
+	return -1, false, nil
 }
 
 // Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
