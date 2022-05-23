@@ -66,10 +66,7 @@
         </span>
       </div>
 
-      <div
-        v-if="selectedInstance.engine == 'POSTGRES'"
-        class="col-span-2 col-start-2 w-64"
-      >
+      <div v-if="requireDatabaseOwnerName" class="col-span-2 col-start-2 w-64">
         <label for="name" class="textlabel">
           {{ $t("create-db.database-owner-name") }}
           <span class="text-red-600">*</span>
@@ -399,7 +396,7 @@ export default defineComponent({
         : true;
       return (
         !isEmpty(state.databaseName) &&
-        !isEmpty(state.databaseOwnerName) &&
+        validDatabaseOwnerName.value &&
         !isReservedName.value &&
         isLabelValid &&
         state.projectId &&
@@ -428,6 +425,22 @@ export default defineComponent({
       return state.instanceId
         ? instanceStore.getInstanceById(state.instanceId)
         : (unknown("INSTANCE") as Instance);
+    });
+
+    const requireDatabaseOwnerName = computed((): boolean => {
+      const instance = selectedInstance.value;
+      if (instance.id === UNKNOWN_ID) {
+        return false;
+      }
+      return instance.engine === "POSTGRES";
+    });
+
+    const validDatabaseOwnerName = computed((): boolean => {
+      if (!requireDatabaseOwnerName.value) {
+        return true;
+      }
+
+      return !isEmpty(state.databaseOwnerName);
     });
 
     const selectProject = (projectId: ProjectId) => {
@@ -557,6 +570,7 @@ export default defineComponent({
       allowEditEnvironment,
       allowEditInstance,
       selectedInstance,
+      requireDatabaseOwnerName,
       showAssigneeSelect,
       selectProject,
       selectEnvironment,
