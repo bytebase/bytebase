@@ -18,7 +18,7 @@ type mysqlBinlog struct {
 	binPath string
 }
 
-// GetBinPath return the mysqlbinlog binary path.
+// GetBinPath returns the mysqlbinlog binary path.
 func GetBinPath() string {
 	return getMySQLBinlog().binPath
 }
