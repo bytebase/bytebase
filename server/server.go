@@ -94,7 +94,14 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	fmt.Printf("dataDir=%s\n", prof.DataDir)
 	fmt.Println("-----Config END-------")
 
-	start := false
+	serverStarted := false
+	defer func() {
+		if !serverStarted {
+			_ = s.Shutdown(ctx)
+		}
+	}()
+
+	var err error
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
@@ -118,22 +125,12 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
 	s.db = storeDB
-	defer func() {
-		if !start {
-			_ = s.metaDB.Close()
-		}
-	}()
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
-	defer func() {
-		if !start {
-			_ = storeDB.Close()
-		}
-	}()
 
 	cacheService := NewCacheService(logger)
 	storeInstance := store.New(logger, storeDB, cacheService)
@@ -311,7 +308,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	s.initSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
-	start = true
+	serverStarted = true
 	return s, nil
 }
 
@@ -440,8 +437,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres server if embed.
-	server.metaDB.Close()
-
+	if server.metaDB != nil {
+		server.metaDB.Close()
+	}
 	server.l.Info("Bytebase stopped properly")
 
 	return nil
