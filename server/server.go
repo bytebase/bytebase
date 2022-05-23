@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"sync"
 	"time"
@@ -57,11 +56,8 @@ type Server struct {
 	startedTs int64
 	secret    string
 
-	mysqlbinlogDir string
-
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
-	boot   bool
 }
 
 //go:embed acl_casbin_model.conf
@@ -95,16 +91,17 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	fmt.Printf("readonly=%t\n", prof.Readonly)
 	fmt.Printf("demo=%t\n", prof.Demo)
 	fmt.Printf("debug=%t\n", prof.Debug)
+	fmt.Printf("dataDir=%s\n", prof.DataDir)
 	fmt.Println("-----Config END-------")
 
-	var err error
-	// TODO(zp): refactor to keep consistency with embedded Postgres.
+	start := false
+
+	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
-	mysqlbinlogDir, err := mysqlbinlog.Install(path.Join(prof.DataDir, "resources"))
+	err := mysqlbinlog.Install(resourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlbinlogDir = mysqlbinlogDir
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -123,7 +120,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 	s.db = storeDB
 	defer func() {
-		if !s.boot {
+		if !start {
 			_ = s.metaDB.Close()
 		}
 	}()
@@ -134,7 +131,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
 	defer func() {
-		if !s.boot {
+		if !start {
 			_ = storeDB.Close()
 		}
 	}()
@@ -315,7 +312,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	s.initSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
-	s.boot = true
+	start = true
 	return s, nil
 }
 
