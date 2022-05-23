@@ -14,7 +14,13 @@ const (
 	MaxDatabaseNameLength = 64
 )
 
-// Restore implements recovery functions for MySQL
+// Restore implements recovery functions for MySQL.
+// For example, the original database is `dbfoo`, and the suffixTs is 1653018005 (derived from the PITR issue's CreateTs),
+// then Bytebase will do the following:
+// 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
+// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
+// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and table from `dbfoo_pitr_1653018005` to `dbfoo`.
+// 3. Delete database `dbfoo_pitr_1653018005_old` and `dbfoo_pitr_1653018005`.
 type Restore struct {
 	driver *mysql.Driver
 }
@@ -31,7 +37,8 @@ func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) er
 	return fmt.Errorf("Unimplemented")
 }
 
-// RestorePITR is a wrapper for restore a full backup and a range of incremental backup
+// RestorePITR is a wrapper for restore a full backup and a range of incremental backup.
+// It performs the step 1 of the restore process.
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
@@ -70,12 +77,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 // It returns the pitr and old database names after swap.
-// For example, the original database is `dbfoo`, and the suffixTs is 1653018005 (derived from the PITR issue's CreateTs),
-// then Bytebase will do the following:
-// 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
-// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
-// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and table from `dbfoo_pitr_1653018005` to `dbfoo`.
-// 3. Delete database `dbfoo_pitr_1653018005_old` and `dbfoo_pitr_1653018005`.
+// It performs the step 2 of the restore process.
 func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) (string, string, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
@@ -125,17 +127,16 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 }
 
 // DeletePITRDatabases deletes the temporary pitr databases after the PITR swap task.
+// It performs the step 3 of the restore process.
 func (r *Restore) DeletePITRDatabases(ctx context.Context, database string, suffixTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return err
 	}
 
-	pitrOldDatabaseName := getPITROldDatabaseName(database, suffixTs)
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrOldDatabaseName)); err != nil {
-		return err
-	}
-
+	// Since the old database contains user data, we do not automatically drop it.
+	// We only drop the empty ephemeral pitr database.
+	// TODO(dragonly): check empty before delete.
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrDatabaseName)); err != nil {
 		return err
