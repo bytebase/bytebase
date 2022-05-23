@@ -1416,15 +1416,15 @@
       },
       "naming-index-uk": {
         "title": "Unique key naming check",
-        "description": "Enforce the unique key name format. Default uk_{table_name}_{column_name}."
+        "description": "Enforce the unique key name format. Default uk_<table_name>_<column_list>."
       },
       "naming-index-fk": {
         "title": "Foreign key naming check",
-        "description": "Enforce the foreign key name format. Default fk_{referencing_table}_{referencing_column}_{referenced_table}_{referenced_column}."
+        "description": "Enforce the foreign key name format. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column>."
       },
       "naming-index-idx": {
         "title": "Index naming check",
-        "description": "Enforce the index name format. Default idx_{table_name}_{column_name}."
+        "description": "Enforce the index name format. Default idx_<table_name>_<column_list>."
       },
       "column-required": {
         "title": "Required columns",
