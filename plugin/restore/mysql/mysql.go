@@ -83,6 +83,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	return nil
 }
 
+// nolint
 type backupComparator struct {
 	backup      *api.Backup
 	binlogInfo  *mysql.BinlogInfo
@@ -90,12 +91,13 @@ type backupComparator struct {
 }
 
 // backupSorter implements interface sort.Interface
-type backupSorter []backupComparator
+type backupSorter []backupComparator // nolint
 
-func (b backupSorter) Len() int      { return len(b) }
-func (b backupSorter) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b backupSorter) Len() int      { return len(b) }           // nolint
+func (b backupSorter) Swap(i, j int) { b[i], b[j] = b[j], b[i] } // nolint
 
 // Newer binlog filename/position will be in front of older ones.
+// nolint
 func (b backupSorter) Less(i, j int) bool {
 	if b[i].binlogIndex > b[j].binlogIndex {
 		return true
@@ -104,6 +106,7 @@ func (b backupSorter) Less(i, j int) bool {
 }
 
 // parse the numeric extension part of the binlog file names, e.g., binlog.000001 -> 1
+// nolint
 func parseBinlogFileNameIndex(filename string) (int64, error) {
 	parts := strings.Split(filename, ".")
 	if len(parts) != 2 {
@@ -119,6 +122,7 @@ func parseBinlogFileNameIndex(filename string) (int64, error) {
 // Parse the binlog at position, and return the timestamp in the binlog event.
 // The current mechanism is by invoking mysqlbinlog with -v and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
+// nolint
 func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (int64, error) {
 	connConfig := r.driver.GetConnectionConfig()
 	mysqlbinlogBinPath := "fake"
@@ -221,6 +225,8 @@ func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (int64
 
 // Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
 // The backupList should only contain DONE backups.
+// TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments
+// nolint
 func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64) (*api.Backup, *mysql.BinlogInfo, error) {
 	// Sort backups by their binlog filename and position, with the latest at the front of the list.
 	backups, err := sortBackupInfo(backupList)
@@ -237,6 +243,7 @@ func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api
 	return backup.backup, backup.binlogInfo, nil
 }
 
+// nolint
 func sortBackupInfo(backupList []*api.Backup) ([]backupComparator, error) {
 	var backups []backupComparator
 	for _, b := range backupList {
@@ -261,6 +268,7 @@ func sortBackupInfo(backupList []*api.Backup) ([]backupComparator, error) {
 }
 
 // Traverse the backups starting from the latest and find the first with timestamp less than the target restore timestamp.
+// nolint
 func (r *Restore) findNearestBinlogEventTimestamp(backups []backupComparator, restoreTs int64) (backupComparator, error) {
 	var eventTs int64
 	var err error
