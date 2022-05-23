@@ -104,6 +104,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		return
 	}
 
+	// TODO(dragonly): CREATE DATABASE is non-transactional, we should drop it if anything fails in the whole process later.
 	if _, err = txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return
 	}
