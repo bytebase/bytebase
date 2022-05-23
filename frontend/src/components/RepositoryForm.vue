@@ -127,8 +127,7 @@
         }}
       </div>
     </div>
-    <!-- TODO(steven): remove this release guard once ready to release. -->
-    <div v-if="isDev()">
+    <div>
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
         <a
@@ -208,7 +207,6 @@ import {
   RepositoryConfig,
   VCSType,
 } from "@/types";
-import { isDev } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -344,7 +342,6 @@ export default defineComponent({
       state,
       sampleFilePath,
       sampleSchemaPath,
-      isDev,
     };
   },
 });
