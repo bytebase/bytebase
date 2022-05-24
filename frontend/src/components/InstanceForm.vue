@@ -257,7 +257,7 @@
         <div>
           <BBCheckbox
             v-if="connectionInfoChanged"
-            :title="$t('instance.sync-schema-afterward')"
+            :title="$t('instance.sync-schema-now')"
             :value="state.syncSchema"
             @toggle="state.syncSchema = !state.syncSchema"
           />
