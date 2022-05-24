@@ -1004,36 +1004,10 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Payload:           string(bytesCutover),
 	})
 
-	// task "drop original table"
-	tableName, err := getTableNameFromStatement(detail.Statement)
-	if err != nil {
-		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to parse table name, error: %v", err))
-	}
-	tableName = fmt.Sprintf("_%v_del", tableName)
-
-	payloadDrop := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
-		DatabaseName: database.Name,
-		TableName:    tableName,
-	}
-	bytesDrop, err := json.Marshal(payloadDrop)
-	if err != nil {
-		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost drop original table payload, error: %v", err))
-	}
-	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              "Update %q schema gh-ost drop original table",
-		InstanceID:        database.Instance.ID,
-		DatabaseID:        &database.ID,
-		Status:            taskStatus,
-		Type:              api.TaskDatabaseSchemaUpdateGhostDropOriginalTable,
-		EarliestAllowedTs: detail.EarliestAllowedTs,
-		Payload:           string(bytesDrop),
-	})
-
-	// The below list means that taskCreateList[0] blocks taskCreateList[1], and taskCreateList[1] blocks taskCreateList[2].
-	// In other words, task "sync" blocks task "cutover", and task "cutover" blocks task "drop original table".
+	// The below list means that taskCreateList[0] blocks taskCreateList[1].
+	// In other words, task "sync" blocks task "cutover".
 	taskIndexDAGList := []api.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
-		{FromIndex: 1, ToIndex: 2},
 	}
 	return taskCreateList, taskIndexDAGList, nil
 }
