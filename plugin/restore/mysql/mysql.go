@@ -22,15 +22,15 @@ const (
 
 // Restore implements recovery functions for MySQL
 type Restore struct {
-	driver         *mysql.Driver
-	mysqlbinlogIns *mysqlbinlog.Instance
+	driver      *mysql.Driver
+	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // New creates a new instance of Restore
 func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	return &Restore{
-		driver:         driver,
-		mysqlbinlogIns: instance,
+		driver:      driver,
+		mysqlbinlog: instance,
 	}
 }
 
@@ -227,7 +227,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, r.mysqlbinlogIns.GetPath(),
+	cmd := exec.CommandContext(ctx, r.mysqlbinlog.GetPath(),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
