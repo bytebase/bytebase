@@ -82,6 +82,8 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	if err != nil {
 		return err
 	}
+
+	// TODO(dragonly): Clean up the transactions, they do not have a clear semantic / are not necessary.
 	txn, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -95,8 +97,19 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 		return err
 	}
 
-	// TODO(dragonly): handle the case that the original database does not exist
-	tables, err := mysql.GetTables(txn, database)
+	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
+	dbExists, err := r.databaseExists(ctx, database)
+	if err != nil {
+		return fmt.Errorf("failed to check whether database %q exists, error[%w]", database, err)
+	}
+	if !dbExists {
+		if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
+			return fmt.Errorf("failed to create non-exist database %q", database)
+		}
+	}
+
+	var tables []*mysql.TableSchema
+	tables, err = mysql.GetTables(txn, database)
 	if err != nil {
 		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
@@ -123,6 +136,22 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	}
 
 	return nil
+}
+
+func (r *Restore) databaseExists(ctx context.Context, database string) (bool, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return false, err
+	}
+	stmt := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
+	rows, err := db.QueryContext(ctx, stmt)
+	if err != nil {
+		return false, err
+	}
+	if exist := rows.Next(); exist {
+		return true, nil
+	}
+	return false, nil
 }
 
 // DeleteOldDatabase deletes the old database after the PITR swap task.
