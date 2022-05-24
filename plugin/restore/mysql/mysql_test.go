@@ -54,6 +54,7 @@ func TestGetPITRDatabaseName(t *testing.T) {
 			expected:  "long_database_name123456789012345678901234567890_pitr_1652237293",
 		},
 	}
+
 	for _, test := range tests {
 		name := getPITRDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
@@ -78,8 +79,47 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 			expected:  "long_database_name12345678901234567890123456_pitr_1652237293_old",
 		},
 	}
+
 	for _, test := range tests {
 		name := getPITROldDatabaseName(test.database, int64(test.timestamp))
 		a.Equal(test.expected, name)
+	}
+}
+
+func TestCheckVersionForPITR(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		version string
+		err     bool
+	}{
+		{
+			version: "5.6.1",
+			err:     true,
+		},
+		{
+			version: "5.7.0",
+			err:     false,
+		},
+		{
+			version: "8.0.28",
+			err:     false,
+		},
+		{
+			version: "8.0.28-debug",
+			err:     false,
+		},
+		{
+			version: "invalid.semver",
+			err:     true,
+		},
+	}
+
+	for _, test := range tests {
+		err := checkVersionForPITR(test.version)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
 	}
 }

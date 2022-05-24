@@ -10,14 +10,17 @@ jobs:
   golangci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+      - name: go generate -tags mysql ./...
+        run: go generate -tags mysql ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           version: v1.45.2
+          args: -v
 
   go-tidy:
     runs-on: ubuntu-latest
@@ -42,7 +45,7 @@ jobs:
         with:
           go-version: 1.17
       - name: Cache MySQL
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: |
             ./resources/mysql/*.tar.gz

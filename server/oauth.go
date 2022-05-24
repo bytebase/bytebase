@@ -38,9 +38,19 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 
 			vcsType = vcs.Type
 			instanceURL = vcs.InstanceURL
+			clientID := req.ClientID
+			clientSecret := req.ClientSecret
+			// Since we may not pass in ClientID and ClientSecret in the request, we will use the client ID and secret from VCS store even if it's stale.
+			// If it's stale, we should return better error messages and ask users to update the VCS secrets.
+			// https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/frontend/src/components/RepositorySelectionPanel.vue?L77:8&subtree=true
+			// https://github.com/bytebase/bytebase/issues/1372
+			if clientID == "" || clientSecret == "" {
+				clientID = vcs.ApplicationID
+				clientSecret = vcs.Secret
+			}
 			oauthExchange = &common.OAuthExchange{
-				ClientID:     req.ClientID,
-				ClientSecret: req.ClientSecret,
+				ClientID:     clientID,
+				ClientSecret: clientSecret,
 				Code:         req.Code,
 			}
 		} else {

@@ -195,8 +195,7 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 			return advisor.MySQLTableRequirePK, nil
 		}
 	case api.SchemaRuleMySQLEngine:
-		switch engine {
-		case db.MySQL:
+		if engine == db.MySQL {
 			return advisor.MySQLUseInnoDB, nil
 		}
 	}
