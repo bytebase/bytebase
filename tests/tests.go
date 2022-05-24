@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -140,6 +141,11 @@ func getTestPort(testName string) int {
 		return 1272
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
+}
+
+// ConnectTestMySQL connects to the test mysql instance.
+func ConnectTestMySQL(port int, database string) (*sql.DB, error) {
+	return sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/%s?multiStatements=true", port, database))
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.

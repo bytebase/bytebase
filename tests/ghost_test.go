@@ -5,7 +5,6 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -56,7 +55,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	_, stopInstance := mysql.SetupTestInstance(t, port)
 	defer stopInstance()
 
-	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", port))
+	mysqlDB, err := ConnectTestMySQL(port, "")
 	a.NoError(err)
 	defer mysqlDB.Close()
 
