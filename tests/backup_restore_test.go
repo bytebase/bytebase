@@ -69,7 +69,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// make a full backup
-	driver, err := getMySQLDriver(ctx, strconv.Itoa(port), database)
+	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 	a.NoError(err)
 	defer func() {
 		err := driver.Close(ctx)
@@ -141,7 +141,7 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, 0, numRowsTime0)
 
 		t.Log("make a full backup")
-		driver, err := getMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
+		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
 		defer func() {
 			err := driver.Close(ctx)
@@ -203,7 +203,7 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, 0, numRowsTime0)
 
 		t.Log("make a full backup")
-		driver, err := getMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
+		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
 		defer func() {
 			err := driver.Close(ctx)
@@ -264,7 +264,7 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, 0, numRowsTime0)
 
 		t.Log("make a full backup")
-		driver, err := getMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
+		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
 		defer func() {
 			err := driver.Close(ctx)
@@ -394,7 +394,7 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func getMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
+func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		return nil, err
