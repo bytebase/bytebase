@@ -127,11 +127,7 @@ VALUES
 
 ALTER SEQUENCE label_key_id_seq RESTART WITH 103;
 
--- Create 1 "test", 1 "prod" instance (including * database and admin data source)
--- Both instances contains the connection info we expect user to setup according to https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing
--- Set host to 172.17.0.1 which is the default docker gateway ip.
--- Our quickstart guide suggests to run both Bytebase and MySQL using docker, and in such case, bytebase access the mysqld container via 172.17.0.1
--- "test" instance
+-- Create 1 "test" instance (including * database and admin data source)
 INSERT INTO
     instance (
         id,
@@ -151,42 +147,15 @@ VALUES
         1,
         1,
         101,
-        'Sample Test instance (Follow the "External Link" field to bring up the MySQL server)',
-        'MYSQL',
-        '8.0.19',
+        'Sample Test instance',
+        'POSTGRES',
+        '14.3',
         'host.docker.internal',
-        '3306',
-        'https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing'
+        '5432',
+        ''
     );
 
-INSERT INTO
-    instance (
-        id,
-        creator_id,
-        updater_id,
-        environment_id,
-        name,
-        engine,
-        engine_version,
-        host,
-        port,
-        external_link
-    )
-VALUES
-    (
-        102,
-        1,
-        1,
-        102,
-        'Sample Prod instance (Follow the "External Link" field to bring up the MySQL server)',
-        'MYSQL',
-        '8.0.19',
-        'host.docker.internal',
-        '3306',
-        'https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing'
-    );
-
-ALTER SEQUENCE instance_id_seq RESTART WITH 103;
+ALTER SEQUENCE instance_id_seq RESTART WITH 102;
 
 INSERT INTO
     db (
@@ -217,36 +186,7 @@ VALUES
         ''
     );
 
-INSERT INTO
-    db (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        project_id,
-        name,
-        character_set,
-        "collation",
-        sync_status,
-        last_successful_sync_ts,
-        schema_version
-    )
-VALUES
-    (
-        102,
-        1,
-        1,
-        102,
-        1,
-        '*',
-        'utf8mb4',
-        'utf8mb4_general_ci',
-        'OK',
-        0,
-        ''
-    );
-
-ALTER SEQUENCE db_id_seq RESTART WITH 103;
+ALTER SEQUENCE db_id_seq RESTART WITH 102;
 
 INSERT INTO
     data_source (
@@ -273,32 +213,7 @@ VALUES
         ''
     );
 
-INSERT INTO
-    data_source (
-        id,
-        creator_id,
-        updater_id,
-        instance_id,
-        database_id,
-        name,
-        TYPE,
-        username,
-        password
-    )
-VALUES
-    (
-        102,
-        1,
-        1,
-        102,
-        102,
-        'Admin data source',
-        'ADMIN',
-        'root',
-        ''
-    );
-
-ALTER SEQUENCE data_source_id_seq RESTART WITH 103;
+ALTER SEQUENCE data_source_id_seq RESTART WITH 102;
 
 -- Create pipeline/stage/task/issue for onboarding
 -- Create pipeline 101 "Hello world"
@@ -413,8 +328,8 @@ VALUES
         1,
         1,
         101,
-        102,
-        102,
+        101,
+        101,
         NULL,
         'Let''s go',
         'bb.task.general',
