@@ -352,7 +352,7 @@ func checkVersionForPITR(version string) error {
 	}
 	v57 := semver.MustParse("5.7.0")
 	if v.LT(v57) {
-		return fmt.Errorf("version %s is not supported for PITR, the minimum supported version is 5.7", version)
+		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 5.7", version)
 	}
 	return nil
 }
