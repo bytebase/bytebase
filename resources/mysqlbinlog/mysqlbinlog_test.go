@@ -1,7 +1,6 @@
 package mysqlbinlog
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,6 @@ func TestRunBinary(t *testing.T) {
 	ins, err := Install(tmpDir)
 	a.NoError(err)
 
-	version, err := ins.Version()
+	_, err = ins.Version()
 	a.NoError(err)
-	fmt.Println(version)
 }
