@@ -8,7 +8,7 @@ on:
 
 jobs:
   golangci:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -17,7 +17,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.46.2
+          version: v1.45.2
           skip-cache: true
 
   go-tidy:
