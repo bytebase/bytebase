@@ -55,9 +55,6 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	m.l.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
-		// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
-		m.identify()
-
 		select {
 		case <-ticker.C:
 			func() {
@@ -70,6 +67,9 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						m.l.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
+
+				// identify will be triggered in every schedule loop so that we can update the latest workspace profile like subscription plan.
+				m.identify()
 
 				ctx := context.Background()
 				for name, collector := range m.collectors {
