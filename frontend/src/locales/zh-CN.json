@@ -532,7 +532,7 @@
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-now": "现在同步",
-    "sync-schema-afterward": "随即同步 schema",
+    "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
