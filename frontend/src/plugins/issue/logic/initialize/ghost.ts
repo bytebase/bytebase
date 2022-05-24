@@ -32,7 +32,7 @@ const buildNewGhostIssue = async (
 
   const databaseList = findDatabaseListByQuery(context);
   const createContext: UpdateSchemaGhostContext = {
-    updateSchemaDetailList: databaseList.map((db) => {
+    updateSchemaGhostDetailList: databaseList.map((db) => {
       return {
         databaseId: db.id,
         databaseName: db.name,

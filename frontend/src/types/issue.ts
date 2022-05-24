@@ -60,7 +60,7 @@ export type UpdateSchemaContext = {
 };
 
 export type UpdateSchemaGhostContext = {
-  updateSchemaDetailList: UpdateSchemaGhostDetail[];
+  updateSchemaGhostDetailList: UpdateSchemaGhostDetail[];
 };
 
 export type PITRContext = {
