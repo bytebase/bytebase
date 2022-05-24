@@ -19,15 +19,15 @@ import (
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
 func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
-		l:              logger,
-		mysqlbinlogIns: instance,
+		l:           logger,
+		mysqlbinlog: instance,
 	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	l              *zap.Logger
-	mysqlbinlogIns *mysqlbinlog.Instance
+	l           *zap.Logger
+	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -77,7 +77,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlogIns)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlog)
 	config := pluginmysql.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
 	// Currently, let's just use the empty backup dump as a placeholder.

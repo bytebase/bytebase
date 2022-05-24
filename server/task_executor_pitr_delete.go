@@ -14,15 +14,15 @@ import (
 // NewPITRDeleteTaskExecutor creates a PITR delete task executor.
 func NewPITRDeleteTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
 	return &PITRDeleteTaskExecutor{
-		l:              logger,
-		mysqlbinlogIns: instance,
+		l:           logger,
+		mysqlbinlog: instance,
 	}
 }
 
 // PITRDeleteTaskExecutor is the PITR delete task executor.
 type PITRDeleteTaskExecutor struct {
-	l              *zap.Logger
-	mysqlbinlogIns *mysqlbinlog.Instance
+	l           *zap.Logger
+	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // RunOnce will run the PITR delete task executor once.
@@ -50,7 +50,7 @@ func (exec *PITRDeleteTaskExecutor) RunOnce(ctx context.Context, server *Server,
 		return true, nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlogIns)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlog)
 	if err := mysqlRestore.DeletePITRDatabases(ctx, task.Database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to delete the original database after PITR swap",
 			zap.String("instance", task.Instance.Name),

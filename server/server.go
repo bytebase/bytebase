@@ -192,8 +192,11 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlbinlog)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger)
+		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlbinlog)
 		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
+
+		pitrDeleteExecutor := NewPITRDeleteTaskExecutor(logger, s.mysqlbinlog)
+		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrDeleteExecutor)
 
 		s.TaskScheduler = taskScheduler
 
