@@ -33,7 +33,7 @@ export const buildNewStandardIssue = async (
     updateSchemaDetailList: databaseList.map((db) => {
       return {
         databaseId: db.id,
-        databaseName: db.name,
+        databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement,
       };
     }),
