@@ -18,6 +18,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.45.2
+          args: -v
 
   go-tidy:
     runs-on: ubuntu-latest
