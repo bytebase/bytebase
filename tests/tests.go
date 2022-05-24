@@ -145,7 +145,7 @@ func getTestPort(testName string) int {
 
 // connectTestMySQL connects to the test mysql instance.
 func connectTestMySQL(port int, database string) (*sql.DB, error) {
-	return sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/%s?multiStatements=true", port, database))
+	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
