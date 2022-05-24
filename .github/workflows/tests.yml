@@ -14,6 +14,8 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+      - name: go generate -tags mysql ./...
+        run: go generate -tags mysql ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
