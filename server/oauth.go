@@ -39,8 +39,8 @@ func (s *Server) registerOAuthRoutes(g *echo.Group) {
 			vcsType = vcs.Type
 			instanceURL = vcs.InstanceURL
 			oauthExchange = &common.OAuthExchange{
-				ClientID:     req.ClientID,
-				ClientSecret: req.ClientSecret,
+				ClientID:     vcs.ApplicationID,
+				ClientSecret: vcs.Secret,
 				Code:         req.Code,
 			}
 		} else {
