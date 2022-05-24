@@ -6,6 +6,7 @@ linters:
     - govet
     - staticcheck
     - misspell
+    - gocritic
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
@@ -22,6 +23,8 @@ issues:
 
 run:
   timeout: 5m
+  build-tags:
+    - mysql
 
 linters-settings:
   revive:
@@ -30,3 +33,6 @@ linters-settings:
         arguments:
           - checkPrivateReceivers
           - sayRepetitiveInsteadOfStutters
+  gocritic:
+    disabled-checks:
+      - ifElseChain

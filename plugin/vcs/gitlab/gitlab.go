@@ -43,8 +43,9 @@ func (e WebhookType) String() string {
 	switch e {
 	case WebhookPush:
 		return "push"
+	default:
+		return "UNKNOWN"
 	}
-	return "UNKNOWN"
 }
 
 // WebhookInfo is the API message for webhook info.

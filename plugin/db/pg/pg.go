@@ -1201,7 +1201,7 @@ func (c *columnSchema) Statement() string {
 		s += fmt.Sprintf("(%s)", c.characterMaximumLength)
 	}
 	if !c.isNullable {
-		s = s + " NOT NULL"
+		s += " NOT NULL"
 	}
 	if c.columnDefault != "" {
 		s += fmt.Sprintf(" DEFAULT %s", c.columnDefault)
@@ -1704,7 +1704,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	var cols []string
 	re := regexp.MustCompile(`\(\(.*\)\)`)
 	for {
-		if len(columnStmt) <= 0 {
+		if len(columnStmt) == 0 {
 			break
 		}
 		// Get a token
@@ -1751,7 +1751,7 @@ func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
@@ -311,7 +312,7 @@ func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.Binlo
 
 // showLatestBinlogFile returns the metadata of latest binlog
 func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFile, error) {
-	//TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
+	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
@@ -341,4 +342,17 @@ func getSafeName(baseName, suffix string) string {
 	}
 	extraCharacters := len(name) - MaxDatabaseNameLength
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
+}
+
+// checks the MySQL version is >=5.7
+func checkVersionForPITR(version string) error {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return err
+	}
+	v57 := semver.MustParse("5.7.0")
+	if v.LT(v57) {
+		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 5.7", version)
+	}
+	return nil
 }
