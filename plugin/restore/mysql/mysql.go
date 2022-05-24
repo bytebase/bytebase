@@ -129,7 +129,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	return pitrDatabaseName, pitrOldDatabase, nil
 }
 
-// DeletePITRDatabases deletes the temporary pitr databases after the PITR swap task.
+// DeletePITRDatabases deletes the temporary pitr database after the PITR swap task.
 // It performs the step 3 of the restore process.
 func (r *Restore) DeletePITRDatabases(ctx context.Context, database string, suffixTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
