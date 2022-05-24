@@ -329,10 +329,10 @@ func (server *Server) initMetricReporter(workspaceID string) {
 	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 	if enabled {
 		metricReporter := NewMetricReporter(server.l, server, workspaceID)
-		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCollector(server.l, server.store))
-		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCollector(server.l, server.store))
-		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCollector(server.l, server.store))
-		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCollector(server.l, server.store))
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(server.l, server.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(server.l, server.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(server.l, server.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(server.l, server.store))
 		server.MetricReporter = metricReporter
 	}
 }
