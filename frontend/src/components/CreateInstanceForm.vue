@@ -185,7 +185,7 @@
       <!-- Create button group -->
       <div class="flex justify-between items-center">
         <BBCheckbox
-          :title="$t('instance.sync-schema-afterward')"
+          :title="$t('instance.sync-schema-now')"
           :value="state.instance.syncSchema"
           @toggle="state.instance.syncSchema = !state.instance.syncSchema"
         />
