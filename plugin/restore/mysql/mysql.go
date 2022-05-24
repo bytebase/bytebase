@@ -311,7 +311,7 @@ func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.Binlo
 
 // showLatestBinlogFile returns the metadata of latest binlog
 func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFile, error) {
-	//TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
+	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err

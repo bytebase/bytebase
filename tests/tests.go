@@ -1051,7 +1051,9 @@ func (ctl *controller) addLabelValues(key string, values []string) error {
 	if labelKey == nil {
 		return fmt.Errorf("failed to find label with key %q", key)
 	}
-	valueList := append(labelKey.ValueList, values...)
+	var valueList []string
+	valueList = append(valueList, labelKey.ValueList...)
+	valueList = append(valueList, values...)
 	_, err = ctl.patchLabelKey(api.LabelKeyPatch{
 		ID:        labelKey.ID,
 		ValueList: valueList,
