@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { computed, watchEffect } from "vue";
+import { computed, onBeforeMount } from "vue";
 import {
   Anomaly,
   DataSource,
@@ -490,6 +490,6 @@ export const useInstanceStore = defineStore("instance", {
 
 export const useInstanceList = (rowStatusList?: RowStatus[]) => {
   const store = useInstanceStore();
-  watchEffect(() => store.fetchInstanceList(rowStatusList));
+  onBeforeMount(() => store.fetchInstanceList(rowStatusList));
   return computed(() => store.getInstanceList(rowStatusList));
 };
