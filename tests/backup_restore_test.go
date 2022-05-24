@@ -247,9 +247,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
 		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
-		a.Error(err)
+		a.NoError(err)
 	})
 
 	t.Run("Schema Migration Failure", func(t *testing.T) {
