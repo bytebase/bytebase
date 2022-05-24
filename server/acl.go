@@ -61,7 +61,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
 				return err
 			} else if isSelf {
-				method = method + "_SELF"
+				method += "_SELF"
 			}
 		}
 

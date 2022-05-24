@@ -215,8 +215,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// Create webhook and retrieve the created webhook id
 		var webhookCreatePayload []byte
-		switch vcs.Type {
-		case "GITLAB_SELF_HOST":
+		if vcs.Type == "GITLAB_SELF_HOST" {
 			webhookPost := gitlab.WebhookPost{
 				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
@@ -367,8 +366,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
 			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
 			var webhookPatchPayload []byte
-			switch vcs.Type {
-			case "GITLAB_SELF_HOST":
+			if vcs.Type == "GITLAB_SELF_HOST" {
 				webhookPut := gitlab.WebhookPut{
 					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
