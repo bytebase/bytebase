@@ -33,7 +33,7 @@ type Instance struct {
 	proc *os.Process
 }
 
-// BackendPort returns the port of the mysql instance.
+// Port returns the port of the mysql instance.
 func (i Instance) Port() int { return i.port }
 
 // Start starts the mysql instance on the given port, outputs to stdout and stderr.
