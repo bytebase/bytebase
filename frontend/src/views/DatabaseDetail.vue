@@ -114,11 +114,10 @@
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
           </button>
-          <BBTooltipButton
+          <button
             v-if="allowEdit"
-            type="normal"
-            tooltip-mode="DISABLED-ONLY"
-            :disabled="!allowMigrate"
+            type="button"
+            class="btn-normal"
             @click="changeData"
           >
             <span>{{ changeDataText }}</span>
@@ -126,16 +125,7 @@
               v-if="database.project.workflowType == 'VCS'"
               class="-mr-1 ml-2 h-5 w-5 text-control-light"
             />
-            <template v-if="!allowMigrate" #tooltip>
-              <div class="w-48 whitespace-pre-wrap">
-                {{
-                  $t("issue.not-allowed-to-single-database-in-tenant-mode", {
-                    operation: changeDataText.toLowerCase(),
-                  })
-                }}
-              </div>
-            </template>
-          </BBTooltipButton>
+          </button>
           <BBTooltipButton
             v-if="allowEdit"
             type="normal"
