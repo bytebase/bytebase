@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
 )
@@ -341,4 +342,18 @@ func getSafeName(baseName, suffix string) string {
 	}
 	extraCharacters := len(name) - MaxDatabaseNameLength
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
+}
+
+// checks the MySQL version is 5.7/8.x
+func checkVersionForPITR(version string) error {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return err
+	}
+	v57 := v.Major == 5 && v.Minor == 7
+	v8 := v.Major == 8
+	if v57 || v8 {
+		return nil
+	}
+	return fmt.Errorf("version %s is not supported for PITR", version)
 }
