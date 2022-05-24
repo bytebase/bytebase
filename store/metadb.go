@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path"
 
 	"github.com/bytebase/bytebase/common"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
@@ -38,7 +37,7 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 		embed:       true,
 		pgUser:      pgUser,
 	}
-	resourceDir := path.Join(dataDir, "resources")
+	resourceDir := common.GetResourceDir(dataDir)
 	pgDataDir := common.GetPostgresDataDir(dataDir)
 	logger.Info("-----Embedded Postgres Config BEGIN-----")
 	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))

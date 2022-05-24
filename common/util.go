@@ -59,6 +59,11 @@ func GetPostgresSocketDir() string {
 	return "/tmp"
 }
 
+// GetResourceDir returns the resource directory of Bytebase.
+func GetResourceDir(dataDir string) string {
+	return path.Join(dataDir, "resources")
+}
+
 // DefaultMigrationVersion returns the default migration version string.
 // Use the current time in second to guarantee uniqueness in a monotonic increasing way.
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
