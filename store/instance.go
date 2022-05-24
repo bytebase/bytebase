@@ -165,7 +165,9 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT engine, environment_id, COUNT(*)
 		FROM instance
-		WHERE row_status = $1
+		WHERE row_status = $1 AND (
+			(id <= 102 AND updater_id != 1) OR id > 102
+		)
 		GROUP BY engine, environment_id`,
 		rowStatus,
 	)
