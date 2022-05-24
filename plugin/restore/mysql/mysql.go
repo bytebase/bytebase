@@ -82,6 +82,8 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	if err != nil {
 		return err
 	}
+
+	// TODO(dragonly): Clean up the transactions, they do not have a clear semantic / are not necessary.
 	txn, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -100,13 +102,16 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	if err != nil {
 		return fmt.Errorf("failed to check whether database %q exists, error[%w]", database, err)
 	}
+	if !dbExists {
+		if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
+			return fmt.Errorf("failed to create non-exist database %q", database)
+		}
+	}
 
 	var tables []*mysql.TableSchema
-	if dbExists {
-		tables, err = mysql.GetTables(txn, database)
-		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
-		}
+	tables, err = mysql.GetTables(txn, database)
+	if err != nil {
+		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
 	tablesPITR, err := mysql.GetTables(txn, pitrDatabaseName)
 	if err != nil {
