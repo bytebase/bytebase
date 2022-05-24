@@ -103,7 +103,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	}
 	if !dbExists {
 		if _, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
-			err = fmt.Errorf("failed to create non-exist database %q", database)
+			err = fmt.Errorf("failed to create non-exist database %q, error[%w]", database, err)
 			return
 		}
 	}
