@@ -55,7 +55,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	_, stopInstance := mysql.SetupTestInstance(t, port)
 	defer stopInstance()
 
-	mysqlDB, err := ConnectTestMySQL(port, "")
+	mysqlDB, err := connectTestMySQL(port, "")
 	a.NoError(err)
 	defer mysqlDB.Close()
 

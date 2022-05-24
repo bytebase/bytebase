@@ -143,8 +143,8 @@ func getTestPort(testName string) int {
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
-// ConnectTestMySQL connects to the test mysql instance.
-func ConnectTestMySQL(port int, database string) (*sql.DB, error) {
+// connectTestMySQL connects to the test mysql instance.
+func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(localhost:%d)/%s?multiStatements=true", port, database))
 }
 

@@ -42,7 +42,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	_, stop := resourcemysql.SetupTestInstance(t, port)
 	defer stop()
 
-	db, err := ConnectTestMySQL(port, "")
+	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
 	defer db.Close()
 
@@ -320,7 +320,7 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 
 	_, stopFn := resourcemysql.SetupTestInstance(t, port)
 
-	db, err := ConnectTestMySQL(port, "")
+	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
 
 	_, err = db.Exec(fmt.Sprintf(`
@@ -423,7 +423,7 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 
 func startUpdateRow(ctx context.Context, t *testing.T, database string, port int) int64 {
 	a := require.New(t)
-	db, err := ConnectTestMySQL(port, database)
+	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
 	t.Log("Start updating data")
