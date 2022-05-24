@@ -490,6 +490,10 @@ export const useInstanceStore = defineStore("instance", {
 
 export const useInstanceList = (rowStatusList?: RowStatus[]) => {
   const store = useInstanceStore();
+  // SQL Editor will visit instanceList very early.
+  // Using `watchEffect` here might get a data race here, which leads a vue's
+  // internal error.
+  // So we fetch data when "before mount" - trying to be early but not too early.
   onBeforeMount(() => store.fetchInstanceList(rowStatusList));
   return computed(() => store.getInstanceList(rowStatusList));
 };
