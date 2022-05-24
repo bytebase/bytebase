@@ -688,53 +688,83 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 
-			dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-				ProjectID: &issueCreate.ProjectID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-
-			baseDBName := d.DatabaseName
-			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
-			if err != nil {
-				return nil, err
-			}
-			// Convert to pipelineCreate
-			for i, databaseList := range matrix {
-				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
-				environmentSet := make(map[string]bool)
-				var environmentID int
-				var taskCreateList []api.TaskCreate
-				for _, database := range databaseList {
-					environmentSet[database.Instance.Environment.Name] = true
-					environmentID = database.Instance.EnvironmentID
-
-					taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
-					if err != nil {
-						return nil, err
-					}
-
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
-					if err != nil {
-						return nil, err
-					}
-					taskCreateList = append(taskCreateList, *taskCreate)
+			if d.DatabaseName == "" && d.DatabaseID > 0 {
+				// We only support data change for a single tenant for the moment.
+				if c.MigrationType != db.Data {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
 				}
-				if len(environmentSet) != 1 {
-					var environments []string
-					for k := range environmentSet {
-						environments = append(environments, k)
-					}
-					err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+				}
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+				}
+
+				taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+				if err != nil {
+					return nil, err
+				}
+
+				taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+				if err != nil {
+					return nil, err
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
-					EnvironmentID: environmentID,
-					TaskList:      taskCreateList,
+					Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+					EnvironmentID: database.Instance.Environment.ID,
+					TaskList:      []api.TaskCreate{*taskCreate},
 				})
+			} else {
+				dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+					ProjectID: &issueCreate.ProjectID,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+				}
+
+				baseDBName := d.DatabaseName
+				deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
+				if err != nil {
+					return nil, err
+				}
+				// Convert to pipelineCreate
+				for i, databaseList := range matrix {
+					// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
+					environmentSet := make(map[string]bool)
+					var environmentID int
+					var taskCreateList []api.TaskCreate
+					for _, database := range databaseList {
+						environmentSet[database.Instance.Environment.Name] = true
+						environmentID = database.Instance.EnvironmentID
+
+						taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
+						if err != nil {
+							return nil, err
+						}
+
+						taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+						if err != nil {
+							return nil, err
+						}
+						taskCreateList = append(taskCreateList, *taskCreate)
+					}
+					if len(environmentSet) != 1 {
+						var environments []string
+						for k := range environmentSet {
+							environments = append(environments, k)
+						}
+						err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+						return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+					}
+
+					create.StageList = append(create.StageList, api.StageCreate{
+						Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+						EnvironmentID: environmentID,
+						TaskList:      taskCreateList,
+					})
+				}
 			}
 		} else {
 			for _, d := range c.DetailList {
