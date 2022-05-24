@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -141,14 +140,6 @@ func getTestPort(testName string) int {
 		return 1272
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
-}
-
-// connectTestMySQL connects to the test mysql instance.
-func connectTestMySQL(port int, database string) (*sql.DB, error) {
-	// If we connect using "localhost" on Unix, MySQL will use a socket file.
-	// We don't want to be bothered by the socket file conflicts here.
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/connecting.html
-	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
