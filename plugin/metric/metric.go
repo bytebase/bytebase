@@ -4,10 +4,10 @@ package metric
 type Name string
 
 // Metric is the API message for metric.
-type Metric struct {
-	Name   Name
-	Value  int
-	Labels map[string]string
+type Metric interface {
+	Name() Name
+	Value() int
+	Labels() map[string]string
 }
 
 // Identifier is the identifier for metric.

@@ -10,6 +10,13 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
+	"github.com/bytebase/bytebase/store"
+
+	// Register all metric collectors.
+	_ "github.com/bytebase/bytebase/store/metric-colloctor/instance-count"
+	_ "github.com/bytebase/bytebase/store/metric-colloctor/issue-count"
+	_ "github.com/bytebase/bytebase/store/metric-colloctor/policy-count"
+	_ "github.com/bytebase/bytebase/store/metric-colloctor/project-count"
 
 	"go.uber.org/zap"
 )
@@ -33,7 +40,7 @@ type MetricReporter struct {
 	version     string
 	workspaceID string
 	reporter    metric.Reporter
-	collectors  map[string]metric.Collector
+	store       *store.Store
 }
 
 // NewMetricReporter creates a new metric scheduler.
@@ -46,7 +53,7 @@ func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
-		collectors:   make(map[string]metric.Collector),
+		store:        server.store,
 	}
 }
 
@@ -76,14 +83,14 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				m.identify()
 
 				ctx := context.Background()
-				for name, collector := range m.collectors {
-					m.l.Debug("Run metric collector", zap.String("collector", name))
+				for name, collector := range store.Collectors() {
+					m.l.Debug("Run metric collector", zap.String("collector", string(name)))
 
-					metricList, err := collector.Collect(ctx)
+					metricList, err := collector.Collect(ctx, m.l, m.store)
 					if err != nil {
 						m.l.Error(
 							"Failed to collect metric",
-							zap.String("collector", name),
+							zap.String("collector", string(name)),
 							zap.Error(err),
 						)
 						continue
@@ -93,7 +100,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if err := m.reporter.Report(metric); err != nil {
 							m.l.Error(
 								"Failed to report metric",
-								zap.String("metric", string(metric.Name)),
+								zap.String("metric", string(metric.Name())),
 								zap.Error(err),
 							)
 						}
@@ -109,11 +116,6 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 // Close will close the metric reporter.
 func (m *MetricReporter) Close() {
 	m.reporter.Close()
-}
-
-// Register will register a metric collector.
-func (m *MetricReporter) Register(metricName metric.Name, collector metric.Collector) {
-	m.collectors[string(metricName)] = collector
 }
 
 // Identify will identify the workspace and update the subscription plan.

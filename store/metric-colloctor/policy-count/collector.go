@@ -11,27 +11,16 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ metric.Collector = (*policyCountCollector)(nil)
-
-// policyCountCollector is the metric data collector for policy.
-type policyCountCollector struct {
-	l     *zap.Logger
-	store *store.Store
+func init() {
+	store.Register(metricAPI.PolicyCountMetricName, collector{})
 }
 
-// NewPolicyCountCollector creates a new instance of policyCollector
-func NewPolicyCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
-	return &policyCountCollector{
-		l:     l,
-		store: store,
-	}
-}
+type collector struct{}
 
-// Collect will collect the metric for policy
-func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
-	var res []*metric.Metric
+func (collector) Collect(ctx context.Context, l *zap.Logger, s *store.Store) ([]metric.Metric, error) {
+	var res []metric.Metric
 
-	policyList, err := c.store.ListPolicy(ctx, &api.PolicyFind{})
+	policyList, err := s.ListPolicy(ctx, &api.PolicyFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +59,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		if _, ok := policyCountMap[key]; !ok {
 			policyCountMap[key] = &metricAPI.PolicyCountMetric{
 				Type:            policy.Type,
-				Value:           value,
+				Payload:         value,
 				EnvironmentName: policy.Environment.Name,
 				Count:           0,
 			}
@@ -79,15 +68,7 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 	}
 
 	for _, policyCountMetric := range policyCountMap {
-		res = append(res, &metric.Metric{
-			Name:  metricAPI.PolicyCountMetricName,
-			Value: policyCountMetric.Count,
-			Labels: map[string]string{
-				"type":        string(policyCountMetric.Type),
-				"environment": policyCountMetric.EnvironmentName,
-				"value":       policyCountMetric.Value,
-			},
-		})
+		res = append(res, policyCountMetric)
 	}
 
 	return res, nil

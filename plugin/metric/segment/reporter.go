@@ -40,16 +40,16 @@ func (r *reporter) Close() {
 }
 
 // Report will exec all the segment reporter.
-func (r *reporter) Report(metric *metric.Metric) error {
+func (r *reporter) Report(metric metric.Metric) error {
 	properties := analytics.NewProperties().
-		Set(metricValueField, metric.Value)
+		Set(metricValueField, metric.Value())
 
-	for key, value := range metric.Labels {
+	for key, value := range metric.Labels() {
 		properties.Set(key, value)
 	}
 
 	return r.client.Enqueue(analytics.Track{
-		Event:      string(metric.Name),
+		Event:      string(metric.Name()),
 		UserId:     r.identifier,
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
