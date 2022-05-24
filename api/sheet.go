@@ -65,9 +65,10 @@ func (v SheetType) String() string {
 	switch v {
 	case SheetForSQL:
 		return "SQL"
+	default:
+		// Default sheet type is SQL.
+		return "SQL"
 	}
-	// Default sheet type is SQL.
-	return "SQL"
 }
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.

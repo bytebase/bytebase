@@ -319,10 +319,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update this task status")
 			}
-		} else {
-			if issue.AssigneeID != currentPrincipalID {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
-			}
+		} else if issue.AssigneeID != currentPrincipalID {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
 		}
 
 		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)

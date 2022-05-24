@@ -34,7 +34,7 @@ func newMigrateCmd() *cobra.Command {
 
 			var sqlReaders []io.Reader
 
-			//TODO(qsliu): support file and command combined as the passed order.
+			// TODO(qsliu): support file and command combined as the passed order.
 			for _, file := range fileList {
 				f, err := os.Open(file)
 				if err != nil {

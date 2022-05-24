@@ -279,7 +279,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 		l.Info("The database schema has not been setup.")
 	} else {
 		l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
-		major := (*curVer).Major
+		major := curVer.Major
 		if major != majorSchemaVersion {
 			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
 		}

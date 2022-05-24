@@ -738,7 +738,7 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))
