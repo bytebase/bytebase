@@ -1,9 +1,6 @@
 package mysqlbinlog
 
 import (
-	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,14 +11,9 @@ import (
 func TestRunBinary(t *testing.T) {
 	a := require.New(t)
 	tmpDir := t.TempDir()
-	mysqlbinlogDir, err := Install(tmpDir)
+	ins, err := Install(tmpDir)
 	a.NoError(err)
 
-	mysqlbinlogPath := filepath.Join(mysqlbinlogDir, "mysqlbinlog")
-	cmd := exec.Command(mysqlbinlogPath, "-V")
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
+	_, err = ins.Version()
 	a.NoError(err)
 }

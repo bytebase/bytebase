@@ -7,19 +7,22 @@ import (
 	"github.com/bytebase/bytebase/api"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 	"go.uber.org/zap"
 )
 
 // NewPITRDeleteTaskExecutor creates a PITR delete task executor.
-func NewPITRDeleteTaskExecutor(logger *zap.Logger) TaskExecutor {
+func NewPITRDeleteTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
 	return &PITRDeleteTaskExecutor{
-		l: logger,
+		l:              logger,
+		mysqlbinlogIns: instance,
 	}
 }
 
 // PITRDeleteTaskExecutor is the PITR delete task executor.
 type PITRDeleteTaskExecutor struct {
-	l *zap.Logger
+	l              *zap.Logger
+	mysqlbinlogIns *mysqlbinlog.Instance
 }
 
 // RunOnce will run the PITR delete task executor once.
@@ -47,7 +50,7 @@ func (exec *PITRDeleteTaskExecutor) RunOnce(ctx context.Context, server *Server,
 		return true, nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlogIns)
 	if err := mysqlRestore.DeleteOldDatabase(ctx, task.Database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to delete the original database after PITR swap",
 			zap.String("instance", task.Instance.Name),
