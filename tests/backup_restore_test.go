@@ -16,6 +16,7 @@ import (
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -126,6 +127,11 @@ func TestPITR(t *testing.T) {
 	)
 	port := getTestPort(t.Name())
 
+	t.Log("install mysqlbinlog binary")
+	tmpDir := t.TempDir()
+	mysqlbinlogIns, err := mysqlbinlog.Install(tmpDir)
+	a.NoError(err)
+
 	// test cases
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Parallel()
@@ -162,7 +168,7 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
 		config := pluginmysql.BinlogInfo{}
 		err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
@@ -235,7 +241,7 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
 		config := pluginmysql.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)
@@ -287,7 +293,7 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
 		config := pluginmysql.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
 		a.NoError(err)

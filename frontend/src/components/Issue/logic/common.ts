@@ -186,7 +186,7 @@ export const useCommonLogic = () => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {
         databaseId: task.databaseId!,
-        databaseName: task.databaseName!,
+        databaseName: "", // Only `databaseId` is needed in standard pipeline.
         statement: maybeFormatStatementOnSave(task.statement, db),
         earliestAllowedTs: task.earliestAllowedTs,
       };

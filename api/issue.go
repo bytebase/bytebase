@@ -127,6 +127,8 @@ type CreateDatabaseContext struct {
 	CharacterSet string `json:"characterSet"`
 	// Collation is the collation of the database.
 	Collation string `json:"collation"`
+	// Owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+	Owner string `json:"owner"`
 	// BackupID is the ID of the backup.
 	BackupID int `json:"backupId"`
 	// Labels is a json-encoded string from a list of DatabaseLabel.

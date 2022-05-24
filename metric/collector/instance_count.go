@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -15,16 +18,16 @@ type instanceCollector struct {
 }
 
 // NewInstanceCollector creates a new instance of instanceCollector
-func NewInstanceCollector(l *zap.Logger, store *store.Store) MetricCollector {
+func NewInstanceCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
 	return &instanceCollector{
 		l:     l,
 		store: store,
 	}
 }
 
-// Collect will collect the netric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
-	var res []*Metric
+// Collect will collect the metric for instance
+func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+	var res []*metric.Metric
 
 	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
 	if err != nil {
@@ -38,8 +41,8 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*Metric, error) {
 			continue
 		}
 
-		res = append(res, &Metric{
-			Name:  instanceCountMetricName,
+		res = append(res, &metric.Metric{
+			Name:  metricAPI.InstanceCountMetricName,
 			Value: instanceCountMetric.Count,
 			Labels: map[string]string{
 				"engine":      string(instanceCountMetric.Engine),
