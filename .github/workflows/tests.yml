@@ -8,7 +8,7 @@ on:
 
 jobs:
   golangci:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -23,8 +23,8 @@ jobs:
   go-tidy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.17
       - name: Verify go.mod is tidy
@@ -36,14 +36,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.17
       - name: Cache MySQL
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: |
             ./resources/mysql/*.tar.gz
@@ -61,7 +61,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: run install script
         run: ./scripts/install_bb.sh
       - name: check bb version
