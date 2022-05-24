@@ -1,5 +1,5 @@
-//go:build darwin && x86_64
-// +build darwin,x86_64
+//go:build darwin && amd64
+// +build darwin,amd64
 
 package mysqlbinlog
 
