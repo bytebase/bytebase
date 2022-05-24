@@ -232,7 +232,8 @@ func TestPITR(t *testing.T) {
 		defer rows.Close()
 		for rows.Next() {
 			var s string
-			rows.Scan(&s)
+			err := rows.Scan(&s)
+			a.NoError(err)
 			a.FailNow("Database still exists after dropped")
 		}
 
