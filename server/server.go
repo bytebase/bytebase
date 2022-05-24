@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"sync"
 	"time"
@@ -47,21 +46,19 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile   Profile
-	e         *echo.Echo
-	metaDB    *store.MetadataDB
-	db        *store.DB
-	store     *store.Store
-	l         *zap.Logger
-	lvl       *zap.AtomicLevel
-	startedTs int64
-	secret    string
-
-	mysqlbinlogDir string
+	profile     Profile
+	e           *echo.Echo
+	mysqlbinlog *mysqlbinlog.Instance
+	metaDB      *store.MetadataDB
+	db          *store.DB
+	store       *store.Store
+	l           *zap.Logger
+	lvl         *zap.AtomicLevel
+	startedTs   int64
+	secret      string
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
-	boot   bool
 }
 
 //go:embed acl_casbin_model.conf
@@ -95,16 +92,25 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	fmt.Printf("readonly=%t\n", prof.Readonly)
 	fmt.Printf("demo=%t\n", prof.Demo)
 	fmt.Printf("debug=%t\n", prof.Debug)
+	fmt.Printf("dataDir=%s\n", prof.DataDir)
 	fmt.Println("-----Config END-------")
 
+	serverStarted := false
+	defer func() {
+		if !serverStarted {
+			_ = s.Shutdown(ctx)
+		}
+	}()
+
 	var err error
-	// TODO(zp): refactor to keep consistency with embedded Postgres.
+
+	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
-	mysqlbinlogDir, err := mysqlbinlog.Install(path.Join(prof.DataDir, "resources"))
+	mysqlbinlogIns, err := mysqlbinlog.Install(resourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlbinlogDir = mysqlbinlogDir
+	s.mysqlbinlog = mysqlbinlogIns
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -122,22 +128,12 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
 	s.db = storeDB
-	defer func() {
-		if !s.boot {
-			_ = s.metaDB.Close()
-		}
-	}()
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
-	defer func() {
-		if !s.boot {
-			_ = storeDB.Close()
-		}
-	}()
 
 	cacheService := NewCacheService(logger)
 	storeInstance := store.New(logger, storeDB, cacheService)
@@ -193,7 +189,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger)
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlbinlog)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
 		s.TaskScheduler = taskScheduler
@@ -315,7 +311,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	s.initSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
-	s.boot = true
+	serverStarted = true
 	return s, nil
 }
 
@@ -444,8 +440,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres server if embed.
-	server.metaDB.Close()
-
+	if server.metaDB != nil {
+		server.metaDB.Close()
+	}
 	server.l.Info("Bytebase stopped properly")
 
 	return nil
