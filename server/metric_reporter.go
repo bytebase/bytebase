@@ -19,6 +19,8 @@ const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
+	// identifyTraitForVersion is the trait key for bytebase version.
+	identifyTraitForVersion = "version"
 )
 
 // MetricReporter is the metric reporter.
@@ -28,9 +30,11 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
-	workspaceID  string
-	reporter     reporter.MetricReporter
-	collectors   map[string]collector.MetricCollector
+	// Version is the bytebase's version
+	version     string
+	workspaceID string
+	reporter    reporter.MetricReporter
+	collectors  map[string]collector.MetricCollector
 }
 
 // NewMetricReporter creates a new metric scheduler.
@@ -40,6 +44,7 @@ func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *
 	return &MetricReporter{
 		l:            logger,
 		subscription: &server.subscription,
+		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
 		collectors:   make(map[string]collector.MetricCollector),
@@ -121,7 +126,8 @@ func (m *MetricReporter) identify() {
 	if err := m.reporter.Identify(&metricAPI.Identifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
-			identifyTraitForPlan: plan,
+			identifyTraitForPlan:    plan,
+			identifyTraitForVersion: m.version,
 		},
 	}); err != nil {
 		m.l.Debug("reporter identify failed", zap.Error(err))
