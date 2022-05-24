@@ -166,10 +166,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 		SELECT engine, environment_id, COUNT(*)
 		FROM instance
 		WHERE row_status = $1 AND (
-			CASE WHEN id <= 102
-			THEN updater_id != 1
-			ELSE 1 = 1
-			END
+			(id <= 102 AND updater_id != 1) OR id > 102
 		)
 		GROUP BY engine, environment_id`,
 		rowStatus,
