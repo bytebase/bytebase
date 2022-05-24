@@ -1606,7 +1606,8 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 		"SELECT e.extname, e.extversion, n.nspname, c.description " +
 		"FROM pg_catalog.pg_extension e " +
 		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
-		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass;"
+		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass " +
+		"WHERE n.nspname != 'pg_catalog';"
 
 	var extensions []db.Extension
 	rows, err := txn.Query(query)
@@ -1619,9 +1620,6 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 		var e db.Extension
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
 			return nil, err
-		}
-		if pgSystemSchema(e.Schema) {
-			continue
 		}
 		extensions = append(extensions, e)
 	}
