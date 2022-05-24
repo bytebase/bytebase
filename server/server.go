@@ -46,15 +46,16 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile   Profile
-	e         *echo.Echo
-	metaDB    *store.MetadataDB
-	db        *store.DB
-	store     *store.Store
-	l         *zap.Logger
-	lvl       *zap.AtomicLevel
-	startedTs int64
-	secret    string
+	profile        Profile
+	e              *echo.Echo
+	mysqlbinlogIns *mysqlbinlog.Instance
+	metaDB         *store.MetadataDB
+	db             *store.DB
+	store          *store.Store
+	l              *zap.Logger
+	lvl            *zap.AtomicLevel
+	startedTs      int64
+	secret         string
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -105,9 +106,11 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
-	if err := mysqlbinlog.Install(resourceDir); err != nil {
+	mysqlbinlogIns, err := mysqlbinlog.Install(resourceDir)
+	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
+	s.mysqlbinlogIns = mysqlbinlogIns
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -186,7 +189,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger)
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlbinlogIns)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
 		s.TaskScheduler = taskScheduler
