@@ -1292,7 +1292,7 @@
           "sql-check-basic": "基础",
           "sql-check-basic-tooltip": "语法检查、数据库连接检查",
           "sql-check-advanced": "高级",
-          "sql-check-advanced-tooltip": "基础版功能 + 向后兼容性检查",
+          "sql-check-advanced-tooltip": "基础版功能 + 自定义 schema 审核规则",
           "anomaly-detection": "异常检测",
           "anomaly-detection-basic": "基础",
           "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",

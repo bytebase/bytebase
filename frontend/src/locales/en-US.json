@@ -1292,7 +1292,7 @@
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
-          "sql-check-advanced-tooltip": "Basic + Backward compatibility check",
+          "sql-check-advanced-tooltip": "Basic + Customized schema review rules",
           "anomaly-detection": "Anomaly detection",
           "anomaly-detection-basic": "Basic",
           "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
