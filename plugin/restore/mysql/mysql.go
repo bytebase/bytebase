@@ -350,3 +350,28 @@ func checkVersionForPITR(version string) error {
 	}
 	return nil
 }
+
+// CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
+func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
+	stmt := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
+	rows, err := db.QueryContext(ctx, stmt)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var tableName, engine string
+		if err := rows.Scan(&tableName, &engine); err != nil {
+			return err
+		}
+		if strings.ToLower(engine) != "innodb" {
+			return fmt.Errorf("table %s of database %s has engine %s, but InnoDB is required for PITR", tableName, database, engine)
+		}
+	}
+	return nil
+}

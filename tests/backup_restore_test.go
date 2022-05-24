@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 // TestBackupRestoreBasic tests basic backup and restore behavior
@@ -45,7 +44,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 
 	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
-	defer db.Close()
+	defer func() { a.NoError(db.Close()) }()
 
 	_, err = db.Exec(fmt.Sprintf(`
 	CREATE DATABASE %s;
@@ -61,7 +60,6 @@ func TestBackupRestoreBasic(t *testing.T) {
 	const numRecords = 10
 	tx, err := db.Begin()
 	a.NoError(err)
-	defer tx.Rollback()
 	for i := 0; i < numRecords; i++ {
 		_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%d)", table, i))
 		a.NoError(err)
@@ -72,10 +70,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// make a full backup
 	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 	a.NoError(err)
-	defer func() {
-		err := driver.Close(ctx)
-		a.NoError(err)
-	}()
+	defer func() { a.NoError(driver.Close(ctx)) }()
 
 	buf, err := doBackup(ctx, driver, database)
 	a.NoError(err)
@@ -141,7 +136,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer db.Close()
+		defer func() { a.NoError(db.Close()) }()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
@@ -149,10 +144,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer func() { a.NoError(driver.Close(ctx)) }()
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -202,7 +194,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port + 1
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer db.Close()
+		defer func() { a.NoError(db.Close()) }()
 
 		// 2. insert data for full backup
 		t.Log("insert data")
@@ -211,10 +203,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer func() { a.NoError(driver.Close(ctx)) }()
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -232,7 +221,7 @@ func TestPITR(t *testing.T) {
 		// 5. check that query from the database that had dropped will fail
 		rows, err := db.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, database))
 		a.NoError(err)
-		defer rows.Close()
+		defer func() { a.NoError(rows.Close()) }()
 		for rows.Next() {
 			var s string
 			err := rows.Scan(&s)
@@ -264,7 +253,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port + 2
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer db.Close()
+		defer func() { a.NoError(db.Close()) }()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
@@ -272,10 +261,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer func() { a.NoError(driver.Close(ctx)) }()
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -355,7 +341,6 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 
 	tx, err := db.Begin()
 	a.NoError(err)
-	defer tx.Rollback()
 
 	for i := begin; i < end; i++ {
 		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d);", i))
@@ -400,27 +385,6 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
-	return dbplugin.Open(
-		ctx,
-		dbplugin.MySQL,
-		dbplugin.DriverConfig{Logger: logger},
-		dbplugin.ConnectionConfig{
-			Host:      "localhost",
-			Port:      port,
-			Username:  "root",
-			Password:  "",
-			Database:  database,
-			TLSConfig: dbplugin.TLSConfig{},
-		},
-		dbplugin.ConnectionContext{},
-	)
-}
-
 func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 	_, err := driver.Dump(ctx, database, &buf, false)
@@ -442,7 +406,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	initTimestamp := time.Now().Unix()
 
 	go func() {
-		defer db.Close()
+		defer func() { a.NoError(db.Close()) }()
 		ticker := time.NewTicker(10 * time.Millisecond)
 		i := 0
 		for {

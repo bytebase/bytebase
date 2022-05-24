@@ -136,8 +136,10 @@ func getTestPort(testName string) int {
 		return 1265
 	case "TestSheetVCS":
 		return 1269
-	case "NEXT":
+	case "TestCheckEngineInnoDB":
 		return 1272
+	case "NEXT":
+		return 1274
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
