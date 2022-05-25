@@ -22,3 +22,23 @@ func (e RowStatus) String() string {
 	}
 	return ""
 }
+
+// SortOrder is the sort order for the returned list.
+type SortOrder string
+
+const (
+	// ASC is the sort order to return in ascending order.
+	ASC SortOrder = "ASC"
+	// DESC is the sort order to return in descending order.
+	DESC SortOrder = "DESC"
+)
+
+func (e SortOrder) String() string {
+	switch e {
+	case ASC:
+		return "ASC"
+	case DESC:
+		return "DESC"
+	}
+	return ""
+}

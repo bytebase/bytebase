@@ -88,6 +88,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			}
 			activityFind.Limit = &limit
 		}
+		if orderStr := c.QueryParams().Get("order"); orderStr != "" {
+			order := api.SortOrder(orderStr)
+			activityFind.Order = &order
+		}
 		activityList, err := s.store.FindActivity(ctx, activityFind)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch activity list").SetInternal(err)
