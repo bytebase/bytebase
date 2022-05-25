@@ -1245,6 +1245,7 @@ type triggerSchema struct {
 }
 
 // GetTables gets all tables of a database.
+// TODO(dragonly): Refactor to 2 variants that one takes a txn arg and one does not, for different use cases.
 func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
