@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -161,44 +160,11 @@ func TestCheckVersionForPITR(t *testing.T) {
 	}
 }
 
-func TestParseBinlogEventTimestampFromTextOutputLine(t *testing.T) {
-	a := require.New(t)
-	tests := []struct {
-		line      string
-		timestamp int64
-		found     bool
-		err       bool
-	}{
-		{
-			line:      "#220421 14:49:26",
-			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.UTC).Unix(),
-			found:     true,
-			err:       false,
-		},
-		{
-			line:      "220421 14:49:26",
-			timestamp: -1,
-			found:     false,
-			err:       false,
-		},
-	}
-
-	for _, test := range tests {
-		timestamp, found, err := parseBinlogEventTimestampFromTextOutputLine(test.line)
-		a.Equal(test.timestamp, timestamp)
-		a.Equal(test.found, found)
-		if test.err {
-			a.Error(err)
-		} else {
-			a.NoError(err)
-		}
-	}
-}
-
 func TestParseBinlogEventTimestampImpl(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		binlogText string
+		position   int64
 		timestamp  int64
 		err        bool
 	}{
@@ -215,29 +181,30 @@ BINLOG '
 dv5gYg8BAAAAegAAAAAAAAAAAAQAOC4wLjI4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAEwANAAgAAAAABAAEAAAAYgAEGggAAAAICAgCAAAACgoKKioAEjQA
 CigAAdZmWLs=
-'/*!*/;`,
+'/*!*/;
+# at 24500
+#220425 17:32:13 server id 1  end_log_pos 24604 CRC32 0x6a465388 	Table_map: ` + "`bytebase`.`migration_history`" + ` mapped to number 172
+WARNING: The range of printed events ends with a row event or a table map event that does not have the STMT_END_F flag set. This might be because the last statement was not fully written to the log, or because you are using a --stop-position or --stop-datetime that refers to an event in the middle of a statement. The event(s) from the partial statement have not been written to output.
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
+/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
+			position:  24500,
 			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.UTC).Unix(),
 			err:       false,
 		},
-		// Cases are that there are multiple occurrence of timestamp, we only consider the first.
+		// Edge case: invalid mysqlbinlog option
 		{
-			binlogText: `# at 24500
-#220425 17:32:13 server id 1  end_log_pos 24604 CRC32 0x6a465388 	Table_map: ` + "`bytebase`.`migration_history`" + ` mapped to number 172
-# at 24604
-#220425 17:32:14 server id 1  end_log_pos 25671 CRC32 0xfc11091b 	Update_rows: table id 172 flags: STMT_END_F`,
-			timestamp: time.Date(2022, 4, 25, 17, 32, 13, 0, time.UTC).Unix(),
-			err:       false,
-		},
-		// Edge case: empty input
-		{
-			binlogText: "",
+			binlogText: "mysqlbinlog: [ERROR] mysqlbinlog: unknown option '-n'.",
+			position:   0,
 			timestamp:  -1,
 			err:        true,
 		},
 	}
 
 	for _, test := range tests {
-		timestamp, err := parseBinlogEventTimestampImpl(strings.NewReader(test.binlogText))
+		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText, test.position)
 		a.Equal(test.timestamp, timestamp)
 		if test.err {
 			a.Error(err)

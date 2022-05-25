@@ -6,10 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -122,140 +122,75 @@ func parseBinlogFileNameIndex(filename string) (int64, error) {
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(binlogInfo *mysql.BinlogInfo) (timestamp int64, err error) {
-	connConfig := r.driver.GetConnectionConfig()
-	mysqlbinlogBinPath := "fake"
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *mysql.BinlogInfo, binlogDir string) (int64, error) {
 	args := []string{
-		"--read-from-remote-server",
-		fmt.Sprintf("--host %s", connConfig.Host),
-		fmt.Sprintf("--user %s", connConfig.Username),
+		path.Join(binlogDir, binlogInfo.FileName),
 		fmt.Sprintf("--start-position %d", binlogInfo.Position),
+		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
+		// the --stop-position is in the middle of the binlog event.
+		// It's OK, since we are only parsing for the timestamp in the binlog event header.
+		fmt.Sprintf("--stop-position %d", binlogInfo.Position+1),
 	}
-	cmd := exec.Command(mysqlbinlogBinPath, args...)
+	var buf bytes.Buffer
+	cmd := exec.CommandContext(ctx, r.mysqlbinlog.GetPath(), args...)
 	cmd.Stderr = os.Stderr
-	output, err := cmd.StdoutPipe()
-	if err != nil {
-		return -1, err
-	}
-	defer func() {
-		if err = output.Close(); err != nil {
-			// TODO(dragonly): log the error, but still return true since we get the binlog event timestamp anyway.
-			err = nil
-		}
-	}()
+	cmd.Stdout = &buf
 
-	if err := cmd.Start(); err != nil {
+	if err := cmd.Run(); err != nil {
 		return -1, err
 	}
 
-	timestamp, err = parseBinlogEventTimestampImpl(output)
+	timestamp, err := parseBinlogEventTimestampImpl(buf.String(), binlogInfo.Position)
 	if err != nil {
 		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename[%s], position[%d], error[%w]", binlogInfo.FileName, binlogInfo.Position, err)
-	}
-
-	// We eagerly exit the mysqlbinlog process as long as we get the timestamp to save resources.
-	if err := cmd.Process.Kill(); err != nil {
-		return -1, err
 	}
 
 	return timestamp, nil
 }
 
-func parseBinlogEventTimestampImpl(output io.Reader) (int64, error) {
-	buf := make([]byte, 1024)
-	var lineBuf bytes.Buffer
-
-	// Read lines from mysqlbinlog text output
-	for {
-		n, err := output.Read(buf)
-		if n > 0 {
-			// It may contain multiple lines, so we loop until all complete lines are matched against
-			bytesRead := buf[:n]
-			index := bytes.Index(bytesRead, []byte("\n"))
-			for index != -1 {
-				// complete line found
-				lineBuf.Write(bytesRead[:index])
-				line := lineBuf.String()
-
-				// parse timestamp from new complete line
-				timestamp, found, err := parseBinlogEventTimestampFromTextOutputLine(line)
-				if err != nil {
-					return -1, err
-				}
-				if found {
-					return timestamp, nil
-				}
-
-				// write the rest of the next line into buffer
-				lineBuf.Reset()
-				if index < len(bytesRead)-1 {
-					// exclude the '\n' character
-					bytesRead = bytesRead[index+1:]
-				}
-				index = bytes.Index(bytesRead, []byte("\n"))
+func parseBinlogEventTimestampImpl(output string, startPosition int64) (int64, error) {
+	lines := strings.Split(output, "\n")
+	// The mysqlbinlog output will contains a line "# at 12345", where 12345 is the --start-position param.
+	// The next line will be started as "#220425 17:32:13", which is the timestamp we are looking for.
+	atPos := fmt.Sprintf("# at %d", startPosition)
+	for i, line := range lines {
+		if strings.HasPrefix(line, atPos) {
+			timestampLine := lines[i+1]
+			year, err := strconv.Atoi("20" + timestampLine[1:3])
+			if err != nil {
+				return -1, err
 			}
-			// no complete line found, append to the line buffer
-			if index == -1 {
-				lineBuf.Write(bytesRead)
+			month, err := strconv.Atoi(timestampLine[3:5])
+			if err != nil {
+				return -1, err
 			}
-		}
-
-		if err != nil {
-			if err == io.EOF {
-				// parse timestamp from the last complete line
-				line := lineBuf.String()
-				timestamp, found, err := parseBinlogEventTimestampFromTextOutputLine(line)
-				if err != nil {
-					return -1, err
-				}
-				if found {
-					return timestamp, nil
-				}
-				return -1, fmt.Errorf("timestamp not found in binlog")
+			day, err := strconv.Atoi(timestampLine[5:7])
+			if err != nil {
+				return -1, err
 			}
-			return -1, err
+			hour, err := strconv.Atoi(timestampLine[8:10])
+			if err != nil {
+				return -1, err
+			}
+			minute, err := strconv.Atoi(timestampLine[11:13])
+			if err != nil {
+				return -1, err
+			}
+			second, err := strconv.Atoi(timestampLine[14:16])
+			if err != nil {
+				return -1, err
+			}
+			return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), nil
 		}
 	}
-}
-
-func parseBinlogEventTimestampFromTextOutputLine(line string) (int64, bool, error) {
-	matches := reServerTime.FindStringSubmatch(line)
-	if matches != nil {
-		year, err := strconv.Atoi(matches[1])
-		if err != nil {
-			return -1, false, err
-		}
-		year += 2000
-		month, err := strconv.Atoi(matches[2])
-		if err != nil {
-			return -1, false, err
-		}
-		day, err := strconv.Atoi(matches[3])
-		if err != nil {
-			return -1, false, err
-		}
-		hour, err := strconv.Atoi(matches[4])
-		if err != nil {
-			return -1, false, err
-		}
-		minute, err := strconv.Atoi(matches[5])
-		if err != nil {
-			return -1, false, err
-		}
-		second, err := strconv.Atoi(matches[6])
-		if err != nil {
-			return -1, false, err
-		}
-		return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), true, nil
-	}
-	return -1, false, nil
+	return -1, fmt.Errorf("no timestamp found in mysqlbinlog output")
 }
 
 // Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
 // The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments
 // nolint
-func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64) (*api.Backup, *mysql.BinlogInfo, error) {
+func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, *mysql.BinlogInfo, error) {
 	// Sort backups by their binlog filename and position, with the latest at the front of the list.
 	backups, err := sortBackupInfo(backupList)
 	if err != nil {
@@ -263,7 +198,7 @@ func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api
 	}
 
 	// TODO(dragonly): Download the latest (partial) binlog file when needed.
-	backup, err := r.findNearestBinlogEventTimestamp(backups, restoreTs)
+	backup, err := r.findNearestBinlogEventTimestamp(ctx, backups, restoreTs, binlogDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -297,12 +232,12 @@ func sortBackupInfo(backupList []*api.Backup) ([]backupComparator, error) {
 
 // Traverse the backups starting from the latest and find the first with timestamp less than the target restore timestamp.
 // nolint
-func (r *Restore) findNearestBinlogEventTimestamp(backups []backupComparator, restoreTs int64) (backupComparator, error) {
+func (r *Restore) findNearestBinlogEventTimestamp(ctx context.Context, backups []backupComparator, restoreTs int64, binlogDir string) (backupComparator, error) {
 	var eventTs int64
 	var err error
 	for _, b := range backups {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		eventTs, err = r.parseBinlogEventTimestamp(b.binlogInfo)
+		eventTs, err = r.parseBinlogEventTimestamp(ctx, b.binlogInfo, binlogDir)
 		if err != nil {
 			return backupComparator{}, err
 		}
@@ -418,7 +353,7 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`,
+// SyncArchivedBinlogFiles syncs the binlog files between the instance and `saveDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
 func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
 	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
@@ -521,7 +456,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	return nil
 }
 
-// getBinlogFilesMetaOnServer returns the metadata of binlogs
+// getBinlogFilesMetaOnServer returns the metadata of binlog files.
 func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
