@@ -19,15 +19,15 @@ import (
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
 func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
-		l:              logger,
-		mysqlbinlogIns: instance,
+		l:           logger,
+		mysqlbinlog: instance,
 	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	l              *zap.Logger
-	mysqlbinlogIns *mysqlbinlog.Instance
+	l           *zap.Logger
+	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -66,12 +66,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil || issue == nil {
-		exec.l.Error("failed to get issue by PipelineID",
-			zap.Int("PipelineID", task.PipelineID),
-			zap.Error(err))
-		return fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
+	issue, err := getIssueByPipelineID(ctx, store, exec.l, task.PipelineID)
+	if err != nil {
+		return err
 	}
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
@@ -80,7 +77,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlogIns)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlog)
 	config := pluginmysql.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
 	// Currently, let's just use the empty backup dump as a placeholder.
@@ -105,4 +102,17 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
+}
+
+func getIssueByPipelineID(ctx context.Context, store *store.Store, l *zap.Logger, pid int) (*api.Issue, error) {
+	issue, err := store.GetIssueByPipelineID(ctx, pid)
+	if err != nil {
+		l.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
+		return nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", pid, err)
+	}
+	if issue == nil {
+		l.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
+		return nil, fmt.Errorf("issue not found with PipelineID[%d]", pid)
+	}
+	return issue, nil
 }

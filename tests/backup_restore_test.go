@@ -179,7 +179,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -251,9 +251,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		// TODO(zp): Recheck here when SwapPITRDatabase can handle the case that the original database does not exist
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
-		a.Error(err)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		a.NoError(err)
 	})
 
 	t.Run("Schema Migration Failure", func(t *testing.T) {
@@ -309,7 +308,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")

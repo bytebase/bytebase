@@ -939,25 +939,8 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 		Payload:    string(bytesCutover),
 	})
 
-	// task: delete the original database
-	payloadDelete := api.TaskDatabasePITRDeletePayload{}
-	BytesDelete, err := json.Marshal(payloadDelete)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR delete task, unable to marshal payload, error[%w]", err)
-	}
-
-	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:       fmt.Sprintf("Delete the original database %s", database.Name),
-		InstanceID: database.InstanceID,
-		DatabaseID: &database.ID,
-		Status:     taskStatus,
-		Type:       api.TaskDatabasePITRDelete,
-		Payload:    string(BytesDelete),
-	})
-
 	taskIndexDAGList := []api.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
-		{FromIndex: 1, ToIndex: 2},
 	}
 
 	return taskCreateList, taskIndexDAGList, nil
