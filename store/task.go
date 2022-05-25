@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 	"go.uber.org/zap"
 )
 
@@ -156,6 +157,38 @@ func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch)
 		return nil, fmt.Errorf("failed to compose TaskStatus with taskRaw[%+v], error[%w]", taskRaw, err)
 	}
 	return task, nil
+}
+
+// CountTaskGroupByTypeAndStatus counts the number of TaskGroup and group by TaskType.
+// Used for the metric collector.
+func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT type, status, COUNT(*)
+		FROM task
+		WHERE (id <= 102 AND updater_id != 1) OR id > 102
+		GROUP BY type, status`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.TaskCountMetric
+	for rows.Next() {
+		var metric metric.TaskCountMetric
+		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
 }
 
 //
