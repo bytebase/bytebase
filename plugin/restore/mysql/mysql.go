@@ -161,31 +161,11 @@ func parseBinlogEventTimestampImpl(output string, startPosition int64) (int64, e
 	for i, line := range lines {
 		if strings.HasPrefix(line, atPos) {
 			timestampLine := lines[i+1]
-			year, err := strconv.Atoi("20" + timestampLine[1:3])
+			date, err := time.Parse("060102 15:04:05", timestampLine[1:16])
 			if err != nil {
 				return -1, err
 			}
-			month, err := strconv.Atoi(timestampLine[3:5])
-			if err != nil {
-				return -1, err
-			}
-			day, err := strconv.Atoi(timestampLine[5:7])
-			if err != nil {
-				return -1, err
-			}
-			hour, err := strconv.Atoi(timestampLine[8:10])
-			if err != nil {
-				return -1, err
-			}
-			minute, err := strconv.Atoi(timestampLine[11:13])
-			if err != nil {
-				return -1, err
-			}
-			second, err := strconv.Atoi(timestampLine[14:16])
-			if err != nil {
-				return -1, err
-			}
-			return time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC).Unix(), nil
+			return date.Unix(), nil
 		}
 	}
 	return -1, fmt.Errorf("no timestamp found in mysqlbinlog output")
