@@ -364,14 +364,18 @@ func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error 
 	if err != nil {
 		return err
 	}
+	var tablesNotInnoDB []string
 	for rows.Next() {
 		var tableName, engine string
 		if err := rows.Scan(&tableName, &engine); err != nil {
 			return err
 		}
 		if strings.ToLower(engine) != "innodb" {
-			return fmt.Errorf("table %s of database %s has engine %s, but InnoDB is required for PITR", tableName, database, engine)
+			tablesNotInnoDB = append(tablesNotInnoDB, tableName)
 		}
+	}
+	if len(tablesNotInnoDB) != 0 {
+		return fmt.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
 	}
 	return nil
 }
