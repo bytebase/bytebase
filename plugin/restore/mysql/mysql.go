@@ -166,36 +166,6 @@ func (r *Restore) databaseExists(ctx context.Context, database string) (bool, er
 	return false, nil
 }
 
-// DeletePITRDatabases deletes the temporary pitr database after the PITR swap task.
-// It performs the step 3 of the restore process.
-func (r *Restore) DeletePITRDatabases(ctx context.Context, database string, suffixTs int64) error {
-	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
-	db, err := r.driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return err
-	}
-
-	// Check that the PITR database is empty
-	txn, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-	tables, err := mysql.GetTables(txn, pitrDatabaseName)
-	if err != nil {
-		return fmt.Errorf("failed to get tables of the PITR database %q, error[%w]", pitrDatabaseName, err)
-	}
-	if len(tables) != 0 {
-		return fmt.Errorf("the PITR database must be empty, but has tables[%v]", tables)
-	}
-
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`;", pitrDatabaseName)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
 // For example, getPITRDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005"
 func getPITRDatabaseName(database string, suffixTs int64) string {

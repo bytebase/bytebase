@@ -195,9 +195,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlbinlog)
 		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
 
-		pitrDeleteExecutor := NewPITRDeleteTaskExecutor(logger, s.mysqlbinlog)
-		taskScheduler.Register(string(api.TaskDatabasePITRDelete), pitrDeleteExecutor)
-
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
