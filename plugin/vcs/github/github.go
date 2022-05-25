@@ -174,9 +174,9 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchRepositoryList fetched all repositories in which the authenticated user
+// FetchAllRepositoryList fetched all repositories in which the authenticated user
 // has a maintainer role.
-func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	return nil, errors.New("not implemented yet")
 }
 

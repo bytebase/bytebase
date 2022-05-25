@@ -281,12 +281,35 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchRepositoryList fetched all repositories in which the authenticated user
-// has a maintainer role.
-func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+// FetchAllRepositoryList fetches all repositories in which the authenticated user has a maintainer role.
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	repoList := []*vcs.Repository{}
+	// page is the current requesting page index, starts from 1.
+	// perPage is the number of items to list per page (default: 20, max: 100).
+	// refer: https://docs.gitlab.com/ee/api/#offset-based-pagination
+	page, perPage := 1, 40
+
+	for {
+		temp, err := p.fetchOffsetRepositoryList(ctx, oauthCtx, instanceURL, page, perPage)
+		if err != nil {
+			return nil, err
+		}
+
+		repoList = append(repoList, temp...)
+		if len(temp) < perPage {
+			break
+		}
+		page = page + 1
+	}
+
+	return repoList, nil
+}
+
+// fetchOffsetRepositoryList fetches offset-based pagination repositories with page and perPage.
+func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page, perPage int) ([]*vcs.Repository, error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40", p.APIURL(instanceURL))
+	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, perPage)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -307,7 +330,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.Oaut
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("not found repository list for GitLab instance %s", instanceURL))
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
 			instanceURL,
@@ -330,6 +353,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.Oaut
 		}
 		repos = append(repos, repo)
 	}
+
 	return repos, nil
 }
 

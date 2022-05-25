@@ -171,7 +171,7 @@ type Provider interface {
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
+	FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
 
 	// Fetch the repository file list
 	//
