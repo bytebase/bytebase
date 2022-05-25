@@ -58,7 +58,6 @@ type Driver struct {
 	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
-	config        db.ConnectionConfig
 
 	db *sql.DB
 }
@@ -71,7 +70,6 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a MySQL driver.
 func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
-	driver.config = config
 	protocol := "tcp"
 	if strings.HasPrefix(config.Host, "/") {
 		protocol = "unix"
@@ -136,11 +134,6 @@ func (driver *Driver) Ping(ctx context.Context) error {
 // GetDbConnection gets a database connection.
 func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
 	return driver.db, nil
-}
-
-// GetConnectionConfig gets the connection config
-func (driver *Driver) GetConnectionConfig() db.ConnectionConfig {
-	return driver.config
 }
 
 // GetVersion gets the version.
