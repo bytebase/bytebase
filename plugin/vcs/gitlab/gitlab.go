@@ -305,7 +305,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 	return repoList, nil
 }
 
-// fetchOffsetRepositoryList fetches offset-based pagination repositories with page and perPage.
+// fetchOffsetRepositoryList fetches repositories at page `page` with `perPage` items per page.
 func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page, perPage int) ([]*vcs.Repository, error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
