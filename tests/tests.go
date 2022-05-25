@@ -136,8 +136,10 @@ func getTestPort(testName string) int {
 		return 1265
 	case "TestSheetVCS":
 		return 1269
-	case "NEXT":
+	case "TestSchemaSystem":
 		return 1272
+	case "NEXT":
+		return 1276
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
@@ -1232,4 +1234,82 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 		return fmt.Errorf("fail to unmarshal dataSource response, error: %w", err)
 	}
 	return nil
+}
+
+// upsertPolicy upserts the policy.
+func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
+		return fmt.Errorf("failed to marshal policyUpsert, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	if err != nil {
+		return err
+	}
+
+	policy := new(api.Policy)
+	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
+		return fmt.Errorf("fail to unmarshal policy response, error: %w", err)
+	}
+	return nil
+}
+
+// schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
+// If the schema review task check is not done, return nil, false, nil.
+func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+	var result []api.TaskCheckResult
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				for _, taskCheck := range task.TaskCheckRunList {
+					if taskCheck.Type == api.TaskCheckDatabaseStatementAdvise {
+						switch taskCheck.Status {
+						case api.TaskCheckRunRunning:
+							return nil, false, nil
+						case api.TaskCheckRunDone:
+							checkResult := &api.TaskCheckRunResultPayload{}
+							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
+								return nil, false, err
+							}
+							result = append(result, checkResult.ResultList...)
+						}
+					}
+				}
+				return result, true, nil
+			}
+		}
+	}
+	return nil, true, nil
+}
+
+// getSchemaReviewResult will wait for next task schema review task check to finish and return the task check result.
+func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.getIssue(id)
+		if err != nil {
+			return nil, err
+		}
+
+		status, err := getAggregatedTaskStatus(issue)
+		if err != nil {
+			return nil, err
+		}
+
+		if status != api.TaskPendingApproval {
+			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
+		}
+
+		result, yes, err := ctl.schemaReviewTaskCheckRunFinished(issue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get schema review result for issue %v: %w", id, err)
+		}
+		if yes {
+			return result, nil
+		}
+	}
+	return nil, nil
 }
