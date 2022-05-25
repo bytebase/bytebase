@@ -159,9 +159,9 @@ func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch)
 	return task, nil
 }
 
-// CountTaskGroupByTaskType counts the number of TaskGroup and group by TaskType.
+// CountTaskGroupByTypeAndStatus counts the number of TaskGroup and group by TaskType.
 // Used for the metric collector.
-func (s *Store) CountTaskGroupByTaskType(ctx context.Context) ([]*metric.TaskCountMetric, error) {
+func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -169,10 +169,10 @@ func (s *Store) CountTaskGroupByTaskType(ctx context.Context) ([]*metric.TaskCou
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT type, count(*)
+		SELECT type, status, COUNT(*)
 		FROM task
 		WHERE (id <= 102 AND updater_id != 1) OR id > 102
-		GROUP BY type`,
+		GROUP BY type, status`,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -182,7 +182,7 @@ func (s *Store) CountTaskGroupByTaskType(ctx context.Context) ([]*metric.TaskCou
 	var res []*metric.TaskCountMetric
 	for rows.Next() {
 		var metric metric.TaskCountMetric
-		if err := rows.Scan(&metric.TaskType, &metric.Count); err != nil {
+		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)

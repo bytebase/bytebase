@@ -10,25 +10,25 @@ import (
 	"go.uber.org/zap"
 )
 
-// taskCollector is the metric data collector for task.
-type taskCollector struct {
+// taskCountCollector is the metric data collector for task.
+type taskCountCollector struct {
 	l     *zap.Logger
 	store *store.Store
 }
 
-// NewTaskCollector creates a new instance of taskCollector.
-func NewTaskCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
-	return &taskCollector{
+// NewTaskCountCollector creates a new instance of taskCollector.
+func NewTaskCountCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
+	return &taskCountCollector{
 		l:     l,
 		store: store,
 	}
 }
 
 // Collect will collect the metric for task.
-func (c *taskCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+func (c *taskCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	taskCountMetricList, err := c.store.CountTaskGroupByTaskType(ctx)
+	taskCountMetricList, err := c.store.CountTaskGroupByTypeAndStatus(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,8 @@ func (c *taskCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 			Name:  metricAPI.TaskCountMetricName,
 			Value: taskCountMetric.Count,
 			Labels: map[string]string{
-				"type": string(taskCountMetric.TaskType),
+				"type":   string(taskCountMetric.Type),
+				"status": string(taskCountMetric.Status),
 			},
 		})
 	}

@@ -51,6 +51,7 @@ type PolicyCountMetric struct {
 
 // TaskCountMetric is the API message for database count metric
 type TaskCountMetric struct {
-	TaskType api.TaskType
-	Count    int
+	Type   api.TaskType
+	Status api.TaskStatus
+	Count  int
 }
