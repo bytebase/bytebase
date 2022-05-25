@@ -319,8 +319,11 @@ func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 			payload
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
+	if v := find.Order; v != nil {
+		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+	}
 	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" ORDER BY updated_ts DESC LIMIT %d", *v)
+		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, query,
