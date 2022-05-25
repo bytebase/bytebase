@@ -10,8 +10,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -88,46 +86,11 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	return nil
 }
 
-// nolint
-type backupComparator struct {
-	backup      *api.Backup
-	binlogInfo  *api.BinlogInfo
-	binlogIndex int64
-}
-
-// backupSorter implements interface sort.Interface
-type backupSorter []backupComparator // nolint
-
-func (b backupSorter) Len() int      { return len(b) }           // nolint
-func (b backupSorter) Swap(i, j int) { b[i], b[j] = b[j], b[i] } // nolint
-
-// Newer binlog filename/position will be in front of older ones.
-// nolint
-func (b backupSorter) Less(i, j int) bool {
-	if b[i].binlogIndex > b[j].binlogIndex {
-		return true
-	}
-	return b[i].binlogInfo.Position > b[j].binlogInfo.Position
-}
-
-// parse the numeric extension part of the binlog file names, e.g., binlog.000001 -> 1
-func parseBinlogFileNameIndex(filename string) (int64, error) {
-	parts := strings.Split(filename, ".")
-	if len(parts) != 2 {
-		return -1, fmt.Errorf("the filename %q is not a valid binlog file name format", filename)
-	}
-	index, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		return -1, fmt.Errorf("failed to parse string[%s] to integer, error[%w]", parts[1], err)
-	}
-	return index, nil
-}
-
 // Parse the binlog at position, and return the timestamp in the binlog event.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *api.BinlogInfo, binlogDir string) (int64, error) {
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo, binlogDir string) (int64, error) {
 	args := []string{
 		path.Join(binlogDir, binlogInfo.FileName),
 		fmt.Sprintf("--start-position %d", binlogInfo.Position),
@@ -171,61 +134,34 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 }
 
 // Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
-// The backupList should only contain DONE backups.
+// The backupList should only contain DONE backups, and sorted that the newest backup is at the front.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments
 // nolint
-func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, *api.BinlogInfo, error) {
-	// Sort backups by their binlog filename and position, with the latest at the front of the list.
-	backups, err := sortBackupInfo(backupList)
+func (r *Restore) getNewestBackupAfterTs(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, error) {
+	backup, err := r.getNewestBackupAfterTsImpl(ctx, backupList, restoreTs, binlogDir)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	// TODO(dragonly): Download the latest (partial) binlog file when needed.
-	backup, err := r.findNearestBinlogEventTimestamp(ctx, backups, restoreTs, binlogDir)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return backup.backup, backup.binlogInfo, nil
-}
-
-// nolint
-func sortBackupInfo(backupList []*api.Backup) ([]backupComparator, error) {
-	var backups []backupComparator
-	for _, b := range backupList {
-		binlogIndex, err := parseBinlogFileNameIndex(b.Payload.BinlogInfo.FileName)
-		if err != nil {
-			return nil, err
-		}
-		backups = append(backups, backupComparator{
-			backup:      b,
-			binlogInfo:  &b.Payload.BinlogInfo,
-			binlogIndex: binlogIndex,
-		})
-	}
-
-	sort.Sort(backupSorter(backups))
-
-	return backups, nil
+	return backup, nil
 }
 
 // Traverse the backups starting from the latest and find the first with timestamp less than the target restore timestamp.
 // nolint
-func (r *Restore) findNearestBinlogEventTimestamp(ctx context.Context, backups []backupComparator, restoreTs int64, binlogDir string) (backupComparator, error) {
+func (r *Restore) getNewestBackupAfterTsImpl(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, error) {
 	var eventTs int64
 	var err error
-	for _, b := range backups {
+	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		eventTs, err = r.parseBinlogEventTimestamp(ctx, b.binlogInfo, binlogDir)
+		eventTs, err = r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
 		if err != nil {
-			return backupComparator{}, err
+			return nil, err
 		}
 		if eventTs < restoreTs {
 			return b, nil
 		}
 	}
-	return backupComparator{}, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", restoreTs, eventTs)
+	return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", restoreTs, eventTs)
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database

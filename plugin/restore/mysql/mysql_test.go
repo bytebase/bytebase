@@ -87,41 +87,6 @@ func TestGetPITROldDatabaseName(t *testing.T) {
 	}
 }
 
-func TestParseBinlogFileNameIndex(t *testing.T) {
-	a := require.New(t)
-	tests := []struct {
-		filename string
-		expected int64
-		err      bool
-	}{
-		{
-			filename: "binlog.000001",
-			expected: 1,
-			err:      false,
-		},
-		{
-			filename: "binlog.000001.ext",
-			expected: -1,
-			err:      true,
-		},
-		{
-			filename: "binlog.ext",
-			expected: -1,
-			err:      true,
-		},
-	}
-
-	for _, test := range tests {
-		index, err := parseBinlogFileNameIndex(test.filename)
-		a.Equal(test.expected, index)
-		if test.err {
-			a.Error(err)
-		} else {
-			a.NoError(err)
-		}
-	}
-}
-
 func TestCheckVersionForPITR(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
