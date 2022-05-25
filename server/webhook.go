@@ -67,19 +67,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repo.ExternalID))
 		}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 		s.l.Debug("Processing gitlab webhook push event...",
 			zap.String("project", repo.Project.Name),
 		)
-=======
-		s.l.Debug("Processing gitlab webhook push event...")
->>>>>>> 4fe2f1ab (chore: verbose logging for VCS workflow)
-=======
-		s.l.Debug("Processing gitlab webhook push event...",
-			zap.String("project", repo.Project.Name),
-		)
->>>>>>> 0a310dd9 (chore: address comment)
 
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
@@ -242,21 +232,10 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if len(createdMessageList) == 0 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0a310dd9 (chore: address comment)
 			msg := "Ignored push event. No applicable file found in the commit list."
 			s.l.Warn(msg,
 				zap.String("project", repo.Project.Name),
 			)
-			return c.String(http.StatusOK, msg)
-<<<<<<< HEAD
-=======
-			return c.String(http.StatusOK, "Ignored push event. No applicable file found in the commit list.")
->>>>>>> 4fe2f1ab (chore: verbose logging for VCS workflow)
-=======
->>>>>>> 0a310dd9 (chore: address comment)
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
