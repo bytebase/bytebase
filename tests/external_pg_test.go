@@ -57,7 +57,7 @@ func TestBootWithExternalPg(t *testing.T) {
 	a.NoError(err)
 	defer func() {
 		if err = externalPg.Destroy(); err != nil {
-			fmt.Printf("cannot destroy pginstance, error: %s", err.Error())
+			fmt.Printf("cannot destroy postgres instance, error: %s", err.Error())
 			t.FailNow()
 		}
 	}()
