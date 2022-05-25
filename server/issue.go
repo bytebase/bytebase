@@ -467,9 +467,15 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 					fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", c.Collation),
 				)
 			}
-
 			// Snowflake needs to use upper case of DatabaseName.
 			c.DatabaseName = strings.ToUpper(c.DatabaseName)
+		case db.Postgres:
+			if c.Owner == "" {
+				return nil, echo.NewHTTPError(
+					http.StatusBadRequest,
+					"Failed to create issue, database owner is required for postgres",
+				)
+			}
 		case db.SQLite:
 			// no-op.
 		default:
@@ -518,7 +524,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			Labels:        c.Labels,
 			SchemaVersion: schemaVersion,
 		}
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, schema)
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, c.Owner, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
@@ -682,53 +688,83 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
 			}
 
-			dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-				ProjectID: &issueCreate.ProjectID,
-			})
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-			}
-
-			baseDBName := d.DatabaseName
-			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
-			if err != nil {
-				return nil, err
-			}
-			// Convert to pipelineCreate
-			for i, databaseList := range matrix {
-				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
-				environmentSet := make(map[string]bool)
-				var environmentID int
-				var taskCreateList []api.TaskCreate
-				for _, database := range databaseList {
-					environmentSet[database.Instance.Environment.Name] = true
-					environmentID = database.Instance.EnvironmentID
-
-					taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
-					if err != nil {
-						return nil, err
-					}
-
-					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
-					if err != nil {
-						return nil, err
-					}
-					taskCreateList = append(taskCreateList, *taskCreate)
+			if d.DatabaseName == "" && d.DatabaseID > 0 {
+				// We only support data change for a single tenant for the moment.
+				if c.MigrationType != db.Data {
+					return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
 				}
-				if len(environmentSet) != 1 {
-					var environments []string
-					for k := range environmentSet {
-						environments = append(environments, k)
-					}
-					err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+				}
+				if database == nil {
+					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+				}
+
+				taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+				if err != nil {
+					return nil, err
+				}
+
+				taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+				if err != nil {
+					return nil, err
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
-					EnvironmentID: environmentID,
-					TaskList:      taskCreateList,
+					Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+					EnvironmentID: database.Instance.Environment.ID,
+					TaskList:      []api.TaskCreate{*taskCreate},
 				})
+			} else {
+				dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+					ProjectID: &issueCreate.ProjectID,
+				})
+				if err != nil {
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+				}
+
+				baseDBName := d.DatabaseName
+				deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
+				if err != nil {
+					return nil, err
+				}
+				// Convert to pipelineCreate
+				for i, databaseList := range matrix {
+					// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
+					environmentSet := make(map[string]bool)
+					var environmentID int
+					var taskCreateList []api.TaskCreate
+					for _, database := range databaseList {
+						environmentSet[database.Instance.Environment.Name] = true
+						environmentID = database.Instance.EnvironmentID
+
+						taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
+						if err != nil {
+							return nil, err
+						}
+
+						taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+						if err != nil {
+							return nil, err
+						}
+						taskCreateList = append(taskCreateList, *taskCreate)
+					}
+					if len(environmentSet) != 1 {
+						var environments []string
+						for k := range environmentSet {
+							environments = append(environments, k)
+						}
+						err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+						return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+					}
+
+					create.StageList = append(create.StageList, api.StageCreate{
+						Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+						EnvironmentID: environmentID,
+						TaskList:      taskCreateList,
+					})
+				}
 			}
 		} else {
 			for _, d := range c.DetailList {
@@ -968,41 +1004,15 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 		Payload:           string(bytesCutover),
 	})
 
-	// task "drop original table"
-	tableName, err := getTableNameFromStatement(detail.Statement)
-	if err != nil {
-		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to parse table name, error: %v", err))
-	}
-	tableName = fmt.Sprintf("_%v_del", tableName)
-
-	payloadDrop := api.TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload{
-		DatabaseName: database.Name,
-		TableName:    tableName,
-	}
-	bytesDrop, err := json.Marshal(payloadDrop)
-	if err != nil {
-		return nil, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to marshal database schema update ghost drop original table payload, error: %v", err))
-	}
-	taskCreateList = append(taskCreateList, api.TaskCreate{
-		Name:              "Update %q schema gh-ost drop original table",
-		InstanceID:        database.Instance.ID,
-		DatabaseID:        &database.ID,
-		Status:            taskStatus,
-		Type:              api.TaskDatabaseSchemaUpdateGhostDropOriginalTable,
-		EarliestAllowedTs: detail.EarliestAllowedTs,
-		Payload:           string(bytesDrop),
-	})
-
-	// The below list means that taskCreateList[0] blocks taskCreateList[1], and taskCreateList[1] blocks taskCreateList[2].
-	// In other words, task "sync" blocks task "cutover", and task "cutover" blocks task "drop original table".
+	// The below list means that taskCreateList[0] blocks taskCreateList[1].
+	// In other words, task "sync" blocks task "cutover".
 	taskIndexDAGList := []api.TaskIndexDAG{
 		{FromIndex: 0, ToIndex: 1},
-		{FromIndex: 1, ToIndex: 2},
 	}
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, owner, schema string) (string, string) {
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
@@ -1021,6 +1031,15 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 		} else {
 			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
 		}
+		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
+		// For tenant project, the schema for the newly created database will belong to the same owner.
+		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, owner)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}

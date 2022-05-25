@@ -1339,7 +1339,7 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))

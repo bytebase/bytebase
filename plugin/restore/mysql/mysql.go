@@ -11,21 +11,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 )
-
-// TODO(zp): refactor this when sure the mysqlbinlog path
-var mysqlbinlogBinPath = "UNKNOWN"
-
-// matches server time pattern in binlog text output like "#220421 14:49:26", which is basically "#YYMMDD hh:mm:ss"
-var reServerTime = regexp.MustCompile(`^#(\d{2})(\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})`)
 
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
@@ -34,13 +29,15 @@ const (
 
 // Restore implements recovery functions for MySQL
 type Restore struct {
-	driver *mysql.Driver
+	driver      *mysql.Driver
+	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver) *Restore {
+func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	return &Restore{
-		driver: driver,
+		driver:      driver,
+		mysqlbinlog: instance,
 	}
 }
 
@@ -322,6 +319,8 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	if err != nil {
 		return err
 	}
+
+	// TODO(dragonly): Clean up the transactions, they do not have a clear semantic / are not necessary.
 	txn, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -335,8 +334,19 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 		return err
 	}
 
-	// TODO(dragonly): handle the case that the original database does not exist
-	tables, err := mysql.GetTables(txn, database)
+	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
+	dbExists, err := r.databaseExists(ctx, database)
+	if err != nil {
+		return fmt.Errorf("failed to check whether database %q exists, error[%w]", database, err)
+	}
+	if !dbExists {
+		if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
+			return fmt.Errorf("failed to create non-exist database %q", database)
+		}
+	}
+
+	var tables []*mysql.TableSchema
+	tables, err = mysql.GetTables(txn, database)
 	if err != nil {
 		return fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
@@ -363,6 +373,22 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, timesta
 	}
 
 	return nil
+}
+
+func (r *Restore) databaseExists(ctx context.Context, database string) (bool, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return false, err
+	}
+	stmt := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
+	rows, err := db.QueryContext(ctx, stmt)
+	if err != nil {
+		return false, err
+	}
+	if exist := rows.Next(); exist {
+		return true, nil
+	}
+	return false, nil
 }
 
 // DeleteOldDatabase deletes the old database after the PITR swap task.
@@ -467,7 +493,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, filepath.Join(mysqlbinlogBinPath, "bin", "mysqlbinlog"),
+	cmd := exec.CommandContext(ctx, r.mysqlbinlog.GetPath(),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
@@ -522,7 +548,7 @@ func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.Binlo
 
 // showLatestBinlogFile returns the metadata of latest binlog
 func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFile, error) {
-	//TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
+	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
@@ -552,4 +578,17 @@ func getSafeName(baseName, suffix string) string {
 	}
 	extraCharacters := len(name) - MaxDatabaseNameLength
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
+}
+
+// checks the MySQL version is >=5.7
+func checkVersionForPITR(version string) error {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return err
+	}
+	v57 := semver.MustParse("5.7.0")
+	if v.LT(v57) {
+		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 5.7", version)
+	}
+	return nil
 }

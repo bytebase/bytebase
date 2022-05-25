@@ -123,6 +123,44 @@ func TestParseBinlogFileNameIndex(t *testing.T) {
 	}
 }
 
+func TestCheckVersionForPITR(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		version string
+		err     bool
+	}{
+		{
+			version: "5.6.1",
+			err:     true,
+		},
+		{
+			version: "5.7.0",
+			err:     false,
+		},
+		{
+			version: "8.0.28",
+			err:     false,
+		},
+		{
+			version: "8.0.28-debug",
+			err:     false,
+		},
+		{
+			version: "invalid.semver",
+			err:     true,
+		},
+	}
+
+	for _, test := range tests {
+		err := checkVersionForPITR(test.version)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}
+
 func TestParseBinlogEventTimestampFromTextOutputLine(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {

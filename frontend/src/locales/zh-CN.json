@@ -507,6 +507,7 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
+    "database-owner-name": "数据库所有者",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
@@ -531,7 +532,7 @@
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-now": "现在同步",
-    "sync-schema-afterward": "随即同步 schema",
+    "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
@@ -1413,21 +1414,17 @@
         "title": "列名命名检查",
         "description": "限制列名命名风格，默认为小写字母_下划线。"
       },
-      "naming-index-pk": {
-        "title": "主键命名检查",
-        "description": "限制主键命名风格，默认为 pk_表名_主键包含的字段名组合。"
-      },
       "naming-index-uk": {
         "title": "唯一键命名检查",
-        "description": "限制唯一键命名风格，默认为 uk_表名_主键包含的字段名组合。"
+        "description": "限制唯一键命名风格，默认为 uk_<表名>_<主键包含的字段名组合>。"
       },
       "naming-index-fk": {
         "title": "外键命名检查",
-        "description": "限制外键命名风格，默认为 fk_目标表名_目标字段名_被引用表名_被引用字段名。"
+        "description": "限制外键命名风格，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>。"
       },
       "naming-index-idx": {
         "title": "索引命名检查",
-        "description": "限制索引命名风格，默认为 idx_表名_主键包含的字段名组合。"
+        "description": "限制索引命名风格，默认为 idx_<表名>_<索引包含的字段名组合>。"
       },
       "column-required": {
         "title": "必须包含的字段",
@@ -1457,9 +1454,9 @@
     "payload-config": {
       "table-name-format": "表命名规则（正则）",
       "column-name-format": "列命名规则（正则）",
-      "pk-name-format": "主键命名规则",
       "uk-name-format": "唯一键命名规则",
       "idx-name-format": "索引命名规则",
+      "fk-name-format": "外键命名规则",
       "required-column": "必须包含的字段名",
       "input-then-press-enter": "输入后按下回车来添加",
       "template": {
