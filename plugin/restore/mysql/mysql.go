@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -40,9 +41,35 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// RestoreBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) error {
-	return fmt.Errorf("Unimplemented")
+// RestoreBinlog restores the database using incremental backup specified by infos, reading the binlog in dataDir.
+func (r *Restore) RestoreBinlog(ctx context.Context, database, dataDir string, infos []mysql.BinlogInfo) error {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return fmt.Errorf("cannot get database connection, error: %w", err)
+	}
+	for _, info := range infos {
+		var stdout bytes.Buffer
+		cmd := exec.Command(r.mysqlbinlog.GetPath(),
+			fmt.Sprintf("--database=%s", database),
+			fmt.Sprintf("--start-position=%d --stop-position=%d", info.Position, info.Position+1),
+			filepath.Join(dataDir, info.FileName),
+		)
+		cmd.Stdout = &stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			// TODO(zp): try to keep it atomic or leave it to the caller
+			return fmt.Errorf("cannot run %s, error: %w", cmd.String(), err)
+		}
+
+		// Apply to database
+		// TODO(zp): how about ExecContext()?
+		stmt := stdout.String()
+		if _, err := db.Exec(stdout.String()); err != nil {
+			return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, database, err)
+		}
+	}
+	return nil
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup.
@@ -78,7 +105,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, binlog)
+	_ = r.RestoreBinlog(ctx, database, "", nil)
 
 	return nil
 }
