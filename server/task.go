@@ -404,11 +404,13 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	// TODO(tianzhou): Refactor the followup code into chained onTaskStatusChange hook.
 	issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 	if err != nil {
-		// Not all pipelines belong to an issue, so it's OK if ENOTFOUND
 		return nil, fmt.Errorf("failed to fetch containing issue after changing the task status: %v, err: %w", task.Name, err)
 	}
+	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
-		return nil, fmt.Errorf("failed to find issue with pipeline ID %d, task: %s", task.PipelineID, task.Name)
+		s.l.Warn("failed to find issue with pipeline ID",
+			zap.Int("pipelineID", task.PipelineID),
+			zap.String("task", task.Name))
 	}
 
 	// Create an activity
