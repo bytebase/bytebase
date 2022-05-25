@@ -44,7 +44,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 
 	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
-	defer func() { a.NoError(db.Close()) }()
+	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf(`
 	CREATE DATABASE %s;
@@ -70,7 +70,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// make a full backup
 	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 	a.NoError(err)
-	defer func() { a.NoError(driver.Close(ctx)) }()
+	defer driver.Close(ctx)
 
 	buf, err := doBackup(ctx, driver, database)
 	a.NoError(err)
@@ -136,7 +136,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
@@ -144,7 +144,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() { a.NoError(driver.Close(ctx)) }()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -194,7 +194,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port + 1
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 
 		// 2. insert data for full backup
 		t.Log("insert data")
@@ -203,7 +203,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() { a.NoError(driver.Close(ctx)) }()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -221,7 +221,7 @@ func TestPITR(t *testing.T) {
 		// 5. check that query from the database that had dropped will fail
 		rows, err := db.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, database))
 		a.NoError(err)
-		defer func() { a.NoError(rows.Close()) }()
+		defer rows.Close()
 		for rows.Next() {
 			var s string
 			err := rows.Scan(&s)
@@ -253,7 +253,7 @@ func TestPITR(t *testing.T) {
 		mysqlPort := port + 2
 		db, stopFn := initPITRDB(t, database, mysqlPort)
 		defer stopFn()
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 
 		t.Log("insert data")
 		insertRangeData(t, db, 0, numRowsTime0)
@@ -261,7 +261,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() { a.NoError(driver.Close(ctx)) }()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -406,7 +406,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	initTimestamp := time.Now().Unix()
 
 	go func() {
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 		ticker := time.NewTicker(10 * time.Millisecond)
 		i := 0
 		for {

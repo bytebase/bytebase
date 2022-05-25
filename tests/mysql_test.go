@@ -29,7 +29,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		database := "test_success"
 		db, err := connectTestMySQL(port, "")
 		a.NoError(err)
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
 		a.NoError(err)
 
@@ -40,7 +40,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		t.Log("check InnoDB engine")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 		a.NoError(err)
-		defer func() { a.NoError(driver.Close(ctx)) }()
+		defer driver.Close(ctx)
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
@@ -53,7 +53,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		database := "test_fail"
 		db, err := connectTestMySQL(port+1, "")
 		a.NoError(err)
-		defer func() { a.NoError(db.Close()) }()
+		defer db.Close()
 		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
 		a.NoError(err)
 
@@ -67,7 +67,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		t.Log("check InnoDB engine")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 		a.NoError(err)
-		defer func() { a.NoError(driver.Close(ctx)) }()
+		defer driver.Close(ctx)
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
