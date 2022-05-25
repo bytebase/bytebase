@@ -236,7 +236,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			s.l.Warn(msg,
 				zap.String("project", repo.Project.Name),
 			)
-			return c.String(http.StatusOK, msg)
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
