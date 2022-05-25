@@ -109,31 +109,28 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	configs := []struct {
-		name  string
-		ports int
-	}{
-		// If the test starts a bytebase server, then we should allocate 3 ports for bytebase, Postgres, and GitLab, unless documented otherwise.
-		{name: "TestServiceRestart", ports: 3},
-		{name: "TestSchemaAndDataUpdate", ports: 3},
-		{name: "TestVCS", ports: 3},
-		{name: "TestTenant", ports: 3},
-		{name: "TestTenantVCS", ports: 3},
-		{name: "TestTenantDatabaseNameTemplate", ports: 3},
-		// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
-		{name: "TestGhostSchemaUpdate", ports: 4},
-		{name: "TestBackupRestoreBasic", ports: 3},
-		{name: "TestPITR", ports: 3},
-		{name: "TestTenantVCSDatabaseNameTemplate", ports: 3},
-		{name: "TestBootWithExternalPg", ports: 4},
-		{name: "TestSheetVCS", ports: 3},
+	// We allocates 4 ports for each of the integration test, who probably would start
+	// the bytebase server, Postgres, MySQL and GitLab.
+	tests := []string{
+		"TestServiceRestart",
+		"TestSchemaAndDataUpdate",
+		"TestVCS",
+		"TestTenant",
+		"TestTenantVCS",
+		"TestTenantDatabaseNameTemplate",
+		"TestGhostSchemaUpdate",
+		"TestBackupRestoreBasic",
+		"TestPITR",
+		"TestTenantVCSDatabaseNameTemplate",
+		"TestBootWithExternalPg",
+		"TestSheetVCS",
 	}
 	port := 1234
-	for _, config := range configs {
-		if testName == config.name {
+	for _, name := range tests {
+		if testName == name {
 			return port
 		}
-		port += config.ports
+		port += 4
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
