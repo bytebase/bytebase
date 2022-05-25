@@ -63,7 +63,8 @@ func TestBootWithExternalPg(t *testing.T) {
 	}()
 
 	ctl := &controller{}
-	err = ctl.StartServerWithExternalPg(ctx, serverPort, externalPg.pgUser, externalPg.pgURL)
+	dataTmpDir := t.TempDir()
+	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, serverPort, externalPg.pgUser, externalPg.pgURL)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 }
