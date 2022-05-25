@@ -281,13 +281,14 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchAllRepositoryList fetches all repositories in which the authenticated user has a maintainer role.
+// FetchAllRepositoryList fetches all repositories where the authenticated user has a maintainer role.
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	repoList := []*vcs.Repository{}
 	// page is the current requesting page index, starts from 1.
 	// perPage is the number of items to list per page (default: 20, max: 100).
 	// refer: https://docs.gitlab.com/ee/api/#offset-based-pagination
-	page, perPage := 1, 40
+	page := 1
+	perPage := 40
 
 	for {
 		temp, err := p.fetchOffsetRepositoryList(ctx, oauthCtx, instanceURL, page, perPage)
