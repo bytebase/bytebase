@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -41,8 +40,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
 
-	statement := strings.TrimSpace(payload.Statement)
-	tableName, err := getTableNameFromStatement(statement)
+	tableName, err := getTableNameFromStatement(payload.Statement)
 	if err != nil {
 		return true, nil, fmt.Errorf("failed to parse table name from statement, error: %w", err)
 	}
