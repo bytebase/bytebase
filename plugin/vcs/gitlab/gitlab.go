@@ -299,7 +299,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 		if len(temp) < perPage {
 			break
 		}
-		page = page + 1
+		page++
 	}
 
 	return repoList, nil
