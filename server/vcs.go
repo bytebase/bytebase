@@ -162,7 +162,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
 		}
 
-		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).FetchRepositoryList(
+		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).FetchAllRepositoryList(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcsFound.ApplicationID,
