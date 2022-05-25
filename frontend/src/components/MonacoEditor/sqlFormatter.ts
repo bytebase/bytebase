@@ -11,6 +11,10 @@ const formatSQL = (sql: string, dialect: SQLDialect): FormatResult => {
   const options: FormatOptions = {
     language: dialect,
   };
+  if (dialect !== "mysql" && dialect !== "postgresql") {
+    options.language = "mysql";
+  }
+
   try {
     const formatted = format(sql, options);
     return { data: formatted, error: null };
