@@ -242,7 +242,7 @@ func TestSchemaSystem(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	policyPayload, err := api.ProdTemplateSchemaReviewPolicy()
+	policyPayload, err := prodTemplateSchemaReviewPolicy()
 	a.NoError(err)
 
 	err = ctl.upsertPolicy(api.PolicyUpsert{
@@ -323,5 +323,4 @@ func TestSchemaSystem(t *testing.T) {
 
 		a.Equal(t.result, result)
 	}
-
 }

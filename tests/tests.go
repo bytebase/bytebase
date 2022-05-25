@@ -1313,3 +1313,123 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 	}
 	return nil, nil
 }
+
+// setDefaultSchemaReviewRulePayload sets the default payload for this rule.
+func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string, error) {
+	var payload []byte
+	var err error
+	switch ruleTp {
+	case api.SchemaRuleMySQLEngine:
+	case api.SchemaRuleStatementNoSelectAll:
+	case api.SchemaRuleStatementRequireWhere:
+	case api.SchemaRuleStatementNoLeadingWildcardLike:
+	case api.SchemaRuleTableRequirePK:
+	case api.SchemaRuleColumnNotNull:
+	case api.SchemaRuleTableNaming:
+		fallthrough
+	case api.SchemaRuleColumnNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^[a-z]+(_[a-z]+)?$",
+		})
+	case api.SchemaRuleIDXNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^idx_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleUKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^uk_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleFKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+		})
+	case api.SchemaRuleRequiredColumn:
+		payload, err = json.Marshal(api.RequiredColumnRulePayload{
+			ColumnList: []string{
+				"id",
+				"created_ts",
+				"updated_ts",
+				"creator_id",
+				"updater_id",
+			},
+		})
+	default:
+		return "", fmt.Errorf("Unknow schema review type for default payload: %s", ruleTp)
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
+}
+
+// prodTemplateSchemaReviewPolicy returns the default schema review policy.
+func prodTemplateSchemaReviewPolicy() (string, error) {
+	policy := api.SchemaReviewPolicy{
+		Name: "Prod",
+		RuleList: []*api.SchemaReviewRule{
+			{
+				Type:  api.SchemaRuleMySQLEngine,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleIDXNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleUKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleFKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoSelectAll,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementRequireWhere,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoLeadingWildcardLike,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableRequirePK,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleRequiredColumn,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNotNull,
+				Level: api.SchemaRuleLevelWarning,
+			},
+		},
+	}
+
+	for _, rule := range policy.RuleList {
+		payload, err := setDefaultSchemaReviewRulePayload(rule.Type)
+		if err != nil {
+			return "", err
+		}
+		rule.Payload = payload
+	}
+
+	s, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
