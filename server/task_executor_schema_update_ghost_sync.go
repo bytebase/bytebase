@@ -52,6 +52,8 @@ func getPostponeFlagFilename(taskID int, databaseID int, databaseName string, ta
 }
 
 func getTableNameFromStatement(statement string) (string, error) {
+	// Trim the statement for the parser.
+	// This in effect removes all leading and trailing spaces, substitute multiple spaces with one.
 	statement = strings.Join(strings.Fields(statement), " ")
 	parser := ghostsql.NewParserFromAlterStatement(statement)
 	if !parser.HasExplicitTable() {
