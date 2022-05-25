@@ -65,7 +65,7 @@ func (r *Restore) RestoreBinlog(ctx context.Context, database, dataDir string, i
 		// Apply to database
 		// TODO(zp): how about ExecContext()?
 		stmt := stdout.String()
-		if _, err := db.Exec(stdout.String()); err != nil {
+		if _, err := db.Exec(stmt); err != nil {
 			return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, database, err)
 		}
 	}
