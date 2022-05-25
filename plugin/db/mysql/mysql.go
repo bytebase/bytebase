@@ -14,6 +14,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -46,24 +47,10 @@ func init() {
 	db.Register(db.TiDB, newDriver)
 }
 
-// BinlogInfo is the binlog coordination for MySQL.
-type BinlogInfo struct {
-	FileName string `json:"fileName"`
-	Position int64  `json:"position"`
-}
-
 // BinlogFile is the metadata of the MySQL binlog file
 type BinlogFile struct {
 	Name string
 	Size int64
-}
-
-// BackupPayload is encoded in JSON and stored in the backup table, representing PITR related info.
-type BackupPayload struct {
-	BinlogInfo BinlogInfo `json:"binlogInfo"`
-	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
-	// Mainly for UI purpose.
-	Ts int64 `json:"ts"`
 }
 
 // Driver is the MySQL driver.
@@ -952,7 +939,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			return "", err
 		}
 
-		payload := BackupPayload{
+		payload := api.BackupPayload{
 			BinlogInfo: binlog,
 			Ts:         ts,
 		}
@@ -1195,18 +1182,18 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (BinlogInfo, error) {
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 	defer rows.Close()
 
 	rows.Next()
-	binlogInfo := BinlogInfo{}
+	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
 	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 
 	return binlogInfo, nil

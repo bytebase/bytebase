@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -42,12 +41,12 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 }
 
 // RestoreBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) error {
+func (r *Restore) RestoreBinlog(ctx context.Context, config api.BinlogInfo) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
@@ -86,7 +85,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 // nolint
 type backupComparator struct {
 	backup      *api.Backup
-	binlogInfo  *mysql.BinlogInfo
+	binlogInfo  *api.BinlogInfo
 	binlogIndex int64
 }
 
@@ -122,7 +121,7 @@ func parseBinlogFileNameIndex(filename string) (int64, error) {
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *mysql.BinlogInfo, binlogDir string) (int64, error) {
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *api.BinlogInfo, binlogDir string) (int64, error) {
 	args := []string{
 		path.Join(binlogDir, binlogInfo.FileName),
 		fmt.Sprintf("--start-position %d", binlogInfo.Position),
@@ -190,7 +189,7 @@ func parseBinlogEventTimestampImpl(output string, startPosition int64) (int64, e
 // The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments
 // nolint
-func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, *mysql.BinlogInfo, error) {
+func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, *api.BinlogInfo, error) {
 	// Sort backups by their binlog filename and position, with the latest at the front of the list.
 	backups, err := sortBackupInfo(backupList)
 	if err != nil {
@@ -210,17 +209,13 @@ func (r *Restore) findBackupAndBinlogInfo(ctx context.Context, backupList []*api
 func sortBackupInfo(backupList []*api.Backup) ([]backupComparator, error) {
 	var backups []backupComparator
 	for _, b := range backupList {
-		payload := mysql.BackupPayload{}
-		if err := json.Unmarshal([]byte(b.Payload), &payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal backup payload[%s], error[%w]", b.Payload, err)
-		}
-		binlogIndex, err := parseBinlogFileNameIndex(payload.BinlogInfo.FileName)
+		binlogIndex, err := parseBinlogFileNameIndex(b.Payload.BinlogInfo.FileName)
 		if err != nil {
 			return nil, err
 		}
 		backups = append(backups, backupComparator{
 			backup:      b,
-			binlogInfo:  &payload.BinlogInfo,
+			binlogInfo:  &b.Payload.BinlogInfo,
 			binlogIndex: binlogIndex,
 		})
 	}

@@ -76,6 +76,20 @@ func (e BackupStorageBackend) String() string {
 	return "UNKNOWN"
 }
 
+// BinlogInfo is the binlog coordination for MySQL.
+type BinlogInfo struct {
+	FileName string `json:"fileName"`
+	Position int64  `json:"position"`
+}
+
+// BackupPayload is encoded in JSON and stored in the backup table, representing PITR related info.
+type BackupPayload struct {
+	BinlogInfo BinlogInfo `json:"binlogInfo"`
+	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
+	// Mainly for UI purpose.
+	Ts int64 `json:"ts"`
+}
+
 // Backup is the API message for a backup.
 type Backup struct {
 	ID int `jsonapi:"primary,backup"`
@@ -103,7 +117,7 @@ type Backup struct {
 	Comment                 string `jsonapi:"attr,comment"`
 	// Payload contains data like PITR info, which will not be created at first.
 	// When backup runner executes the real backup job, it will fill this field.
-	Payload string `jsonapi:"attr,payload"`
+	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
 // BackupCreate is the API message for creating a backup.

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -34,7 +35,7 @@ type backupRaw struct {
 	Comment                 string
 	// Payload contains data like PITR info, which will not be created at first.
 	// When backup runner executes the real backup job, it will fill this field.
-	Payload string
+	Payload api.BackupPayload
 }
 
 // toBackup creates an instance of Backup based on the backupRaw.
@@ -485,6 +486,7 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 	var backupRawList []*backupRaw
 	for rows.Next() {
 		var backupRaw backupRaw
+		var payload []byte
 		if err := rows.Scan(
 			&backupRaw.ID,
 			&backupRaw.CreatorID,
@@ -499,11 +501,13 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 			&backupRaw.MigrationHistoryVersion,
 			&backupRaw.Path,
 			&backupRaw.Comment,
-			&backupRaw.Payload,
+			&payload,
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
+		if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+			return nil, err
+		}
 		backupRawList = append(backupRawList, &backupRaw)
 	}
 	if err := rows.Err(); err != nil {
@@ -544,6 +548,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 
 		if row.Next() {
 			var backupRaw backupRaw
+			var payload []byte
 			if err := row.Scan(
 				&backupRaw.ID,
 				&backupRaw.CreatorID,
@@ -558,9 +563,12 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 				&backupRaw.MigrationHistoryVersion,
 				&backupRaw.Path,
 				&backupRaw.Comment,
-				&backupRaw.Payload,
+				&payload,
 			); err != nil {
 				return nil, FormatError(err)
+			}
+			if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+				return nil, err
 			}
 			return &backupRaw, nil
 		}
