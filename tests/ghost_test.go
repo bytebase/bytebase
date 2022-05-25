@@ -8,14 +8,39 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
+	ghostsql "github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGhostParser(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	const statement = `
+	ALTER TABLE
+  		test
+	ADD
+		COLUMN ghost_play_2 int;
+	`
+	t.Run("fail to parse", func(t *testing.T) {
+		t.Parallel()
+		parser := ghostsql.NewParserFromAlterStatement(statement)
+		a.Equal(false, parser.HasExplicitTable())
+	})
+	t.Run("succeed to parse", func(t *testing.T) {
+		t.Parallel()
+		s := strings.Join(strings.Fields(statement), " ")
+		parser := ghostsql.NewParserFromAlterStatement(s)
+		a.Equal(true, parser.HasExplicitTable())
+		a.Equal("test", parser.GetExplicitTable())
+	})
+}
 
 func TestGhostSchemaUpdate(t *testing.T) {
 	const (

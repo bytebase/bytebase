@@ -131,7 +131,7 @@ func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statem
 	}
 	defer driver.Close(ctx)
 
-	l.Debug("Start sql migration...",
+	l.Debug("Start migration...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
 		zap.String("source", mi.Source.String()),
@@ -190,6 +190,12 @@ func postMigration(ctx context.Context, l *zap.Logger, server *Server, task *api
 			}
 		}
 	}
+
+	l.Debug("Post migration...",
+		zap.String("instance", task.Instance.Name),
+		zap.String("database", databaseName),
+		zap.Bool("writeBack", writeBack),
+	)
 
 	if writeBack {
 		dbName, err := api.GetBaseDatabaseName(mi.Database, project.DBNameTemplate, task.Database.Labels)
@@ -368,6 +374,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		Content:       schema,
 	}
 	if createSchemaFile {
+		server.l.Debug("Create latest schema file",
+			zap.String("schema_file", latestSchemaFile),
+		)
+
 		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).CreateFile(
 			ctx,
 			common.OauthContext{
@@ -387,6 +397,10 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			return "", fmt.Errorf("failed to create file after applying migration %s to %q: %w", mi.Version, mi.Database, err)
 		}
 	} else {
+		server.l.Debug("Update latest schema file",
+			zap.String("schema_file", latestSchemaFile),
+		)
+
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
 		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{Logger: server.l}).OverwriteFile(
 			ctx,
