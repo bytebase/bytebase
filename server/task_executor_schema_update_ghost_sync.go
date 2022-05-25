@@ -52,7 +52,9 @@ func getPostponeFlagFilename(taskID int, databaseID int, databaseName string, ta
 }
 
 func getTableNameFromStatement(statement string) (string, error) {
-	statement = strings.TrimSpace(statement)
+	// Trim the statement for the parser.
+	// This in effect removes all leading and trailing spaces, substitute multiple spaces with one.
+	statement = strings.Join(strings.Fields(statement), " ")
 	parser := ghostsql.NewParserFromAlterStatement(statement)
 	if !parser.HasExplicitTable() {
 		return "", fmt.Errorf("failed to parse table name from statement, statement: %v", statement)
@@ -90,6 +92,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		cutoverLockTimoutSeconds            = 3
 		exponentialBackoffMaxInterval       = 64
 	)
+	statement := strings.Join(strings.Fields(config.alterStatement), " ")
 	migrationContext := base.NewMigrationContext()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
 	port := 3306
@@ -105,7 +108,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.CliPassword = config.password
 	migrationContext.DatabaseName = config.database
 	migrationContext.OriginalTableName = config.table
-	migrationContext.AlterStatement = config.alterStatement
+	migrationContext.AlterStatement = statement
 	migrationContext.Noop = config.noop
 	migrationContext.ReplicaServerId = config.serverID
 	// set defaults

@@ -15,6 +15,8 @@ var (
 	PolicyCountMetricName metric.Name = "bb.policy.count"
 	// ProjectCountMetricName is the metric name for project count
 	ProjectCountMetricName metric.Name = "bb.project.count"
+	// TaskCountMetricName is the metric name for database count
+	TaskCountMetricName metric.Name = "bb.task.count"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count
@@ -45,4 +47,11 @@ type PolicyCountMetric struct {
 	Value           string
 	EnvironmentName string
 	Count           int
+}
+
+// TaskCountMetric is the API message for database count metric
+type TaskCountMetric struct {
+	Type   api.TaskType
+	Status api.TaskStatus
+	Count  int
 }
