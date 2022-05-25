@@ -164,7 +164,6 @@ func TestParseBinlogEventTimestampImpl(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		binlogText string
-		position   int64
 		timestamp  int64
 		err        bool
 	}{
@@ -190,21 +189,19 @@ DELIMITER ;
 # End of log file
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
-			position:  24500,
 			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.UTC).Unix(),
 			err:       false,
 		},
 		// Edge case: invalid mysqlbinlog option
 		{
 			binlogText: "mysqlbinlog: [ERROR] mysqlbinlog: unknown option '-n'.",
-			position:   0,
 			timestamp:  -1,
 			err:        true,
 		},
 	}
 
 	for _, test := range tests {
-		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText, test.position)
+		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText)
 		a.Equal(test.timestamp, timestamp)
 		if test.err {
 			a.Error(err)

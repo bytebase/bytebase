@@ -145,7 +145,7 @@ func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *api
 		return -1, err
 	}
 
-	timestamp, err := parseBinlogEventTimestampImpl(buf.String(), binlogInfo.Position)
+	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
 	if err != nil {
 		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename[%s], position[%d], error[%w]", binlogInfo.FileName, binlogInfo.Position, err)
 	}
@@ -153,15 +153,14 @@ func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo *api
 	return timestamp, nil
 }
 
-func parseBinlogEventTimestampImpl(output string, startPosition int64) (int64, error) {
+func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	lines := strings.Split(output, "\n")
-	// The mysqlbinlog output will contains a line "# at 12345", where 12345 is the --start-position param.
-	// The next line will be started as "#220425 17:32:13", which is the timestamp we are looking for.
-	atPos := fmt.Sprintf("# at %d", startPosition)
-	for i, line := range lines {
-		if strings.HasPrefix(line, atPos) {
-			timestampLine := lines[i+1]
-			date, err := time.Parse("060102 15:04:05", timestampLine[1:16])
+	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
+	// which has the timestamp we are looking for.
+	// The first occurrence is the target.
+	for _, line := range lines {
+		if strings.Contains(line, "server id") {
+			date, err := time.Parse("060102 15:04:05", line[1:16])
 			if err != nil {
 				return -1, err
 			}
