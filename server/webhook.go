@@ -67,7 +67,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repo.ExternalID))
 		}
 
-		s.l.Debug("Processing gitlab webhook push event...")
+		s.l.Debug("Processing gitlab webhook push event...",
+			zap.String("project", repo.Project.Name),
+		)
 
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
@@ -230,7 +232,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 
 		if len(createdMessageList) == 0 {
-			return c.String(http.StatusOK, "Ignored push event. No applicable file found in the commit list.")
+			msg := "Ignored push event. No applicable file found in the commit list."
+			s.l.Warn(msg,
+				zap.String("project", repo.Project.Name),
+			)
+			return c.String(http.StatusOK, msg)
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
