@@ -109,35 +109,30 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3 for bytebase, Postgres, and GitLab, unless documented otherwise.
-	switch testName {
-	case "TestServiceRestart":
-		return 1234
-	case "TestSchemaAndDataUpdate":
-		return 1237
-	case "TestVCS":
-		return 1240
-	case "TestTenant":
-		return 1243
-	case "TestTenantVCS":
-		return 1246
-	case "TestTenantDatabaseNameTemplate":
-		return 1249
-	// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
-	case "TestGhostSchemaUpdate":
-		return 1252
-	case "TestBackupRestoreBasic":
-		return 1256
-	case "TestPITR":
-		return 1259
-	case "TestTenantVCSDatabaseNameTemplate":
-		return 1262
-	case "TestBootWithExternalPg":
-		return 1265
-	case "TestSheetVCS":
-		return 1269
-	case "NEXT":
-		return 1272
+	configs := []struct {
+		name  string
+		ports int
+	}{
+		{name: "TestServiceRestart", ports: 3},
+		{name: "TestSchemaAndDataUpdate", ports: 3},
+		{name: "TestVCS", ports: 3},
+		{name: "TestTenant", ports: 3},
+		{name: "TestTenantVCS", ports: 3},
+		{name: "TestTenantDatabaseNameTemplate", ports: 3},
+		// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
+		{name: "TestGhostSchemaUpdate", ports: 4},
+		{name: "TestBackupRestoreBasic", ports: 3},
+		{name: "TestPITR", ports: 3},
+		{name: "TestTenantVCSDatabaseNameTemplate", ports: 3},
+		{name: "TestBootWithExternalPg", ports: 4},
+		{name: "TestSheetVCS", ports: 3},
+	}
+	port := 1234
+	for _, config := range configs {
+		if testName == config.name {
+			return port
+		}
+		port += config.ports
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
