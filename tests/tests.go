@@ -124,7 +124,7 @@ func getTestPort(testName string) int {
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
-    "TestSchemaSystem",
+		"TestSchemaSystem",
 	}
 	port := 1234
 	for _, name := range tests {
