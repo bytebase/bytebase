@@ -296,6 +296,10 @@ type ActivityFind struct {
 	Level       *ActivityLevel
 	ContainerID *int
 	Limit       *int
+	// If specified, sorts the returned list by created_ts in <<ORDER>>
+	// Different use cases want different orders.
+	// e.g. Issue activity list wants ASC, while view recent activity list wants DESC.
+	Order *SortOrder
 }
 
 func (find *ActivityFind) String() string {
