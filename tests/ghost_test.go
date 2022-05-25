@@ -20,6 +20,7 @@ import (
 )
 
 func TestGhostParser(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	const statement = `
 	ALTER TABLE
@@ -27,12 +28,18 @@ func TestGhostParser(t *testing.T) {
 	ADD
 		COLUMN ghost_play_2 int;
 	`
-	s := strings.Join(strings.Fields(statement), " ")
-	parser := ghostsql.NewParserFromAlterStatement(s)
-	a.Equal(true, parser.HasExplicitTable())
-	a.Equal("test", parser.GetExplicitTable())
-	parser = ghostsql.NewParserFromAlterStatement(statement)
-	a.Equal(false, parser.HasExplicitTable())
+	t.Run("fail to parse", func(t *testing.T) {
+		t.Parallel()
+		parser := ghostsql.NewParserFromAlterStatement(statement)
+		a.Equal(false, parser.HasExplicitTable())
+	})
+	t.Run("succeed to parse", func(t *testing.T) {
+		t.Parallel()
+		s := strings.Join(strings.Fields(statement), " ")
+		parser := ghostsql.NewParserFromAlterStatement(s)
+		a.Equal(true, parser.HasExplicitTable())
+		a.Equal("test", parser.GetExplicitTable())
+	})
 }
 
 func TestGhostSchemaUpdate(t *testing.T) {
