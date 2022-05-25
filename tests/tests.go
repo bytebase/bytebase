@@ -113,6 +113,7 @@ func getTestPort(testName string) int {
 		name  string
 		ports int
 	}{
+		// If the test starts a bytebase server, then we should allocate 3 ports for bytebase, Postgres, and GitLab, unless documented otherwise.
 		{name: "TestServiceRestart", ports: 3},
 		{name: "TestSchemaAndDataUpdate", ports: 3},
 		{name: "TestVCS", ports: 3},
