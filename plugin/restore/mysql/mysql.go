@@ -21,12 +21,11 @@ const (
 )
 
 // Restore implements recovery functions for MySQL.
-// For example, the original database is `dbfoo`, and the suffixTs is 1653018005 (derived from the PITR issue's CreateTs),
-// then Bytebase will do the following:
+// For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
+// Bytebase will do the following:
 // 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
 // 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
 // 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
-// 3. Delete database `dbfoo_pitr_1653018005`, which should be empty now.
 type Restore struct {
 	driver      *mysql.Driver
 	mysqlbinlog *mysqlbinlog.Instance
