@@ -471,8 +471,7 @@ func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 		where, args = append(where, fmt.Sprintf("webhook_endpoint_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	if mode == common.ReleaseModeDev {
-		rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -499,79 +498,6 @@ func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			refresh_token
 		FROM repository
 		WHERE `+strings.Join(where, " AND "),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer rows.Close()
-
-		// Iterate over result set and deserialize rows into repoRawList.
-		var repoRawList []*repositoryRaw
-		for rows.Next() {
-			var repository repositoryRaw
-			if err := rows.Scan(
-				&repository.ID,
-				&repository.CreatorID,
-				&repository.CreatedTs,
-				&repository.UpdaterID,
-				&repository.UpdatedTs,
-				&repository.VCSID,
-				&repository.ProjectID,
-				&repository.Name,
-				&repository.FullPath,
-				&repository.WebURL,
-				&repository.BranchFilter,
-				&repository.BaseDirectory,
-				&repository.FilePathTemplate,
-				&repository.SchemaPathTemplate,
-				&repository.SheetPathTemplate,
-				&repository.ExternalID,
-				&repository.ExternalWebhookID,
-				&repository.WebhookURLHost,
-				&repository.WebhookEndpointID,
-				&repository.WebhookSecretToken,
-				&repository.AccessToken,
-				&repository.ExpiresTs,
-				&repository.RefreshToken,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-
-			repoRawList = append(repoRawList, &repository)
-		}
-		if err := rows.Err(); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return repoRawList, nil
-	}
-	rows, err := tx.QueryContext(ctx, `
-	SELECT
-		id,
-		creator_id,
-		created_ts,
-		updater_id,
-		updated_ts,
-		vcs_id,
-		project_id,
-		name,
-		full_path,
-		web_url,
-		branch_filter,
-		base_directory,
-		file_path_template,
-		schema_path_template,
-		external_id,
-		external_webhook_id,
-		webhook_url_host,
-		webhook_endpoint_id,
-		webhook_secret_token,
-		access_token,
-		expires_ts,
-		refresh_token
-	FROM repository
-	WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {
@@ -598,6 +524,7 @@ func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
+			&repository.SheetPathTemplate,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
@@ -635,10 +562,8 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 	if v := patch.SchemaPathTemplate; v != nil {
 		set, args = append(set, fmt.Sprintf("schema_path_template = $%d", len(args)+1)), append(args, *v)
 	}
-	if mode == common.ReleaseModeDev {
-		if v := patch.SheetPathTemplate; v != nil {
-			set, args = append(set, fmt.Sprintf("sheet_path_template = $%d", len(args)+1)), append(args, *v)
-		}
+	if v := patch.SheetPathTemplate; v != nil {
+		set, args = append(set, fmt.Sprintf("sheet_path_template = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.AccessToken; v != nil {
 		set, args = append(set, fmt.Sprintf("access_token = $%d", len(args)+1)), append(args, *v)
@@ -653,62 +578,12 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	if mode == common.ReleaseModeDev {
-		row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
-	`, len(args)),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
-
-		if row.Next() {
-			var repository repositoryRaw
-			if err := row.Scan(
-				&repository.ID,
-				&repository.CreatorID,
-				&repository.CreatedTs,
-				&repository.UpdaterID,
-				&repository.UpdatedTs,
-				&repository.VCSID,
-				&repository.ProjectID,
-				&repository.Name,
-				&repository.FullPath,
-				&repository.WebURL,
-				&repository.BranchFilter,
-				&repository.BaseDirectory,
-				&repository.FilePathTemplate,
-				&repository.SchemaPathTemplate,
-				&repository.SheetPathTemplate,
-				&repository.ExternalID,
-				&repository.ExternalWebhookID,
-				&repository.WebhookURLHost,
-				&repository.WebhookEndpointID,
-				&repository.WebhookSecretToken,
-				&repository.AccessToken,
-				&repository.ExpiresTs,
-				&repository.RefreshToken,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-
-			return &repository, nil
-		}
-
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
-	}
-
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-	UPDATE repository
-	SET `+strings.Join(set, ", ")+`
-	WHERE id = $%d
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
-`, len(args)),
+		`, len(args)),
 		args...,
 	)
 	if err != nil {
@@ -733,6 +608,7 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 			&repository.BaseDirectory,
 			&repository.FilePathTemplate,
 			&repository.SchemaPathTemplate,
+			&repository.SheetPathTemplate,
 			&repository.ExternalID,
 			&repository.ExternalWebhookID,
 			&repository.WebhookURLHost,
