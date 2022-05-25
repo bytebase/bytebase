@@ -143,14 +143,14 @@ func getTestPort(testName string) int {
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
 
-	profile := cmd.GetTestProfileWithExternalPg(port, pgUser, pgURL)
+	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
