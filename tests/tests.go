@@ -125,6 +125,7 @@ func getTestPort(testName string) int {
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
 		"TestCheckEngineInnoDB",
+		"TestSchemaSystem",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -1226,4 +1227,202 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 		return fmt.Errorf("fail to unmarshal dataSource response, error: %w", err)
 	}
 	return nil
+}
+
+// upsertPolicy upserts the policy.
+func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
+		return fmt.Errorf("failed to marshal policyUpsert, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	if err != nil {
+		return err
+	}
+
+	policy := new(api.Policy)
+	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
+		return fmt.Errorf("fail to unmarshal policy response, error: %w", err)
+	}
+	return nil
+}
+
+// schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
+// If the schema review task check is not done, return nil, false, nil.
+func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+	var result []api.TaskCheckResult
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				for _, taskCheck := range task.TaskCheckRunList {
+					if taskCheck.Type == api.TaskCheckDatabaseStatementAdvise {
+						switch taskCheck.Status {
+						case api.TaskCheckRunRunning:
+							return nil, false, nil
+						case api.TaskCheckRunDone:
+							checkResult := &api.TaskCheckRunResultPayload{}
+							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
+								return nil, false, err
+							}
+							result = append(result, checkResult.ResultList...)
+						}
+					}
+				}
+				return result, true, nil
+			}
+		}
+	}
+	return nil, true, nil
+}
+
+// getSchemaReviewResult will wait for next task schema review task check to finish and return the task check result.
+func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.getIssue(id)
+		if err != nil {
+			return nil, err
+		}
+
+		status, err := getAggregatedTaskStatus(issue)
+		if err != nil {
+			return nil, err
+		}
+
+		if status != api.TaskPendingApproval {
+			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
+		}
+
+		result, yes, err := ctl.schemaReviewTaskCheckRunFinished(issue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get schema review result for issue %v: %w", id, err)
+		}
+		if yes {
+			return result, nil
+		}
+	}
+	return nil, nil
+}
+
+// setDefaultSchemaReviewRulePayload sets the default payload for this rule.
+func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string, error) {
+	var payload []byte
+	var err error
+	switch ruleTp {
+	case api.SchemaRuleMySQLEngine:
+	case api.SchemaRuleStatementNoSelectAll:
+	case api.SchemaRuleStatementRequireWhere:
+	case api.SchemaRuleStatementNoLeadingWildcardLike:
+	case api.SchemaRuleTableRequirePK:
+	case api.SchemaRuleColumnNotNull:
+	case api.SchemaRuleTableNaming:
+		fallthrough
+	case api.SchemaRuleColumnNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^[a-z]+(_[a-z]+)?$",
+		})
+	case api.SchemaRuleIDXNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^idx_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleUKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^uk_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleFKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+		})
+	case api.SchemaRuleRequiredColumn:
+		payload, err = json.Marshal(api.RequiredColumnRulePayload{
+			ColumnList: []string{
+				"id",
+				"created_ts",
+				"updated_ts",
+				"creator_id",
+				"updater_id",
+			},
+		})
+	default:
+		return "", fmt.Errorf("Unknow schema review type for default payload: %s", ruleTp)
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
+}
+
+// prodTemplateSchemaReviewPolicy returns the default schema review policy.
+func prodTemplateSchemaReviewPolicy() (string, error) {
+	policy := api.SchemaReviewPolicy{
+		Name: "Prod",
+		RuleList: []*api.SchemaReviewRule{
+			{
+				Type:  api.SchemaRuleMySQLEngine,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleIDXNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleUKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleFKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoSelectAll,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementRequireWhere,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoLeadingWildcardLike,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableRequirePK,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleRequiredColumn,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNotNull,
+				Level: api.SchemaRuleLevelWarning,
+			},
+		},
+	}
+
+	for _, rule := range policy.RuleList {
+		payload, err := setDefaultSchemaReviewRulePayload(rule.Type)
+		if err != nil {
+			return "", err
+		}
+		rule.Payload = payload
+	}
+
+	s, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
 }
