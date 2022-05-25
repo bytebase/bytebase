@@ -330,7 +330,7 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("not found repository list for GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("repository list for GitLab instance %s not found", instanceURL))
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
 			instanceURL,
