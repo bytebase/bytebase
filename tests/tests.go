@@ -109,50 +109,42 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3 for bytebase, Postgres, and GitLab, unless documented otherwise.
-	switch testName {
-	case "TestServiceRestart":
-		return 1234
-	case "TestSchemaAndDataUpdate":
-		return 1237
-	case "TestVCS":
-		return 1240
-	case "TestTenant":
-		return 1243
-	case "TestTenantVCS":
-		return 1246
-	case "TestTenantDatabaseNameTemplate":
-		return 1249
-	// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
-	case "TestGhostSchemaUpdate":
-		return 1252
-	case "TestBackupRestoreBasic":
-		return 1256
-	case "TestPITR":
-		return 1259
-	case "TestTenantVCSDatabaseNameTemplate":
-		return 1262
-	case "TestBootWithExternalPg":
-		return 1265
-	case "TestSheetVCS":
-		return 1269
-	case "TestSchemaSystem":
-		return 1272
-	case "NEXT":
-		return 1276
+	// We allocates 4 ports for each of the integration test, who probably would start
+	// the bytebase server, Postgres, MySQL and GitLab.
+	tests := []string{
+		"TestServiceRestart",
+		"TestSchemaAndDataUpdate",
+		"TestVCS",
+		"TestTenant",
+		"TestTenantVCS",
+		"TestTenantDatabaseNameTemplate",
+		"TestGhostSchemaUpdate",
+		"TestBackupRestoreBasic",
+		"TestPITR",
+		"TestTenantVCSDatabaseNameTemplate",
+		"TestBootWithExternalPg",
+		"TestSheetVCS",
+    "TestSchemaSystem",
+	}
+	port := 1234
+	for _, name := range tests {
+		if testName == name {
+			return port
+		}
+		port += 4
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
 
-	profile := cmd.GetTestProfileWithExternalPg(port, pgUser, pgURL)
+	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
