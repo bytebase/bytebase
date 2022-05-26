@@ -36,8 +36,6 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 		return nil, err
 	}
 
-	backupPlanPolicyType := api.PolicyType(api.PolicyTypeBackupPlan)
-
 	group := make(map[api.BackupPlanPolicySchedule]map[bool]int, 3) // map[schedule][enabled]count
 	for _, schedule := range []api.BackupPlanPolicySchedule{
 		api.BackupPlanPolicyScheduleDaily,
@@ -53,17 +51,9 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			c.l.Debug("failed to get instance by id", zap.Int("id", database.InstanceID))
 			continue
 		}
-		backupPolicy, err := c.store.GetPolicy(ctx, &api.PolicyFind{
-			EnvironmentID: &database.Instance.EnvironmentID,
-			Type:          &backupPlanPolicyType,
-		})
+		backupPolicy, err := c.store.GetBackupPlanPolicyByEnvID(ctx, database.Instance.EnvironmentID)
 		if err != nil {
-			c.l.Debug("failed to get policy by id", zap.Int("id", database.Instance.EnvironmentID))
-			continue
-		}
-		payload, err := api.UnmarshalBackupPlanPolicy(backupPolicy.Payload)
-		if err != nil {
-			c.l.Debug("failed to unmarshal policy payload", zap.String("payload", backupPolicy.Payload))
+			c.l.Debug("failed to get policy by environment id", zap.Int("id", database.Instance.EnvironmentID))
 			continue
 		}
 		backupSetting, err := c.store.GetBackupSettingByDatabaseID(ctx, database.ID)
@@ -75,7 +65,7 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 		if backupSetting != nil {
 			enabled = backupSetting.Enabled
 		}
-		group[payload.Schedule][enabled]++
+		group[backupPolicy.Schedule][enabled]++
 	}
 
 	for schedule, subgroup := range group {
@@ -84,8 +74,8 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 				Name:  metricAPI.DatabaseCountMetricName,
 				Value: count,
 				Labels: map[string]string{
-					"schedule": string(schedule),
-					"enabled":  strconv.FormatBool(enabled),
+					"backup_schedule": string(schedule),
+					"backup_enabled":  strconv.FormatBool(enabled),
 				},
 			})
 		}
