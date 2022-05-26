@@ -370,6 +370,8 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		}
 	}()
 
+	s.l.Info("changeTaskStatusWithPatch", zap.Int("task_id", task.ID), zap.String("task_name", task.Name), zap.String("old_status", string(task.Status)), zap.String("new_status", string(taskStatusPatch.Status)), zap.Stack("stack"))
+
 	if !isTaskStatusTransitionAllowed(task.Status, taskStatusPatch.Status) {
 		return nil, &common.Error{
 			Code: common.Invalid,

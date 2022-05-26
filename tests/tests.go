@@ -717,6 +717,7 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
+				fmt.Printf("approve issue [%+v] task[%+v]\n", issue, task)
 				if _, err := ctl.patchTaskStatus(
 					api.TaskStatusPatch{
 						ID:     task.ID,
