@@ -114,7 +114,7 @@ type Backup struct {
 	MigrationHistoryVersion string `jsonapi:"attr,migrationHistoryVersion"`
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
-	// Payload contains data such as backup position info which will not be created at first.
+	// Payload contains data such as binlog position info which will not be created at first.
 	// Backup runner will fill in this field.
 	Payload BackupPayload `jsonapi:"attr,payload"`
 }
