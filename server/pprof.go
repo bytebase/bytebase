@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// wrappprof adds several routes from package `net/http/pprof` to *echo.Echo object.
+// registerPProfEndpoints adds several routes from package `net/http/pprof` to *echo.Echo object.
 func wrappprof(e *echo.Echo) {
 	e.GET("/debug/pprof/", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
 	e.GET("/debug/pprof/allocs", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
