@@ -18,7 +18,7 @@ jobs:
           - docker-image-tag: "dev-ci"
             docker-build-args: "RELEASE="
           - docker-image-tag: "release-ci"
-            docker-build-args: ""
+            docker-build-args: "RELEASE=release"
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -35,4 +35,4 @@ jobs:
           tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
           build-args: ${{ matrix.docker-build-args }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:dev-ci " ${{ steps.docker_build.outputs.digest }}
+        run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}
