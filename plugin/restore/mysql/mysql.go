@@ -134,22 +134,27 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 }
 
 // Find the latest logical backup and corresponding binlog info whose time is before `targetTs`.
-// The backupList should only contain DONE backups, and sorted that the newest backup is at the front.
+// The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
 func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
-	var eventTs int64
+	var maxEventTsLETargetTs int64
+	var backup *api.Backup
 	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
 		}
-		if eventTs <= targetTs {
-			return b, nil
+		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
+			maxEventTsLETargetTs = eventTs
+			backup = b
 		}
 	}
-	return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, eventTs)
+	if maxEventTsLETargetTs == 0 {
+		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, maxEventTsLETargetTs)
+	}
+	return backup, nil
 }
 
 // TODO(dragonly): Implement this.
