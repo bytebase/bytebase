@@ -48,6 +48,11 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	return nil, fmt.Errorf("cannot find index for %v", find)
 }
 
+type test struct {
+	statement string
+	want      []advisor.Advice
+}
+
 func runSchemaReviewRuleTests(
 	t *testing.T,
 	tests []test,
