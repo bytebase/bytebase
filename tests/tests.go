@@ -1282,6 +1282,7 @@ func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
 // If the schema review task check is not done, return nil, false, nil.
 func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
+	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
@@ -1291,11 +1292,15 @@ func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api
 						case api.TaskCheckRunRunning:
 							return nil, false, nil
 						case api.TaskCheckRunDone:
+							// return the latest result
+							if latestTs != 0 && latestTs > taskCheck.UpdatedTs {
+								continue
+							}
 							checkResult := &api.TaskCheckRunResultPayload{}
 							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
 								return nil, false, err
 							}
-							result = append(result, checkResult.ResultList...)
+							result = checkResult.ResultList
 						}
 					}
 				}
