@@ -19,6 +19,7 @@ import (
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/require"
 )

@@ -11,6 +11,7 @@ import (
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestCheckEngineInnoDB(t *testing.T) {
@@ -48,7 +49,9 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		defer driver.Close(ctx)
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
+		logger, err := zap.NewDevelopment()
+		a.NoError(err)
+		mysqlRestore := restoremysql.New(logger, mysqlDriver, mysqlbinlogIns)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
@@ -79,7 +82,9 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		defer driver.Close(ctx)
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
+		logger, err := zap.NewDevelopment()
+		a.NoError(err)
+		mysqlRestore := restoremysql.New(logger, mysqlDriver, mysqlbinlogIns)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.Error(err)
 	})
