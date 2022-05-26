@@ -428,6 +428,27 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 	return resp.Body, nil
 }
 
+func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
+	req, err := http.NewRequest("DELETE", url, body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new DELETE request(%q), error: %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a DELETE request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
 // getProjects gets the projects.
 func (ctl *controller) getProjects() ([]*api.Project, error) {
 	body, err := ctl.get("/project", nil)
@@ -1243,6 +1264,15 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 	policy := new(api.Policy)
 	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
 		return fmt.Errorf("fail to unmarshal policy response, error: %w", err)
+	}
+	return nil
+}
+
+// deletePolicy deletes the archived policy.
+func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	if err != nil {
+		return err
 	}
 	return nil
 }
