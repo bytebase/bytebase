@@ -82,7 +82,10 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	_ = r.replayBinlog(ctx, binlog)
+	if err := r.replayBinlog(ctx, binlog); err != nil {
+		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
+		return nil
+	}
 
 	return nil
 }
@@ -124,7 +127,13 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	// The first occurrence is the target.
 	for _, line := range lines {
 		if strings.Contains(line, "server id") {
-			date, err := time.Parse("060102 15:04:05", line[1:16])
+			fields := strings.Fields(line)
+			// fields should starts with ["#220421", "14:49:26", "server", "id"]
+			if len(fields) < 4 ||
+				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
+				continue
+			}
+			date, err := time.Parse("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]))
 			if err != nil {
 				return 0, err
 			}
