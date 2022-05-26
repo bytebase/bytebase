@@ -42,7 +42,7 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 }
 
 // RestoreBinlog restores the database using incremental backup specified by infos, reading the binlog in dataDir.
-func (r *Restore) RestoreBinlog(ctx context.Context, database, dataDir string, infos []mysql.BinlogInfo) error {
+func (r *Restore) RestoreBinlog(ctx context.Context, originDatabase, pitrDatabase, dataDir string, infos []mysql.BinlogInfo) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return fmt.Errorf("cannot get database connection, error: %w", err)
@@ -50,7 +50,8 @@ func (r *Restore) RestoreBinlog(ctx context.Context, database, dataDir string, i
 	for _, info := range infos {
 		var stdout bytes.Buffer
 		cmd := exec.Command(r.mysqlbinlog.GetPath(),
-			fmt.Sprintf("--database=%s", database),
+			fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
+			fmt.Sprintf("--database=%s", pitrDatabase),
 			fmt.Sprintf("--start-position=%d --stop-position=%d", info.Position, info.Position+1),
 			filepath.Join(dataDir, info.FileName),
 		)
@@ -66,7 +67,7 @@ func (r *Restore) RestoreBinlog(ctx context.Context, database, dataDir string, i
 		// TODO(zp): how about ExecContext()?
 		stmt := stdout.String()
 		if _, err := db.Exec(stmt); err != nil {
-			return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, database, err)
+			return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, pitrDatabase, err)
 		}
 	}
 	return nil
@@ -105,7 +106,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, database, "", nil)
+	_ = r.RestoreBinlog(ctx, database, "", "", nil)
 
 	return nil
 }
