@@ -81,7 +81,6 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		// TODO(zp): try to keep it atomic or leave it to the caller
 		return fmt.Errorf("cannot run %s, error: %w", cmd.String(), err)
 	}
 
