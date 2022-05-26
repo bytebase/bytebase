@@ -443,12 +443,12 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	if task.Status == api.TaskPendingApproval && taskPatched.Status == api.TaskPending {
 		skipIfAlreadyTerminated := false
 		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, taskPatched, api.SystemBotID, skipIfAlreadyTerminated); err != nil {
-			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", taskPatched.Name)
+			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval, err: %w", taskPatched.Name, err)
 		}
 
 		scheduledTask, err := s.TaskScheduler.ScheduleIfNeeded(ctx, taskPatched)
 		if err != nil {
-			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", taskPatched.Name)
+			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval, err: %w", taskPatched.Name, err)
 		}
 		taskPatched = scheduledTask
 	}
