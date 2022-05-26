@@ -190,24 +190,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					if s.feature(api.FeatureBackwardCompatibility) {
-						_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-							CreatorID:               api.SystemBotID,
-							TaskID:                  task.ID,
-							Type:                    api.TaskCheckDatabaseStatementCompatibility,
-							Payload:                 string(payload),
-							SkipIfAlreadyTerminated: false,
-						})
-						if err != nil {
-							// It's OK if we failed to trigger a check, just emit an error log
-							s.l.Error("Failed to trigger compatibility check after changing task statement",
-								zap.Int("task_id", task.ID),
-								zap.String("task_name", task.Name),
-								zap.Error(err),
-							)
-						}
-					}
-
 					if s.feature(api.FeatureSchemaReviewPolicy) {
 						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
