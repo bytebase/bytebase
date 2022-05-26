@@ -9,7 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
@@ -42,34 +44,52 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 }
 
 // RestoreBinlog restores the database using incremental backup specified by infos, reading the binlog in dataDir.
-func (r *Restore) RestoreBinlog(ctx context.Context, originDatabase, pitrDatabase, dataDir string, infos []mysql.BinlogInfo) error {
+func (r *Restore) RestoreBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, stopTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return fmt.Errorf("cannot get database connection, error: %w", err)
 	}
-	for _, info := range infos {
-		var stdout bytes.Buffer
-		cmd := exec.Command(r.mysqlbinlog.GetPath(),
-			fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
-			fmt.Sprintf("--database=%s", pitrDatabase),
-			fmt.Sprintf("--start-position=%d --stop-position=%d", info.Position, info.Position+1),
-			filepath.Join(dataDir, info.FileName),
-		)
-		cmd.Stdout = &stdout
-		cmd.Stderr = os.Stderr
 
-		if err := cmd.Run(); err != nil {
-			// TODO(zp): try to keep it atomic or leave it to the caller
-			return fmt.Errorf("cannot run %s, error: %w", cmd.String(), err)
-		}
+	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
+	}
 
-		// Apply to database
-		// TODO(zp): how about ExecContext()?
-		stmt := stdout.String()
-		if _, err := db.Exec(stmt); err != nil {
-			return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, pitrDatabase, err)
+	var needReplay []string
+	for _, f := range binlogFilesLocal {
+		if !f.IsDir() && strings.HasPrefix(f.Name(), "binlog.") && f.Name() >= startInfo.FileName {
+			needReplay = append(needReplay, f.Name())
 		}
 	}
+	sort.Strings(needReplay)
+
+	stopTime := time.Unix(stopTs, 0)
+	args := []string{
+		fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
+		fmt.Sprintf("--database=%s", pitrDatabase),
+		"--disable-log-bin",
+		fmt.Sprintf("--start-position=%d", startInfo.Position),
+		fmt.Sprintf(`--stop-datetime="%d-%d-%d %d:%d:%d"`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
+	}
+
+	for _, name := range needReplay {
+		args = append(args, filepath.Join(binlogDir, name))
+	}
+
+	var stdout bytes.Buffer
+	cmd := exec.Command(r.mysqlbinlog.GetPath(), args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		// TODO(zp): try to keep it atomic or leave it to the caller
+		return fmt.Errorf("cannot run %s, error: %w", cmd.String(), err)
+	}
+
+	stmt := stdout.String()
+	if _, err := db.ExecContext(ctx, stmt); err != nil {
+		return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, pitrDatabase, err)
+	}
+
 	return nil
 }
 
@@ -106,7 +126,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, database, "", "", nil)
+	_ = r.RestoreBinlog(ctx, database, "", "", mysql.BinlogInfo{}, 0)
 
 	return nil
 }
