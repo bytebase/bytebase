@@ -133,7 +133,7 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
 				continue
 			}
-			date, err := time.Parse("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]))
+			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
 			if err != nil {
 				return 0, err
 			}
