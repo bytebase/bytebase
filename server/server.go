@@ -298,7 +298,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return c.String(http.StatusOK, "OK!\n")
 	})
 	// Register pprof endpoints.
-	wrappprof(e)
+	registerPProfEndpoints(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
