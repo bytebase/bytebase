@@ -366,7 +366,8 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 				zap.String("name", task.Name),
 				zap.String("old_status", string(task.Status)),
 				zap.String("new_status", string(taskStatusPatch.Status)),
-				zap.Error(err))
+				zap.Error(err),
+				zap.Stack("stack"))
 		}
 	}()
 
