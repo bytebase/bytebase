@@ -8,6 +8,7 @@ import (
 
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 	"github.com/stretchr/testify/require"
 )
@@ -25,6 +26,10 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("success", func(t *testing.T) {
+		port := port
+		t.Parallel()
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
 		t.Log("create test database")
 		database := "test_success"
 		db, err := connectTestMySQL(port, "")
@@ -49,9 +54,13 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
+		port := port + 1
+		t.Parallel()
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
 		t.Log("create test database")
 		database := "test_fail"
-		db, err := connectTestMySQL(port+1, "")
+		db, err := connectTestMySQL(port, "")
 		a.NoError(err)
 		defer db.Close()
 		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`; USE `%s`;", database, database))
@@ -61,7 +70,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		_, err = db.ExecContext(ctx, "CREATE TABLE t_innodb (id INT PRIMARY KEY) ENGINE=InnoDB;")
 		a.NoError(err)
 		t.Log("create table with MyISAM engine")
-		_, err = db.ExecContext(ctx, "CREATE TABLE t_innodb (id INT PRIMARY KEY) ENGINE=MyISAM;")
+		_, err = db.ExecContext(ctx, "CREATE TABLE t_myisam (id INT PRIMARY KEY) ENGINE=MyISAM;")
 		a.NoError(err)
 
 		t.Log("check InnoDB engine")
