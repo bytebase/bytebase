@@ -82,7 +82,8 @@ type BinlogInfo struct {
 	Position int64  `json:"position"`
 }
 
-// BackupPayload is encoded in JSON and stored in the backup table, representing PITR related info.
+// BackupPayload contains backup related database specific info, it differs for different database types.
+// It is encoded in JSON and stored in the backup table.
 type BackupPayload struct {
 	// MySQL related fields
 	// BinlogInfo is recorded when taking the backup, and they are at the same snapshot of the database.
@@ -115,7 +116,7 @@ type Backup struct {
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
 	// Payload contains data such as binlog position info which will not be created at first.
-	// Backup runner will fill in this field.
+	// It is filled when the backup task executor takes database backups.
 	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
