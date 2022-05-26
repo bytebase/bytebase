@@ -33,12 +33,6 @@ type FeatureType string
 const (
 	// Change Workflow
 
-	// FeatureBackwardCompatibility checks if a DDL change is backward compatible.
-	// See https://bytebase.com/docs/features/sql-advisor/backward-compatibility-migration-check
-	//
-	// Currently, we only support MySQL/TiDB thanks to github.com/pingcap/parser
-	// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-	FeatureBackwardCompatibility FeatureType = "bb.feature.backward-compatibility"
 	// FeatureSchemaDrift detects if there occurs schema drift.
 	// See https://bytebase.com/docs/features/drift-detection
 	FeatureSchemaDrift FeatureType = "bb.feature.schema-drift"
@@ -110,8 +104,6 @@ const (
 
 func (e FeatureType) String() string {
 	switch e {
-	case FeatureBackwardCompatibility:
-		return "bb.feature.backward-compatibility"
 	case FeatureSchemaDrift:
 		return "bb.feature.schema-drift"
 	case FeatureTaskScheduleTime:
@@ -141,8 +133,6 @@ func (e FeatureType) String() string {
 // Name returns a readable name of the feature
 func (e FeatureType) Name() string {
 	switch e {
-	case FeatureBackwardCompatibility:
-		return "Backward compatibility"
 	case FeatureSchemaDrift:
 		return "Schema drift"
 	case FeatureTaskScheduleTime:
@@ -188,18 +178,17 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.backward-compatibility": {false, true, true},
-	"bb.feature.schema-drift":           {false, true, true},
-	"bb.feature.task-schedule-time":     {false, true, true},
-	"bb.feature.multi-tenancy":          {false, true, true},
-	"bb.feature.dba-workflow":           {false, false, true},
-	"bb.feature.data-source":            {false, false, false},
-	"bb.feature.approval-policy":        {false, true, true},
-	"bb.feature.backup-policy":          {false, true, true},
-	"bb.feature.schema-review-policy":   {false, true, true},
-	"bb.feature.rbac":                   {false, true, true},
-	"bb.feature.3rd-party-auth":         {false, true, true},
-	"bb.feature.branding":               {false, true, true},
+	"bb.feature.schema-drift":         {false, true, true},
+	"bb.feature.task-schedule-time":   {false, true, true},
+	"bb.feature.multi-tenancy":        {false, true, true},
+	"bb.feature.dba-workflow":         {false, false, true},
+	"bb.feature.data-source":          {false, false, false},
+	"bb.feature.approval-policy":      {false, true, true},
+	"bb.feature.backup-policy":        {false, true, true},
+	"bb.feature.schema-review-policy": {false, true, true},
+	"bb.feature.rbac":                 {false, true, true},
+	"bb.feature.3rd-party-auth":       {false, true, true},
+	"bb.feature.branding":             {false, true, true},
 }
 
 // Plan is the API message for a plan.
