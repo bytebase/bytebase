@@ -124,6 +124,7 @@ func getTestPort(testName string) int {
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
+		"TestCheckEngineInnoDB",
 		"TestSchemaSystem",
 	}
 	port := 1234
