@@ -48,7 +48,7 @@ func (r *Restore) replayBinlog(ctx context.Context, config api.BinlogInfo) error
 	return fmt.Errorf("Unimplemented")
 }
 
-// RestorePITR is a wrapper for restore a full backup and a range of incremental backup.
+// RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
