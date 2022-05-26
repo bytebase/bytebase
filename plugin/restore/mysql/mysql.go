@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -138,7 +139,12 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
 func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
+	if len(backupList) == 0 {
+		return nil, fmt.Errorf("no valid backup")
+	}
+
 	var maxEventTsLETargetTs int64
+	var minEventTs int64 = math.MaxInt64
 	var backup *api.Backup
 	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
@@ -150,9 +156,13 @@ func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 			maxEventTsLETargetTs = eventTs
 			backup = b
 		}
+		// This is only for composing the error message.
+		if eventTs < minEventTs {
+			minEventTs = eventTs
+		}
 	}
 	if maxEventTsLETargetTs == 0 {
-		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, maxEventTsLETargetTs)
+		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, minEventTs)
 	}
 	return backup, nil
 }
