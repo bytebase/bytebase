@@ -792,6 +792,7 @@ func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
+	retry := 3
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
 		if err != nil {
@@ -805,7 +806,11 @@ func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 		switch status {
 		case api.TaskPendingApproval:
 			if err := ctl.approveIssueNext(issue); err != nil {
-				return api.TaskFailed, err
+				if retry == 0 {
+					return api.TaskFailed, err
+				}
+				retry--
+				continue
 			}
 		case api.TaskFailed:
 			return status, err
