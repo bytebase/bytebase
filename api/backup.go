@@ -86,7 +86,7 @@ type BinlogInfo struct {
 // It is encoded in JSON and stored in the backup table.
 type BackupPayload struct {
 	// MySQL related fields
-	// BinlogInfo is recorded when taking the backup, and they are at the same snapshot of the database.
+	// BinlogInfo is recorded when taking the backup.
 	BinlogInfo BinlogInfo `json:"binlogInfo"`
 }
 
