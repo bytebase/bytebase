@@ -160,7 +160,7 @@ DELIMITER ;
 		// Edge case: invalid mysqlbinlog option
 		{
 			binlogText: "mysqlbinlog: [ERROR] mysqlbinlog: unknown option '-n'.",
-			timestamp:  -1,
+			timestamp:  0,
 			err:        true,
 		},
 	}
