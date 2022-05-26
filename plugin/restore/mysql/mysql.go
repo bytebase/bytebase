@@ -43,8 +43,8 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// RestoreBinlog restores the database using incremental backup specified by infos, reading the binlog in dataDir.
-func (r *Restore) RestoreBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, stopTs int64) error {
+// ReplayBinlog restores the database using incremental backup specified by infos, reading the binlog in dataDir.
+func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, stopTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return fmt.Errorf("cannot get database connection, error: %w", err)
@@ -126,7 +126,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, database, "", "", mysql.BinlogInfo{}, 0)
+	_ = r.ReplayBinlog(ctx, database, "", "", mysql.BinlogInfo{}, 0)
 
 	return nil
 }
