@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 // TestBackupRestoreBasic tests basic backup and restore behavior
@@ -61,7 +60,6 @@ func TestBackupRestoreBasic(t *testing.T) {
 	const numRecords = 10
 	tx, err := db.Begin()
 	a.NoError(err)
-	defer tx.Rollback()
 	for i := 0; i < numRecords; i++ {
 		_, err = tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%d)", table, i))
 		a.NoError(err)
@@ -72,10 +70,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// make a full backup
 	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 	a.NoError(err)
-	defer func() {
-		err := driver.Close(ctx)
-		a.NoError(err)
-	}()
+	defer driver.Close(ctx)
 
 	buf, err := doBackup(ctx, driver, database)
 	a.NoError(err)
@@ -149,10 +144,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -211,10 +203,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -272,10 +261,7 @@ func TestPITR(t *testing.T) {
 		t.Log("make a full backup")
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
-		defer func() {
-			err := driver.Close(ctx)
-			a.NoError(err)
-		}()
+		defer driver.Close(ctx)
 
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -355,7 +341,6 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 
 	tx, err := db.Begin()
 	a.NoError(err)
-	defer tx.Rollback()
 
 	for i := begin; i < end; i++ {
 		_, err := tx.Exec(fmt.Sprintf("INSERT INTO tbl0 VALUES (%d);", i))
@@ -398,27 +383,6 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.NoError(rows.Err())
 	// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
 	a.Equal(numRows, i)
-}
-
-func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
-	return dbplugin.Open(
-		ctx,
-		dbplugin.MySQL,
-		dbplugin.DriverConfig{Logger: logger},
-		dbplugin.ConnectionConfig{
-			Host:      "localhost",
-			Port:      port,
-			Username:  "root",
-			Password:  "",
-			Database:  database,
-			TLSConfig: dbplugin.TLSConfig{},
-		},
-		dbplugin.ConnectionContext{},
-	)
 }
 
 func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*bytes.Buffer, error) {
