@@ -51,6 +51,14 @@ func TestSchemaSystem(t *testing.T) {
 				"FOREIGN KEY fk1(roomId) REFERENCES room(id)" +
 				") ENGINE = CSV",
 		}
+		noSchemaReviewPolicy = []api.TaskCheckResult{
+			{
+				Status:  api.TaskCheckStatusWarn,
+				Code:    common.TaskCheckEmptySchemaReviewPolicy,
+				Title:   "Empty schema review policy or disabled",
+				Content: "",
+			},
+		}
 		tests = []test{
 			{
 				statement: statements[0],
@@ -297,30 +305,58 @@ func TestSchemaSystem(t *testing.T) {
 	a.Equal(database.Instance.ID, instance.ID)
 
 	for _, t := range tests {
-		createContext, err := json.Marshal(&api.UpdateSchemaContext{
-			MigrationType: db.Migrate,
-			DetailList: []*api.UpdateSchemaDetail{
-				{
-					DatabaseID: database.ID,
-					Statement:  t.statement,
-				},
-			},
-		})
-		a.NoError(err)
-
-		issue, err := ctl.createIssue(api.IssueCreate{
-			ProjectID:     project.ID,
-			Name:          fmt.Sprintf("update schema for database %q", databaseName),
-			Type:          api.IssueDatabaseSchemaUpdate,
-			Description:   fmt.Sprintf("This updates the schema of database %q", databaseName),
-			AssigneeID:    project.Creator.ID,
-			CreateContext: string(createContext),
-		})
-		a.NoError(err)
-
-		result, err := ctl.getSchemaReviewResult(issue.ID)
-		a.NoError(err)
-
+		result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
 		a.Equal(t.result, result)
 	}
+
+	// disable the schema review policy
+	disable := api.Archived.String()
+	err = ctl.upsertPolicy(api.PolicyUpsert{
+		EnvironmentID: prodEnvironment.ID,
+		Type:          api.PolicyTypeSchemaReview,
+		Payload:       &policyPayload,
+		RowStatus:     &disable,
+	})
+	a.NoError(err)
+
+	result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSchemaReviewPolicy, result)
+
+	// delete the schema review policy
+	err = ctl.deletePoliy(api.PolicyDelete{
+		EnvironmentID: prodEnvironment.ID,
+		Type:          api.PolicyTypeSchemaReview,
+	})
+	a.NoError(err)
+
+	result = createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, statements[0])
+	a.Equal(noSchemaReviewPolicy, result)
+}
+
+func createIssueAndReturnSchemaReviewResult(a *require.Assertions, ctl *controller, databaseID int, projectID int, assigneeID int, statement string) []api.TaskCheckResult {
+	createContext, err := json.Marshal(&api.UpdateSchemaContext{
+		MigrationType: db.Migrate,
+		DetailList: []*api.UpdateSchemaDetail{
+			{
+				DatabaseID: databaseID,
+				Statement:  statement,
+			},
+		},
+	})
+	a.NoError(err)
+
+	issue, err := ctl.createIssue(api.IssueCreate{
+		ProjectID:     projectID,
+		Name:          "update schema for database",
+		Type:          api.IssueDatabaseSchemaUpdate,
+		Description:   "This updates the schema of database",
+		AssigneeID:    assigneeID,
+		CreateContext: string(createContext),
+	})
+	a.NoError(err)
+
+	result, err := ctl.getSchemaReviewResult(issue.ID)
+	a.NoError(err)
+
+	return result
 }
