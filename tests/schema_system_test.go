@@ -196,6 +196,17 @@ func TestSchemaSystem(t *testing.T) {
 					},
 				},
 			},
+			{
+				statement: "DROP TABLE user",
+				result: []api.TaskCheckResult{
+					{
+						Status:  api.TaskCheckStatusWarn,
+						Code:    common.CompatibilityDropTable,
+						Title:   "Potential incompatible migration",
+						Content: "\"DROP TABLE user\" may cause incompatibility with the existing data and code",
+					},
+				},
+			},
 		}
 	)
 

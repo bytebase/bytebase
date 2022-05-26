@@ -1317,6 +1317,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string,
 	case api.SchemaRuleStatementNoLeadingWildcardLike:
 	case api.SchemaRuleTableRequirePK:
 	case api.SchemaRuleColumnNotNull:
+	case api.SchemaRuleSchemaBackwardCompatibility:
 	case api.SchemaRuleTableNaming:
 		fallthrough
 	case api.SchemaRuleColumnNaming:
@@ -1406,6 +1407,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  api.SchemaRuleColumnNotNull,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleSchemaBackwardCompatibility,
 				Level: api.SchemaRuleLevelWarning,
 			},
 		},
