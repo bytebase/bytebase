@@ -51,7 +51,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		exec.l.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlog)
+	mysqlRestore := restoremysql.New(exec.l, mysqlDriver, exec.mysqlbinlog)
 
 	exec.l.Info("Start swapping the original and PITR database",
 		zap.String("instance", task.Instance.Name),

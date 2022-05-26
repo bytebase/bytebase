@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"go.uber.org/zap"
 )
 
 const (
@@ -32,20 +33,22 @@ const (
 // 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
 // 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 type Restore struct {
+	l           *zap.Logger
 	driver      *mysql.Driver
 	mysqlbinlog *mysqlbinlog.Instance
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
+func New(l *zap.Logger, driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	return &Restore{
+		l:           l,
 		driver:      driver,
 		mysqlbinlog: instance,
 	}
 }
 
 // replayBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) replayBinlog(ctx context.Context, config api.BinlogInfo) error {
+func replayBinlog(ctx context.Context, config api.BinlogInfo) error {
 	return fmt.Errorf("Unimplemented")
 }
 
@@ -82,7 +85,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := r.replayBinlog(ctx, binlog); err != nil {
+	if err := replayBinlog(ctx, binlog); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}
@@ -157,6 +160,10 @@ func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	var backup *api.Backup
 	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
+		if b.Payload.BinlogInfo.FileName == "" || b.Payload.BinlogInfo.Position == 0 {
+			r.l.Warn("backup has empty binlog info", zap.Int("backupID", b.ID))
+			continue
+		}
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
