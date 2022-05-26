@@ -927,15 +927,11 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			zap.String("filename", binlog.FileName),
 			zap.Int64("position", binlog.Position))
 
-		ts, err := getServerTime(ctx, driver.db)
 		if err != nil {
 			return "", err
 		}
 
-		payload := api.BackupPayload{
-			BinlogInfo: binlog,
-			Ts:         ts,
-		}
+		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
 		if err != nil {
 			return "", err
@@ -992,19 +988,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-func getServerTime(ctx context.Context, db *sql.DB) (int64, error) {
-	var timestamp int64
-	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
-	if err != nil {
-		return 0, err
-	}
-	rows.Next()
-	if err := rows.Scan(&timestamp); err != nil {
-		return 0, err
-	}
-	return timestamp, nil
 }
 
 func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
