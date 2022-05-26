@@ -8,7 +8,7 @@ import (
 )
 
 // registerPProfEndpoints adds several routes from package `net/http/pprof` to *echo.Echo object.
-func wrappprof(e *echo.Echo) {
+func registerPProfEndpoints(e *echo.Echo) {
 	e.GET("/debug/pprof/", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
 	e.GET("/debug/pprof/allocs", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
 	e.GET("/debug/pprof/block", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
