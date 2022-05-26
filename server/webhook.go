@@ -67,9 +67,22 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repo.ExternalID))
 		}
 
+		s.l.Debug("Processing gitlab webhook push event...",
+			zap.String("project", repo.Project.Name),
+		)
+
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
+			s.l.Debug("Processing commit...",
+				zap.String("id", commit.ID),
+				zap.String("title", commit.Title),
+			)
+
 			for _, added := range commit.AddedList {
+				s.l.Debug("Processing added file...",
+					zap.String("file", added),
+				)
+
 				if !strings.HasPrefix(added, repo.BaseDirectory) {
 					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repo.BaseDirectory))
 					continue
@@ -80,8 +93,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", added), zap.String("timestamp", commit.Timestamp), zap.Error(err))
 				}
 
-				// Ignored the schema file we auto generated to the repository.
+				// Ignore the schema file we auto generated to the repository.
 				if isSkipGeneratedSchemaFile(repo, added, s.l) {
+					s.l.Debug("Ignored generated latest schema file.", zap.String("file", added))
 					continue
 				}
 
@@ -217,6 +231,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 		}
 
+		if len(createdMessageList) == 0 {
+			msg := "Ignored push event. No applicable file found in the commit list."
+			s.l.Warn(msg,
+				zap.String("project", repo.Project.Name),
+			)
+		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
 }
@@ -318,6 +338,8 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 	return string(createContext), nil
 }
 
+// We may write back the latest schema file to the repository after migration and we need to ignore
+// this file from the webhook push event.
 func isSkipGeneratedSchemaFile(repository *api.Repository, added string, logger *zap.Logger) bool {
 	if repository.SchemaPathTemplate != "" {
 		placeholderList := []string{

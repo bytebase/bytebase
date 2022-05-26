@@ -109,48 +109,43 @@ type controller struct {
 }
 
 func getTestPort(testName string) int {
-	// The port should be incremented by 3 for bytebase, Postgres, and GitLab, unless documented otherwise.
-	switch testName {
-	case "TestServiceRestart":
-		return 1234
-	case "TestSchemaAndDataUpdate":
-		return 1237
-	case "TestVCS":
-		return 1240
-	case "TestTenant":
-		return 1243
-	case "TestTenantVCS":
-		return 1246
-	case "TestTenantDatabaseNameTemplate":
-		return 1249
-	// TestGhostSchemaUpdate uses 4 ports in total. The additional one is for a MySQL instance.
-	case "TestGhostSchemaUpdate":
-		return 1252
-	case "TestBackupRestoreBasic":
-		return 1256
-	case "TestPITR":
-		return 1259
-	case "TestTenantVCSDatabaseNameTemplate":
-		return 1262
-	case "TestBootWithExternalPg":
-		return 1265
-	case "TestSheetVCS":
-		return 1269
-	case "NEXT":
-		return 1272
+	// We allocates 4 ports for each of the integration test, who probably would start
+	// the bytebase server, Postgres, MySQL and GitLab.
+	tests := []string{
+		"TestServiceRestart",
+		"TestSchemaAndDataUpdate",
+		"TestVCS",
+		"TestTenant",
+		"TestTenantVCS",
+		"TestTenantDatabaseNameTemplate",
+		"TestGhostSchemaUpdate",
+		"TestBackupRestoreBasic",
+		"TestPITR",
+		"TestTenantVCSDatabaseNameTemplate",
+		"TestBootWithExternalPg",
+		"TestSheetVCS",
+		"TestCheckEngineInnoDB",
+		"TestSchemaSystem",
+	}
+	port := 1234
+	for _, name := range tests {
+		if testName == name {
+			return port
+		}
+		port += 4
 	}
 	panic(fmt.Sprintf("test %q doesn't have assigned port, please set it in getTestPort()", testName))
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context, port int, pgUser, pgURL string) error {
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
 	logger, lvl, err := cmd.GetLogger()
 	if err != nil {
 		return fmt.Errorf("failed to get logger, error: %w", err)
 	}
 	defer logger.Sync()
 
-	profile := cmd.GetTestProfileWithExternalPg(port, pgUser, pgURL)
+	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
 	if err != nil {
 		return err
@@ -423,6 +418,27 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 	resp, err := ctl.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fail to send a PATCH request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
+func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
+	req, err := http.NewRequest("DELETE", url, body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new DELETE request(%q), error: %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a DELETE request(%q), error: %w", url, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -1232,4 +1248,216 @@ func (ctl *controller) createDataSource(dataSourceCreate api.DataSourceCreate) e
 		return fmt.Errorf("fail to unmarshal dataSource response, error: %w", err)
 	}
 	return nil
+}
+
+// upsertPolicy upserts the policy.
+func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &policyUpsert); err != nil {
+		return fmt.Errorf("failed to marshal policyUpsert, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/policy/environment/%d?type=%s", policyUpsert.EnvironmentID, policyUpsert.Type), buf)
+	if err != nil {
+		return err
+	}
+
+	policy := new(api.Policy)
+	if err = jsonapi.UnmarshalPayload(body, policy); err != nil {
+		return fmt.Errorf("fail to unmarshal policy response, error: %w", err)
+	}
+	return nil
+}
+
+// deletePolicy deletes the archived policy.
+func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
+// If the schema review task check is not done, return nil, false, nil.
+func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+	var result []api.TaskCheckResult
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				for _, taskCheck := range task.TaskCheckRunList {
+					if taskCheck.Type == api.TaskCheckDatabaseStatementAdvise {
+						switch taskCheck.Status {
+						case api.TaskCheckRunRunning:
+							return nil, false, nil
+						case api.TaskCheckRunDone:
+							checkResult := &api.TaskCheckRunResultPayload{}
+							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
+								return nil, false, err
+							}
+							result = append(result, checkResult.ResultList...)
+						}
+					}
+				}
+				return result, true, nil
+			}
+		}
+	}
+	return nil, true, nil
+}
+
+// getSchemaReviewResult will wait for next task schema review task check to finish and return the task check result.
+func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		issue, err := ctl.getIssue(id)
+		if err != nil {
+			return nil, err
+		}
+
+		status, err := getAggregatedTaskStatus(issue)
+		if err != nil {
+			return nil, err
+		}
+
+		if status != api.TaskPendingApproval {
+			return nil, fmt.Errorf("the status of issue %v is not pending approval", id)
+		}
+
+		result, yes, err := ctl.schemaReviewTaskCheckRunFinished(issue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get schema review result for issue %v: %w", id, err)
+		}
+		if yes {
+			return result, nil
+		}
+	}
+	return nil, nil
+}
+
+// setDefaultSchemaReviewRulePayload sets the default payload for this rule.
+func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string, error) {
+	var payload []byte
+	var err error
+	switch ruleTp {
+	case api.SchemaRuleMySQLEngine:
+	case api.SchemaRuleStatementNoSelectAll:
+	case api.SchemaRuleStatementRequireWhere:
+	case api.SchemaRuleStatementNoLeadingWildcardLike:
+	case api.SchemaRuleTableRequirePK:
+	case api.SchemaRuleColumnNotNull:
+	case api.SchemaRuleSchemaBackwardCompatibility:
+	case api.SchemaRuleTableNaming:
+		fallthrough
+	case api.SchemaRuleColumnNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^[a-z]+(_[a-z]+)?$",
+		})
+	case api.SchemaRuleIDXNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^idx_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleUKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^uk_{{table}}_{{column_list}}$",
+		})
+	case api.SchemaRuleFKNaming:
+		payload, err = json.Marshal(api.NamingRulePayload{
+			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+		})
+	case api.SchemaRuleRequiredColumn:
+		payload, err = json.Marshal(api.RequiredColumnRulePayload{
+			ColumnList: []string{
+				"id",
+				"created_ts",
+				"updated_ts",
+				"creator_id",
+				"updater_id",
+			},
+		})
+	default:
+		return "", fmt.Errorf("Unknow schema review type for default payload: %s", ruleTp)
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
+}
+
+// prodTemplateSchemaReviewPolicy returns the default schema review policy.
+func prodTemplateSchemaReviewPolicy() (string, error) {
+	policy := api.SchemaReviewPolicy{
+		Name: "Prod",
+		RuleList: []*api.SchemaReviewRule{
+			{
+				Type:  api.SchemaRuleMySQLEngine,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleIDXNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleUKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleFKNaming,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoSelectAll,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementRequireWhere,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleStatementNoLeadingWildcardLike,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleTableRequirePK,
+				Level: api.SchemaRuleLevelError,
+			},
+			{
+				Type:  api.SchemaRuleRequiredColumn,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleColumnNotNull,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleSchemaBackwardCompatibility,
+				Level: api.SchemaRuleLevelWarning,
+			},
+		},
+	}
+
+	for _, rule := range policy.RuleList {
+		payload, err := setDefaultSchemaReviewRulePayload(rule.Type)
+		if err != nil {
+			return "", err
+		}
+		rule.Payload = payload
+	}
+
+	s, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
 }

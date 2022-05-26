@@ -30,7 +30,12 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 		return errAdvice, nil
 	}
 
-	c := &compatibilityChecker{}
+	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+
+	c := &compatibilityChecker{level: level}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(c)
 	}
@@ -40,13 +45,15 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
-			Content: "Migration is backward compatible"})
+			Content: "",
+		})
 	}
 	return c.adviceList, nil
 }
 
 type compatibilityChecker struct {
 	adviceList []advisor.Advice
+	level      advisor.Status
 }
 
 // Enter implements the ast.Visitor interface
@@ -139,7 +146,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 
 	if code != common.Ok {
 		v.adviceList = append(v.adviceList, advisor.Advice{
-			Status:  advisor.Warn,
+			Status:  v.level,
 			Code:    code,
 			Title:   "Potential incompatible migration",
 			Content: fmt.Sprintf("%q may cause incompatibility with the existing data and code", in.Text()),

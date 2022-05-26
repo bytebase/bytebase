@@ -4,32 +4,11 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"go.uber.org/zap"
 )
-
-type test struct {
-	statement string
-	want      []advisor.Advice
-}
-
-func runTests(t *testing.T, tests []test, adv advisor.Advisor) {
-	logger, _ := zap.NewDevelopmentConfig().Build()
-	ctx := advisor.Context{
-		Logger:    logger,
-		Charset:   "",
-		Collation: "",
-	}
-	for _, tc := range tests {
-		adviceList, err := adv.Check(ctx, tc.statement)
-		require.NoError(t, err)
-		assert.Equal(t, tc.want, adviceList)
-	}
-}
 
 func TestBasic(t *testing.T) {
 	tests := []test{
@@ -107,7 +86,11 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }
 
 func TestAlterTable(t *testing.T) {
@@ -119,7 +102,7 @@ func TestAlterTable(t *testing.T) {
 					Status:  advisor.Success,
 					Code:    common.Ok,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -217,7 +200,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Success,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -238,7 +221,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Success,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -260,7 +243,7 @@ func TestAlterTable(t *testing.T) {
 					Status:  advisor.Success,
 					Code:    common.Ok,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -277,7 +260,11 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }
 
 func TestAlterTableChangeColumnType(t *testing.T) {
@@ -339,5 +326,9 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }
