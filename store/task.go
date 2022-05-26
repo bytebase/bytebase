@@ -290,7 +290,7 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 
 // findTaskRaw retrieves a list of tasks based on find.
 func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -307,7 +307,7 @@ func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw
 // getTaskRaw retrieves a single task based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getTaskRaw(ctx context.Context, find *api.TaskFind) (*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, FormatError(err)
 	}
