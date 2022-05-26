@@ -439,6 +439,20 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, err
 	}
 
+	// Schedule the task if it's being just approved
+	if task.Status == api.TaskPendingApproval && taskPatched.Status == api.TaskPending {
+		skipIfAlreadyTerminated := false
+		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, taskPatched, api.SystemBotID, skipIfAlreadyTerminated); err != nil {
+			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", taskPatched.Name)
+		}
+
+		scheduledTask, err := s.TaskScheduler.ScheduleIfNeeded(ctx, taskPatched)
+		if err != nil {
+			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", taskPatched.Name)
+		}
+		taskPatched = scheduledTask
+	}
+
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
 		taskPatched.Status == api.TaskDone {
