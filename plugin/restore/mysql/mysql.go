@@ -43,13 +43,14 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// RestoreBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) RestoreBinlog(ctx context.Context, config api.BinlogInfo) error {
+// replayBinlog restores the database using incremental backup in time range of [config.Start, config.End).
+func (r *Restore) replayBinlog(ctx context.Context, config api.BinlogInfo) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper for restore a full backup and a range of incremental backup.
 // It performs the step 1 of the restore process.
+// TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
 func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
@@ -80,13 +81,12 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, binlog)
+	_ = r.replayBinlog(ctx, binlog)
 
 	return nil
 }
 
-// Parse the binlog at position, and return the timestamp in the binlog event.
+// Locate the binlog event at (filename, position), parse the event and return its timestamp.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
@@ -105,7 +105,7 @@ func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.
 	cmd.Stdout = &buf
 
 	if err := cmd.Run(); err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
@@ -125,44 +125,38 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 		if strings.Contains(line, "server id") {
 			date, err := time.Parse("060102 15:04:05", line[1:16])
 			if err != nil {
-				return -1, err
+				return 0, err
 			}
 			return date.Unix(), nil
 		}
 	}
-	return -1, fmt.Errorf("no timestamp found in mysqlbinlog output")
+	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
 }
 
-// Find the latest logical backup and corresponding binlog info whose time is before `restoreTs`.
+// Find the latest logical backup and corresponding binlog info whose time is before `targetTs`.
 // The backupList should only contain DONE backups, and sorted that the newest backup is at the front.
-// TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments
+// TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
-func (r *Restore) getNewestBackupAfterTs(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, error) {
-	backup, err := r.getNewestBackupAfterTsImpl(ctx, backupList, restoreTs, binlogDir)
-	if err != nil {
-		return nil, err
-	}
-
-	return backup, nil
-}
-
-// Traverse the backups starting from the latest and find the first with timestamp less than the target restore timestamp.
-// nolint
-func (r *Restore) getNewestBackupAfterTsImpl(ctx context.Context, backupList []*api.Backup, restoreTs int64, binlogDir string) (*api.Backup, error) {
+func (r *Restore) getLatestBackupBeforeTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
 	var eventTs int64
-	var err error
 	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		eventTs, err = r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
+		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
 		if err != nil {
 			return nil, err
 		}
-		if eventTs < restoreTs {
+		if eventTs < targetTs {
 			return b, nil
 		}
 	}
-	return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", restoreTs, eventTs)
+	return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, eventTs)
 }
+
+// TODO(dragonly): Implement this.
+// Find the binlog range between the full backup and the targetTs.
+// func (r *Restore) getReplayBinlogRange(ctx context.Context, backup *api.Backup, targetTs int64, binlogDir string) (binlogInfoList []api.BinlogInfo, startPos, stopPos int64, err error) {
+
+// }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 // It returns the pitr and old database names after swap.

@@ -84,10 +84,14 @@ type BinlogInfo struct {
 
 // BackupPayload is encoded in JSON and stored in the backup table, representing PITR related info.
 type BackupPayload struct {
-	BinlogInfo BinlogInfo `json:"binlogInfo"`
+	// general fields
 	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
-	// Mainly for UI purpose.
+	// It's only for UI purposes.
 	Ts int64 `json:"ts"`
+
+	// MySQL related fields
+	// BinlogInfo is recorded when taking the backup, and they are at the same snapshot of the database.
+	BinlogInfo BinlogInfo `json:"binlogInfo"`
 }
 
 // Backup is the API message for a backup.
