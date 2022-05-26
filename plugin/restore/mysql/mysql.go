@@ -137,7 +137,7 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 // The backupList should only contain DONE backups, and sorted that the newest backup is at the front.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
-func (r *Restore) getLatestBackupBeforeTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
+func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
 	var eventTs int64
 	for _, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
@@ -145,7 +145,7 @@ func (r *Restore) getLatestBackupBeforeTs(ctx context.Context, backupList []*api
 		if err != nil {
 			return nil, err
 		}
-		if eventTs < targetTs {
+		if eventTs <= targetTs {
 			return b, nil
 		}
 	}
