@@ -43,7 +43,7 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// ReplayBinlog replays the binlog from `startInfo.Position` to `stopTs` that reading from `binlogDir`.
+// ReplayBinlog replays the binlog about `originDatabase` from `startInfo.Position` to `stopTs`.
 func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, stopTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
