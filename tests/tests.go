@@ -124,6 +124,7 @@ func getTestPort(testName string) int {
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
+		"TestCheckEngineInnoDB",
 		"TestSchemaSystem",
 	}
 	port := 1234
@@ -417,6 +418,27 @@ func (ctl *controller) patch(shortURL string, body io.Reader) (io.ReadCloser, er
 	resp, err := ctl.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fail to send a PATCH request(%q), error: %w", url, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read http response body, error: %w", err)
+		}
+		return nil, fmt.Errorf("http response error code %v body %q", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
+}
+
+func (ctl *controller) delete(shortURL string, body io.Reader) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", ctl.apiURL, shortURL)
+	req, err := http.NewRequest("DELETE", url, body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to create a new DELETE request(%q), error: %w", url, err)
+	}
+	req.Header.Set("Cookie", ctl.cookie)
+	resp, err := ctl.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fail to send a DELETE request(%q), error: %w", url, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -1247,10 +1269,20 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 	return nil
 }
 
+// deletePolicy deletes the archived policy.
+func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
 // If the schema review task check is not done, return nil, false, nil.
 func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
+	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
@@ -1260,11 +1292,15 @@ func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api
 						case api.TaskCheckRunRunning:
 							return nil, false, nil
 						case api.TaskCheckRunDone:
+							// return the latest result
+							if latestTs != 0 && latestTs > taskCheck.UpdatedTs {
+								continue
+							}
 							checkResult := &api.TaskCheckRunResultPayload{}
 							if err := json.Unmarshal([]byte(taskCheck.Result), checkResult); err != nil {
 								return nil, false, err
 							}
-							result = append(result, checkResult.ResultList...)
+							result = checkResult.ResultList
 						}
 					}
 				}
@@ -1317,6 +1353,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string,
 	case api.SchemaRuleStatementNoLeadingWildcardLike:
 	case api.SchemaRuleTableRequirePK:
 	case api.SchemaRuleColumnNotNull:
+	case api.SchemaRuleSchemaBackwardCompatibility:
 	case api.SchemaRuleTableNaming:
 		fallthrough
 	case api.SchemaRuleColumnNaming:
@@ -1406,6 +1443,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  api.SchemaRuleColumnNotNull,
+				Level: api.SchemaRuleLevelWarning,
+			},
+			{
+				Type:  api.SchemaRuleSchemaBackwardCompatibility,
 				Level: api.SchemaRuleLevelWarning,
 			},
 		},

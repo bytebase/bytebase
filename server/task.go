@@ -190,24 +190,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 						)
 					}
 
-					if s.feature(api.FeatureBackwardCompatibility) {
-						_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
-							CreatorID:               api.SystemBotID,
-							TaskID:                  task.ID,
-							Type:                    api.TaskCheckDatabaseStatementCompatibility,
-							Payload:                 string(payload),
-							SkipIfAlreadyTerminated: false,
-						})
-						if err != nil {
-							// It's OK if we failed to trigger a check, just emit an error log
-							s.l.Error("Failed to trigger compatibility check after changing task statement",
-								zap.Int("task_id", task.ID),
-								zap.String("task_name", task.Name),
-								zap.Error(err),
-							)
-						}
-					}
-
 					if s.feature(api.FeatureSchemaReviewPolicy) {
 						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
@@ -455,20 +437,6 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta)
 	if err != nil {
 		return nil, err
-	}
-
-	// Schedule the task if it's being just approved
-	if task.Status == api.TaskPendingApproval && taskPatched.Status == api.TaskPending {
-		skipIfAlreadyTerminated := false
-		if _, err := s.TaskCheckScheduler.ScheduleCheckIfNeeded(ctx, taskPatched, api.SystemBotID, skipIfAlreadyTerminated); err != nil {
-			return nil, fmt.Errorf("failed to schedule task check \"%v\" after approval", taskPatched.Name)
-		}
-
-		scheduledTask, err := s.TaskScheduler.ScheduleIfNeeded(ctx, taskPatched)
-		if err != nil {
-			return nil, fmt.Errorf("failed to schedule task \"%v\" after approval", taskPatched.Name)
-		}
-		taskPatched = scheduledTask
 	}
 
 	// If create database or schema update task completes, we sync the corresponding instance schema immediately.

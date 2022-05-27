@@ -9,25 +9,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
-	metricCollector "github.com/bytebase/bytebase/metric/collector"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
-	"github.com/bytebase/bytebase/store"
-	"github.com/google/uuid"
-
 	// embed will embeds the acl policy.
 	_ "embed"
 
-	"github.com/bytebase/bytebase/api"
-	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
+	"github.com/bytebase/bytebase/metric"
+	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/store"
 )
 
 // Server is the Bytebase server.
@@ -203,8 +203,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
-		// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementSimpleExecutor)
 
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
@@ -299,6 +297,8 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
 	})
+	// Register pprof endpoints.
+	registerPProfEndpoints(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
