@@ -48,7 +48,7 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, targetTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
-		return fmt.Errorf("cannot get database connection, error: %w", err)
+		return err
 	}
 
 	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
