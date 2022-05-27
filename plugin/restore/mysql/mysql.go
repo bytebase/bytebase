@@ -57,10 +57,6 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
 	}
 
-	if !strings.HasPrefix(startBinlogInfo.FileName, binlogNamePrefix) {
-		return fmt.Errorf("the starting binlog file name must have the prefix %q, but get %q", binlogNamePrefix, startBinlogInfo.FileName)
-	}
-
 	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
 		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
