@@ -57,7 +57,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	}
 
 	if !strings.HasPrefix(startBinlogInfo.FileName, binlogNamePrefix) {
-		return fmt.Errorf("start binlog name must has the prefix: %s, but get: %s", binlogNamePrefix, startBinlogInfo.FileName)
+		return fmt.Errorf("the starting binlog file name must have the prefix %q, but get %q", binlogNamePrefix, startBinlogInfo.FileName)
 	}
 
 	startBinlogSeq, err := strconv.ParseInt(strings.TrimPrefix(startBinlogInfo.FileName, binlogNamePrefix), 10, 0)
@@ -415,7 +415,7 @@ func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
 	var basename string
 	if rows.Next() {
 		var unused interface{}
-		if err := rows.Scan(&unused /*log_bin_basename*/, &basename); err != nil {
+		if err := rows.Scan(&unused /*Variable_name*/, &basename); err != nil {
 			return "", err
 		}
 		return filepath.Base(basename) + ".", nil
