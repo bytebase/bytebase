@@ -76,6 +76,22 @@ func (e BackupStorageBackend) String() string {
 	return "UNKNOWN"
 }
 
+// BinlogInfo is the binlog coordination for MySQL.
+type BinlogInfo struct {
+	FileName string `json:"fileName"`
+	Position int64  `json:"position"`
+}
+
+// BackupPayload contains backup related database specific info, it differs for different database types.
+// It is encoded in JSON and stored in the backup table.
+type BackupPayload struct {
+	// MySQL related fields
+	// BinlogInfo is recorded when taking the backup.
+	// It is recorded within the same transaction as the dump so that the binlog position is consistent with the dump.
+	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
+	BinlogInfo BinlogInfo `json:"binlogInfo"`
+}
+
 // Backup is the API message for a backup.
 type Backup struct {
 	ID int `jsonapi:"primary,backup"`
@@ -101,6 +117,9 @@ type Backup struct {
 	MigrationHistoryVersion string `jsonapi:"attr,migrationHistoryVersion"`
 	Path                    string `jsonapi:"attr,path"`
 	Comment                 string `jsonapi:"attr,comment"`
+	// Payload contains data such as binlog position info which will not be created at first.
+	// It is filled when the backup task executor takes database backups.
+	Payload BackupPayload `jsonapi:"attr,payload"`
 }
 
 // BackupCreate is the API message for creating a backup.
