@@ -60,7 +60,7 @@ func (ins *Instance) Version(binName binaryName) (string, error) {
 	return version.String(), nil
 }
 
-// Install will extract the mysqlbinlog tar in resourceDir.
+// Install will extract the mysqlutil tar in resourceDir.
 func Install(resourceDir string) (*Instance, error) {
 	var tarName string
 	switch {
@@ -75,15 +75,15 @@ func Install(resourceDir string) (*Instance, error) {
 	}
 
 	version := strings.TrimRight(tarName, "tar.gz")
-	mysqlbinlogDir := path.Join(resourceDir, version)
-	if _, err := os.Stat(mysqlbinlogDir); err != nil {
+	mysqlutilDir := path.Join(resourceDir, version)
+	if _, err := os.Stat(mysqlutilDir); err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlbinlogDir, err)
+			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
 		}
 		// Install if not exist yet
 		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
 		if err := os.RemoveAll(tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to remove mysqlbinlog binary temp directory %q, error: %w", tmpDir, err)
+			return nil, fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
 		}
 
 		f, err := resources.Open(tarName)
@@ -96,12 +96,12 @@ func Install(resourceDir string) (*Instance, error) {
 			return nil, fmt.Errorf("failed to extract tar.gz file, error: %w", err)
 		}
 
-		if err := os.Rename(tmpDir, mysqlbinlogDir); err != nil {
-			return nil, fmt.Errorf("failed to rename mysqlbinlog binary directory from %q to %q, error: %w", tmpDir, mysqlbinlogDir, err)
+		if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
+			return nil, fmt.Errorf("failed to rename mysqlutil binaries directory from %q to %q, error: %w", tmpDir, mysqlutilDir, err)
 		}
 	}
 	return &Instance{
-		mysqlPath:       filepath.Join(mysqlbinlogDir, "bin", "mysql"),
-		mysqlbinlogPath: filepath.Join(mysqlbinlogDir, "bin", "mysqlbinlog"),
+		mysqlPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
+		mysqlbinlogPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
 	}, nil
 }
