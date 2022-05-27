@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -32,7 +33,9 @@ type backupRaw struct {
 	MigrationHistoryVersion string
 	Path                    string
 	Comment                 string
-	Payload                 string
+	// Payload contains data like PITR info, which will not be created at first.
+	// When backup runner executes the real backup job, it will fill this field.
+	Payload api.BackupPayload
 }
 
 // toBackup creates an instance of Backup based on the backupRaw.
@@ -58,6 +61,7 @@ func (raw *backupRaw) toBackup() *api.Backup {
 		MigrationHistoryVersion: raw.MigrationHistoryVersion,
 		Path:                    raw.Path,
 		Comment:                 raw.Comment,
+		Payload:                 raw.Payload,
 	}
 }
 
@@ -453,7 +457,67 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 		where, args = append(where, fmt.Sprintf("status = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			name,
+			status,
+			type,
+			storage_backend,
+			migration_history_version,
+			path,
+			comment,
+			payload
+		FROM backup
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into backupRawList.
+		var backupRawList []*backupRaw
+		for rows.Next() {
+			var backupRaw backupRaw
+			var payload []byte
+			if err := rows.Scan(
+				&backupRaw.ID,
+				&backupRaw.CreatorID,
+				&backupRaw.CreatedTs,
+				&backupRaw.UpdaterID,
+				&backupRaw.UpdatedTs,
+				&backupRaw.DatabaseID,
+				&backupRaw.Name,
+				&backupRaw.Status,
+				&backupRaw.Type,
+				&backupRaw.StorageBackend,
+				&backupRaw.MigrationHistoryVersion,
+				&backupRaw.Path,
+				&backupRaw.Comment,
+				&payload,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+				return nil, err
+			}
+			backupRawList = append(backupRawList, &backupRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return backupRawList, nil
+	} else {
+		rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -470,42 +534,42 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 			comment
 		FROM backup
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY updated_ts DESC`,
-		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer rows.Close()
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
 
-	// Iterate over result set and deserialize rows into backupRawList.
-	var backupRawList []*backupRaw
-	for rows.Next() {
-		var backupRaw backupRaw
-		if err := rows.Scan(
-			&backupRaw.ID,
-			&backupRaw.CreatorID,
-			&backupRaw.CreatedTs,
-			&backupRaw.UpdaterID,
-			&backupRaw.UpdatedTs,
-			&backupRaw.DatabaseID,
-			&backupRaw.Name,
-			&backupRaw.Status,
-			&backupRaw.Type,
-			&backupRaw.StorageBackend,
-			&backupRaw.MigrationHistoryVersion,
-			&backupRaw.Path,
-			&backupRaw.Comment,
-		); err != nil {
+		// Iterate over result set and deserialize rows into backupRawList.
+		var backupRawList []*backupRaw
+		for rows.Next() {
+			var backupRaw backupRaw
+			if err := rows.Scan(
+				&backupRaw.ID,
+				&backupRaw.CreatorID,
+				&backupRaw.CreatedTs,
+				&backupRaw.UpdaterID,
+				&backupRaw.UpdatedTs,
+				&backupRaw.DatabaseID,
+				&backupRaw.Name,
+				&backupRaw.Status,
+				&backupRaw.Type,
+				&backupRaw.StorageBackend,
+				&backupRaw.MigrationHistoryVersion,
+				&backupRaw.Path,
+				&backupRaw.Comment,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+			backupRawList = append(backupRawList, &backupRaw)
+		}
+		if err := rows.Err(); err != nil {
 			return nil, FormatError(err)
 		}
 
-		backupRawList = append(backupRawList, &backupRaw)
+		return backupRawList, nil
 	}
-	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return backupRawList, nil
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
@@ -539,6 +603,7 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 
 		if row.Next() {
 			var backupRaw backupRaw
+			var payload []byte
 			if err := row.Scan(
 				&backupRaw.ID,
 				&backupRaw.CreatorID,
@@ -553,9 +618,12 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 				&backupRaw.MigrationHistoryVersion,
 				&backupRaw.Path,
 				&backupRaw.Comment,
-				&backupRaw.Payload,
+				&payload,
 			); err != nil {
 				return nil, FormatError(err)
+			}
+			if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+				return nil, err
 			}
 			return &backupRaw, nil
 		}
