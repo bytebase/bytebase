@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"bytes"
 	"sort"
 	"strings"
 
@@ -50,43 +49,4 @@ func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
 		return "", err
 	}
 	return buffer.String(), nil
-}
-
-// formatSQLText will convert '\n', '\r' and '\t' to ' '(space). Then turn consecutive spaces into a single.
-func formatSQLText(sql string) string {
-	var buf bytes.Buffer
-	var inChar, hasEscape, consecutiveSpaces bool
-	var mark rune
-	for _, c := range sql {
-		if inChar {
-			buf.WriteRune(c)
-			if hasEscape {
-				hasEscape = false
-				continue
-			}
-			if c == rune('\\') {
-				hasEscape = true
-			}
-			if c == mark {
-				inChar = false
-			}
-			continue
-		}
-		switch c {
-		case rune('"'), rune('`'), rune('\''):
-			consecutiveSpaces = false
-			inChar = true
-			mark = c
-			buf.WriteRune(c)
-		case rune('\n'), rune('\r'), rune('\t'), rune(' '):
-			if !consecutiveSpaces {
-				buf.WriteString(" ")
-				consecutiveSpaces = true
-			}
-		default:
-			consecutiveSpaces = false
-			buf.WriteRune(c)
-		}
-	}
-	return strings.TrimSpace(buf.String())
 }

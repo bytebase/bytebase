@@ -36,7 +36,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 	}
 	checker := &whereRequirementChecker{level: level}
 	for _, stmtNode := range root {
-		checker.text = formatSQLText(stmtNode.Text())
+		checker.text = stmtNode.Text()
 		(stmtNode).Accept(checker)
 	}
 
@@ -83,7 +83,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "Require WHERE clause",
-			Content: fmt.Sprintf("%q requires WHERE clause", v.text),
+			Content: fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
 		})
 	}
 	return in, false
