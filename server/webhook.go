@@ -74,13 +74,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
 			s.l.Debug("Processing commit...",
-				zap.String("id", commit.ID),
-				zap.String("title", commit.Title),
+				zap.String("id", common.EscapeForLogging(commit.ID)),
+				zap.String("title", common.EscapeForLogging(commit.Title)),
 			)
 
 			for _, added := range commit.AddedList {
-				addedEscaped := strings.ReplaceAll(added, "\n", "")
-				addedEscaped = strings.ReplaceAll(addedEscaped, "\t", "")
+				addedEscaped := common.EscapeForLogging(added)
 				s.l.Debug("Processing added file...",
 					zap.String("file", addedEscaped),
 				)
@@ -92,7 +91,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 				if err != nil {
-					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", commit.Timestamp), zap.Error(err))
+					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 				}
 
 				// Ignore the schema file we auto generated to the repository.
