@@ -24,17 +24,17 @@ const (
 
 // Instance involve the path of all binaries binary.
 type Instance struct {
-	mysqlPath       string
-	mysqlbinlogPath string
+	mysqlBinPath       string
+	mysqlbinlogBinPath string
 }
 
 // GetPath returns the binary path specified by `binName`.
 func (ins *Instance) GetPath(binName binaryName) string {
 	switch binName {
 	case MySQL:
-		return ins.mysqlPath
+		return ins.mysqlBinPath
 	case MySQLBinlog:
-		return ins.mysqlbinlogPath
+		return ins.mysqlbinlogBinPath
 	}
 	return "UNKNOWN"
 }
@@ -101,7 +101,7 @@ func Install(resourceDir string) (*Instance, error) {
 		}
 	}
 	return &Instance{
-		mysqlPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
-		mysqlbinlogPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
+		mysqlBinPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
+		mysqlbinlogBinPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
 	}, nil
 }
