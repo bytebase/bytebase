@@ -7,22 +7,22 @@ import (
 	"github.com/bytebase/bytebase/api"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
+func NewPITRCutoverTaskExecutor(logger *zap.Logger, instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
-		l:           logger,
-		mysqlbinlog: instance,
+		l:         logger,
+		mysqlutil: instance,
 	}
 }
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
-	l           *zap.Logger
-	mysqlbinlog *mysqlbinlog.Instance
+	l         *zap.Logger
+	mysqlutil *mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
@@ -51,7 +51,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		exec.l.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlbinlog)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil)
 
 	exec.l.Info("Start swapping the original and PITR database",
 		zap.String("instance", task.Instance.Name),
