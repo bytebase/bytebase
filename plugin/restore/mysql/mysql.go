@@ -86,11 +86,11 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 
 	stopTime := time.Unix(targetTs, 0)
 	args := []string{
-		fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
+		fmt.Sprintf(`--rewrite-db=%s->%s`, originDatabase, pitrDatabase),
 		fmt.Sprintf("--database=%s", pitrDatabase),
 		"--disable-log-bin",
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
-		fmt.Sprintf(`--stop-datetime="%d-%d-%d %d:%d:%d"`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
+		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
 	for _, name := range needReplay {
