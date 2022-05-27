@@ -65,7 +65,7 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 					Status:  v.level,
 					Code:    common.StatementSelectAll,
 					Title:   "Not SELECT all",
-					Content: fmt.Sprintf("%q uses SELECT all", v.text),
+					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
 				})
 				break
 			}
