@@ -135,7 +135,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
 
-	cacheService := NewCacheService(logger)
+	cacheService := NewCacheService()
 	storeInstance := store.New(logger, storeDB, cacheService)
 	s.store = storeInstance
 

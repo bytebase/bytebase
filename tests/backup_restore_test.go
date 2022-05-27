@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
@@ -123,7 +124,7 @@ func TestPITR(t *testing.T) {
 
 	t.Log("install mysqlbinlog binary")
 	tmpDir := t.TempDir()
-	mysqlbinlogIns, err := mysqlutil.Install(tmpDir)
+	mysqlutilIns, err := mysqlutil.Install(tmpDir)
 	a.NoError(err)
 
 	// test cases
@@ -161,9 +162,9 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -234,9 +235,9 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -284,9 +285,9 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
