@@ -44,7 +44,7 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			labels["backup_schedule"] = string(*v)
 		}
 		if v := databaseCountMetric.BackupSettingEnabled; v != nil {
-			labels["backup_enabled"] = strconv.FormatBool(*databaseCountMetric.BackupSettingEnabled)
+			labels["backup_enabled"] = strconv.FormatBool(*v)
 		}
 		res = append(res, &metric.Metric{
 			Name:   metricAPI.DatabaseCountMetricName,
