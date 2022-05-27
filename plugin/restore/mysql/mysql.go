@@ -146,7 +146,7 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
 }
 
-// Find the latest logical backup and corresponding binlog info whose time is before `targetTs`.
+// Find the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
