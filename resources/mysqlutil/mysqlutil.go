@@ -67,9 +67,9 @@ func Install(resourceDir string) (*Instance, error) {
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		tarName = "mysqlutil-8.0.28-macos11-arm64.tar.gz"
 	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		tarName = "mysqlbinlog-8.0.28-macos11-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.28-macos11-x86_64.tar.gz"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		tarName = "mysqlbinlog-8.0.28-linux-glibc2.17-x86_64.tar.gz"
+		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
 	default:
 		return nil, fmt.Errorf("Unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
 	}
