@@ -55,9 +55,10 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        with:
+          output: sarif-results
 
       - name: Upload SARIF File
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: results.sarif
-          category: language-${{ matrix.language }}
+          sarif_file: sarif-results/${{ matrix.language }}.sarif
