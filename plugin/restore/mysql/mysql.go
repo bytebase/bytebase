@@ -2,9 +2,9 @@ package mysql
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -47,11 +47,6 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance) *Restore {
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo mysql.BinlogInfo, targetTs int64) error {
-	db, err := r.driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return err
-	}
-
 	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
@@ -85,31 +80,53 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	sort.Strings(needReplay)
 
 	stopTime := time.Unix(targetTs, 0)
-	args := []string{
+	mysqlbinlogArgs := []string{
+		"--disable-log-bin",
 		fmt.Sprintf(`--rewrite-db=%s->%s`, originDatabase, pitrDatabase),
 		fmt.Sprintf("--database=%s", pitrDatabase),
-		"--disable-log-bin",
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
 	for _, name := range needReplay {
-		args = append(args, filepath.Join(binlogDir, name))
+		mysqlbinlogArgs = append(mysqlbinlogArgs, filepath.Join(binlogDir, name))
 	}
 
-	var stdout bytes.Buffer
-	cmd := exec.Command(r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot run %s, error: %w", cmd.String(), err)
+	mysqlArgs := []string{
+		fmt.Sprintf("--host=%s", "TODO"),
+		fmt.Sprintf("--port=%d", 65540),
+		fmt.Sprintf("--user=%s", "TODO"),
+		fmt.Sprintf("--password=%s", "TODO"),
 	}
 
-	stmt := stdout.String()
-	if _, err := db.ExecContext(ctx, stmt); err != nil {
-		return fmt.Errorf("cannot apply stmt %s to database %s, error: %w", stmt, pitrDatabase, err)
+	mysqlbinlogCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
+	mysqlCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
+
+	mysqlRead, mysqlbinlogWrite := io.Pipe()
+	defer mysqlRead.Close()
+	defer mysqlbinlogWrite.Close()
+
+	mysqlbinlogCmd.Stderr = os.Stderr
+	mysqlbinlogCmd.Stdout = mysqlbinlogWrite
+
+	mysqlCmd.Stderr = os.Stderr
+	mysqlCmd.Stdout = os.Stderr
+	mysqlCmd.Stdin = mysqlRead
+
+	if err := mysqlbinlogCmd.Start(); err != nil {
+		return fmt.Errorf("cannot start mysqlbinlog command %s, error: %w", mysqlbinlogCmd.String(), err)
+	}
+	if err := mysqlCmd.Start(); err != nil {
+		return fmt.Errorf("cannot start mysql command %s, error: %w", mysqlCmd.String(), err)
 	}
 
+	if err := mysqlbinlogCmd.Wait(); err != nil {
+		return fmt.Errorf("wait mysqlbinlog encountering an error: %w", err)
+	}
+	mysqlbinlogWrite.Close()
+	if err := mysqlCmd.Wait(); err != nil {
+		return fmt.Errorf("wait mysql encountering an error: %w", err)
+	}
 	return nil
 }
 
