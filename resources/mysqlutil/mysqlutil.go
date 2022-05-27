@@ -28,7 +28,7 @@ type Instance struct {
 	mysqlbinlogPath string
 }
 
-// GetPath returns the mysqlbinlog binary path.
+// GetPath returns the binary path specified by `binName`.
 func (ins *Instance) GetPath(binName binaryName) string {
 	switch binName {
 	case MySQL:
