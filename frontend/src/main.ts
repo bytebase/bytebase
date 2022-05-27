@@ -41,7 +41,7 @@ import {
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
 
-axios.defaults.timeout = 10000;
+axios.defaults.timeout = 20000;
 axios.interceptors.request.use((request) => {
   if (isDev() && request.url!.startsWith("/api")) {
     console.debug(
