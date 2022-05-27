@@ -5,27 +5,28 @@ import (
 
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
-// projectCollector is the metric data collector for project.
-type projectCollector struct {
+var _ metric.Collector = (*projectCountCollector)(nil)
+
+// projectCountCollector is the metric data collector for project.
+type projectCountCollector struct {
 	l     *zap.Logger
 	store *store.Store
 }
 
-// NewProjectCollector creates a new instance of projectCollector
-func NewProjectCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
-	return &projectCollector{
+// NewProjectCountCollector creates a new instance of projectCollector
+func NewProjectCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+	return &projectCountCollector{
 		l:     l,
 		store: store,
 	}
 }
 
 // Collect will collect the metric for project
-func (c *projectCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
 	projectCountMetricList, err := c.store.CountProjectGroupByTenantModeAndWorkflow(ctx)

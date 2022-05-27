@@ -6,27 +6,28 @@ import (
 	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
-// instanceCollector is the metric data collector for instance.
-type instanceCollector struct {
+var _ metric.Collector = (*instanceCountCollector)(nil)
+
+// instanceCountCollector is the metric data collector for instance.
+type instanceCountCollector struct {
 	l     *zap.Logger
 	store *store.Store
 }
 
-// NewInstanceCollector creates a new instance of instanceCollector
-func NewInstanceCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
-	return &instanceCollector{
+// NewInstanceCountCollector creates a new instance of instanceCollector
+func NewInstanceCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+	return &instanceCountCollector{
 		l:     l,
 		store: store,
 	}
 }
 
 // Collect will collect the metric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
 	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
