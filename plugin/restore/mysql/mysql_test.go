@@ -123,3 +123,54 @@ func TestCheckVersionForPITR(t *testing.T) {
 		}
 	}
 }
+
+func TestGetBinlogFileNameSeqNumber(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		name   string
+		prefix string
+		expect int64
+		err    bool
+	}{
+		{
+			name:   "binlog.09865",
+			prefix: "binlog.",
+			expect: 9865,
+			err:    false,
+		},
+		{
+			name:   "binlog.178923",
+			prefix: "binlog.",
+			expect: 178923,
+			err:    false,
+		},
+		{
+			name:   "UNKNOWN.178923",
+			prefix: "binlog.",
+			expect: 0,
+			err:    true,
+		},
+		{
+			name:   "binlog.00001",
+			prefix: "binlog",
+			expect: 0,
+			err:    true,
+		},
+		{
+			name:   "binlog.x8dft",
+			prefix: "binlog.",
+			expect: 0,
+			err:    true,
+		},
+	}
+
+	for _, test := range tests {
+		seq, err := getBinlogFileNameSeqNumber(test.name, test.prefix)
+		a.EqualValues(seq, test.expect)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}

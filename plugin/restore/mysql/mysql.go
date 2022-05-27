@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
@@ -60,7 +61,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		return fmt.Errorf("the starting binlog file name must have the prefix %q, but get %q", binlogNamePrefix, startBinlogInfo.FileName)
 	}
 
-	startBinlogSeq, err := strconv.ParseInt(strings.TrimPrefix(startBinlogInfo.FileName, binlogNamePrefix), 10, 0)
+	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
 		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
 	}
@@ -77,9 +78,9 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := strconv.ParseInt(strings.TrimPrefix(f.Name(), binlogNamePrefix), 10, 0)
+		binlogSeq, err := getBinlogFileNameSeqNumber(f.Name(), binlogNamePrefix)
 		if err != nil {
-			return fmt.Errorf("cannot parse the binlog name [%s], error: %w", f.Name(), err)
+			return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
 			needReplay = append(needReplay, f.Name())
@@ -101,7 +102,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	}
 
 	var stdout bytes.Buffer
-	cmd := exec.Command(r.mysqlbinlog.GetPath(), args...)
+	cmd := exec.Command(r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -421,6 +422,21 @@ func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
 		return filepath.Base(basename) + ".", nil
 	}
 	return "", fmt.Errorf("cannot find log_bin_basename on mysqlbin server, error: %w", err)
+}
+
+// getBinlogSeqNumber returns the sequence number of binlog file.
+// For example: ("binlog.000001","binlog.") => 1, ("binlog.000001a", "binlog.") => err, ("binlog.000001", "binlog") => err
+func getBinlogFileNameSeqNumber(name, prefix string) (int64, error) {
+	if !strings.HasPrefix(name, prefix) {
+		return 0, fmt.Errorf("binlog file name %s must prefix with %s", name, prefix)
+	}
+	seqStr := strings.TrimPrefix(name, prefix)
+	for _, r := range seqStr {
+		if !unicode.IsDigit(r) {
+			return 0, fmt.Errorf("binlog file sequence number must be digit, but get %v in %s", r, name)
+		}
+	}
+	return strconv.ParseInt(seqStr, 10, 0)
 }
 
 func getSafeName(baseName, suffix string) string {
