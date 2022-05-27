@@ -77,12 +77,11 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		}
 		binlogSeq, err := strconv.ParseInt(strings.TrimPrefix(f.Name(), binlogNamePrefix), 10, 0)
 		if err != nil {
-			return fmt.Errorf("cannot parse the binlog name [%s], error: %w", startInfo.FileName, err)
+			return fmt.Errorf("cannot parse the binlog name [%s], error: %w", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
 			needReplay = append(needReplay, f.Name())
 		}
-
 	}
 	sort.Strings(needReplay)
 
