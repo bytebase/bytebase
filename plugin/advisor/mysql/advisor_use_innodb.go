@@ -100,7 +100,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 						Status:  v.level,
 						Code:    common.Internal,
 						Title:   "Internal error for use InnoDB rule",
-						Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
+						Content: fmt.Sprintf("\"%s\" meet internal error %q", in.Text(), err.Error()),
 					})
 					continue
 				}
@@ -117,7 +117,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "InnoDB engine is not used",
-			Content: fmt.Sprintf("%q doesn't use InnoDB engine", in.Text()),
+			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
 		})
 	}
 	return in, false

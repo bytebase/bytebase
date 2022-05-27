@@ -83,7 +83,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "Require WHERE clause",
-			Content: fmt.Sprintf("%q requires WHERE clause", v.text),
+			Content: fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
 		})
 	}
 	return in, false
