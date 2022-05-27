@@ -236,22 +236,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			s.l.Warn(msg,
 				zap.String("project", repo.Project.Name),
 			)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-			return c.String(http.StatusOK, msg)
-<<<<<<< HEAD
-=======
 			return c.String(http.StatusOK, "Ignored push event. No applicable file found in the commit list.")
->>>>>>> 4fe2f1ab (chore: verbose logging for VCS workflow)
-<<<<<<< HEAD
->>>>>>> 09c69bc0 (chore: verbose logging for VCS workflow)
-=======
-=======
->>>>>>> 0a310dd9 (chore: address comment)
->>>>>>> 4dcdf559 (chore: address comment)
-=======
->>>>>>> c2d691f5 (chore: merge)
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
