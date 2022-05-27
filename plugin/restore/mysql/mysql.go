@@ -44,8 +44,8 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// ReplayBinlog replays the binlog about `originDatabase` from `startInfo.Position` to `targetTs`.
-func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, targetTs int64) error {
+// ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
+func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo mysql.BinlogInfo, targetTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return err
@@ -56,13 +56,13 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
 	}
 
-	if !strings.HasPrefix(startInfo.FileName, binlogNamePrefix) {
-		return fmt.Errorf("start binlog name must has the prefix: %s, but get: %s", binlogNamePrefix, startInfo.FileName)
+	if !strings.HasPrefix(startBinlogInfo.FileName, binlogNamePrefix) {
+		return fmt.Errorf("start binlog name must has the prefix: %s, but get: %s", binlogNamePrefix, startBinlogInfo.FileName)
 	}
 
-	startBinlogSeq, err := strconv.ParseInt(strings.TrimPrefix(startInfo.FileName, binlogNamePrefix), 10, 0)
+	startBinlogSeq, err := strconv.ParseInt(strings.TrimPrefix(startBinlogInfo.FileName, binlogNamePrefix), 10, 0)
 	if err != nil {
-		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startInfo.FileName, err)
+		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
 	}
 
 	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
@@ -92,7 +92,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
 		fmt.Sprintf("--database=%s", pitrDatabase),
 		"--disable-log-bin",
-		fmt.Sprintf("--start-position=%d", startInfo.Position),
+		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
 		fmt.Sprintf(`--stop-datetime="%d-%d-%d %d:%d:%d"`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
