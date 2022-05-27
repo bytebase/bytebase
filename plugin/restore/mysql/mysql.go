@@ -75,6 +75,8 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
 			continue
 		}
+		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
+		// so we cannot directly use string to compare lexicographical order.
 		binlogSeq, err := strconv.ParseInt(strings.TrimPrefix(f.Name(), binlogNamePrefix), 10, 0)
 		if err != nil {
 			return fmt.Errorf("cannot parse the binlog name [%s], error: %w", f.Name(), err)
