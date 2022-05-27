@@ -148,7 +148,6 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	// TODO(dragonly): implement RestoreBinlog in mysql driver
 	_ = r.ReplayBinlog(ctx, database, "", "", mysql.BinlogInfo{}, 0)
 
 	return nil
