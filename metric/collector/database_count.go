@@ -37,9 +37,13 @@ func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 
 	for _, databaseCountMetric := range databaseCountMetricList {
 		labels := map[string]string{
-			"backup_schedule": string(databaseCountMetric.BackupPlanPolicySchedule),
+			"backup_schedule": "null",
+			"enabled":         "null",
 		}
-		if databaseCountMetric.BackupSettingEnabled != nil {
+		if v := databaseCountMetric.BackupPlanPolicySchedule; v != nil {
+			labels["backup_schedule"] = string(*v)
+		}
+		if v := databaseCountMetric.BackupSettingEnabled; v != nil {
 			labels["backup_enabled"] = strconv.FormatBool(*databaseCountMetric.BackupSettingEnabled)
 		}
 		res = append(res, &metric.Metric{

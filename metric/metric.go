@@ -60,7 +60,7 @@ type TaskCountMetric struct {
 
 // DatabaseCountMetric is the API message for database count metric
 type DatabaseCountMetric struct {
-	BackupPlanPolicySchedule api.BackupPlanPolicySchedule
+	BackupPlanPolicySchedule *api.BackupPlanPolicySchedule
 	BackupSettingEnabled     *bool // nil if BackupPlanPolicyScheduleUnset
 	Count                    int
 }
