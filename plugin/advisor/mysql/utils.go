@@ -88,5 +88,5 @@ func formatSQLText(sql string) string {
 			buf.WriteRune(c)
 		}
 	}
-	return buf.String()
+	return strings.TrimSpace(buf.String())
 }

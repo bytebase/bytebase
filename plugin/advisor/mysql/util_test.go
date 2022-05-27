@@ -20,7 +20,7 @@ func TestFormatSQLText(t *testing.T) {
 				WHERE
 				a > 0 and b < 1;
 			`,
-			after: " SELECT * FROM t WHERE a > 0 and b < 1; ",
+			after: "SELECT * FROM t WHERE a > 0 and b < 1;",
 		},
 		{
 			before: `
@@ -29,7 +29,7 @@ func TestFormatSQLText(t *testing.T) {
 			WHERE
 			a LIKE 'abcd\'xxx\n'
 			`,
-			after: ` SELECT * FROM t WHERE a LIKE 'abcd\'xxx\n' `,
+			after: `SELECT * FROM t WHERE a LIKE 'abcd\'xxx\n'`,
 		},
 		{
 			before: "SELECT * FROM `t`			 WHERE a != 'Chinese \\'      测试'",
