@@ -16,7 +16,7 @@ func TestNoSelectAll(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementSelectAll,
-					Title:   "No SELECT all",
+					Title:   "Not SELECT all",
 					Content: "\"SELECT * FROM t\" uses SELECT all",
 				},
 			},
@@ -29,6 +29,17 @@ func TestNoSelectAll(t *testing.T) {
 					Code:    common.Ok,
 					Title:   "OK",
 					Content: "",
+				},
+			},
+		},
+		{
+			statement: "SELECT a, b FROM (SELECT * from t1 JOIN t2) t",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    common.StatementSelectAll,
+					Title:   "Not SELECT all",
+					Content: "\"SELECT a, b FROM (SELECT * from t1 JOIN t2) t\" uses SELECT all",
 				},
 			},
 		},
