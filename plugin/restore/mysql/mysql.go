@@ -44,8 +44,8 @@ func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
 	}
 }
 
-// ReplayBinlog replays the binlog about `originDatabase` from `startInfo.Position` to `stopTs`.
-func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, stopTs int64) error {
+// ReplayBinlog replays the binlog about `originDatabase` from `startInfo.Position` to `targetTs`.
+func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startInfo mysql.BinlogInfo, targetTs int64) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return fmt.Errorf("cannot get database connection, error: %w", err)
@@ -87,7 +87,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	}
 	sort.Strings(needReplay)
 
-	stopTime := time.Unix(stopTs, 0)
+	stopTime := time.Unix(targetTs, 0)
 	args := []string{
 		fmt.Sprintf(`--rewrite-db="%s->%s"`, originDatabase, pitrDatabase),
 		fmt.Sprintf("--database=%s", pitrDatabase),
