@@ -148,7 +148,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	_ = r.ReplayBinlog(ctx, database, "", "", mysql.BinlogInfo{}, 0)
+	_ = r.ReplayBinlog(ctx, database, pitrDatabaseName, "", binlog, suffixTs)
 
 	return nil
 }
