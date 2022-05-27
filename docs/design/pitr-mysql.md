@@ -90,6 +90,21 @@ The partial backup dump should be discarded if Bytebase encounters an unrecovera
 
 To check the integrity of the logical dump, Bytebase will save file size in the backup metadata. When using a logical backup to recover, we should first validate the file size of the dump file and the metadata matches.
 
+#### Why bother?
+
+The full backup process seems very sophisticated. Why don't we just dump the logical backup and use `SHOW MASTER STATUS` to get the binlog coordinates? Well, let's look at an example.
+
+If we start to dump a logical backup called bk at time t, and the backup SQL runs for 10s and finishes at t+10. Then we get the binlog coordinates at t+10 and save it together with the backup metadata. When we want to do a PITR to the database state at t+20, we would restore the logical backup bk and replay the binlog from t+10 to t+20.
+
+Here is the problem: the logical backup is a [consistent read](https://dev.mysql.com/doc/refman/8.0/en/innodb-consistent-read.html) of the database, which means that no matter how long it takes to run the SQL, **the backup content is just like reading a snapshot of the database at time t**.
+
+Now let's reconsider the binlog replay. After the logical backup bk is restored, the database is at the state of t. If we want to incrementally restore to t+20, we should replay the binlog from **t to t+20** instead of t+10 to t+20 as is described above. In short, this "simpler implementation" is actually buggy.
+
+The current design of full backup process in [this section](#full-backup) ensures that:
+
+1. No data is inserted between we dump a logical backup with the consistent read semantic and get the binlog coordinates.
+2. The locking time is minimal so that the backup process has the minimal impact on other workloads in the same database.
+
 ## Incremental Backup
 
 Once the backup is enabled for a database, Bytebase will periodically download binlog from the MySQL server via `mysqlbinlog` with parameter [`--read-from-remote-server`](https://dev.mysql.com/doc/refman/8.0/en/mysqlbinlog.html#option_mysqlbinlog_read-from-remote-server), which reads data via the [binlog network stream](https://dev.mysql.com/doc/internals/en/binlog-network-stream.html). The binlog downloading process is described below.
