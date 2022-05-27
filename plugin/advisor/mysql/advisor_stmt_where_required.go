@@ -34,25 +34,27 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 	if err != nil {
 		return nil, err
 	}
-	we := &whereRequirementChecker{level: level}
+	checker := &whereRequirementChecker{level: level}
 	for _, stmtNode := range root {
-		(stmtNode).Accept(we)
+		checker.text = stmtNode.Text()
+		(stmtNode).Accept(checker)
 	}
 
-	if len(we.adviceList) == 0 {
-		we.adviceList = append(we.adviceList, advisor.Advice{
+	if len(checker.adviceList) == 0 {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    common.Ok,
 			Title:   "OK",
 			Content: "",
 		})
 	}
-	return we.adviceList, nil
+	return checker.adviceList, nil
 }
 
 type whereRequirementChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	text       string
 }
 
 // Enter implements the ast.Visitor interface
@@ -81,7 +83,7 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "Require WHERE clause",
-			Content: fmt.Sprintf("%q requires WHERE clause", in.Text()),
+			Content: fmt.Sprintf("%q requires WHERE clause", v.text),
 		})
 	}
 	return in, false
