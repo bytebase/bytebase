@@ -54,6 +54,17 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    common.StatementLeadingWildcardLike,
+					Title:   "No leading wildcard LIKE",
+					Content: "\"SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1\" uses leading wildcard LIKE",
+				},
+			},
+		},
 	}
 
 	runSchemaReviewRuleTests(t, tests, &NoLeadingWildcardLikeAdvisor{}, &api.SchemaReviewRule{

@@ -8,9 +8,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	metricAPI "github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
-	"github.com/bytebase/bytebase/plugin/metric/reporter"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/segment"
 
 	"go.uber.org/zap"
 )
@@ -33,13 +32,13 @@ type MetricReporter struct {
 	// Version is the bytebase's version
 	version     string
 	workspaceID string
-	reporter    reporter.MetricReporter
-	collectors  map[string]collector.MetricCollector
+	reporter    metric.Reporter
+	collectors  map[string]metric.Collector
 }
 
 // NewMetricReporter creates a new metric scheduler.
 func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	r := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
+	r := segment.NewReporter(logger, server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
 		l:            logger,
@@ -47,7 +46,7 @@ func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
-		collectors:   make(map[string]collector.MetricCollector),
+		collectors:   make(map[string]metric.Collector),
 	}
 }
 
@@ -113,7 +112,7 @@ func (m *MetricReporter) Close() {
 }
 
 // Register will register a metric collector.
-func (m *MetricReporter) Register(metricName metricAPI.Name, collector collector.MetricCollector) {
+func (m *MetricReporter) Register(metricName metric.Name, collector metric.Collector) {
 	m.collectors[string(metricName)] = collector
 }
 
@@ -123,7 +122,7 @@ func (m *MetricReporter) identify() {
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 	}
-	if err := m.reporter.Identify(&metricAPI.Identifier{
+	if err := m.reporter.Identify(&metric.Identifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,

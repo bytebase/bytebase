@@ -18,8 +18,7 @@ import (
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 
 	"github.com/stretchr/testify/require"
 )
@@ -125,7 +124,7 @@ func TestPITR(t *testing.T) {
 
 	t.Log("install mysqlbinlog binary")
 	tmpDir := t.TempDir()
-	mysqlbinlogIns, err := mysqlbinlog.Install(tmpDir)
+	mysqlutilIns, err := mysqlutil.Install(tmpDir)
 	a.NoError(err)
 
 	// test cases
@@ -163,9 +162,7 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		logger, err := zap.NewDevelopment()
-		a.NoError(err)
-		mysqlRestore := restoremysql.New(logger, mysqlDriver, mysqlbinlogIns)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
 		binlogInfo := api.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
@@ -238,9 +235,7 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		logger, err := zap.NewDevelopment()
-		a.NoError(err)
-		mysqlRestore := restoremysql.New(logger, mysqlDriver, mysqlbinlogIns)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
 		binlogInfo := api.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
@@ -290,9 +285,7 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		logger, err := zap.NewDevelopment()
-		a.NoError(err)
-		mysqlRestore := restoremysql.New(logger, mysqlDriver, mysqlbinlogIns)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilIns)
 		binlogInfo := api.BinlogInfo{}
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)

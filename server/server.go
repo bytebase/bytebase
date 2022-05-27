@@ -9,25 +9,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
-	metricCollector "github.com/bytebase/bytebase/metric/collector"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
-	"github.com/bytebase/bytebase/store"
-	"github.com/google/uuid"
-
 	// embed will embeds the acl policy.
 	_ "embed"
 
-	"github.com/bytebase/bytebase/api"
-	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
+	"github.com/bytebase/bytebase/metric"
+	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"github.com/bytebase/bytebase/store"
 )
 
 // Server is the Bytebase server.
@@ -46,16 +46,16 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile     Profile
-	e           *echo.Echo
-	mysqlbinlog *mysqlbinlog.Instance
-	metaDB      *store.MetadataDB
-	db          *store.DB
-	store       *store.Store
-	l           *zap.Logger
-	lvl         *zap.AtomicLevel
-	startedTs   int64
-	secret      string
+	profile   Profile
+	e         *echo.Echo
+	mysqlutil *mysqlutil.Instance
+	metaDB    *store.MetadataDB
+	db        *store.DB
+	store     *store.Store
+	l         *zap.Logger
+	lvl       *zap.AtomicLevel
+	startedTs int64
+	secret    string
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -105,12 +105,12 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	var err error
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
-	// Install mysqlbinlog.
-	mysqlbinlogIns, err := mysqlbinlog.Install(resourceDir)
+	// Install mysqlutil
+	mysqlutilIns, err := mysqlutil.Install(resourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlbinlog = mysqlbinlogIns
+	s.mysqlutil = mysqlutilIns
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -189,10 +189,10 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlbinlog)
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlutil)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlbinlog)
+		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlutil)
 		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
 
 		s.TaskScheduler = taskScheduler
@@ -297,6 +297,8 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
 	})
+	// Register pprof endpoints.
+	registerPProfEndpoints(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -326,11 +328,12 @@ func (server *Server) initMetricReporter(workspaceID string) {
 	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 	if enabled {
 		metricReporter := NewMetricReporter(server.l, server, workspaceID)
-		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCollector(server.l, server.store))
-		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCollector(server.l, server.store))
-		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCollector(server.l, server.store))
-		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCollector(server.l, server.store))
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(server.l, server.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(server.l, server.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(server.l, server.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(server.l, server.store))
 		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(server.l, server.store))
+		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(server.l, server.store))
 		server.MetricReporter = metricReporter
 	}
 }

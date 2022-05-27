@@ -176,20 +176,19 @@ func TestSchemaSystem(t *testing.T) {
 				},
 			},
 			{
-				// TODO(rebelice): most advisors cannot get the SQL text with sub-queries, fix it
 				statement: "INSERT INTO t_copy SELECT * FROM t",
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
 						Code:    common.StatementSelectAll,
-						Title:   "No SELECT all",
-						Content: "\"\" uses SELECT all",
+						Title:   "Not SELECT all",
+						Content: "\"INSERT INTO t_copy SELECT * FROM t\" uses SELECT all",
 					},
 					{
 						Status:  api.TaskCheckStatusError,
 						Code:    common.StatementNoWhere,
 						Title:   "Require WHERE clause",
-						Content: "\"\" requires WHERE clause",
+						Content: "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
 					},
 				},
 			},

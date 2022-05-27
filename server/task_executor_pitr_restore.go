@@ -11,23 +11,23 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
+func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
-		l:           logger,
-		mysqlbinlog: instance,
+		l:         logger,
+		mysqlutil: instance,
 	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	l           *zap.Logger
-	mysqlbinlog *mysqlbinlog.Instance
+	l         *zap.Logger
+	mysqlutil *mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -77,7 +77,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(exec.l, mysqlDriver, exec.mysqlbinlog)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil)
+
 	binlogInfo := api.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
 	// Currently, let's just use the empty backup dump as a placeholder.

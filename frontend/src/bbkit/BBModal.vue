@@ -2,6 +2,7 @@
   <teleport to="#bb-modal-stack">
     <div class="fixed inset-0 bg-transparent" :style="style" />
     <div
+      v-bind="$attrs"
       class="bb-modal"
       :style="style"
       :data-bb-modal-id="id"
