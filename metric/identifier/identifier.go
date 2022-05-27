@@ -1,0 +1,65 @@
+package identifier
+
+import (
+	"context"
+	"strconv"
+	"time"
+
+	"github.com/bytebase/bytebase/api"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/collector"
+	"github.com/bytebase/bytebase/store"
+	"go.uber.org/zap"
+)
+
+type metricIdentifier struct {
+	l         *zap.Logger
+	store     *store.Store
+	workspace *api.Workspace
+	// subscription is the pointer to the server.subscription.
+	// the subscription can be updated by users so we need the pointer to get the latest value.
+	subscription *enterpriseAPI.Subscription
+}
+
+const (
+	// identifyTraitForPlan is the trait key for subscription plan.
+	identifyTraitForPlan = "plan"
+	// identifyTraitForVersion is the trait key for bytebase version.
+	identifyTraitForVersion = "version"
+	// identifyTraitForActive is the trait key for workspace is active.
+	identifyTraitForActive = "active"
+)
+
+// NewIdentifier creates a new instance of metricIdentifier
+func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, subscription *enterpriseAPI.Subscription) collector.MetricIdentifier {
+	return &metricIdentifier{
+		l:            l,
+		store:        store,
+		workspace:    workspace,
+		subscription: subscription,
+	}
+}
+
+func (i *metricIdentifier) Collect(ctx context.Context) (*metric.Identifier, error) {
+	plan := api.FREE.String()
+	if i.subscription != nil {
+		plan = i.subscription.Plan.String()
+	}
+
+	now := time.Now()
+	from := now.AddDate(0, 0, -7)
+	existTask, err := i.store.ExistTaskInRangeOfTime(ctx, from.Unix(), now.Unix(), api.TaskDone)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metric.Identifier{
+		ID: i.workspace.ID,
+		Labels: map[string]string{
+			identifyTraitForPlan:    plan,
+			identifyTraitForVersion: i.workspace.Version,
+			identifyTraitForActive:  strconv.FormatBool(existTask),
+		},
+	}, nil
+}

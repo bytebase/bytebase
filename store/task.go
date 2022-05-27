@@ -126,7 +126,6 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 				zap.Any("taskRaw", raw),
 				zap.Error(err))
 			continue
-
 		}
 		taskList = append(taskList, task)
 	}
@@ -189,6 +188,37 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	}
 
 	return res, nil
+}
+
+// ExistTaskInRangeOfTime check if exists task with specific status in a range of time.
+func (s *Store) ExistTaskInRangeOfTime(ctx context.Context, fromTs int64, toTs int64, status api.TaskStatus) (bool, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	row, err := tx.PTx.QueryContext(ctx, `
+		SELECT COUNT(*)
+		FROM task
+		WHERE status = $1 AND updated_ts >= $2 AND updated_ts <= $3`,
+		status,
+		fromTs,
+		toTs,
+	)
+	if err != nil {
+		return false, FormatError(err)
+	}
+	defer row.Close()
+
+	count := 0
+	if row.Next() {
+		if err := row.Scan(&count); err != nil {
+			return false, FormatError(err)
+		}
+	}
+
+	return count > 0, nil
 }
 
 //

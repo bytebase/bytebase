@@ -10,3 +10,8 @@ import (
 type MetricCollector interface {
 	Collect(ctx context.Context) ([]*metric.Metric, error)
 }
+
+// MetricIdentifier is the API message for metric identifier.
+type MetricIdentifier interface {
+	Collect(ctx context.Context) (*metric.Identifier, error)
+}
