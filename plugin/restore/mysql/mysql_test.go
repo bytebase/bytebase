@@ -214,7 +214,7 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 			},
 			err: false,
 		},
-		// backup without valid binlog info does not count
+		// backup with empty binlog info does not count
 		{
 			backupList: []*api.Backup{
 				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
