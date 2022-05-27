@@ -46,7 +46,11 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance) *Restore {
 }
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo mysql.BinlogInfo, targetTs int64) error {
+func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo mysql.BinlogInfo, targetTs int64, instance *api.Instance) error {
+	if err := r.SyncLatestBinlog(ctx, instance, binlogDir); err != nil {
+		return err
+	}
+
 	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
@@ -162,7 +166,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	_ = r.ReplayBinlog(ctx, database, pitrDatabaseName, "", binlog, suffixTs)
+	_ = r.ReplayBinlog(ctx, database, pitrDatabaseName, "", binlog, suffixTs, nil)
 
 	return nil
 }
