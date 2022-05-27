@@ -30,5 +30,3 @@ Please read and follow [Google's Code Review Guideline](https://google.github.io
 - You can also try [graphite](https://graphite.dev/) which is a new code review tool for GitHub. One nice feature is it displays who should take the turn for each ongoing PR.
 
   ![Screenshot](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/codereview2.png)
-
-- [Reviewbunny](https://reviewbunny.app/) has been installed to Bytebase repositories. You will receive daily email with pull requests which need to be reviewed.
