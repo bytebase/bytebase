@@ -1,4 +1,4 @@
-package reporter
+package segment
 
 import (
 	"time"
@@ -9,8 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// Segment is the metrics collector https://segment.com/.
-type segment struct {
+var _ metric.Reporter = (*reporter)(nil)
+
+// reporter is the metrics collector https://segment.com/.
+type reporter struct {
 	l          *zap.Logger
 	identifier string
 	client     analytics.Client
@@ -21,11 +23,11 @@ const (
 	metricValueField = "value"
 )
 
-// NewSegmentReporter creates a new instance of segment
-func NewSegmentReporter(l *zap.Logger, key string, identifier string) MetricReporter {
+// NewReporter creates a new instance of segment
+func NewReporter(l *zap.Logger, key string, identifier string) metric.Reporter {
 	client := analytics.New(key)
 
-	return &segment{
+	return &reporter{
 		l:          l,
 		identifier: identifier,
 		client:     client,
@@ -33,12 +35,12 @@ func NewSegmentReporter(l *zap.Logger, key string, identifier string) MetricRepo
 }
 
 // Close will close the segment client.
-func (s *segment) Close() {
-	s.client.Close()
+func (r *reporter) Close() {
+	r.client.Close()
 }
 
 // Report will exec all the segment reporter.
-func (s *segment) Report(metric *metric.Metric) error {
+func (r *reporter) Report(metric *metric.Metric) error {
 	properties := analytics.NewProperties().
 		Set(metricValueField, metric.Value)
 
@@ -46,23 +48,23 @@ func (s *segment) Report(metric *metric.Metric) error {
 		properties.Set(key, value)
 	}
 
-	return s.client.Enqueue(analytics.Track{
+	return r.client.Enqueue(analytics.Track{
 		Event:      string(metric.Name),
-		UserId:     s.identifier,
+		UserId:     r.identifier,
 		Properties: properties,
 		Timestamp:  time.Now().UTC(),
 	})
 }
 
 // Identify will identify the workspace with license.
-func (s *segment) Identify(identifier *metric.Identifier) error {
+func (r *reporter) Identify(identifier *metric.Identifier) error {
 	traits := analytics.NewTraits()
 	for key, value := range identifier.Labels {
 		traits.Set(key, value)
 	}
 
-	return s.client.Enqueue(analytics.Identify{
-		UserId:    s.identifier,
+	return r.client.Enqueue(analytics.Identify{
+		UserId:    r.identifier,
 		Traits:    traits,
 		Timestamp: time.Now().UTC(),
 	})
