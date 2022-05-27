@@ -19,7 +19,7 @@ const (
 	// MySQL is the name of mysql binary
 	MySQL binaryName = "mysql"
 	// MySQLBinlog is the name of mysqlbinlog binary
-	MySQLBinlog binaryName = "mysqlbinary"
+	MySQLBinlog binaryName = "mysqlbinlog"
 )
 
 // Instance involve the path of all binaries binary.
