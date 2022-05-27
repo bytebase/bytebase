@@ -11,13 +11,13 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instance) TaskExecutor {
+func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
 		l:           logger,
 		mysqlbinlog: instance,
@@ -27,7 +27,7 @@ func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlbinlog.Instan
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
 	l           *zap.Logger
-	mysqlbinlog *mysqlbinlog.Instance
+	mysqlbinlog *mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.

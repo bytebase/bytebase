@@ -17,7 +17,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/api"
 	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 )
 
 const (
@@ -32,15 +32,15 @@ const (
 // 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
 // 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 type Restore struct {
-	driver      *mysql.Driver
-	mysqlbinlog *mysqlbinlog.Instance
+	driver    *mysql.Driver
+	mysqlutil *mysqlutil.Instance
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
+func New(driver *mysql.Driver, instance *mysqlutil.Instance) *Restore {
 	return &Restore{
-		driver:      driver,
-		mysqlbinlog: instance,
+		driver:    driver,
+		mysqlutil: instance,
 	}
 }
 
@@ -101,7 +101,7 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	}
 
 	var stdout bytes.Buffer
-	cmd := exec.Command(r.mysqlbinlog.GetPath(), args...)
+	cmd := exec.Command(r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -321,7 +321,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, r.mysqlbinlog.GetPath(),
+	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",

@@ -26,7 +26,7 @@ import (
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -48,7 +48,7 @@ type Server struct {
 
 	profile     Profile
 	e           *echo.Echo
-	mysqlbinlog *mysqlbinlog.Instance
+	mysqlbinlog *mysqlutil.Instance
 	metaDB      *store.MetadataDB
 	db          *store.DB
 	store       *store.Store
@@ -106,7 +106,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 	resourceDir := common.GetResourceDir(prof.DataDir)
 	// Install mysqlbinlog.
-	mysqlbinlogIns, err := mysqlbinlog.Install(resourceDir)
+	mysqlbinlogIns, err := mysqlutil.Install(resourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
