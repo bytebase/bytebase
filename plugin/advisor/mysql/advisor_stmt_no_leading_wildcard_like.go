@@ -41,7 +41,7 @@ func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement st
 
 	checker := &noLeadingWildcardLikeChecker{level: level}
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
+		checker.text = formatSQLText(stmtNode.Text())
 		checker.leadingWildcardLike = false
 		(stmtNode).Accept(checker)
 

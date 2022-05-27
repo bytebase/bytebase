@@ -117,7 +117,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "InnoDB engine is not used",
-			Content: fmt.Sprintf("%q doesn't use InnoDB engine", in.Text()),
+			Content: fmt.Sprintf("%q doesn't use InnoDB engine", formatSQLText(in.Text())),
 		})
 	}
 	return in, false

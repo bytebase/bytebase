@@ -36,7 +36,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 	}
 	checker := &whereRequirementChecker{level: level}
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
+		checker.text = formatSQLText(stmtNode.Text())
 		(stmtNode).Accept(checker)
 	}
 

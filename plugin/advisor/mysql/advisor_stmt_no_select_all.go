@@ -35,7 +35,7 @@ func (adv *NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]a
 	}
 	checker := &noSelectAllChecker{level: level}
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
+		checker.text = formatSQLText(stmtNode.Text())
 		(stmtNode).Accept(checker)
 	}
 
