@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/stretchr/testify/require"
 )
 
@@ -168,6 +169,82 @@ DELIMITER ;
 	for _, test := range tests {
 		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText)
 		a.Equal(test.timestamp, timestamp)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}
+
+func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		backupList   []*api.Backup
+		eventTsList  []int64
+		targetTs     int64
+		targetBackup *api.Backup
+		err          bool
+	}{
+		// normal case
+		{
+			backupList: []*api.Backup{
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 20}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000002", Position: 10}}},
+			},
+			eventTsList: []int64{1, 2, 3},
+			targetTs:    2,
+			targetBackup: &api.Backup{
+				Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 20}},
+			},
+			err: false,
+		},
+		// backup list not in sorted order
+		{
+			backupList: []*api.Backup{
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 20}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000002", Position: 10}}},
+			},
+			eventTsList: []int64{2, 1, 3},
+			targetTs:    2,
+			targetBackup: &api.Backup{
+				Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 20}},
+			},
+			err: false,
+		},
+		// backup without valid binlog info does not count
+		{
+			backupList: []*api.Backup{
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000002", Position: 10}}},
+			},
+			eventTsList: []int64{1, 2, 3},
+			targetTs:    2,
+			targetBackup: &api.Backup{
+				Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}},
+			},
+			err: false,
+		},
+		// no valid backup found
+		{
+			backupList: []*api.Backup{
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 20}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000002", Position: 10}}},
+			},
+			eventTsList:  []int64{1, 2, 3},
+			targetTs:     0,
+			targetBackup: nil,
+			err:          true,
+		},
+	}
+
+	for _, test := range tests {
+		backup, err := getLatestBackupBeforeOrEqualTsImpl(test.backupList, test.eventTsList, test.targetTs)
+		a.Equal(test.targetBackup, backup)
 		if test.err {
 			a.Error(err)
 		} else {

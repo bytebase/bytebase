@@ -134,7 +134,7 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 			// fields should starts with ["#220421", "14:49:26", "server", "id"]
 			if len(fields) < 4 ||
 				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
-				continue
+				return 0, fmt.Errorf("invalid mysqlbinlog output line: %q", line)
 			}
 			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
 			if err != nil {
@@ -155,24 +155,39 @@ func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		return nil, fmt.Errorf("no valid backup")
 	}
 
-	var maxEventTsLETargetTs int64
-	var minEventTs int64 = math.MaxInt64
-	var backup *api.Backup
+	var eventTsList []int64
 	for _, b := range backupList {
-		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		if b.Payload.BinlogInfo.FileName == "" || b.Payload.BinlogInfo.Position == 0 {
-			r.l.Warn("backup has empty binlog info", zap.Int("backupID", b.ID))
-			continue
-		}
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
 		}
+		eventTsList = append(eventTsList, eventTs)
+	}
+
+	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupList, eventTsList, targetTs)
+	if err != nil {
+		return nil, err
+	}
+	return backup, nil
+
+}
+
+// The backupList must 1 to 1 maps to the eventTsList, and the sorting order is not required.
+func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []int64, targetTs int64) (*api.Backup, error) {
+	var maxEventTsLETargetTs int64
+	var minEventTs int64 = math.MaxInt64
+	var backup *api.Backup
+	for i, b := range backupList {
+		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
+		if b.Payload.BinlogInfo.FileName == "" || b.Payload.BinlogInfo.Position == 0 {
+			continue
+		}
+		eventTs := eventTsList[i]
 		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
 			maxEventTsLETargetTs = eventTs
 			backup = b
 		}
-		// This is only for composing the error message.
+		// This is only for composing the error message when no valid backup found.
 		if eventTs < minEventTs {
 			minEventTs = eventTs
 		}
@@ -182,12 +197,6 @@ func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	}
 	return backup, nil
 }
-
-// TODO(dragonly): Implement this.
-// Find the binlog range between the full backup and the targetTs.
-// func (r *Restore) getReplayBinlogRange(ctx context.Context, backup *api.Backup, targetTs int64, binlogDir string) (binlogInfoList []api.BinlogInfo, startPos, stopPos int64, err error) {
-
-// }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 // It returns the pitr and old database names after swap.
