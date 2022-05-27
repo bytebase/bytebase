@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +51,20 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		return fmt.Errorf("cannot get database connection, error: %w", err)
 	}
 
+	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
+	}
+
+	if !strings.HasPrefix(startInfo.FileName, binlogNamePrefix) {
+		return fmt.Errorf("start binlog name must has the prefix: %s, but get: %s", binlogNamePrefix, startInfo.FileName)
+	}
+
+	startBinlogSeq, err := strconv.ParseInt(strings.TrimPrefix(startInfo.FileName, binlogNamePrefix), 10, 0)
+	if err != nil {
+		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startInfo.FileName, err)
+	}
+
 	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
@@ -57,9 +72,17 @@ func (r *Restore) ReplayBinlog(ctx context.Context, originDatabase, pitrDatabase
 
 	var needReplay []string
 	for _, f := range binlogFilesLocal {
-		if !f.IsDir() && strings.HasPrefix(f.Name(), "binlog.") && f.Name() >= startInfo.FileName {
+		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
+			continue
+		}
+		binlogSeq, err := strconv.ParseInt(strings.TrimPrefix(f.Name(), binlogNamePrefix), 10, 0)
+		if err != nil {
+			return fmt.Errorf("cannot parse the binlog name [%s], error: %w", startInfo.FileName, err)
+		}
+		if binlogSeq >= startBinlogSeq {
 			needReplay = append(needReplay, f.Name())
 		}
+
 	}
 	sort.Strings(needReplay)
 
@@ -374,6 +397,30 @@ func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFil
 		return &binlogFile, nil
 	}
 	return nil, fmt.Errorf("cannot find latest binlog on instance")
+}
+
+// getBinlogNamePrefix returns the prefix of binlog file name.
+func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return "", err
+	}
+
+	rows, err := db.QueryContext(ctx, `SHOW VARIABLES LIKE "log_bin_basename";`)
+	if err != nil {
+		return "", fmt.Errorf("cannot query log_bin_basename on mysql server, error: %w", err)
+	}
+	defer rows.Close()
+
+	var basename string
+	if rows.Next() {
+		var unused interface{}
+		if err := rows.Scan(&unused /*log_bin_basename*/, &basename); err != nil {
+			return "", err
+		}
+		return filepath.Base(basename) + ".", nil
+	}
+	return "", fmt.Errorf("cannot find log_bin_basename on mysqlbin server, error: %w", err)
 }
 
 func getSafeName(baseName, suffix string) string {
