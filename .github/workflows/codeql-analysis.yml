@@ -58,3 +58,6 @@ jobs:
 
       - name: Upload SARIF File
         uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+          category: language-${{ matrix.language }}
