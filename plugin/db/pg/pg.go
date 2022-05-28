@@ -936,18 +936,27 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 	}
 
 	constraints := make(map[string]bool)
+	tableConstraints := make([]*tableConstraint, 0)
 	for _, tbl := range tables {
 		if _, err := io.WriteString(out, tbl.Statement()); err != nil {
 			return err
 		}
 		for _, constraint := range tbl.constraints {
 			key := fmt.Sprintf("%s.%s.%s", constraint.schemaName, constraint.tableName, constraint.name)
+			tableConstraints = append(tableConstraints, constraint)
 			constraints[key] = true
 		}
 		if !schemaOnly {
 			if err := exportTableData(txn, tbl, out); err != nil {
 				return err
 			}
+		}
+	}
+
+	// Add constraints such as primary key, unique, or checks.
+	for _, constraint := range tableConstraints {
+		if _, err := io.WriteString(out, constraint.Statement()); err != nil {
+			return err
 		}
 	}
 
@@ -1185,12 +1194,6 @@ func (t *tableSchema) Statement() string {
 	}
 	s += strings.Join(cols, ",\n")
 	s += "\n);\n\n"
-
-	// Add constraints such as primary key, unique, or checks.
-	for _, constraint := range t.constraints {
-		s += fmt.Sprintf("%s\n", constraint.Statement())
-	}
-	s += "\n"
 	return s
 }
 
