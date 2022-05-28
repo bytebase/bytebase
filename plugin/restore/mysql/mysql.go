@@ -455,15 +455,15 @@ func getSafeName(baseName, suffix string) string {
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
-// checks the MySQL version is >=5.7
+// checks the MySQL version is >=8.0
 func checkVersionForPITR(version string) error {
 	v, err := semver.Parse(version)
 	if err != nil {
 		return err
 	}
-	v57 := semver.MustParse("5.7.0")
-	if v.LT(v57) {
-		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 5.7", version)
+	v8 := semver.MustParse("8.0.0")
+	if v.LT(v8) {
+		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
 	}
 	return nil
 }
