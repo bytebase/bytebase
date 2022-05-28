@@ -1196,7 +1196,7 @@ func (t *tableSchema) Statement() string {
 
 // Statement returns the statement of a table column.
 func (c *columnSchema) Statement() string {
-	s := fmt.Sprintf("%s %s", c.columnName, c.dataType)
+	s := fmt.Sprintf("%s %s", quoteIdentifier(c.columnName), c.dataType)
 	if c.characterMaximumLength != "" {
 		s += fmt.Sprintf("(%s)", c.characterMaximumLength)
 	}
