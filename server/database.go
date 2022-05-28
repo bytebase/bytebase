@@ -905,7 +905,8 @@ func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseNa
 		return db.ConnectionConfig{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
 	}
 
-	return db.ConnectionConfig{Username: adminDataSource.Username,
+	return db.ConnectionConfig{
+		Username: adminDataSource.Username,
 		Password: adminDataSource.Password,
 		Host:     instance.Host,
 		Port:     instance.Port,
