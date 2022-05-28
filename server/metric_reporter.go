@@ -6,9 +6,8 @@ import (
 	"sync"
 	"time"
 
-	metricAPI "github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
-	"github.com/bytebase/bytebase/plugin/metric/reporter"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/segment"
 
 	"go.uber.org/zap"
 )
@@ -21,20 +20,20 @@ const (
 type MetricReporter struct {
 	l *zap.Logger
 
-	identifier collector.MetricIdentifier
-	reporter   reporter.MetricReporter
-	collectors map[string]collector.MetricCollector
+	identifier metric.Identifier
+	reporter   metric.Reporter
+	collectors map[string]metric.Collector
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(logger *zap.Logger, workspaceID string, connectionKey string, identifier collector.MetricIdentifier) *MetricReporter {
-	r := reporter.NewSegmentReporter(logger, connectionKey, workspaceID)
+func NewMetricReporter(logger *zap.Logger, workspaceID string, connectionKey string, identifier metric.Identifier) *MetricReporter {
+	r := segment.NewReporter(logger, connectionKey, workspaceID)
 
 	return &MetricReporter{
 		l:          logger,
 		identifier: identifier,
 		reporter:   r,
-		collectors: make(map[string]collector.MetricCollector),
+		collectors: make(map[string]metric.Collector),
 	}
 }
 
@@ -100,13 +99,13 @@ func (m *MetricReporter) Close() {
 }
 
 // Register will register a metric collector.
-func (m *MetricReporter) Register(metricName metricAPI.Name, collector collector.MetricCollector) {
+func (m *MetricReporter) Register(metricName metric.Name, collector metric.Collector) {
 	m.collectors[string(metricName)] = collector
 }
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *MetricReporter) identify(ctx context.Context) {
-	identity, err := m.identifier.Collect(ctx)
+	identity, err := m.identifier.Identify(ctx)
 	if err != nil {
 		m.l.Debug("collect identity failed", zap.Error(err))
 		return

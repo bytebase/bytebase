@@ -320,7 +320,7 @@ func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) (
 		FROM activity
 		WHERE ` + strings.Join(where, " AND ")
 	if v := find.Order; v != nil {
-		query += fmt.Sprintf(" ORDER BY created_ts %s", *v)
+		query += fmt.Sprintf(" ORDER BY created_ts %s", v.String())
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)

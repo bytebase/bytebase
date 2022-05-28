@@ -10,8 +10,8 @@ type Metric struct {
 	Labels map[string]string
 }
 
-// Identifier is the identifier for metric.
-type Identifier struct {
+// Identity is the Identity for metric.
+type Identity struct {
 	ID     string
 	Labels map[string]string
 }

@@ -9,7 +9,7 @@ import (
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +22,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 	t.Log("install mysqlbinlog binary")
 	tmpDir := t.TempDir()
-	mysqlbinlogIns, err := mysqlbinlog.Install(tmpDir)
+	mysqlbinlogIns, err := mysqlutil.Install(tmpDir)
 	a.NoError(err)
 
 	t.Run("success", func(t *testing.T) {

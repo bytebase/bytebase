@@ -74,28 +74,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
 			s.l.Debug("Processing commit...",
-				zap.String("id", commit.ID),
-				zap.String("title", commit.Title),
+				zap.String("id", common.EscapeForLogging(commit.ID)),
+				zap.String("title", common.EscapeForLogging(commit.Title)),
 			)
 
 			for _, added := range commit.AddedList {
+				addedEscaped := common.EscapeForLogging(added)
 				s.l.Debug("Processing added file...",
-					zap.String("file", added),
+					zap.String("file", addedEscaped),
 				)
 
-				if !strings.HasPrefix(added, repo.BaseDirectory) {
-					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", added), zap.String("base_directory", repo.BaseDirectory))
+				if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
+					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", addedEscaped), zap.String("base_directory", repo.BaseDirectory))
 					continue
 				}
 
 				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 				if err != nil {
-					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", added), zap.String("timestamp", commit.Timestamp), zap.Error(err))
+					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 				}
 
 				// Ignore the schema file we auto generated to the repository.
-				if isSkipGeneratedSchemaFile(repo, added, s.l) {
-					s.l.Debug("Ignored generated latest schema file.", zap.String("file", added))
+				if isSkipGeneratedSchemaFile(repo, addedEscaped, s.l) {
+					s.l.Debug("Ignored generated latest schema file.", zap.String("file", addedEscaped))
 					continue
 				}
 
@@ -114,13 +115,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						CreatedTs:  createdTime.Unix(),
 						URL:        commit.URL,
 						AuthorName: commit.Author.Name,
-						Added:      added,
+						Added:      addedEscaped,
 					},
 				}
 
 				// Create a WARNING project activity if committed file is ignored
 				var createIgnoredFileActivity = func(err error) {
-					s.l.Warn("Ignored committed file", zap.String("file", added), zap.Error(err))
+					s.l.Warn("Ignored committed file", zap.String("file", addedEscaped), zap.Error(err))
 					bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 						VCSPushEvent: vcsPushEvent,
 					})
@@ -134,7 +135,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						ContainerID: repo.ProjectID,
 						Type:        api.ActivityProjectRepositoryPush,
 						Level:       api.ActivityWarn,
-						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", added, err.Error()),
+						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", addedEscaped, err.Error()),
 						Payload:     string(bytes),
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
@@ -143,7 +144,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 				}
 
-				mi, err := db.ParseMigrationInfo(added, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+				mi, err := db.ParseMigrationInfo(addedEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
 				if err != nil {
 					createIgnoredFileActivity(err)
 					continue
@@ -161,7 +162,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					},
 					repo.VCS.InstanceURL,
 					repo.ExternalID,
-					added,
+					addedEscaped,
 					commit.ID,
 				)
 				if err != nil {
@@ -175,9 +176,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					if !s.feature(api.FeatureMultiTenancy) {
 						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 					}
-					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, added, content)
+					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
 				} else {
-					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, added, content)
+					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
 				}
 				if err != nil {
 					createIgnoredFileActivity(err)
@@ -205,7 +206,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
 				}
 
-				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, added))
+				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, addedEscaped))
 
 				// Create a project activity after successfully creating the issue as the result of the push event
 				bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{

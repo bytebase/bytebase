@@ -8,7 +8,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
@@ -32,7 +31,7 @@ const (
 )
 
 // NewIdentifier creates a new instance of metricIdentifier
-func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, subscription *enterpriseAPI.Subscription) collector.MetricIdentifier {
+func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, subscription *enterpriseAPI.Subscription) metric.Identifier {
 	return &metricIdentifier{
 		l:            l,
 		store:        store,
@@ -41,7 +40,7 @@ func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, 
 	}
 }
 
-func (i *metricIdentifier) Collect(ctx context.Context) (*metric.Identifier, error) {
+func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, error) {
 	plan := api.FREE.String()
 	if i.subscription != nil {
 		plan = i.subscription.Plan.String()
@@ -54,7 +53,7 @@ func (i *metricIdentifier) Collect(ctx context.Context) (*metric.Identifier, err
 		return nil, err
 	}
 
-	return &metric.Identifier{
+	return &metric.Identity{
 		ID: i.workspace.ID,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,

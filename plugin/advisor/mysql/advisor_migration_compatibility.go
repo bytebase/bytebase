@@ -149,7 +149,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			Status:  v.level,
 			Code:    code,
 			Title:   "Potential incompatible migration",
-			Content: fmt.Sprintf("%q may cause incompatibility with the existing data and code", in.Text()),
+			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
 		})
 	}
 	return in, false

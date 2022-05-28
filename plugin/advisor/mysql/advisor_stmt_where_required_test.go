@@ -76,6 +76,17 @@ func TestWhereRequirement(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT a FROM t WHERE a > (SELECT max(id) FROM user)",
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    common.StatementNoWhere,
+					Title:   "Require WHERE clause",
+					Content: "\"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)\" requires WHERE clause",
+				},
+			},
+		},
 	}
 
 	runSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &api.SchemaReviewRule{
