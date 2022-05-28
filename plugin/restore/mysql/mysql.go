@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 
@@ -35,13 +36,15 @@ const (
 type Restore struct {
 	driver    *mysql.Driver
 	mysqlutil *mysqlutil.Instance
+	connCfg   db.ConnectionConfig
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlutil.Instance) *Restore {
+func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig) *Restore {
 	return &Restore{
 		driver:    driver,
 		mysqlutil: instance,
+		connCfg:   connCfg,
 	}
 }
 
