@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -102,9 +103,52 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _
 	return p.fetchUserInfo(ctx, oauthCtx, "user")
 }
 
-// FetchCommitByID fetch the commit data by id.
-func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
-	return nil, errors.New("not implemented yet")
+// Commit represents a GitHub API response for a commit.
+type Commit struct {
+	SHA    string `json:"sha"`
+	Author struct {
+		Date time.Time `json:"date"`
+		Name string    `json:"name"`
+	} `json:"author"`
+}
+
+// FetchCommitByID fetches the commit data by its ID from the repository.
+func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, commitID string) (*vcs.Commit, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", apiURL, repositoryID, commitID)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "GET")
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, errors.New("failed to fetch commit data from GitHub.com, not found"))
+	} else if code >= 300 {
+		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d", code)
+	}
+
+	commit := &Commit{}
+	if err := json.Unmarshal([]byte(body), commit); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal commit data from GitHub.com, err: %w", err)
+	}
+
+	return &vcs.Commit{
+		ID:         commit.SHA,
+		AuthorName: commit.Author.Name,
+		CreatedTs:  commit.Author.Date.Unix(),
+	}, nil
 }
 
 // FetchUserInfo fetches user info of given user ID.
