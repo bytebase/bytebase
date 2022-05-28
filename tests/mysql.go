@@ -8,10 +8,22 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/bytebase/bytebase/plugin/db"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 
 	"go.uber.org/zap"
 )
+
+func getMySQLConnectionConfig(port string, database string) dbplugin.ConnectionConfig {
+	return db.ConnectionConfig{
+		Host:      "localhost",
+		Port:      port,
+		Username:  "root",
+		Password:  "",
+		Database:  database,
+		TLSConfig: dbplugin.TLSConfig{},
+	}
+}
 
 // connectTestMySQL connects to the test mysql instance.
 func connectTestMySQL(port int, database string) (*sql.DB, error) {
@@ -26,18 +38,12 @@ func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Dr
 	if err != nil {
 		return nil, err
 	}
+	connCfg := getMySQLConnectionConfig(port, database)
 	return dbplugin.Open(
 		ctx,
 		dbplugin.MySQL,
 		dbplugin.DriverConfig{Logger: logger},
-		dbplugin.ConnectionConfig{
-			Host:      "localhost",
-			Port:      port,
-			Username:  "root",
-			Password:  "",
-			Database:  database,
-			TLSConfig: dbplugin.TLSConfig{},
-		},
+		connCfg,
 		dbplugin.ConnectionContext{},
 	)
 }
