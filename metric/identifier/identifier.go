@@ -48,7 +48,7 @@ func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, erro
 
 	now := time.Now()
 	from := now.AddDate(0, 0, -7)
-	existTask, err := i.store.ExistTaskInRangeOfTime(ctx, from.Unix(), now.Unix(), api.TaskDone)
+	existTask, err := i.store.ExistTaskInRangeOfTimeWithStatus(ctx, from.Unix(), now.Unix(), api.TaskDone)
 	if err != nil {
 		return nil, err
 	}
