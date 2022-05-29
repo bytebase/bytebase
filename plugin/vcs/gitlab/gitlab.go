@@ -538,8 +538,10 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	var emptyEmailUserIDList []string
 	var activeMembers []*vcs.RepositoryMember
 	for _, m := range allMembers {
-		// We only want active member (both state and membership_state)
-		if m.State != vcs.StateActive || m.MembershipState != vcs.StateActive {
+		// We only want active member (both state and membership_state), the absence of
+		// the value indicates the GitLab does not support member state.
+		if (m.State != "" && m.State != vcs.StateActive) ||
+			(m.MembershipState != "" && m.MembershipState != vcs.StateActive) {
 			continue
 		}
 
