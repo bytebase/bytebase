@@ -9,6 +9,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
@@ -141,6 +142,7 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
+	log.MustInitialize(true)
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)

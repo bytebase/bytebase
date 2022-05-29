@@ -18,6 +18,9 @@ var (
 
 // MustInitialize initializes the global logger for the bytebase server.
 func MustInitialize(debug bool) {
+	if gl != nil {
+		return
+	}
 	gLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 	if debug {
 		gLevel.SetLevel(zap.DebugLevel)
@@ -31,6 +34,9 @@ func MustInitialize(debug bool) {
 
 // MustInitializeBB initializes the global logger for the BB CLI.
 func MustInitializeBB() {
+	if gl != nil {
+		return
+	}
 	logConfig := zap.NewProductionConfig()
 	// Always set encoding to "console" for now since we do not redirect to file.
 	logConfig.Encoding = "console"

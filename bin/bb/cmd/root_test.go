@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bytebase/bytebase/common/log"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ type testTable struct {
 }
 
 func tableTest(t *testing.T, tables []testTable) {
+	log.MustInitializeBB()
 	t.Helper()
 	for _, tc := range tables {
 		actual, err := execute(t, NewRootCmd(), tc.args...)
