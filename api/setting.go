@@ -14,6 +14,8 @@ const (
 	SettingBrandingLogo SettingName = "bb.branding.logo"
 	// SettingWorkspaceID is the setting name for workspace identifier.
 	SettingWorkspaceID SettingName = "bb.workspace.id"
+	// SettingEnterpriseLicense is the setting name for enterprise license.
+	SettingEnterpriseLicense SettingName = "bb.enterprise.license"
 )
 
 // Setting is the API message for a setting.

@@ -100,7 +100,7 @@ func TestCheckVersionForPITR(t *testing.T) {
 		},
 		{
 			version: "5.7.0",
-			err:     false,
+			err:     true,
 		},
 		{
 			version: "8.0.28",
