@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
 	"github.com/google/jsonapi"
+	"go.uber.org/zap"
 )
 
 //go:embed fake
@@ -140,7 +141,8 @@ func getTestPort(testName string) int {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
-	log.MustInitialize(true)
+	log.Init()
+	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
@@ -154,7 +156,8 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
-	log.MustInitialize(true)
+	log.Init()
+	log.SetLevel(zap.DebugLevel)
 	profile := cmd.GetTestProfile(dataDir, port)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {

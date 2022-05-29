@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
@@ -150,7 +151,10 @@ func checkDataDir() error {
 }
 
 func start() {
-	log.MustInitialize(flags.debug)
+	log.Init()
+	if flags.debug {
+		log.SetLevel(zap.DebugLevel)
+	}
 	defer log.Sync()
 
 	// check flags

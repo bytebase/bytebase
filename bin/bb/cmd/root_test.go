@@ -11,6 +11,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
@@ -38,7 +39,8 @@ type testTable struct {
 }
 
 func tableTest(t *testing.T, tables []testTable) {
-	log.MustInitializeBB()
+	log.Init()
+	log.SetLevel(zap.DebugLevel)
 	t.Helper()
 	for _, tc := range tables {
 		actual, err := execute(t, NewRootCmd(), tc.args...)

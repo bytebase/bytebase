@@ -13,6 +13,7 @@ import (
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestGetMinorMigrationVersions(t *testing.T) {
@@ -142,7 +143,8 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
-	log.MustInitialize(true)
+	log.Init()
+	log.SetLevel(zap.DebugLevel)
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)

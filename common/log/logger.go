@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -16,39 +15,17 @@ var (
 	gLevel zap.AtomicLevel
 )
 
-// MustInitialize initializes the global logger for the bytebase server.
-func MustInitialize(debug bool) {
+// Init initializes the global console logger.
+func Init() {
 	if gl != nil {
 		return
 	}
 	gLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
-	if debug {
-		gLevel.SetLevel(zap.DebugLevel)
-	}
 	gl = zap.New(zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		zapcore.Lock(os.Stdout),
 		gLevel,
 	))
-}
-
-// MustInitializeBB initializes the global logger for the BB CLI.
-func MustInitializeBB() {
-	if gl != nil {
-		return
-	}
-	logConfig := zap.NewProductionConfig()
-	// Always set encoding to "console" for now since we do not redirect to file.
-	logConfig.Encoding = "console"
-	// "console" encoding needs to use the corresponding development encoder config.
-	logConfig.EncoderConfig = zap.NewDevelopmentEncoderConfig()
-	logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-
-	logger, err := logConfig.Build()
-	if err != nil {
-		panic(fmt.Errorf("failed to create logger. %w", err))
-	}
-	gl = logger
 }
 
 // SetLevel wraps the zap Level's SetLevel method.
