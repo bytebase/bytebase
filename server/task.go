@@ -77,8 +77,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issue.ProjectID)).SetInternal(err)
 			}
-			if project.TenantMode == api.TenantModeTenant {
-				err := fmt.Errorf("cannot update SQL statement for projects in tenant mode")
+			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
+				err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 
@@ -105,7 +105,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
 			case api.TaskDatabaseDataUpdate:
-
 				payload := &api.TaskDatabaseDataUpdatePayload{}
 				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
@@ -121,7 +120,22 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
-
+			case api.TaskDatabaseCreate:
+				payload := &api.TaskDatabaseCreatePayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database create payload").SetInternal(err)
+				}
+				oldStatement = payload.Statement
+				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
 			}
 		}
 
