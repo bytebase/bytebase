@@ -124,7 +124,6 @@ func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.
 	return timestamp, nil
 }
 
-// nolint
 func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	lines := strings.Split(output, "\n")
 	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
