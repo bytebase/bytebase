@@ -86,9 +86,13 @@ export const useCommonLogic = () => {
 
     const issueEntity = issue.value as Issue;
 
-    // For Create DB issues ,statement is not editable.
-    // Since the server-side seems won't do a patch really.
     if (issueEntity.type === "bb.issue.database.create") {
+      // We allow to edit create database statement for tenant project to give users a
+      // chance to edit the dumped schema from its peer databases, because the dumpped schema
+      // may not be pefectly correct.
+      if (issueEntity.project.tenantMode === "TENANT") {
+        return true;
+      }
       return false;
     }
 
