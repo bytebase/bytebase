@@ -27,8 +27,9 @@ func (s *Server) registerSubscriptionRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, patch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed create subscription request").SetInternal(err)
 		}
+		patch.UpdaterID = c.Get(getPrincipalIDContextKey()).(int)
 
-		if err := s.LicenseService.StoreLicense(patch.License); err != nil {
+		if err := s.LicenseService.StoreLicense(patch); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to store license").SetInternal(err)
 		}
 
