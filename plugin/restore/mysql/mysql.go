@@ -104,10 +104,10 @@ func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase
 	}
 
 	mysqlArgs := []string{
-		fmt.Sprintf("--host=%s", "TODO"),
-		fmt.Sprintf("--port=%d", 65540),
-		fmt.Sprintf("--user=%s", "TODO"),
-		fmt.Sprintf("--password=%s", "TODO"),
+		fmt.Sprintf("--host=%s", r.connCfg.Host),
+		fmt.Sprintf("--port=%s", r.connCfg.Port),
+		fmt.Sprintf("--user=%s", r.connCfg.Username),
+		fmt.Sprintf("--password=%s", r.connCfg.Password),
 	}
 
 	mysqlbinlogCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
