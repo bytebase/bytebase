@@ -139,17 +139,12 @@ func getTestPort(testName string) int {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
-	logger, lvl, err := cmd.GetLogger()
-	if err != nil {
-		return fmt.Errorf("failed to get logger, error: %w", err)
-	}
-	defer logger.Sync()
-
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
-	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
+	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
+	ctl.server = server
 
 	return ctl.start(ctx, port)
 }
@@ -157,17 +152,13 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
-	logger, lvl, err := cmd.GetLogger()
-	if err != nil {
-		return fmt.Errorf("failed to get logger, error: %w", err)
-	}
-	defer logger.Sync()
 
 	profile := cmd.GetTestProfile(dataDir, port)
-	ctl.server, err = server.NewServer(ctx, profile, logger, lvl)
+	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
 	}
+	ctl.server = server
 
 	return ctl.start(ctx, port)
 }

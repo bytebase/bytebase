@@ -45,7 +45,7 @@ func restoreDatabase(ctx context.Context, u *dburl.URL, file string) error {
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 
-	db, err := open(ctx, logger, u)
+	db, err := open(ctx, u)
 	if err != nil {
 		return err
 	}

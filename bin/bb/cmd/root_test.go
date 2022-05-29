@@ -10,7 +10,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const (
@@ -18,10 +17,6 @@ const (
 	PortTestMigrate
 	PortTestCreateDatabase
 )
-
-func init() {
-	logger = zap.NewNop()
-}
 
 func execute(t *testing.T, cmd *cobra.Command, args ...string) (string, error) {
 	t.Helper()

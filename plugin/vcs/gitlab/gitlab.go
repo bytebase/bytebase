@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -196,7 +195,6 @@ func init() {
 
 // Provider is a GitLab self host VCS provider.
 type Provider struct {
-	l      *zap.Logger
 	client *http.Client
 }
 
@@ -205,7 +203,6 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 		config.Client = &http.Client{}
 	}
 	return &Provider{
-		l:      config.Logger,
 		client: config.Client,
 	}
 }

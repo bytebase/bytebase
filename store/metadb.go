@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"go.uber.org/zap"
@@ -14,7 +15,6 @@ import (
 
 // MetadataDB abstracts the underlying Postgres instance
 type MetadataDB struct {
-	l           *zap.Logger
 	mode        common.ReleaseMode
 	demoDataDir string
 
@@ -29,9 +29,8 @@ type MetadataDB struct {
 }
 
 // NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
-func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
+func NewMetadataDBWithEmbedPg(pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	mgr := &MetadataDB{
-		l:           logger,
 		mode:        mode,
 		demoDataDir: demoDataDir,
 		embed:       true,
@@ -39,12 +38,12 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 	}
 	resourceDir := common.GetResourceDir(dataDir)
 	pgDataDir := common.GetPostgresDataDir(dataDir)
-	logger.Info("-----Embedded Postgres Config BEGIN-----")
-	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	logger.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
-	logger.Info("-----Embedded Postgres Config END-----")
+	log.Info("-----Embedded Postgres Config BEGIN-----")
+	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	log.Info("-----Embedded Postgres Config END-----")
 
-	logger.Info("Preparing embedded PostgreSQL instance...")
+	log.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	var err error
@@ -57,9 +56,8 @@ func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir s
 }
 
 // NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance
-func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
+func NewMetadataDBWithExternalPg(pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
 	return &MetadataDB{
-		l:           logger,
 		mode:        mode,
 		demoDataDir: demoDataDir,
 		embed:       false,
@@ -92,7 +90,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(m.l, connCfg, demoDataDir, readonly, version, mode)
+	db := NewDB(connCfg, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
@@ -105,7 +103,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 
 	q := u.Query()
 
-	m.l.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
+	log.Info("Establishing external PostgreSQL connection...", zap.String("pgURL", u.Redacted()))
 
 	if u.Scheme != "postgresql" {
 		return nil, fmt.Errorf("invalid connection protocol: %s", u.Scheme)
@@ -158,7 +156,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(m.l, connCfg, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(connCfg, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
@@ -168,7 +166,7 @@ func (m *MetadataDB) Close() error {
 		return nil
 	}
 
-	m.l.Info("Trying to shutdown postgresql server...")
+	log.Info("Trying to shutdown postgresql server...")
 	if err := m.pgInstance.Stop(os.Stdout, os.Stderr); err != nil {
 		return err
 	}

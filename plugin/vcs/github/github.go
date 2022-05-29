@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -29,7 +28,6 @@ var _ vcs.Provider = (*Provider)(nil)
 
 // Provider is a GitHub.com VCS provider.
 type Provider struct {
-	l      *zap.Logger
 	client *http.Client
 }
 
@@ -38,7 +36,6 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 		config.Client = &http.Client{}
 	}
 	return &Provider{
-		l:      config.Logger,
 		client: config.Client,
 	}
 }

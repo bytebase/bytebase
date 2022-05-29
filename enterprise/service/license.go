@@ -9,12 +9,10 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/enterprise/config"
 	"github.com/golang-jwt/jwt/v4"
-	"go.uber.org/zap"
 )
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
-	l      *zap.Logger
 	config *config.Config
 }
 
@@ -28,15 +26,14 @@ type Claims struct {
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*LicenseService, error) {
-	config, err := config.NewConfig(l, dataDir, mode)
+func NewLicenseService(dataDir string, mode common.ReleaseMode) (*LicenseService, error) {
+	config, err := config.NewConfig(dataDir, mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &LicenseService{
 		config: config,
-		l:      l,
 	}, nil
 }
 

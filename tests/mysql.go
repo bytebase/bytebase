@@ -9,8 +9,6 @@ import (
 	"fmt"
 
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
-
-	"go.uber.org/zap"
 )
 
 // connectTestMySQL connects to the test mysql instance.
@@ -22,14 +20,10 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 }
 
 func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
 	return dbplugin.Open(
 		ctx,
 		dbplugin.MySQL,
-		dbplugin.DriverConfig{Logger: logger},
+		dbplugin.DriverConfig{},
 		dbplugin.ConnectionConfig{
 			Host:      "localhost",
 			Port:      port,
