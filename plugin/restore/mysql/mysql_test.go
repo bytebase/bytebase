@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"testing"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/stretchr/testify/require"
@@ -118,57 +117,6 @@ func TestCheckVersionForPITR(t *testing.T) {
 
 	for _, test := range tests {
 		err := checkVersionForPITR(test.version)
-		if test.err {
-			a.Error(err)
-		} else {
-			a.NoError(err)
-		}
-	}
-}
-
-func TestParseBinlogEventTimestampImpl(t *testing.T) {
-	a := require.New(t)
-	tests := []struct {
-		binlogText string
-		timestamp  int64
-		err        bool
-	}{
-		// This is a real one from mysqlbinlog output.
-		{
-			binlogText: `# The proper term is pseudo_replica_mode, but we use this compatibility alias
-# to make the statement usable on server versions 8.0.24 and older.
-/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
-/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
-DELIMITER /*!*/;
-# at 24500
-#220421 14:49:26 server id 1  end_log_pos 0 CRC32 0xbb5866d6 	Start: binlog v 4, server v 8.0.28 created 220421 14:49:26
-BINLOG '
-dv5gYg8BAAAAegAAAAAAAAAAAAQAOC4wLjI4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAEwANAAgAAAAABAAEAAAAYgAEGggAAAAICAgCAAAACgoKKioAEjQA
-CigAAdZmWLs=
-'/*!*/;
-# at 24500
-#220425 17:32:13 server id 1  end_log_pos 24604 CRC32 0x6a465388 	Table_map: ` + "`bytebase`.`migration_history`" + ` mapped to number 172
-WARNING: The range of printed events ends with a row event or a table map event that does not have the STMT_END_F flag set. This might be because the last statement was not fully written to the log, or because you are using a --stop-position or --stop-datetime that refers to an event in the middle of a statement. The event(s) from the partial statement have not been written to output.
-SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
-DELIMITER ;
-# End of log file
-/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
-/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
-			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.Local).Unix(),
-			err:       false,
-		},
-		// Edge case: invalid mysqlbinlog option
-		{
-			binlogText: "mysqlbinlog: [ERROR] mysqlbinlog: unknown option '-n'.",
-			timestamp:  0,
-			err:        true,
-		},
-	}
-
-	for _, test := range tests {
-		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText)
-		a.Equal(test.timestamp, timestamp)
 		if test.err {
 			a.Error(err)
 		} else {
