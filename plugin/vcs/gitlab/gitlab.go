@@ -485,9 +485,7 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 //
 // Docs: https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
-	// Preallocate the slice to avoid multiple allocations when appending the first
-	// 100 results to the slice.
-	allMembers := make([]RepositoryMember, 0, 100)
+	var allMembers []RepositoryMember
 
 	// The "state" filter only available in GitLab Premium self-managed, GitLab
 	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
