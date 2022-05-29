@@ -112,6 +112,8 @@ type WebhookPushEvent struct {
 type Commit struct {
 	ID         string    `json:"id"`
 	AuthorName string    `json:"author_name"`
+	// CreatedAt expects corresponding JSON value is a string in RFC 3339 format,
+	// see https://pkg.go.dev/time#Time.MarshalJSON.
 	CreatedAt  time.Time `json:"created_at"`
 }
 

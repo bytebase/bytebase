@@ -107,6 +107,8 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, _
 type Commit struct {
 	SHA    string `json:"sha"`
 	Author struct {
+		// Date expects corresponding JSON value is a string in RFC 3339 format,
+		// see https://pkg.go.dev/time#Time.MarshalJSON.
 		Date time.Time `json:"date"`
 		Name string    `json:"name"`
 	} `json:"author"`
