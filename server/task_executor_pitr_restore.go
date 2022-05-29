@@ -70,13 +70,18 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
+	connCfg, err := getConnectionConfig(ctx, instance, database.Name)
+	if err != nil {
+		return err
+	}
+
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	if !ok {
 		log.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg)
 
 	binlogInfo := api.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.

@@ -302,7 +302,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(prof.DataDir, prof.Mode)
+	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
@@ -371,6 +371,16 @@ func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, 
 		return nil, err
 	}
 	conf.workspaceID = workspaceSetting.Value
+
+	// initial license
+	if _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingEnterpriseLicense,
+		Value:       "",
+		Description: "Enterprise license",
+	}); err != nil {
+		return nil, err
+	}
 
 	return conf, nil
 }

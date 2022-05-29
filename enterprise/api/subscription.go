@@ -4,7 +4,8 @@ import "github.com/bytebase/bytebase/api"
 
 // SubscriptionPatch is the API message for update the subscription.
 type SubscriptionPatch struct {
-	License string `jsonapi:"attr,license"`
+	UpdaterID int
+	License   string `jsonapi:"attr,license"`
 }
 
 // Subscription is the API message for subscription.

@@ -25,8 +25,6 @@ type Config struct {
 	Audience string
 	// MinimumInstance is the minimum instance count in each plan.
 	MinimumInstance int
-	// StorePath is the file path to store license.
-	StorePath string
 }
 
 const (
@@ -41,7 +39,7 @@ const (
 )
 
 // NewConfig will create a new enterprise config instance.
-func NewConfig(dataDir string, mode common.ReleaseMode) (*Config, error) {
+func NewConfig(mode common.ReleaseMode) (*Config, error) {
 	log.Info("get project env", zap.String("env", string(mode)))
 
 	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
@@ -51,17 +49,11 @@ func NewConfig(dataDir string, mode common.ReleaseMode) (*Config, error) {
 	}
 	log.Info("load public pem", zap.String("file", filename))
 
-	storefile := "license"
-	if mode != common.ReleaseModeProd {
-		storefile = fmt.Sprintf("license_%s", mode)
-	}
-
 	return &Config{
 		PublicKey:       string(licensePubKey),
 		Version:         keyID,
 		Issuer:          issuer,
 		Audience:        audience,
 		MinimumInstance: minimumInstance,
-		StorePath:       fmt.Sprintf("%s/%s", dataDir, storefile),
 	}, nil
 }
