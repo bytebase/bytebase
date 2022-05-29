@@ -35,62 +35,65 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 // Post makes a HTTP POST request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Post(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPost, url, token, body))
+	code, _, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPost, url, token, body))
+	return code, respBody, err
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
-func Get(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
+func Get(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, header http.Header, respBody string, err error) {
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodGet, url, token, nil))
 }
 
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
+	code, _, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
+	return code, respBody, err
 }
 
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
+	code, _, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
+	return code, respBody, err
 }
 
 const maxRetries = 3
 
-func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, respBody string, err error) {
+func retry(ctx context.Context, client *http.Client, token *string, tokenRefresher TokenRefresher, f func() (*http.Response, error)) (code int, header http.Header, respBody string, err error) {
 	var resp *http.Response
 	var body []byte
 	for retries := 0; retries < maxRetries; retries++ {
 		select {
 		case <-ctx.Done():
-			return 0, "", ctx.Err()
+			return 0, nil, "", ctx.Err()
 		default:
 		}
 
 		resp, err = f()
 		if err != nil {
-			return 0, "", err
+			return 0, nil, "", err
 		}
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return 0, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
+			return 0, nil, "", errors.Wrapf(err, "read response body with status code %d", resp.StatusCode)
 		}
 
 		if err = getOAuthErrorDetails(resp.StatusCode, body); err != nil {
 			if _, ok := err.(*oauthError); ok {
 				// Refresh the token
 				if err := tokenRefresher(ctx, client, token); err != nil {
-					return 0, "", err
+					return 0, nil, "", err
 				}
 				continue
 			}
-			return 0, "", errors.Errorf("got unexpected OAuth error %T", err)
+			return 0, nil, "", errors.Errorf("got unexpected OAuth error %T", err)
 		}
-		return resp.StatusCode, string(body), nil
+		return resp.StatusCode, resp.Header, string(body), nil
 	}
-	return 0, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
+	return 0, nil, "", errors.Errorf("retries exceeded for OAuth refresher with status code %d and body %q", resp.StatusCode, string(body))
 }
 
 type oauthError struct {

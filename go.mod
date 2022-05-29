@@ -19,6 +19,7 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/mattn/go-sqlite3 v1.14.7
+	github.com/peterhellberg/link v1.1.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
 	github.com/pingcap/tidb/parser v0.0.0-20211209055157-9f744cdf8266
 	github.com/pkg/errors v0.9.1

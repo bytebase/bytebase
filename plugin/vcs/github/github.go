@@ -59,7 +59,7 @@ type User struct {
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", apiURL, resourceURI)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -117,7 +117,7 @@ type Commit struct {
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", apiURL, repositoryID, commitID)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,

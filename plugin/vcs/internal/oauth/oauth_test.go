@@ -48,7 +48,7 @@ func TestGet(t *testing.T) {
 		},
 	}
 	token := "token"
-	_, _, err := Get(ctx, client, "", &token, nil)
+	_, _, _, err := Get(ctx, client, "", &token, nil)
 	require.NoError(t, err)
 }
 
@@ -94,7 +94,7 @@ func TestRetry_Exceeded(t *testing.T) {
 	ctx := context.Background()
 	token := "expired"
 
-	_, _, err := retry(ctx, nil, &token,
+	_, _, _, err := retry(ctx, nil, &token,
 		func(_ context.Context, _ *http.Client, _ *string) error { return nil },
 		func() (*http.Response, error) {
 			return &http.Response{

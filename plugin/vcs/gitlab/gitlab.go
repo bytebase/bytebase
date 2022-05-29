@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/peterhellberg/link"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -175,13 +176,14 @@ func (e ProjectRole) String() string {
 	return ""
 }
 
-// gitLabRepositoryMember is the API message for repository member
-type gitLabRepositoryMember struct {
-	ID          int       `json:"id"`
-	Email       string    `json:"email"`
-	Name        string    `json:"name"`
-	State       vcs.State `json:"state"`
-	AccessLevel int32     `json:"access_level"`
+// RepositoryMember represents a GitLab API response for a repository member.
+type RepositoryMember struct {
+	ID              int       `json:"id"`
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	State           vcs.State `json:"state"`
+	AccessLevel     int32     `json:"access_level"`
+	MembershipState vcs.State `json:"membership_state"`
 }
 
 // gitLabRepository is the API message for repository in GitLab
@@ -313,7 +315,7 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, perPage)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -364,7 +366,7 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 // should be either "user" or "users/{userID}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -412,7 +414,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -479,84 +481,111 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 	return "", ""
 }
 
-// FetchRepositoryActiveMemberList fetch all active members of a repository
+// FetchRepositoryActiveMemberList fetches all active members of a repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
-	// Official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
-	url := fmt.Sprintf("%s/projects/%s/members/all", p.APIURL(instanceURL), repositoryID)
-	code, body, err := oauth.Get(
-		ctx,
-		p.client,
-		url,
-		&oauthCtx.AccessToken,
-		tokenRefresher(
-			instanceURL,
-			oauthContext{
-				ClientID:     oauthCtx.ClientID,
-				ClientSecret: oauthCtx.ClientSecret,
-				RefreshToken: oauthCtx.RefreshToken,
-			},
-			oauthCtx.Refresher,
-		),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "GET")
-	}
+	// Preallocate the slice to avoid multiple allocations when appending the first
+	// 100 results to the slice.
+	allMembers := make([]RepositoryMember, 0, 100)
 
-	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
-	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
-			instanceURL,
-			code,
+	// The "state" filter only available in GitLab Premium self-managed, GitLab
+	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
+	nextURL := fmt.Sprintf("%s/projects/%s/members/all?state=active&per_page=100", p.APIURL(instanceURL), repositoryID)
+	for nextURL != "" {
+		code, header, body, err := oauth.Get(
+			ctx,
+			p.client,
+			nextURL,
+			&oauthCtx.AccessToken,
+			tokenRefresher(
+				instanceURL,
+				oauthContext{
+					ClientID:     oauthCtx.ClientID,
+					ClientSecret: oauthCtx.ClientSecret,
+					RefreshToken: oauthCtx.RefreshToken,
+				},
+				oauthCtx.Refresher,
+			),
 		)
+		if err != nil {
+			return nil, errors.Wrapf(err, "GET %s", nextURL)
+		}
+
+		if code == http.StatusNotFound {
+			return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", nextURL))
+		} else if code >= 300 {
+			return nil, fmt.Errorf("failed to read repository members from URL %s, status code: %d, body: %s",
+				nextURL,
+				code,
+				body,
+			)
+		}
+
+		var members []RepositoryMember
+		if err := json.Unmarshal([]byte(body), &members); err != nil {
+			return nil, errors.Wrap(err, "unmarshal body")
+		}
+		allMembers = append(allMembers, members...)
+
+		if l := link.Parse(header.Get("Link"))["next"]; l != nil {
+			nextURL = l.URI
+		} else {
+			nextURL = ""
+		}
 	}
 
-	var gitLabrepositoryMember []gitLabRepositoryMember
-	if err := json.Unmarshal([]byte(body), &gitLabrepositoryMember); err != nil {
-		return nil, err
-	}
-
-	// we only return active member (both state and membership_state is active)
 	var emptyEmailUserIDList []string
-	var activeRepositoryMemberList []*vcs.RepositoryMember
-	for _, gitLabMember := range gitLabrepositoryMember {
-		if gitLabMember.State == vcs.StateActive {
-			// The email field will only be returned if the caller credential is associated with a GitLab admin account.
-			// And since most callers are not GitLab admins, thus we fetch public email
+	var activeMembers []*vcs.RepositoryMember
+	for _, m := range allMembers {
+		// We only want active member (both state and membership_state)
+		if m.State != vcs.StateActive || m.MembershipState != vcs.StateActive {
+			continue
+		}
+
+		// The email field is only returned if the caller credential is associated with
+		// a GitLab admin account. We'll try getting the email by fetching the info of
+		// individual users.
+		if m.Email == "" {
 			// TODO: need to work around this if the user does not set public email. For now, we just return an error listing users not having public emails.
 			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
-			userInfo, err := p.FetchUserInfo(ctx, oauthCtx, instanceURL, strconv.Itoa(gitLabMember.ID))
+			userInfo, err := p.FetchUserInfo(ctx, oauthCtx, instanceURL, strconv.Itoa(m.ID))
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "fetch user info, id: %d", m.ID)
 			}
-			if userInfo.PublicEmail == "" {
-				emptyEmailUserIDList = append(emptyEmailUserIDList, gitLabMember.Name)
-			}
+			m.Email = userInfo.PublicEmail
+		}
 
-			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
-			repositoryMember := &vcs.RepositoryMember{
-				Name:         gitLabMember.Name,
-				Email:        userInfo.PublicEmail,
+		if m.Email == "" {
+			emptyEmailUserIDList = append(emptyEmailUserIDList, m.Name)
+			continue
+		}
+
+		gitlabRole, bytebaseRole := getRoleAndMappedRole(m.AccessLevel)
+		activeMembers = append(
+			activeMembers,
+			&vcs.RepositoryMember{
+				Name:         m.Name,
+				Email:        m.Email,
 				Role:         bytebaseRole,
-				VCSRole:      gitLabRole.String(),
+				VCSRole:      gitlabRole.String(),
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
-			}
-			activeRepositoryMemberList = append(activeRepositoryMemberList, repositoryMember)
-		}
+			},
+		)
 	}
 
 	if len(emptyEmailUserIDList) != 0 {
 		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
 	}
 
-	return activeRepositoryMemberList, nil
+	return activeMembers, nil
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", p.APIURL(instanceURL), repositoryID, ref, filePath)
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -815,7 +844,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 // readFile reads the file data including metadata and content.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
-	code, body, err := oauth.Get(
+	code, _, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
