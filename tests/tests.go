@@ -20,6 +20,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/bin/server/cmd"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server"
@@ -139,6 +140,7 @@ func getTestPort(testName string) int {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
+	log.MustInitialize(true)
 	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
@@ -152,7 +154,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
-
+	log.MustInitialize(true)
 	profile := cmd.GetTestProfile(dataDir, port)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
