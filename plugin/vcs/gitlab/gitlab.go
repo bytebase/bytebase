@@ -110,11 +110,11 @@ type WebhookPushEvent struct {
 
 // Commit is the API message for commit.
 type Commit struct {
-	ID         string    `json:"id"`
-	AuthorName string    `json:"author_name"`
+	ID         string `json:"id"`
+	AuthorName string `json:"author_name"`
 	// CreatedAt expects corresponding JSON value is a string in RFC 3339 format,
 	// see https://pkg.go.dev/time#Time.MarshalJSON.
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // FileCommit is the API message for file commit.
