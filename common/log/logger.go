@@ -76,6 +76,6 @@ func Error(msg string, fields ...zap.Field) {
 }
 
 // Sync wraps the zap Logger's Sync method.
-func Sync() error {
-	return gl.Sync()
+func Sync() {
+	_ = gl.Sync()
 }

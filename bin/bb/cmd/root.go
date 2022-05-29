@@ -22,7 +22,7 @@ func NewRootCmd() *cobra.Command {
 }
 
 // Execute is the execute command for root command.
-func Execute() error {
+func Execute() (err error) {
 	log.MustInitializeBB()
 	defer log.Sync()
 	return NewRootCmd().Execute()

@@ -238,9 +238,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 				`"status":${status},"error":"${error}"}` + "\n",
 		}))
 	}
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return recoverMiddleware(next)
-	})
+	e.Use(recoverMiddleware)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)

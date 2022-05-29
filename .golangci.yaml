@@ -25,7 +25,6 @@ run:
   timeout: 5m
   build-tags:
     - mysql
-    - release
 
 linters-settings:
   revive:
