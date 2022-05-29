@@ -136,7 +136,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, errors.New("failed to fetch commit data from GitHub.com, not found"))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d", code)
+		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d, body: %s", code, body)
 	}
 
 	commit := &Commit{}

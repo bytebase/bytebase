@@ -431,9 +431,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from GitLab instance %s, not found", instanceURL))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d, body: %s",
 			instanceURL,
 			code,
+			body,
 		)
 	}
 
