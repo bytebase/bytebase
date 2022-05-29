@@ -1497,8 +1497,11 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			collationName:          collationName.String,
 			comment:                comment.String,
 		}
-		if dataType == "USER-DEFINED" {
+		switch dataType {
+		case "USER-DEFINED":
 			c.dataType = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
+		case "ARRAY":
+			c.dataType = udtName.String
 		}
 		columns = append(columns, &c)
 	}
