@@ -19,7 +19,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -56,7 +55,6 @@ type Server struct {
 	metaDB     *store.MetadataDB
 	db         *store.DB
 	store      *store.Store
-	lvl        *zap.AtomicLevel
 	startedTs  int64
 	secret     string
 
