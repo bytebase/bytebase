@@ -178,37 +178,37 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		taskScheduler := NewTaskScheduler(s)
 
 		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(string(api.TaskGeneral), defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
 
 		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
 
 		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
 
 		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseDataUpdate), dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
 
 		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
 
 		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
 
 		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostSync), schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
 
 		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
 
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
 
 		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
 
 		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
 
 		s.TaskScheduler = taskScheduler
 
@@ -216,20 +216,20 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		taskCheckScheduler := NewTaskCheckScheduler(s)
 
 		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor()
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
+		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementFakeAdvise, statementSimpleExecutor)
+		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementSyntax, statementSimpleExecutor)
 
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
+		taskCheckScheduler.Register(api.TaskCheckDatabaseStatementAdvise, statementCompositeExecutor)
 
 		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
+		taskCheckScheduler.Register(api.TaskCheckDatabaseConnect, databaseConnectExecutor)
 
 		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
-		taskCheckScheduler.Register(string(api.TaskCheckInstanceMigrationSchema), migrationSchemaExecutor)
+		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
 
 		timingExecutor := NewTaskCheckTimingExecutor()
-		taskCheckScheduler.Register(string(api.TaskCheckGeneralEarliestAllowedTime), timingExecutor)
+		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
 
 		s.TaskCheckScheduler = taskCheckScheduler
 
@@ -370,7 +370,7 @@ func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, 
 	authSetting, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
 		Name:        api.SettingAuthSecret,
-		Value:       common.RandomString(secreatLength),
+		Value:       common.RandomString(secretLength),
 		Description: "Random string used to sign the JWT auth token.",
 	})
 	if err != nil {
