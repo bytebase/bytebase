@@ -8,20 +8,18 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
 // NewDatabaseCreateTaskExecutor creates a database create task executor.
-func NewDatabaseCreateTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &DatabaseCreateTaskExecutor{
-		l: logger,
-	}
+func NewDatabaseCreateTaskExecutor() TaskExecutor {
+	return &DatabaseCreateTaskExecutor{}
 }
 
 // DatabaseCreateTaskExecutor is the database create task executor.
 type DatabaseCreateTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run the database create task executor once.
@@ -37,13 +35,13 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	}
 
 	instance := task.Instance
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", server.pgInstanceDir)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	exec.l.Debug("Start creating database...",
+	log.Debug("Start creating database...",
 		zap.String("instance", instance.Name),
 		zap.String("database", payload.DatabaseName),
 		zap.String("statement", statement),
@@ -66,7 +64,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if err != nil {
 		// If somehow we unable to find the principal, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		exec.l.Error("Failed to fetch creator for composing the migration info",
+		log.Error("Failed to fetch creator for composing the migration info",
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
@@ -78,14 +76,14 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
 		// critical enough to fail the entire operation.
-		exec.l.Error("Failed to fetch containing issue for composing the migration info",
+		log.Error("Failed to fetch containing issue for composing the migration info",
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)
 	}
 	if issue == nil {
 		err := fmt.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		exec.l.Error(err.Error(),
+		log.Error(err.Error(),
 			zap.Int("task_id", task.ID),
 			zap.Error(err),
 		)

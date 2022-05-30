@@ -6,12 +6,14 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
-	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -33,12 +35,7 @@ var (
 		"template0": true,
 		"template1": true,
 	}
-	ident             = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
-	databaseHeaderFmt = "" +
-		"--\n" +
-		"-- PostgreSQL database structure for %s\n" +
-		"--\n"
-	useDatabaseFmt             = "\\connect %s;\n\n"
+	ident                      = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
@@ -54,11 +51,13 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	l             *zap.Logger
+	pgInstanceDir string
 	connectionCtx db.ConnectionContext
+	config        db.ConnectionConfig
 
-	db      *sql.DB
-	baseDSN string
+	db           *sql.DB
+	baseDSN      string
+	databaseName string
 
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
@@ -66,7 +65,7 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		l: config.Logger,
+		pgInstanceDir: config.PgInstanceDir,
 	}
 }
 
@@ -77,7 +76,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	dsn, err := guessDSN(
+	databaseName, dsn, err := guessDSN(
 		config.Username,
 		config.Password,
 		config.Host,
@@ -93,8 +92,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if config.ReadOnly {
 		dsn = fmt.Sprintf("%s default_transaction_read_only=true", dsn)
 	}
+	driver.databaseName = databaseName
 	driver.baseDSN = dsn
 	driver.connectionCtx = connCtx
+	driver.config = config
 	if config.StrictUseDb {
 		driver.strictDatabase = config.Database
 	}
@@ -107,8 +108,8 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	return driver, nil
 }
 
-// guessDSN will guess the dsn of a valid DB connection.
-func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, error) {
+// guessDSN will guess a valid DB connection and its database name.
+func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, string, error) {
 	// dbname is guessed if not specified.
 	m := map[string]string{
 		"host":     hostname,
@@ -140,17 +141,22 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 	var guesses []string
 	if database != "" {
-		guesses = append(guesses, dsn+" dbname="+database)
+		guesses = append(guesses, database)
 	} else {
 		// Guess default database postgres, template1.
-		guesses = append(guesses, dsn)
-		guesses = append(guesses, dsn+" dbname=bytebase")
-		guesses = append(guesses, dsn+" dbname=postgres")
-		guesses = append(guesses, dsn+" dbname=template1")
+		guesses = append(guesses, "")
+		guesses = append(guesses, "bytebase")
+		guesses = append(guesses, "postgres")
+		guesses = append(guesses, "template1")
 	}
 
-	for _, dsn := range guesses {
-		db, err := sql.Open(driverName, dsn)
+	//  dsn+" dbname=bytebase"
+	for _, guess := range guesses {
+		guessDSN := dsn
+		if guess != "" {
+			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
+		}
+		db, err := sql.Open(driverName, guessDSN)
 		if err != nil {
 			continue
 		}
@@ -159,13 +165,13 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		if err = db.Ping(); err != nil {
 			continue
 		}
-		return dsn, nil
+		return guess, guessDSN, nil
 	}
 
 	if database != "" {
-		return "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
+		return "", "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
 	}
-	return "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
+	return "", "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
@@ -429,7 +435,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -481,7 +487,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -490,7 +496,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		if !driver.strictUseDb() {
 			exist, err := driver.hasBytebaseDatabase(ctx)
 			if err != nil {
-				driver.l.Error("Failed to find bytebase database.",
+				log.Error("Failed to find bytebase database.",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
@@ -501,7 +507,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			if !exist {
 				// Create `bytebase` database
 				if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
-					driver.l.Error("Failed to create bytebase database.",
+					log.Error("Failed to create bytebase database.",
 						zap.Error(err),
 						zap.String("environment", driver.connectionCtx.EnvironmentName),
 						zap.String("database", driver.connectionCtx.InstanceName),
@@ -511,7 +517,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			}
 
 			if err := driver.switchDatabase(db.BytebaseDatabase); err != nil {
-				driver.l.Error("Failed to switch to bytebase database.",
+				log.Error("Failed to switch to bytebase database.",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
@@ -522,14 +528,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 		// Create `migration_history` table
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -679,9 +685,9 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	if driver.strictUseDb() {
-		return util.ExecuteMigration(ctx, driver.l, driver, m, statement, driver.strictDatabase)
+		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
 	}
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -839,7 +845,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 
 	for _, dbName := range dumpableDbNames {
 		includeUseDatabase := len(dumpableDbNames) > 1
-		if err := driver.dumpOneDatabase(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
+		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
 			return "", err
 		}
 	}
@@ -873,147 +879,57 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
-func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
-	if err := driver.switchDatabase(database); err != nil {
-		return err
+func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
+	var args []string
+	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
+	if driver.config.Password == "" {
+		args = append(args, "--no-password")
+	} else {
+		args = append(args, fmt.Sprintf("--password=%s", driver.config.Password))
 	}
-
-	version, err := driver.GetVersion(ctx)
+	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
+	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	if schemaOnly {
+		args = append(args, "--schema-only")
+	}
+	args = append(args, "--inserts")
+	args = append(args, "--use-set-session-authorization")
+	args = append(args, driver.databaseName)
+	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
+	cmd := exec.Command(pgDumpPath, args...)
+	cmd.Stderr = os.Stderr
+	r, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
-	semverVersion, err := semver.ParseTolerant(version)
-	if err != nil {
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	// Database statement.
-	if includeUseDatabase {
-		// Database header.
-		header := fmt.Sprintf(databaseHeaderFmt, database)
-		if _, err := io.WriteString(out, header); err != nil {
-			return err
-		}
-		// Use database statement.
-		useStmt := fmt.Sprintf(useDatabaseFmt, database)
-		if _, err := io.WriteString(out, useStmt); err != nil {
-			return err
-		}
-	}
-
-	// Schema statements.
-	schemas, err := getPgSchemas(txn)
-	if err != nil {
-		return err
-	}
-	for _, schema := range schemas {
-		if _, err := io.WriteString(out, schema.Statement()); err != nil {
-			return err
-		}
-	}
-
-	// Sequence statements.
-	seqs, err := getSequences(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get sequences from database %q: %s", database, err)
-	}
-	for _, seq := range seqs {
-		if _, err := io.WriteString(out, seq.Statement()); err != nil {
-			return err
-		}
-	}
-
-	// Table statements.
-	tables, err := getPgTables(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get tables from database %q: %s", database, err)
-	}
-
-	constraints := make(map[string]bool)
-	for _, tbl := range tables {
-		if _, err := io.WriteString(out, tbl.Statement()); err != nil {
-			return err
-		}
-		for _, constraint := range tbl.constraints {
-			key := fmt.Sprintf("%s.%s.%s", constraint.schemaName, constraint.tableName, constraint.name)
-			constraints[key] = true
-		}
-		if !schemaOnly {
-			if err := exportTableData(txn, tbl, out); err != nil {
-				return err
-			}
-		}
-	}
-
-	// View statements.
-	views, err := getViews(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get views from database %q: %s", database, err)
-	}
-	for _, view := range views {
-		if _, err := io.WriteString(out, view.Statement()); err != nil {
-			return err
-		}
-	}
-
-	// Index statements.
-	indices, err := getIndices(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get indices from database %q: %s", database, err)
-	}
-	for _, idx := range indices {
-		key := fmt.Sprintf("%s.%s.%s", idx.schemaName, idx.tableName, idx.name)
-		if constraints[key] {
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		line := s.Text()
+		// Skip "SET SESSION AUTHORIZATION" till we can support it.
+		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
 		}
-		if _, err := io.WriteString(out, idx.Statement()); err != nil {
+		// Skip dump client and server version header.
+		if strings.HasPrefix(line, "-- Dumped from database version") || strings.HasPrefix(line, "-- Dumped by pg_dump version") {
+			continue
+		}
+
+		if _, err := io.WriteString(out, line); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\n"); err != nil {
 			return err
 		}
 	}
-
-	// Function statements.
-	fs, err := getFunctions(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get functions from database %q: %s", database, err)
+	if s.Err() != nil {
+		log.Warn(s.Err().Error())
 	}
-	for _, f := range fs {
-		if _, err := io.WriteString(out, f.Statement()); err != nil {
-			return err
-		}
-	}
-
-	// Trigger statements.
-	triggers, err := getTriggers(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get triggers from database %q: %s", database, err)
-	}
-	for _, tr := range triggers {
-		if _, err := io.WriteString(out, tr.Statement()); err != nil {
-			return err
-		}
-	}
-
-	// Event statements.
-	events, err := getEventTriggers(txn)
-	if err != nil {
-		return fmt.Errorf("failed to get event triggers from database %q: %s", database, err)
-	}
-	for _, evt := range events {
-		if _, err := io.WriteString(out, evt.Statement(semverVersion.Major)); err != nil {
-			return err
-		}
-	}
-
-	if err := txn.Commit(); err != nil {
+	if err := cmd.Wait(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -1030,6 +946,7 @@ func (driver *Driver) switchDatabase(dbName string) error {
 		return err
 	}
 	driver.db = db
+	driver.databaseName = dbName
 	return nil
 }
 
@@ -1061,12 +978,6 @@ type pgDatabaseSchema struct {
 	name     string
 	encoding string
 	collate  string
-}
-
-// pgSchema describes a pg schema, a namespace for all schemas.
-type pgSchema struct {
-	name        string
-	schemaOwner string
 }
 
 // tableSchema describes the schema of a pg table.
@@ -1124,76 +1035,6 @@ type indexSchema struct {
 	comment           string
 }
 
-// sequencePgSchema describes the schema of a pg sequence.
-type sequencePgSchema struct {
-	schemaName   string
-	name         string
-	dataType     string
-	startValue   string
-	increment    string
-	minimumValue string
-	maximumValue string
-	cycleOption  string
-	cache        string
-}
-
-// functionSchema describes the schema of a pg function.
-type functionSchema struct {
-	schemaName string
-	name       string
-	statement  string
-	language   string
-	arguments  string
-}
-
-// triggerSchema describes the schema of a pg trigger.
-type triggerSchema struct {
-	name      string
-	statement string
-}
-
-// eventTriggerSchema describes the schema of a pg event trigger.
-type eventTriggerSchema struct {
-	name     string
-	enabled  string
-	event    string
-	owner    string
-	tags     string
-	funcName string
-}
-
-// Statement returns the create statement of a Postgres schema.
-func (ps *pgSchema) Statement() string {
-	return fmt.Sprintf(""+
-		"--\n"+
-		"-- Schema structure for %s\n"+
-		"--\n"+
-		"CREATE SCHEMA %s;\n\n", ps.name, ps.name)
-}
-
-// Statement returns the create statement of a table.
-func (t *tableSchema) Statement() string {
-	s := fmt.Sprintf(""+
-		"--\n"+
-		"-- Table structure for %s.%s\n"+
-		"--\n"+
-		"CREATE TABLE %s.%s (\n",
-		t.schemaName, t.name, t.schemaName, t.name)
-	var cols []string
-	for _, v := range t.columns {
-		cols = append(cols, "  "+v.Statement())
-	}
-	s += strings.Join(cols, ",\n")
-	s += "\n);\n\n"
-
-	// Add constraints such as primary key, unique, or checks.
-	for _, constraint := range t.constraints {
-		s += fmt.Sprintf("%s\n", constraint.Statement())
-	}
-	s += "\n"
-	return s
-}
-
 // Statement returns the statement of a table column.
 func (c *columnSchema) Statement() string {
 	s := fmt.Sprintf("%s %s", quoteIdentifier(c.columnName), c.dataType)
@@ -1227,38 +1068,6 @@ func (v *viewSchema) Statement() string {
 		v.schemaName, v.name, v.schemaName, v.name, v.definition)
 }
 
-// Statement returns the create statement of a sequence.
-func (seq *sequencePgSchema) Statement() string {
-	s := fmt.Sprintf(""+
-		"--\n"+
-		"-- Sequence structure for %s.%s\n"+
-		"--\n"+
-		"CREATE SEQUENCE %s.%s\n"+
-		"    AS %s\n"+
-		"    START WITH %s\n"+
-		"    INCREMENT BY %s\n",
-		seq.schemaName, seq.name, seq.schemaName, seq.name, seq.dataType, seq.startValue, seq.increment)
-	if seq.minimumValue == "" {
-		s += fmt.Sprintf("    MINVALUE %s\n", seq.minimumValue)
-	} else {
-		s += "    NO MINVALUE\n"
-	}
-	if seq.maximumValue == "" {
-		s += fmt.Sprintf("    MAXVALUE %s\n", seq.maximumValue)
-	} else {
-		s += "    NO MAXVALUE\n"
-	}
-	s += fmt.Sprintf("    CACHE %s", seq.cache)
-	switch seq.cycleOption {
-	case "YES":
-		s += "\n    CYCLE;\n"
-	case "NO":
-		s += ";\n"
-	}
-	s += "\n"
-	return s
-}
-
 // Statement returns the create statement of an index.
 func (idx indexSchema) Statement() string {
 	return fmt.Sprintf(""+
@@ -1267,103 +1076,6 @@ func (idx indexSchema) Statement() string {
 		"--\n"+
 		"%s;\n\n",
 		idx.schemaName, idx.name, idx.statement)
-}
-
-// Statement returns the create statement of a function.
-func (f functionSchema) Statement() string {
-	return fmt.Sprintf(""+
-		"--\n"+
-		"-- Function structure for %s.%s\n"+
-		"--\n"+
-		"%s;\n\n",
-		f.schemaName, f.name, f.statement)
-}
-
-// Statement returns the create statement of a trigger.
-func (t triggerSchema) Statement() string {
-	return fmt.Sprintf(""+
-		"--\n"+
-		"-- Trigger structure for %s\n"+
-		"--\n"+
-		"%s;\n\n",
-		t.name, t.statement)
-}
-
-// Statement returns the create statement of an event trigger.
-func (t eventTriggerSchema) Statement(majorVersion uint64) string {
-	s := fmt.Sprintf(""+
-		"--\n"+
-		"-- Event trigger structure for %s\n"+
-		"--\n",
-		t.name)
-	s += fmt.Sprintf("CREATE EVENT TRIGGER %s ON %s", t.name, t.event)
-	if t.tags != "" {
-		s += fmt.Sprintf("\n         WHEN TAG IN (%s)", t.tags)
-	}
-
-	// See https://www.postgresql.org/docs/10/sql-createeventtrigger.html,
-	// pg with major version below 10 uses PROCEDURE syntax.
-	functionSyntax := "FUNCTION"
-	if majorVersion == 10 {
-		functionSyntax = "PROCEDURE"
-	}
-
-	s += fmt.Sprintf("\n   EXECUTE %s %s();\n", functionSyntax, t.funcName)
-
-	if t.enabled != "O" {
-		s += fmt.Sprintf("ALTER EVENT TRIGGER %s ", t.name)
-		switch t.enabled {
-		case "D":
-			s += "DISABLE;\n"
-		case "A":
-			s += "ENABLE ALWAYS;\n"
-		case "R":
-			s += "ENABLE REPLICA;\n"
-		default:
-			s += "ENABLE;\n"
-		}
-	}
-	s += "\n"
-	return s
-}
-
-// getPgSchemas gets all schemas of a database.
-func getPgSchemas(txn *sql.Tx) ([]*pgSchema, error) {
-	var schemas []*pgSchema
-	rows, err := txn.Query("SELECT schema_name, schema_owner FROM information_schema.schemata;")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var schema pgSchema
-		if err := rows.Scan(&schema.name, &schema.schemaOwner); err != nil {
-			return nil, err
-		}
-		schema.name = quoteIdentifier(schema.name)
-		if ok := pgSystemSchema(schema.name); ok {
-			continue
-		}
-		schemas = append(schemas, &schema)
-	}
-	return schemas, nil
-}
-
-// pgSystemSchema returns whether the schema is a system or user defined schema.
-func pgSystemSchema(s string) bool {
-	if common.HasPrefixes(s, "pg_toast", "pg_temp") {
-		return true
-	}
-	switch s {
-	case "pg_catalog":
-		return true
-	case "public":
-		return true
-	case "information_schema":
-		return true
-	}
-	return false
 }
 
 // getTables gets all tables of a database.
@@ -1737,188 +1449,6 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	}
 
 	return cols, nil
-}
-
-// exportTableData gets the data of a table.
-func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
-	query := fmt.Sprintf("SELECT * FROM %s.%s;", tbl.schemaName, tbl.name)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	cols, err := rows.ColumnTypes()
-	if err != nil {
-		return err
-	}
-	if len(cols) == 0 {
-		return nil
-	}
-	values := make([]*sql.NullString, len(cols))
-	refs := make([]interface{}, len(cols))
-	for i := 0; i < len(cols); i++ {
-		refs[i] = &values[i]
-	}
-	for rows.Next() {
-		if err := rows.Scan(refs...); err != nil {
-			return err
-		}
-		tokens := make([]string, len(cols))
-		for i, v := range values {
-			switch {
-			case v == nil || !v.Valid:
-				tokens[i] = "NULL"
-			case isNumeric(cols[i].ScanType().Name()):
-				tokens[i] = v.String
-			default:
-				tokens[i] = fmt.Sprintf("'%s'", v.String)
-			}
-		}
-		stmt := fmt.Sprintf("INSERT INTO %s.%s VALUES (%s);\n", tbl.schemaName, tbl.name, strings.Join(tokens, ", "))
-		if _, err := io.WriteString(out, stmt); err != nil {
-			return err
-		}
-	}
-	if _, err := io.WriteString(out, "\n"); err != nil {
-		return err
-	}
-	return nil
-}
-
-// isNumeric determines whether the value needs quotes.
-// Even if the function returns incorrect result, the data dump will still work.
-func isNumeric(t string) bool {
-	return strings.Contains(t, "int") || strings.Contains(t, "bool") || strings.Contains(t, "float") || strings.Contains(t, "byte")
-}
-
-// getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx) ([]*sequencePgSchema, error) {
-	caches := make(map[string]string)
-	query := "SELECT seqclass.relnamespace::regnamespace::text, seqclass.relname, seq.seqcache " +
-		"FROM pg_catalog.pg_class AS seqclass " +
-		"JOIN pg_catalog.pg_sequence AS seq ON (seq.seqrelid = seqclass.oid);"
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var schemaName, seqName, cache string
-		if err := rows.Scan(&schemaName, &seqName, &cache); err != nil {
-			return nil, err
-		}
-		schemaName, seqName = quoteIdentifier(schemaName), quoteIdentifier(seqName)
-		caches[fmt.Sprintf("%s.%s", schemaName, seqName)] = cache
-	}
-
-	var seqs []*sequencePgSchema
-	query = "" +
-		"SELECT sequence_schema, sequence_name, data_type, start_value, increment, minimum_value, maximum_value, cycle_option " +
-		"FROM information_schema.sequences;"
-	rows, err = txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var seq sequencePgSchema
-
-		if err := rows.Scan(&seq.schemaName, &seq.name, &seq.dataType, &seq.startValue, &seq.increment, &seq.minimumValue, &seq.maximumValue, &seq.cycleOption); err != nil {
-			return nil, err
-		}
-		seq.schemaName, seq.name = quoteIdentifier(seq.schemaName), quoteIdentifier(seq.name)
-		cache, ok := caches[fmt.Sprintf("%s.%s", seq.schemaName, seq.name)]
-		if !ok {
-			return nil, fmt.Errorf("cannot find cache value for sequence: %q.%q", seq.schemaName, seq.name)
-		}
-		seq.cache = cache
-		seqs = append(seqs, &seq)
-	}
-
-	return seqs, nil
-}
-
-// getFunctions gets all functions of a database.
-func getFunctions(txn *sql.Tx) ([]*functionSchema, error) {
-	query := "" +
-		"SELECT n.nspname, p.proname, l.lanname, " +
-		"  CASE WHEN l.lanname = 'internal' THEN p.prosrc ELSE pg_get_functiondef(p.oid) END as definition, " +
-		"  pg_get_function_arguments(p.oid) " +
-		"FROM pg_proc p " +
-		"LEFT JOIN pg_namespace n ON p.pronamespace = n.oid " +
-		"LEFT JOIN pg_language l ON p.prolang = l.oid " +
-		"LEFT JOIN pg_type t ON t.oid = p.prorettype " +
-		"WHERE n.nspname NOT IN ('pg_catalog', 'information_schema');"
-
-	var fs []*functionSchema
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var f functionSchema
-		if err := rows.Scan(&f.schemaName, &f.name, &f.language, &f.statement, &f.arguments); err != nil {
-			return nil, err
-		}
-		f.schemaName, f.name = quoteIdentifier(f.schemaName), quoteIdentifier(f.name)
-		fs = append(fs, &f)
-	}
-
-	return fs, nil
-}
-
-// getTriggers gets all triggers of a database.
-func getTriggers(txn *sql.Tx) ([]*triggerSchema, error) {
-	query := "SELECT tgname, pg_get_triggerdef(t.oid) FROM pg_trigger AS t;"
-
-	var triggers []*triggerSchema
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var t triggerSchema
-		if err := rows.Scan(&t.name, &t.statement); err != nil {
-			return nil, err
-		}
-		t.name = quoteIdentifier(t.name)
-		triggers = append(triggers, &t)
-	}
-
-	return triggers, nil
-}
-
-// getEventTriggers gets all event triggers of a database.
-func getEventTriggers(txn *sql.Tx) ([]*eventTriggerSchema, error) {
-	query := "" +
-		"SELECT evtname, evtenabled, evtevent, pg_get_userbyid(evtowner) AS evtowner, " +
-		"  array_to_string(array(SELECT quote_literal(x) FROM unnest(evttags) as t(x)), ', ') AS evttags, " +
-		"  e.evtfoid::regproc " +
-		"FROM pg_event_trigger e;"
-
-	var triggers []*eventTriggerSchema
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var t eventTriggerSchema
-		if err := rows.Scan(&t.name, &t.enabled, &t.event, &t.owner, &t.tags, &t.funcName); err != nil {
-			return nil, err
-		}
-		t.name = quoteIdentifier(t.name)
-		triggers = append(triggers, &t)
-	}
-
-	return triggers, nil
 }
 
 // quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.

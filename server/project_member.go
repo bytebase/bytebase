@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -48,7 +49,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		if vcs == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("VCS not found with ID: %d", repo.VCSID))
 		}
-		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryActiveMemberList(ctx,
+		vcsProjectMemberList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryActiveMemberList(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
@@ -154,7 +155,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						principal.Name, principal.Email, deletedMember.Role, deletedMember.RoleProvider, createdMember.Role, createdMember.RoleProvider),
 				}
 				if _, err = s.ActivityManager.CreateActivity(ctx, activityUpdateMember, &ActivityMeta{}); err != nil {
-					s.l.Warn("Failed to create project activity after updating member role",
+					log.Warn("Failed to create project activity after updating member role",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
 						zap.String("principal_name", principal.Name),
@@ -177,7 +178,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 						principal.Name, principal.Email, createdMember.Role),
 				}
 				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreateMember, &ActivityMeta{}); err != nil {
-					s.l.Warn("Failed to create project activity after creating member",
+					log.Warn("Failed to create project activity after creating member",
 						zap.Int("project_id", projectID),
 						zap.Int("principal_id", principal.ID),
 						zap.String("principal_name", principal.Name),
@@ -206,7 +207,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 					principal.Name, principal.Email, deletedMember.Role),
 			}
 			if _, err = s.ActivityManager.CreateActivity(ctx, activityDeleteMember, &ActivityMeta{}); err != nil {
-				s.l.Warn("Failed to create project activity after creating member",
+				log.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", principal.ID),
 					zap.String("principal_name", principal.Name),
@@ -253,7 +254,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
-				s.l.Warn("Failed to create project activity after creating member",
+				log.Warn("Failed to create project activity after creating member",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),
@@ -316,7 +317,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			}
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			if err != nil {
-				s.l.Warn("Failed to create project activity after updating member role",
+				log.Warn("Failed to create project activity after updating member role",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),
@@ -375,7 +376,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 			}
 			if err != nil {
-				s.l.Warn("Failed to create project activity after deleting member",
+				log.Warn("Failed to create project activity after deleting member",
 					zap.Int("project_id", projectID),
 					zap.Int("principal_id", projectMember.Principal.ID),
 					zap.String("principal_name", projectMember.Principal.Name),

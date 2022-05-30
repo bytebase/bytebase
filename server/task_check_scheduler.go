@@ -9,14 +9,14 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
 // NewTaskCheckScheduler creates a task check scheduler.
-func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckScheduler {
+func NewTaskCheckScheduler(server *Server) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
-		l:         logger,
 		executors: make(map[string]TaskCheckExecutor),
 		server:    server,
 	}
@@ -24,7 +24,6 @@ func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckSchedul
 
 // TaskCheckScheduler is the task check scheduler.
 type TaskCheckScheduler struct {
-	l         *zap.Logger
 	executors map[string]TaskCheckExecutor
 
 	server *Server
@@ -35,7 +34,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
+	log.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
 	runningTaskChecks := make(map[int]bool)
 	mu := sync.RWMutex{}
 	for {
@@ -48,7 +47,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Task check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Task check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -61,13 +60,13 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
 				if err != nil {
-					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
 				for _, taskCheckRun := range taskCheckRunList {
 					executor, ok := s.executors[string(taskCheckRun.Type)]
 					if !ok {
-						s.l.Error("Skip running task check run with unknown type",
+						log.Error("Skip running task check run with unknown type",
 							zap.Int("id", taskCheckRun.ID),
 							zap.Int("task_id", taskCheckRun.TaskID),
 							zap.String("type", string(taskCheckRun.Type)),
@@ -96,7 +95,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								ResultList: checkResultList,
 							})
 							if err != nil {
-								s.l.Error("Failed to marshal task check run result",
+								log.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -114,7 +113,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
-								s.l.Error("Failed to mark task check run as DONE",
+								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -122,7 +121,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								)
 							}
 						} else {
-							s.l.Debug("Failed to run task check",
+							log.Debug("Failed to run task check",
 								zap.Int("id", taskCheckRun.ID),
 								zap.Int("task_id", taskCheckRun.TaskID),
 								zap.String("type", string(taskCheckRun.Type)),
@@ -132,7 +131,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Detail: err.Error(),
 							})
 							if marshalErr != nil {
-								s.l.Error("Failed to marshal task check run result",
+								log.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -150,7 +149,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
-								s.l.Error("Failed to mark task check run as FAILED",
+								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -361,6 +360,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
 // But this method is used for gating the automatic run, so we are more cautious here.
+// TODO(dragonly): refactor arguments.
 func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -376,7 +376,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 	}
 
 	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
-		server.l.Debug("Task is waiting for check to pass",
+		log.Debug("Task is waiting for check to pass",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.String("task_type", string(task.Type)),
@@ -391,7 +391,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 	}
 	for _, result := range checkResult.ResultList {
 		if result.Status == api.TaskCheckStatusError {
-			server.l.Debug("Task is waiting for check to pass",
+			log.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),
 				zap.String("task_type", string(task.Type)),

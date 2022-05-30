@@ -87,13 +87,16 @@ export const useCommonLogic = () => {
     const issueEntity = issue.value as Issue;
 
     if (issueEntity.type === "bb.issue.database.create") {
-      // We allow to edit create database statement for tenant project to give users a
-      // chance to edit the dumped schema from its peer databases, because the dumpped schema
-      // may not be pefectly correct.
-      if (issueEntity.project.tenantMode === "TENANT") {
-        return true;
+      // For standard mode projects, we are not allowed to edit the database
+      // creation SQL statement.
+      if (issueEntity.project.tenantMode !== "TENANT") {
+        return false;
       }
-      return false;
+
+      // We allow to edit create database statement for tenant project to give users a
+      // chance to edit the dumped schema from its peer databases, because the dumped schema
+      // may not be perfectly correct.
+      // So we fallthrough to the common checkpoints.
     }
 
     // if not creating, we are allowed to edit sql statement only when:

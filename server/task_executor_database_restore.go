@@ -11,21 +11,19 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 
 	"go.uber.org/zap"
 )
 
 // NewDatabaseRestoreTaskExecutor creates a new database restore task executor.
-func NewDatabaseRestoreTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &DatabaseRestoreTaskExecutor{
-		l: logger,
-	}
+func NewDatabaseRestoreTaskExecutor() TaskExecutor {
+	return &DatabaseRestoreTaskExecutor{}
 }
 
 // DatabaseRestoreTaskExecutor is the task executor for database restore.
 type DatabaseRestoreTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run database restore once.
@@ -63,7 +61,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 		return true, nil, fmt.Errorf("target database %q not found in instance %q: %w", payload.DatabaseName, task.Instance.Name, err)
 	}
 
-	exec.l.Debug("Start database restore from backup...",
+	log.Debug("Start database restore from backup...",
 		zap.String("source_instance", sourceDatabase.Instance.Name),
 		zap.String("source_database", sourceDatabase.Name),
 		zap.String("target_instance", targetDatabase.Instance.Name),
@@ -72,13 +70,13 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir); err != nil {
 		return true, nil, err
 	}
 
 	// TODO(tianzhou): This should be done in the same transaction as restoreDatabase to guarantee consistency.
 	// For now, we do this after restoreDatabase, since this one is unlikely to fail.
-	migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task, exec.l)
+	migrationID, version, err := createBranchMigrationHistory(ctx, server, sourceDatabase, targetDatabase, backup, task)
 	if err != nil {
 		return true, nil, err
 	}
@@ -107,8 +105,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup
-func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
+func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return err
 	}
@@ -133,11 +131,11 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 }
 
 // createBranchMigrationHistory creates a migration history with "BRANCH" type. We choose NOT to copy over
-// all migrationhistory from source database because that might be expensive (e.g. we may use restore to
+// all migration history from source database because that might be expensive (e.g. we may use restore to
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success
-func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task, logger *zap.Logger) (int64, string, error) {
-	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, logger)
+func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
+	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstanceDir)
 	if err != nil {
 		return -1, "", err
 	}
