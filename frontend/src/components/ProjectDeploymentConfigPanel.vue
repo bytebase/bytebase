@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto">
+  <div class="max-w-[60rem] mx-auto">
     <template v-if="project.dbNameTemplate">
       <div class="text-lg font-medium leading-7 text-main">
         {{ $t("project.db-name-template") }}
@@ -44,25 +44,17 @@
     >
     </BBAttention>
 
-    <div v-if="state.deployment" class="divide-y">
+    <div v-if="state.deployment">
       <DeploymentConfigTool
         :schedule="state.deployment.schedule"
         :allow-edit="allowEdit"
         :label-list="availableLabelList"
         :database-list="databaseList"
       />
-      <div class="pt-4 flex justify-between items-center">
+      <div class="pt-4 border-t flex justify-between items-center">
         <div class="flex items-center space-x-2">
           <button v-if="allowEdit" class="btn-normal" @click="addStage">
             {{ $t("deployment-config.add-stage") }}
-          </button>
-
-          <button
-            class="btn-normal"
-            :disabled="!!state.error"
-            @click="state.showPreview = true"
-          >
-            {{ $t("common.preview") }}
           </button>
         </div>
         <div class="flex items-center space-x-2">
@@ -93,25 +85,25 @@
           </NPopover>
         </div>
       </div>
+
+      <div class="mt-6">
+        <div class="text-lg font-medium leading-7 text-main border-t pt-4">
+          {{ $t("deployment-config.preview-deployment-stages") }}
+        </div>
+        <DeploymentMatrix
+          class="w-full mt-4 !px-0 overflow-x-auto"
+          :project="project"
+          :deployment="state.deployment"
+          :database-list="databaseList"
+          :environment-list="environmentList"
+          :label-list="labelList"
+        />
+      </div>
     </div>
 
     <div v-else class="flex justify-center items-center py-10">
       <BBSpin />
     </div>
-
-    <BBModal
-      v-if="state.deployment && state.showPreview"
-      :title="$t('deployment-config.preview-deployment-config')"
-      @close="state.showPreview = false"
-    >
-      <DeploymentMatrix
-        :project="project"
-        :deployment="state.deployment"
-        :database-list="databaseList"
-        :environment-list="environmentList"
-        :label-list="labelList"
-      />
-    </BBModal>
   </div>
 </template>
 
@@ -153,7 +145,6 @@ type LocalState = {
   deployment: DeploymentConfig | undefined;
   originalDeployment: DeploymentConfig | undefined;
   error: string | undefined;
-  showPreview: boolean;
 };
 
 export default defineComponent({
@@ -179,7 +170,6 @@ export default defineComponent({
       deployment: undefined,
       originalDeployment: undefined,
       error: undefined,
-      showPreview: false,
     });
 
     const dirty = computed((): boolean => {

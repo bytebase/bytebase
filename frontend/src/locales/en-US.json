@@ -1057,7 +1057,6 @@
     "this-is-example-deployment-config": "This is the deployment config example. You need to edit and save it.",
     "n-databases": "{n} database | {n} databases",
     "selectors": "Selectors",
-    "wont-be-deployed": "Will not be deployed",
     "add-stage": "Add stage",
     "confirm-to-revert": "Confirm to revert your editing?",
     "name-placeholder": "Stage name...",
@@ -1072,7 +1071,9 @@
     },
     "project-has-no-deployment-config": "This project has no deployment config yet. Please {go} first.",
     "go-and-config": "Go and config",
-    "preview-deployment-config": "Preview Deployment Config"
+    "wont-be-deployed-explanation": "These databases won't be deployed, since they hit none of the selectors.",
+    "wont-be-deployed": "Won't be deployed",
+    "preview-deployment-stages": "Preview Deployment Stages"
   },
   "datasource": {
     "role-type": "Role Type",
