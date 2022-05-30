@@ -55,7 +55,7 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 }
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo api.BinlogInfo, targetTs int64, instance *api.Instance) error {
+func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	if err := r.SyncLatestBinlog(ctx, binlogDir); err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := r.replayBinlog(ctx, database, pitrDatabaseName, r.binlogDir, binlog, suffixTs, nil); err != nil {
+	if err := r.replayBinlog(ctx, database, pitrDatabaseName, r.binlogDir, binlog, suffixTs); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}
