@@ -360,7 +360,7 @@ func TestGetReplayBinlogPathListImpl(t *testing.T) {
 			err:    false,
 		},
 		{
-			// Test user defile prefix
+			// Test user define prefix
 			subDirNames:     []string{},
 			binlogFileNames: []string{"USER_PREFIX.000001", "USER_PREFIX.000002", "USER_PREFIX.000003"},
 			startBinlogInfo: api.BinlogInfo{
