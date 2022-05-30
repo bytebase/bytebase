@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -16,7 +17,7 @@ import (
 // Schema review policy consists of a list of schema review rules.
 // There is such a logical mapping in bytebase backend:
 //   1. One schema review policy maps a TaskCheckRun.
-//   2. Each schema reivew rule type maps an advisor.Type.
+//   2. Each schema review rule type maps an advisor.Type.
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 //
 // How to add a schema review rule:
@@ -25,15 +26,12 @@ import (
 //   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewTaskCheckStatementAdvisorCompositeExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorCompositeExecutor{
-		l: logger,
-	}
+func NewTaskCheckStatementAdvisorCompositeExecutor() TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorCompositeExecutor{}
 }
 
 // TaskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type TaskCheckStatementAdvisorCompositeExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
@@ -77,18 +75,17 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		}
 		advisorType, err := getAdvisorTypeByRule(rule.Type, payload.DbType)
 		if err != nil {
-			exec.l.Debug("not supported rule", zap.Error(err))
+			log.Debug("not supported rule", zap.Error(err))
 			continue
 		}
 		adviceList, err := advisor.Check(
 			payload.DbType,
 			advisorType,
 			advisor.Context{
-				Logger:    exec.l,
 				Charset:   payload.Charset,
 				Collation: payload.Collation,
 				Rule:      rule,
-				Catalog:   catalog.NewService(exec.l, task.DatabaseID, server.store),
+				Catalog:   catalog.NewService(task.DatabaseID, server.store),
 			},
 			payload.Statement,
 		)

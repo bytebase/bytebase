@@ -6,19 +6,15 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 // NewTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
-func NewTaskCheckMigrationSchemaExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckMigrationSchemaExecutor{
-		l: logger,
-	}
+func NewTaskCheckMigrationSchemaExecutor() TaskCheckExecutor {
+	return &TaskCheckMigrationSchemaExecutor{}
 }
 
 // TaskCheckMigrationSchemaExecutor is the task check migration schema executor.
 type TaskCheckMigrationSchemaExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check migration schema executor once.
@@ -43,7 +39,7 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "")
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

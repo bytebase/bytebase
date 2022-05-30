@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -88,7 +89,7 @@ func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, return
 			if returnOnErr {
 				return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", raw, err)
 			}
-			s.l.Error("failed to compose pipeline",
+			log.Error("failed to compose pipeline",
 				zap.Any("pipelineRaw", raw),
 				zap.Error(err),
 			)

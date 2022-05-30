@@ -8,19 +8,15 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"go.uber.org/zap"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
-func NewSchemaUpdateGhostCutoverTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SchemaUpdateGhostCutoverTaskExecutor{
-		l: logger,
-	}
+func NewSchemaUpdateGhostCutoverTaskExecutor() TaskExecutor {
+	return &SchemaUpdateGhostCutoverTaskExecutor{}
 }
 
 // SchemaUpdateGhostCutoverTaskExecutor is the schema update (gh-ost) cutover task executor.
 type SchemaUpdateGhostCutoverTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run SchemaUpdateGhostCutover task once.

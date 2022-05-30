@@ -14,6 +14,7 @@ import (
 
 	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
@@ -39,7 +40,6 @@ func init() {
 
 // Driver is the ClickHouse driver.
 type Driver struct {
-	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
@@ -47,9 +47,7 @@ type Driver struct {
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		l: config.Logger,
-	}
+	return &Driver{}
 }
 
 // Open opens a ClickHouse driver.
@@ -79,7 +77,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		DialTimeout: 10 * time.Second,
 	})
 
-	driver.l.Debug("Opening ClickHouse driver",
+	log.Debug("Opening ClickHouse driver",
 		zap.String("addr", addr),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
@@ -364,7 +362,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -386,19 +384,19 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 		if err := driver.Execute(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -572,7 +570,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
