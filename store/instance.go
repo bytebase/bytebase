@@ -281,7 +281,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		InstanceID:    instance.ID,
 		EnvironmentID: instance.EnvironmentID,
 		Name:          api.AllDatabaseName,
-		CharacterSet:  api.DefaultCharactorSetName,
+		CharacterSet:  api.DefaultCharacterSetName,
 		Collation:     api.DefaultCollationName,
 	}
 	allDatabase, err := s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)

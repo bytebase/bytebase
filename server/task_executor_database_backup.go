@@ -91,22 +91,21 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, inst
 	return payload, nil
 }
 
-// getAndCreateBackupDirectory returns the path of a database backup.
-func getAndCreateBackupDirectory(dataDir string, database *api.Database) (string, error) {
-	dir := filepath.Join("backup", "db", fmt.Sprintf("%d", database.ID))
-	absDir := filepath.Join(dataDir, dir)
-	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
-		return "", nil
-	}
+func getBackupDirectory(databaseID int) string {
+	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
+}
 
-	return dir, nil
+func getBackupPath(dataDir string, databaseID int, backupName string) string {
+	dir := getBackupDirectory(databaseID)
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", backupName))
 }
 
 // getAndCreateBackupPath returns the path of a database backup.
-func getAndCreateBackupPath(dataDir string, database *api.Database, name string) (string, error) {
-	dir, err := getAndCreateBackupDirectory(dataDir, database)
-	if err != nil {
-		return "", err
+func getAndCreateBackupPath(dataDir string, databaseID int, backupName string) (string, error) {
+	dir := getBackupDirectory(databaseID)
+	absDir := filepath.Join(dataDir, dir)
+	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
+		return absDir, err
 	}
-	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", backupName)), nil
 }

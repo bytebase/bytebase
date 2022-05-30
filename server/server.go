@@ -145,7 +145,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.db = storeDB
 
 	// Open the database that stores bytebase's own metadata connection.
-	if err = storeDB.Open(ctx); err != nil {
+	if err := storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
