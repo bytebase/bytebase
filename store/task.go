@@ -190,11 +190,11 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	return res, nil
 }
 
-// ExistTaskInRangeOfTimeWithStatus check if exists task with specific status in a range of time.
-func (s *Store) ExistTaskInRangeOfTimeWithStatus(ctx context.Context, fromTs int64, toTs int64, status api.TaskStatus) (bool, error) {
+// CountTaskInRangeOfTimeWithStatus count task with specific status in a range of time.
+func (s *Store) CountTaskInRangeOfTimeWithStatus(ctx context.Context, fromTs int64, toTs int64, status api.TaskStatus) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return false, FormatError(err)
+		return 0, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
@@ -207,18 +207,18 @@ func (s *Store) ExistTaskInRangeOfTimeWithStatus(ctx context.Context, fromTs int
 		toTs,
 	)
 	if err != nil {
-		return false, FormatError(err)
+		return 0, FormatError(err)
 	}
 	defer row.Close()
 
 	count := 0
 	if row.Next() {
 		if err := row.Scan(&count); err != nil {
-			return false, FormatError(err)
+			return 0, FormatError(err)
 		}
 	}
 
-	return count > 0, nil
+	return count, nil
 }
 
 //

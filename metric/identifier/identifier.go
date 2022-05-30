@@ -26,8 +26,8 @@ const (
 	identifyTraitForPlan = "plan"
 	// identifyTraitForVersion is the trait key for bytebase version.
 	identifyTraitForVersion = "version"
-	// identifyTraitForActive is the trait key for workspace is active.
-	identifyTraitForActive = "active"
+	// identifyTraitForActiveTaskCount is the trait key for active task count in the workspace.
+	identifyTraitForActiveTaskCount = "active_task_count"
 )
 
 // NewIdentifier creates a new instance of metricIdentifier
@@ -48,7 +48,7 @@ func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, erro
 
 	now := time.Now()
 	from := now.AddDate(0, 0, -7)
-	existTask, err := i.store.ExistTaskInRangeOfTimeWithStatus(ctx, from.Unix(), now.Unix(), api.TaskDone)
+	count, err := i.store.CountTaskInRangeOfTimeWithStatus(ctx, from.Unix(), now.Unix(), api.TaskDone)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +56,9 @@ func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, erro
 	return &metric.Identity{
 		ID: i.workspace.ID,
 		Labels: map[string]string{
-			identifyTraitForPlan:    plan,
-			identifyTraitForVersion: i.workspace.Version,
-			identifyTraitForActive:  strconv.FormatBool(existTask),
+			identifyTraitForPlan:            plan,
+			identifyTraitForVersion:         i.workspace.Version,
+			identifyTraitForActiveTaskCount: strconv.Itoa(count),
 		},
 	}, nil
 }
