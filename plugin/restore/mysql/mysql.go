@@ -56,7 +56,7 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase, binlogDir string, startBinlogInfo api.BinlogInfo, targetTs int64, instance *api.Instance) error {
-	if err := r.SyncLatestBinlog(ctx, instance, binlogDir); err != nil {
+	if err := r.SyncLatestBinlog(ctx, binlogDir); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := r.replayBinlog(ctx, database, pitrDatabaseName, "", binlog, suffixTs, nil); err != nil {
+	if err := r.replayBinlog(ctx, database, pitrDatabaseName, r.binlogDir, binlog, suffixTs, nil); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}
@@ -472,7 +472,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, instance, binlogDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, binlogDir, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -481,22 +481,22 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 }
 
 // SyncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
-func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, binlogDir string) error {
+func (r *Restore) SyncLatestBinlog(ctx context.Context, binlogDir string) error {
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, instance, binlogDir, *latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, binlogDir, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, binlogDir string, binlog mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlogDir string, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL),
 		binlog.Name,
-		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
+		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", r.connCfg.Host, r.connCfg.Port, r.connCfg.Username, r.connCfg.Password),
 		"--raw",
 		fmt.Sprintf("--result-file=%s", resultFileDir),
 	)
