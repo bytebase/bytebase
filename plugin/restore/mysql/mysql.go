@@ -295,10 +295,10 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlog files between the instance and `saveDir`,
+// SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
-	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, binlogDir string) error {
+	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 
 		if localBinlogSize != serverBinlog.Size {
 			// exist on local and file size not match, delete and then download it
-			if err := os.Remove(filepath.Join(saveDir, serverBinlog.Name)); err != nil {
+			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
 				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
 			todo[serverBinlog.Name] = true
@@ -348,7 +348,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, instance, binlogDir, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -356,19 +356,19 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	return nil
 }
 
-// SyncLatestBinlog syncs the latest binlog between the instance and `saveDir`
-func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, saveDir string) error {
+// SyncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
+func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, binlogDir string) error {
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, instance, saveDir, *latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, instance, binlogDir, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, binlogDir string, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
-	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
+	resultFileDir := strings.TrimRight(binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL),
 		binlog.Name,
