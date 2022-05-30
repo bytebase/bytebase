@@ -40,6 +40,7 @@ func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, 
 	}
 }
 
+// Identify returns the metric Identity
 func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, error) {
 	plan := api.FREE.String()
 	if i.subscription != nil {
