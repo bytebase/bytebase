@@ -191,8 +191,8 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	return res, nil
 }
 
-// CountTaskInRangeOfTimeWithStatus count task with specific status in a range of time.
-func (s *Store) CountTaskInRangeOfTimeWithStatus(ctx context.Context, fromTs int64, toTs int64, status api.TaskStatus) (int, error) {
+// CountTaskInRangeOfTimeByStatus count task with specific status in a range of time.
+func (s *Store) CountTaskInRangeOfTimeByStatus(ctx context.Context, fromTs int64, toTs int64, status api.TaskStatus) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, FormatError(err)

@@ -9,11 +9,9 @@ import (
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 type metricIdentifier struct {
-	l         *zap.Logger
 	store     *store.Store
 	workspace *api.Workspace
 	// subscription is the pointer to the server.subscription.
@@ -48,7 +46,7 @@ func (i *metricIdentifier) Identify(ctx context.Context) (*metric.Identity, erro
 
 	now := time.Now()
 	from := now.AddDate(0, 0, -7)
-	count, err := i.store.CountTaskInRangeOfTimeWithStatus(ctx, from.Unix(), now.Unix(), api.TaskDone)
+	count, err := i.store.CountTaskInRangeOfTimeByStatus(ctx, from.Unix(), now.Unix(), api.TaskDone)
 	if err != nil {
 		return nil, err
 	}
