@@ -1,12 +1,17 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
@@ -15,7 +20,6 @@ import (
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
 func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
-
 		mysqlutil: instance,
 	}
 }
@@ -76,6 +80,38 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		zap.String("original_database", task.Database.Name),
 		zap.String("pitr_database", pitrDatabaseName),
 		zap.String("old_database", pitrOldDatabaseName))
+
+	log.Info("Appending new migration history record...")
+	executor := driver.(util.MigrationExecutor)
+	schemaVersion := common.DefaultMigrationVersion()
+	mi, err := preMigration(ctx, server, task, db.Baseline, "", schemaVersion, nil)
+	if err != nil {
+		return true, nil, err
+	}
+
+	var prevSchemaBuf bytes.Buffer
+	if _, err := driver.Dump(ctx, task.Database.Name, &prevSchemaBuf, true); err != nil {
+		return true, nil, err
+	}
+	var updatedSchemaBuf bytes.Buffer
+	if _, err := driver.Dump(ctx, pitrDatabaseName, &updatedSchemaBuf, true); err != nil {
+		return true, nil, err
+	}
+
+	stmt := "/* pitr cutover */"
+	startedNs := time.Now().UnixNano()
+	migrationHistoryID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), stmt, db.BytebaseDatabase)
+	if err != nil {
+		return true, nil, err
+	}
+
+	if err := util.EndMigration(ctx, executor, startedNs, migrationHistoryID, updatedSchemaBuf.String(), db.BytebaseDatabase, true /*isDone*/); err != nil {
+		log.Error("failed to update migration history record",
+			zap.Int64("migration_history_id", migrationHistoryID),
+			zap.Error(err),
+		)
+	}
+
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
