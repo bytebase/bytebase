@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
@@ -50,7 +52,7 @@ func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRRestore(ctx, task, server.store, driver); err != nil {
+	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir); err != nil {
 		return true, nil, err
 	}
 
@@ -61,7 +63,7 @@ func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver) error {
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string) error {
 	instance := task.Instance
 	database := task.Database
 
@@ -107,6 +109,18 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
+}
+
+// getAndCreateBinlogDirectory returns the path of a instance binlog directory.
+// nolint
+func getAndCreateBinlogDirectory(dataDir string, instance *api.Instance) (string, error) {
+	dir := filepath.Join("backup", "instance", fmt.Sprintf("%d", instance.ID))
+	absDir := filepath.Join(dataDir, dir)
+	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
+		return "", nil
+	}
+
+	return dir, nil
 }
 
 func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
