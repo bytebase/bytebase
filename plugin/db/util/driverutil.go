@@ -12,6 +12,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -21,7 +22,7 @@ func FormatErrorWithQuery(err error, query string) error {
 	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
 }
 
-// ApplyMultiStatements will apply the splitted statements from scanner.
+// ApplyMultiStatements will apply the split statements from scanner.
 func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 	s := ""
 	delimiter := false
@@ -125,7 +126,7 @@ type MigrationExecutor interface {
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -136,7 +137,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		}
 	}
 
-	// Phase 1 - Precheck before executing migration
+	// Phase 1 - Pre-check before executing migration
 	// Phase 2 - Record migration history as PENDING
 	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
@@ -146,8 +147,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
-			l.Error("Failed to update migration history record",
+		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
 			)
@@ -186,7 +187,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
 	}
-	// Phase 1 - Precheck before executing migration
+	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
@@ -247,7 +248,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
 	sqldb, err := executor.GetDbConnection(ctx, databaseName)
@@ -280,7 +281,7 @@ func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
 	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {

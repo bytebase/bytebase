@@ -8,19 +8,17 @@ import (
 	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &DatabaseBackupTaskExecutor{
-		l: logger,
-	}
+func NewDatabaseBackupTaskExecutor() TaskExecutor {
+	return &DatabaseBackupTaskExecutor{}
 }
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run database backup once.
@@ -37,7 +35,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backup == nil {
 		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
 	}
-	exec.l.Debug("Start database backup...",
+	log.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),
 		zap.String("backup", backup.Name),
@@ -73,7 +71,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 
 // backupDatabase will take a backup of a database.
 func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName)
 	if err != nil {
 		return "", err
 	}

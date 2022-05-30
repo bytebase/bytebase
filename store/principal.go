@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -255,7 +256,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 			return nil, err
 		}
 		if memberRaw == nil {
-			s.l.Error("Principal has not been assigned a role.",
+			log.Error("Principal has not been assigned a role.",
 				zap.Int("id", principal.ID),
 				zap.String("name", principal.Name),
 			)

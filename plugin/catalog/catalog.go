@@ -6,13 +6,10 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 // Catalog is the database catalog.
 type Catalog struct {
-	logger *zap.Logger
-
 	// catalog special fields.
 	databaseID *int
 	store      *store.Store
@@ -39,9 +36,8 @@ type IndexFind struct {
 }
 
 // NewService creates a new instance of Catalog
-func NewService(logger *zap.Logger, databaseID *int, store *store.Store) *Catalog {
+func NewService(databaseID *int, store *store.Store) *Catalog {
 	return &Catalog{
-		logger:     logger,
 		databaseID: databaseID,
 		store:      store,
 	}

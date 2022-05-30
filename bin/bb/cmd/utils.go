@@ -10,7 +10,6 @@ import (
 	// install pg driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/xo/dburl"
-	"go.uber.org/zap"
 )
 
 func getDatabase(u *dburl.URL) string {
@@ -20,7 +19,7 @@ func getDatabase(u *dburl.URL) string {
 	return u.Path[1:]
 }
 
-func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, error) {
+func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 	var dbType db.Type
 	switch u.Driver {
 	case "mysql":
@@ -34,7 +33,7 @@ func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, err
 	}
 
 	passwd, _ := u.User.Password()
-	driver, err := db.Open(ctx, dbType, db.DriverConfig{Logger: logger}, db.ConnectionConfig{
+	driver, err := db.Open(ctx, dbType, db.DriverConfig{}, db.ConnectionConfig{
 		Host:     u.Hostname(),
 		Port:     u.Port(),
 		Username: u.User.Username(),
