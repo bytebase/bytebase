@@ -50,7 +50,7 @@
                   {{ $t("deployment-config.wont-be-deployed") }}
                 </span>
               </template>
-              <div class="flex items-center text-sm">
+              <div class="flex items-center text-sm max-w-[16rem]">
                 {{ $t("deployment-config.wont-be-deployed-explanation") }}
               </div>
             </NPopover>
