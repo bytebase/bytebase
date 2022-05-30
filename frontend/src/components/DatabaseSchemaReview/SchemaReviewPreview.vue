@@ -81,7 +81,9 @@
               :key="i"
               class="leading-8"
             >
-              {{ component.title }}:
+              {{
+                $t(`schema-review-policy.payload-config.${component.title}`)
+              }}:
               <span
                 v-if="
                   component.payload.type === 'STRING' ||
