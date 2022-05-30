@@ -16,6 +16,7 @@ import (
 	// Import sqlite3 driver.
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"go.uber.org/zap"
@@ -44,13 +45,10 @@ type Driver struct {
 	dir           string
 	db            *sql.DB
 	connectionCtx db.ConnectionContext
-	l             *zap.Logger
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		l: config.Logger,
-	}
+	return &Driver{}
 }
 
 // Open opens a SQLite driver.
@@ -369,7 +367,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -402,13 +400,13 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 
 		if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
-			driver.l.Error("Failed to switch to bytebase database.",
+			log.Error("Failed to switch to bytebase database.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
@@ -417,14 +415,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		}
 
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -577,7 +575,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.

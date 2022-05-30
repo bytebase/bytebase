@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -45,7 +46,6 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 		level:   level,
 		tables:  make(tablePK),
 		catalog: ctx.Catalog,
-		logger:  ctx.Logger,
 	}
 
 	for _, stmtNode := range root {
@@ -60,7 +60,6 @@ type tableRequirePKChecker struct {
 	level      advisor.Status
 	tables     tablePK
 	catalog    catalog.Service
-	logger     *zap.Logger
 }
 
 // Enter implements the ast.Visitor interface
@@ -166,7 +165,7 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 			IndexName: primaryKeyName,
 		})
 		if err != nil {
-			v.logger.Error(
+			log.Error(
 				"Cannot find primary key in table",
 				zap.String("table_name", table),
 				zap.Error(err),

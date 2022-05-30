@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -232,7 +230,6 @@ var (
 
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
-	Logger *zap.Logger
 	Client *http.Client
 }
 

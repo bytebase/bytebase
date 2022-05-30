@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 )
 
@@ -71,14 +72,14 @@ func (s *Server) loadLicense() (*enterpriseAPI.License, error) {
 	license, err := s.LicenseService.LoadLicense()
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			s.l.Debug("Failed to find license", zap.String("error", err.Error()))
+			log.Debug("Failed to find license", zap.String("error", err.Error()))
 		} else {
-			s.l.Warn("Failed to load valid license", zap.String("error", err.Error()))
+			log.Warn("Failed to load valid license", zap.String("error", err.Error()))
 		}
 		return nil, err
 	}
 
-	s.l.Info(
+	log.Info(
 		"Load valid license",
 		zap.String("plan", license.Plan.String()),
 		zap.Time("expiresAt", time.Unix(license.ExpiresTs, 0)),
