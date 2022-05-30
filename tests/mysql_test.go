@@ -51,7 +51,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
@@ -85,7 +85,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
 
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.Error(err)

@@ -77,7 +77,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	path, err := getAndCreateBinlogDirectory(dataDir, task.Instance)
+	binlogDir, err := getAndCreateBinlogDirectory(dataDir, task.Instance)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg)
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
 
 	binlogInfo := api.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
@@ -104,7 +104,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
-	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(&buf), binlogInfo, database.Name, issue.CreatedTs, path); err != nil {
+	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(&buf), binlogInfo, database.Name, issue.CreatedTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),

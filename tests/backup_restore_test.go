@@ -164,10 +164,10 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		binlogSaveDir := t.TempDir()
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -240,10 +240,10 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		binlogSaveDir := t.TempDir()
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -293,10 +293,10 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		binlogSaveDir := t.TempDir()
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")

@@ -37,26 +37,28 @@ type Restore struct {
 	driver    *mysql.Driver
 	mysqlutil *mysqlutil.Instance
 	connCfg   db.ConnectionConfig
+	binlogDir string
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig) *Restore {
+func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
 	return &Restore{
 		driver:    driver,
 		mysqlutil: instance,
 		connCfg:   connCfg,
+		binlogDir: binlogDir,
 	}
 }
 
 // replayBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func replayBinlog(ctx context.Context, config api.BinlogInfo, saveDir string) error {
+func replayBinlog(ctx context.Context, config api.BinlogInfo, binlogDir string) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64, saveDir string) error {
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
@@ -86,7 +88,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := replayBinlog(ctx, binlog, saveDir); err != nil {
+	if err := replayBinlog(ctx, binlog, r.binlogDir); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}
@@ -98,9 +100,9 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo, binlogDir string) (int64, error) {
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
-		path.Join(binlogDir, binlogInfo.FileName),
+		path.Join(r.binlogDir, binlogInfo.FileName),
 		fmt.Sprintf("--start-position %d", binlogInfo.Position),
 		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
 		// the --stop-position is in the middle of the binlog event.
@@ -151,14 +153,14 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 // The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
-func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
+func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
 	if len(backupList) == 0 {
 		return nil, fmt.Errorf("no valid backup")
 	}
 
 	var eventTsList []int64
 	for _, b := range backupList {
-		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
+		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
 		}
