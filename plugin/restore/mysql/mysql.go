@@ -58,37 +58,10 @@ func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		return err
 	}
 
-	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
+	replayBinlogPaths, err := r.getReplayBinlogPathList(ctx, startBinlogInfo, binlogDir)
 	if err != nil {
-		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
+		return err
 	}
-
-	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
-	if err != nil {
-		return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
-	}
-
-	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
-	if err != nil {
-		return fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
-	}
-
-	var needReplay []string
-	for _, f := range binlogFilesLocal {
-		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
-			continue
-		}
-		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
-		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := getBinlogFileNameSeqNumber(f.Name(), binlogNamePrefix)
-		if err != nil {
-			return fmt.Errorf("cannot parse the start binlog name [%s], error: %w", f.Name(), err)
-		}
-		if binlogSeq >= startBinlogSeq {
-			needReplay = append(needReplay, f.Name())
-		}
-	}
-	sort.Strings(needReplay)
 
 	stopTime := time.Unix(targetTs, 0)
 	mysqlbinlogArgs := []string{
@@ -99,8 +72,8 @@ func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
-	for _, name := range needReplay {
-		mysqlbinlogArgs = append(mysqlbinlogArgs, filepath.Join(binlogDir, name))
+	for _, path := range replayBinlogPaths {
+		mysqlbinlogArgs = append(mysqlbinlogArgs, path)
 	}
 
 	mysqlArgs := []string{
@@ -180,6 +153,55 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	return nil
+}
+
+func (r *Restore) getReplayBinlogPathList(ctx context.Context, startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
+	}
+	return getReplayBinlogPathListImpl(ctx, startBinlogInfo, binlogDir, binlogNamePrefix)
+}
+
+func getReplayBinlogPathListImpl(ctx context.Context, startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
+	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
+	}
+
+	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
+	}
+
+	var needReplayBinlogSeq []int64
+	for _, f := range binlogFilesLocal {
+		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
+			continue
+		}
+		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
+		// so we cannot directly use string to compare lexicographical order.
+		binlogSeq, err := getBinlogFileNameSeqNumber(f.Name(), binlogNamePrefix)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", f.Name(), err)
+		}
+		if binlogSeq >= startBinlogSeq {
+			needReplayBinlogSeq = append(needReplayBinlogSeq, binlogSeq)
+		}
+	}
+	sort.Slice(needReplayBinlogSeq, func(i, j int) bool { return needReplayBinlogSeq[i] < needReplayBinlogSeq[j] })
+	for i := 1; i < len(needReplayBinlogSeq); i++ {
+		if needReplayBinlogSeq[i] != needReplayBinlogSeq[i-1]+1 {
+			return nil, fmt.Errorf("detect a discontinuous binlog sequence %v", needReplayBinlogSeq)
+		}
+	}
+
+	var needReplayBinlogFilePath []string
+	for _, seq := range needReplayBinlogSeq {
+		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, fmt.Sprintf("%s%d", binlogNamePrefix, seq)))
+	}
+
+	return needReplayBinlogFilePath, nil
 }
 
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
