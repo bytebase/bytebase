@@ -919,6 +919,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
 		}
+		// Skip dump client and server version header.
+		if strings.HasPrefix(line, "-- Dumped from database version") || strings.HasPrefix(line, "-- Dumped by pg_dump version") {
+			continue
+		}
 
 		if _, err := io.WriteString(out, line); err != nil {
 			return err
