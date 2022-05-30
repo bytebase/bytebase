@@ -295,7 +295,7 @@ func runMigration(ctx context.Context, server *Server, task *api.Task, migration
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, server.pgInstance.BaseDir, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, server.pgInstanceDir, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}

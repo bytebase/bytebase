@@ -41,7 +41,7 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("backup", backup.Name),
 	)
 
-	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstance.BaseDir)
+	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
 	comment := ""

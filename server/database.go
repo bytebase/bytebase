@@ -226,7 +226,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 					if err != nil {
 						return err
 					}
@@ -508,7 +508,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 		if err != nil {
 			return err
 		}

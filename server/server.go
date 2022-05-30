@@ -48,15 +48,15 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile    Profile
-	e          *echo.Echo
-	mysqlutil  *mysqlutil.Instance
-	pgInstance *postgres.Instance
-	metaDB     *store.MetadataDB
-	db         *store.DB
-	store      *store.Store
-	startedTs  int64
-	secret     string
+	profile       Profile
+	e             *echo.Echo
+	mysqlutil     *mysqlutil.Instance
+	pgInstanceDir string
+	metaDB        *store.MetadataDB
+	db            *store.DB
+	store         *store.Store
+	startedTs     int64
+	secret        string
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -125,7 +125,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.pgInstance = pgInstance
+	s.pgInstanceDir = pgInstance.BaseDir
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
