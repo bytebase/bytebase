@@ -15,7 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const ()
+const (
+	backupExpireDuration = 7 * 24 * time.Hour
+)
 
 // NewBackupRunner creates a new backup runner.
 func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
@@ -128,10 +130,10 @@ func (r *BackupRunner) cleanupBackups(ctx context.Context) {
 		return
 	}
 
-	oneWeekAgo := time.Now().Add(-7 * 24 * time.Hour)
+	expireTime := time.Now().Add(-backupExpireDuration)
 	for _, backup := range backupList {
 		backupTime := time.Unix(backup.UpdatedTs, 0)
-		if backupTime.Before(oneWeekAgo) {
+		if backupTime.Before(expireTime) {
 			if err := r.deleteBackupFile(backup); err != nil {
 				log.Error("Failed to delete backup file", zap.Error(err))
 			}
