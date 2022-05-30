@@ -10,7 +10,9 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
+
 	"go.uber.org/zap"
 )
 
@@ -19,9 +21,8 @@ const (
 )
 
 // NewTaskScheduler creates a new task scheduler.
-func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
+func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		l:         logger,
 		executors: make(map[string]TaskExecutor),
 		server:    server,
 	}
@@ -29,7 +30,6 @@ func NewTaskScheduler(logger *zap.Logger, server *Server) *TaskScheduler {
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	l         *zap.Logger
 	executors map[string]TaskExecutor
 
 	server *Server
@@ -40,7 +40,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
+	log.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
 	tasks := struct {
 		running map[int]bool // task id set
 		mu      sync.RWMutex
@@ -58,7 +58,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Task scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Task scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -71,7 +71,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				pipelineList, err := s.server.store.FindPipeline(ctx, pipelineFind, false)
 				if err != nil {
-					s.l.Error("Failed to retrieve open pipelines", zap.Error(err))
+					log.Error("Failed to retrieve open pipelines", zap.Error(err))
 					return
 				}
 				for _, pipeline := range pipelineList {
@@ -80,7 +80,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					if _, err := s.server.ScheduleNextTaskIfNeeded(ctx, pipeline); err != nil {
-						s.l.Error("Failed to schedule next running task",
+						log.Error("Failed to schedule next running task",
 							zap.Int("pipeline_id", pipeline.ID),
 							zap.Error(err),
 						)
@@ -96,7 +96,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				// We may optimize this in the future since only some relationship info is needed by the executor
 				taskList, err := s.server.store.FindTask(ctx, taskFind, false)
 				if err != nil {
-					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
 
@@ -107,7 +107,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					executor, ok := s.executors[string(task.Type)]
 					if !ok {
-						s.l.Error("Skip running task with unknown type",
+						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
 							zap.String("name", task.Name),
 							zap.String("type", string(task.Type)),
@@ -118,7 +118,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					// Skip execution if has any dependency not finished.
 					isBlocked, err := s.isTaskBlocked(ctx, task)
 					if err != nil {
-						s.l.Error("failed to check if task is blocked",
+						log.Error("failed to check if task is blocked",
 							zap.Int("id", task.ID),
 							zap.Error(err))
 						continue
@@ -141,12 +141,12 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(tasks.running, task.ID)
 							tasks.mu.Unlock()
 						}()
-						done, result, err := RunTaskExecutorOnce(ctx, s.l, executor, s.server, task)
+						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
 						if done {
 							if err == nil {
 								bytes, err := json.Marshal(*result)
 								if err != nil {
-									s.l.Error("Failed to marshal task run result",
+									log.Error("Failed to marshal task run result",
 										zap.Int("task_id", task.ID),
 										zap.String("type", string(task.Type)),
 										zap.Error(err),
@@ -164,14 +164,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
-									s.l.Error("Failed to mark task as DONE",
+									log.Error("Failed to mark task as DONE",
 										zap.Int("id", task.ID),
 										zap.String("name", task.Name),
 										zap.Error(err),
 									)
 								}
 							} else {
-								s.l.Debug("Failed to run task",
+								log.Debug("Failed to run task",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
 									zap.String("type", string(task.Type)),
@@ -181,7 +181,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									Detail: err.Error(),
 								})
 								if marshalErr != nil {
-									s.l.Error("Failed to marshal task run result",
+									log.Error("Failed to marshal task run result",
 										zap.Int("task_id", task.ID),
 										zap.String("type", string(task.Type)),
 										zap.Error(marshalErr),
@@ -199,7 +199,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
 								if err != nil {
-									s.l.Error("Failed to mark task as FAILED",
+									log.Error("Failed to mark task as FAILED",
 										zap.Int("id", task.ID),
 										zap.String("name", task.Name),
 										zap.Error(err),
@@ -207,7 +207,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								}
 							}
 						} else if err != nil {
-							s.l.Debug("Encountered transient error running task, will retry",
+							log.Debug("Encountered transient error running task, will retry",
 								zap.Int("id", task.ID),
 								zap.String("name", task.Name),
 								zap.String("type", string(task.Type)),

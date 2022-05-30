@@ -8,21 +8,18 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*policyCountCollector)(nil)
 
 // policyCountCollector is the metric data collector for policy.
 type policyCountCollector struct {
-	l     *zap.Logger
 	store *store.Store
 }
 
 // NewPolicyCountCollector creates a new instance of policyCollector
-func NewPolicyCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+func NewPolicyCountCollector(store *store.Store) metric.Collector {
 	return &policyCountCollector{
-		l:     l,
 		store: store,
 	}
 }

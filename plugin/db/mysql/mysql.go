@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
@@ -55,7 +56,6 @@ type BinlogFile struct {
 
 // Driver is the MySQL driver.
 type Driver struct {
-	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
@@ -63,9 +63,7 @@ type Driver struct {
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		l: config.Logger,
-	}
+	return &Driver{}
 }
 
 // Open opens a MySQL driver.
@@ -105,7 +103,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		defer mysql.DeregisterTLSConfig(tlsKey)
 		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
-	driver.l.Debug("Opening MySQL driver",
+	log.Debug("Opening MySQL driver",
 		zap.String("dsn", loggedDSN),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
@@ -547,7 +545,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -569,7 +567,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -577,14 +575,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
 		// 2. For TiDB, the created database/table is not visible to the followup statements from the same transaction.
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -737,7 +735,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -912,10 +910,10 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// Before we dump the real data, we should record the binlog position for PITR.
 	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
 	if !schemaOnly {
-		driver.l.Debug("flush tables in database with read locks",
+		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
 		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-			driver.l.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
+			log.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
 			return "", err
 		}
 
@@ -923,7 +921,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		if err != nil {
 			return "", err
 		}
-		driver.l.Debug("binlog config at dump time",
+		log.Debug("binlog config at dump time",
 			zap.String("filename", binlog.FileName),
 			zap.Int64("position", binlog.Position))
 
@@ -952,7 +950,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	driver.l.Debug("begin to dump database", zap.String("database", database))
+	log.Debug("begin to dump database", zap.String("database", database))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}

@@ -11,8 +11,10 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+
 	snow "github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
 )
@@ -38,7 +40,6 @@ func init() {
 
 // Driver is the Snowflake driver.
 type Driver struct {
-	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
@@ -46,9 +47,7 @@ type Driver struct {
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		l: config.Logger,
-	}
+	return &Driver{}
 }
 
 // Open opens a Snowflake driver.
@@ -86,7 +85,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		dsn = fmt.Sprintf("%s?%s", dsn, strings.Join(params, "&"))
 		loggedDSN = fmt.Sprintf("%s?%s", loggedDSN, strings.Join(params, "&"))
 	}
-	driver.l.Debug("Opening Snowflake driver",
+	log.Debug("Opening Snowflake driver",
 		zap.String("dsn", loggedDSN),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
@@ -515,7 +514,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -560,20 +559,20 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 		// Should use role SYSADMIN.
 		if err := driver.Execute(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -748,7 +747,7 @@ func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo,
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
 		return int64(0), "", err
 	}
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, bytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
