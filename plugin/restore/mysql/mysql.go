@@ -49,14 +49,14 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 }
 
 // replayBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func replayBinlog(ctx context.Context, config api.BinlogInfo) error {
+func replayBinlog(ctx context.Context, config api.BinlogInfo, saveDir string) error {
 	return fmt.Errorf("Unimplemented")
 }
 
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64, saveDir string) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
@@ -86,7 +86,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := replayBinlog(ctx, binlog); err != nil {
+	if err := replayBinlog(ctx, binlog, saveDir); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}

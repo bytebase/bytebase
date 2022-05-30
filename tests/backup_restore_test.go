@@ -166,7 +166,8 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogSaveDir := t.TempDir()
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -241,7 +242,8 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogSaveDir := t.TempDir()
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -293,7 +295,8 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogSaveDir := t.TempDir()
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp, binlogSaveDir)
 		a.NoError(err)
 
 		t.Log("cutover stage")
