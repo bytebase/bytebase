@@ -17,14 +17,14 @@ import (
 // NewTaskCheckScheduler creates a task check scheduler.
 func NewTaskCheckScheduler(server *Server) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
-		executors: make(map[string]TaskCheckExecutor),
+		executors: make(map[api.TaskCheckType]TaskCheckExecutor),
 		server:    server,
 	}
 }
 
 // TaskCheckScheduler is the task check scheduler.
 type TaskCheckScheduler struct {
-	executors map[string]TaskCheckExecutor
+	executors map[api.TaskCheckType]TaskCheckExecutor
 
 	server *Server
 }
@@ -64,7 +64,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return
 				}
 				for _, taskCheckRun := range taskCheckRunList {
-					executor, ok := s.executors[string(taskCheckRun.Type)]
+					executor, ok := s.executors[taskCheckRun.Type]
 					if !ok {
 						log.Error("Skip running task check run with unknown type",
 							zap.Int("id", taskCheckRun.ID),
@@ -167,7 +167,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register the task check executor.
-func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecutor) {
+func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskCheckExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}

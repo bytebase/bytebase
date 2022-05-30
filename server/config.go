@@ -8,7 +8,7 @@ import (
 
 const (
 	// secretLength is the length for the secret used to sign the JWT auto token
-	secreatLength = 32
+	secretLength = 32
 )
 
 // retrieved via the SettingService upon startup
