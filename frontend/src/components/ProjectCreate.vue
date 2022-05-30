@@ -116,6 +116,14 @@
       </button>
     </div>
   </form>
+
+  <div
+    v-if="state.isCreating"
+    class="absolute inset-0 bg-white/50 flex justify-center items-center"
+  >
+    <BBSpin />
+  </div>
+
   <FeatureModal
     v-if="state.showFeatureModal"
     feature="bb.feature.multi-tenancy"
@@ -126,22 +134,25 @@
 <script lang="ts">
 import { computed, reactive, defineComponent, watch } from "vue";
 import { useRouter } from "vue-router";
-import isEmpty from "lodash-es/isEmpty";
-import { Project, ProjectCreate } from "../types";
-import { projectSlug, randomString } from "../utils";
+import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { useEventListener } from "@vueuse/core";
+import { generateDefaultSchedule, projectSlug, randomString } from "@/utils";
+import { ProjectCreate } from "@/types";
 import {
   hasFeature,
   pushNotification,
   useUIStateStore,
   useProjectStore,
+  useEnvironmentList,
+  useDeploymentStore,
 } from "@/store";
 
 interface LocalState {
   project: ProjectCreate;
   showFeatureModal: boolean;
   enableDbNameTemplate: boolean;
+  isCreating: boolean;
 }
 
 export default defineComponent({
@@ -162,6 +173,7 @@ export default defineComponent({
       },
       showFeatureModal: false,
       enableDbNameTemplate: false,
+      isCreating: false,
     });
 
     useEventListener("keydown", (e) => {
@@ -191,7 +203,7 @@ export default defineComponent({
       }
     );
 
-    const create = () => {
+    const create = async () => {
       if (
         state.project.tenantMode !== "TENANT" ||
         !state.enableDbNameTemplate
@@ -206,34 +218,42 @@ export default defineComponent({
         state.showFeatureModal = true;
         return;
       }
+      state.isCreating = true;
 
-      projectStore
-        .createProject(state.project)
-        .then((createdProject: Project) => {
-          useUIStateStore().saveIntroStateByKey({
-            key: "project.visit",
-            newState: true,
-          });
+      const createdProject = await projectStore.createProject(state.project);
+      useUIStateStore().saveIntroStateByKey({
+        key: "project.visit",
+        newState: true,
+      });
 
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("project.create-modal.success-prompt", {
-              name: createdProject.name,
-            }),
-          });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.create-modal.success-prompt", {
+          name: createdProject.name,
+        }),
+      });
 
-          const url = {
-            path: `/project/${projectSlug(createdProject)}`,
-            hash: "",
-          };
-          if (state.project.tenantMode === "TENANT") {
-            // Jump to Deployment Config panel if it's a tenant mode project
-            url.hash = "deployment-config";
-          }
-          router.push(url);
-          emit("dismiss");
+      const url = {
+        path: `/project/${projectSlug(createdProject)}`,
+        hash: "",
+      };
+      if (state.project.tenantMode === "TENANT") {
+        // Generate and save default deployment configuration if it's a tenant mode project
+        const environmentList = useEnvironmentList(["NORMAL"]);
+        const schedule = generateDefaultSchedule(environmentList.value);
+        await useDeploymentStore().patchDeploymentConfigByProjectId({
+          projectId: createdProject.id,
+          deploymentConfigPatch: {
+            payload: JSON.stringify(schedule),
+          },
         });
+
+        url.hash = "deployment-config";
+      }
+      state.isCreating = false;
+      router.push(url);
+      emit("dismiss");
     };
 
     const cancel = () => {
