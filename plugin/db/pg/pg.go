@@ -6,6 +6,10 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -55,10 +59,13 @@ func init() {
 // Driver is the Postgres driver.
 type Driver struct {
 	l             *zap.Logger
+	pgInstanceDir string
 	connectionCtx db.ConnectionContext
+	config        db.ConnectionConfig
 
-	db      *sql.DB
-	baseDSN string
+	db           *sql.DB
+	baseDSN      string
+	databaseName string
 
 	// strictDatabase should be used only if the user gives only a database instead of a whole instance to access.
 	strictDatabase string
@@ -66,7 +73,8 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		l: config.Logger,
+		l:             config.Logger,
+		pgInstanceDir: config.PgInstanceDir,
 	}
 }
 
@@ -77,7 +85,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	dsn, err := guessDSN(
+	databaseName, dsn, err := guessDSN(
 		config.Username,
 		config.Password,
 		config.Host,
@@ -93,8 +101,10 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	if config.ReadOnly {
 		dsn = fmt.Sprintf("%s default_transaction_read_only=true", dsn)
 	}
+	driver.databaseName = databaseName
 	driver.baseDSN = dsn
 	driver.connectionCtx = connCtx
+	driver.config = config
 	if config.StrictUseDb {
 		driver.strictDatabase = config.Database
 	}
@@ -107,8 +117,8 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	return driver, nil
 }
 
-// guessDSN will guess the dsn of a valid DB connection.
-func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, error) {
+// guessDSN will guess a valid DB connection and its database name.
+func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslKey string) (string, string, error) {
 	// dbname is guessed if not specified.
 	m := map[string]string{
 		"host":     hostname,
@@ -140,17 +150,22 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 
 	var guesses []string
 	if database != "" {
-		guesses = append(guesses, dsn+" dbname="+database)
+		guesses = append(guesses, database)
 	} else {
 		// Guess default database postgres, template1.
-		guesses = append(guesses, dsn)
-		guesses = append(guesses, dsn+" dbname=bytebase")
-		guesses = append(guesses, dsn+" dbname=postgres")
-		guesses = append(guesses, dsn+" dbname=template1")
+		guesses = append(guesses, "")
+		guesses = append(guesses, "bytebase")
+		guesses = append(guesses, "postgres")
+		guesses = append(guesses, "template1")
 	}
 
-	for _, dsn := range guesses {
-		db, err := sql.Open(driverName, dsn)
+	//  dsn+" dbname=bytebase"
+	for _, guess := range guesses {
+		guessDSN := dsn
+		if guess != "" {
+			guessDSN = fmt.Sprintf("%s dbname=%s", dsn, guess)
+		}
+		db, err := sql.Open(driverName, guessDSN)
 		if err != nil {
 			continue
 		}
@@ -159,13 +174,13 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 		if err = db.Ping(); err != nil {
 			continue
 		}
-		return dsn, nil
+		return guess, guessDSN, nil
 	}
 
 	if database != "" {
-		return "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
+		return "", "", fmt.Errorf("cannot connecting %q, make sure the connection info is correct and the database exists", database)
 	}
-	return "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
+	return "", "", fmt.Errorf("cannot connecting instance, make sure the connection info is correct")
 }
 
 // Close closes the driver.
@@ -839,7 +854,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 
 	for _, dbName := range dumpableDbNames {
 		includeUseDatabase := len(dumpableDbNames) > 1
-		if err := driver.dumpOneDatabase(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
+		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
 			return "", err
 		}
 	}
@@ -873,6 +888,57 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
+	var args []string
+	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
+	if driver.config.Password == "" {
+		args = append(args, "--no-password")
+	} else {
+		args = append(args, fmt.Sprintf("--password=%s", driver.config.Password))
+	}
+	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
+	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
+	if schemaOnly {
+		args = append(args, "--schema-only")
+	}
+	args = append(args, "--inserts")
+	args = append(args, "--use-set-session-authorization")
+	args = append(args, driver.databaseName)
+	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
+	cmd := exec.Command(pgDumpPath, args...)
+	cmd.Stderr = os.Stderr
+	r, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		line := s.Text()
+		// Skip "SET SESSION AUTHORIZATION" till we can support it.
+		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
+			continue
+		}
+
+		if _, err := io.WriteString(out, line); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\n"); err != nil {
+			return err
+		}
+	}
+	if s.Err() != nil {
+		log.Fatal(s.Err())
+	}
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// dumpOneDatabase is still WIP to be on-par with postgres' implementation of pg_dump.
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	if err := driver.switchDatabase(database); err != nil {
 		return err
@@ -1030,6 +1096,7 @@ func (driver *Driver) switchDatabase(dbName string) error {
 		return err
 	}
 	driver.db = db
+	driver.databaseName = dbName
 	return nil
 }
 

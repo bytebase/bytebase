@@ -46,7 +46,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("database ID not found %v", task.DatabaseID))
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, server.pgInstance.BaseDir, exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{
 			{

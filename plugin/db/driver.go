@@ -138,7 +138,8 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	Logger *zap.Logger
+	Logger        *zap.Logger
+	PgInstanceDir string
 }
 
 type driverFunc func(DriverConfig) Driver

@@ -120,12 +120,12 @@ func preMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	return mi, nil
 }
 
-func executeMigration(ctx context.Context, l *zap.Logger, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
+func executeMigration(ctx context.Context, l *zap.Logger, pgInstanceDir string, task *api.Task, statement string, mi *db.MigrationInfo) (migrationID int64, schema string, err error) {
 
 	statement = strings.TrimSpace(statement)
 	databaseName := task.Database.Name
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, databaseName, pgInstanceDir, l)
 	if err != nil {
 		return 0, "", err
 	}
@@ -295,7 +295,7 @@ func runMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.
 	if err != nil {
 		return true, nil, err
 	}
-	migrationID, schema, err := executeMigration(ctx, l, task, statement, mi)
+	migrationID, schema, err := executeMigration(ctx, l, server.pgInstance.BaseDir, task, statement, mi)
 	if err != nil {
 		return true, nil, err
 	}

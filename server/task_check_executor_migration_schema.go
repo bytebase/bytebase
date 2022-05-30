@@ -43,7 +43,7 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", server.pgInstance.BaseDir, exec.l)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}

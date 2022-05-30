@@ -225,7 +225,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.l)
 					if err != nil {
 						return err
 					}
@@ -507,7 +507,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstance.BaseDir, s.l)
 		if err != nil {
 			return err
 		}
@@ -875,7 +875,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string, logger *zap.Logger) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -884,7 +884,7 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{Logger: logger},
+		db.DriverConfig{Logger: logger, PgInstanceDir: pgInstanceDir},
 		connCfg,
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,
@@ -929,6 +929,7 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
+		// We don't need postgres installation for query.
 		db.DriverConfig{Logger: logger},
 		db.ConnectionConfig{
 			Username: dataSource.Username,

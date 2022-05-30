@@ -160,7 +160,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{Logger: l},
+		dbdriver.DriverConfig{Logger: l, PgInstanceDir: pgInstance.BaseDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
 	)

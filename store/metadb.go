@@ -29,42 +29,27 @@ type MetadataDB struct {
 }
 
 // NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
-func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
-	mgr := &MetadataDB{
+func NewMetadataDBWithEmbedPg(logger *zap.Logger, pgInstance *postgres.Instance, pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+	return &MetadataDB{
 		l:           logger,
 		mode:        mode,
 		demoDataDir: demoDataDir,
 		embed:       true,
 		pgUser:      pgUser,
+		pgInstance:  pgInstance,
 	}
-	resourceDir := common.GetResourceDir(dataDir)
-	pgDataDir := common.GetPostgresDataDir(dataDir)
-	logger.Info("-----Embedded Postgres Config BEGIN-----")
-	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	logger.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
-	logger.Info("-----Embedded Postgres Config END-----")
-
-	logger.Info("Preparing embedded PostgreSQL instance...")
-	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
-	// to store Bytebase's own metadata.
-	var err error
-	mgr.pgInstance, err = postgres.Install(resourceDir, pgDataDir, pgUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return mgr, nil
 }
 
 // NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance
-func NewMetadataDBWithExternalPg(logger *zap.Logger, pgURL, demoDataDir string, mode common.ReleaseMode) (*MetadataDB, error) {
+func NewMetadataDBWithExternalPg(logger *zap.Logger, pgInstance *postgres.Instance, pgURL, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		l:           logger,
 		mode:        mode,
 		demoDataDir: demoDataDir,
 		embed:       false,
 		pgURL:       pgURL,
-	}, nil
+		pgInstance:  pgInstance,
+	}
 }
 
 // Connect connects to the underlying Postgres instance
@@ -92,7 +77,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 		Port:        fmt.Sprintf("%d", datastorePort),
 		StrictUseDb: false,
 	}
-	db := NewDB(m.l, connCfg, demoDataDir, readonly, version, mode)
+	db := NewDB(m.l, connCfg, m.pgInstance.BaseDir, demoDataDir, readonly, version, mode)
 	return db, nil
 }
 
@@ -158,7 +143,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 		SslCert: q.Get("sslcert"),
 	}
 
-	db := NewDB(m.l, connCfg, m.demoDataDir, readonly, version, m.mode)
+	db := NewDB(m.l, connCfg, m.pgInstance.BaseDir, m.demoDataDir, readonly, version, m.mode)
 	return db, nil
 }
 
