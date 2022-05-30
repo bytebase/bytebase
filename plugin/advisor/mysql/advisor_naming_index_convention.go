@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -49,7 +50,6 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
-		logger:       ctx.Logger,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -73,7 +73,6 @@ type namingIndexConventionChecker struct {
 	format       string
 	templateList []string
 	catalog      catalog.Service
-	logger       *zap.Logger
 }
 
 // Enter implements the ast.Visitor interface
@@ -148,7 +147,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					checker.logger.Error(
+					log.Error(
 						"Cannot find index in table",
 						zap.String("table_name", node.Table.Name.String()),
 						zap.String("index_name", spec.FromKey.String()),

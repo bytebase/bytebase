@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -47,7 +48,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		db, err := db.Open(
 			ctx,
 			connectionInfo.Engine,
-			db.DriverConfig{Logger: s.l},
+			db.DriverConfig{},
 			db.ConnectionConfig{
 				Username: connectionInfo.Username,
 				Password: password,
@@ -133,7 +134,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		start := time.Now().UnixNano()
 
 		bytes, err := func() ([]byte, error) {
-			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName, s.l)
+			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
 			}
@@ -164,7 +165,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			})
 
 			if err != nil {
-				s.l.Warn("Failed to marshal activity after executing sql statement",
+				log.Warn("Failed to marshal activity after executing sql statement",
 					zap.String("database_name", exec.DatabaseName),
 					zap.String("instance_name", instance.Name),
 					zap.String("statement", exec.Statement),
@@ -185,7 +186,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 
 			if err != nil {
-				s.l.Warn("Failed to create activity after executing sql statement",
+				log.Warn("Failed to create activity after executing sql statement",
 					zap.String("database_name", exec.DatabaseName),
 					zap.String("instance_name", instance.Name),
 					zap.String("statement", exec.Statement),
@@ -197,19 +198,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		resultSet := &api.SQLResultSet{}
 		if err == nil {
 			resultSet.Data = string(bytes)
-			s.l.Debug("Query result",
+			log.Debug("Query result",
 				zap.String("statement", exec.Statement),
 				zap.String("data", resultSet.Data),
 			)
 		} else {
 			resultSet.Error = err.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
-				s.l.Error("Failed to execute query",
+				log.Error("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
 				)
 			} else {
-				s.l.Debug("Failed to execute query",
+				log.Debug("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
 				)
@@ -227,7 +228,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
 	resultSet := &api.SQLResultSet{}
 	err := func() error {
-		driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
 		if err != nil {
 			return err
 		}

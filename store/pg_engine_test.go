@@ -9,6 +9,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/stretchr/testify/require"
@@ -139,10 +140,11 @@ var (
 	pgUser        = "test"
 	pgPort        = 6000
 	serverVersion = "server-version"
-	l             = zap.NewNop()
 )
 
 func TestMigrationCompatibility(t *testing.T) {
+	log.Init()
+	log.SetLevel(zap.DebugLevel)
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
 	require.NoError(t, err)
@@ -160,7 +162,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{Logger: l, PgInstanceDir: pgInstance.BaseDir},
+		dbdriver.DriverConfig{PgInstanceDir: pgInstance.BaseDir},
 		connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -175,7 +177,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	// Create a database with release latest schema.
 	databaseName := "hidb"
 	// Passing curVers = nil will create the database.
-	err = migrate(ctx, d, nil, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName, l)
+	err = migrate(ctx, d, nil, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err := d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
@@ -186,7 +188,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName, l)
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeProd, false /*strictDb*/, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = d.FindMigrationHistoryList(ctx, &dbdriver.MigrationHistoryFind{
@@ -196,7 +198,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Len(t, histories, 1)
 
 	// Apply migration to dev latest if there are patches.
-	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, false /*strictDb*/, serverVersion, databaseName, l)
+	err = migrate(ctx, d, &releaseVersion, common.ReleaseModeDev, false /*strictDb*/, serverVersion, databaseName)
 	require.NoError(t, err)
 
 	// Check migration history.

@@ -6,21 +6,18 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*issueCountCollector)(nil)
 
 // issueCountCollector is the metric data collector for issue.
 type issueCountCollector struct {
-	l     *zap.Logger
 	store *store.Store
 }
 
 // NewIssueCountCollector creates a new instance of issueCollector
-func NewIssueCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+func NewIssueCountCollector(store *store.Store) metric.Collector {
 	return &issueCountCollector{
-		l:     l,
 		store: store,
 	}
 }

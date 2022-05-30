@@ -10,13 +10,13 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(logger *zap.Logger, server *Server, backupRunnerInterval time.Duration) *BackupRunner {
+func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
-		l:                    logger,
 		server:               server,
 		backupRunnerInterval: backupRunnerInterval,
 	}
@@ -24,7 +24,6 @@ func NewBackupRunner(logger *zap.Logger, server *Server, backupRunnerInterval ti
 
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
-	l                    *zap.Logger
 	server               *Server
 	backupRunnerInterval time.Duration
 }
@@ -34,13 +33,13 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(s.backupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
 	runningTasks := make(map[int]bool)
 	var mu sync.RWMutex
 	for {
 		select {
 		case <-ticker.C:
-			s.l.Debug("New auto backup round started...")
+			log.Debug("New auto backup round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -48,7 +47,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -60,7 +59,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
-					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
+					log.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
 				}
 
@@ -76,7 +75,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					db := backupSetting.Database
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
-						s.l.Debug("Schedule auto backup",
+						log.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
 							zap.String("backup", backupName),
 						)
@@ -87,7 +86,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}()
 						err := s.scheduleBackupTask(ctx, database, backupName)
 						if err != nil {
-							s.l.Error("Failed to create automatic backup for database",
+							log.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
 							return
@@ -98,7 +97,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 						_, err = http.PostForm(hookURL, nil)
 						if err != nil {
-							s.l.Warn("Failed to POST hook URL",
+							log.Warn("Failed to POST hook URL",
 								zap.String("hookURL", hookURL),
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
@@ -119,7 +118,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.server.pgInstance.BaseDir, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.server.pgInstance.BaseDir)
 	if err != nil {
 		return err
 	}

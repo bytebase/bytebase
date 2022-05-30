@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 
 	// embed will embeds the migration schema.
 	_ "embed"
@@ -58,7 +58,6 @@ func init() {
 
 // Driver is the Postgres driver.
 type Driver struct {
-	l             *zap.Logger
 	pgInstanceDir string
 	connectionCtx db.ConnectionContext
 	config        db.ConnectionConfig
@@ -73,7 +72,6 @@ type Driver struct {
 
 func newDriver(config db.DriverConfig) db.Driver {
 	return &Driver{
-		l:             config.Logger,
 		pgInstanceDir: config.PgInstanceDir,
 	}
 }
@@ -444,7 +442,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -496,7 +494,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -505,7 +503,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		if !driver.strictUseDb() {
 			exist, err := driver.hasBytebaseDatabase(ctx)
 			if err != nil {
-				driver.l.Error("Failed to find bytebase database.",
+				log.Error("Failed to find bytebase database.",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
@@ -516,7 +514,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			if !exist {
 				// Create `bytebase` database
 				if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
-					driver.l.Error("Failed to create bytebase database.",
+					log.Error("Failed to create bytebase database.",
 						zap.Error(err),
 						zap.String("environment", driver.connectionCtx.EnvironmentName),
 						zap.String("database", driver.connectionCtx.InstanceName),
@@ -526,7 +524,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			}
 
 			if err := driver.switchDatabase(db.BytebaseDatabase); err != nil {
-				driver.l.Error("Failed to switch to bytebase database.",
+				log.Error("Failed to switch to bytebase database.",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
@@ -537,14 +535,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 
 		// Create `migration_history` table
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -694,9 +692,9 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	if driver.strictUseDb() {
-		return util.ExecuteMigration(ctx, driver.l, driver, m, statement, driver.strictDatabase)
+		return util.ExecuteMigration(ctx, driver, m, statement, driver.strictDatabase)
 	}
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -930,7 +928,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		}
 	}
 	if s.Err() != nil {
-		log.Fatal(s.Err())
+		log.Warn(s.Err().Error())
 	}
 	if err := cmd.Wait(); err != nil {
 		return err

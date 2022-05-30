@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"runtime"
 	"strings"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
@@ -56,7 +56,6 @@ type Server struct {
 	metaDB     *store.MetadataDB
 	db         *store.DB
 	store      *store.Store
-	l          *zap.Logger
 	lvl        *zap.AtomicLevel
 	startedTs  int64
 	secret     string
@@ -78,11 +77,9 @@ var casbinDBAPolicy string
 var casbinDeveloperPolicy string
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLevel *zap.AtomicLevel) (*Server, error) {
+func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s := &Server{
 		profile:   prof,
-		l:         logger,
-		lvl:       loggerLevel,
 		startedTs: time.Now().Unix(),
 	}
 
@@ -118,14 +115,14 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 	// Install Postgres.
 	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
-	logger.Info("-----Embedded Postgres Config BEGIN-----")
-	logger.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
-	logger.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
-	logger.Info("-----Embedded Postgres Config END-----")
-	logger.Info("Preparing embedded PostgreSQL instance...")
+	log.Info("-----Embedded Postgres Config BEGIN-----")
+	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	log.Info("-----Embedded Postgres Config END-----")
+	log.Info("Preparing embedded PostgreSQL instance...")
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
-	log.Printf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH)
+	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
 	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
 	if err != nil {
 		return nil, err
@@ -134,9 +131,9 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(logger, pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(logger, pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
@@ -156,7 +153,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	cacheService := NewCacheService()
-	storeInstance := store.New(logger, storeDB, cacheService)
+	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
 	config, err := s.initSetting(ctx, storeInstance)
@@ -175,77 +172,77 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		XFrameOptions: "DENY",
 	}))
 
-	embedFrontend(logger, e)
+	embedFrontend(e)
 	s.e = e
 
 	if !prof.Readonly {
 		// Task scheduler
-		taskScheduler := NewTaskScheduler(logger, s)
+		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor(logger)
+		defaultExecutor := NewDefaultTaskExecutor()
 		taskScheduler.Register(string(api.TaskGeneral), defaultExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor(logger)
+		createDBExecutor := NewDatabaseCreateTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseCreate), createDBExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor(logger)
+		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdate), schemaUpdateExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor(logger)
+		dataUpdateExecutor := NewDataUpdateTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseDataUpdate), dataUpdateExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor(logger)
+		backupDBExecutor := NewDatabaseBackupTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseBackup), backupDBExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor(logger)
+		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseRestore), restoreDBExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor(logger)
+		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostSync), schemaUpdateGhostSyncExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor(logger)
+		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostCutover), schemaUpdateGhostCutoverExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
+		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlutil)
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
 
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlutil)
+		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
 		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
 
 		s.TaskScheduler = taskScheduler
 
 		// Task check scheduler
-		taskCheckScheduler := NewTaskCheckScheduler(logger, s)
+		taskCheckScheduler := NewTaskCheckScheduler(s)
 
-		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
+		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor()
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
 
-		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
+		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor()
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
 
-		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor(logger)
+		databaseConnectExecutor := NewTaskCheckDatabaseConnectExecutor()
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseConnect), databaseConnectExecutor)
 
-		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor(logger)
+		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
 		taskCheckScheduler.Register(string(api.TaskCheckInstanceMigrationSchema), migrationSchemaExecutor)
 
-		timingExecutor := NewTaskCheckTimingExecutor(logger)
+		timingExecutor := NewTaskCheckTimingExecutor()
 		taskCheckScheduler.Register(string(api.TaskCheckGeneralEarliestAllowedTime), timingExecutor)
 
 		s.TaskCheckScheduler = taskCheckScheduler
 
 		// Schema syncer
-		s.SchemaSyncer = NewSchemaSyncer(logger, s)
+		s.SchemaSyncer = NewSchemaSyncer(s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(logger, s, prof.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
 
 		// Anomaly scanner
-		s.AnomalyScanner = NewAnomalyScanner(logger, s)
+		s.AnomalyScanner = NewAnomalyScanner(s)
 
 		// Metric reporter
 		s.initMetricReporter(config.workspaceID)
@@ -262,9 +259,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 				`"status":${status},"error":"${error}"}` + "\n",
 		}))
 	}
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return recoverMiddleware(logger, next)
-	})
+	e.Use(recoverMiddleware)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
@@ -272,7 +267,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	apiGroup := e.Group("/api")
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(logger, s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -285,7 +280,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(logger, s, ce, next, prof.Readonly)
+		return aclMiddleware(s, ce, next, prof.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -326,39 +321,39 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(logger, prof.Mode, s.store)
+	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
 
 	s.initSubscription()
 
-	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
+	log.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	serverStarted = true
 	return s, nil
 }
 
 // initSubscription will initial the subscription cache in memory.
-func (server *Server) initSubscription() {
-	server.subscription = server.loadSubscription()
+func (s *Server) initSubscription() {
+	s.subscription = s.loadSubscription()
 }
 
 // initMetricReporter will initial the metric scheduler.
-func (server *Server) initMetricReporter(workspaceID string) {
-	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
+func (s *Server) initMetricReporter(workspaceID string) {
+	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo
 	if enabled {
-		metricReporter := NewMetricReporter(server.l, server, workspaceID)
-		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(server.l, server.store))
-		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(server.l, server.store))
-		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(server.l, server.store))
-		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(server.l, server.store))
-		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(server.l, server.store))
-		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(server.l, server.store))
-		server.MetricReporter = metricReporter
+		metricReporter := NewMetricReporter(s, workspaceID)
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
+		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
+		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
+		s.MetricReporter = metricReporter
 	}
 }
 
-func (server *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
+func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
 	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,
@@ -410,80 +405,80 @@ func (server *Server) initSetting(ctx context.Context, store *store.Store) (*con
 }
 
 // Run will run the server.
-func (server *Server) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
-	server.cancel = cancel
-	if !server.profile.Readonly {
+	s.cancel = cancel
+	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
-		go server.TaskScheduler.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
-		go server.TaskCheckScheduler.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
-		go server.SchemaSyncer.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
-		go server.BackupRunner.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
-		go server.AnomalyScanner.Run(ctx, &server.runnerWG)
-		server.runnerWG.Add(1)
+		go s.TaskScheduler.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.TaskCheckScheduler.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.SchemaSyncer.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.BackupRunner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
+		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
+		s.runnerWG.Add(1)
 
-		if server.MetricReporter != nil {
-			go server.MetricReporter.Run(ctx, &server.runnerWG)
-			server.runnerWG.Add(1)
+		if s.MetricReporter != nil {
+			go s.MetricReporter.Run(ctx, &s.runnerWG)
+			s.runnerWG.Add(1)
 		}
 	}
 
 	// Sleep for 1 sec to make sure port is released between runs.
 	time.Sleep(time.Duration(1) * time.Second)
 
-	return server.e.Start(fmt.Sprintf(":%d", server.profile.BackendPort))
+	return s.e.Start(fmt.Sprintf(":%d", s.profile.BackendPort))
 }
 
 // Shutdown will shut down the server.
-func (server *Server) Shutdown(ctx context.Context) error {
-	server.l.Info("Trying to stop Bytebase ....")
-	server.l.Info("Trying to gracefully shutdown server")
+func (s *Server) Shutdown(ctx context.Context) error {
+	log.Info("Trying to stop Bytebase ....")
+	log.Info("Trying to gracefully shutdown server")
 
 	// Close the metric reporter
-	if server.MetricReporter != nil {
-		server.MetricReporter.Close()
+	if s.MetricReporter != nil {
+		s.MetricReporter.Close()
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	// Cancel the worker
-	if server.cancel != nil {
-		server.cancel()
+	if s.cancel != nil {
+		s.cancel()
 	}
 
 	// Shutdown echo
-	if server.e != nil {
-		if err := server.e.Shutdown(ctx); err != nil {
-			server.e.Logger.Fatal(err)
+	if s.e != nil {
+		if err := s.e.Shutdown(ctx); err != nil {
+			s.e.Logger.Fatal(err)
 		}
 	}
 
 	// Wait for all runners to exit.
-	server.runnerWG.Wait()
+	s.runnerWG.Wait()
 
 	// Close db connection
-	if server.db != nil {
-		server.l.Info("Trying to close database connections")
-		if err := server.db.Close(); err != nil {
+	if s.db != nil {
+		log.Info("Trying to close database connections")
+		if err := s.db.Close(); err != nil {
 			return err
 		}
 	}
 
 	// Shutdown postgres server if embed.
-	if server.metaDB != nil {
-		server.metaDB.Close()
+	if s.metaDB != nil {
+		s.metaDB.Close()
 	}
-	server.l.Info("Bytebase stopped properly")
+	log.Info("Bytebase stopped properly")
 
 	return nil
 }
 
 // GetEcho returns the echo server.
-func (server *Server) GetEcho() *echo.Echo {
-	return server.e
+func (s *Server) GetEcho() *echo.Echo {
+	return s.e
 }

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -38,15 +39,15 @@ const (
 )
 
 // NewConfig will create a new enterprise config instance.
-func NewConfig(l *zap.Logger, mode common.ReleaseMode) (*Config, error) {
-	l.Info("get project env", zap.String("env", string(mode)))
+func NewConfig(mode common.ReleaseMode) (*Config, error) {
+	log.Info("get project env", zap.String("env", string(mode)))
 
 	filename := fmt.Sprintf("keys/%s.pub.pem", mode)
 	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
 	if err != nil {
 		return nil, fmt.Errorf("cannot read license public key for env %s", mode)
 	}
-	l.Info("load public pem", zap.String("file", filename))
+	log.Info("load public pem", zap.String("file", filename))
 
 	return &Config{
 		PublicKey:       string(licensePubKey),

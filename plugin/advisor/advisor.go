@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
 )
 
 // Status is the advisor result status.
@@ -111,7 +110,6 @@ type Advice struct {
 
 // Context is the context for advisor.
 type Context struct {
-	Logger    *zap.Logger
 	Charset   string
 	Collation string
 

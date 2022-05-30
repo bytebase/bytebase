@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 type MockCatalogService struct{}
@@ -60,9 +59,7 @@ func runSchemaReviewRuleTests(
 	rule *api.SchemaReviewRule,
 	catalog catalog.Service,
 ) {
-	logger, _ := zap.NewDevelopmentConfig().Build()
 	ctx := advisor.Context{
-		Logger:    logger,
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,

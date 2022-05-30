@@ -13,7 +13,6 @@ import (
 	// install pg driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
 	"github.com/xo/dburl"
-	"go.uber.org/zap"
 )
 
 func getDatabase(u *dburl.URL) string {
@@ -23,7 +22,7 @@ func getDatabase(u *dburl.URL) string {
 	return u.Path[1:]
 }
 
-func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, error) {
+func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 	var dbType db.Type
 	var pgInstanceDir string
 	switch u.Driver {
@@ -41,12 +40,11 @@ func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, err
 	default:
 		return nil, fmt.Errorf("database type %q not supported; supported types: mysql, pg", u.Driver)
 	}
-	fmt.Printf("Barny1: %s\n", pgInstanceDir)
 	passwd, _ := u.User.Password()
 	driver, err := db.Open(
 		ctx,
 		dbType,
-		db.DriverConfig{Logger: logger, PgInstanceDir: pgInstanceDir},
+		db.DriverConfig{PgInstanceDir: pgInstanceDir},
 		db.ConnectionConfig{
 			Host:     u.Hostname(),
 			Port:     u.Port(),
@@ -58,7 +56,9 @@ func open(ctx context.Context, logger *zap.Logger, u *dburl.URL) (db.Driver, err
 				SslCert: u.Query().Get("ssl-cert"),
 				SslKey:  u.Query().Get("ssl-key"),
 			},
-		}, db.ConnectionContext{})
+		},
+		db.ConnectionContext{},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database, got error: %w", err)
 	}
