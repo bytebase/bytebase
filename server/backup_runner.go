@@ -118,7 +118,7 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.server.pgInstanceDir)
 	if err != nil {
 		return err
 	}
