@@ -1073,7 +1073,8 @@
     "go-and-config": "Go and config",
     "wont-be-deployed-explanation": "These databases won't be deployed, since they hit none of the selectors.",
     "wont-be-deployed": "Won't be deployed",
-    "preview-deployment-stages": "Preview Deployment Stages"
+    "preview-deployment-stages": "Preview Deployment Stages",
+    "pipeline-generated-from-deployment-config": "The deployment pipeline is generated according to the project's {deployment_config}."
   },
   "datasource": {
     "role-type": "Role Type",

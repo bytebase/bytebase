@@ -1073,7 +1073,8 @@
     "go-and-config": "去配置",
     "wont-be-deployed-explanation": "这些数据库不会被部署，因为没有命中任何选择条件。",
     "wont-be-deployed": "不参与部署",
-    "preview-deployment-stages": "预览部署阶段"
+    "preview-deployment-stages": "预览部署阶段",
+    "pipeline-generated-from-deployment-config": "部署的流水线根据项目的 {deployment_config} 生成。"
   },
   "datasource": {
     "role-type": "权限类型",
