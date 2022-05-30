@@ -149,8 +149,8 @@ func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error 
 	return nil
 }
 
-// CountSheetGroupByVisibility counts the number of sheets group by visibility.
-func (s *Store) CountSheetGroupByVisibility(ctx context.Context) ([]*metric.SheetCountMetric, error) {
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)

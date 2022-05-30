@@ -26,7 +26,7 @@ func NewSheetCountCollector(store *store.Store) metric.Collector {
 func (c *sheetCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	sheetCountMetricList, err := c.store.CountSheetGroupByVisibility(ctx)
+	sheetCountMetricList, err := c.store.CountSheetGroupByRowstatusVisibilitySourceAndType(ctx)
 	if err != nil {
 		return nil, err
 	}
