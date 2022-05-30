@@ -90,7 +90,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		Database:       task.Database.Name,
 		Environment:    task.Database.Instance.Environment.Name,
 		Source:         db.MigrationSource(task.Database.Project.WorkflowType),
-		Type:           db.Branch,
+		Type:           db.Baseline,
 		Description:    fmt.Sprintf("pitr: swap database %s and %s", task.Database.Name, pitrDatabaseName),
 		Creator:        task.Creator.Name,
 		IssueID:        strconv.Itoa(issue.ID),
