@@ -9,19 +9,16 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/db"
-	dbplugin "github.com/bytebase/bytebase/plugin/db"
-
-	"go.uber.org/zap"
 )
 
-func getMySQLConnectionConfig(port string, database string) dbplugin.ConnectionConfig {
+func getMySQLConnectionConfig(port string, database string) db.ConnectionConfig {
 	return db.ConnectionConfig{
 		Host:      "localhost",
 		Port:      port,
 		Username:  "root",
 		Password:  "",
 		Database:  database,
-		TLSConfig: dbplugin.TLSConfig{},
+		TLSConfig: db.TLSConfig{},
 	}
 }
 
@@ -33,17 +30,13 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
-func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
+func getTestMySQLDriver(ctx context.Context, port, database string) (db.Driver, error) {
 	connCfg := getMySQLConnectionConfig(port, database)
-	return dbplugin.Open(
+	return db.Open(
 		ctx,
-		dbplugin.MySQL,
-		dbplugin.DriverConfig{Logger: logger},
+		db.MySQL,
+		db.DriverConfig{},
 		connCfg,
-		dbplugin.ConnectionContext{},
+		db.ConnectionContext{},
 	)
 }

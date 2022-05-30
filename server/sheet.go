@@ -106,7 +106,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 
 		basePath := filepath.Dir(repo.SheetPathTemplate)
 		// TODO(Steven): The repo.branchFilter could be `test/*` which cannot be the ref value.
-		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchRepositoryFileList(ctx,
+		fileList, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchRepositoryFileList(ctx,
 			common.OauthContext{
 				ClientID:     vcs.ApplicationID,
 				ClientSecret: vcs.Secret,
@@ -132,7 +132,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("sheet name cannot be empty from sheet path %s with template %s", file.Path, repo.SheetPathTemplate)).SetInternal(err)
 			}
 
-			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileContent(ctx,
+			fileContent, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileContent(ctx,
 				common.OauthContext{
 					ClientID:     vcs.ApplicationID,
 					ClientSecret: vcs.Secret,
@@ -149,7 +149,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file content from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
 			}
 
-			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).ReadFileMeta(ctx,
+			fileMeta, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(ctx,
 				common.OauthContext{
 					ClientID:     vcs.ApplicationID,
 					ClientSecret: vcs.Secret,
@@ -166,7 +166,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch file meta from VCS, instance URL: %s, repo ID: %s, file path: %s, branch: %s", vcs.InstanceURL, repo.ExternalID, file.Path, repo.BranchFilter)).SetInternal(err)
 			}
 
-			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).FetchCommitByID(ctx,
+			lastCommit, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).FetchCommitByID(ctx,
 				common.OauthContext{
 					ClientID:     vcs.ApplicationID,
 					ClientSecret: vcs.Secret,
