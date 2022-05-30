@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
@@ -67,36 +68,36 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Project.ID, repo.ExternalID))
 		}
 
-		s.l.Debug("Processing gitlab webhook push event...",
+		log.Debug("Processing gitlab webhook push event...",
 			zap.String("project", repo.Project.Name),
 		)
 
 		createdMessageList := []string{}
 		for _, commit := range pushEvent.CommitList {
-			s.l.Debug("Processing commit...",
+			log.Debug("Processing commit...",
 				zap.String("id", common.EscapeForLogging(commit.ID)),
 				zap.String("title", common.EscapeForLogging(commit.Title)),
 			)
 
 			for _, added := range commit.AddedList {
 				addedEscaped := common.EscapeForLogging(added)
-				s.l.Debug("Processing added file...",
+				log.Debug("Processing added file...",
 					zap.String("file", addedEscaped),
 				)
 
 				if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
-					s.l.Debug("Ignored committed file, not under base directory.", zap.String("file", addedEscaped), zap.String("base_directory", repo.BaseDirectory))
+					log.Debug("Ignored committed file, not under base directory.", zap.String("file", addedEscaped), zap.String("base_directory", repo.BaseDirectory))
 					continue
 				}
 
 				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 				if err != nil {
-					s.l.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
+					log.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 				}
 
 				// Ignore the schema file we auto generated to the repository.
-				if isSkipGeneratedSchemaFile(repo, addedEscaped, s.l) {
-					s.l.Debug("Ignored generated latest schema file.", zap.String("file", addedEscaped))
+				if isSkipGeneratedSchemaFile(repo, addedEscaped) {
+					log.Debug("Ignored generated latest schema file.", zap.String("file", addedEscaped))
 					continue
 				}
 
@@ -121,12 +122,12 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				// Create a WARNING project activity if committed file is ignored
 				var createIgnoredFileActivity = func(err error) {
-					s.l.Warn("Ignored committed file", zap.String("file", addedEscaped), zap.Error(err))
+					log.Warn("Ignored committed file", zap.String("file", addedEscaped), zap.Error(err))
 					bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 						VCSPushEvent: vcsPushEvent,
 					})
 					if marshalErr != nil {
-						s.l.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
+						log.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
 						return
 					}
 
@@ -140,7 +141,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
-						s.l.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
+						log.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
 					}
 				}
 
@@ -151,7 +152,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				}
 
 				// Retrieve sql by reading the file content
-				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).ReadFileContent(
+				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
 					ctx,
 					common.OauthContext{
 						ClientID:     repo.VCS.ApplicationID,
@@ -234,7 +235,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 		if len(createdMessageList) == 0 {
 			msg := "Ignored push event. No applicable file found in the commit list."
-			s.l.Warn(msg,
+			log.Warn(msg,
 				zap.String("project", repo.Project.Name),
 			)
 		}
@@ -341,7 +342,7 @@ func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *
 
 // We may write back the latest schema file to the repository after migration and we need to ignore
 // this file from the webhook push event.
-func isSkipGeneratedSchemaFile(repository *api.Repository, added string, logger *zap.Logger) bool {
+func isSkipGeneratedSchemaFile(repository *api.Repository, added string) bool {
 	if repository.SchemaPathTemplate != "" {
 		placeholderList := []string{
 			"ENV_NAME",
@@ -353,7 +354,7 @@ func isSkipGeneratedSchemaFile(repository *api.Repository, added string, logger 
 		}
 		myRegex, err := regexp.Compile(schemafilePathRegex)
 		if err != nil {
-			logger.Warn("Invalid schema path template.", zap.String("schema_path_template",
+			log.Warn("Invalid schema path template.", zap.String("schema_path_template",
 				repository.SchemaPathTemplate),
 				zap.Error(err),
 			)

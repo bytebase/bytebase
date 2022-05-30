@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // Type is the type of a database.
@@ -138,7 +137,6 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	Logger *zap.Logger
 }
 
 type driverFunc func(DriverConfig) Driver

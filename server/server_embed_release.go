@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
 //go:embed dist
@@ -19,15 +18,15 @@ var embeddedFiles embed.FS
 var indexContent string
 
 func getFileSystem() http.FileSystem {
-	fsys, err := fs.Sub(embeddedFiles, "dist")
+	fs, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
 		panic(err)
 	}
 
-	return http.FS(fsys)
+	return http.FS(fs)
 }
 
-func embedFrontend(logger *zap.Logger, e *echo.Echo) {
+func embedFrontend(e *echo.Echo) {
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
 	e.GET("/*", func(c echo.Context) error {
