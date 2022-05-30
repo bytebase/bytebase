@@ -1,5 +1,13 @@
 <template>
   <div class="mx-auto">
+    <FeatureAttention
+      v-if="!hasSchemaReviewPolicyFeature"
+      custom-class="mt-5"
+      feature="bb.feature.schema-review-policy"
+      :description="
+        $t('subscription.features.bb-feature-schema-review-policy.desc')
+      "
+    />
     <div v-if="store.reviewPolicyList.length > 0" class="space-y-6 my-5">
       <div class="flex justify-start mt-4" v-if="hasPermission">
         <div class="flex flex-col items-center w-28">
@@ -32,6 +40,7 @@ import {
   pushNotification,
   useSchemaSystemStore,
   useCurrentUser,
+  featureToRef,
 } from "@/store";
 import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
 import { schemaReviewPolicySlug, isDBAOrOwner } from "@/utils";
@@ -49,6 +58,10 @@ watchEffect(() => {
 const hasPermission = computed(() => {
   return isDBAOrOwner(currentUser.value.role);
 });
+
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
 
 const goToCreationView = () => {
   if (hasPermission.value) {
