@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -298,6 +300,114 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 			a.Error(err)
 		} else {
 			a.NoError(err)
+		}
+	}
+}
+
+func TestGetReplayBinlogPathListImpl(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		subDirNames     []string
+		binlogFileNames []string
+		startBinlogInfo api.BinlogInfo
+		prefix          string
+		expect          []string
+		err             bool
+	}{
+		{
+			// Test skip directory
+			subDirNames:     []string{"subdir_a", "subdir_b"},
+			binlogFileNames: []string{},
+			startBinlogInfo: api.BinlogInfo{},
+			prefix:          "",
+			expect:          []string{},
+			err:             false,
+		},
+		{
+			// Test skip stale binlog
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			prefix: "binlog.",
+			expect: []string{"binlog.000002", "binlog.000003"},
+			err:    false,
+		},
+		{
+			// Test binlogs no hole
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000004"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			prefix: "binlog.",
+			expect: []string{},
+			err:    true,
+		},
+		{
+			// Test mix with other file
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "otherfile"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000001",
+				Position: 0xdeadbeaf,
+			},
+			prefix: "binlog.",
+			expect: []string{"binlog.000001", "binlog.000002"},
+			err:    false,
+		},
+		{
+			// Test user defile prefix
+			subDirNames:     []string{},
+			binlogFileNames: []string{"USER_PREFIX.000001", "USER_PREFIX.000002", "USER_PREFIX.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "USER_PREFIX.000001",
+				Position: 0xdeadbeaf,
+			},
+			prefix: "USER_PREFIX.",
+			expect: []string{"USER_PREFIX.000001", "USER_PREFIX.000002", "USER_PREFIX.000003"},
+			err:    false,
+		},
+		{
+			// Test out of binlog.999999
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.999999",
+				Position: 0xdeadbeaf,
+			},
+			prefix: "binlog.",
+			expect: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			err:    false,
+		},
+	}
+
+	for _, test := range tests {
+		tmpDir := t.TempDir()
+
+		for _, subDir := range test.subDirNames {
+			err := os.MkdirAll(filepath.Join(tmpDir, subDir), os.ModePerm)
+			a.NoError(err)
+		}
+
+		for _, binlogFileName := range test.binlogFileNames {
+			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))
+			a.NoError(err)
+			err = f.Close()
+			a.NoError(err)
+		}
+
+		result, err := getReplayBinlogPathListImpl(test.startBinlogInfo, tmpDir, test.prefix)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.EqualValues(len(result), len(test.expect))
+			for idx := range test.expect {
+				a.EqualValues(result[idx], filepath.Join(tmpDir, test.expect[idx]))
+			}
 		}
 	}
 }

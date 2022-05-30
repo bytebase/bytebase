@@ -72,9 +72,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originDatabase, pitrDatabase
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
-	for _, path := range replayBinlogPaths {
-		mysqlbinlogArgs = append(mysqlbinlogArgs, path)
-	}
+	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
 
 	mysqlArgs := []string{
 		fmt.Sprintf("--host=%s", r.connCfg.Host),
@@ -160,10 +158,10 @@ func (r *Restore) getReplayBinlogPathList(ctx context.Context, startBinlogInfo a
 	if err != nil {
 		return nil, fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
 	}
-	return getReplayBinlogPathListImpl(ctx, startBinlogInfo, binlogDir, binlogNamePrefix)
+	return getReplayBinlogPathListImpl(startBinlogInfo, binlogDir, binlogNamePrefix)
 }
 
-func getReplayBinlogPathListImpl(ctx context.Context, startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
+func getReplayBinlogPathListImpl(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
 	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
@@ -174,7 +172,12 @@ func getReplayBinlogPathListImpl(ctx context.Context, startBinlogInfo api.Binlog
 		return nil, fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
 	}
 
-	var needReplayBinlogSeq []int64
+	type binlogItem struct {
+		name string
+		seq  int
+	}
+	var needReplayBinlogName []binlogItem
+
 	for _, f := range binlogFilesLocal {
 		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
 			continue
@@ -186,19 +189,30 @@ func getReplayBinlogPathListImpl(ctx context.Context, startBinlogInfo api.Binlog
 			return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
-			needReplayBinlogSeq = append(needReplayBinlogSeq, binlogSeq)
+			needReplayBinlogName = append(needReplayBinlogName, binlogItem{
+				name: f.Name(),
+				seq:  int(binlogSeq),
+			})
 		}
 	}
-	sort.Slice(needReplayBinlogSeq, func(i, j int) bool { return needReplayBinlogSeq[i] < needReplayBinlogSeq[j] })
-	for i := 1; i < len(needReplayBinlogSeq); i++ {
-		if needReplayBinlogSeq[i] != needReplayBinlogSeq[i-1]+1 {
-			return nil, fmt.Errorf("detect a discontinuous binlog sequence %v", needReplayBinlogSeq)
+
+	if len(needReplayBinlogName) == 0 {
+		return []string{}, nil
+	}
+
+	sort.Slice(needReplayBinlogName, func(i, j int) bool {
+		return needReplayBinlogName[i].seq < needReplayBinlogName[j].seq
+	})
+
+	for i := 1; i < len(needReplayBinlogName); i++ {
+		if needReplayBinlogName[i].seq != needReplayBinlogName[i-1].seq+1 {
+			return nil, fmt.Errorf("detect a discontinuous binlog sequence %v", needReplayBinlogName)
 		}
 	}
 
 	var needReplayBinlogFilePath []string
-	for _, seq := range needReplayBinlogSeq {
-		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, fmt.Sprintf("%s%d", binlogNamePrefix, seq)))
+	for _, item := range needReplayBinlogName {
+		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, item.name))
 	}
 
 	return needReplayBinlogFilePath, nil
