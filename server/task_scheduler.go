@@ -23,14 +23,14 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executors: make(map[string]TaskExecutor),
+		executors: make(map[api.TaskType]TaskExecutor),
 		server:    server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executors map[string]TaskExecutor
+	executors map[api.TaskType]TaskExecutor
 
 	server *Server
 }
@@ -105,7 +105,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					executor, ok := s.executors[string(task.Type)]
+					executor, ok := s.executors[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -224,7 +224,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register a task executor.
-func (s *TaskScheduler) Register(taskType string, executor TaskExecutor) {
+func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
