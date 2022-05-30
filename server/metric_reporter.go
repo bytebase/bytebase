@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
@@ -24,8 +25,6 @@ const (
 
 // MetricReporter is the metric reporter.
 type MetricReporter struct {
-	l *zap.Logger
-
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
@@ -37,11 +36,10 @@ type MetricReporter struct {
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	r := segment.NewReporter(logger, server.profile.MetricConnectionKey, workspaceID)
+func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
+	r := segment.NewReporter(server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
-		l:            logger,
 		subscription: &server.subscription,
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
@@ -56,7 +54,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	m.l.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
+	log.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
 		select {
@@ -68,7 +66,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						m.l.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -77,11 +75,11 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				for name, collector := range m.collectors {
-					m.l.Debug("Run metric collector", zap.String("collector", name))
+					log.Debug("Run metric collector", zap.String("collector", name))
 
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
-						m.l.Error(
+						log.Error(
 							"Failed to collect metric",
 							zap.String("collector", name),
 							zap.Error(err),
@@ -91,7 +89,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					for _, metric := range metricList {
 						if err := m.reporter.Report(metric); err != nil {
-							m.l.Error(
+							log.Error(
 								"Failed to report metric",
 								zap.String("metric", string(metric.Name)),
 								zap.Error(err),
@@ -129,6 +127,6 @@ func (m *MetricReporter) identify() {
 			identifyTraitForVersion: m.version,
 		},
 	}); err != nil {
-		m.l.Debug("reporter identify failed", zap.Error(err))
+		log.Debug("reporter identify failed", zap.Error(err))
 	}
 }

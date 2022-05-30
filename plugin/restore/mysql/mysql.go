@@ -41,14 +41,16 @@ type Restore struct {
 	driver    *mysql.Driver
 	mysqlutil *mysqlutil.Instance
 	connCfg   db.ConnectionConfig
+	binlogDir string
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig) *Restore {
+func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
 	return &Restore{
 		driver:    driver,
 		mysqlutil: instance,
 		connCfg:   connCfg,
+		binlogDir: binlogDir,
 	}
 }
 
@@ -222,9 +224,9 @@ func getReplayBinlogPathListImpl(startBinlogInfo api.BinlogInfo, binlogDir, binl
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo, binlogDir string) (int64, error) {
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
-		path.Join(binlogDir, binlogInfo.FileName),
+		path.Join(r.binlogDir, binlogInfo.FileName),
 		fmt.Sprintf("--start-position %d", binlogInfo.Position),
 		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
 		// the --stop-position is in the middle of the binlog event.
@@ -275,14 +277,14 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 // The backupList should only contain DONE backups.
 // TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
 // nolint
-func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, binlogDir string) (*api.Backup, error) {
+func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
 	if len(backupList) == 0 {
 		return nil, fmt.Errorf("no valid backup")
 	}
 
 	var eventTsList []int64
 	for _, b := range backupList {
-		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo, binlogDir)
+		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
 		}
@@ -417,10 +419,10 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlog files between the instance and `saveDir`,
+// SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
-	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, binlogDir string) error {
+	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return err
 	}
@@ -458,7 +460,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 
 		if localBinlogSize != serverBinlog.Size {
 			// exist on local and file size not match, delete and then download it
-			if err := os.Remove(filepath.Join(saveDir, serverBinlog.Name)); err != nil {
+			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
 				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
 			todo[serverBinlog.Name] = true
@@ -470,7 +472,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, instance, binlogDir, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -478,19 +480,19 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	return nil
 }
 
-// SyncLatestBinlog syncs the latest binlog between the instance and `saveDir`
-func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, saveDir string) error {
+// SyncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
+func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, binlogDir string) error {
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, instance, saveDir, *latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, instance, binlogDir, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, binlogDir string, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
-	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
+	resultFileDir := strings.TrimRight(binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL),
 		binlog.Name,

@@ -8,19 +8,15 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 // NewTaskCheckTimingExecutor creates a task check timing executor.
-func NewTaskCheckTimingExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckTimingExecutor{
-		l: logger,
-	}
+func NewTaskCheckTimingExecutor() TaskCheckExecutor {
+	return &TaskCheckTimingExecutor{}
 }
 
 // TaskCheckTimingExecutor is the task check timing executor.
 type TaskCheckTimingExecutor struct {
-	l *zap.Logger
 }
 
 const dataFormat = "2006-01-02 15:04:05"
