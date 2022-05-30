@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/metric"
 	metricCollector "github.com/bytebase/bytebase/metric/collector"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/store"
 )
 
@@ -46,14 +48,15 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile   Profile
-	e         *echo.Echo
-	mysqlutil *mysqlutil.Instance
-	metaDB    *store.MetadataDB
-	db        *store.DB
-	store     *store.Store
-	startedTs int64
-	secret    string
+	profile       Profile
+	e             *echo.Echo
+	mysqlutil     *mysqlutil.Instance
+	pgInstanceDir string
+	metaDB        *store.MetadataDB
+	db            *store.DB
+	store         *store.Store
+	startedTs     int64
+	secret        string
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -108,11 +111,27 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 	s.mysqlutil = mysqlutilIns
 
+	// Install Postgres.
+	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	log.Info("-----Embedded Postgres Config BEGIN-----")
+	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
+	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
+	log.Info("-----Embedded Postgres Config END-----")
+	log.Info("Preparing embedded PostgreSQL instance...")
+	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
+	// to store Bytebase's own metadata.
+	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
+	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	if err != nil {
+		return nil, err
+	}
+	s.pgInstanceDir = pgInstance.BaseDir
+
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB, err = store.NewMetadataDBWithEmbedPg(prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
 	} else {
-		s.metaDB, err = store.NewMetadataDBWithExternalPg(prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
