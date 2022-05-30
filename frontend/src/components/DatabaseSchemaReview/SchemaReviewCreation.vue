@@ -65,6 +65,11 @@
       @cancel="state.showAlertModal = false"
     >
     </BBAlert>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.schema-review-policy"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -83,6 +88,7 @@ import {
   convertRuleTemplateToPolicyRule,
 } from "@/types";
 import {
+  featureToRef,
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
@@ -97,6 +103,7 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
+  showFeatureModal: boolean;
   templateIndex: number;
   pendingApplyTemplateIndex: number;
 }
@@ -126,6 +133,10 @@ const currentUser = useCurrentUser();
 const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
+
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
 
 const getRuleListWithLevel = (
   typeList: RuleType[],
@@ -231,6 +242,7 @@ const state = reactive<LocalState>({
     : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
   ruleUpdated: false,
   showAlertModal: false,
+  showFeatureModal: false,
   templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
@@ -282,6 +294,10 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
+  if (!hasSchemaReviewPolicyFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   if (!hasPermission.value) {
     pushNotification({
       module: "bytebase",
