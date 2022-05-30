@@ -91,6 +91,71 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_FetchCommitByID(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/git/commits#get-a-commit
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "sha": "7638417db6d59f3c431d3e1f261cc637155684cd",
+  "node_id": "MDY6Q29tbWl0NmRjYjA5YjViNTc4NzVmMzM0ZjYxYWViZWQ2OTVlMmU0MTkzZGI1ZQ==",
+  "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd",
+  "html_url": "https://github.com/octocat/Hello-World/commit/7638417db6d59f3c431d3e1f261cc637155684cd",
+  "author": {
+    "date": "2014-11-07T22:01:45Z",
+    "name": "Monalisa Octocat",
+    "email": "octocat@github.com"
+  },
+  "committer": {
+    "date": "2014-11-07T22:01:45Z",
+    "name": "Monalisa Octocat",
+    "email": "octocat@github.com"
+  },
+  "message": "added readme, because im a good github citizen",
+  "tree": {
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/trees/691272480426f78a0138979dd3ce63b77f706feb",
+    "sha": "691272480426f78a0138979dd3ce63b77f706feb"
+  },
+  "parents": [
+    {
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/1acc419d4d6a9ce985db7be48c6349a0475975b5",
+      "sha": "1acc419d4d6a9ce985db7be48c6349a0475975b5",
+      "html_url": "https://github.com/octocat/Hello-World/commit/7638417db6d59f3c431d3e1f261cc637155684cd"
+    }
+  ],
+  "verification": {
+    "verified": false,
+    "reason": "unsigned",
+    "signature": null,
+    "payload": null
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchCommitByID(ctx, common.OauthContext{}, "", "octocat/Hello-World", "7638417db6d59f3c431d3e1f261cc637155684cd")
+	require.NoError(t, err)
+
+	want := &vcs.Commit{
+		ID:         "7638417db6d59f3c431d3e1f261cc637155684cd",
+		AuthorName: "Monalisa Octocat",
+		CreatedTs:  1415397705,
+	}
+	assert.Equal(t, want, got)
+}
+
 func TestProvider_ExchangeOAuthToken(t *testing.T) {
 	p := newProvider(
 		vcs.ProviderConfig{
