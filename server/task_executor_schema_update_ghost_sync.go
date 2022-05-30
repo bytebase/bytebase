@@ -183,7 +183,7 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, migr
 func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, statement string, waitSync *sync.WaitGroup) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, "" /* pgInstanceDir */)
 	if err != nil {
 		return -1, "", err
 	}

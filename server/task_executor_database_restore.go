@@ -70,7 +70,7 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	)
 
 	// Restore the database to the target database.
-	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir); err != nil {
+	if err := exec.restoreDatabase(ctx, targetDatabase.Instance, targetDatabase.Name, backup, server.profile.DataDir, server.pgInstanceDir); err != nil {
 		return true, nil, err
 	}
 
@@ -105,8 +105,8 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 }
 
 // restoreDatabase will restore the database from a backup
-func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) error {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName)
+func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) error {
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (exec *DatabaseRestoreTaskExecutor) restoreDatabase(ctx context.Context, in
 // create many ephemeral databases from backup for testing purpose)
 // Returns migration history id and the version on success
 func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDatabase, targetDatabase *api.Database, backup *api.Backup, task *api.Task) (int64, string, error) {
-	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name)
+	targetDriver, err := getAdminDatabaseDriver(ctx, targetDatabase.Instance, targetDatabase.Name, server.pgInstanceDir)
 	if err != nil {
 		return -1, "", err
 	}
