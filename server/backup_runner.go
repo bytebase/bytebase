@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	backupExpireDuration = 7 * 24 * time.Hour
+	backupExpireDuration  = 7 * 24 * time.Hour
+	backupCleanupInterval = 30 * time.Minute
 )
 
 // NewBackupRunner creates a new backup runner.
@@ -44,16 +45,21 @@ type BackupRunner struct {
 
 // Run is the runner for backup runner.
 func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(r.backupRunnerInterval)
-	defer ticker.Stop()
+	tickerAutoBackup := time.NewTicker(r.backupRunnerInterval)
+	tickerBackupCleaner := time.NewTicker(backupCleanupInterval)
+	defer tickerAutoBackup.Stop()
+	defer tickerBackupCleaner.Stop()
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", r.backupRunnerInterval))
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-tickerAutoBackup.C:
 			log.Debug("New auto backup round started...")
 			r.run(ctx)
+		case <-tickerBackupCleaner.C:
+			log.Debug("New backup clean up round started...")
+			r.cleanupBackups(ctx)
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
