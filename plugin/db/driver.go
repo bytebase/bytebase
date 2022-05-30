@@ -137,6 +137,7 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
+	PgInstanceDir string
 }
 
 type driverFunc func(DriverConfig) Driver
