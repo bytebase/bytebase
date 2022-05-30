@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -82,13 +83,21 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		zap.String("old_database", pitrOldDatabaseName))
 
 	log.Info("Appending new migration history record...")
-	executor := driver.(util.MigrationExecutor)
-	schemaVersion := common.DefaultMigrationVersion()
-	mi, err := preMigration(ctx, server, task, db.Baseline, "", schemaVersion, nil)
-	if err != nil {
-		return true, nil, err
+	mi := &db.MigrationInfo{
+		ReleaseVersion: server.profile.Version,
+		Version:        common.DefaultMigrationVersion(),
+		Namespace:      task.Database.Name,
+		Database:       task.Database.Name,
+		Environment:    task.Database.Instance.Environment.Name,
+		Source:         db.MigrationSource(task.Database.Project.WorkflowType),
+		Type:           db.Branch,
+		Description:    fmt.Sprintf("pitr: swap database %s and %s", task.Database.Name, pitrDatabaseName),
+		Creator:        task.Creator.Name,
+		IssueID:        strconv.Itoa(issue.ID),
 	}
 
+	// After the swap, the original database is replaced by the pitr database, so prev schema the original database,
+	// and updated schema is the pitr database.
 	var prevSchemaBuf bytes.Buffer
 	if _, err := driver.Dump(ctx, task.Database.Name, &prevSchemaBuf, true); err != nil {
 		return true, nil, err
@@ -98,6 +107,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
+	executor := driver.(util.MigrationExecutor)
 	stmt := "/* pitr cutover */"
 	startedNs := time.Now().UnixNano()
 	migrationHistoryID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), stmt, db.BytebaseDatabase)
