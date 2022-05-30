@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // sheetRaw is the store model for an Sheet.
@@ -146,6 +147,41 @@ func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error 
 	}
 
 	return nil
+}
+
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT row_status, visibility, source, type, COUNT(*) AS count
+		FROM sheets
+		GROUP BY row_status, visibility, source, type`)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.SheetCountMetric
+	for rows.Next() {
+		var sheetCount metric.SheetCountMetric
+		if err := rows.Scan(
+			&sheetCount.RowStatus,
+			&sheetCount.Visibility,
+			&sheetCount.Source,
+			&sheetCount.Type,
+			&sheetCount.Count,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &sheetCount)
+	}
+
+	return res, nil
 }
 
 //
