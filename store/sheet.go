@@ -158,9 +158,9 @@ func (s *Store) CountSheetGroupByVisibility(ctx context.Context) ([]*metric.Shee
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT visibility, COUNT(*) AS count
+		SELECT row_status, visibility, source, type, COUNT(*) AS count
 		FROM sheets
-		GROUP BY visibility`)
+		GROUP BY row_status, visibility, source, type`)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -169,7 +169,13 @@ func (s *Store) CountSheetGroupByVisibility(ctx context.Context) ([]*metric.Shee
 	var res []*metric.SheetCountMetric
 	for rows.Next() {
 		var sheetCount metric.SheetCountMetric
-		if err := rows.Scan(&sheetCount.Visibility, &sheetCount.Count); err != nil {
+		if err := rows.Scan(
+			&sheetCount.RowStatus,
+			&sheetCount.Visibility,
+			&sheetCount.Source,
+			&sheetCount.Type,
+			&sheetCount.Count,
+		); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &sheetCount)
