@@ -128,7 +128,7 @@
           </div>
         </div>
       </div>
-      <div class="col-span-1" v-if="!create && isDev()">
+      <div class="col-span-1" v-if="!create">
         <label class="textlabel">
           {{ $t("schema-review-policy.title") }}
         </label>
