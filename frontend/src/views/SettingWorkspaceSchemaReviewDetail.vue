@@ -1,4 +1,12 @@
 <template>
+  <FeatureAttention
+    v-if="!hasSchemaReviewPolicyFeature"
+    custom-class="my-5"
+    feature="bb.feature.schema-review-policy"
+    :description="
+      $t('subscription.features.bb-feature-schema-review-policy.desc')
+    "
+  />
   <transition appear name="slide-from-bottom" mode="out-in">
     <SchemaReviewCreation
       v-if="state.editMode"
@@ -176,6 +184,7 @@ import {
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
 import {
+  featureToRef,
   useCurrentUser,
   pushNotification,
   useSchemaSystemStore,
@@ -212,6 +221,10 @@ const state = reactive<LocalState>({
   checkedEngine: new Set<SchemaRuleEngineType>(),
   checkedLevel: new Set<RuleLevel>(),
 });
+
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
 
 const hasPermission = computed(() => {
   return isDBAOrOwner(currentUser.value.role);
