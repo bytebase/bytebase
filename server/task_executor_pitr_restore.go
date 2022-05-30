@@ -117,7 +117,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 }
 
 // getAndCreateBinlogDirectory returns the path of a instance binlog directory.
-// nolint
 func getAndCreateBinlogDirectory(dataDir string, instance *api.Instance) (string, error) {
 	dir := filepath.Join("backup", "instance", fmt.Sprintf("%d", instance.ID))
 	absDir := filepath.Join(dataDir, dir)
