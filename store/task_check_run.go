@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -167,7 +168,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 	if runningCount > 0 {
 		if runningCount > 1 {
 			// Normally, this should not happen, if it occurs, emit a warning
-			s.l.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
+			log.Warn(fmt.Sprintf("Found %d task check run, expect at most 1", len(taskCheckRunList)),
 				zap.Int("task_id", create.TaskID),
 				zap.String("task_check_type", string(create.Type)),
 			)

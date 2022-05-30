@@ -31,9 +31,8 @@ const (
 )
 
 // NewIdentifier creates a new instance of metricIdentifier
-func NewIdentifier(l *zap.Logger, store *store.Store, workspace *api.Workspace, subscription *enterpriseAPI.Subscription) metric.Identifier {
+func NewIdentifier(store *store.Store, workspace *api.Workspace, subscription *enterpriseAPI.Subscription) metric.Identifier {
 	return &metricIdentifier{
-		l:            l,
 		store:        store,
 		workspace:    workspace,
 		subscription: subscription,

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/plugin/metric/segment"
 
@@ -18,19 +19,16 @@ const (
 
 // MetricReporter is the metric reporter.
 type MetricReporter struct {
-	l *zap.Logger
-
 	identifier metric.Identifier
 	reporter   metric.Reporter
 	collectors map[string]metric.Collector
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(logger *zap.Logger, workspaceID string, connectionKey string, identifier metric.Identifier) *MetricReporter {
-	r := segment.NewReporter(logger, connectionKey, workspaceID)
+func NewMetricReporter(workspaceID string, connectionKey string, identifier metric.Identifier) *MetricReporter {
+	r := segment.NewReporter(connectionKey, workspaceID)
 
 	return &MetricReporter{
-		l:          logger,
 		identifier: identifier,
 		reporter:   r,
 		collectors: make(map[string]metric.Collector),
@@ -43,7 +41,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	m.l.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
+	log.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
 		select {
@@ -55,7 +53,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						m.l.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
 					}
 				}()
 
@@ -64,11 +62,11 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 				m.identify(ctx)
 
 				for name, collector := range m.collectors {
-					m.l.Debug("Run metric collector", zap.String("collector", name))
+					log.Debug("Run metric collector", zap.String("collector", name))
 
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
-						m.l.Error(
+						log.Error(
 							"Failed to collect metric",
 							zap.String("collector", name),
 							zap.Error(err),
@@ -78,7 +76,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					for _, metric := range metricList {
 						if err := m.reporter.Report(metric); err != nil {
-							m.l.Error(
+							log.Error(
 								"Failed to report metric",
 								zap.String("metric", string(metric.Name)),
 								zap.Error(err),
@@ -107,10 +105,10 @@ func (m *MetricReporter) Register(metricName metric.Name, collector metric.Colle
 func (m *MetricReporter) identify(ctx context.Context) {
 	identity, err := m.identifier.Identify(ctx)
 	if err != nil {
-		m.l.Debug("collect identity failed", zap.Error(err))
+		log.Debug("collect identity failed", zap.Error(err))
 		return
 	}
 	if err := m.reporter.Identify(identity); err != nil {
-		m.l.Debug("reporter identify failed", zap.Error(err))
+		log.Debug("reporter identify failed", zap.Error(err))
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/metric"
 	"go.uber.org/zap"
 )
@@ -122,7 +123,7 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 			if returnOnErr {
 				return nil, fmt.Errorf("failed to compose Task with taskRaw[%+v], error[%w]", raw, err)
 			}
-			s.l.Error("failed to compose Task",
+			log.Error("failed to compose Task",
 				zap.Any("taskRaw", raw),
 				zap.Error(err))
 			continue
