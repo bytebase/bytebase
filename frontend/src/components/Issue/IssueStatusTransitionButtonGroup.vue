@@ -105,7 +105,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, Ref, ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import type { TaskStatusTransition } from "@/utils";
@@ -123,8 +123,7 @@ import { useCurrentUser, useIssueStore } from "@/store";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   flattenTaskList,
-  getApplicableIssueStatusTransitionList,
-  getApplicableTaskStatusTransitionList,
+  useIssueTransitionLogic,
   isApplicableTransition,
   IssueTypeWithStatement,
   TaskTypeWithStatement,
@@ -180,9 +179,12 @@ const issueContext = computed((): IssueContext => {
   };
 });
 
-const applicableTaskStatusTransitionList = computed(() =>
-  getApplicableTaskStatusTransitionList(issue.value as Issue)
-);
+const {
+  applicableTaskStatusTransitionList,
+  applicableIssueStatusTransitionList,
+  getApplicableIssueStatusTransitionList,
+  getApplicableTaskStatusTransitionList,
+} = useIssueTransitionLogic(issue as Ref<Issue>);
 
 const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
   updateStatusModalState.mode = "TASK";
@@ -222,10 +224,6 @@ const doTaskStatusTransition = (
 ) => {
   changeTaskStatus(task, transition.to, comment);
 };
-
-const applicableIssueStatusTransitionList = computed(() =>
-  getApplicableIssueStatusTransitionList(issue.value as Issue)
-);
 
 const currentTask = computed(() => {
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
