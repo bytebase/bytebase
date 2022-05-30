@@ -8,7 +8,6 @@ import (
 
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/bytebase/bytebase/api"
-	"go.uber.org/zap"
 )
 
 var (
@@ -20,15 +19,12 @@ var (
 // CacheService implements a cache.
 type CacheService struct {
 	cache *fastcache.Cache
-
-	l *zap.Logger
 }
 
 // NewCacheService creates a cache service.
-func NewCacheService(logger *zap.Logger) *CacheService {
+func NewCacheService() *CacheService {
 	return &CacheService{
 		cache: fastcache.New(cacheSize),
-		l:     logger,
 	}
 }
 

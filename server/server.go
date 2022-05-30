@@ -5,30 +5,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/metric"
-	metricCollector "github.com/bytebase/bytebase/metric/collector"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
-	"github.com/bytebase/bytebase/store"
-	"github.com/google/uuid"
-
 	// embed will embeds the acl policy.
 	_ "embed"
 
-	"github.com/bytebase/bytebase/api"
-	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
+	"github.com/bytebase/bytebase/metric"
+	metricCollector "github.com/bytebase/bytebase/metric/collector"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"github.com/bytebase/bytebase/store"
 )
 
 // Server is the Bytebase server.
@@ -49,6 +48,7 @@ type Server struct {
 
 	profile   Profile
 	e         *echo.Echo
+	mysqlutil *mysqlutil.Instance
 	metaDB    *store.MetadataDB
 	db        *store.DB
 	store     *store.Store
@@ -57,11 +57,8 @@ type Server struct {
 	startedTs int64
 	secret    string
 
-	mysqlbinlogDir string
-
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
-	boot   bool
 }
 
 //go:embed acl_casbin_model.conf
@@ -95,16 +92,25 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	fmt.Printf("readonly=%t\n", prof.Readonly)
 	fmt.Printf("demo=%t\n", prof.Demo)
 	fmt.Printf("debug=%t\n", prof.Debug)
+	fmt.Printf("dataDir=%s\n", prof.DataDir)
 	fmt.Println("-----Config END-------")
 
+	serverStarted := false
+	defer func() {
+		if !serverStarted {
+			_ = s.Shutdown(ctx)
+		}
+	}()
+
 	var err error
-	// TODO(zp): refactor to keep consistency with embedded Postgres.
-	// Install mysqlbinlog.
-	mysqlbinlogDir, err := mysqlbinlog.Install(path.Join(prof.DataDir, "resources"))
+
+	resourceDir := common.GetResourceDir(prof.DataDir)
+	// Install mysqlutil
+	mysqlutilIns, err := mysqlutil.Install(resourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlbinlogDir = mysqlbinlogDir
+	s.mysqlutil = mysqlutilIns
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
@@ -122,24 +128,14 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
 	s.db = storeDB
-	defer func() {
-		if !s.boot {
-			_ = s.metaDB.Close()
-		}
-	}()
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, fmt.Errorf("cannot open db: %w", err)
 	}
-	defer func() {
-		if !s.boot {
-			_ = storeDB.Close()
-		}
-	}()
 
-	cacheService := NewCacheService(logger)
+	cacheService := NewCacheService()
 	storeInstance := store.New(logger, storeDB, cacheService)
 	s.store = storeInstance
 
@@ -193,8 +189,11 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor(logger)
 		taskScheduler.Register(string(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable), schemaUpdateGhostDropOriginalTableExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger)
+		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(logger, s.mysqlutil)
 		taskScheduler.Register(string(api.TaskDatabasePITRRestore), pitrRestoreExecutor)
+
+		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(logger, s.mysqlutil)
+		taskScheduler.Register(string(api.TaskDatabasePITRCutover), pitrCutoverExecutor)
 
 		s.TaskScheduler = taskScheduler
 
@@ -204,8 +203,6 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 		statementSimpleExecutor := NewTaskCheckStatementAdvisorSimpleExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementFakeAdvise), statementSimpleExecutor)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementSyntax), statementSimpleExecutor)
-		// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementCompatibility), statementSimpleExecutor)
 
 		statementCompositeExecutor := NewTaskCheckStatementAdvisorCompositeExecutor(logger)
 		taskCheckScheduler.Register(string(api.TaskCheckDatabaseStatementAdvise), statementCompositeExecutor)
@@ -300,6 +297,8 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")
 	})
+	// Register pprof endpoints.
+	registerPProfEndpoints(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -307,7 +306,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	}
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(logger, prof.DataDir, prof.Mode)
+	s.LicenseService, err = enterpriseService.NewLicenseService(logger, prof.Mode, s.store)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
@@ -315,7 +314,7 @@ func NewServer(ctx context.Context, prof Profile, logger *zap.Logger, loggerLeve
 	s.initSubscription()
 
 	logger.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
-	s.boot = true
+	serverStarted = true
 	return s, nil
 }
 
@@ -329,10 +328,12 @@ func (server *Server) initMetricReporter(workspaceID string) {
 	enabled := server.profile.Mode == common.ReleaseModeProd && !server.profile.Demo
 	if enabled {
 		metricReporter := NewMetricReporter(server.l, server, workspaceID)
-		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCollector(server.l, server.store))
-		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCollector(server.l, server.store))
-		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCollector(server.l, server.store))
-		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCollector(server.l, server.store))
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(server.l, server.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(server.l, server.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(server.l, server.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(server.l, server.store))
+		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(server.l, server.store))
+		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(server.l, server.store))
 		server.MetricReporter = metricReporter
 	}
 }
@@ -374,6 +375,16 @@ func (server *Server) initSetting(ctx context.Context, store *store.Store) (*con
 		return nil, err
 	}
 	conf.workspaceID = workspaceSetting.Value
+
+	// initial license
+	if _, err = store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
+		CreatorID:   api.SystemBotID,
+		Name:        api.SettingEnterpriseLicense,
+		Value:       "",
+		Description: "Enterprise license",
+	}); err != nil {
+		return nil, err
+	}
 
 	return conf, nil
 }
@@ -444,8 +455,9 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown postgres server if embed.
-	server.metaDB.Close()
-
+	if server.metaDB != nil {
+		server.metaDB.Close()
+	}
 	server.l.Info("Bytebase stopped properly")
 
 	return nil

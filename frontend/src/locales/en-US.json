@@ -532,7 +532,7 @@
     "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync-now": "Sync Now",
-    "sync-schema-afterward": "Sync schema afterward",
+    "sync-schema-now": "Sync schema now",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
     "unable-to-connect-instance-to-check-migration-schema": "Unable to connect instance to check migration schema",
@@ -1253,9 +1253,9 @@
         "title": "Backup policy",
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
-      "bb-feature-backward-compatibility": {
-        "title": "Backward compatibility",
-        "desc": "MySQL and TiDB support checking whether the schema change is backward compatible. @:{'subscription.upgrade'} to unlock this feature."
+      "bb-feature-schema-review-policy": {
+        "title": "Schema review policy",
+        "desc": "Customize the schema review policy for different environments. @:{'subscription.upgrade'} to unlock this feature."
       },
       "bb-feature-rbac": {
         "title": "Role management",
@@ -1292,7 +1292,7 @@
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
-          "sql-check-advanced-tooltip": "Basic + Backward compatibility check",
+          "sql-check-advanced-tooltip": "Basic + Customized schema review rules",
           "anomaly-detection": "Anomaly detection",
           "anomaly-detection-basic": "Basic",
           "anomaly-detection-basic-tooltip": "Connection failure, missing backup",

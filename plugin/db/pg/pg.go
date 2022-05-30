@@ -1196,12 +1196,12 @@ func (t *tableSchema) Statement() string {
 
 // Statement returns the statement of a table column.
 func (c *columnSchema) Statement() string {
-	s := fmt.Sprintf("%s %s", c.columnName, c.dataType)
+	s := fmt.Sprintf("%s %s", quoteIdentifier(c.columnName), c.dataType)
 	if c.characterMaximumLength != "" {
 		s += fmt.Sprintf("(%s)", c.characterMaximumLength)
 	}
 	if !c.isNullable {
-		s = s + " NOT NULL"
+		s += " NOT NULL"
 	}
 	if c.columnDefault != "" {
 		s += fmt.Sprintf(" DEFAULT %s", c.columnDefault)
@@ -1499,8 +1499,11 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 			collationName:          collationName.String,
 			comment:                comment.String,
 		}
-		if dataType == "USER-DEFINED" {
+		switch dataType {
+		case "USER-DEFINED":
 			c.dataType = fmt.Sprintf("%s.%s", udtSchema.String, udtName.String)
+		case "ARRAY":
+			c.dataType = udtName.String
 		}
 		columns = append(columns, &c)
 	}
@@ -1606,7 +1609,8 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 		"SELECT e.extname, e.extversion, n.nspname, c.description " +
 		"FROM pg_catalog.pg_extension e " +
 		"LEFT JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace " +
-		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass;"
+		"LEFT JOIN pg_catalog.pg_description c ON c.objoid = e.oid AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass " +
+		"WHERE n.nspname != 'pg_catalog';"
 
 	var extensions []db.Extension
 	rows, err := txn.Query(query)
@@ -1619,9 +1623,6 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 		var e db.Extension
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &e.Description); err != nil {
 			return nil, err
-		}
-		if pgSystemSchema(e.Schema) {
-			continue
 		}
 		extensions = append(extensions, e)
 	}
@@ -1704,7 +1705,7 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	var cols []string
 	re := regexp.MustCompile(`\(\(.*\)\)`)
 	for {
-		if len(columnStmt) <= 0 {
+		if len(columnStmt) == 0 {
 			break
 		}
 		// Get a token
@@ -1751,7 +1752,7 @@ func exportTableData(txn *sql.Tx, tbl *tableSchema, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))

@@ -11,20 +11,23 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(logger *zap.Logger) TaskExecutor {
+func NewPITRRestoreTaskExecutor(logger *zap.Logger, instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
-		l: logger,
+		l:         logger,
+		mysqlutil: instance,
 	}
 }
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	l *zap.Logger
+	l         *zap.Logger
+	mysqlutil *mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -63,12 +66,14 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil || issue == nil {
-		exec.l.Error("failed to get issue by PipelineID",
-			zap.Int("PipelineID", task.PipelineID),
-			zap.Error(err))
-		return fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", task.PipelineID, err)
+	issue, err := getIssueByPipelineID(ctx, store, exec.l, task.PipelineID)
+	if err != nil {
+		return err
+	}
+
+	connCfg, err := getConnectionConfig(ctx, instance, database.Name)
+	if err != nil {
+		return err
 	}
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
@@ -77,8 +82,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver)
-	config := pluginmysql.BinlogInfo{}
+	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg)
+
+	binlogInfo := api.BinlogInfo{}
 	// TODO(dragonly): Search and put the file io of the logical backup file here.
 	// Currently, let's just use the empty backup dump as a placeholder.
 	var buf bytes.Buffer
@@ -92,7 +98,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
-	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(&buf), config, database.Name, issue.CreatedTs); err != nil {
+	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(&buf), binlogInfo, database.Name, issue.CreatedTs); err != nil {
 		exec.l.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
@@ -102,4 +108,17 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
+}
+
+func getIssueByPipelineID(ctx context.Context, store *store.Store, l *zap.Logger, pid int) (*api.Issue, error) {
+	issue, err := store.GetIssueByPipelineID(ctx, pid)
+	if err != nil {
+		l.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
+		return nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", pid, err)
+	}
+	if issue == nil {
+		l.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
+		return nil, fmt.Errorf("issue not found with PipelineID[%d]", pid)
+	}
+	return issue, nil
 }

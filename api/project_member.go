@@ -26,7 +26,7 @@ func (e ProjectRoleProvider) String() string {
 	return ""
 }
 
-//ProjectRoleProviderPayload is the payload for role provider
+// ProjectRoleProviderPayload is the payload for role provider
 type ProjectRoleProviderPayload struct {
 	VCSRole    string `json:"vcsRole"`
 	LastSyncTs int64  `json:"lastSyncTs"`

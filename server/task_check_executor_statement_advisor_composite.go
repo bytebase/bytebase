@@ -57,7 +57,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 				{
 					Status:  api.TaskCheckStatusWarn,
 					Code:    common.TaskCheckEmptySchemaReviewPolicy,
-					Title:   "Empty schema review policy",
+					Title:   "Empty schema review policy or disabled",
 					Content: "",
 				},
 			}, nil
@@ -195,8 +195,7 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 			return advisor.MySQLTableRequirePK, nil
 		}
 	case api.SchemaRuleMySQLEngine:
-		switch engine {
-		case db.MySQL:
+		if engine == db.MySQL {
 			return advisor.MySQLUseInnoDB, nil
 		}
 	}

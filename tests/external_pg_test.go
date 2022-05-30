@@ -57,13 +57,14 @@ func TestBootWithExternalPg(t *testing.T) {
 	a.NoError(err)
 	defer func() {
 		if err = externalPg.Destroy(); err != nil {
-			fmt.Printf("cannot destroy pginstance, error: %s", err.Error())
+			fmt.Printf("cannot destroy postgres instance, error: %s", err.Error())
 			t.FailNow()
 		}
 	}()
 
 	ctl := &controller{}
-	err = ctl.StartServerWithExternalPg(ctx, serverPort, externalPg.pgUser, externalPg.pgURL)
+	dataTmpDir := t.TempDir()
+	err = ctl.StartServerWithExternalPg(ctx, dataTmpDir, serverPort, externalPg.pgUser, externalPg.pgURL)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 }

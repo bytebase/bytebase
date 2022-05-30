@@ -282,17 +282,6 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 				return task, nil
 			}
 
-			// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-			if s.server.feature(api.FeatureBackwardCompatibility) {
-				pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementCompatibility)
-				if err != nil {
-					return nil, err
-				}
-				if !pass {
-					return task, nil
-				}
-			}
-
 			if s.server.feature(api.FeatureSchemaReviewPolicy) {
 				pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 				if err != nil {

@@ -14,6 +14,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -46,24 +47,10 @@ func init() {
 	db.Register(db.TiDB, newDriver)
 }
 
-// BinlogInfo is the binlog coordination for MySQL.
-type BinlogInfo struct {
-	FileName string `json:"fileName"`
-	Position int64  `json:"position"`
-}
-
 // BinlogFile is the metadata of the MySQL binlog file
 type BinlogFile struct {
 	Name string
 	Size int64
-}
-
-// This is encoded in JSON and stored in the backup table, representing PITR related info.
-type backupPayload struct {
-	BinlogInfo BinlogInfo `json:"binlogInfo"`
-	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
-	// Mainly for UI purpose.
-	Ts int64 `json:"ts"`
 }
 
 // Driver is the MySQL driver.
@@ -940,15 +927,11 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 			zap.String("filename", binlog.FileName),
 			zap.Int64("position", binlog.Position))
 
-		ts, err := getServerTime(ctx, driver.db)
 		if err != nil {
 			return "", err
 		}
 
-		payload := backupPayload{
-			BinlogInfo: binlog,
-			Ts:         ts,
-		}
+		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
 		if err != nil {
 			return "", err
@@ -969,7 +952,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	driver.l.Debug("begin to dump database")
+	driver.l.Debug("begin to dump database", zap.String("database", database))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}
@@ -1005,19 +988,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
-}
-
-func getServerTime(ctx context.Context, db *sql.DB) (int64, error) {
-	var timestamp int64
-	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
-	if err != nil {
-		return 0, err
-	}
-	rows.Next()
-	if err := rows.Scan(&timestamp); err != nil {
-		return 0, err
-	}
-	return timestamp, nil
 }
 
 func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
@@ -1188,18 +1158,18 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (BinlogInfo, error) {
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 	defer rows.Close()
 
 	rows.Next()
-	binlogInfo := BinlogInfo{}
+	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
 	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 
 	return binlogInfo, nil
@@ -1251,6 +1221,7 @@ type triggerSchema struct {
 }
 
 // GetTables gets all tables of a database.
+// TODO(dragonly): Refactor to 2 variants that one takes a txn arg and one does not, for different use cases.
 func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
@@ -1332,7 +1303,7 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))

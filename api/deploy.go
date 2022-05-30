@@ -116,7 +116,7 @@ func ValidateAndGetDeploymentSchedule(payload string) (*DeploymentSchedule, erro
 		for _, e := range d.Spec.Selector.MatchExpressions {
 			switch e.Operator {
 			case InOperatorType:
-				if len(e.Values) <= 0 {
+				if len(e.Values) == 0 {
 					return nil, common.Errorf(common.Invalid, fmt.Errorf("expression key %q with %q operator should have at least one value", e.Key, e.Operator))
 				}
 			case ExistsOperatorType:

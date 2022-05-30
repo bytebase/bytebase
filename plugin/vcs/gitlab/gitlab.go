@@ -43,8 +43,9 @@ func (e WebhookType) String() string {
 	switch e {
 	case WebhookPush:
 		return "push"
+	default:
+		return "UNKNOWN"
 	}
-	return "UNKNOWN"
 }
 
 // WebhookInfo is the API message for webhook info.
@@ -111,7 +112,9 @@ type WebhookPushEvent struct {
 type Commit struct {
 	ID         string `json:"id"`
 	AuthorName string `json:"author_name"`
-	CreatedAt  string `json:"created_at"`
+	// CreatedAt expects corresponding JSON value is a string in RFC 3339 format,
+	// see https://pkg.go.dev/time#Time.MarshalJSON.
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // FileCommit is the API message for file commit.
@@ -280,12 +283,36 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchRepositoryList fetched all repositories in which the authenticated user
-// has a maintainer role.
-func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+// FetchAllRepositoryList fetches all repositories where the authenticated user has a maintainer role.
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
+	repoList := []*vcs.Repository{}
+	// page is the current requesting page index, starts from 1.
+	// perPage is the number of items to list per page (default: 20, max: 100).
+	// refer: https://docs.gitlab.com/ee/api/#offset-based-pagination
+	page := 1
+	perPage := 40
+
+	for {
+		temp, err := p.fetchOffsetRepositoryList(ctx, oauthCtx, instanceURL, page, perPage)
+		if err != nil {
+			return nil, err
+		}
+
+		repoList = append(repoList, temp...)
+		if len(temp) < perPage {
+			break
+		}
+		page++
+	}
+
+	return repoList, nil
+}
+
+// fetchOffsetRepositoryList fetches repositories at page `page` with `perPage` items per page.
+func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page, perPage int) ([]*vcs.Repository, error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40", p.APIURL(instanceURL))
+	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, perPage)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -306,7 +333,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.Oaut
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("repository list for GitLab instance %s not found", instanceURL))
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
 			instanceURL,
@@ -329,6 +356,7 @@ func (p *Provider) FetchRepositoryList(ctx context.Context, oauthCtx common.Oaut
 		}
 		repos = append(repos, repo)
 	}
+
 	return repos, nil
 }
 
@@ -381,7 +409,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
 }
 
-// FetchCommitByID fetch the commit data by id.
+// FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
 	code, body, err := oauth.Get(
@@ -405,9 +433,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from GitLab instance %s, not found", instanceURL))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d, body: %s",
 			instanceURL,
 			code,
+			body,
 		)
 	}
 
@@ -416,15 +445,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
-	createdTime, err := time.Parse(time.RFC3339, commit.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse commit created_at field, err: %w", err)
-	}
-
 	return &vcs.Commit{
 		ID:         commit.ID,
 		AuthorName: commit.AuthorName,
-		CreatedTs:  createdTime.Unix(),
+		CreatedTs:  commit.CreatedAt.Unix(),
 	}, nil
 }
 

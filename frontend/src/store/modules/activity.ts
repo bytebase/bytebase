@@ -73,7 +73,7 @@ export const useActivityStore = defineStore("activity", {
       this.activityListByIssue.set(issueId, activityList);
     },
     async fetchActivityListForUser(userId: PrincipalId) {
-      const data = (await axios.get(`/api/activity`)).data;
+      const data = (await axios.get(`/api/activity?order=DESC`)).data;
       const activityList: Activity[] = data.data.map(
         (activity: ResourceObject) => {
           return convert(activity, data.included);
@@ -84,7 +84,11 @@ export const useActivityStore = defineStore("activity", {
       return activityList;
     },
     async fetchActivityListForIssue(issueId: IssueId) {
-      const queryList = ["typePrefix=bb.issue.", `container=${issueId}`];
+      const queryList = [
+        "typePrefix=bb.issue.",
+        `container=${issueId}`,
+        `order=ASC`,
+      ];
       const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
         .data;
       const activityList: Activity[] = data.data.map(
@@ -104,7 +108,11 @@ export const useActivityStore = defineStore("activity", {
       projectId: ProjectId;
       limit?: number;
     }) {
-      const queryList = ["typePrefix=bb.project.", `container=${projectId}`];
+      const queryList = [
+        "typePrefix=bb.project.",
+        `container=${projectId}`,
+        `order=DESC`,
+      ];
       if (limit) {
         queryList.push(`limit=${limit}`);
       }
@@ -123,6 +131,7 @@ export const useActivityStore = defineStore("activity", {
       const queryList = [
         "typePrefix=bb.sql-editor.query",
         `user=${currentUser.id}`,
+        `order=DESC`,
         `limit=${limit}`,
         // only fetch the successful query history
         `level=INFO`,
