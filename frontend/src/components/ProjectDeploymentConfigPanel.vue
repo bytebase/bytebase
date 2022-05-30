@@ -88,7 +88,7 @@
 
       <div class="mt-6">
         <div class="text-lg font-medium leading-7 text-main border-t pt-4">
-          {{ $t("deployment-config.preview-deployment-stages") }}
+          {{ $t("deployment-config.preview-deployment-pipeline") }}
         </div>
         <DeploymentMatrix
           class="w-full mt-4 !px-0 overflow-x-auto"
