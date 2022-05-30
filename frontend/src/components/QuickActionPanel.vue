@@ -175,6 +175,7 @@
   </div>
   <BBModal
     v-if="state.showModal"
+    class="relative overflow-hidden"
     :title="state.modalTitle"
     :subtitle="state.modalSubtitle"
     @close="state.showModal = false"
