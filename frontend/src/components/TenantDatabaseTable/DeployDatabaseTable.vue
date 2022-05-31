@@ -47,14 +47,11 @@
                 <span
                   class="px-1.5 py-1 relative rounded inline-flex items-center hover:bg-control-bg-hover cursor-pointer select-none"
                 >
-                  <heroicons-outline:exclamation
-                    class="h-4 w-4 mr-1 text-warning"
-                  />
-                  {{ $t("common.others") }}
+                  {{ $t("deployment-config.wont-be-deployed") }}
                 </span>
               </template>
-              <div class="flex items-center text-sm">
-                {{ $t("deployment-config.wont-be-deployed") }}
+              <div class="flex items-center text-sm max-w-[16rem]">
+                {{ $t("deployment-config.wont-be-deployed-explanation") }}
               </div>
             </NPopover>
           </BBTableHeaderCell>
