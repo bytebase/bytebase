@@ -458,14 +458,18 @@ func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
 	}
 	defer rows.Close()
 
+	var owner string
 	for rows.Next() {
-		var owner string
-		if err := rows.Scan(&owner); err != nil {
+		var o string
+		if err := rows.Scan(&o); err != nil {
 			return "", err
 		}
-		return owner, nil
+		owner = o
 	}
-	return "", fmt.Errorf("Owner not found for the current database")
+	if owner == "" {
+		return "", fmt.Errorf("Owner not found for the current database")
+	}
+	return owner, nil
 }
 
 // Query queries a SQL statement.
