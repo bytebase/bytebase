@@ -168,8 +168,8 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		seq, err := getBinlogExtension(test.name, test.prefix)
-		a.EqualValues(seq, test.expect)
+		ext, err := getBinlogNameExtension(test.name, test.prefix)
+		a.EqualValues(ext, test.expect)
 		if test.err {
 			a.Error(err)
 		} else {
