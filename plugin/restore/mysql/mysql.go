@@ -60,7 +60,12 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return err
 	}
 
-	replayBinlogPaths, err := r.getReplayBinlogPathList(ctx, startBinlogInfo, binlogDir)
+	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
+	}
+
+	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, binlogDir, binlogNamePrefix)
 	if err != nil {
 		return err
 	}
@@ -68,7 +73,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	stopTime := time.Unix(targetTs, 0)
 	mysqlbinlogArgs := []string{
 		"--disable-log-bin",
-		fmt.Sprintf(`--rewrite-db=%s->%s`, originDatabase, pitrDatabase),
+		fmt.Sprintf(`--rewrite-db=%s->%s`, originalDatabase, pitrDatabase),
 		fmt.Sprintf("--database=%s", pitrDatabase),
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
@@ -155,15 +160,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	return nil
 }
 
-func (r *Restore) getReplayBinlogPathList(ctx context.Context, startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
-	}
-	return getReplayBinlogPathListImpl(startBinlogInfo, binlogDir, binlogNamePrefix)
-}
-
-func getReplayBinlogPathListImpl(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
+func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
 	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
