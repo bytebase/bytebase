@@ -335,7 +335,7 @@
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
         "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
-        "cannot-change-role-of-systembot": "不能修改系统管理员的角色"
+        "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
       },
       "toggle-role-provider": {
         "title": "您确认吗？"
@@ -347,7 +347,7 @@
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
       },
-      "system-administrator": "系统管理员"
+      "system-bot": "机器人助手"
     },
     "general": {
       "workspace": {
