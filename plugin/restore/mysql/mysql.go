@@ -165,7 +165,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
 	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", startBinlogInfo.FileName, err)
+		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
 
 	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
