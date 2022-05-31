@@ -225,23 +225,16 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		}
 	}
 
-	// TODO(dragonly): Remove the transactions, because they do not have a clear semantic / are not necessary.
-	txn, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-	defer txn.Rollback()
-
-	tables, err := mysql.GetTables(txn, database)
+	tables, err := mysql.GetTables(ctx, db, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
-	tablesPITR, err := mysql.GetTables(txn, pitrDatabaseName)
+	tablesPITR, err := mysql.GetTables(ctx, db, pitrDatabaseName)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
 	}
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -254,11 +247,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	}
 	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
 
-	if _, err := txn.ExecContext(ctx, renameStmt); err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-
-	if err := txn.Commit(); err != nil {
+	if _, err := db.ExecContext(ctx, renameStmt); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
