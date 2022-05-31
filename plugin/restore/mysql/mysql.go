@@ -17,9 +17,11 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"go.uber.org/zap"
 
 	"github.com/blang/semver/v4"
 )
@@ -444,6 +446,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context) error {
 
 		if localBinlogSize != serverBinlog.Size {
 			// exist on local and file size not match, delete and then download it
+			log.Warn("inconsistent file size detected", zap.String("binlogFile", serverBinlog.Name), zap.Int64("server", serverBinlog.Size), zap.Int64("local", localBinlogSize))
 			if err := os.Remove(filepath.Join(r.binlogDir, serverBinlog.Name)); err != nil {
 				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
