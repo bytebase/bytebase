@@ -54,7 +54,7 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 	}
 }
 
-// ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
+// ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
 	if err := r.incrementalFetchAllBinlogFiles(ctx); err != nil {
 		return err
