@@ -151,7 +151,6 @@ func checkDataDir() error {
 }
 
 func start() {
-	log.Init()
 	if flags.debug {
 		log.SetLevel(zap.DebugLevel)
 	}
