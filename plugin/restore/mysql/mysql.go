@@ -188,7 +188,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 		// so we cannot directly use string to compare lexicographical order.
 		binlogSeq, err := getBinlogFileNameSeqNumber(f.Name(), binlogNamePrefix)
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse the start binlog name [%s], error: %w", f.Name(), err)
+			return nil, fmt.Errorf("cannot parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
 			needReplayBinlogName = append(needReplayBinlogName, binlogItem{
