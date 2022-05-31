@@ -15,14 +15,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
-	"go.uber.org/zap"
 
 	"github.com/blang/semver/v4"
 )
@@ -61,12 +58,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return err
 	}
 
-	binlogNamePrefix, err := r.getBinlogNamePrefix(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
-	}
-
-	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, r.binlogDir, binlogNamePrefix)
+	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, r.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -159,8 +151,8 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	return nil
 }
 
-func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
-	startBinlogSeq, err := getBinlogNameExtension(startBinlogInfo.FileName, binlogNamePrefix)
+func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+	startBinlogSeq, err := getBinlogNameExtension(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
@@ -177,13 +169,12 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 	var needReplayBinlogNames []binlogItem
 
 	for _, f := range binlogFilesLocal {
-		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
-			log.Warn("Binlog file has invalid basename", zap.String("filename", f.Name()), zap.String("basename", binlogNamePrefix))
+		if f.IsDir() {
 			continue
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := getBinlogNameExtension(f.Name(), binlogNamePrefix)
+		binlogSeq, err := getBinlogNameExtension(f.Name())
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
@@ -574,43 +565,11 @@ func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFil
 	return nil, fmt.Errorf("cannot find latest binlog on instance")
 }
 
-// getBinlogNamePrefix returns the prefix of binlog file name.
-func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
-	db, err := r.driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return "", err
-	}
-
-	rows, err := db.QueryContext(ctx, `SHOW VARIABLES LIKE "log_bin_basename";`)
-	if err != nil {
-		return "", fmt.Errorf("cannot query log_bin_basename on mysql server, error: %w", err)
-	}
-	defer rows.Close()
-
-	var basename string
-	if rows.Next() {
-		var unused interface{}
-		if err := rows.Scan(&unused /*Variable_name*/, &basename); err != nil {
-			return "", err
-		}
-		return filepath.Base(basename) + ".", nil
-	}
-	return "", fmt.Errorf("cannot find log_bin_basename on mysqlbin server, error: %w", err)
-}
-
-// getBinlogNameExtension returns the numeric extension to the binary log base name
-// For example: ("binlog.000001","binlog.") => 1, ("binlog.000001a", "binlog.") => err, ("binlog.000001", "binlog") => err
-func getBinlogNameExtension(name, prefix string) (int64, error) {
-	if !strings.HasPrefix(name, prefix) {
-		return 0, fmt.Errorf("binlog file name %s must have prefix %s", name, prefix)
-	}
-	ext := strings.TrimPrefix(name, prefix)
-	for _, r := range ext {
-		if !unicode.IsDigit(r) {
-			return 0, fmt.Errorf("binlog file %s has invalid sequence number %s", name, ext)
-		}
-	}
-	return strconv.ParseInt(ext, 10, 0)
+// getBinlogNameExtension returns the numeric extension to the binary log base name by using split the dot.
+// For example: ("binlog.000001") => 1, ("binlog000001") => err
+func getBinlogNameExtension(name string) (int64, error) {
+	s := strings.Split(name, ".")
+	return strconv.ParseInt(s[len(s)-1], 10, 0)
 }
 
 func getSafeName(baseName, suffix string) string {

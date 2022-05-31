@@ -137,38 +137,28 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 		err    bool
 	}{
 		{
-			name:   "binlog.09865",
-			prefix: "binlog.",
-			expect: 9865,
+			name:   "binlog.096865",
+			expect: 96865,
 			err:    false,
 		},
 		{
 			name:   "binlog.178923",
-			prefix: "binlog.",
 			expect: 178923,
 			err:    false,
 		},
 		{
-			name:   "UNKNOWN.178923",
-			prefix: "binlog.",
-			expect: 0,
-			err:    true,
-		},
-		{
-			name:   "binlog.00001",
-			prefix: "binlog",
-			expect: 0,
-			err:    true,
+			name:   "binlog.000001",
+			expect: 1,
+			err:    false,
 		},
 		{
 			name:   "binlog.x8dft",
-			prefix: "binlog.",
 			expect: 0,
 			err:    true,
 		},
 	}
 	for _, test := range tests {
-		ext, err := getBinlogNameExtension(test.name, test.prefix)
+		ext, err := getBinlogNameExtension(test.name)
 		a.EqualValues(ext, test.expect)
 		if test.err {
 			a.Error(err)
@@ -310,7 +300,6 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		subDirNames     []string
 		binlogFileNames []string
 		startBinlogInfo api.BinlogInfo
-		prefix          string
 		expect          []string
 		err             bool
 	}{
@@ -319,7 +308,6 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			subDirNames:     []string{"subdir_a", "subdir_b"},
 			binlogFileNames: []string{},
 			startBinlogInfo: api.BinlogInfo{},
-			prefix:          "",
 			expect:          []string{},
 			err:             false,
 		},
@@ -331,7 +319,6 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 				FileName: "binlog.000002",
 				Position: 0xdeadbeaf,
 			},
-			prefix: "binlog.",
 			expect: []string{"binlog.000002", "binlog.000003"},
 			err:    false,
 		},
@@ -343,32 +330,18 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 				FileName: "binlog.000002",
 				Position: 0xdeadbeaf,
 			},
-			prefix: "binlog.",
 			expect: []string{},
 			err:    true,
 		},
 		{
-			// Test mix with other file
+			// Test mysql-bin prefix
 			subDirNames:     []string{},
-			binlogFileNames: []string{"binlog.000001", "binlog.000002", "otherfile"},
+			binlogFileNames: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
 			startBinlogInfo: api.BinlogInfo{
-				FileName: "binlog.000001",
+				FileName: "bin.000001",
 				Position: 0xdeadbeaf,
 			},
-			prefix: "binlog.",
-			expect: []string{"binlog.000001", "binlog.000002"},
-			err:    false,
-		},
-		{
-			// Test user define prefix
-			subDirNames:     []string{},
-			binlogFileNames: []string{"USER_PREFIX.000001", "USER_PREFIX.000002", "USER_PREFIX.000003"},
-			startBinlogInfo: api.BinlogInfo{
-				FileName: "USER_PREFIX.000001",
-				Position: 0xdeadbeaf,
-			},
-			prefix: "USER_PREFIX.",
-			expect: []string{"USER_PREFIX.000001", "USER_PREFIX.000002", "USER_PREFIX.000003"},
+			expect: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
 			err:    false,
 		},
 		{
@@ -379,8 +352,17 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 				FileName: "binlog.999999",
 				Position: 0xdeadbeaf,
 			},
-			prefix: "binlog.",
 			expect: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			err:    false,
+		},
+		{
+			subDirNames:     []string{"sub_dir"},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{"binlog.000002", "binlog.000003"},
 			err:    false,
 		},
 	}
@@ -400,7 +382,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			a.NoError(err)
 		}
 
-		result, err := getReplayBinlogPathList(test.startBinlogInfo, tmpDir, test.prefix)
+		result, err := getReplayBinlogPathList(test.startBinlogInfo, tmpDir)
 		if test.err {
 			a.Error(err)
 		} else {
