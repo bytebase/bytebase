@@ -5,7 +5,7 @@ DELETE FROM
     setting
 WHERE
     name != 'bb.auth.secret' AND name != 'bb.enterprise.license';
--- We have to change the creator and updator to system robot, otherwise we will get foreigh key check error on
+-- We have to change the creator and updater to system robot, otherwise, we will get foreign key check errors on
 -- resetting principal table.
 UPDATE setting SET creator_id = 1, updater_id = 1 WHERE name = 'bb.enterprise.license';
 
