@@ -56,8 +56,8 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 }
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase, binlogDir string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	if err := r.fetchBinlogUpToTargetTs(ctx, binlogDir); err != nil {
+func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
+	if err := r.fetchBinlogUpToTargetTs(ctx); err != nil {
 		return err
 	}
 
@@ -66,7 +66,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return fmt.Errorf("cannot get the prefix of binlog name, error: %w", err)
 	}
 
-	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, binlogDir, binlogNamePrefix)
+	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, r.binlogDir, binlogNamePrefix)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	if err := r.replayBinlog(ctx, database, pitrDatabaseName, r.binlogDir, binlog, suffixTs); err != nil {
+	if err := r.replayBinlog(ctx, database, pitrDatabaseName, binlog, suffixTs); err != nil {
 		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
 		return nil
 	}
@@ -418,8 +418,8 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 
 // SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string) error {
-	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context) error {
+	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -457,7 +457,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string)
 
 		if localBinlogSize != serverBinlog.Size {
 			// exist on local and file size not match, delete and then download it
-			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
+			if err := os.Remove(filepath.Join(r.binlogDir, serverBinlog.Name)); err != nil {
 				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
 			todo[serverBinlog.Name] = true
@@ -469,7 +469,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string)
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, binlogDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -480,21 +480,21 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string)
 // fetchBinlogUpToTargetTs fetches the binlog from server up to the targetTs.
 // TODO(zp): It is not yet supported to synchronize some binlogs.
 // The current practice is to download all binlogs, but in the future we hope to only synchronize to the PITR time point
-func (r *Restore) fetchBinlogUpToTargetTs(ctx context.Context, binlogDir string) error {
-	if err := r.SyncArchivedBinlogFiles(ctx, binlogDir); err != nil {
+func (r *Restore) fetchBinlogUpToTargetTs(ctx context.Context) error {
+	if err := r.SyncArchivedBinlogFiles(ctx); err != nil {
 		return err
 	}
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, binlogDir, *latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlogDir string, binlog mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
-	resultFileDir := strings.TrimRight(binlogDir, "/") + "/"
+	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL),
 		binlog.Name,
