@@ -382,7 +382,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 			a.NoError(err)
 		}
 
-		result, err := getReplayBinlogPathList(test.startBinlogInfo, tmpDir)
+		result, err := getBinlogReplayList(test.startBinlogInfo, tmpDir)
 		if test.err {
 			a.Error(err)
 		} else {

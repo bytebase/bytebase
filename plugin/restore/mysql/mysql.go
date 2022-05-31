@@ -60,7 +60,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return err
 	}
 
-	replayBinlogPaths, err := getReplayBinlogPathList(startBinlogInfo, r.binlogDir)
+	replayBinlogPaths, err := getBinlogReplayList(startBinlogInfo, r.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -69,15 +69,15 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	stopTime := time.Unix(targetTs, 0)
 
 	mysqlbinlogArgs := []string{
-		/**Disable binary logging*/
+		// Disable binary logging.
 		"--disable-log-bin",
-		/*Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database*/
+		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
 		fmt.Sprintf(`--rewrite-db=%s->%s`, originalDatabase, pitrDatabase),
-		/*List entries for just this database, using PITR database to cooperate with --rewrite-db option*/
+		// List entries for just this database, using PITR database to cooperate with --rewrite-db option.
 		fmt.Sprintf("--database=%s", pitrDatabase),
-		/*Start decoding the binary log at the log position, this option applies to the first log file named on the command line.*/
+		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
-		/*Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument*/
+		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
@@ -158,8 +158,9 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	return nil
 }
 
-func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogSeq, err := getBinlogNameExtension(startBinlogInfo.FileName)
+// getBinlogReplayList returns the path list of the binlog that need be replayed.
+func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
+	startBinlogExt, err := getBinlogNameExtension(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
@@ -171,9 +172,9 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 
 	type binlogItem struct {
 		name string
-		seq  int64
+		ext  int64
 	}
-	var needReplayBinlogNames []binlogItem
+	var toBeReplayedBinlogItems []binlogItem
 
 	for _, f := range binlogFiles {
 		if f.IsDir() {
@@ -181,30 +182,30 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := getBinlogNameExtension(f.Name())
+		binlogExt, err := getBinlogNameExtension(f.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
-		if binlogSeq >= startBinlogSeq {
-			needReplayBinlogNames = append(needReplayBinlogNames, binlogItem{
+		if binlogExt >= startBinlogExt {
+			toBeReplayedBinlogItems = append(toBeReplayedBinlogItems, binlogItem{
 				name: f.Name(),
-				seq:  binlogSeq,
+				ext:  binlogExt,
 			})
 		}
 	}
 
-	sort.Slice(needReplayBinlogNames, func(i, j int) bool {
-		return needReplayBinlogNames[i].seq < needReplayBinlogNames[j].seq
+	sort.Slice(toBeReplayedBinlogItems, func(i, j int) bool {
+		return toBeReplayedBinlogItems[i].ext < toBeReplayedBinlogItems[j].ext
 	})
 
-	for i := 1; i < len(needReplayBinlogNames); i++ {
-		if needReplayBinlogNames[i].seq != needReplayBinlogNames[i-1].seq+1 {
-			return nil, fmt.Errorf("Discontinuous binlog file extensions detected in %s and %s", needReplayBinlogNames[i-1].name, needReplayBinlogNames[i].name)
+	for i := 1; i < len(toBeReplayedBinlogItems); i++ {
+		if toBeReplayedBinlogItems[i].ext != toBeReplayedBinlogItems[i-1].ext+1 {
+			return nil, fmt.Errorf("Discontinuous binlog file extensions detected in %s and %s", toBeReplayedBinlogItems[i-1].name, toBeReplayedBinlogItems[i].name)
 		}
 	}
 
 	var needReplayBinlogFilePath []string
-	for _, item := range needReplayBinlogNames {
+	for _, item := range toBeReplayedBinlogItems {
 		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, item.name))
 	}
 
