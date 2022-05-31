@@ -149,11 +149,9 @@ func (r *BackupRunner) cleanupBackups(ctx context.Context) {
 	// TODO(dragonly): Delete binlog for MySQL databases after MySQL binlog replay is done.
 }
 
+// delete the backup file corresponds to the api.Backup.
 func (r *BackupRunner) deleteBackupFile(backup *api.Backup) error {
-	path, err := getAndCreateBackupPath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
-	if err != nil {
-		return err
-	}
+	path := getBackupPath(r.server.profile.DataDir, backup.DatabaseID, backup.Name)
 	return os.Remove(path)
 }
 
