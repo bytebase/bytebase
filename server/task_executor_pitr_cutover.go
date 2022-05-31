@@ -60,7 +60,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	if !ok {
-		log.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
+		log.Error("failed to cast driver to mysql.Driver")
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
@@ -75,7 +75,6 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		log.Error("Failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", task.Database.Name),
-			zap.Stack("stack"),
 			zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
 	}
