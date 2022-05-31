@@ -1,7 +1,7 @@
 <template>
   <BBTable
     :column-list="columnList"
-    :data-source="databaseList"
+    :data-source="sortedDatabaseList"
     :show-header="true"
     :left-bordered="bordered"
     :right-bordered="bordered"
@@ -59,7 +59,13 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-4">
-        {{ database.syncStatus }}
+        <span
+          :class="{
+            'text-error': database.syncStatus === 'NOT_FOUND',
+          }"
+        >
+          {{ database.syncStatus }}
+        </span>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
@@ -149,6 +155,20 @@ const router = useRouter();
 const { t } = useI18n();
 const state = reactive<State>({
   showIncorrectProjectModal: false,
+});
+
+const sortedDatabaseList = computed(() => {
+  const list = [...props.databaseList];
+  list.sort((a, b) => {
+    if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
+      return -1;
+    }
+    if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
+      return 1;
+    }
+    return a.id - b.id;
+  });
+  return list;
 });
 
 const columnListMap = computed(() => {
@@ -312,7 +332,7 @@ const handleIncorrectProjectModalCancel = () => {
 const clickDatabase = (section: number, row: number) => {
   if (!props.rowClickable) return;
 
-  const database = props.databaseList[row];
+  const database = sortedDatabaseList.value[row];
   if (props.customClick) {
     emit("select-database", database);
   } else {
