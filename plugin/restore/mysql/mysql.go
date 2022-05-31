@@ -44,6 +44,11 @@ type Restore struct {
 	binlogDir string
 }
 
+type binlogItem struct {
+	name string
+	ext  int64
+}
+
 // New creates a new instance of Restore
 func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
 	return &Restore{
@@ -64,9 +69,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	if err != nil {
 		return err
 	}
-
-	// Converts the ts to the local time, which is needed by mysqlbinlog's --stop-datetime option.
-	stopTime := time.Unix(targetTs, 0)
+	stopDateTime := getDateTime(targetTs)
 
 	mysqlbinlogArgs := []string{
 		// Disable binary logging.
@@ -78,7 +81,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
-		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
+		fmt.Sprintf(`--stop-datetime=%s`, stopDateTime),
 	}
 
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
@@ -170,11 +173,7 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
 	}
 
-	type binlogItem struct {
-		name string
-		ext  int64
-	}
-	var toBeReplayedBinlogItems []binlogItem
+	var toBeReplayedBinlogNames []string
 
 	for _, f := range binlogFiles {
 		if f.IsDir() {
@@ -187,16 +186,14 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
 		if binlogExt >= startBinlogExt {
-			toBeReplayedBinlogItems = append(toBeReplayedBinlogItems, binlogItem{
-				name: f.Name(),
-				ext:  binlogExt,
-			})
+			toBeReplayedBinlogNames = append(toBeReplayedBinlogNames, f.Name())
 		}
 	}
 
-	sort.Slice(toBeReplayedBinlogItems, func(i, j int) bool {
-		return toBeReplayedBinlogItems[i].ext < toBeReplayedBinlogItems[j].ext
-	})
+	toBeReplayedBinlogItems, err := parseAndSortBinlogFileNames(toBeReplayedBinlogNames)
+	if err != nil {
+		return nil, err
+	}
 
 	for i := 1; i < len(toBeReplayedBinlogItems); i++ {
 		if toBeReplayedBinlogItems[i].ext != toBeReplayedBinlogItems[i-1].ext+1 {
@@ -210,6 +207,25 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	}
 
 	return needReplayBinlogFilePath, nil
+}
+
+// parseAndSortBinlogFileNames will parse the binlog file name, and then sort them in ascending order by their numeric extension.
+func parseAndSortBinlogFileNames(binlogFileNames []string) ([]binlogItem, error) {
+	var items []binlogItem
+	for _, name := range binlogFileNames {
+		binlogExt, err := getBinlogNameExtension(name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", name, err)
+		}
+		items = append(items, binlogItem{
+			name: name,
+			ext:  binlogExt,
+		})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ext < items[j].ext
+	})
+	return items, nil
 }
 
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
@@ -473,7 +489,7 @@ func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 	return nil
 }
 
-// incrementalFetchAllBinlogFiles fetches all the binlogs from server.
+// incrementalFetchAllBinlogFiles fetches all the binlogs that on server but not on local.
 // TODO(zp): It is not yet supported to synchronize some binlogs.
 // The current practice is to download all binlogs, but in the future we hope to only synchronize to the PITR time point
 func (r *Restore) incrementalFetchAllBinlogFiles(ctx context.Context) error {
@@ -629,4 +645,10 @@ func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error 
 		return fmt.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
 	}
 	return nil
+}
+
+// getDateTime returns converts the targetTs to the local date-time.
+func getDateTime(targetTs int64) string {
+	t := time.Unix(targetTs, 0)
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
