@@ -913,7 +913,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
 		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-			log.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
+			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 

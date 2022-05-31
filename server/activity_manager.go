@@ -75,7 +75,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
-	// Call external webhook endpoint in Go routine to avoid blocking web serveing thread.
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
 	go func() {
 		webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
 		if err != nil {
