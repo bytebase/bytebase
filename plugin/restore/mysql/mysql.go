@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -95,12 +94,13 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	mysqlbinlogCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
 	mysqlCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
 
-	mysqlRead, mysqlbinlogWrite := io.Pipe()
+	mysqlRead, err := mysqlbinlogCmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("cannot get mysqlbinlog stdout pipe, error: %w", err)
+	}
 	defer mysqlRead.Close()
-	defer mysqlbinlogWrite.Close()
 
 	mysqlbinlogCmd.Stderr = os.Stderr
-	mysqlbinlogCmd.Stdout = mysqlbinlogWrite
 
 	mysqlCmd.Stderr = os.Stderr
 	mysqlCmd.Stdout = os.Stderr
@@ -109,16 +109,11 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	if err := mysqlbinlogCmd.Start(); err != nil {
 		return fmt.Errorf("cannot start mysqlbinlog command %s, error: %w", mysqlbinlogCmd.String(), err)
 	}
-	if err := mysqlCmd.Start(); err != nil {
-		return fmt.Errorf("cannot start mysql command %s, error: %w", mysqlCmd.String(), err)
+	if err := mysqlCmd.Run(); err != nil {
+		return fmt.Errorf("cannot run mysql command %s, error: %w", mysqlCmd.String(), err)
 	}
-
 	if err := mysqlbinlogCmd.Wait(); err != nil {
 		return fmt.Errorf("wait mysqlbinlog encountering an error: %w", err)
-	}
-	mysqlbinlogWrite.Close()
-	if err := mysqlCmd.Wait(); err != nil {
-		return fmt.Errorf("wait mysql encountering an error: %w", err)
 	}
 	return nil
 }
