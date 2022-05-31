@@ -334,7 +334,8 @@
         "upgrade": "升级到付费方案来解锁角色管理",
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
-        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色"
+        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
+        "cannot-change-role-of-systembot": "不能修改系统管理员的角色"
       },
       "toggle-role-provider": {
         "title": "您确认吗？"

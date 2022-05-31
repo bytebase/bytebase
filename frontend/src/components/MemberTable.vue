@@ -218,6 +218,9 @@ export default defineComponent({
     });
 
     const allowChangeRole = (member: Member) => {
+      if (member.principal.id === SYSTEM_BOT_ID) {
+        return false;
+      }
       return (
         hasRBACFeature.value &&
         allowEdit.value &&
@@ -229,6 +232,9 @@ export default defineComponent({
     const changeRoleTooltip = (member: Member): string => {
       if (allowChangeRole(member)) {
         return "";
+      }
+      if (member.principal.id === SYSTEM_BOT_ID) {
+        return t("settings.members.tooltip.cannot-change-role-of-systembot");
       }
 
       if (!hasRBACFeature.value) {
