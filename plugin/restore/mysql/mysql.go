@@ -163,7 +163,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 }
 
 func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNamePrefix string) ([]string, error) {
-	startBinlogSeq, err := getBinlogFileNameSeqNumber(startBinlogInfo.FileName, binlogNamePrefix)
+	startBinlogSeq, err := getBinlogExtension(startBinlogInfo.FileName, binlogNamePrefix)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
@@ -186,7 +186,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := getBinlogFileNameSeqNumber(f.Name(), binlogNamePrefix)
+		binlogSeq, err := getBinlogExtension(f.Name(), binlogNamePrefix)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
@@ -596,19 +596,19 @@ func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("cannot find log_bin_basename on mysqlbin server, error: %w", err)
 }
 
-// getBinlogSeqNumber returns the sequence number of binlog file.
+// getBinlogExtension returns the numeric extension to the binary log base name
 // For example: ("binlog.000001","binlog.") => 1, ("binlog.000001a", "binlog.") => err, ("binlog.000001", "binlog") => err
-func getBinlogFileNameSeqNumber(name, prefix string) (int64, error) {
+func getBinlogExtension(name, prefix string) (int64, error) {
 	if !strings.HasPrefix(name, prefix) {
 		return 0, fmt.Errorf("binlog file name %s must have prefix %s", name, prefix)
 	}
-	seqStr := strings.TrimPrefix(name, prefix)
-	for _, r := range seqStr {
+	extension := strings.TrimPrefix(name, prefix)
+	for _, r := range extension {
 		if !unicode.IsDigit(r) {
-			return 0, fmt.Errorf("binlog file %s has invalid sequence number %s", name, seqStr)
+			return 0, fmt.Errorf("binlog file %s has invalid sequence number %s", name, extension)
 		}
 	}
-	return strconv.ParseInt(seqStr, 10, 0)
+	return strconv.ParseInt(extension, 10, 0)
 }
 
 func getSafeName(baseName, suffix string) string {
