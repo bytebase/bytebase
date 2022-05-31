@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	// TODO(dragonly): Design the user configuration in pitr-mysql.md, and implement it.
 	backupExpireDuration  = 7 * 24 * time.Hour
 	backupCleanupInterval = 30 * time.Minute
 )
