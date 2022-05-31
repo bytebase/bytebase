@@ -56,7 +56,7 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	if err := r.fetchBinlogUpToTargetTs(ctx); err != nil {
+	if err := r.incrementalFetchAllBinlogFiles(ctx); err != nil {
 		return err
 	}
 
@@ -405,9 +405,9 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
-// but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context) error {
+// FetchArchivedBinlogFiles downloads the missing binlog files from the remote instance to `binlogDir`,
+// but exclude latest binlog. We may  download the latest binlog only when doing PITR.
+func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
 	if err != nil {
 		return err
@@ -467,11 +467,11 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context) error {
 	return nil
 }
 
-// fetchBinlogUpToTargetTs fetches the binlog from server up to the targetTs.
+// incrementalFetchAllBinlogFiles fetches all the binlogs from server.
 // TODO(zp): It is not yet supported to synchronize some binlogs.
 // The current practice is to download all binlogs, but in the future we hope to only synchronize to the PITR time point
-func (r *Restore) fetchBinlogUpToTargetTs(ctx context.Context) error {
-	if err := r.SyncArchivedBinlogFiles(ctx); err != nil {
+func (r *Restore) incrementalFetchAllBinlogFiles(ctx context.Context) error {
+	if err := r.FetchArchivedBinlogFiles(ctx); err != nil {
 		return err
 	}
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
