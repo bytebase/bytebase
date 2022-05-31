@@ -38,11 +38,35 @@
           </i18n-t>
         </div>
         <template v-else>
+          <i18n-t
+            tag="p"
+            class="textinfolabel"
+            keypath="deployment-config.pipeline-generated-from-deployment-config"
+          >
+            <template #deployment_config>
+              <router-link
+                :to="{
+                  path: `/project/${projectSlug(project)}`,
+                  hash: '#deployment-config',
+                }"
+                active-class=""
+                exact-active-class=""
+                class="underline hover:bg-link-hover"
+                @click="$emit('dismiss')"
+              >
+                {{ $t("common.deployment-config") }}
+              </router-link>
+            </template>
+          </i18n-t>
           <YAxisRadioGroup
             v-model:label="label"
             :label-list="labelList"
-            class="text-sm pt-2 pb-1"
-          />
+            class="text-sm mt-2 pt-2 pb-1"
+          >
+            <template #title>
+              <span class="textlabel mr-1">Group by:</span>
+            </template>
+          </YAxisRadioGroup>
           <NCollapse
             display-directive="if"
             accordion
