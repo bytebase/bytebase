@@ -23,7 +23,6 @@ func NewRootCmd() *cobra.Command {
 
 // Execute is the execute command for root command.
 func Execute() (err error) {
-	log.Init()
 	defer log.Sync()
 	return NewRootCmd().Execute()
 }

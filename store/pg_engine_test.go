@@ -143,7 +143,6 @@ var (
 )
 
 func TestMigrationCompatibility(t *testing.T) {
-	log.Init()
 	log.SetLevel(zap.DebugLevel)
 	pgDir := t.TempDir()
 	pgInstance, err := postgres.Install(path.Join(pgDir, "resource"), path.Join(pgDir, "data"), pgUser)
