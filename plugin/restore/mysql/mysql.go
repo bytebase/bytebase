@@ -159,7 +159,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 
 	binlogFiles, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
+		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
 	}
 
 	type binlogItem struct {
@@ -176,7 +176,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 		// so we cannot directly use string to compare lexicographical order.
 		binlogSeq, err := getBinlogNameExtension(f.Name())
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse the binlog file name[%s], error[%w]", f.Name(), err)
+			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
 			needReplayBinlogNames = append(needReplayBinlogNames, binlogItem{
@@ -192,7 +192,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 
 	for i := 1; i < len(needReplayBinlogNames); i++ {
 		if needReplayBinlogNames[i].seq != needReplayBinlogNames[i-1].seq+1 {
-			return nil, fmt.Errorf("detect a discontinuous binlog file extension %s", needReplayBinlogNames[i].name)
+			return nil, fmt.Errorf("Discontinuous binlog file extensions detected in %s and %s", needReplayBinlogNames[i-1].name, needReplayBinlogNames[i].name)
 		}
 	}
 
