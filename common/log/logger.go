@@ -17,9 +17,6 @@ var (
 
 // Initializes the global console logger.
 func init() {
-	if gl != nil {
-		return
-	}
 	gLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 	gl = zap.New(zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
