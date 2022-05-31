@@ -59,7 +59,13 @@
         </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-4">
-        {{ database.syncStatus }}
+        <span
+          :class="{
+            'text-error': database.syncStatus === 'NOT_FOUND',
+          }"
+        >
+          {{ database.syncStatus }}
+        </span>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-16">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
