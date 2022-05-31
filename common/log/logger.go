@@ -37,8 +37,6 @@ func EnabledLevel(level zapcore.Level) bool {
 
 // Debug wraps the zap Logger's Debug method.
 func Debug(msg string, fields ...zap.Field) {
-	// See notes of function Error.
-	fields = append(fields, zap.StackSkip("stack", 2))
 	gl.Debug(msg, fields...)
 }
 
