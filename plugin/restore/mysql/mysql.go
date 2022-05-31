@@ -72,7 +72,9 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return err
 	}
 
+	// Converts the ts to the local time, which is needed by mysqlbinlog's --stop-datetime option.
 	stopTime := time.Unix(targetTs, 0)
+
 	mysqlbinlogArgs := []string{
 		"--disable-log-bin",
 		fmt.Sprintf(`--rewrite-db=%s->%s`, originalDatabase, pitrDatabase),
@@ -177,7 +179,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 		name string
 		seq  int
 	}
-	var needReplayBinlogName []binlogItem
+	var needReplayBinlogNames []binlogItem
 
 	for _, f := range binlogFilesLocal {
 		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
@@ -191,29 +193,29 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 			return nil, fmt.Errorf("cannot parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
 		if binlogSeq >= startBinlogSeq {
-			needReplayBinlogName = append(needReplayBinlogName, binlogItem{
+			needReplayBinlogNames = append(needReplayBinlogNames, binlogItem{
 				name: f.Name(),
 				seq:  int(binlogSeq),
 			})
 		}
 	}
 
-	if len(needReplayBinlogName) == 0 {
+	if len(needReplayBinlogNames) == 0 {
 		return []string{}, nil
 	}
 
-	sort.Slice(needReplayBinlogName, func(i, j int) bool {
-		return needReplayBinlogName[i].seq < needReplayBinlogName[j].seq
+	sort.Slice(needReplayBinlogNames, func(i, j int) bool {
+		return needReplayBinlogNames[i].seq < needReplayBinlogNames[j].seq
 	})
 
-	for i := 1; i < len(needReplayBinlogName); i++ {
-		if needReplayBinlogName[i].seq != needReplayBinlogName[i-1].seq+1 {
-			return nil, fmt.Errorf("detect a discontinuous binlog sequence %v", needReplayBinlogName)
+	for i := 1; i < len(needReplayBinlogNames); i++ {
+		if needReplayBinlogNames[i].seq != needReplayBinlogNames[i-1].seq+1 {
+			return nil, fmt.Errorf("detect a discontinuous binlog file extension %v", needReplayBinlogNames)
 		}
 	}
 
 	var needReplayBinlogFilePath []string
-	for _, item := range needReplayBinlogName {
+	for _, item := range needReplayBinlogNames {
 		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, item.name))
 	}
 
@@ -421,7 +423,7 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 
 // SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, binlogDir string) error {
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string) error {
 	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return err
@@ -482,6 +484,9 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 
 // SyncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
 func (r *Restore) SyncLatestBinlog(ctx context.Context, binlogDir string) error {
+	if err := r.SyncArchivedBinlogFiles(ctx, binlogDir); err != nil {
+		return err
+	}
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
