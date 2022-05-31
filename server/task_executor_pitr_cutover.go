@@ -3,9 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
@@ -15,7 +18,6 @@ import (
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
 func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
-
 		mysqlutil: instance,
 	}
 }
@@ -70,7 +72,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	)
 	pitrDatabaseName, pitrOldDatabaseName, err := mysqlRestore.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("failed to swap the original and PITR database",
+		log.Error("Failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", task.Database.Name),
 			zap.Stack("stack"),
@@ -82,6 +84,26 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		zap.String("original_database", task.Database.Name),
 		zap.String("pitr_database", pitrDatabaseName),
 		zap.String("old_database", pitrOldDatabaseName))
+
+	log.Info("Appending new migration history record...")
+	m := &db.MigrationInfo{
+		ReleaseVersion: server.profile.Version,
+		Version:        common.DefaultMigrationVersion(),
+		Namespace:      task.Database.Name,
+		Database:       task.Database.Name,
+		Environment:    task.Database.Instance.Environment.Name,
+		Source:         db.MigrationSource(task.Database.Project.WorkflowType),
+		Type:           db.Baseline,
+		Description:    fmt.Sprintf("PITR: restoring database %s", task.Database.Name),
+		Creator:        task.Creator.Name,
+		IssueID:        strconv.Itoa(issue.ID),
+	}
+
+	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
+		log.Error("Failed to add migration history record", zap.Error(err))
+		return true, nil, fmt.Errorf("failed to add migration history record, error[%w]", err)
+	}
+
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
