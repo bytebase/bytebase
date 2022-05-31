@@ -1,18 +1,15 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/plugin/db/util"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
@@ -69,7 +66,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	)
 	pitrDatabaseName, pitrOldDatabaseName, err := mysqlRestore.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("failed to swap the original and PITR database",
+		log.Error("Failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", task.Database.Name),
 			zap.Stack("stack"),
@@ -83,7 +80,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		zap.String("old_database", pitrOldDatabaseName))
 
 	log.Info("Appending new migration history record...")
-	mi := &db.MigrationInfo{
+	m := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
 		Namespace:      task.Database.Name,
@@ -96,30 +93,9 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		IssueID:        strconv.Itoa(issue.ID),
 	}
 
-	// After the swap, the original database is replaced by the pitr database, so prev schema the original database,
-	// and updated schema is the pitr database.
-	var prevSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, task.Database.Name, &prevSchemaBuf, true); err != nil {
-		return true, nil, err
-	}
-	var updatedSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, pitrDatabaseName, &updatedSchemaBuf, true); err != nil {
-		return true, nil, err
-	}
-
-	executor := driver.(util.MigrationExecutor)
-	stmt := "/* pitr cutover */"
-	startedNs := time.Now().UnixNano()
-	migrationHistoryID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), stmt, db.BytebaseDatabase)
-	if err != nil {
-		return true, nil, err
-	}
-
-	if err := util.EndMigration(ctx, executor, startedNs, migrationHistoryID, updatedSchemaBuf.String(), db.BytebaseDatabase, true /*isDone*/); err != nil {
-		log.Error("failed to update migration history record",
-			zap.Int64("migration_history_id", migrationHistoryID),
-			zap.Error(err),
-		)
+	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
+		log.Error("Failed to add migration history record", zap.Error(err))
+		return true, nil, fmt.Errorf("failed to add migration history record, error[%w]", err)
 	}
 
 	return true, &api.TaskRunResultPayload{
