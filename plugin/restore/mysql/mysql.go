@@ -157,7 +157,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
 
-	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
+	binlogFiles, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read directory %s, error %w", binlogDir, err)
 	}
@@ -168,7 +168,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 	}
 	var needReplayBinlogNames []binlogItem
 
-	for _, f := range binlogFilesLocal {
+	for _, f := range binlogFiles {
 		if f.IsDir() {
 			continue
 		}
