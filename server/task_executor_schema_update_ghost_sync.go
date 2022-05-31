@@ -38,7 +38,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
-	return runGhostMigration(ctx, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runGhostMigration(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -87,7 +87,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		dmlBatchSize                        = 10
 		maxLagMillisecondsThrottleThreshold = 1500
 		defaultNumRetries                   = 60
-		cutoverLockTimoutSeconds            = 3
+		cutoverLockTimeoutSeconds           = 3
 		exponentialBackoffMaxInterval       = 64
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
@@ -145,7 +145,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.SetMaxLagMillisecondsThrottleThreshold(maxLagMillisecondsThrottleThreshold)
 	migrationContext.SetDefaultNumRetries(defaultNumRetries)
 	migrationContext.ApplyCredentials()
-	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimoutSeconds); err != nil {
+	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimeoutSeconds); err != nil {
 		return nil, err
 	}
 	if err := migrationContext.SetExponentialBackoffMaxInterval(exponentialBackoffMaxInterval); err != nil {
@@ -154,8 +154,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func runGhostMigration(ctx context.Context, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+func runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
