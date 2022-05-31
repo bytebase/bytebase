@@ -39,7 +39,6 @@ type testTable struct {
 }
 
 func tableTest(t *testing.T, tables []testTable) {
-	log.Init()
 	log.SetLevel(zap.DebugLevel)
 	t.Helper()
 	for _, tc := range tables {
