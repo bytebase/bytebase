@@ -565,7 +565,10 @@ func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFil
 // For example: ("binlog.000001") => 1, ("binlog000001") => err
 func getBinlogNameExtension(name string) (int64, error) {
 	s := strings.Split(name, ".")
-	return strconv.ParseInt(s[len(s)-1], 10, 0)
+	if len(s) != 2 {
+		return 0, fmt.Errorf("cannot parse the the binlog name extension, expect 1 part after split by dot, but get: %d", len(s))
+	}
+	return strconv.ParseInt(s[1], 10, 0)
 }
 
 func getSafeName(baseName, suffix string) string {
