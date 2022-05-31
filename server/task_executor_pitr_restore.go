@@ -43,8 +43,6 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return exec.pitrRestore(ctx, task, server)
 }
 
-// TODO(dragonly): Should establish a BASELINE migration in the swap database task.
-// And what's the right schema version in tenant mode?
 func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
