@@ -102,10 +102,10 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		return fmt.Errorf("cannot start mysqlbinlog command %s, error: %w", mysqlbinlogCmd.String(), err)
 	}
 	if err := mysqlCmd.Run(); err != nil {
-		return fmt.Errorf("cannot run mysql command %s, error: %w", mysqlCmd.String(), err)
+		return fmt.Errorf("mysql command %s fails, error: %w", mysqlCmd.String(), err)
 	}
 	if err := mysqlbinlogCmd.Wait(); err != nil {
-		return fmt.Errorf("wait mysqlbinlog encountering an error: %w", err)
+		return fmt.Errorf("error occurred while waiting for mysqlbinlog to exit: %w", err)
 	}
 	return nil
 }
