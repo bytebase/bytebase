@@ -40,6 +40,8 @@ func EnabledLevel(level zapcore.Level) bool {
 
 // Debug wraps the zap Logger's Debug method.
 func Debug(msg string, fields ...zap.Field) {
+	// See notes of function Error.
+	fields = append(fields, zap.StackSkip("stack", 2))
 	gl.Debug(msg, fields...)
 }
 
@@ -55,6 +57,9 @@ func Warn(msg string, fields ...zap.Field) {
 
 // Error wraps the zap Logger's Error method.
 func Error(msg string, fields ...zap.Field) {
+	// Append the stack info in Error logging for better debugging experience.
+	// Note that we should skip 2 stack frames so that the top frame start at the caller of log.Error.
+	fields = append(fields, zap.StackSkip("stack", 2))
 	gl.Error(msg, fields...)
 }
 

@@ -242,6 +242,7 @@ type MigrationInfo struct {
 	Description    string
 	Creator        string
 	IssueID        string
+	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload        string
 	CreateDatabase bool
 	// UseSemanticVersion is whether version is a semantic version.
