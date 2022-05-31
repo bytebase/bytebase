@@ -304,7 +304,7 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 	}
 }
 
-func TestGetReplayBinlogPathListImpl(t *testing.T) {
+func TestGetReplayBinlogPathList(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		subDirNames     []string
