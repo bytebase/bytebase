@@ -605,7 +605,7 @@ func getBinlogFileNameSeqNumber(name, prefix string) (int64, error) {
 	seqStr := strings.TrimPrefix(name, prefix)
 	for _, r := range seqStr {
 		if !unicode.IsDigit(r) {
-			return 0, fmt.Errorf("binlog file sequence number must be digit, but get %v in %s", r, name)
+			return 0, fmt.Errorf("binlog file %s has invalid sequence number %s", name, seqStr)
 		}
 	}
 	return strconv.ParseInt(seqStr, 10, 0)
