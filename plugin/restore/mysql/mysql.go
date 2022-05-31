@@ -600,7 +600,7 @@ func (r *Restore) getBinlogNamePrefix(ctx context.Context) (string, error) {
 // For example: ("binlog.000001","binlog.") => 1, ("binlog.000001a", "binlog.") => err, ("binlog.000001", "binlog") => err
 func getBinlogFileNameSeqNumber(name, prefix string) (int64, error) {
 	if !strings.HasPrefix(name, prefix) {
-		return 0, fmt.Errorf("binlog file name %s must prefix with %s", name, prefix)
+		return 0, fmt.Errorf("binlog file name %s must have prefix %s", name, prefix)
 	}
 	seqStr := strings.TrimPrefix(name, prefix)
 	for _, r := range seqStr {
