@@ -164,7 +164,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 
 	type binlogItem struct {
 		name string
-		seq  int
+		seq  int64
 	}
 	var needReplayBinlogNames []binlogItem
 
@@ -181,7 +181,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 		if binlogSeq >= startBinlogSeq {
 			needReplayBinlogNames = append(needReplayBinlogNames, binlogItem{
 				name: f.Name(),
-				seq:  int(binlogSeq),
+				seq:  binlogSeq,
 			})
 		}
 	}
