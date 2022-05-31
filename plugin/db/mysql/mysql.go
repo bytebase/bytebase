@@ -1225,7 +1225,7 @@ func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 
 // GetTables gets all tables of a database.
 func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
-	txn, err := db.BeginTx(ctx, nil)
+	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
