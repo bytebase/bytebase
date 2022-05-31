@@ -186,10 +186,6 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir string) (
 		}
 	}
 
-	if len(needReplayBinlogNames) == 0 {
-		return []string{}, nil
-	}
-
 	sort.Slice(needReplayBinlogNames, func(i, j int) bool {
 		return needReplayBinlogNames[i].seq < needReplayBinlogNames[j].seq
 	})
