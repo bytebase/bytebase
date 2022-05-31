@@ -57,7 +57,7 @@ func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.Connecti
 
 // ReplayBinlog replays the binlog about `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
 func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase, binlogDir string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	if err := r.syncLatestBinlog(ctx, binlogDir); err != nil {
+	if err := r.fetchBinlogUpToTargetTs(ctx, binlogDir); err != nil {
 		return err
 	}
 
@@ -205,7 +205,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 
 	for i := 1; i < len(needReplayBinlogNames); i++ {
 		if needReplayBinlogNames[i].seq != needReplayBinlogNames[i-1].seq+1 {
-			return nil, fmt.Errorf("detect a discontinuous binlog file extension %v", needReplayBinlogNames)
+			return nil, fmt.Errorf("detect a discontinuous binlog file extension %s", needReplayBinlogNames[i].name)
 		}
 	}
 
@@ -477,8 +477,10 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, binlogDir string)
 	return nil
 }
 
-// syncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
-func (r *Restore) syncLatestBinlog(ctx context.Context, binlogDir string) error {
+// fetchBinlogUpToTargetTs fetches the binlog from server up to the targetTs.
+// TODO(zp): It is not yet supported to synchronize some binlogs.
+// The current practice is to download all binlogs, but in the future we hope to only synchronize to the PITR time point
+func (r *Restore) fetchBinlogUpToTargetTs(ctx context.Context, binlogDir string) error {
 	if err := r.SyncArchivedBinlogFiles(ctx, binlogDir); err != nil {
 		return err
 	}
