@@ -69,10 +69,15 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	stopTime := time.Unix(targetTs, 0)
 
 	mysqlbinlogArgs := []string{
+		/**Disable binary logging*/
 		"--disable-log-bin",
+		/*Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database*/
 		fmt.Sprintf(`--rewrite-db=%s->%s`, originalDatabase, pitrDatabase),
+		/*List entries for just this database, using PITR database to cooperate with --rewrite-db option*/
 		fmt.Sprintf("--database=%s", pitrDatabase),
+		/*Start decoding the binary log at the log position, this option applies to the first log file named on the command line.*/
 		fmt.Sprintf("--start-position=%d", startBinlogInfo.Position),
+		/*Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument*/
 		fmt.Sprintf(`--stop-datetime=%d-%d-%d %d:%d:%d`, stopTime.Year(), stopTime.Month(), stopTime.Day(), stopTime.Hour(), stopTime.Minute(), stopTime.Second()),
 	}
 
