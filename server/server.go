@@ -53,7 +53,6 @@ type Server struct {
 	mysqlutil     *mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
-	db            *store.DB
 	store         *store.Store
 	startedTs     int64
 	secret        string
@@ -142,7 +141,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
-	s.db = storeDB
 
 	// Open the database that stores bytebase's own metadata connection.
 	if err = storeDB.Open(ctx); err != nil {
@@ -461,9 +459,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	s.runnerWG.Wait()
 
 	// Close db connection
-	if s.db != nil {
-		log.Info("Trying to close database connections")
-		if err := s.db.Close(); err != nil {
+	if s.store != nil {
+		if err := s.store.Close(); err != nil {
 			return err
 		}
 	}

@@ -17,3 +17,8 @@ func New(db *DB, cache api.CacheService) *Store {
 		cache: cache,
 	}
 }
+
+// Close closes underlying db.
+func (s *Store) Close() error {
+	return s.db.Close()
+}
