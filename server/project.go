@@ -10,6 +10,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"go.uber.org/zap"
 
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -464,7 +466,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+			// Despite the error here, we have deleted the repository in the database, we still return success.
+			log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
