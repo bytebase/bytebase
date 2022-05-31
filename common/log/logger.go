@@ -15,8 +15,8 @@ var (
 	gLevel zap.AtomicLevel
 )
 
-// Init initializes the global console logger.
-func Init() {
+// Initializes the global console logger.
+func init() {
 	if gl != nil {
 		return
 	}
