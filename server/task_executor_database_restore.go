@@ -167,7 +167,6 @@ func createBranchMigrationHistory(ctx context.Context, server *Server, sourceDat
 		Description:    description,
 		Creator:        task.Creator.Name,
 		IssueID:        issueID,
-		Payload:        "",
 	}
 	migrationID, _, err := targetDriver.ExecuteMigration(ctx, m, "")
 	if err != nil {
