@@ -345,7 +345,8 @@
       },
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
-      }
+      },
+      "system-administrator": "系统管理员"
     },
     "general": {
       "workspace": {

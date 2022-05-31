@@ -345,7 +345,8 @@
       },
       "change-role-provider-to-bytebase": {
         "content": "You are about to restore the following members. All existing members synced from VCS will be removed."
-      }
+      },
+      "system-administrator": "System Administrator"
     },
     "general": {
       "workspace": {
