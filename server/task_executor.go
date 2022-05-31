@@ -36,7 +36,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
+			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr))
 			terminated = true
 			result = nil
 			err = fmt.Errorf("encounter internal error when executing task")
