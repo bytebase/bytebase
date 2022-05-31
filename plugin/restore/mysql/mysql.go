@@ -19,9 +19,11 @@ import (
 	"unicode"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"go.uber.org/zap"
 
 	"github.com/blang/semver/v4"
 )
@@ -179,6 +181,7 @@ func getReplayBinlogPathList(startBinlogInfo api.BinlogInfo, binlogDir, binlogNa
 
 	for _, f := range binlogFilesLocal {
 		if f.IsDir() || !strings.HasPrefix(f.Name(), binlogNamePrefix) {
+			log.Warn("Binlog file has invalid basename", zap.String("filename", f.Name()), zap.String("basename", binlogNamePrefix))
 			continue
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
