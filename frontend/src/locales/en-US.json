@@ -1374,6 +1374,7 @@
   },
   "schema-review-policy": {
     "title": "Schema Review",
+    "disabled": "Disabled",
     "no-policy-set": "No schema review policy",
     "create-policy": "Create policy",
     "configure-policy": "Configure policy",

@@ -26,7 +26,7 @@
       <template #1>
         <SchemaReviewConfig
           class="py-5"
-          :select-rule-list="state.selectedRuleList"
+          :selected-rule-list="state.selectedRuleList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           @change="onRuleChange"

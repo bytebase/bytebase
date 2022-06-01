@@ -1374,6 +1374,7 @@
   },
   "schema-review-policy": {
     "title": "Schema 审核策略",
+    "disabled": "已禁用",
     "no-policy-set": "没有 schema 审核策略",
     "create-policy": "创建审核策略",
     "configure-policy": "配置审核策略",

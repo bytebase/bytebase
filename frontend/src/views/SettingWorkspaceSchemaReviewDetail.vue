@@ -24,9 +24,9 @@
           </h1>
           <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
             <BBBadge
-              :text="$t('common.disable')"
+              :text="$t('schema-review-policy.disabled')"
               :can-remove="false"
-              :style="'WARN'"
+              :style="'DISABLED'"
             />
           </div>
         </div>
@@ -39,12 +39,17 @@
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5" v-if="reviewPolicy.environment">
+      <div
+        class="flex items-center flex-wrap gap-x-3 my-5"
+        v-if="reviewPolicy.environment"
+      >
         <span class="font-semibold">{{ $t("common.environment") }}</span>
-        <BBBadge
-          :text="environmentName(reviewPolicy.environment)"
-          :can-remove="false"
-        />
+        <router-link
+          :to="`/environment/${environmentSlug(reviewPolicy.environment)}`"
+          class="col-span-2 font-medium text-main underline"
+        >
+          {{ environmentName(reviewPolicy.environment) }}
+        </router-link>
       </div>
       <BBAttention
         v-else

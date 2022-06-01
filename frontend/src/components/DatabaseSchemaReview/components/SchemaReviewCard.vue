@@ -9,9 +9,9 @@
         </h3>
         <BBBadge
           v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
-          :text="$t('common.disable')"
+          :text="$t('schema-review-policy.disabled')"
           :can-remove="false"
-          :style="'WARN'"
+          :style="'DISABLED'"
         />
       </div>
       <button
