@@ -56,6 +56,30 @@ jobs:
           go generate -tags mysql ./...
           go test -v ./... -tags=mysql
 
+  go-release-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Cache MySQL
+        uses: actions/cache@v2
+        with:
+          path: |
+            ./resources/mysql/*.tar.gz
+            ./resources/mysql/*.tar.xz
+          key: ${{ runner.OS }}-build-mysql-cache
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm release
+      - name: Install dependencies and run all tests
+        run: |
+          go generate -tags mysql,release ./...
+          go test -v ./... -tags=mysql,release
+
   # tests if scripts/install_bb.sh is working correctly.
   install-bb:
     strategy:
