@@ -1376,6 +1376,7 @@
     "title": "Schema Review",
     "no-policy-set": "No schema review policy",
     "create-policy": "Create policy",
+    "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
@@ -1396,10 +1397,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "Schema review for Prod"
+        "title": "Production environment template"
       },
       "policy-for-dev": {
-        "title": "Schema review for Dev"
+        "title": "Development environment template"
       }
     },
     "rule": {

@@ -1376,6 +1376,7 @@
     "title": "Schema 审核策略",
     "no-policy-set": "没有 schema 审核策略",
     "create-policy": "创建审核策略",
+    "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
@@ -1396,10 +1397,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "针对生产环境的审核策略"
+        "title": "针对生产环境的审核策略模板"
       },
       "policy-for-dev": {
-        "title": "针对开发环境的审核策略"
+        "title": "针对开发环境的审核策略模板"
       }
     },
     "rule": {

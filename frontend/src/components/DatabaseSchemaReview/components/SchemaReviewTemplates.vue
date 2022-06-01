@@ -19,7 +19,7 @@
         @click="$emit('select', index)"
       >
         <img class="h-24" :src="template.imagePath" alt="" />
-        <span class="text-lg lg:text-xl mt-4">{{ template.title }}</span>
+        <span class="text-sm lg:text-base mt-4">{{ template.title }}</span>
         <heroicons-solid:check-circle
           v-if="index == selectedTemplateIndex"
           class="w-7 h-7 text-gray-500 absolute top-3 left-3"
