@@ -11,32 +11,8 @@
     >
       <div class="relative -mt-4 -ml-4 flex items-center justify-between">
         <div class="ml-4 text-xl text-main">
-          <component
-            :is="overrides.title"
-            v-if="typeof overrides.title === 'function'"
-          />
-          <template v-else-if="typeof overrides.title === 'string'">
-            {{ overrides.title }}
-          </template>
-          <template v-else>
-            {{ title }}
-          </template>
-
-          <component
-            :is="overrides.subtitle"
-            v-if="typeof overrides.subtitle === 'function'"
-          />
-          <template v-else-if="typeof overrides.subtitle === 'string'">{{
-            overrides.subtitle
-          }}</template>
-          <div
-            v-else-if="subtitle"
-            class="text-sm text-control whitespace-nowrap"
-          >
-            <span class="inline-block">
-              {{ subtitle }}
-            </span>
-          </div>
+          <component :is="renderTitle" />
+          <component :is="renderSubtitle" />
         </div>
         <button
           v-if="showClose"
@@ -60,6 +36,7 @@
 import {
   computed,
   defineComponent,
+  h,
   inject,
   onBeforeMount,
   onMounted,
@@ -68,6 +45,7 @@ import {
   ref,
   Ref,
   RenderFunction,
+  VNode,
 } from "vue";
 import { useModalStack } from "./BBModalStack.vue";
 
@@ -145,6 +123,35 @@ export default defineComponent({
       overrides,
     });
 
+    const renderTitle = () => {
+      if (typeof overrides.value.title === "function") {
+        return overrides.value.title();
+      }
+      if (typeof overrides.value.title === "string") {
+        return overrides.value.title;
+      }
+      return props.title;
+    };
+
+    const renderSubtitle = () => {
+      if (typeof overrides.value.subtitle === "function") {
+        return overrides.value.subtitle();
+      }
+      if (typeof overrides.value.subtitle === "string") {
+        return overrides.value.subtitle;
+      }
+      if (props.subtitle) {
+        return h(
+          "div",
+          {
+            class: "text-sm text-control whitespace-nowrap",
+          },
+          [h("span", { class: "inline-block" }, props.subtitle)]
+        );
+      }
+      return null;
+    };
+
     return {
       style,
       close,
@@ -153,6 +160,8 @@ export default defineComponent({
       index,
       active,
       overrides,
+      renderTitle,
+      renderSubtitle,
     };
   },
 });
