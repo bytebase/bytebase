@@ -157,17 +157,17 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		t1 := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
-		t.Logf("start to concurrently update data at t1: %v", t1)
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		t.Logf("start to concurrently update data at t1: %v", targetTs)
 
 		t.Log("restore to pitr database")
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, suffixTs, targetTs)
 		// TODO(zp): change to a.NoError(err) when binlogInfo is determined
 		a.Error(err)
 
@@ -176,7 +176,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -219,6 +219,7 @@ func TestPITR(t *testing.T) {
 		// 3. insert more data for incremental restore
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+		targetTs := time.Now().Unix()
 
 		// 4. drop database
 		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database)
@@ -238,18 +239,18 @@ func TestPITR(t *testing.T) {
 
 		// 6. restore
 		t.Log("restore to pitr database")
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, suffixTs, targetTs)
 		// TODO(zp): change to a.NoError(err) when binlogInfo is determined
 		a.Error(err)
 
 		t.Log("cutover stage")
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 	})
 
@@ -282,10 +283,10 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		t1 := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
-		t.Logf("start to concurrently update data at t1: %v", t1)
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		t.Logf("start to concurrently update data at t1: %v", targetTs)
 
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 
 		t.Log("mimics schema migration")
 		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
@@ -298,7 +299,7 @@ func TestPITR(t *testing.T) {
 		binlogDir := t.TempDir()
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, suffixTs, targetTs)
 		// TODO(zp): change to a.NoError(err) when binlogInfo is determined
 		a.Error(err)
 
@@ -307,7 +308,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")

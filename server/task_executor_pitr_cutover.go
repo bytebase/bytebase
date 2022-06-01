@@ -53,8 +53,8 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
-	binlogDir, err := getAndCreateBinlogDirectory(server.profile.DataDir, task.Instance)
-	if err != nil {
+	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
+	if err := createBinlogDir(server.profile.DataDir, task.Instance.ID); err != nil {
 		return true, nil, err
 	}
 
@@ -102,6 +102,9 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		log.Error("Failed to add migration history record", zap.Error(err))
 		return true, nil, fmt.Errorf("failed to add migration history record, error[%w]", err)
 	}
+
+	// Sync database schema after restore is completed.
+	server.syncEngineVersionAndSchema(ctx, task.Database.Instance)
 
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
