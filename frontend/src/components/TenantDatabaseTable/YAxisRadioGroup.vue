@@ -32,10 +32,6 @@ const emit = defineEmits<{
 }>();
 
 const onChange = (e: Event) => {
-  // const target = e.target as HTMLInputElement;
-  // if (target.checked) {
-  //   emit("update:label", target.value);
-  // }
   const target = e.target as HTMLSelectElement;
   emit("update:label", target.value);
 };
