@@ -73,6 +73,17 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch environment request").SetInternal(err)
 		}
 
+		// Ensure no instance in env before archived
+		if v := envPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			instances, err := s.store.FindInstance(ctx, &api.InstanceFind{EnvironmentID: &id})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check instances under environment").SetInternal(err)
+			}
+			if len(instances) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot archive environment with instances")
+			}
+		}
+
 		env, err := s.store.PatchEnvironment(ctx, envPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
