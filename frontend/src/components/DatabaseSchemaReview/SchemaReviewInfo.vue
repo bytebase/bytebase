@@ -55,7 +55,11 @@
           <label
             :for="`${env.id}`"
             class="ml-2 items-center text-sm"
-            :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
+            :class="
+              env.disabled
+                ? 'cursor-not-allowed text-gray-400'
+                : 'cursor-pointer'
+            "
           >
             {{ env.displayName }}
           </label>
