@@ -62,10 +62,15 @@ const prepareAccessibleConnectionByProject = async () => {
       project.id
     );
     if (databaseList.length >= 0) {
-      databaseList.forEach((database: Database) => {
-        state.databaseIdList.set(database.id, database.name);
-        state.instanceIdList.set(database.instance.id, database.instance.name);
-      });
+      databaseList
+        .filter((d) => d.syncStatus === "OK")
+        .forEach((database: Database) => {
+          state.databaseIdList.set(database.id, database.name);
+          state.instanceIdList.set(
+            database.instance.id,
+            database.instance.name
+          );
+        });
     }
   });
 
