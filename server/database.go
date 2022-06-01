@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -225,7 +226,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 					if err != nil {
 						return err
 					}
@@ -300,7 +301,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				}
 
 				if err != nil {
-					s.l.Warn("Failed to create project activity after transferring database",
+					log.Warn("Failed to create project activity after transferring database",
 						zap.Int("database_id", dbPatched.ID),
 						zap.String("database_name", dbPatched.Name),
 						zap.Int("old_project_id", dbExisting.ProjectID),
@@ -319,7 +320,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
-						s.l.Warn("Failed to create project activity after transferring database",
+						log.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", dbPatched.ID),
 							zap.String("database_name", dbPatched.Name),
 							zap.Int("old_project_id", dbExisting.ProjectID),
@@ -507,7 +508,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
 		}
 
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 		if err != nil {
 			return err
 		}
@@ -875,23 +876,17 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
-	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
-	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
+	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
+	if err != nil {
+		return nil, err
 	}
 
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{Logger: logger},
-		db.ConnectionConfig{
-			Username: adminDataSource.Username,
-			Password: adminDataSource.Password,
-			Host:     instance.Host,
-			Port:     instance.Port,
-			Database: databaseName,
-		},
+		db.DriverConfig{PgInstanceDir: pgInstanceDir},
+		connCfg,
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,
 			InstanceName:    instance.Name,
@@ -904,9 +899,25 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 	return driver, nil
 }
 
+// getConnectionConfig returns the connection config of the `databaseName` on `instance`.
+func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
+	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
+	if adminDataSource == nil {
+		return db.ConnectionConfig{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+	}
+
+	return db.ConnectionConfig{
+		Username: adminDataSource.Username,
+		Password: adminDataSource.Password,
+		Host:     instance.Host,
+		Port:     instance.Port,
+		Database: databaseName,
+	}, nil
+}
+
 // We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
 	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
 	// If there are no read-only data source, fall back to admin data source.
 	if dataSource == nil {
@@ -919,7 +930,8 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{Logger: logger},
+		// We don't need postgres installation for query.
+		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
 			Password: dataSource.Password,

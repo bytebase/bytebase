@@ -11,10 +11,10 @@ import (
 	"syscall"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	// Register clickhouse driver.
 	_ "github.com/bytebase/bytebase/plugin/db/clickhouse"
@@ -150,34 +150,19 @@ func checkDataDir() error {
 	return nil
 }
 
-// GetLogger will return a logger.
-func GetLogger() (*zap.Logger, *zap.AtomicLevel, error) {
-	atom := zap.NewAtomicLevelAt(zap.InfoLevel)
-	if flags.debug {
-		atom.SetLevel(zap.DebugLevel)
-	}
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.Lock(os.Stdout),
-		atom,
-	))
-	return logger, &atom, nil
-}
-
 func start() {
-	logger, level, err := GetLogger()
-	if err != nil {
-		panic(fmt.Errorf("failed to create logger, %w", err))
+	if flags.debug {
+		log.SetLevel(zap.DebugLevel)
 	}
-	defer logger.Sync()
+	defer log.Sync()
 
 	// check flags
 	if !common.HasPrefixes(flags.host, "http://", "https://") {
-		logger.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
+		log.Error(fmt.Sprintf("--host %s must start with http:// or https://", flags.host))
 		return
 	}
 	if err := checkDataDir(); err != nil {
-		logger.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
@@ -193,14 +178,14 @@ func start() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-c
-		logger.Info(fmt.Sprintf("%s received.", sig.String()))
+		log.Info(fmt.Sprintf("%s received.", sig.String()))
 		if s != nil {
 			_ = s.Shutdown(ctx)
 		}
 		cancel()
 	}()
 
-	s, err = server.NewServer(ctx, activeProfile, logger, level)
+	s, err := server.NewServer(ctx, activeProfile)
 	if err != nil {
 		fmt.Printf("cannot new server, error: %v\n", err)
 		return
@@ -209,7 +194,7 @@ func start() {
 	// Execute program.
 	if err := s.Run(ctx); err != nil {
 		if err != http.ErrServerClosed {
-			logger.Error(err.Error())
+			log.Error(err.Error())
 			_ = s.Shutdown(ctx)
 			cancel()
 		}

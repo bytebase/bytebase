@@ -9,7 +9,7 @@ import (
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +22,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 	t.Log("install mysqlbinlog binary")
 	tmpDir := t.TempDir()
-	mysqlbinlogIns, err := mysqlbinlog.Install(tmpDir)
+	mysqlutilInstance, err := mysqlutil.Install(tmpDir)
 	a.NoError(err)
 
 	t.Run("success", func(t *testing.T) {
@@ -46,9 +46,12 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 		a.NoError(err)
 		defer driver.Close(ctx)
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), database)
+
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
@@ -77,9 +80,13 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), database)
 		a.NoError(err)
 		defer driver.Close(ctx)
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), database)
+
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
+
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.Error(err)
 	})

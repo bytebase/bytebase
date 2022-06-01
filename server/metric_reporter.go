@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
-	metricAPI "github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
-	"github.com/bytebase/bytebase/plugin/metric/reporter"
+	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/plugin/metric/segment"
 
 	"go.uber.org/zap"
 )
@@ -25,29 +25,26 @@ const (
 
 // MetricReporter is the metric reporter.
 type MetricReporter struct {
-	l *zap.Logger
-
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
 	// Version is the bytebase's version
 	version     string
 	workspaceID string
-	reporter    reporter.MetricReporter
-	collectors  map[string]collector.MetricCollector
+	reporter    metric.Reporter
+	collectors  map[string]metric.Collector
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(logger *zap.Logger, server *Server, workspaceID string) *MetricReporter {
-	r := reporter.NewSegmentReporter(logger, server.profile.MetricConnectionKey, workspaceID)
+func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
+	r := segment.NewReporter(server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
-		l:            logger,
 		subscription: &server.subscription,
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
-		collectors:   make(map[string]collector.MetricCollector),
+		collectors:   make(map[string]metric.Collector),
 	}
 }
 
@@ -57,7 +54,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 
-	m.l.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
+	log.Debug(fmt.Sprintf("Metrics reporter started and will run every %v", metricSchedulerInterval))
 
 	for {
 		select {
@@ -69,7 +66,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						m.l.Error("Metrics reporter PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Metrics reporter PANIC RECOVER", zap.Error(err))
 					}
 				}()
 
@@ -78,11 +75,11 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				ctx := context.Background()
 				for name, collector := range m.collectors {
-					m.l.Debug("Run metric collector", zap.String("collector", name))
+					log.Debug("Run metric collector", zap.String("collector", name))
 
 					metricList, err := collector.Collect(ctx)
 					if err != nil {
-						m.l.Error(
+						log.Error(
 							"Failed to collect metric",
 							zap.String("collector", name),
 							zap.Error(err),
@@ -92,7 +89,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					for _, metric := range metricList {
 						if err := m.reporter.Report(metric); err != nil {
-							m.l.Error(
+							log.Error(
 								"Failed to report metric",
 								zap.String("metric", string(metric.Name)),
 								zap.Error(err),
@@ -113,7 +110,7 @@ func (m *MetricReporter) Close() {
 }
 
 // Register will register a metric collector.
-func (m *MetricReporter) Register(metricName metricAPI.Name, collector collector.MetricCollector) {
+func (m *MetricReporter) Register(metricName metric.Name, collector metric.Collector) {
 	m.collectors[string(metricName)] = collector
 }
 
@@ -123,13 +120,13 @@ func (m *MetricReporter) identify() {
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
 	}
-	if err := m.reporter.Identify(&metricAPI.Identifier{
+	if err := m.reporter.Identify(&metric.Identifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
 		},
 	}); err != nil {
-		m.l.Debug("reporter identify failed", zap.Error(err))
+		log.Debug("reporter identify failed", zap.Error(err))
 	}
 }

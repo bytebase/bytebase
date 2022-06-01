@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -15,16 +16,14 @@ const (
 )
 
 // NewSchemaSyncer creates a schema syncer.
-func NewSchemaSyncer(logger *zap.Logger, server *Server) *SchemaSyncer {
+func NewSchemaSyncer(server *Server) *SchemaSyncer {
 	return &SchemaSyncer{
-		l:      logger,
 		server: server,
 	}
 }
 
 // SchemaSyncer is the schema syncer.
 type SchemaSyncer struct {
-	l      *zap.Logger
 	server *Server
 }
 
@@ -33,13 +32,13 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(schemaSyncInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
+	log.Debug(fmt.Sprintf("Schema syncer started and will run every %v", schemaSyncInterval))
 	runningTasks := make(map[int]bool)
 	mu := sync.RWMutex{}
 	for {
 		select {
 		case <-ticker.C:
-			s.l.Debug("New schema syncer round started...")
+			log.Debug("New schema syncer round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -47,7 +46,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Schema syncer PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Schema syncer PANIC RECOVER", zap.Error(err))
 					}
 				}()
 
@@ -59,7 +58,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
 				if err != nil {
-					s.l.Error("Failed to retrieve instances", zap.Error(err))
+					log.Error("Failed to retrieve instances", zap.Error(err))
 					return
 				}
 
@@ -73,7 +72,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					mu.Unlock()
 
 					go func(instance *api.Instance) {
-						s.l.Debug("Sync instance schema", zap.String("instance", instance.Name))
+						log.Debug("Sync instance schema", zap.String("instance", instance.Name))
 						defer func() {
 							mu.Lock()
 							delete(runningTasks, instance.ID)
@@ -81,7 +80,7 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}()
 						resultSet := s.server.syncEngineVersionAndSchema(ctx, instance)
 						if resultSet.Error != "" {
-							s.l.Debug("Failed to sync instance",
+							log.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),
 								zap.String("name", instance.Name),
 								zap.String("error", resultSet.Error))

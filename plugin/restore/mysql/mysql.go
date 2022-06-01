@@ -2,18 +2,24 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 
 	"github.com/blang/semver/v4"
-	"github.com/bytebase/bytebase/api"
-	mysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
 )
 
 const (
@@ -28,26 +34,31 @@ const (
 // 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
 // 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 type Restore struct {
-	driver      *mysql.Driver
-	mysqlbinlog *mysqlbinlog.Instance
+	driver    *mysql.Driver
+	mysqlutil *mysqlutil.Instance
+	connCfg   db.ConnectionConfig
+	binlogDir string
 }
 
 // New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlbinlog.Instance) *Restore {
+func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
 	return &Restore{
-		driver:      driver,
-		mysqlbinlog: instance,
+		driver:    driver,
+		mysqlutil: instance,
+		connCfg:   connCfg,
+		binlogDir: binlogDir,
 	}
 }
 
-// RestoreBinlog restores the database using incremental backup in time range of [config.Start, config.End).
-func (r *Restore) RestoreBinlog(ctx context.Context, config mysql.BinlogInfo) error {
+// replayBinlog restores the database using incremental backup in time range of [config.Start, config.End).
+func replayBinlog(ctx context.Context, config api.BinlogInfo, binlogDir string) error {
 	return fmt.Errorf("Unimplemented")
 }
 
-// RestorePITR is a wrapper for restore a full backup and a range of incremental backup.
+// RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog mysql.BinlogInfo, database string, suffixTs int64) error {
+// TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
+func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, binlog api.BinlogInfo, database string, suffixTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
@@ -77,10 +88,118 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 		return err
 	}
 
-	// TODO(dragonly): implement RestoreBinlog in mysql driver
-	_ = r.RestoreBinlog(ctx, binlog)
+	if err := replayBinlog(ctx, binlog, r.binlogDir); err != nil {
+		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
+		return nil
+	}
 
 	return nil
+}
+
+// Locate the binlog event at (filename, position), parse the event and return its timestamp.
+// The current mechanism is by invoking mysqlbinlog and parse the output string.
+// Maybe we should parse the raw binlog header to get better documented structure?
+// nolint
+func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
+	args := []string{
+		path.Join(r.binlogDir, binlogInfo.FileName),
+		fmt.Sprintf("--start-position %d", binlogInfo.Position),
+		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
+		// the --stop-position is in the middle of the binlog event.
+		// It's OK, since we are only parsing for the timestamp in the binlog event header.
+		fmt.Sprintf("--stop-position %d", binlogInfo.Position+1),
+	}
+	var buf bytes.Buffer
+	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = &buf
+
+	if err := cmd.Run(); err != nil {
+		return 0, err
+	}
+
+	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
+	if err != nil {
+		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename[%s], position[%d], error[%w]", binlogInfo.FileName, binlogInfo.Position, err)
+	}
+
+	return timestamp, nil
+}
+
+func parseBinlogEventTimestampImpl(output string) (int64, error) {
+	lines := strings.Split(output, "\n")
+	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
+	// which has the timestamp we are looking for.
+	// The first occurrence is the target.
+	for _, line := range lines {
+		if strings.Contains(line, "server id") {
+			fields := strings.Fields(line)
+			// fields should starts with ["#220421", "14:49:26", "server", "id"]
+			if len(fields) < 4 ||
+				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
+				return 0, fmt.Errorf("invalid mysqlbinlog output line: %q", line)
+			}
+			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
+			if err != nil {
+				return 0, err
+			}
+			return date.Unix(), nil
+		}
+	}
+	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
+}
+
+// Find the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
+// The backupList should only contain DONE backups.
+// TODO(dragonly)/TODO(zp): Use this when the apply binlog PR is ready, and remove the nolint comments.
+// nolint
+func (r *Restore) getLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
+	if len(backupList) == 0 {
+		return nil, fmt.Errorf("no valid backup")
+	}
+
+	var eventTsList []int64
+	for _, b := range backupList {
+		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
+		}
+		eventTsList = append(eventTsList, eventTs)
+	}
+
+	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupList, eventTsList, targetTs)
+	if err != nil {
+		return nil, err
+	}
+	return backup, nil
+
+}
+
+// The backupList must 1 to 1 maps to the eventTsList, and the sorting order is not required.
+func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []int64, targetTs int64) (*api.Backup, error) {
+	var maxEventTsLETargetTs int64
+	var minEventTs int64 = math.MaxInt64
+	var backup *api.Backup
+	emptyBinlogInfo := api.BinlogInfo{}
+	for i, b := range backupList {
+		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
+		if b.Payload.BinlogInfo == emptyBinlogInfo {
+			continue
+		}
+		eventTs := eventTsList[i]
+		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
+			maxEventTsLETargetTs = eventTs
+			backup = b
+		}
+		// This is only for composing the error message when no valid backup found.
+		if eventTs < minEventTs {
+			minEventTs = eventTs
+		}
+	}
+	if maxEventTsLETargetTs == 0 {
+		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, minEventTs)
+	}
+	return backup, nil
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
@@ -106,23 +225,16 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		}
 	}
 
-	// TODO(dragonly): Remove the transactions, because they do not have a clear semantic / are not necessary.
-	txn, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-	defer txn.Rollback()
-
-	tables, err := mysql.GetTables(txn, database)
+	tables, err := mysql.GetTables(ctx, db, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error[%w]", database, err)
 	}
-	tablesPITR, err := mysql.GetTables(txn, pitrDatabaseName)
+	tablesPITR, err := mysql.GetTables(ctx, db, pitrDatabaseName)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error[%w]", pitrDatabaseName, err)
 	}
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -135,11 +247,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	}
 	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
 
-	if _, err := txn.ExecContext(ctx, renameStmt); err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-
-	if err := txn.Commit(); err != nil {
+	if _, err := db.ExecContext(ctx, renameStmt); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -176,10 +284,10 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// SyncArchivedBinlogFiles syncs the binlogs between the instance and `saveDir`,
+// SyncArchivedBinlogFiles syncs the binlog files between the instance and `binlogDir`,
 // but exclude latest binlog. We will download the latest binlog only when doing PITR.
-func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, saveDir string) error {
-	binlogFilesLocal, err := ioutil.ReadDir(saveDir)
+func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Instance, binlogDir string) error {
+	binlogFilesLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return err
 	}
@@ -217,7 +325,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 
 		if localBinlogSize != serverBinlog.Size {
 			// exist on local and file size not match, delete and then download it
-			if err := os.Remove(filepath.Join(saveDir, serverBinlog.Name)); err != nil {
+			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
 				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
 			}
 			todo[serverBinlog.Name] = true
@@ -229,7 +337,7 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, instance, saveDir, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, instance, binlogDir, serverFile); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -237,21 +345,21 @@ func (r *Restore) SyncArchivedBinlogFiles(ctx context.Context, instance *api.Ins
 	return nil
 }
 
-// SyncLatestBinlog syncs the latest binlog between the instance and `saveDir`
-func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, saveDir string) error {
+// SyncLatestBinlog syncs the latest binlog between the instance and `binlogDir`
+func (r *Restore) SyncLatestBinlog(ctx context.Context, instance *api.Instance, binlogDir string) error {
 	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, instance, saveDir, *latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, instance, binlogDir, *latestBinlogFileOnServer)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, saveDir string, binlog mysql.BinlogFile) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance, binlogDir string, binlog mysql.BinlogFile) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
-	resultFileDir := strings.TrimRight(saveDir, "/") + "/"
+	resultFileDir := strings.TrimRight(binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
-	cmd := exec.CommandContext(ctx, r.mysqlbinlog.GetPath(),
+	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL),
 		binlog.Name,
 		fmt.Sprintf("--read-from-remote-server --host=%s --port=%s --user=%s --password=%s", instance.Host, instance.Port, instance.Username, instance.Password),
 		"--raw",
@@ -279,7 +387,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, instance *api.Instance
 	return nil
 }
 
-// getBinlogFilesMetaOnServer returns the metadata of binlogs
+// getBinlogFilesMetaOnServer returns the metadata of binlog files.
 func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
@@ -338,15 +446,15 @@ func getSafeName(baseName, suffix string) string {
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
-// checks the MySQL version is >=5.7
+// checks the MySQL version is >=8.0
 func checkVersionForPITR(version string) error {
 	v, err := semver.Parse(version)
 	if err != nil {
 		return err
 	}
-	v57 := semver.MustParse("5.7.0")
-	if v.LT(v57) {
-		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 5.7", version)
+	v8 := semver.MustParse("8.0.0")
+	if v.LT(v8) {
+		return fmt.Errorf("version %s is not supported for PITR; the minimum supported version is 8.0", version)
 	}
 	return nil
 }

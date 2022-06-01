@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/vcs"
@@ -112,7 +111,9 @@ type WebhookPushEvent struct {
 type Commit struct {
 	ID         string `json:"id"`
 	AuthorName string `json:"author_name"`
-	CreatedAt  string `json:"created_at"`
+	// CreatedAt expects corresponding JSON value is a string in RFC 3339 format,
+	// see https://pkg.go.dev/time#Time.MarshalJSON.
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // FileCommit is the API message for file commit.
@@ -196,7 +197,6 @@ func init() {
 
 // Provider is a GitLab self host VCS provider.
 type Provider struct {
-	l      *zap.Logger
 	client *http.Client
 }
 
@@ -205,7 +205,6 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 		config.Client = &http.Client{}
 	}
 	return &Provider{
-		l:      config.Logger,
 		client: config.Client,
 	}
 }
@@ -407,7 +406,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 	return p.fetchUserInfo(ctx, oauthCtx, instanceURL, "user")
 }
 
-// FetchCommitByID fetch the commit data by id.
+// FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
 	code, body, err := oauth.Get(
@@ -431,9 +430,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	if code == http.StatusNotFound {
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from GitLab instance %s, not found", instanceURL))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d",
+		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d, body: %s",
 			instanceURL,
 			code,
+			body,
 		)
 	}
 
@@ -442,15 +442,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		return nil, fmt.Errorf("failed to unmarshal commit data from GitLab instance %s, err: %w", instanceURL, err)
 	}
 
-	createdTime, err := time.Parse(time.RFC3339, commit.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse commit created_at field, err: %w", err)
-	}
-
 	return &vcs.Commit{
 		ID:         commit.ID,
 		AuthorName: commit.AuthorName,
-		CreatedTs:  createdTime.Unix(),
+		CreatedTs:  commit.CreatedAt.Unix(),
 	}, nil
 }
 

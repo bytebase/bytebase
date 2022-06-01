@@ -13,11 +13,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/api"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlbinlog"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 
 	"github.com/stretchr/testify/require"
 )
@@ -123,7 +124,7 @@ func TestPITR(t *testing.T) {
 
 	t.Log("install mysqlbinlog binary")
 	tmpDir := t.TempDir()
-	mysqlbinlogIns, err := mysqlbinlog.Install(tmpDir)
+	mysqlutilInstance, err := mysqlutil.Install(tmpDir)
 	a.NoError(err)
 
 	// test cases
@@ -146,6 +147,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
+
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s", buf.String())
@@ -161,9 +164,10 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -205,6 +209,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
+
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s", buf.String())
@@ -234,9 +240,10 @@ func TestPITR(t *testing.T) {
 		createPITRIssueTimestamp := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -263,6 +270,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
+
 		buf, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s\n", buf.String())
@@ -284,9 +293,10 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlbinlogIns)
-		config := pluginmysql.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), config, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		binlogInfo := api.BinlogInfo{}
+		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
 		a.NoError(err)
 
 		t.Log("cutover stage")

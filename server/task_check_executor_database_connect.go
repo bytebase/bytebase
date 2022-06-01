@@ -6,19 +6,15 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 // NewTaskCheckDatabaseConnectExecutor creates a task check database connect executor.
-func NewTaskCheckDatabaseConnectExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckDatabaseConnectExecutor{
-		l: logger,
-	}
+func NewTaskCheckDatabaseConnectExecutor() TaskCheckExecutor {
+	return &TaskCheckDatabaseConnectExecutor{}
 }
 
 // TaskCheckDatabaseConnectExecutor is the task check database connect executor.
 type TaskCheckDatabaseConnectExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check database connector executor once.
@@ -46,7 +42,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("database ID not found %v", task.DatabaseID))
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, server.pgInstanceDir)
 	if err != nil {
 		return []api.TaskCheckResult{
 			{

@@ -8,10 +8,19 @@ import (
 	"database/sql"
 	"fmt"
 
-	dbplugin "github.com/bytebase/bytebase/plugin/db"
-
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/db"
 )
+
+func getMySQLConnectionConfig(port string, database string) db.ConnectionConfig {
+	return db.ConnectionConfig{
+		Host:      "localhost",
+		Port:      port,
+		Username:  "root",
+		Password:  "",
+		Database:  database,
+		TLSConfig: db.TLSConfig{},
+	}
+}
 
 // connectTestMySQL connects to the test mysql instance.
 func connectTestMySQL(port int, database string) (*sql.DB, error) {
@@ -21,23 +30,13 @@ func connectTestMySQL(port int, database string) (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/%s?multiStatements=true", port, database))
 }
 
-func getTestMySQLDriver(ctx context.Context, port, database string) (dbplugin.Driver, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
-	return dbplugin.Open(
+func getTestMySQLDriver(ctx context.Context, port, database string) (db.Driver, error) {
+	connCfg := getMySQLConnectionConfig(port, database)
+	return db.Open(
 		ctx,
-		dbplugin.MySQL,
-		dbplugin.DriverConfig{Logger: logger},
-		dbplugin.ConnectionConfig{
-			Host:      "localhost",
-			Port:      port,
-			Username:  "root",
-			Password:  "",
-			Database:  database,
-			TLSConfig: dbplugin.TLSConfig{},
-		},
-		dbplugin.ConnectionContext{},
+		db.MySQL,
+		db.DriverConfig{},
+		connCfg,
+		db.ConnectionContext{},
 	)
 }

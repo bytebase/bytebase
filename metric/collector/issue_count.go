@@ -5,27 +5,25 @@ import (
 
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
-// issueCollector is the metric data collector for issue.
-type issueCollector struct {
-	l     *zap.Logger
+var _ metric.Collector = (*issueCountCollector)(nil)
+
+// issueCountCollector is the metric data collector for issue.
+type issueCountCollector struct {
 	store *store.Store
 }
 
-// NewIssueCollector creates a new instance of issueCollector
-func NewIssueCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
-	return &issueCollector{
-		l:     l,
+// NewIssueCountCollector creates a new instance of issueCollector
+func NewIssueCountCollector(store *store.Store) metric.Collector {
+	return &issueCountCollector{
 		store: store,
 	}
 }
 
 // Collect will collect the metric for issue
-func (c *issueCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+func (c *issueCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
 	issueCountMetricList, err := c.store.CountIssueGroupByTypeAndStatus(ctx)

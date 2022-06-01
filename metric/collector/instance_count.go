@@ -4,29 +4,29 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
-	"github.com/bytebase/bytebase/plugin/metric/collector"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
-// instanceCollector is the metric data collector for instance.
-type instanceCollector struct {
-	l     *zap.Logger
+var _ metric.Collector = (*instanceCountCollector)(nil)
+
+// instanceCountCollector is the metric data collector for instance.
+type instanceCountCollector struct {
 	store *store.Store
 }
 
-// NewInstanceCollector creates a new instance of instanceCollector
-func NewInstanceCollector(l *zap.Logger, store *store.Store) collector.MetricCollector {
-	return &instanceCollector{
-		l:     l,
+// NewInstanceCountCollector creates a new instance of instanceCollector
+func NewInstanceCountCollector(store *store.Store) metric.Collector {
+	return &instanceCountCollector{
 		store: store,
 	}
 }
 
 // Collect will collect the metric for instance
-func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
+func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
 	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
@@ -37,7 +37,7 @@ func (c *instanceCollector) Collect(ctx context.Context) ([]*metric.Metric, erro
 	for _, instanceCountMetric := range instanceCountMetricList {
 		env, err := c.store.GetEnvironmentByID(ctx, instanceCountMetric.EnvironmentID)
 		if err != nil {
-			c.l.Debug("failed to get environment by id", zap.Int("id", instanceCountMetric.EnvironmentID))
+			log.Debug("failed to get environment by id", zap.Int("id", instanceCountMetric.EnvironmentID))
 			continue
 		}
 
