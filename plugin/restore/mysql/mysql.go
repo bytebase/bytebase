@@ -46,7 +46,7 @@ type Restore struct {
 
 type binlogItem struct {
 	name string
-	ext  int64
+	seq  int64
 }
 
 // New creates a new instance of Restore
@@ -163,7 +163,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 
 // getBinlogReplayList returns the path list of the binlog that need be replayed.
 func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogExt, err := getBinlogNameExtension(startBinlogInfo.FileName)
+	startBinlogSeq, err := getBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name[%s], error[%w]", startBinlogInfo.FileName, err)
 	}
@@ -181,11 +181,11 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		}
 		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 		// so we cannot directly use string to compare lexicographical order.
-		binlogExt, err := getBinlogNameExtension(f.Name())
+		binlogSeq, err := getBinlogNameSeq(f.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", f.Name(), err)
 		}
-		if binlogExt >= startBinlogExt {
+		if binlogSeq >= startBinlogSeq {
 			toBeReplayedBinlogNames = append(toBeReplayedBinlogNames, f.Name())
 		}
 	}
@@ -196,7 +196,7 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	}
 
 	for i := 1; i < len(toBeReplayedBinlogItems); i++ {
-		if toBeReplayedBinlogItems[i].ext != toBeReplayedBinlogItems[i-1].ext+1 {
+		if toBeReplayedBinlogItems[i].seq != toBeReplayedBinlogItems[i-1].seq+1 {
 			return nil, fmt.Errorf("Discontinuous binlog file extensions detected in %s and %s", toBeReplayedBinlogItems[i-1].name, toBeReplayedBinlogItems[i].name)
 		}
 	}
@@ -213,17 +213,17 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 func parseAndSortBinlogFileNames(binlogFileNames []string) ([]binlogItem, error) {
 	var items []binlogItem
 	for _, name := range binlogFileNames {
-		binlogExt, err := getBinlogNameExtension(name)
+		seq, err := getBinlogNameSeq(name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", name, err)
 		}
 		items = append(items, binlogItem{
 			name: name,
-			ext:  binlogExt,
+			seq:  seq,
 		})
 	}
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].ext < items[j].ext
+		return items[i].seq < items[j].seq
 	})
 	return items, nil
 }
@@ -586,12 +586,12 @@ func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (*mysql.BinlogFil
 	return nil, fmt.Errorf("cannot find latest binlog on instance")
 }
 
-// getBinlogNameExtension returns the numeric extension to the binary log base name by using split the dot.
+// getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
 // For example: ("binlog.000001") => 1, ("binlog000001") => err
-func getBinlogNameExtension(name string) (int64, error) {
+func getBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return 0, fmt.Errorf("cannot parse the the binlog name extension, expect 1 part after split by dot, but get: %d", len(s))
+		return 0, fmt.Errorf("cannot parse the the binlog name sequence, expect 1 part after split by dot, but get: %d", len(s))
 	}
 	return strconv.ParseInt(s[1], 10, 0)
 }

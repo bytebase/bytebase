@@ -158,7 +158,7 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		ext, err := getBinlogNameExtension(test.name)
+		ext, err := getBinlogNameSeq(test.name)
 		a.EqualValues(ext, test.expect)
 		if test.err {
 			a.Error(err)
@@ -407,15 +407,15 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 			expect: []binlogItem{
 				{
 					name: "binlog.000001",
-					ext:  1,
+					seq:  1,
 				},
 				{
 					name: "binlog.000002",
-					ext:  2,
+					seq:  2,
 				},
 				{
 					name: "binlog.000003",
-					ext:  3,
+					seq:  3,
 				},
 			},
 			err: false,
@@ -432,15 +432,15 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 			expect: []binlogItem{
 				{
 					name: "binlog.000001",
-					ext:  1,
+					seq:  1,
 				},
 				{
 					name: "binlog.000004",
-					ext:  4,
+					seq:  4,
 				},
 				{
 					name: "binlog.000007",
-					ext:  7,
+					seq:  7,
 				},
 			},
 			err: false,
@@ -456,7 +456,7 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 			a.EqualValues(len(items), len(test.expect))
 			for idx := range items {
 				a.EqualValues(items[idx].name, test.expect[idx].name)
-				a.EqualValues(items[idx].ext, test.expect[idx].ext)
+				a.EqualValues(items[idx].seq, test.expect[idx].seq)
 			}
 		}
 	}
