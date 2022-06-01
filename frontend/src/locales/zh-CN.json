@@ -334,7 +334,8 @@
         "upgrade": "升级到付费方案来解锁角色管理",
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
-        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色"
+        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
+        "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
       },
       "toggle-role-provider": {
         "title": "您确认吗？"
@@ -345,7 +346,8 @@
       },
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
-      }
+      },
+      "system-bot": "机器人助手"
     },
     "general": {
       "workspace": {
@@ -1057,7 +1059,6 @@
     "this-is-example-deployment-config": "这是部署配置的样例，你需要在此基础上编辑并保存。",
     "n-databases": "{n} 个数据库",
     "selectors": "选择条件",
-    "wont-be-deployed": "不会被部署",
     "add-stage": "添加阶段",
     "confirm-to-revert": "确定撤销编辑？",
     "name-placeholder": "阶段名称…",
@@ -1072,7 +1073,10 @@
     },
     "project-has-no-deployment-config": "这个项目还没有部署配置。请先{go}。",
     "go-and-config": "去配置",
-    "preview-deployment-config": "预览部署配置"
+    "wont-be-deployed-explanation": "这些数据库不会被部署，因为没有命中任何选择条件。",
+    "wont-be-deployed": "不参与部署",
+    "pipeline-generated-from-deployment-config": "部署的流水线根据项目的{deployment_config}生成。",
+    "preview-deployment-pipeline": "预览部署流水线"
   },
   "datasource": {
     "role-type": "权限类型",

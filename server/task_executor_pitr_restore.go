@@ -43,8 +43,6 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return exec.pitrRestore(ctx, task, server)
 }
 
-// TODO(dragonly): Should establish a BASELINE migration in the swap database task.
-// And what's the right schema version in tenant mode?
 func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
@@ -84,7 +82,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	if !ok {
-		log.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
+		log.Error("failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
@@ -108,7 +106,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
-			zap.Stack("stack"),
 			zap.Error(err))
 		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error[%w]", err)
 	}

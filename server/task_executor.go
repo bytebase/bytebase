@@ -36,7 +36,7 @@ func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server,
 			if !ok {
 				panicErr = fmt.Errorf("%v", r)
 			}
-			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr), zap.Stack("stack"))
+			log.Error("TaskExecutor PANIC RECOVER", zap.Error(panicErr))
 			terminated = true
 			result = nil
 			err = fmt.Errorf("encounter internal error when executing task")
@@ -87,7 +87,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		)
 		// This should not happen normally as we already check this when creating the issue. Just in case.
 		if err != nil {
-			return nil, fmt.Errorf("failed to start migration, error: %w", err)
+			return nil, fmt.Errorf("failed to prepare for database migration, error[%w]", err)
 		}
 		mi.Creator = vcsPushEvent.FileCommit.AuthorName
 
@@ -96,7 +96,7 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 		}
 		bytes, err := json.Marshal(miPayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to start migration, unable to marshal vcs push event payload %w", err)
+			return nil, fmt.Errorf("failed to prepare for database migration, unable to marshal vcs push event payload, error[%w]", err)
 		}
 		mi.Payload = string(bytes)
 	}
