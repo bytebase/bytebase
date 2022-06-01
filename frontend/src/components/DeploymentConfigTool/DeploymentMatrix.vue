@@ -17,7 +17,7 @@
     </div>
 
     <template v-else>
-      <div class="flex items-center py-0.5 space-x-2">
+      <div class="flex justify-between items-center py-0.5 space-x-2">
         <select
           v-model="state.selectedDatabaseName"
           class="btn-select w-40 disabled:cursor-not-allowed"

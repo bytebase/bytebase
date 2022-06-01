@@ -38,70 +38,75 @@
           </i18n-t>
         </div>
         <template v-else>
-          <i18n-t
-            tag="p"
-            class="textinfolabel"
-            keypath="deployment-config.pipeline-generated-from-deployment-config"
-          >
-            <template #deployment_config>
-              <router-link
-                :to="{
-                  path: `/project/${projectSlug(project)}`,
-                  hash: '#deployment-config',
-                }"
-                active-class=""
-                exact-active-class=""
-                class="underline hover:bg-link-hover"
-                @click="$emit('dismiss')"
-              >
-                {{ $t("common.deployment-config") }}
-              </router-link>
-            </template>
-          </i18n-t>
-          <YAxisRadioGroup
-            v-model:label="label"
-            :label-list="labelList"
-            class="text-sm mt-2 pt-2 pb-1"
-          >
-            <template #title>
-              <span class="textlabel mr-1">Group by:</span>
-            </template>
-          </YAxisRadioGroup>
-          <NCollapse
-            display-directive="if"
-            accordion
-            :expanded-names="state.selectedDatabaseName"
-            @update:expanded-names="
-              (names) => (state.selectedDatabaseName = names[0])
-            "
-          >
-            <NCollapseItem
-              v-for="{ name, list } in databaseListGroupByName"
-              :key="name"
-              :title="name"
-              :name="name"
-            >
-              <template #header>
-                <span class="text-base">{{ name }}</span>
-                <span v-if="name === state.selectedDatabaseName">
-                  <heroicons-outline:check class="w-5 h-5 ml-2 text-success" />
-                </span>
-              </template>
-              <template #header-extra>
-                <span class="text-control-placeholder">
-                  {{ $t("deployment-config.n-databases", list.length) }}
-                </span>
-              </template>
+          <div class="flex justify-between items-center py-0.5">
+            <div class="flex-1">
+              <label class="text-base text-control">
+                <template v-if="databaseListGroupByName.length > 1">
+                  {{ $t("deployment-config.select-database-group") }}
+                </template>
+                <template v-else-if="state.selectedDatabaseName">
+                  {{ state.selectedDatabaseName }}
+                </template>
+              </label>
+            </div>
+            <YAxisRadioGroup
+              v-model:label="label"
+              :label-list="labelList"
+              class="text-sm"
+            />
+          </div>
 
-              <DeployDatabaseTable
-                :database-list="list"
-                :label="label"
-                :label-list="labelList"
-                :environment-list="environmentList"
-                :deployment="deployment!"
-              />
-            </NCollapseItem>
-          </NCollapse>
+          <template v-if="databaseListGroupByName.length === 1">
+            <DeployDatabaseTable
+              class="mt-4"
+              :database-list="databaseListGroupByName[0].list"
+              :label="label"
+              :label-list="labelList"
+              :environment-list="environmentList"
+              :deployment="deployment!"
+            />
+          </template>
+          <template v-else>
+            <NCollapse
+              display-directive="if"
+              accordion
+              :expanded-names="state.selectedDatabaseName"
+              @update:expanded-names="
+                (names) => (state.selectedDatabaseName = names[0])
+              "
+            >
+              <NCollapseItem
+                v-for="{ name, list } in databaseListGroupByName"
+                :key="name"
+                :title="name"
+                :name="name"
+              >
+                <template #arrow>
+                  <input
+                    type="radio"
+                    class="radio"
+                    :checked="name === state.selectedDatabaseName"
+                  />
+                </template>
+                <template #header>
+                  <span class="text-base">{{ name }}</span>
+                </template>
+                <template #header-extra>
+                  <span class="text-control-placeholder">
+                    {{ $t("deployment-config.n-databases", list.length) }}
+                  </span>
+                </template>
+
+                <DeployDatabaseTable
+                  :database-list="list"
+                  :label="label"
+                  :label-list="labelList"
+                  :environment-list="environmentList"
+                  :deployment="deployment!"
+                />
+              </NCollapseItem>
+            </NCollapse>
+          </template>
         </template>
       </template>
     </template>
@@ -111,9 +116,11 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 
-import { computed, watchEffect, watch, ref } from "vue";
+import { computed, watchEffect, watch, ref, h, useSlots } from "vue";
 import { NCollapse, NCollapseItem } from "naive-ui";
 import { groupBy } from "lodash-es";
+import { Translation, useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import type {
   Database,
   DatabaseId,
@@ -126,8 +133,10 @@ import { DeployDatabaseTable } from "../TenantDatabaseTable";
 import {
   parseDatabaseNameByTemplate,
   getPipelineFromDeploymentSchedule,
+  projectSlug,
 } from "@/utils";
 import { useDeploymentStore, useLabelList } from "@/store";
+import { useOverrideSubtitle } from "@/bbkit/BBModal.vue";
 
 export type State = {
   selectedDatabaseName: string | undefined;
@@ -141,9 +150,11 @@ const props = defineProps<{
   state: State;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
+
+const { t } = useI18n();
 
 const deploymentStore = useDeploymentStore();
 
@@ -225,6 +236,36 @@ watchEffect(() => {
     const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.id));
     props.state.deployingTenantDatabaseList = databaseIdList;
   }
+});
+
+useOverrideSubtitle(() => {
+  return h(
+    Translation,
+    {
+      tag: "p",
+      class: "textinfolabel",
+      keypath: "deployment-config.pipeline-generated-from-deployment-config",
+    },
+    {
+      deployment_config: () =>
+        h(
+          RouterLink,
+          {
+            to: {
+              path: `/project/${projectSlug(props.project!)}`,
+              hash: "#deployment-config",
+            },
+            activeClass: "",
+            exactActiveClass: "",
+            class: "underline hover:bg-link-hover",
+            onClick: () => emit("dismiss"),
+          },
+          {
+            default: () => t("common.deployment-config"),
+          }
+        ),
+    }
+  );
 });
 </script>
 

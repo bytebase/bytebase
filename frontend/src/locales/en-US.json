@@ -1076,7 +1076,8 @@
     "wont-be-deployed-explanation": "These databases won't be deployed, since they hit none of the selectors.",
     "wont-be-deployed": "Won't be deployed",
     "pipeline-generated-from-deployment-config": "The deployment pipeline is generated according to the project's {deployment_config}.",
-    "preview-deployment-pipeline": "Preview Deployment Pipeline"
+    "preview-deployment-pipeline": "Preview Deployment Pipeline",
+    "select-database-group": "Select database group"
   },
   "datasource": {
     "role-type": "Role Type",
