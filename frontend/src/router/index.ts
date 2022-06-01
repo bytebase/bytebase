@@ -546,8 +546,8 @@ const routes: Array<RouteRecordRaw> = [
                       allowCreateOrTransferDB =
                         plan === PlanType.ENTERPRISE
                           ? // For ENTERPRISE plan, only
-                            // - workspace owner and DBA
-                            // - developers as the project owner
+                            //   - workspace owner and DBA
+                            //   - developers as the project owner
                             // can create/transfer DB.
                             // Other developers are not allowed.
                             isProjectOwner(memberOfProject.role)
