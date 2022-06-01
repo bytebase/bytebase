@@ -140,6 +140,9 @@
             @click.prevent="onSchemaReviewPolicyClick"
           >
             {{ schemaReviewPolicy.name }}
+            <span v-if="schemaReviewPolicy.rowStatus == 'ARCHIVED'">
+              ({{ $t("schema-review-policy.disabled") }})
+            </span>
           </button>
           <button
             v-else-if="hasPermission"

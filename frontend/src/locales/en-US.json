@@ -1385,8 +1385,8 @@
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",
-    "disable": "Disable schema review policy",
-    "enable": "Enable schema review policy",
+    "disable": "Disable",
+    "enable": "Enable",
     "delete": "Delete schema review policy",
     "category": {
       "engine": "Engine",

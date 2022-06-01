@@ -30,6 +30,26 @@
             />
           </div>
         </div>
+        <BBButtonConfirm
+          v-if="reviewPolicy.rowStatus === 'NORMAL'"
+          :style="'ARCHIVE'"
+          :button-text="$t('schema-review-policy.disable')"
+          confirm-description=""
+          :ok-text="$t('common.disable')"
+          :confirm-title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
+          :require-confirm="true"
+          @confirm="onArchive"
+        />
+        <BBButtonConfirm
+          v-else
+          :style="'RESTORE'"
+          :button-text="$t('schema-review-policy.enable')"
+          confirm-description=""
+          :ok-text="$t('common.enable')"
+          :confirm-title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
+          :require-confirm="true"
+          @confirm="onRestore"
+        />
         <button
           v-if="hasPermission"
           type="button"
@@ -139,34 +159,14 @@
         class="py-5"
       />
       <BBButtonConfirm
-        v-if="reviewPolicy.rowStatus === 'NORMAL'"
-        :style="'ARCHIVE'"
-        :button-text="$t('schema-review-policy.disable')"
-        confirm-description=""
-        :ok-text="$t('common.disable')"
-        :confirm-title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
+        v-if="reviewPolicy.rowStatus === 'ARCHIVED'"
+        :style="'DELETE'"
+        :button-text="$t('schema-review-policy.delete')"
+        :ok-text="$t('common.delete')"
+        :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
-        @confirm="onArchive"
+        @confirm="onRemove"
       />
-      <div class="flex gap-x-5" v-else>
-        <BBButtonConfirm
-          :style="'RESTORE'"
-          :button-text="$t('schema-review-policy.enable')"
-          confirm-description=""
-          :ok-text="$t('common.enable')"
-          :confirm-title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onRestore"
-        />
-        <BBButtonConfirm
-          :style="'DELETE'"
-          :button-text="$t('schema-review-policy.delete')"
-          :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onRemove"
-        />
-      </div>
     </div>
   </transition>
 </template>
