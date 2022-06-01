@@ -82,7 +82,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	if !ok {
-		log.Error("failed to cast driver to mysql.Driver", zap.Stack("stack"))
+		log.Error("failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
@@ -106,7 +106,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
-			zap.Stack("stack"),
 			zap.Error(err))
 		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error[%w]", err)
 	}

@@ -913,7 +913,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
 		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-			log.Error("flush tables failed", zap.Error(err), zap.Stack("stack"))
+			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 
@@ -1000,7 +1000,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := GetTables(txn, database)
+	tables, err := GetTablesTx(txn, database)
 	if err != nil {
 		return err
 	}
@@ -1074,7 +1074,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := GetTables(txn, dbName)
+		tables, err := GetTablesTx(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
 		}
@@ -1218,9 +1218,22 @@ type triggerSchema struct {
 	statement string
 }
 
+// GetTablesTx gets all tables of a database using the provided transaction.
+func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+	return getTablesImpl(txn, dbName)
+}
+
 // GetTables gets all tables of a database.
-// TODO(dragonly): Refactor to 2 variants that one takes a txn arg and one does not, for different use cases.
-func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
+	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+	return getTablesImpl(txn, dbName)
+}
+
+func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
