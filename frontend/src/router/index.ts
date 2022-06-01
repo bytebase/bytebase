@@ -527,7 +527,7 @@ const routes: Array<RouteRecordRaw> = [
                   const actionList: string[] = [];
 
                   const currentUser = useAuthStore().currentUser;
-                  let allowAlterSchemaOrChangeData;
+                  let allowAlterSchemaOrChangeData = false;
                   let allowCreateOrTransferDB = false;
                   if (isDBAOrOwner(currentUser.role)) {
                     // Yes to workspace owner and DBA
