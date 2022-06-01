@@ -71,6 +71,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	}
 	stopDateTime := getDateTime(targetTs)
 
+	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
 	mysqlbinlogArgs := []string{
 		// Disable binary logging.
 		"--disable-log-bin",
