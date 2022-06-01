@@ -390,7 +390,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") || (strings.HasPrefix(stmt, "ALTER DATABASE  ") && strings.Contains(stmt, " OWNER TO ")) {
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") || (strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ")) {
 			// We don't use transaction for creating / altering databases in Postgres.
 			// https://github.com/bytebase/bytebase/issues/202
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
@@ -424,13 +424,52 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err = tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err == nil {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	owner, err := driver.getCurrentDatabaseOwner(tx)
+	if err != nil {
+		return err
+	}
+	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
+		return err
 	}
 
-	return err
+	if _, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err != nil {
+		return nil
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
+	const query = `
+		SELECT
+			u.rolname
+		FROM
+			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
+		WHERE
+			d.datname = current_database();
+		`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var owner string
+	for rows.Next() {
+		var o string
+		if err := rows.Scan(&o); err != nil {
+			return "", err
+		}
+		owner = o
+	}
+	if owner == "" {
+		return "", fmt.Errorf("Owner not found for the current database")
+	}
+	return owner, nil
 }
 
 // Query queries a SQL statement.
@@ -894,7 +933,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	}
 	args = append(args, "--inserts")
 	args = append(args, "--use-set-session-authorization")
-	args = append(args, driver.databaseName)
+	args = append(args, database)
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
 	cmd := exec.Command(pgDumpPath, args...)
 	cmd.Stderr = os.Stderr
