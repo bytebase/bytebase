@@ -157,6 +157,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
+		// Ensure no database in project before archived
+		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch databases in project").SetInternal(err)
+			}
+			if len(databases) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "Cannot archive project with databases")
+			}
+		}
+
 		project, err := s.store.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
