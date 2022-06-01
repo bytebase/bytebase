@@ -154,8 +154,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, bi
 	}
 
 	if err := r.replayBinlog(ctx, database, pitrDatabaseName, binlog, suffixTs); err != nil {
-		// TODO(dragonly)/TODO(zp): Handle the error when implement replayBinlog.
-		return nil
+		return fmt.Errorf("failed to replay binlog, error[%w]", err)
 	}
 
 	return nil
