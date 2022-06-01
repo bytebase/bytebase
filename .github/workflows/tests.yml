@@ -63,6 +63,9 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: latest
       - name: Cache MySQL
         uses: actions/cache@v2
         with:
