@@ -393,3 +393,71 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		}
 	}
 }
+
+func TestParseAndSortBinlogFileName(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		binlogFileNames []string
+		expect          []binlogItem
+		err             bool
+	}{
+		// Normal
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			expect: []binlogItem{
+				{
+					name: "binlog.000001",
+					ext:  1,
+				},
+				{
+					name: "binlog.000002",
+					ext:  2,
+				},
+				{
+					name: "binlog.000003",
+					ext:  3,
+				},
+			},
+			err: false,
+		},
+		// parse error
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog000002"},
+			expect:          []binlogItem{},
+			err:             true,
+		},
+		// gap
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog.000007", "binlog.000004"},
+			expect: []binlogItem{
+				{
+					name: "binlog.000001",
+					ext:  1,
+				},
+				{
+					name: "binlog.000004",
+					ext:  4,
+				},
+				{
+					name: "binlog.000007",
+					ext:  7,
+				},
+			},
+			err: false,
+		},
+	}
+
+	for _, test := range tests {
+		items, err := parseAndSortBinlogFileNames(test.binlogFileNames)
+
+		if test.err {
+			a.Error(err)
+		} else {
+			a.EqualValues(len(items), len(test.expect))
+			for idx := range items {
+				a.EqualValues(items[idx].name, test.expect[idx].name)
+				a.EqualValues(items[idx].ext, test.expect[idx].ext)
+			}
+		}
+	}
+}

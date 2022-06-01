@@ -50,8 +50,9 @@ func init() {
 
 // BinlogFile is the metadata of the MySQL binlog file
 type BinlogFile struct {
-	Name string
-	Size int64
+	Name   string
+	Size   int64
+	Latest bool
 }
 
 // Driver is the MySQL driver.
