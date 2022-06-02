@@ -35,28 +35,11 @@ jobs:
           git diff --exit-code
 
   go-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-      - name: Cache MySQL
-        uses: actions/cache@v2
-        with:
-          path: |
-            ./resources/mysql/*.tar.gz
-            ./resources/mysql/*.tar.xz
-          key: ${{ runner.OS }}-build-mysql-cache
-      - name: Install dependencies and run all tests
-        run: |
-          go generate -tags mysql ./...
-          go test -v ./... -tags=mysql
-
-  go-release-tests:
+    strategy:
+      matrix:
+        release-tags:
+          - "release,"
+          - ""
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -75,13 +58,14 @@ jobs:
           key: ${{ runner.OS }}-build-mysql-cache
       # Release mode needs to embed fronetend dist
       - name: Touch garbage dist/index.html
+        if: ${{ matrix.release-tags }}
         run: |
           mkdir -p server/dist
           touch server/dist/index.html
       - name: Install dependencies and run all tests
         run: |
-          go generate -tags mysql,release ./...
-          go test -v ./... -tags=mysql,release
+          go generate -tags ${{ matrix.release-tags }}mysql ./...
+          go test -v ./... -tags=${{ matrix.release-tags }}mysql
 
   # tests if scripts/install_bb.sh is working correctly.
   install-bb:
