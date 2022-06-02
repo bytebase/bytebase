@@ -19,7 +19,7 @@ func TestNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
-					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -41,7 +41,7 @@ func TestNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
-					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -63,7 +63,7 @@ func TestNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
-					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -74,13 +74,13 @@ func TestNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
-					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "Mismatch table naming convention",
-					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -97,7 +97,7 @@ func TestNamingTableConvention(t *testing.T) {
 		},
 	}
 	payload, err := json.Marshal(api.NamingRulePayload{
-		Format: "^[a-z]+(_[a-z]+)?$",
+		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
 	runSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &api.SchemaReviewRule{
