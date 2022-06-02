@@ -157,7 +157,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
-		// Ensure no database in project before archived
+		// Ensure the project has no database before it's archived.
 		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
 			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
 			if err != nil {
