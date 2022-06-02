@@ -481,7 +481,7 @@ func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 		if _, ok := todo[serverFile.Name]; !ok {
 			continue
 		}
-		if err := r.downloadBinlogFile(ctx, serverFile); err != nil {
+		if err := r.downloadBinlogFile(ctx, serverFile, false); err != nil {
 			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
 		}
 	}
@@ -500,11 +500,14 @@ func (r *Restore) IncrementalFetchAllBinlogFiles(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return r.downloadBinlogFile(ctx, latestBinlogFileOnServer)
+	return r.downloadBinlogFile(ctx, latestBinlogFileOnServer, true)
 }
 
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFile) error {
+// If isLast is true, it means that this is the last binlog file containing the targetTs event.
+// It may keep growing as there are ongoing writes to the database. So we just need to check that
+// the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFile, isLast bool) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
@@ -527,21 +530,42 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
-	log.Debug("downloading binary log files using mysqlbinlog", zap.String("cmd", cmd.String()))
+	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
 	resultFilePath := filepath.Join(resultFileDir, binlog.Name)
 	if err := cmd.Run(); err != nil {
 		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("mysqlbinlog fails, error: %w", err)
 	}
 
-	fi, err := os.Stat(resultFilePath)
+	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
 		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("cannot stat %s, error: %w", resultFilePath, err)
 	}
-	if fi.Size() != binlog.Size {
-		_ = os.Remove(resultFilePath)
-		return fmt.Errorf("download file %s size not match", resultFilePath)
+	if !isLast {
+		// Case 1: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
+		if fileInfo.Size() != binlog.Size {
+			log.Error("Downloaded binlog file size does not match size queried on the MySQL server",
+				zap.String("binlog", binlog.Name),
+				zap.Int64("sizeInfo", binlog.Size),
+				zap.Int64("downloadedSize", fileInfo.Size()),
+			)
+			_ = os.Remove(resultFilePath)
+			return fmt.Errorf("downloaded binlog file[%s] size[%d] does not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
+		}
+	} else {
+		// Case 2: It's the last binlog file we need (contains the targetTs).
+		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
+		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
+		if fileInfo.Size() < binlog.Size {
+			log.Error("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
+				zap.String("binlog", binlog.Name),
+				zap.Int64("sizeInfo", binlog.Size),
+				zap.Int64("downloadedSize", fileInfo.Size()),
+			)
+			_ = os.Remove(resultFilePath)
+			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
+		}
 	}
 
 	return nil
