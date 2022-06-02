@@ -67,6 +67,9 @@ type InstanceFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+
+	// Related fields
+	EnvironmentID *int
 }
 
 func (find *InstanceFind) String() string {
