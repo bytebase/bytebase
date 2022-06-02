@@ -1398,10 +1398,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "Production environment template"
+        "title": "Production Environment Template"
       },
       "policy-for-dev": {
-        "title": "Development environment template"
+        "title": "Development Environment Template"
       }
     },
     "rule": {
