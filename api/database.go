@@ -97,12 +97,13 @@ type DatabaseFind struct {
 	ID *int
 
 	// Related fields
-	InstanceID *int
 	ProjectID  *int
+	InstanceID *int
 
 	// Domain specific fields
 	Name               *string
 	IncludeAllDatabase bool
+	SyncStatus         *SyncStatus
 }
 
 func (find *DatabaseFind) String() string {
