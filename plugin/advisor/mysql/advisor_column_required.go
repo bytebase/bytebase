@@ -46,6 +46,7 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 	}
 	checker := &columnRequirementChecker{
 		level:           level,
+		title:           string(ctx.Rule.Type),
 		requiredColumns: requiredColumns,
 		tables:          make(tableState),
 	}
@@ -60,6 +61,7 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 type columnRequirementChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
+	title           string
 	requiredColumns columnSet
 	tables          tableState
 }
@@ -122,7 +124,7 @@ func (v *columnRequirementChecker) generateAdviceList() []advisor.Advice {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    common.NoRequiredColumn,
-				Title:   "Require columns",
+				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
 			})
 		}

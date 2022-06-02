@@ -31,7 +31,7 @@ func TestNamingIndexConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
-					Title:   "Mismatch index naming convention",
+					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
@@ -60,7 +60,7 @@ func TestNamingIndexConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
-					Title:   "Mismatch index naming convention",
+					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `idx_tech_book`",
 				},
 			},
@@ -82,7 +82,7 @@ func TestNamingIndexConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
-					Title:   "Mismatch index naming convention",
+					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
@@ -104,7 +104,7 @@ func TestNamingIndexConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingIndexConventionMismatch,
-					Title:   "Mismatch index naming convention",
+					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_name$\" but found ``",
 				},
 			},

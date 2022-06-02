@@ -38,7 +38,7 @@ func TestUseInnoDB(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
-					Title:   "InnoDB engine is not used",
+					Title:   "engine.mysql.use-innodb",
 					Content: "\"CREATE TABLE book(id int) ENGINE = CSV\" doesn't use InnoDB engine",
 				},
 			},
@@ -60,7 +60,7 @@ func TestUseInnoDB(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
-					Title:   "InnoDB engine is not used",
+					Title:   "engine.mysql.use-innodb",
 					Content: "\"ALTER TABLE book ENGINE = CSV\" doesn't use InnoDB engine",
 				},
 			},
@@ -82,7 +82,7 @@ func TestUseInnoDB(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
-					Title:   "InnoDB engine is not used",
+					Title:   "engine.mysql.use-innodb",
 					Content: "\"SET default_storage_engine=CSV\" doesn't use InnoDB engine",
 				},
 			},

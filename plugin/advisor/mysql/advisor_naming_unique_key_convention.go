@@ -46,6 +46,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 	}
 	checker := &namingUKConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
@@ -68,6 +69,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 type namingUKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
 	catalog      catalog.Service
@@ -92,7 +94,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingUKConventionMismatch,
-				Title:   "Mismatch unique key naming convention",
+				Title:   checker.title,
 				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
