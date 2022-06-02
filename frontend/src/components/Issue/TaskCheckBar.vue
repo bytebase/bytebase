@@ -1,5 +1,10 @@
 <template>
   <div class="flex items-start space-x-4">
+    <TaskCheckBadgeBar
+      :task-check-run-list="task.taskCheckRunList"
+      @select-task-check-type="viewCheckRunDetail"
+    />
+
     <button
       v-if="showRunCheckButton"
       type="button"
@@ -9,10 +14,7 @@
     >
       {{ hasRunningTaskCheck ? $t("task.checking") : $t("task.run-task") }}
     </button>
-    <TaskCheckBadgeBar
-      :task-check-run-list="task.taskCheckRunList"
-      @select-task-check-type="viewCheckRunDetail"
-    />
+
     <BBModal
       v-if="state.showModal"
       :title="$t('task.check-result.title', { name: task.name })"
