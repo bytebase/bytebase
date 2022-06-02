@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/bin/server/cmd"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -142,7 +142,7 @@ func getTestPort(testName string) int {
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir string, port int, pgUser, pgURL string) error {
 	log.SetLevel(zap.DebugLevel)
-	profile := GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
+	profile := cmd.GetTestProfileWithExternalPg(dataDir, port, pgUser, pgURL)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -156,7 +156,7 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, dataDir st
 func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int) error {
 	// start main server.
 	log.SetLevel(zap.DebugLevel)
-	profile := GetTestProfile(dataDir, port)
+	profile := cmd.GetTestProfile(dataDir, port)
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return err
@@ -1459,37 +1459,4 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 		return "", err
 	}
 	return string(s), nil
-}
-
-// GetTestProfile will return a profile for testing.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func GetTestProfile(dataDir string, port int) server.Profile {
-	// Using flags.port + 1 as our datastore port
-	datastorePort := port + 1
-	return server.Profile{
-		Mode:                 common.ReleaseModeDev,
-		BackendHost:          "http://localhost",
-		BackendPort:          port,
-		DatastorePort:        datastorePort,
-		PgUser:               "bbtest",
-		DataDir:              dataDir,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		BackupRunnerInterval: 10 * time.Second,
-	}
-}
-
-// GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
-// We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
-// pgURL for connect to Postgres.
-func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) server.Profile {
-	return server.Profile{
-		Mode:                 common.ReleaseModeDev,
-		BackendHost:          "http://localhost",
-		BackendPort:          port,
-		PgUser:               pgUser,
-		DataDir:              dataDir,
-		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
-		BackupRunnerInterval: 10 * time.Second,
-		PgURL:                pgURL,
-	}
 }
