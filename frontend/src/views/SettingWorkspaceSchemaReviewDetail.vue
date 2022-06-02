@@ -30,26 +30,22 @@
             />
           </div>
         </div>
-        <BBButtonConfirm
+        <button
           v-if="reviewPolicy.rowStatus === 'NORMAL'"
-          :style="'ARCHIVE'"
-          :button-text="$t('schema-review-policy.disable')"
-          confirm-description=""
-          :ok-text="$t('common.disable')"
-          :confirm-title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onArchive"
-        />
-        <BBButtonConfirm
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showDisableModal = true"
+        >
+          {{ $t("common.disable") }}
+        </button>
+        <button
           v-else
-          :style="'RESTORE'"
-          :button-text="$t('schema-review-policy.enable')"
-          confirm-description=""
-          :ok-text="$t('common.enable')"
-          :confirm-title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onRestore"
-        />
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showEnableModal = true"
+        >
+          {{ $t("common.enable") }}
+        </button>
         <button
           v-if="hasPermission"
           type="button"
@@ -169,6 +165,36 @@
       />
     </div>
   </transition>
+  <BBAlert
+    v-if="state.showDisableModal"
+    :style="'CRITICAL'"
+    :ok-text="$t('common.disable')"
+    :title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
+    description=""
+    @ok="
+      () => {
+        state.showDisableModal = false;
+        onArchive();
+      }
+    "
+    @cancel="state.showDisableModal = false"
+  >
+  </BBAlert>
+  <BBAlert
+    v-if="state.showEnableModal"
+    :style="'INFO'"
+    :ok-text="$t('common.enable')"
+    :title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
+    description=""
+    @ok="
+      () => {
+        state.showEnableModal = false;
+        onRestore();
+      }
+    "
+    @cancel="state.showEnableModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -204,6 +230,8 @@ const props = defineProps({
 });
 
 interface LocalState {
+  showDisableModal: boolean;
+  showEnableModal: boolean;
   searchText: string;
   selectedCategory?: string;
   editMode: boolean;
@@ -218,6 +246,8 @@ const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.schema-review-policy";
 
 const state = reactive<LocalState>({
+  showDisableModal: false,
+  showEnableModal: false,
   searchText: "",
   selectedCategory: router.currentRoute.value.query.category
     ? (router.currentRoute.value.query.category as string)
