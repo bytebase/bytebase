@@ -17,7 +17,9 @@
       @cancel="state.editMode = false"
     />
     <div class="my-5" v-else>
-      <div class="flex flex-col items-center justify-center md:flex-row">
+      <div
+        class="flex flex-col items-center space-x-2 justify-center md:flex-row"
+      >
         <div class="flex-1 flex space-x-3 items-center justify-start">
           <h1 class="text-xl md:text-3xl font-semibold">
             {{ reviewPolicy.name }}
@@ -49,7 +51,7 @@
         <button
           v-if="hasPermission"
           type="button"
-          class="btn-primary ml-5"
+          class="btn-primary"
           @click="onEdit"
         >
           {{ $t("common.edit") }}
