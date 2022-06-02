@@ -84,7 +84,7 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find instances in the environment %d", id)).SetInternal(err)
 			}
 			if len(instances) > 0 {
-				return echo.NewHTTPError(http.StatusBadRequest, "You should archive all instances understand the environment before archiving the environment.")
+				return echo.NewHTTPError(http.StatusBadRequest, "You should archive all instances under the environment before archiving the environment.")
 			}
 		}
 
