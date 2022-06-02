@@ -35,6 +35,11 @@ jobs:
           git diff --exit-code
 
   go-tests:
+    strategy:
+      matrix:
+        release-tags:
+          - "release,"
+          - ""
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -51,10 +56,16 @@ jobs:
             ./resources/mysql/*.tar.gz
             ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
+      # Release mode needs to embed fronetend dist
+      - name: Touch garbage dist/index.html
+        if: ${{ matrix.release-tags }}
+        run: |
+          mkdir -p server/dist
+          touch server/dist/index.html
       - name: Install dependencies and run all tests
         run: |
-          go generate -tags mysql ./...
-          go test -v ./... -tags=mysql
+          go generate -tags ${{ matrix.release-tags }}mysql ./...
+          go test -v ./... -tags=${{ matrix.release-tags }}mysql
 
   # tests if scripts/install_bb.sh is working correctly.
   install-bb:
