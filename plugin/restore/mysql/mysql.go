@@ -75,7 +75,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// List entries for just this database. It's applied after the --rewrite-db option, so we should provide the rewritten database, i.e., pitrDatabase.
 		"--database", pitrDatabase,
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
-		"--start-position", strconv.FormatInt(startBinlogInfo.Position, 10),
+		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
 		"--stop-datetime", getDateTime(targetTs),
 	}
@@ -237,11 +237,11 @@ func parseAndSortBinlogFileNames(binlogFileNames []string) ([]binlogItem, error)
 func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
 		path.Join(r.binlogDir, binlogInfo.FileName),
-		"--start-position", strconv.FormatInt(binlogInfo.Position, 10),
+		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
 		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
 		// the --stop-position is in the middle of the binlog event.
 		// It's OK, since we are only parsing for the timestamp in the binlog event header.
-		"--stop-position", strconv.FormatInt(binlogInfo.Position+1, 10),
+		"--stop-position", fmt.Sprintf("%d", binlogInfo.Position+1),
 	}
 	var buf bytes.Buffer
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
