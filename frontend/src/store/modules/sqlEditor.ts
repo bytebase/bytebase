@@ -184,8 +184,8 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
         hasSlug: true,
         instanceId,
         instanceName: instance.name,
-        databaseId,
-        databaseName: database.name,
+        databaseId: database.syncStatus === "OK" ? database.id : undefined,
+        databaseName: database.syncStatus === "OK" ? database.name : undefined,
         databaseType: instance.engine,
       });
     },
