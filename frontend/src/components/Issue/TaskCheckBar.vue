@@ -8,11 +8,18 @@
     <button
       v-if="showRunCheckButton"
       type="button"
-      class="btn-small py-0.5"
+      class="btn-small py-0.5 inline-flex items-center gap-1"
       :disabled="hasRunningTaskCheck"
       @click.prevent="runChecks"
     >
-      {{ hasRunningTaskCheck ? $t("task.checking") : $t("task.run-task") }}
+      <template v-if="hasRunningTaskCheck">
+        <BBSpin class="w-4 h-4" />
+        {{ $t("task.checking") }}
+      </template>
+      <template v-else>
+        <heroicons-outline:play class="w-4 h-4" />
+        {{ $t("task.run-task") }}
+      </template>
     </button>
 
     <BBModal
