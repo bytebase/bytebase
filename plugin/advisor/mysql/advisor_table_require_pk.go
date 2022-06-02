@@ -44,6 +44,7 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 	}
 	checker := &tableRequirePKChecker{
 		level:   level,
+		title:   string(ctx.Rule.Type),
 		tables:  make(tablePK),
 		catalog: ctx.Catalog,
 	}
@@ -58,6 +59,7 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 type tableRequirePKChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 	tables     tablePK
 	catalog    catalog.Service
 }
@@ -123,7 +125,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    common.TableNoPK,
-				Title:   "Require PRIMARY KEY",
+				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
 			})
 		}

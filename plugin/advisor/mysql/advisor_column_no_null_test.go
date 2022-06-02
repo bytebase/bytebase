@@ -15,15 +15,15 @@ func TestColumnNoNull(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`id` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`id` can not have NULL value",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`name` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`name` can not have NULL value",
 				},
 			},
 		},
@@ -32,9 +32,9 @@ func TestColumnNoNull(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`name` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`name` can not have NULL value",
 				},
 			},
 		},
@@ -43,9 +43,9 @@ func TestColumnNoNull(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`name` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`name` can not have NULL value",
 				},
 			},
 		},
@@ -65,9 +65,9 @@ func TestColumnNoNull(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`id` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`id` can not have NULL value",
 				},
 			},
 		},
@@ -87,9 +87,9 @@ func TestColumnNoNull(t *testing.T) {
 			want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNull,
-					Title:   "Column can have NULL value",
-					Content: "`book`.`name` can have NULL value",
+					Code:    common.ColumnCanNotNull,
+					Title:   "column.no-null",
+					Content: "`book`.`name` can not have NULL value",
 				},
 			},
 		},

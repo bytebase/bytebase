@@ -38,7 +38,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
@@ -74,7 +74,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
@@ -86,7 +86,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
@@ -170,7 +170,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
@@ -182,7 +182,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
@@ -207,7 +207,7 @@ func TestRequirePK(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.TableNoPK,
-					Title:   "Require PRIMARY KEY",
+					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
 			},
