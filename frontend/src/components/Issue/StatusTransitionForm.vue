@@ -124,12 +124,12 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
+import { cloneDeep, groupBy, maxBy } from "lodash-es";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
-import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../../types";
-import { OutputField } from "../../plugins";
-import { activeEnvironment, TaskStatusTransition } from "../../utils";
+import { Issue, IssueStatusTransition, Task } from "@/types";
+import { OutputField } from "@/plugins";
+import { activeEnvironment, TaskStatusTransition } from "@/utils";
 
 type CheckSummary = {
   successCount: number;
@@ -260,18 +260,18 @@ export default defineComponent({
         errorCount: 0,
       };
 
-      // For a particular check type, only counts the most recent one
-      const list: TaskCheckRun[] = [];
-      for (const run of props.task!.taskCheckRunList) {
-        const index = list.findIndex((item) => item.type == run.type);
-        if (index >= 0 && list[index].updatedTs < run.updatedTs) {
-          list[index] = run;
-        } else {
-          list.push(run);
-        }
-      }
+      const taskCheckRunList = props.task?.taskCheckRunList ?? [];
 
-      for (const check of list) {
+      const listGroupByType = groupBy(taskCheckRunList, (run) => run.type);
+      const latestCheckRunOfEachType = Object.keys(listGroupByType).map(
+        (type) => {
+          const listOfType = listGroupByType[type];
+          const latest = maxBy(listOfType, (run) => run.updatedTs)!;
+          return latest;
+        }
+      );
+
+      for (const check of latestCheckRunOfEachType) {
         if (check.status == "DONE") {
           for (const result of check.result.resultList) {
             if (result.status == "SUCCESS") {
