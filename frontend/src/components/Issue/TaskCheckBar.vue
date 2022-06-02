@@ -11,11 +11,7 @@
     </button>
     <TaskCheckBadgeBar
       :task-check-run-list="task.taskCheckRunList"
-      @select-task-check-run="
-        (checkRun) => {
-          viewCheckRunDetail(checkRun);
-        }
-      "
+      @select-task-check-type="viewCheckRunDetail"
     />
     <BBModal
       v-if="state.showModal"
@@ -28,12 +24,8 @@
             :task-check-run-list="task.taskCheckRunList"
             :allow-selection="true"
             :sticky-selection="true"
-            :selected-task-check-run="state.selectedTaskCheckRun"
-            @select-task-check-run="
-              (checkRun) => {
-                viewCheckRunDetail(checkRun);
-              }
-            "
+            :selected-task-check-type="state.selectedTaskCheckType"
+            @select-task-check-type="viewCheckRunDetail"
           />
         </div>
         <BBTabFilter
@@ -42,12 +34,14 @@
           :selected-index="state.selectedTabIndex"
           @select-index="
             (index: number) => {
-              state.selectedTaskCheckRun = tabTaskCheckRunList[index];
               state.selectedTabIndex = index;
             }
           "
         />
-        <TaskCheckRunPanel :task-check-run="state.selectedTaskCheckRun!" />
+        <TaskCheckRunPanel
+          v-if="selectedTaskCheckRun"
+          :task-check-run="selectedTaskCheckRun"
+        />
         <div class="pt-4 flex justify-end">
           <button
             type="button"
@@ -64,17 +58,17 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive } from "vue";
-import { Task, TaskCheckRun, TaskCheckStatus } from "../../types";
+import { useI18n } from "vue-i18n";
+import { cloneDeep } from "lodash-es";
+import { Task, TaskCheckRun, TaskCheckStatus, TaskCheckType } from "@/types";
 import TaskCheckBadgeBar from "./TaskCheckBadgeBar.vue";
 import TaskCheckRunPanel from "./TaskCheckRunPanel.vue";
-import { BBTabFilterItem } from "../../bbkit/types";
-import { cloneDeep } from "lodash-es";
-import { humanizeTs } from "../../utils";
-import { useI18n } from "vue-i18n";
+import { BBTabFilterItem } from "@/bbkit/types";
+import { humanizeTs } from "@/utils";
 
 interface LocalState {
   showModal: boolean;
-  selectedTaskCheckRun?: TaskCheckRun;
+  selectedTaskCheckType: TaskCheckType | undefined;
   selectedTabIndex: number;
 }
 
@@ -97,17 +91,18 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       showModal: false,
+      selectedTaskCheckType: undefined,
       selectedTabIndex: 0,
     });
 
     const tabTaskCheckRunList = computed((): TaskCheckRun[] => {
-      if (!state.selectedTaskCheckRun) {
+      if (!state.selectedTaskCheckType) {
         return [];
       }
 
       const list: TaskCheckRun[] = [];
       for (const check of props.task.taskCheckRunList) {
-        if (check.type == state.selectedTaskCheckRun.type) {
+        if (check.type == state.selectedTaskCheckType) {
           list.push(check);
         }
       }
@@ -125,6 +120,13 @@ export default defineComponent({
           alert: false,
         };
       });
+    });
+
+    const selectedTaskCheckRun = computed(() => {
+      const type = state.selectedTaskCheckType;
+      const index = state.selectedTabIndex;
+      if (!type) return undefined;
+      return tabTaskCheckRunList.value[index];
     });
 
     const showRunCheckButton = computed((): boolean => {
@@ -162,14 +164,15 @@ export default defineComponent({
       return value;
     };
 
-    const viewCheckRunDetail = (taskCheckRun: TaskCheckRun) => {
-      state.selectedTaskCheckRun = taskCheckRun;
+    const viewCheckRunDetail = (type: TaskCheckType) => {
+      state.selectedTaskCheckType = type;
+      state.selectedTabIndex = 0;
       state.showModal = true;
     };
 
     const dismissDialog = () => {
       state.showModal = false;
-      state.selectedTaskCheckRun = undefined;
+      state.selectedTaskCheckType = undefined;
     };
 
     const runChecks = () => {
@@ -180,6 +183,7 @@ export default defineComponent({
       state,
       tabTaskCheckRunList,
       tabItemList,
+      selectedTaskCheckRun,
       showRunCheckButton,
       hasRunningTaskCheck,
       taskCheckStatus,
