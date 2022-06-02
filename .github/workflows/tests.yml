@@ -59,13 +59,13 @@ jobs:
   go-release-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - uses: pnpm/action-setup@v2.2.2
-        with:
-          version: latest
       - name: Cache MySQL
         uses: actions/cache@v2
         with:
@@ -73,11 +73,11 @@ jobs:
             ./resources/mysql/*.tar.gz
             ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
-      - name: Build frontend
-        working-directory: frontend
+      # Release mode needs to embed fronetend dist
+      - name: Touch garbage dist/index.html
         run: |
-          pnpm install --frozen-lockfile
-          pnpm release
+          mkdir -p server/dist
+          touch server/dist/index.html
       - name: Install dependencies and run all tests
         run: |
           go generate -tags mysql,release ./...
