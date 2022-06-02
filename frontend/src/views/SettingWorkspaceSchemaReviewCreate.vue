@@ -16,17 +16,26 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useEnvironmentStore, featureToRef } from "@/store";
+import { computed, watchEffect } from "vue";
+import {
+  useEnvironmentStore,
+  featureToRef,
+  useSchemaSystemStore,
+} from "@/store";
 import { EMPTY_ID } from "@/types";
 
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const environmentId = params.get("environmentId") ?? "";
+const store = useSchemaSystemStore();
 
 const hasSchemaReviewPolicyFeature = featureToRef(
   "bb.feature.schema-review-policy"
 );
+
+watchEffect(() => {
+  store.fetchReviewPolicyList();
+});
 
 const environment = computed(() => {
   if (!environmentId || Number.isNaN(environmentId)) {

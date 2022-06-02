@@ -95,13 +95,13 @@ func TestSchemaSystem(t *testing.T) {
 						Status:  api.TaskCheckStatusWarn,
 						Code:    common.NamingTableConventionMismatch,
 						Title:   "Mismatch table naming convention",
-						Content: "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+						Content: "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
 						Code:    common.NamingColumnConventionMismatch,
 						Title:   "Mismatch column naming convention",
-						Content: "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)?$\"",
+						Content: "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,

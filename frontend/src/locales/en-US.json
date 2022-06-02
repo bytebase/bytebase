@@ -1374,8 +1374,10 @@
   },
   "schema-review-policy": {
     "title": "Schema Review",
+    "disabled": "Disabled",
     "no-policy-set": "No schema review policy",
     "create-policy": "Create policy",
+    "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
@@ -1383,8 +1385,8 @@
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",
-    "disable": "Disable schema review policy",
-    "enable": "Enable schema review policy",
+    "disable": "Disable",
+    "enable": "Enable",
     "delete": "Delete schema review policy",
     "category": {
       "engine": "Engine",
@@ -1396,10 +1398,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "Schema review for Prod"
+        "title": "Production Environment Template"
       },
       "policy-for-dev": {
-        "title": "Schema review for Dev"
+        "title": "Development Environment Template"
       }
     },
     "rule": {
