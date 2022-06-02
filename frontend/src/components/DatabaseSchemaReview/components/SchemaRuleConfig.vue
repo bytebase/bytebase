@@ -5,13 +5,12 @@
       :class="active ? 'bg-gray-100' : ''"
       @click="$emit('activate', selectedRule.type)"
     >
-      <heroicons-solid:chevron-right
-        class="w-5 h-5 transform transition-all"
-        :class="active ? 'rotate-90' : ''"
-      />
-
-      <div class="flex-1 flex flex-col ml-3">
+      <div class="flex-1 flex flex-col">
         <div class="flex mb-2 items-center space-x-2">
+          <heroicons-solid:chevron-right
+            class="w-5 h-5 transform transition-all"
+            :class="active ? 'rotate-90' : ''"
+          />
           <h1 class="text-base font-semibold text-gray-900">
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
@@ -21,7 +20,7 @@
           />
           <SchemaRuleLevelBadge :level="selectedRule.level" />
         </div>
-        <div class="text-sm text-gray-400">
+        <div class="text-sm text-gray-400 ml-7">
           {{ getRuleLocalization(selectedRule.type).description }}
         </div>
       </div>
@@ -41,7 +40,7 @@
               type="radio"
               :checked="level === selectedRule.level"
               @input="emit('level-change', level)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
             />
             <label
               :for="`level-${level}`"
@@ -57,7 +56,7 @@
       <div
         v-for="(config, index) in selectedRule.componentList"
         :key="index"
-        class="mb-7"
+        class="mb-1"
       >
         <p class="mb-3">
           {{ $t(`schema-review-policy.payload-config.${config.title}`) }}

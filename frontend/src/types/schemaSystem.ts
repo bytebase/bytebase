@@ -143,7 +143,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           description: "",
           payload: {
             type: "STRING",
-            default: "^[a-z]+(_[a-z]+)?$",
+            default: "^[a-z]+(_[a-z]+)*$",
           },
         },
       ],
@@ -156,7 +156,7 @@ export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
           description: "",
           payload: {
             type: "STRING",
-            default: "^[a-z]+(_[a-z]+)?$",
+            default: "^[a-z]+(_[a-z]+)*$",
           },
         },
       ],

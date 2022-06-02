@@ -1352,7 +1352,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string,
 		fallthrough
 	case api.SchemaRuleColumnNaming:
 		payload, err = json.Marshal(api.NamingRulePayload{
-			Format: "^[a-z]+(_[a-z]+)?$",
+			Format: "^[a-z]+(_[a-z]+)*$",
 		})
 	case api.SchemaRuleIDXNaming:
 		payload, err = json.Marshal(api.NamingRulePayload{
