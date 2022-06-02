@@ -116,8 +116,8 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string) error {
-	path, err := getAndCreateBackupPath(s.server.profile.DataDir, database, backupName)
-	if err != nil {
+	path := getBackupRelativeFilePath(database.ID, backupName)
+	if err := createBackupDirectory(s.server.profile.DataDir, database.ID); err != nil {
 		return err
 	}
 
