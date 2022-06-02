@@ -3,7 +3,7 @@
     type="normal"
     tooltip-mode="DISABLED-ONLY"
     :disabled="!allowAdmin || !pitrAvailable.result"
-    @click="state.showDatabasePITRModal = true"
+    @click="openDialog"
   >
     {{ $t("common.restore") }}
     <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
@@ -142,6 +142,11 @@ const isDateDisabled = (tsInMS: number) => {
 const resetUI = () => {
   state.loading = false;
   state.showDatabasePITRModal = false;
+  state.pitrTimestampMS = Date.now();
+};
+
+const openDialog = () => {
+  state.showDatabasePITRModal = true;
   state.pitrTimestampMS = Date.now();
 };
 
