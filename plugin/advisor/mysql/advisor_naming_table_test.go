@@ -18,8 +18,8 @@ func TestNamingTableConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
-					Title:   "Mismatch table naming convention",
-					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Title:   "naming.table",
+					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?*\"",
 				},
 			},
 		},
@@ -40,7 +40,7 @@ func TestNamingTableConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
-					Title:   "Mismatch table naming convention",
+					Title:   "naming.table",
 					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -62,7 +62,7 @@ func TestNamingTableConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
-					Title:   "Mismatch table naming convention",
+					Title:   "naming.table",
 					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -73,13 +73,13 @@ func TestNamingTableConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
-					Title:   "Mismatch table naming convention",
+					Title:   "naming.table",
 					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
-					Title:   "Mismatch table naming convention",
+					Title:   "naming.table",
 					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},

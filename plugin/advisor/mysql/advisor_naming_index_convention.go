@@ -47,6 +47,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	}
 	checker := &namingIndexConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
@@ -70,6 +71,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 type namingIndexConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
 	catalog      catalog.Service
@@ -94,7 +96,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
-				Title:   "Mismatch index naming convention",
+				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}

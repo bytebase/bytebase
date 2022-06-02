@@ -41,6 +41,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	}
 	checker := &namingTableConventionChecker{
 		level:  level,
+		title:  string(ctx.Rule.Type),
 		format: format,
 	}
 	for _, stmtNode := range root {
@@ -61,6 +62,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 type namingTableConventionChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 	format     *regexp.Regexp
 }
 
@@ -92,7 +94,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    common.NamingTableConventionMismatch,
-				Title:   "Mismatch table naming convention",
+				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
 			})
 		}

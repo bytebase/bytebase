@@ -68,7 +68,7 @@ const (
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
-	ColumnCanNull    Code = 10302
+	ColumnCanNotNull Code = 10302
 
 	NotInnoDBEngine Code = 10401
 
