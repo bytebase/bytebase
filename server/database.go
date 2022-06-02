@@ -90,6 +90,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if name := c.QueryParam("name"); name != "" {
 			databaseFind.Name = &name
 		}
+		if syncStatusStr := c.QueryParam("syncStatus"); syncStatusStr != "" {
+			syncStatus := api.SyncStatus(syncStatusStr)
+			databaseFind.SyncStatus = &syncStatus
+		}
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
 			projectID, err := strconv.Atoi(projectIDStr)

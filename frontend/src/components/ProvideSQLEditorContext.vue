@@ -58,9 +58,10 @@ const prepareAccessibleConnectionByProject = async () => {
   }
 
   const promises = state.projectList.map(async (project) => {
-    const databaseList = await databaseStore.fetchDatabaseListByProjectId(
-      project.id
-    );
+    const databaseList = await databaseStore.fetchDatabaseList({
+      projectId: project.id,
+      syncStatus: "OK",
+    });
     if (databaseList.length >= 0) {
       databaseList.forEach((database: Database) => {
         state.databaseIdList.set(database.id, database.name);
@@ -97,9 +98,10 @@ const prepareSQLEditorContext = async () => {
   connectionTree = filteredInstanceList.map(mapConnectionAtom("instance", 0));
 
   for (const instance of filteredInstanceList) {
-    const databaseList = await databaseStore.fetchDatabaseListByInstanceId(
-      instance.id
-    );
+    const databaseList = await databaseStore.fetchDatabaseList({
+      instanceId: instance.id,
+      syncStatus: "OK",
+    });
 
     const instanceItem = connectionTree.find(
       (item: ConnectionAtom) => item.id === instance.id
