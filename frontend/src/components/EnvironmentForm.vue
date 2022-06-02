@@ -140,6 +140,9 @@
             @click.prevent="onSchemaReviewPolicyClick"
           >
             {{ schemaReviewPolicy.name }}
+            <span v-if="schemaReviewPolicy.rowStatus == 'ARCHIVED'">
+              ({{ $t("schema-review-policy.disabled") }})
+            </span>
           </button>
           <button
             v-else-if="hasPermission"
@@ -147,8 +150,7 @@
             class="btn-normal py-2 px-4 gap-x-1 items-center"
             @click.prevent="onSchemaReviewPolicyClick"
           >
-            <heroicons-solid:plus class="h-4 w-4" />
-            {{ $t("schema-review-policy.create-policy") }}
+            {{ $t("schema-review-policy.configure-policy") }}
           </button>
           <span v-else class="textinfolabel">
             {{ $t("schema-review-policy.no-policy-set") }}

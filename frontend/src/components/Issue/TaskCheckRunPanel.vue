@@ -136,7 +136,7 @@ export default defineComponent({
           return;
         case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
           return {
-            title: t("schema-review-policy.create-policy"),
+            title: t("schema-review-policy.configure-policy"),
             target: "_self",
             url: "/setting/schema-review-policy",
           };
