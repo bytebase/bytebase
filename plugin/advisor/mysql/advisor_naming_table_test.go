@@ -19,7 +19,7 @@ func TestNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)?*\"",
+					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
