@@ -18,7 +18,7 @@ func TestNamingColumnConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -41,7 +41,7 @@ func TestNamingColumnConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -69,7 +69,7 @@ func TestNamingColumnConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -107,7 +107,7 @@ func TestNamingColumnConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`contentString` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
@@ -126,25 +126,25 @@ func TestNamingColumnConvention(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`book`.`updaterId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`student`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
-					Title:   "Mismatch column naming convention",
+					Title:   "naming.column",
 					Content: "`student`.`updatedTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},

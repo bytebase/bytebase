@@ -41,6 +41,7 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 	}
 	checker := &namingColumnConventionChecker{
 		level:  level,
+		title:  string(ctx.Rule.Type),
 		format: format,
 		tables: make(tableState),
 	}
@@ -64,6 +65,7 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 type namingColumnConventionChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 	format     *regexp.Regexp
 	tables     tableState
 }
@@ -104,7 +106,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    common.NamingColumnConventionMismatch,
-				Title:   "Mismatch column naming convention",
+				Title:   v.title,
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
 			})
 		}
