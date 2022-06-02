@@ -7,7 +7,7 @@
       <button
         class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
         :class="buttonStyle(checkRun)"
-        @click.prevent="selectTaskCheckRun(checkRun)"
+        @click.prevent="selectTaskCheckType(checkRun.type)"
       >
         <template v-if="checkRun.status == 'RUNNING'">
           <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
@@ -53,7 +53,7 @@ import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
 
 interface LocalState {
-  selectedTaskCheckRun?: TaskCheckRun;
+  selectedTaskCheckType: TaskCheckType | undefined;
 }
 
 export default defineComponent({
@@ -72,22 +72,22 @@ export default defineComponent({
       default: false,
       type: Boolean,
     },
-    selectedTaskCheckRun: {
-      type: Object as PropType<TaskCheckRun>,
+    selectedTaskCheckType: {
+      type: String as PropType<TaskCheckType>,
       default: undefined,
     },
   },
-  emits: ["select-task-check-run"],
+  emits: ["select-task-check-type"],
   setup(props, { emit }) {
     const { t } = useI18n();
     const state = reactive<LocalState>({
-      selectedTaskCheckRun: props.selectedTaskCheckRun,
+      selectedTaskCheckType: props.selectedTaskCheckType,
     });
 
     watch(
-      () => props.selectedTaskCheckRun,
+      () => props.selectedTaskCheckType,
       (curNew, _) => {
-        state.selectedTaskCheckRun = curNew;
+        state.selectedTaskCheckType = curNew;
       }
     );
 
@@ -137,7 +137,7 @@ export default defineComponent({
         styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
         if (
           props.stickySelection &&
-          checkRun.type == state.selectedTaskCheckRun?.type
+          checkRun.type == state.selectedTaskCheckType
         ) {
           styleList.push(bgHoverColor);
         } else {
@@ -209,8 +209,8 @@ export default defineComponent({
       return type;
     };
 
-    const selectTaskCheckRun = (taskCheckRun: TaskCheckRun) => {
-      emit("select-task-check-run", taskCheckRun);
+    const selectTaskCheckType = (type: TaskCheckType) => {
+      emit("select-task-check-type", type);
     };
 
     return {
@@ -219,7 +219,7 @@ export default defineComponent({
       filteredTaskCheckRunList,
       taskCheckStatus,
       name,
-      selectTaskCheckRun,
+      selectTaskCheckType,
     };
   },
 });
