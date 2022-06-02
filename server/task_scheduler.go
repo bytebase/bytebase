@@ -171,7 +171,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									)
 								}
 							} else {
-								log.Debug("Failed to run task",
+								log.Warn("Failed to run task",
 									zap.Int("id", task.ID),
 									zap.String("name", task.Name),
 									zap.String("type", string(task.Type)),
