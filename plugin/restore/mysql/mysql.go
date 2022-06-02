@@ -90,7 +90,9 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		mysqlArgs = append(mysqlArgs, "--port", r.connCfg.Port)
 	}
 	if r.connCfg.Password != "" {
-		mysqlArgs = append(mysqlArgs, "--password", r.connCfg.Password)
+		// The --password parameter of mysql/mysqlbinlog does not support the "--password PASSWORD" format (split by space).
+		// If provided like that, the program will hang.
+		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", r.connCfg.Password))
 	}
 
 	mysqlbinlogCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
@@ -523,7 +525,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 		args = append(args, "--port", r.connCfg.Port)
 	}
 	if r.connCfg.Password != "" {
-		args = append(args, "--password", r.connCfg.Password)
+		args = append(args, fmt.Sprintf("--password=%s", r.connCfg.Password))
 	}
 
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
@@ -537,6 +539,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 		return fmt.Errorf("mysqlbinlog fails, error: %w", err)
 	}
 
+	log.Debug("Checking binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
 		_ = os.Remove(resultFilePath)
