@@ -165,6 +165,7 @@ export default defineComponent({
     const viewCheckRunDetail = (taskCheckRun: TaskCheckRun) => {
       state.selectedTaskCheckRun = taskCheckRun;
       state.showModal = true;
+      state.selectedTabIndex = 0;
     };
 
     const dismissDialog = () => {
