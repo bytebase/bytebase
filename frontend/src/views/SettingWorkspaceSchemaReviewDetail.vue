@@ -17,34 +17,57 @@
       @cancel="state.editMode = false"
     />
     <div class="my-5" v-else>
-      <div class="flex flex-col items-center justify-center md:flex-row">
+      <div
+        class="flex flex-col items-center space-x-2 justify-center md:flex-row"
+      >
         <div class="flex-1 flex space-x-3 items-center justify-start">
           <h1 class="text-xl md:text-3xl font-semibold">
             {{ reviewPolicy.name }}
           </h1>
           <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
             <BBBadge
-              :text="$t('common.disable')"
+              :text="$t('schema-review-policy.disabled')"
               :can-remove="false"
-              :style="'WARN'"
+              :style="'DISABLED'"
             />
           </div>
         </div>
         <button
+          v-if="reviewPolicy.rowStatus === 'NORMAL'"
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showDisableModal = true"
+        >
+          {{ $t("common.disable") }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="btn-normal py-2 px-4"
+          @click.prevent="state.showEnableModal = true"
+        >
+          {{ $t("common.enable") }}
+        </button>
+        <button
           v-if="hasPermission"
           type="button"
-          class="btn-primary ml-5"
+          class="btn-primary"
           @click="onEdit"
         >
           {{ $t("common.edit") }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-3 my-5" v-if="reviewPolicy.environment">
+      <div
+        class="flex items-center flex-wrap gap-x-3 my-5"
+        v-if="reviewPolicy.environment"
+      >
         <span class="font-semibold">{{ $t("common.environment") }}</span>
-        <BBBadge
-          :text="environmentName(reviewPolicy.environment)"
-          :can-remove="false"
-        />
+        <router-link
+          :to="`/environment/${environmentSlug(reviewPolicy.environment)}`"
+          class="col-span-2 font-medium text-main underline"
+        >
+          {{ environmentName(reviewPolicy.environment) }}
+        </router-link>
       </div>
       <BBAttention
         v-else
@@ -134,36 +157,46 @@
         class="py-5"
       />
       <BBButtonConfirm
-        v-if="reviewPolicy.rowStatus === 'NORMAL'"
-        :style="'ARCHIVE'"
-        :button-text="$t('schema-review-policy.disable')"
-        confirm-description=""
-        :ok-text="$t('common.disable')"
-        :confirm-title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
+        v-if="reviewPolicy.rowStatus === 'ARCHIVED'"
+        :style="'DELETE'"
+        :button-text="$t('schema-review-policy.delete')"
+        :ok-text="$t('common.delete')"
+        :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
-        @confirm="onArchive"
+        @confirm="onRemove"
       />
-      <div class="flex gap-x-5" v-else>
-        <BBButtonConfirm
-          :style="'RESTORE'"
-          :button-text="$t('schema-review-policy.enable')"
-          confirm-description=""
-          :ok-text="$t('common.enable')"
-          :confirm-title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onRestore"
-        />
-        <BBButtonConfirm
-          :style="'DELETE'"
-          :button-text="$t('schema-review-policy.delete')"
-          :ok-text="$t('common.delete')"
-          :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
-          :require-confirm="true"
-          @confirm="onRemove"
-        />
-      </div>
     </div>
   </transition>
+  <BBAlert
+    v-if="state.showDisableModal"
+    :style="'CRITICAL'"
+    :ok-text="$t('common.disable')"
+    :title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
+    description=""
+    @ok="
+      () => {
+        state.showDisableModal = false;
+        onArchive();
+      }
+    "
+    @cancel="state.showDisableModal = false"
+  >
+  </BBAlert>
+  <BBAlert
+    v-if="state.showEnableModal"
+    :style="'INFO'"
+    :ok-text="$t('common.enable')"
+    :title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
+    description=""
+    @ok="
+      () => {
+        state.showEnableModal = false;
+        onRestore();
+      }
+    "
+    @cancel="state.showEnableModal = false"
+  >
+  </BBAlert>
 </template>
 
 <script lang="ts" setup>
@@ -199,6 +232,8 @@ const props = defineProps({
 });
 
 interface LocalState {
+  showDisableModal: boolean;
+  showEnableModal: boolean;
   searchText: string;
   selectedCategory?: string;
   editMode: boolean;
@@ -213,6 +248,8 @@ const currentUser = useCurrentUser();
 const ROUTE_NAME = "setting.workspace.schema-review-policy";
 
 const state = reactive<LocalState>({
+  showDisableModal: false,
+  showEnableModal: false,
   searchText: "",
   selectedCategory: router.currentRoute.value.query.category
     ? (router.currentRoute.value.query.category as string)
