@@ -901,13 +901,13 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 }
 
 // creates PITR TaskCreate list and dependency
-func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, recoveryTime int) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
 	// task: create and restore to PITR database
 	payloadRestore := api.TaskDatabasePITRRestorePayload{
 		ProjectID:     projectID,
-		PointInTimeTs: recoveryTime,
+		PointInTimeTs: targetTs,
 	}
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
