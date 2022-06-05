@@ -1,3 +1,4 @@
+import { uniqBy } from "lodash-es";
 import * as monaco from "monaco-editor";
 import {
   Database,
@@ -55,7 +56,7 @@ export default class AutoCompletion {
       });
     });
 
-    return suggestions;
+    return uniqBy(suggestions, "label");
   }
 
   getCompletionItemsForDatabaseList(): CompletionItems {
@@ -76,7 +77,7 @@ export default class AutoCompletion {
       suggestions.push(...this.getCompletionItemsForTableList(database));
     });
 
-    return suggestions;
+    return uniqBy(suggestions, "label");
   }
 
   getCompletionItemsForTableList(
@@ -109,7 +110,7 @@ export default class AutoCompletion {
       }
     });
 
-    return suggestions;
+    return uniqBy(suggestions, "label");
   }
 
   getCompletionItemsForTableColumnList(
@@ -135,6 +136,6 @@ export default class AutoCompletion {
       });
     });
 
-    return suggestions;
+    return uniqBy(suggestions, "label");
   }
 }

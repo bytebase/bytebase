@@ -11,17 +11,9 @@ import {
   nextTick,
   onUnmounted,
   watch,
-  computed,
   defineExpose,
 } from "vue";
-import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
-import {
-  pushNotification,
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-} from "@/store";
 import { SQLDialect } from "@/types";
 import { useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
@@ -34,6 +26,10 @@ const props = defineProps({
   language: {
     type: String,
     default: "mysql",
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -54,13 +50,7 @@ const emit = defineEmits<{
 const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
-
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
-const { t } = useI18n();
-
-const readonly = computed(() => sheetStore.isReadOnly);
+const readonly = toRef(props, "readonly");
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
@@ -142,11 +132,6 @@ const init = async () => {
     contextMenuOrder: 1,
     run: () => {
       if (readonly.value) {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t("sql-editor.notify.sheet-is-read-only"),
-        });
         return;
       }
       formatContent(editorInstance, language.value as SQLDialect);
@@ -213,32 +198,21 @@ watch(
   }
 );
 
-watch(
-  () => sqlEditorStore.shouldSetContent,
-  () => {
-    if (sqlEditorStore.shouldSetContent) {
-      sqlEditorStore.setShouldSetContent(false);
-      setContent(editorInstance, tabStore.currentTab.statement);
-    }
-  }
-);
+const setEditorContent = (content: string) => {
+  setContent(editorInstance, content);
+};
 
-// trigger format code from outside
-watch(
-  () => sqlEditorStore.shouldFormatContent,
-  () => {
-    if (sqlEditorStore.shouldFormatContent) {
-      formatContent(editorInstance, language.value as SQLDialect);
-      nextTick(() => {
-        setPositionAtEndOfLine(editorInstance);
-        editorInstance.focus();
-      });
-      sqlEditorStore.setShouldFormatContent(false);
-    }
-  }
-);
+const formatEditorContent = () => {
+  formatContent(editorInstance, language.value as SQLDialect);
+  nextTick(() => {
+    setPositionAtEndOfLine(editorInstance);
+    editorInstance.focus();
+  });
+};
 
 defineExpose({
+  formatEditorContent,
+  setEditorContent,
   setAutoCompletionContext,
 });
 </script>

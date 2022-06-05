@@ -3,6 +3,7 @@
     ref="editorRef"
     v-model:value="sqlCode"
     :language="selectedLanguage"
+    :readonly="readonly"
     @change="handleChange"
     @change-selection="handleChangeSelection"
     @run-query="handleRunQuery"
@@ -19,6 +20,7 @@ import {
   useSQLEditorStore,
   useDatabaseStore,
   useTableStore,
+  useSheetStore,
 } from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
@@ -32,6 +34,7 @@ const tabStore = useTabStore();
 const databaseStore = useDatabaseStore();
 const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
 
 const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
@@ -45,7 +48,6 @@ const selectedInstance = computed(() => {
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
-
 const selectedLanguage = computed(() => {
   const engine = selectedInstanceEngine.value;
   if (engine === "MySQL") {
@@ -56,6 +58,7 @@ const selectedLanguage = computed(() => {
   }
   return "sql";
 });
+const readonly = computed(() => sheetStore.isReadOnly);
 
 watch(selectedInstance, () => {
   if (selectedInstance.value) {
@@ -69,6 +72,26 @@ watch(selectedInstance, () => {
     editorRef.value?.setAutoCompletionContext(databaseList, tableList);
   }
 });
+
+watch(
+  () => sqlEditorStore.shouldSetContent,
+  () => {
+    if (sqlEditorStore.shouldSetContent) {
+      editorRef.value?.setEditorContent(tabStore.currentTab.statement);
+      sqlEditorStore.setShouldSetContent(false);
+    }
+  }
+);
+
+watch(
+  () => sqlEditorStore.shouldFormatContent,
+  () => {
+    if (sqlEditorStore.shouldFormatContent) {
+      editorRef.value?.formatEditorContent();
+      sqlEditorStore.setShouldFormatContent(false);
+    }
+  }
+);
 
 const handleChange = debounce((value: string) => {
   tabStore.updateCurrentTab({

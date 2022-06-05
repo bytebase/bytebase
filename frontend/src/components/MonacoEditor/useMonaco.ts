@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { uniqBy } from "lodash-es";
 import * as monaco from "monaco-editor";
 import type { editor as Editor } from "monaco-editor";
 import { Database, Table, CompletionItems, SQLDialect } from "@/types";
@@ -116,7 +117,7 @@ const useMonaco = async (lang: string) => {
       }
 
       return {
-        suggestions,
+        suggestions: uniqBy(suggestions, "label"),
       };
     },
   });
