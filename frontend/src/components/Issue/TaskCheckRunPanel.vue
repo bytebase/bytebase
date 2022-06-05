@@ -135,8 +135,6 @@ export default defineComponent({
     const errorTitle = (checkResult: TaskCheckResult): string => {
       let title = "";
 
-      console.log(checkResult);
-
       switch (checkResult.code) {
         case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
           title = checkResult.title;
