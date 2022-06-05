@@ -12,19 +12,18 @@ import {
   onUnmounted,
   watch,
   computed,
+  defineExpose,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
-
-import { useMonaco } from "./useMonaco";
-
 import {
   pushNotification,
   useTabStore,
   useSQLEditorStore,
   useSheetStore,
 } from "@/store";
-import { SQLDialect } from "../../types";
+import { SQLDialect } from "@/types";
+import { useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -67,10 +66,10 @@ let editorInstance: Editor.IStandaloneCodeEditor;
 
 const {
   monaco,
-  setPositionAtEndOfLine,
   formatContent,
   setContent,
-  completionItemProvider,
+  setAutoCompletionContext,
+  setPositionAtEndOfLine,
 } = await useMonaco(language.value);
 
 const init = async () => {
@@ -158,7 +157,6 @@ const init = async () => {
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
-    // emit("update:value", value);
     emit("change", value);
   });
 
@@ -186,34 +184,34 @@ const init = async () => {
     const value = editorInstance.getValue();
     emit("save", value);
   });
+};
+
+onMounted(() => {
+  init();
 
   // set the editor focus when the tab is selected
   if (!readonly.value) {
     editorInstance.focus();
-
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
-
-  watch(
-    () => readonly.value,
-    (readOnly) => {
-      if (editorInstance) {
-        editorInstance.updateOptions({ readOnly });
-      }
-    },
-    {
-      deep: true,
-      immediate: true,
-    }
-  );
-};
-
-onMounted(init);
+});
 
 onUnmounted(() => {
-  completionItemProvider.dispose();
   editorInstance.dispose();
 });
+
+watch(
+  () => readonly.value,
+  (readOnly) => {
+    if (editorInstance) {
+      editorInstance.updateOptions({ readOnly });
+    }
+  },
+  {
+    deep: true,
+    immediate: true,
+  }
+);
 
 watch(
   () => sqlEditorStore.shouldSetContent,
@@ -239,6 +237,10 @@ watch(
     }
   }
 );
+
+defineExpose({
+  setAutoCompletionContext,
+});
 </script>
 
 <style>

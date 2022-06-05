@@ -1,33 +1,28 @@
 import * as monaco from "monaco-editor";
-
 import {
-  Instance,
   Database,
   Table,
   EditorModel,
   EditorPosition,
   SortText,
   CompletionItems,
-} from "../../types";
+} from "@/types";
 import { keywords } from "./keywords";
 
 export default class AutoCompletion {
   model: EditorModel;
   position: EditorPosition;
-  instanceList: Instance[];
   databaseList: Database[];
   tableList: Table[];
 
   constructor(
     model: EditorModel,
     position: EditorPosition,
-    instanceList: Instance[],
     databaseList: Database[],
     tableList: Table[]
   ) {
     this.model = model;
     this.position = position;
-    this.instanceList = instanceList;
     this.databaseList = databaseList;
     this.tableList = tableList;
   }
@@ -46,7 +41,6 @@ export default class AutoCompletion {
 
   getCompletionItemsForKeywords() {
     const suggestions: CompletionItems = [];
-
     const range = this.getWordRange();
 
     keywords.forEach((keyword) => {
@@ -65,8 +59,7 @@ export default class AutoCompletion {
   }
 
   getCompletionItemsForDatabaseList(): CompletionItems {
-    let suggestions: CompletionItems = [];
-
+    const suggestions: CompletionItems = [];
     const range = this.getWordRange();
 
     this.databaseList.forEach((database) => {
@@ -80,9 +73,7 @@ export default class AutoCompletion {
         range,
       });
 
-      suggestions = suggestions.concat(
-        this.getCompletionItemsForTableList(database)
-      );
+      suggestions.push(...this.getCompletionItemsForTableList(database));
     });
 
     return suggestions;
@@ -92,8 +83,7 @@ export default class AutoCompletion {
     db?: Database,
     withDatabasePrefix = true
   ): CompletionItems {
-    let suggestions: CompletionItems = [];
-
+    const suggestions: CompletionItems = [];
     const range = this.getWordRange();
 
     const filterTableListByDB = this.tableList.filter((table: Table) => {
@@ -115,9 +105,7 @@ export default class AutoCompletion {
         range,
       });
       if (table.columnList && table.columnList.length > 0) {
-        suggestions = suggestions.concat(
-          this.getCompletionItemsForTableColumnList(table)
-        );
+        suggestions.push(...this.getCompletionItemsForTableColumnList(table));
       }
     });
 
@@ -129,7 +117,6 @@ export default class AutoCompletion {
     withTablePrefix = true
   ): CompletionItems {
     const suggestions: CompletionItems = [];
-
     const range = this.getWordRange();
 
     table.columnList.forEach((column) => {
