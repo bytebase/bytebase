@@ -127,6 +127,8 @@ type CreateDatabaseContext struct {
 	CharacterSet string `json:"characterSet"`
 	// Collation is the collation of the database.
 	Collation string `json:"collation"`
+	// Owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+	Owner string `json:"owner"`
 	// BackupID is the ID of the backup.
 	BackupID int `json:"backupId"`
 	// Labels is a json-encoded string from a list of DatabaseLabel.
@@ -185,7 +187,7 @@ type PITRContext struct {
 	DatabaseID int `json:"databaseId"`
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs int `json:"pointInTimeTs"`
+	PointInTimeTs int64 `json:"pointInTimeTs"`
 }
 
 // IssueFind is the API message for finding issues.

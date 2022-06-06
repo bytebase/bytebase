@@ -31,7 +31,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
@@ -53,7 +53,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
@@ -82,7 +82,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `uk_tech_book`",
 				},
 			},
@@ -104,7 +104,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},
@@ -115,7 +115,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},
@@ -126,7 +126,7 @@ func TestNamingUKConvention(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},

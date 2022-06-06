@@ -184,7 +184,9 @@ func TestTenant(t *testing.T) {
 	}
 
 	// Query migration history
-	instances := append(stagingInstances, prodInstances...)
+	var instances []*api.Instance
+	instances = append(instances, stagingInstances...)
+	instances = append(instances, prodInstances...)
 	hm1 := map[string]bool{}
 	hm2 := map[string]bool{}
 	for _, instance := range instances {
@@ -407,7 +409,9 @@ func TestTenantVCS(t *testing.T) {
 	}
 
 	// Query migration history
-	instances := append(stagingInstances, prodInstances...)
+	var instances []*api.Instance
+	instances = append(instances, stagingInstances...)
+	instances = append(instances, prodInstances...)
 	hm1 := map[string]bool{}
 	hm2 := map[string]bool{}
 	for _, instance := range instances {

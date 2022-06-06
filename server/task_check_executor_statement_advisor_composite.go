@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -16,7 +17,7 @@ import (
 // Schema review policy consists of a list of schema review rules.
 // There is such a logical mapping in bytebase backend:
 //   1. One schema review policy maps a TaskCheckRun.
-//   2. Each schema reivew rule type maps an advisor.Type.
+//   2. Each schema review rule type maps an advisor.Type.
 //   3. Each [db.Type][AdvisorType] maps an advisor.
 //
 // How to add a schema review rule:
@@ -25,15 +26,12 @@ import (
 //   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewTaskCheckStatementAdvisorCompositeExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorCompositeExecutor{
-		l: logger,
-	}
+func NewTaskCheckStatementAdvisorCompositeExecutor() TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorCompositeExecutor{}
 }
 
 // TaskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type TaskCheckStatementAdvisorCompositeExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
@@ -50,8 +48,18 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	policy, err := server.store.GetSchemaReviewPolicyByID(ctx, payload.PolicyID)
+	policy, err := server.store.GetSchemaReviewPolicyNormalByID(ctx, payload.PolicyID)
 	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			return []api.TaskCheckResult{
+				{
+					Status:  api.TaskCheckStatusWarn,
+					Code:    common.TaskCheckEmptySchemaReviewPolicy,
+					Title:   "Empty schema review policy or disabled",
+					Content: "",
+				},
+			}, nil
+		}
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
 	}
 
@@ -67,18 +75,17 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		}
 		advisorType, err := getAdvisorTypeByRule(rule.Type, payload.DbType)
 		if err != nil {
-			exec.l.Debug("not supported rule", zap.Error(err))
+			log.Debug("not supported rule", zap.Error(err))
 			continue
 		}
 		adviceList, err := advisor.Check(
 			payload.DbType,
 			advisorType,
 			advisor.Context{
-				Logger:    exec.l,
 				Charset:   payload.Charset,
 				Collation: payload.Collation,
 				Rule:      rule,
-				Catalog:   catalog.NewService(exec.l, task.DatabaseID, server.store),
+				Catalog:   catalog.NewService(task.DatabaseID, server.store),
 			},
 			payload.Statement,
 		)
@@ -185,8 +192,7 @@ func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (ad
 			return advisor.MySQLTableRequirePK, nil
 		}
 	case api.SchemaRuleMySQLEngine:
-		switch engine {
-		case db.MySQL:
+		if engine == db.MySQL {
 			return advisor.MySQLUseInnoDB, nil
 		}
 	}

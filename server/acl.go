@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin/v2"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -23,7 +22,7 @@ func getRoleContextKey() string {
 	return roleContextKey
 }
 
-func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
+func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		// Skips auth, actuator, plan
@@ -61,7 +60,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			if isSelf, err := isOperatingSelf(ctx, c, s, principalID, method); err != nil {
 				return err
 			} else if isSelf {
-				method = method + "_SELF"
+				method += "_SELF"
 			}
 		}
 

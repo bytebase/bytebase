@@ -1,18 +1,22 @@
 <template>
   <div class="mx-auto">
+    <FeatureAttention
+      v-if="!hasSchemaReviewPolicyFeature"
+      custom-class="mt-5"
+      feature="bb.feature.schema-review-policy"
+      :description="
+        $t('subscription.features.bb-feature-schema-review-policy.desc')
+      "
+    />
     <div v-if="store.reviewPolicyList.length > 0" class="space-y-6 my-5">
-      <div class="flex justify-start mt-4" v-if="hasPermission">
-        <div class="flex flex-col items-center w-28">
-          <button
-            class="btn-icon-primary p-3"
-            @click.prevent="goToCreationView"
-          >
-            <heroicons-outline:plus-sm class="w-6 h-6" />
-          </button>
-          <h3 class="mt-1 text-base font-normal text-main tracking-tight">
-            {{ $t("schema-review-policy.add-review") }}
-          </h3>
-        </div>
+      <div class="flex items-center justify-end" v-if="hasPermission">
+        <button
+          type="button"
+          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+          @click.prevent="goToCreationView"
+        >
+          {{ $t("schema-review-policy.create-policy") }}
+        </button>
       </div>
       <template v-for="review in store.reviewPolicyList" :key="review.id">
         <SchemaReviewCard :review-policy="review" @click="onClick" />
@@ -32,6 +36,7 @@ import {
   pushNotification,
   useSchemaSystemStore,
   useCurrentUser,
+  featureToRef,
 } from "@/store";
 import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
 import { schemaReviewPolicySlug, isDBAOrOwner } from "@/utils";
@@ -49,6 +54,10 @@ watchEffect(() => {
 const hasPermission = computed(() => {
   return isDBAOrOwner(currentUser.value.role);
 });
+
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
 
 const goToCreationView = () => {
   if (hasPermission.value) {

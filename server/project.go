@@ -10,6 +10,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"go.uber.org/zap"
 
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -94,11 +96,11 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 
 		var activeProjectList []*api.Project
-		for _, project := range projectList {
-			projectList = append(projectList, project)
-			// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
-			if projectFind.PrincipalID != nil {
-				principalID := *projectFind.PrincipalID
+		// if principalID is passed, we will enable the filter logic
+		if projectFind.PrincipalID != nil {
+			principalID := *projectFind.PrincipalID
+			for _, project := range projectList {
+				// We will filter those project with the current principle as an inactive member (the role provider differs from that of the project)
 				roleProvider := project.RoleProvider
 				for _, projectMember := range project.ProjectMemberList {
 					if projectMember.PrincipalID == principalID && projectMember.RoleProvider == roleProvider {
@@ -107,10 +109,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 					}
 				}
 			}
-		}
-
-		// if principalID is not passed, we will disable the filter logic
-		if projectFind.PrincipalID == nil {
+		} else {
 			activeProjectList = projectList
 		}
 
@@ -156,6 +155,17 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		}
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, projectPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
+		}
+
+		// Ensure the project has no database before it's archived.
+		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find databases in the project %d", id)).SetInternal(err)
+			}
+			if len(databases) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the project before archiving the project.")
+			}
 		}
 
 		project, err := s.store.PatchProject(ctx, projectPatch)
@@ -218,8 +228,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 
 		// Create webhook and retrieve the created webhook id
 		var webhookCreatePayload []byte
-		switch vcs.Type {
-		case "GITLAB_SELF_HOST":
+		if vcs.Type == "GITLAB_SELF_HOST" {
 			webhookPost := gitlab.WebhookPost{
 				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
@@ -233,7 +242,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
+		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
 			ctx,
 			common.OauthContext{
 				AccessToken: repositoryCreate.AccessToken,
@@ -370,8 +379,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
 			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
 			var webhookPatchPayload []byte
-			switch vcs.Type {
-			case "GITLAB_SELF_HOST":
+			if vcs.Type == "GITLAB_SELF_HOST" {
 				webhookPut := gitlab.WebhookPut{
 					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
@@ -382,7 +390,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				}
 			}
 
-			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).PatchWebhook(
+			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).PatchWebhook(
 				ctx,
 				common.OauthContext{
 					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
@@ -453,7 +461,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).DeleteWebhook(
+		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
 			ctx,
 			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			common.OauthContext{
@@ -469,7 +477,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+			// Despite the error here, we have deleted the repository in the database, we still return success.
+			log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

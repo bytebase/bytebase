@@ -25,7 +25,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.APIURL = vcs.Get(vcsCreate.Type, vcs.ProviderConfig{Logger: s.l}).APIURL(vcsCreate.InstanceURL)
+		vcsCreate.APIURL = vcs.Get(vcsCreate.Type, vcs.ProviderConfig{}).APIURL(vcsCreate.InstanceURL)
 
 		vcs, err := s.store.CreateVCS(ctx, vcsCreate)
 		if err != nil {
@@ -162,7 +162,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
 		}
 
-		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).FetchRepositoryList(
+		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcsFound.ApplicationID,

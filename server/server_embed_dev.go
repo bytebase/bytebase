@@ -4,10 +4,10 @@
 package server
 
 import (
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 )
 
-func embedFrontend(logger *zap.Logger, _ *echo.Echo) {
-	logger.Info("Dev mode, skip embedding frontend")
+func embedFrontend(_ *echo.Echo) {
+	log.Info("Dev mode, skip embedding frontend")
 }

@@ -21,9 +21,16 @@ import {
   useIssueStore,
   usePrincipalStore,
   useRouterStore,
+  useSubscriptionStore,
 } from "../store";
-import { Database, QuickActionType, Sheet, UNKNOWN_ID } from "../types";
-import { idFromSlug, isDBAOrOwner, isOwner } from "../utils";
+import {
+  Database,
+  PlanType,
+  QuickActionType,
+  Sheet,
+  UNKNOWN_ID,
+} from "../types";
+import { idFromSlug, isDBAOrOwner, isOwner, isProjectOwner } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -156,8 +163,8 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.request",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.request",
+                      // "quickaction.bb.database.troubleshoot",
                       "quickaction.bb.project.create",
                     ]
                   : [
@@ -517,27 +524,51 @@ const routes: Array<RouteRecordRaw> = [
                 );
 
                 if (project.rowStatus == "NORMAL") {
+                  const actionList: string[] = [];
+
                   const currentUser = useAuthStore().currentUser;
-                  let allowEditProject = false;
+                  let allowAlterSchemaOrChangeData = false;
+                  let allowCreateOrTransferDB = false;
                   if (isDBAOrOwner(currentUser.role)) {
-                    allowEditProject = true;
+                    // Yes to workspace owner and DBA
+                    allowAlterSchemaOrChangeData = true;
+                    allowCreateOrTransferDB = true;
                   } else {
-                    for (const member of project.memberList) {
-                      if (member.principal.id == currentUser.id) {
-                        allowEditProject = true;
-                        break;
-                      }
+                    const memberOfProject = project.memberList.find(
+                      (m) => m.principal.id === currentUser.id
+                    );
+                    if (memberOfProject) {
+                      // If current user is a member of this project
+                      // we are allowed to alter schema and change data.
+                      allowAlterSchemaOrChangeData = true;
+
+                      const plan = useSubscriptionStore().currentPlan;
+                      allowCreateOrTransferDB =
+                        plan === PlanType.ENTERPRISE
+                          ? // For ENTERPRISE plan, only
+                            //   - workspace owner and DBA
+                            //   - developers as the project owner
+                            // can create/transfer DB.
+                            // Other developers are not allowed.
+                            isProjectOwner(memberOfProject.role)
+                          : // For TEAM plan, all members of the project are allowed
+                            true;
                     }
                   }
+                  if (allowAlterSchemaOrChangeData) {
+                    actionList.push(
+                      "quickaction.bb.database.schema.update",
+                      "quickaction.bb.database.data.update"
+                    );
+                  }
 
-                  const actionList: string[] = allowEditProject
-                    ? [
-                        "quickaction.bb.database.schema.update",
-                        "quickaction.bb.database.data.update",
-                        "quickaction.bb.database.create",
-                        "quickaction.bb.project.database.transfer",
-                      ]
-                    : [];
+                  if (allowCreateOrTransferDB) {
+                    actionList.push(
+                      "quickaction.bb.database.create",
+                      "quickaction.bb.project.database.transfer"
+                    );
+                  }
+
                   return new Map([
                     ["OWNER", actionList],
                     ["DBA", actionList],
@@ -649,8 +680,8 @@ const routes: Array<RouteRecordRaw> = [
                   ? [
                       "quickaction.bb.database.schema.update",
                       "quickaction.bb.database.data.update",
-                      "quickaction.bb.database.request",
-                      "quickaction.bb.database.troubleshoot",
+                      // "quickaction.bb.database.request",
+                      // "quickaction.bb.database.troubleshoot",
                     ]
                   : [
                       "quickaction.bb.database.schema.update",
@@ -713,9 +744,11 @@ const routes: Array<RouteRecordRaw> = [
                 meta: {
                   title: (route: RouteLocationNormalized) => {
                     const slug = route.params.migrationHistorySlug as string;
-                    return useInstanceStore().getMigrationHistoryById(
-                      idFromSlug(slug)
-                    )?.version;
+                    const migrationHistory =
+                      useInstanceStore().getMigrationHistoryById(
+                        idFromSlug(slug)
+                      );
+                    return migrationHistory?.version ?? "";
                   },
                   allowBookmark: true,
                 },

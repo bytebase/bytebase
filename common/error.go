@@ -10,11 +10,10 @@ type Code int
 // Application error codes.
 const (
 	// 0 ~ 99 general error
-	Ok            Code = 0
-	Internal      Code = 1
-	NotAuthorized Code = 2
-	Invalid       Code = 3
-	// TODO(dragonly): check usages of NotFound to ensure no code uses it to check for Get/Find methods
+	Ok             Code = 0
+	Internal       Code = 1
+	NotAuthorized  Code = 2
+	Invalid        Code = 3
 	NotFound       Code = 4
 	Conflict       Code = 5
 	NotImplemented Code = 6
@@ -35,6 +34,9 @@ const (
 
 	// 301 task error
 	TaskTimingNotAllowed Code = 301
+
+	// 401 task check error
+	TaskCheckEmptySchemaReviewPolicy Code = 401
 
 	// 10001 advisor error code
 	CompatibilityDropDatabase  Code = 10001
@@ -66,7 +68,7 @@ const (
 
 	// 10301 column rule advisor error code
 	NoRequiredColumn Code = 10301
-	ColumnCanNull    Code = 10302
+	ColumnCanNotNull Code = 10302
 
 	NotInnoDBEngine Code = 10401
 

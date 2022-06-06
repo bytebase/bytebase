@@ -4,32 +4,11 @@ import (
 	"testing"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"go.uber.org/zap"
 )
-
-type test struct {
-	statement string
-	want      []advisor.Advice
-}
-
-func runTests(t *testing.T, tests []test, adv advisor.Advisor) {
-	logger, _ := zap.NewDevelopmentConfig().Build()
-	ctx := advisor.Context{
-		Logger:    logger,
-		Charset:   "",
-		Collation: "",
-	}
-	for _, tc := range tests {
-		adviceList, err := adv.Check(ctx, tc.statement)
-		require.NoError(t, err)
-		assert.Equal(t, tc.want, adviceList)
-	}
-}
 
 func TestBasic(t *testing.T) {
 	tests := []test{
@@ -39,7 +18,7 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropDatabase,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"DROP DATABASE d1\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -50,7 +29,7 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"DROP TABLE t1\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -61,7 +40,7 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityRenameTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"RENAME TABLE t1 to t2\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -72,7 +51,7 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"DROP VIEW v1\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -83,7 +62,7 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddUniqueKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"CREATE UNIQUE INDEX idx1 ON t1 (f1)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -94,20 +73,24 @@ func TestBasic(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"DROP TABLE t1;\" may cause incompatibility with the existing data and code",
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"DROP TABLE t2;\" may cause incompatibility with the existing data and code",
 				},
 			},
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }
 
 func TestAlterTable(t *testing.T) {
@@ -119,7 +102,7 @@ func TestAlterTable(t *testing.T) {
 					Status:  advisor.Success,
 					Code:    common.Ok,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -129,7 +112,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityRenameColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 RENAME COLUMN f1 to f2\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -140,7 +123,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityDropColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 DROP COLUMN f1\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -151,7 +134,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddPrimaryKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD PRIMARY KEY (f1)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -162,7 +145,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddUniqueKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD UNIQUE (f1)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -173,7 +156,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddUniqueKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD UNIQUE KEY (f1)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -184,7 +167,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddUniqueKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD UNIQUE INDEX (f1)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -195,7 +178,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddForeignKey,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD FOREIGN KEY (f1) REFERENCES t2(f2)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -206,7 +189,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddCheck,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD CHECK (f1 > 0)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -217,7 +200,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Success,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -227,7 +210,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterCheck,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ALTER CHECK chk1 ENFORCED\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -238,7 +221,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Success,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -248,7 +231,7 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAddCheck,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 ADD CONSTRAINT CHECK (f1 > 0)\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -260,7 +243,7 @@ func TestAlterTable(t *testing.T) {
 					Status:  advisor.Success,
 					Code:    common.Ok,
 					Title:   "OK",
-					Content: "Migration is backward compatible",
+					Content: "",
 				},
 			},
 		},
@@ -270,14 +253,18 @@ func TestAlterTable(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityRenameTable,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 RENAME TO t2\" may cause incompatibility with the existing data and code",
 				},
 			},
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }
 
 func TestAlterTableChangeColumnType(t *testing.T) {
@@ -288,7 +275,7 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 CHANGE f1 f2 TEXT\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -299,7 +286,7 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 MODIFY f1 TEXT\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -310,7 +297,7 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 MODIFY f1 TEXT NULL\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -321,7 +308,7 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 MODIFY f1 TEXT NOT NULL\" may cause incompatibility with the existing data and code",
 				},
 			},
@@ -332,12 +319,16 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.CompatibilityAlterColumn,
-					Title:   "Potential incompatible migration",
+					Title:   "schema.backward-compatibility",
 					Content: "\"ALTER TABLE t1 MODIFY f1 TEXT COMMENT 'bla'\" may cause incompatibility with the existing data and code",
 				},
 			},
 		},
 	}
 
-	runTests(t, tests, &CompatibilityAdvisor{})
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
+		Type:    api.SchemaRuleSchemaBackwardCompatibility,
+		Level:   api.SchemaRuleLevelWarning,
+		Payload: "",
+	}, &MockCatalogService{})
 }

@@ -49,8 +49,8 @@ func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement st
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.StatementLeadingWildcardLike,
-				Title:   "No leading wildcard LIKE",
-				Content: fmt.Sprintf("%q uses leading wildcard LIKE", checker.text),
+				Title:   string(ctx.Rule.Type),
+				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 			})
 		}
 	}
@@ -83,7 +83,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    common.Internal,
 				Title:   "Internal error for no leading wildcard LIKE rule",
-				Content: fmt.Sprintf("%q meet internal error %q", v.text, err.Error()),
+				Content: fmt.Sprintf("\"%s\" meet internal error %q", v.text, err.Error()),
 			})
 		}
 		if len(pattern) > 0 && pattern[:1] == wildcard {

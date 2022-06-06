@@ -32,16 +32,15 @@
 </template>
 
 <script lang="ts">
-import { PropType } from "vue";
+import { defineComponent, PropType } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Table } from "../types";
 import { bytesToString, databaseSlug } from "../utils";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
-export default {
+export default defineComponent({
   name: "TableTable",
-  components: {},
   props: {
     tableList: {
       required: true,
@@ -84,5 +83,5 @@ export default {
       clickTable,
     };
   },
-};
+});
 </script>

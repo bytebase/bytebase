@@ -1,21 +1,21 @@
 package service
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/enterprise/config"
+	"github.com/bytebase/bytebase/store"
 	"github.com/golang-jwt/jwt/v4"
-	"go.uber.org/zap"
 )
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
-	l      *zap.Logger
 	config *config.Config
+	store  *store.Store
 }
 
 // Claims creates a struct that will be encoded to a JWT.
@@ -28,26 +28,26 @@ type Claims struct {
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(l *zap.Logger, dataDir string, mode common.ReleaseMode) (*LicenseService, error) {
-	config, err := config.NewConfig(l, dataDir, mode)
+func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseService, error) {
+	config, err := config.NewConfig(mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &LicenseService{
+		store:  store,
 		config: config,
-		l:      l,
 	}, nil
 }
 
 // StoreLicense will store license into file.
-func (s *LicenseService) StoreLicense(tokenString string) error {
-	if tokenString != "" {
-		if _, err := s.parseLicense(tokenString); err != nil {
+func (s *LicenseService) StoreLicense(patch *enterpriseAPI.SubscriptionPatch) error {
+	if patch.License != "" {
+		if _, err := s.parseLicense(patch.License); err != nil {
 			return nil
 		}
 	}
-	return s.writeLicense(tokenString)
+	return s.writeLicense(patch)
 }
 
 // LoadLicense will load license from file and validate it.
@@ -137,19 +137,30 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 }
 
 func (s *LicenseService) readLicense() (string, error) {
-	token, err := ioutil.ReadFile(s.config.StorePath)
-	if err != nil {
+	settingName := api.SettingEnterpriseLicense
+	ctx := context.Background()
+	settings, err := s.store.FindSetting(ctx, &api.SettingFind{
+		Name: &settingName,
+	})
+
+	if len(settings) == 0 {
 		return "", common.Errorf(
 			common.NotFound,
-			fmt.Errorf("cannot read license from %s, error %w", s.config.StorePath, err),
+			fmt.Errorf("cannot find license with error %w", err),
 		)
 	}
 
-	return string(token), nil
+	return settings[0].Value, nil
 }
 
-func (s *LicenseService) writeLicense(token string) error {
-	return ioutil.WriteFile(s.config.StorePath, []byte(token), 0644)
+func (s *LicenseService) writeLicense(patch *enterpriseAPI.SubscriptionPatch) error {
+	ctx := context.Background()
+	_, err := s.store.PatchSetting(ctx, &api.SettingPatch{
+		UpdaterID: patch.UpdaterID,
+		Name:      api.SettingEnterpriseLicense,
+		Value:     patch.License,
+	})
+	return err
 }
 
 func convertPlanType(candidate string) (api.PlanType, error) {

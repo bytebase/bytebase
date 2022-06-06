@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // Type is the type of a database.
@@ -138,7 +137,7 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	Logger *zap.Logger
+	PgInstanceDir string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -243,6 +242,7 @@ type MigrationInfo struct {
 	Description    string
 	Creator        string
 	IssueID        string
+	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload        string
 	CreateDatabase bool
 	// UseSemanticVersion is whether version is a semantic version.

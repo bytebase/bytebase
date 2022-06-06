@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -46,10 +47,10 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	}
 	checker := &namingIndexConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
-		logger:       ctx.Logger,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -70,10 +71,10 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 type namingIndexConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
 	catalog      catalog.Service
-	logger       *zap.Logger
 }
 
 // Enter implements the ast.Visitor interface
@@ -95,7 +96,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingIndexConventionMismatch,
-				Title:   "Mismatch index naming convention",
+				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
@@ -148,7 +149,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					checker.logger.Error(
+					log.Error(
 						"Cannot find index in table",
 						zap.String("table_name", node.Table.Name.String()),
 						zap.String("index_name", spec.FromKey.String()),

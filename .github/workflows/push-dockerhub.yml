@@ -1,12 +1,9 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Build and push image to docker hub
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [main]
+    branches:
+      - main
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -15,6 +12,13 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - docker-image-tag: "dev-ci"
+            docker-build-args: "RELEASE="
+          - docker-image-tag: "release-ci"
+            docker-build-args: "RELEASE=release"
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -24,10 +28,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
+        id: docker_build
         uses: docker/build-push-action@v2
         with:
           file: Dockerfile
           push: true
-          tags: bytebase/bytebase:dev-ci
+          tags: bytebase/bytebase:${{ matrix.docker-image-tag }}
+          build-args: ${{ matrix.docker-build-args }}
       - name: Image digest
-        run: echo "Successfully pushed bytebase/bytebase:dev-ci " ${{ steps.docker_build.outputs.digest }}
+        run: echo "Successfully pushed bytebase/bytebase:${{ matrix.docker-image-tag }} " ${{ steps.docker_build.outputs.digest }}

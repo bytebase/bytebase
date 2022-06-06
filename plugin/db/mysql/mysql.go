@@ -14,7 +14,9 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/go-sql-driver/mysql"
@@ -46,23 +48,14 @@ func init() {
 	db.Register(db.TiDB, newDriver)
 }
 
-// BinlogInfo is the binlog coordination for MySQL.
-type BinlogInfo struct {
-	FileName string `json:"fileName"`
-	Position int64  `json:"position"`
-}
-
-// This is encoded in JSON and stored in the backup table, representing PITR related info.
-type backupPayload struct {
-	BinlogInfo BinlogInfo `json:"binlogInfo"`
-	// Imprecise UNIX timestamp to the second which is the rough time when this backup is taken.
-	// Mainly for UI purpose.
-	Ts int64 `json:"ts"`
+// BinlogFile is the metadata of the MySQL binlog file
+type BinlogFile struct {
+	Name string
+	Size int64
 }
 
 // Driver is the MySQL driver.
 type Driver struct {
-	l             *zap.Logger
 	connectionCtx db.ConnectionContext
 	dbType        db.Type
 
@@ -70,9 +63,7 @@ type Driver struct {
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
-	return &Driver{
-		l: config.Logger,
-	}
+	return &Driver{}
 }
 
 // Open opens a MySQL driver.
@@ -112,7 +103,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		defer mysql.DeregisterTLSConfig(tlsKey)
 		dsn += fmt.Sprintf("?tls=%s", tlsKey)
 	}
-	driver.l.Debug("Opening MySQL driver",
+	log.Debug("Opening MySQL driver",
 		zap.String("dsn", loggedDSN),
 		zap.String("environment", connCtx.EnvironmentName),
 		zap.String("database", connCtx.InstanceName),
@@ -554,7 +545,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 // Query queries a SQL statement.
 func (driver *Driver) Query(ctx context.Context, statement string, limit int) ([]interface{}, error) {
-	return util.Query(ctx, driver.l, driver.db, statement, limit)
+	return util.Query(ctx, driver.db, statement, limit)
 }
 
 // NeedsSetupMigration returns whether it needs to setup migration.
@@ -576,7 +567,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	}
 
 	if setup {
-		driver.l.Info("Bytebase migration schema not found, creating schema...",
+		log.Info("Bytebase migration schema not found, creating schema...",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -584,14 +575,14 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		// 1. For MySQL, each DDL is in its own transaction. See https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
 		// 2. For TiDB, the created database/table is not visible to the followup statements from the same transaction.
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {
-			driver.l.Error("Failed to initialize migration schema.",
+			log.Error("Failed to initialize migration schema.",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
 			return util.FormatErrorWithQuery(err, migrationSchema)
 		}
-		driver.l.Info("Successfully created migration schema.",
+		log.Info("Successfully created migration schema.",
 			zap.String("environment", driver.connectionCtx.EnvironmentName),
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
@@ -744,7 +735,7 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
-	return util.ExecuteMigration(ctx, driver.l, driver, m, statement, db.BytebaseDatabase)
+	return util.ExecuteMigration(ctx, driver, m, statement, db.BytebaseDatabase)
 }
 
 // FindMigrationHistoryList finds the migration history.
@@ -915,32 +906,34 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer conn.Close()
 
-	driver.l.Debug("flush tables in database with read locks",
-		zap.String("database", database))
-	if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
-		return "", err
-	}
+	var payloadBytes []byte
+	// Before we dump the real data, we should record the binlog position for PITR.
+	// Please refer to https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md#full-backup for details.
+	if !schemaOnly {
+		log.Debug("flush tables in database with read locks",
+			zap.String("database", database))
+		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+			log.Error("flush tables failed", zap.Error(err))
+			return "", err
+		}
 
-	binlog, err := getBinlogInfo(ctx, conn)
-	if err != nil {
-		return "", err
-	}
-	driver.l.Debug("binlog config at dump time",
-		zap.String("filename", binlog.FileName),
-		zap.Int64("position", binlog.Position))
+		binlog, err := getBinlogInfo(ctx, conn)
+		if err != nil {
+			return "", err
+		}
+		log.Debug("binlog config at dump time",
+			zap.String("filename", binlog.FileName),
+			zap.Int64("position", binlog.Position))
 
-	ts, err := getServerTime(ctx, driver.db)
-	if err != nil {
-		return "", err
-	}
+		if err != nil {
+			return "", err
+		}
 
-	payload := backupPayload{
-		BinlogInfo: binlog,
-		Ts:         ts,
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
+		payload := api.BackupPayload{BinlogInfo: binlog}
+		payloadBytes, err = json.Marshal(payload)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	options := sql.TxOptions{}
@@ -948,7 +941,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if driver.dbType == "MYSQL" {
 		options.ReadOnly = true
 	}
-	// Now we are still holding the tables' exclusive locks.
+	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	txn, err := conn.BeginTx(ctx, &options)
@@ -957,7 +950,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	driver.l.Debug("begin to dump database")
+	log.Debug("begin to dump database", zap.String("database", database))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}
@@ -995,19 +988,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
-func getServerTime(ctx context.Context, db *sql.DB) (int64, error) {
-	var timestamp int64
-	rows, err := db.QueryContext(ctx, "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP());")
-	if err != nil {
-		return 0, err
-	}
-	rows.Next()
-	if err := rows.Scan(&timestamp); err != nil {
-		return 0, err
-	}
-	return timestamp, nil
-}
-
 func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
@@ -1020,7 +1000,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := GetTables(txn, database)
+	tables, err := GetTablesTx(txn, database)
 	if err != nil {
 		return err
 	}
@@ -1094,7 +1074,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := GetTables(txn, dbName)
+		tables, err := GetTablesTx(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
 		}
@@ -1176,18 +1156,18 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (BinlogInfo, error) {
+func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 	defer rows.Close()
 
 	rows.Next()
-	binlogInfo := BinlogInfo{}
+	binlogInfo := api.BinlogInfo{}
 	var unused interface{}
 	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
-		return BinlogInfo{}, err
+		return api.BinlogInfo{}, err
 	}
 
 	return binlogInfo, nil
@@ -1238,8 +1218,22 @@ type triggerSchema struct {
 	statement string
 }
 
+// GetTablesTx gets all tables of a database using the provided transaction.
+func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+	return getTablesImpl(txn, dbName)
+}
+
 // GetTables gets all tables of a database.
-func GetTables(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
+	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+	return getTablesImpl(txn, dbName)
+}
+
+func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
@@ -1320,7 +1314,7 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 	if err != nil {
 		return err
 	}
-	if len(cols) <= 0 {
+	if len(cols) == 0 {
 		return nil
 	}
 	values := make([]*sql.NullString, len(cols))

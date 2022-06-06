@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -150,6 +151,42 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	}
 
 	return count, nil
+}
+
+// CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
+// Used by the metric collector.
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*metric.InstanceCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT engine, environment_id, COUNT(*)
+		FROM instance
+		WHERE row_status = $1 AND (
+			(id <= 102 AND updater_id != 1) OR id > 102
+		)
+		GROUP BY engine, environment_id`,
+		rowStatus,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.InstanceCountMetric
+
+	for rows.Next() {
+		var metric metric.InstanceCountMetric
+		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
 }
 
 // GetInstanceAdminPasswordByID gets admin password of instance
@@ -542,6 +579,9 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	return strings.Join(where, " AND "), args

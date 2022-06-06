@@ -8,19 +8,15 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"go.uber.org/zap"
 )
 
 // NewTaskCheckStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewTaskCheckStatementAdvisorSimpleExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorSimpleExecutor{
-		l: logger,
-	}
+func NewTaskCheckStatementAdvisorSimpleExecutor() TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorSimpleExecutor{}
 }
 
 // TaskCheckStatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
 type TaskCheckStatementAdvisorSimpleExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check statement advisor executor once.
@@ -31,12 +27,6 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
 		advisorType = advisor.MySQLSyntax
-	case api.TaskCheckDatabaseStatementCompatibility:
-		// TODO(ed): remove this after TaskCheckDatabaseStatementCompatibility is entirely moved into schema review policy
-		if !server.feature(api.FeatureBackwardCompatibility) {
-			return nil, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureBackwardCompatibility.AccessErrorMessage()))
-		}
-		advisorType = advisor.MySQLMigrationCompatibility
 	}
 
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
@@ -48,7 +38,6 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 		payload.DbType,
 		advisorType,
 		advisor.Context{
-			Logger:    exec.l,
 			Charset:   payload.Charset,
 			Collation: payload.Collation,
 		},

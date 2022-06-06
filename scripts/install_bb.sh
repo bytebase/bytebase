@@ -40,7 +40,7 @@ http_download() {
 }
 
 execute() {
-    BB_VERSION="1.0.5"
+    BB_VERSION="1.1.0"
     OS="$(uname_os)"
     ARCH="$(uname_arch)"
 
@@ -55,7 +55,8 @@ execute() {
     echo "Completed extracting tarball"
 
     echo "Start installing bb..."
-    install "${tmpdir}/bb" "/usr/local/bin"
+    echo "Requesting root privilege..." 
+    sudo install "${tmpdir}/bb" "/usr/local/bin"
     echo "Installed bb to /usr/local/bin"
 
     echo ""

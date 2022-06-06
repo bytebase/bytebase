@@ -1,0 +1,103 @@
+version: '3.7'
+
+services:
+  bb:
+    image: bytebase/bytebase:1.1.0
+    init: true
+    container_name: bytebase
+    restart: always
+    ports:
+      - 8080:8080
+    # # Uncomment the following lines to persist data
+    # volumes:
+    #   - ~/.bytebase/data:/var/opt/bytebase
+    command:
+      [
+        "--data",
+        "/var/opt/bytebase",
+        "--host",
+        "http://localhost",
+        "--port",
+        "8080"
+      ]
+    networks: [ clickhouse-network ]
+
+  # Clickhouse cluster
+  zookeeper:
+    image: zookeeper
+    networks: [ clickhouse-network ]
+
+  clickhouse01:
+    image: yandex/clickhouse-server
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        hard: 262144
+        soft: 262144
+    ports:
+      - 9001:9000
+    volumes:
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse-cluster/clickhouse01.config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
+    networks: [ clickhouse-network ]
+    depends_on:
+      - zookeeper
+
+  clickhouse02:
+    image: yandex/clickhouse-server
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        hard: 262144
+        soft: 262144
+    ports:
+      - 9002:9000
+    volumes:
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse-cluster/clickhouse02.config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
+    networks: [ clickhouse-network ]
+    depends_on:
+      - zookeeper
+
+  clickhouse03:
+    image: yandex/clickhouse-server
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        hard: 262144
+        soft: 262144
+    ports:
+      - 9003:9000
+    volumes:
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse-cluster/clickhouse03.config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
+    networks: [ clickhouse-network ]
+    depends_on:
+      - zookeeper
+
+  clickhouse04:
+    image: yandex/clickhouse-server
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        hard: 262144
+        soft: 262144
+    ports:
+      - 9004:9000
+    volumes:
+      - ./clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse-cluster/clickhouse04.config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse-cluster/test_schema:/docker-entrypoint-initdb.d
+    networks: [ clickhouse-network ]
+    depends_on:
+      - zookeeper
+
+networks:
+  clickhouse-network:
+    name: clickhouse-network
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24

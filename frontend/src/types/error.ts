@@ -21,6 +21,22 @@ export enum MigrationErrorCode {
   MIGRATION_BASELINE_MISSING = 204,
 }
 
+export enum SchemaReviewPolicyErrorCode {
+  EMPTY_POLICY = 401,
+  STATEMENT_NO_WHERE = 10101,
+  STATEMENT_NO_SELECT_ALL = 10102,
+  STATEMENT_LEADING_WILDCARD_LIKE = 10103,
+  TABLE_NAMING_DISMATCH = 10201,
+  COLUMN_NAMING_DISMATCH = 10202,
+  INDEX_NAMING_DISMATCH = 10203,
+  UK_NAMING_DISMATCH = 10204,
+  FK_NAMING_DISMATCH = 10205,
+  NO_REQUIRED_COLUMN = 10301,
+  COLUMN_CANBE_NULL = 10302,
+  NOT_INNODB_ENGINE = 10401,
+  NO_PK_IN_TABLE = 10501,
+}
+
 export enum CompatibilityErrorCode {
   COMPATIBILITY_DROP_DATABASE = 10001,
   COMPATIBILITY_RENAME_TABLE = 10002,
@@ -39,7 +55,8 @@ export type ErrorCode =
   | GeneralErrorCode
   | DBErrorCode
   | MigrationErrorCode
-  | CompatibilityErrorCode;
+  | CompatibilityErrorCode
+  | SchemaReviewPolicyErrorCode;
 
 export type ErrorTag = "General" | "Compatibility";
 

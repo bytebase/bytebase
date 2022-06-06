@@ -196,7 +196,8 @@
     "duplicate": "拷贝",
     "clear-search": "清空搜索",
     "enable": "开启",
-    "disable": "禁用"
+    "disable": "禁用",
+    "view-doc": "查看文档"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -333,7 +334,8 @@
         "upgrade": "升级到付费方案来解锁角色管理",
         "not-allow-edit": "只有所有者才能改变角色",
         "not-allow-remove": "不能移除最后一个所有者",
-        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色"
+        "project-role-provider-gitlab": "同步自对应 GitLab 项目的 {rawRole} 角色",
+        "cannot-change-role-of-systembot": "不能修改机器人助手的角色"
       },
       "toggle-role-provider": {
         "title": "您确认吗？"
@@ -344,7 +346,8 @@
       },
       "change-role-provider-to-bytebase": {
         "content": "将会恢复成以下成员的权限。所有由 VCS 提供的成员将会被移除。"
-      }
+      },
+      "system-bot": "机器人助手"
     },
     "general": {
       "workspace": {
@@ -506,6 +509,7 @@
   },
   "create-db": {
     "new-database-name": "新数据库名称",
+    "database-owner-name": "数据库所有者",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
@@ -530,7 +534,7 @@
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync-now": "现在同步",
-    "sync-schema-afterward": "随即同步 schema",
+    "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
@@ -1055,7 +1059,6 @@
     "this-is-example-deployment-config": "这是部署配置的样例，你需要在此基础上编辑并保存。",
     "n-databases": "{n} 个数据库",
     "selectors": "选择条件",
-    "wont-be-deployed": "不会被部署",
     "add-stage": "添加阶段",
     "confirm-to-revert": "确定撤销编辑？",
     "name-placeholder": "阶段名称…",
@@ -1070,7 +1073,11 @@
     },
     "project-has-no-deployment-config": "这个项目还没有部署配置。请先{go}。",
     "go-and-config": "去配置",
-    "preview-deployment-config": "预览部署配置"
+    "wont-be-deployed-explanation": "这些数据库不会被部署，因为没有命中任何选择条件。",
+    "wont-be-deployed": "不参与部署",
+    "pipeline-generated-from-deployment-config": "部署的流水线根据项目的{deployment_config}生成。",
+    "preview-deployment-pipeline": "预览部署流水线",
+    "select-database-group": "选择数据库分组"
   },
   "datasource": {
     "role-type": "权限类型",
@@ -1251,9 +1258,9 @@
         "title": "备份策略",
         "desc": "「备份策略」可以根据指定的周期自动备份数据库"
       },
-      "bb-feature-backward-compatibility": {
-        "title": "向后兼容",
-        "desc": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容，可以通过@:{'subscription.upgrade'}来开启该功能。"
+      "bb-feature-schema-review-policy": {
+        "title": "Schema 审核策略",
+        "desc": "给不同的环境定制 schema 审核策略，可以通过@:{'subscription.upgrade'}来开启该功能。"
       },
       "bb-feature-rbac": {
         "title": "角色管理",
@@ -1290,7 +1297,7 @@
           "sql-check-basic": "基础",
           "sql-check-basic-tooltip": "语法检查、数据库连接检查",
           "sql-check-advanced": "高级",
-          "sql-check-advanced-tooltip": "基础版功能 + 向后兼容性检查",
+          "sql-check-advanced-tooltip": "基础版功能 + 自定义 schema 审核规则",
           "anomaly-detection": "异常检测",
           "anomaly-detection-basic": "基础",
           "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
@@ -1367,12 +1374,14 @@
   },
   "schema-review-policy": {
     "title": "Schema 审核策略",
+    "disabled": "已禁用",
     "no-policy-set": "没有 schema 审核策略",
-    "add-review": "新增审核策略",
+    "create-policy": "创建审核策略",
+    "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
-    "remove-review": "审核策略已删除",
-    "create-review": "审核策略已创建",
-    "update-review": "审核策略已更新",
+    "policy-removed": "审核策略已删除",
+    "policy-created": "审核策略已创建",
+    "policy-updated": "审核策略已更新",
     "rules": "规则",
     "filter": "筛选",
     "no-permission": "仅 DBA 或所有者有权限创建或更新审核策略。",
@@ -1389,10 +1398,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "针对生产环境的审核策略"
+        "title": "针对生产环境的审核策略模板"
       },
       "policy-for-dev": {
-        "title": "针对开发环境的审核策略"
+        "title": "针对开发环境的审核策略模板"
       }
     },
     "rule": {
@@ -1412,21 +1421,17 @@
         "title": "列名命名检查",
         "description": "限制列名命名风格，默认为小写字母_下划线。"
       },
-      "naming-index-pk": {
-        "title": "主键命名检查",
-        "description": "限制主键命名风格，默认为 pk_表名_主键包含的字段名组合。"
-      },
       "naming-index-uk": {
         "title": "唯一键命名检查",
-        "description": "限制唯一键命名风格，默认为 uk_表名_主键包含的字段名组合。"
+        "description": "限制唯一键命名风格，默认为 uk_<表名>_<主键包含的字段名组合>。"
       },
       "naming-index-fk": {
         "title": "外键命名检查",
-        "description": "限制外键命名风格，默认为 fk_目标表名_目标字段名_被引用表名_被引用字段名。"
+        "description": "限制外键命名风格，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>。"
       },
       "naming-index-idx": {
         "title": "索引命名检查",
-        "description": "限制索引命名风格，默认为 idx_表名_主键包含的字段名组合。"
+        "description": "限制索引命名风格，默认为 idx_<表名>_<索引包含的字段名组合>。"
       },
       "column-required": {
         "title": "必须包含的字段",
@@ -1456,9 +1461,9 @@
     "payload-config": {
       "table-name-format": "表命名规则（正则）",
       "column-name-format": "列命名规则（正则）",
-      "pk-name-format": "主键命名规则",
       "uk-name-format": "唯一键命名规则",
       "idx-name-format": "索引命名规则",
+      "fk-name-format": "外键命名规则",
       "required-column": "必须包含的字段名",
       "input-then-press-enter": "输入后按下回车来添加",
       "template": {

@@ -8,19 +8,17 @@ import (
 	"path/filepath"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
 // NewDatabaseBackupTaskExecutor creates a new database backup task executor.
-func NewDatabaseBackupTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &DatabaseBackupTaskExecutor{
-		l: logger,
-	}
+func NewDatabaseBackupTaskExecutor() TaskExecutor {
+	return &DatabaseBackupTaskExecutor{}
 }
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run database backup once.
@@ -37,13 +35,13 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	if backup == nil {
 		return true, nil, fmt.Errorf("backup %v not found", payload.BackupID)
 	}
-	exec.l.Debug("Start database backup...",
+	log.Debug("Start database backup...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", task.Database.Name),
 		zap.String("backup", backup.Name),
 	)
 
-	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir)
+	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
 	// Update the status of the backup.
 	newBackupStatus := string(api.BackupStatusDone)
 	comment := ""
@@ -72,8 +70,8 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 }
 
 // backupDatabase will take a backup of a database.
-func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir string) (string, error) {
-	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, exec.l)
+func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, instance *api.Instance, databaseName string, backup *api.Backup, dataDir, pgInstanceDir string) (string, error) {
+	driver, err := getAdminDatabaseDriver(ctx, instance, databaseName, pgInstanceDir)
 	if err != nil {
 		return "", err
 	}
@@ -93,22 +91,39 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, inst
 	return payload, nil
 }
 
-// getAndCreateBackupDirectory returns the path of a database backup.
-func getAndCreateBackupDirectory(dataDir string, database *api.Database) (string, error) {
-	dir := filepath.Join("backup", "db", fmt.Sprintf("%d", database.ID))
-	absDir := filepath.Join(dataDir, dir)
-	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
-		return "", nil
-	}
-
-	return dir, nil
+// Get backup dir relative to the data dir.
+func getBackupRelativeDir(databaseID int) string {
+	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
 }
 
-// getAndCreateBackupPath returns the path of a database backup.
-func getAndCreateBackupPath(dataDir string, database *api.Database, name string) (string, error) {
-	dir, err := getAndCreateBackupDirectory(dataDir, database)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
+func getBackupRelativeFilePath(databaseID int, name string) string {
+	dir := getBackupRelativeDir(databaseID)
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", name))
+}
+
+func getBackupAbsFilePath(dataDir string, databaseID int, name string) string {
+	path := getBackupRelativeFilePath(databaseID, name)
+	return filepath.Join(dataDir, path)
+}
+
+// Create backup directory for database.
+func createBackupDirectory(dataDir string, databaseID int) error {
+	dir := getBackupRelativeDir(databaseID)
+	absDir := filepath.Join(dataDir, dir)
+	return os.MkdirAll(absDir, os.ModePerm)
+}
+
+func getBinlogRelativeDir(instanceID int) string {
+	return filepath.Join("backup", "instance", fmt.Sprintf("%d", instanceID))
+}
+
+func getBinlogAbsDir(dataDir string, instanceID int) string {
+	dir := getBinlogRelativeDir(instanceID)
+	return filepath.Join(dataDir, dir)
+}
+
+func createBinlogDir(dataDir string, instanceID int) error {
+	dir := getBinlogRelativeDir(instanceID)
+	absDir := filepath.Join(dataDir, dir)
+	return os.MkdirAll(absDir, os.ModePerm)
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // databaseRaw is the store model for an Database.
@@ -121,6 +122,67 @@ func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*a
 		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
 	}
 	return database, nil
+}
+
+// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled
+func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		WITH database_backup_policy AS (
+			SELECT db.id AS database_id, backup_policy.payload AS payload
+			FROM db, instance LEFT JOIN (
+				SELECT environment_id, payload
+				FROM policy
+				WHERE type = 'bb.policy.backup-plan'
+			) AS backup_policy ON instance.environment_id = backup_policy.environment_id
+			WHERE db.instance_id = instance.id
+		), database_backup_setting AS(
+			SELECT db.id AS database_id, backup_setting.enabled AS enabled
+			FROM db LEFT JOIN backup_setting ON db.id = backup_setting.database_id
+		)
+		SELECT database_backup_policy.payload, database_backup_setting.enabled, COUNT(*)
+		FROM database_backup_policy FULL JOIN database_backup_setting
+			ON database_backup_policy.database_id = database_backup_setting.database_id
+		GROUP BY database_backup_policy.payload, database_backup_setting.enabled
+		`)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var databaseCountMetricList []*metric.DatabaseCountMetric
+	for rows.Next() {
+		var optionalPayload sql.NullString
+		var optionalEnabled sql.NullBool
+		var count int
+		if err := rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
+			return nil, FormatError(err)
+		}
+		var backupPlanPolicySchedule *api.BackupPlanPolicySchedule
+		if optionalPayload.Valid {
+			backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(optionalPayload.String)
+			if err != nil {
+				return nil, FormatError(err)
+			}
+			backupPlanPolicySchedule = &backupPlanPolicy.Schedule
+		}
+		var enabled *bool
+		if optionalEnabled.Valid {
+			enabled = &optionalEnabled.Bool
+		}
+		databaseCountMetricList = append(databaseCountMetricList, &metric.DatabaseCountMetric{
+			BackupPlanPolicySchedule: backupPlanPolicySchedule,
+			BackupSettingEnabled:     enabled,
+			Count:                    count,
+		})
+	}
+
+	return databaseCountMetricList, nil
 }
 
 //
@@ -435,6 +497,9 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 	}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SyncStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.AllDatabaseName+"'")

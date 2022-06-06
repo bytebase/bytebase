@@ -1,4 +1,5 @@
 import { computed, defineComponent } from "vue";
+import { cloneDeep } from "lodash-es";
 import { provideIssueLogic, useIssueLogic } from "./index";
 import { maybeFormatStatementOnSave, useCommonLogic } from "./common";
 import {
@@ -13,7 +14,7 @@ import { useDatabaseStore } from "@/store";
 export default defineComponent({
   name: "GhostModeProvider",
   setup() {
-    const { create, issue, selectedTask } = useIssueLogic();
+    const { create, issue, selectedTask, createIssue } = useIssueLogic();
     const databaseStore = useDatabaseStore();
 
     // In gh-ost mode, each stage can own its SQL statement
@@ -34,14 +35,14 @@ export default defineComponent({
     });
 
     const doCreate = () => {
-      const issueCreate = issue.value as IssueCreate;
+      const issueCreate = cloneDeep(issue.value as IssueCreate);
 
       // for gh-ost mode, copy user edited tasks back to issue.createContext
       // only the first subtask (bb.task.database.schema.update.ghost.sync) has statement
       const stageList = issueCreate.pipeline!.stageList;
       const createContext =
         issueCreate.createContext as UpdateSchemaGhostContext;
-      const detailList = createContext.updateSchemaDetailList;
+      const detailList = createContext.updateSchemaGhostDetailList;
       stageList.forEach((stage, i) => {
         const detail = detailList[i];
         const syncTask = stage.taskList.find(
@@ -54,6 +55,8 @@ export default defineComponent({
         detail.statement = maybeFormatStatementOnSave(syncTask.statement, db);
         detail.earliestAllowedTs = syncTask.earliestAllowedTs;
       });
+
+      createIssue(issueCreate);
     };
 
     const logic = {

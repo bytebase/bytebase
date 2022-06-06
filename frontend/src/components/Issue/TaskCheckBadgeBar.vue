@@ -7,7 +7,7 @@
       <button
         class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
         :class="buttonStyle(checkRun)"
-        @click.prevent="selectTaskCheckRun(checkRun)"
+        @click.prevent="selectTaskCheckType(checkRun.type)"
       >
         <template v-if="checkRun.status == 'RUNNING'">
           <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
@@ -47,12 +47,13 @@
 
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
+import { groupBy, maxBy } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TaskCheckRun, TaskCheckStatus, TaskCheckType } from "../../types";
 import TaskSpinner from "./TaskSpinner.vue";
 
 interface LocalState {
-  selectedTaskCheckRun?: TaskCheckRun;
+  selectedTaskCheckType: TaskCheckType | undefined;
 }
 
 export default defineComponent({
@@ -71,22 +72,22 @@ export default defineComponent({
       default: false,
       type: Boolean,
     },
-    selectedTaskCheckRun: {
-      type: Object as PropType<TaskCheckRun>,
+    selectedTaskCheckType: {
+      type: String as PropType<TaskCheckType>,
       default: undefined,
     },
   },
-  emits: ["select-task-check-run"],
+  emits: ["select-task-check-type"],
   setup(props, { emit }) {
     const { t } = useI18n();
     const state = reactive<LocalState>({
-      selectedTaskCheckRun: props.selectedTaskCheckRun,
+      selectedTaskCheckType: props.selectedTaskCheckType,
     });
 
     watch(
-      () => props.selectedTaskCheckRun,
+      () => props.selectedTaskCheckType,
       (curNew, _) => {
-        state.selectedTaskCheckRun = curNew;
+        state.selectedTaskCheckType = curNew;
       }
     );
 
@@ -136,7 +137,7 @@ export default defineComponent({
         styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
         if (
           props.stickySelection &&
-          checkRun.type == state.selectedTaskCheckRun?.type
+          checkRun.type == state.selectedTaskCheckType
         ) {
           styleList.push(bgHoverColor);
         } else {
@@ -152,35 +153,31 @@ export default defineComponent({
 
     // For a particular check type, only returns the most recent one
     const filteredTaskCheckRunList = computed((): TaskCheckRun[] => {
-      const result: TaskCheckRun[] = [];
-      for (const run of props.taskCheckRunList) {
-        const index = result.findIndex((item) => item.type == run.type);
-        if (index < 0) {
-          result.push(run);
-        } else if (result[index].updatedTs < run.updatedTs) {
-          result[index] = run;
+      const groupByType = groupBy(props.taskCheckRunList, (run) => run.type);
+      /*
+        `groupByType` looks like: {
+          "bb.task-check.general.earliest-allowed-time": [run1, run2, ...],
+          "bb.task-check.database.statement.compatibility": [run1, run2, ...],
+          "bb.task-check.database.statement.syntax": [run1, run2, ...],
+          ...
         }
-      }
+        `result` is an array of the most recent TaskCheckRun in each group
+      */
+      const result = Object.keys(groupByType).map((type) => {
+        const groupList = groupByType[type];
+        const mostRecentInGroup = maxBy(groupList, (run) => run.updatedTs)!;
+        return mostRecentInGroup;
+      });
 
       return result.sort((a: TaskCheckRun, b: TaskCheckRun) => {
-        // Put likely failure first.
         const taskCheckRunTypeOrder = (type: TaskCheckType) => {
-          switch (type) {
-            case "bb.task-check.general.earliest-allowed-time":
-              return 0;
-            case "bb.task-check.database.statement.compatibility":
-              return 1;
-            case "bb.task-check.database.statement.syntax":
-              return 2;
-            case "bb.task-check.database.connect":
-              return 3;
-            case "bb.task-check.instance.migration-schema":
-              return 4;
-            case "bb.task-check.database.statement.advise":
-              return 5;
-            case "bb.task-check.database.statement.fake-advise":
-              return 100;
+          const has = TaskCheckTypeOrderDict.has(type);
+          console.assert(has, `Missing TaskCheckType order of "${type}"`);
+          if (has) {
+            return TaskCheckTypeOrderDict.get(type)!;
           }
+          // Fallback, types not defined in the dictionary will go to the tail.
+          return FAKE_MAX_TASK_CHECK_TYPE_ORDER;
         };
 
         return taskCheckRunTypeOrder(a.type) - taskCheckRunTypeOrder(b.type);
@@ -202,26 +199,18 @@ export default defineComponent({
     };
 
     const name = (taskCheckRun: TaskCheckRun): string => {
-      switch (taskCheckRun.type) {
-        case "bb.task-check.database.statement.fake-advise":
-          return t("task.check-type.fake");
-        case "bb.task-check.database.statement.syntax":
-          return t("task.check-type.syntax");
-        case "bb.task-check.database.statement.compatibility":
-          return t("task.check-type.compatibility");
-        case "bb.task-check.database.statement.advise":
-          return t("task.check-type.sql-review");
-        case "bb.task-check.database.connect":
-          return t("task.check-type.connection");
-        case "bb.task-check.instance.migration-schema":
-          return t("task.check-type.migration-schema");
-        case "bb.task-check.general.earliest-allowed-time":
-          return t("task.check-type.earliest-allowed-time");
+      const { type } = taskCheckRun;
+      const has = TaskCheckTypeNameDict.has(type);
+      console.assert(has, `Missing TaskCheckType name of "${type}"`);
+      if (has) {
+        const key = TaskCheckTypeNameDict.get(type)!;
+        return t(key);
       }
+      return type;
     };
 
-    const selectTaskCheckRun = (taskCheckRun: TaskCheckRun) => {
-      emit("select-task-check-run", taskCheckRun);
+    const selectTaskCheckType = (type: TaskCheckType) => {
+      emit("select-task-check-type", type);
     };
 
     return {
@@ -230,8 +219,46 @@ export default defineComponent({
       filteredTaskCheckRunList,
       taskCheckStatus,
       name,
-      selectTaskCheckRun,
+      selectTaskCheckType,
     };
   },
 });
+
+// Defines the order of TaskCheckType
+const TaskCheckTypeOrderList: TaskCheckType[] = [
+  "bb.task-check.general.earliest-allowed-time",
+  "bb.task-check.database.statement.compatibility",
+  "bb.task-check.database.statement.syntax",
+  "bb.task-check.database.connect",
+  "bb.task-check.instance.migration-schema",
+  "bb.task-check.database.statement.advise",
+];
+const TaskCheckTypeOrderDict = new Map<TaskCheckType, number>(
+  TaskCheckTypeOrderList.map((type, index) => [type, index])
+);
+const FAKE_MAX_TASK_CHECK_TYPE_ORDER = 100;
+TaskCheckTypeOrderDict.set(
+  "bb.task-check.database.statement.fake-advise",
+  FAKE_MAX_TASK_CHECK_TYPE_ORDER
+);
+
+// Defines the mapping from TaskCheckType to an i18n resource keypath
+const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
+  ["bb.task-check.database.statement.fake-advise", "task.check-type.fake"],
+  ["bb.task-check.database.statement.syntax", "task.check-type.syntax"],
+  [
+    "bb.task-check.database.statement.compatibility",
+    "task.check-type.compatibility",
+  ],
+  ["bb.task-check.database.statement.advise", "task.check-type.sql-review"],
+  ["bb.task-check.database.connect", "task.check-type.connection"],
+  [
+    "bb.task-check.instance.migration-schema",
+    "task.check-type.migration-schema",
+  ],
+  [
+    "bb.task-check.general.earliest-allowed-time",
+    "task.check-type.earliest-allowed-time",
+  ],
+]);
 </script>

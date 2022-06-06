@@ -33,8 +33,12 @@ func (adv *NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]a
 	if err != nil {
 		return nil, err
 	}
-	checker := &noSelectAllChecker{level: level}
+	checker := &noSelectAllChecker{
+		level: level,
+		title: string(ctx.Rule.Type),
+	}
 	for _, stmtNode := range root {
+		checker.text = stmtNode.Text()
 		(stmtNode).Accept(checker)
 	}
 
@@ -52,6 +56,8 @@ func (adv *NoSelectAllAdvisor) Check(ctx advisor.Context, statement string) ([]a
 type noSelectAllChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
+	text       string
 }
 
 // Enter implements the ast.Visitor interface
@@ -62,8 +68,8 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 				v.adviceList = append(v.adviceList, advisor.Advice{
 					Status:  v.level,
 					Code:    common.StatementSelectAll,
-					Title:   "No SELECT all",
-					Content: fmt.Sprintf("%q uses SELECT all", in.Text()),
+					Title:   v.title,
+					Content: fmt.Sprintf("\"%s\" uses SELECT all", v.text),
 				})
 				break
 			}

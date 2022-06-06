@@ -22,7 +22,7 @@ import {
   taskSlug,
 } from "@/utils";
 import { useIssueStore, useProjectStore } from "@/store";
-import { TaskTypeWithStatement } from "./common";
+import { flattenTaskList, TaskTypeWithStatement } from "./common";
 
 export const useBaseIssueLogic = (params: {
   create: Ref<boolean>;
@@ -113,10 +113,11 @@ export const useBaseIssueLogic = (params: {
   };
 
   const selectTask = (task: Task) => {
-    if (!create.value) return;
+    if (create.value) return;
 
+    // Find the stage which the task belongs to
     const stage = (issue.value as Issue).pipeline?.stageList.find(
-      (t) => t.id === task.id
+      (s) => s.taskList.findIndex((t) => t.id === task.id) >= 0
     );
     if (!stage) {
       return;
@@ -146,10 +147,17 @@ export const useBaseIssueLogic = (params: {
 
   const isTenantMode = computed((): boolean => {
     if (project.value.tenantMode !== "TENANT") return false;
-    return (
-      issue.value.type === "bb.issue.database.schema.update" ||
-      issue.value.type === "bb.issue.database.data.update"
-    );
+    const { type } = issue.value;
+    if (type === "bb.issue.database.schema.update") {
+      return true;
+    }
+    if (type === "bb.issue.database.data.update") {
+      // We support single database data change in tenant mode projects.
+      // So a data change pipeline should be tenant mode when it contains more
+      // than one tasks.
+      return flattenTaskList(issue.value).length > 1;
+    }
+    return false;
   });
 
   const isGhostMode = computed((): boolean => {

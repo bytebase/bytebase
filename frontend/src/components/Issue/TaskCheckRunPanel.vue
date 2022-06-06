@@ -11,8 +11,8 @@
       :row-clickable="false"
     >
       <template #body="{ rowData: checkResult }">
-        <BBTableCell :left-padding="4" class="table-cell w-4">
-          <div class="flex flex-row space-x-2">
+        <BBTableCell :left-padding="4" class="w-16">
+          <div class="flex gap-x-3">
             <div
               class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
               :class="statusIconClass(checkResult.status)"
@@ -31,19 +31,17 @@
                 >
               </template>
             </div>
+            {{ errorTitle(checkResult) }}
           </div>
         </BBTableCell>
-        <BBTableCell class="table-cell w-16">
-          {{ checkResult.title }}
-        </BBTableCell>
-        <BBTableCell class="table-cell w-48">
+        <BBTableCell class="w-64">
           {{ checkResult.content }}
           <a
             v-if="errorCodeLink(checkResult.code)"
             class="normal-link"
-            :href="errorCodeLink(checkResult.code)"
-            target="__blank"
-            >view doc</a
+            :href="errorCodeLink(checkResult.code)?.url"
+            :target="errorCodeLink(checkResult.code)?.target"
+            >{{ errorCodeLink(checkResult.code)?.title }}</a
           >
         </BBTableCell>
       </template>
@@ -61,7 +59,11 @@ import {
   TaskCheckResult,
   ErrorCode,
   ERROR_LIST,
-} from "../../types";
+  GeneralErrorCode,
+  ruleTemplateList,
+  getRuleLocalization,
+  SchemaReviewPolicyErrorCode,
+} from "@/types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -74,6 +76,12 @@ const columnList: BBTableColumn[] = [
     title: "Detail",
   },
 ];
+
+interface ErrorCodeLink {
+  title: string;
+  target: string;
+  url: string;
+}
 
 export default defineComponent({
   name: "TaskCheckRunPanel",
@@ -124,9 +132,64 @@ export default defineComponent({
       return [];
     });
 
-    const errorCodeLink = (code: ErrorCode): string => {
-      const error = ERROR_LIST.find((item) => item.code == code);
-      return error ? `https://bytebase.com/docs/error-code#${error.hash}` : "";
+    const errorTitle = (checkResult: TaskCheckResult): string => {
+      let title = "";
+
+      switch (checkResult.code) {
+        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+          title = checkResult.title;
+          break;
+        case SchemaReviewPolicyErrorCode.STATEMENT_NO_WHERE:
+        case SchemaReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
+        case SchemaReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SchemaReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.UK_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
+        case SchemaReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SchemaReviewPolicyErrorCode.NOT_INNODB_ENGINE:
+        case SchemaReviewPolicyErrorCode.NO_PK_IN_TABLE:
+          const rule = ruleTemplateList.find(
+            (r) => r.type === checkResult.title
+          );
+
+          if (rule) {
+            const ruleLocalization = getRuleLocalization(rule.type);
+            title = `[${t(
+              `schema-review-policy.category.${rule.category.toLowerCase()}`
+            )}] ${ruleLocalization.title}`;
+          } else {
+            title = checkResult.title;
+          }
+          break;
+      }
+
+      return title ? `${title} (${checkResult.code})` : checkResult.title;
+    };
+
+    const errorCodeLink = (code: ErrorCode): ErrorCodeLink | undefined => {
+      switch (code) {
+        case GeneralErrorCode.OK:
+          return;
+        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+          return {
+            title: t("schema-review-policy.configure-policy"),
+            target: "_self",
+            url: "/setting/schema-review-policy",
+          };
+        default:
+          const error = ERROR_LIST.find((item) => item.code == code);
+          if (!error) {
+            return;
+          }
+          return {
+            title: t("common.view-doc"),
+            target: "__blank",
+            url: `https://bytebase.com/docs/error-code#${error.hash}`,
+          };
+      }
     };
 
     return {
@@ -134,6 +197,7 @@ export default defineComponent({
       statusIconClass,
       checkResultList,
       errorCodeLink,
+      errorTitle,
     };
   },
 });

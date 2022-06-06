@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 type MockCatalogService struct{}
@@ -48,6 +47,11 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	return nil, fmt.Errorf("cannot find index for %v", find)
 }
 
+type test struct {
+	statement string
+	want      []advisor.Advice
+}
+
 func runSchemaReviewRuleTests(
 	t *testing.T,
 	tests []test,
@@ -55,9 +59,7 @@ func runSchemaReviewRuleTests(
 	rule *api.SchemaReviewRule,
 	catalog catalog.Service,
 ) {
-	logger, _ := zap.NewDevelopmentConfig().Build()
 	ctx := advisor.Context{
-		Logger:    logger,
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,

@@ -324,7 +324,9 @@ export default defineComponent({
     };
 
     const switchToTeam = () => {
-      subscriptionStore.patchSubscription(import.meta.env.BB_DEV_LICENSE);
+      subscriptionStore.patchSubscription(
+        import.meta.env.BB_DEV_LICENSE as string
+      );
     };
 
     const kbarActions = computed(() => [

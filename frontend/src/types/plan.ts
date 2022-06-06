@@ -1,7 +1,7 @@
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
   // Change Workflow
-  | "bb.feature.backward-compatibility"
+  | "bb.feature.schema-review-policy"
   | "bb.feature.schema-drift"
   | "bb.feature.task-schedule-time"
   | "bb.feature.multi-tenancy"
@@ -46,7 +46,7 @@ export interface Plan {
 // so that it can be shared between frontend/backend.
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Change Workflow
-  ["bb.feature.backward-compatibility", [false, true, true]],
+  ["bb.feature.schema-review-policy", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
   ["bb.feature.task-schedule-time", [false, true, true]],
   ["bb.feature.multi-tenancy", [false, true, true]],
@@ -100,9 +100,7 @@ export const FEATURE_SECTIONS = [
   },
   {
     id: "branding",
-    features: [
-      "branding-logo",
-    ],
+    features: ["branding-logo"],
   },
 ];
 

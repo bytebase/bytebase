@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -171,7 +169,7 @@ type Provider interface {
 	//
 	// oauthCtx: OAuth context to write the file content
 	// instanceURL: VCS instance URL
-	FetchRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
+	FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*Repository, error)
 
 	// Fetch the repository file list
 	//
@@ -192,7 +190,7 @@ type Provider interface {
 	CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Overwrites an existing file
 	//
-	// Similar to CreateFile except it overwrites an existing file. The fileCommit shoud includes the "LastCommitID" field which is used to detect conflicting writes.
+	// Similar to CreateFile except it overwrites an existing file. The fileCommit should includes the "LastCommitID" field which is used to detect conflicting writes.
 	OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit FileCommitCreate) error
 	// Reads the file metadata
 	//
@@ -210,7 +208,7 @@ type Provider interface {
 	// filePath: file path to be read
 	// ref: the specific file version to be read, could be a name of branch, tag or commit
 	ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error)
-	// Creates a webhook. Returns the created webhook ID on succeess.
+	// Creates a webhook. Returns the created webhook ID on success.
 	//
 	// oauthCtx: OAuth context to create the webhook
 	// instanceURL: VCS instance URL
@@ -232,7 +230,6 @@ var (
 
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
-	Logger *zap.Logger
 	Client *http.Client
 }
 

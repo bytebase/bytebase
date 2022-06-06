@@ -66,6 +66,21 @@
         </span>
       </div>
 
+      <div v-if="requireDatabaseOwnerName" class="col-span-2 col-start-2 w-64">
+        <label for="name" class="textlabel">
+          {{ $t("create-db.database-owner-name") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="name"
+          v-model="state.databaseOwnerName"
+          required
+          name="ownerName"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
+
       <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
       <DatabaseLabelForm
         v-if="isTenantProject"
@@ -259,6 +274,7 @@ interface LocalState {
   instanceId?: InstanceId;
   labelList: DatabaseLabel[];
   databaseName: string;
+  databaseOwnerName: string;
   characterSet: string;
   collation: string;
   assigneeId?: PrincipalId;
@@ -322,6 +338,7 @@ export default defineComponent({
 
     const state = reactive<LocalState>({
       databaseName: "",
+      databaseOwnerName: "",
       projectId: props.projectId,
       environmentId: props.environmentId,
       instanceId: props.instanceId,
@@ -379,6 +396,7 @@ export default defineComponent({
         : true;
       return (
         !isEmpty(state.databaseName) &&
+        validDatabaseOwnerName.value &&
         !isReservedName.value &&
         isLabelValid &&
         state.projectId &&
@@ -409,6 +427,22 @@ export default defineComponent({
         : (unknown("INSTANCE") as Instance);
     });
 
+    const requireDatabaseOwnerName = computed((): boolean => {
+      const instance = selectedInstance.value;
+      if (instance.id === UNKNOWN_ID) {
+        return false;
+      }
+      return instance.engine === "POSTGRES";
+    });
+
+    const validDatabaseOwnerName = computed((): boolean => {
+      if (!requireDatabaseOwnerName.value) {
+        return true;
+      }
+
+      return !isEmpty(state.databaseOwnerName);
+    });
+
     const selectProject = (projectId: ProjectId) => {
       state.projectId = projectId;
     };
@@ -435,6 +469,9 @@ export default defineComponent({
       const databaseName = isDbNameTemplateMode.value
         ? generatedDatabaseName.value
         : state.databaseName;
+      const owner = requireDatabaseOwnerName.value
+        ? state.databaseOwnerName
+        : "";
 
       if (props.backup) {
         newIssue = {
@@ -449,7 +486,8 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName,
+            databaseName: databaseName,
+            owner,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -474,7 +512,8 @@ export default defineComponent({
           },
           createContext: {
             instanceId: state.instanceId!,
-            databaseName,
+            databaseName: databaseName,
+            owner,
             characterSet:
               state.characterSet ||
               defaultCharset(selectedInstance.value.engine),
@@ -534,6 +573,7 @@ export default defineComponent({
       allowEditEnvironment,
       allowEditInstance,
       selectedInstance,
+      requireDatabaseOwnerName,
       showAssigneeSelect,
       selectProject,
       selectEnvironment,

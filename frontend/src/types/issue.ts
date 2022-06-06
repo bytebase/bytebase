@@ -33,6 +33,8 @@ export type IssueStatus = "OPEN" | "DONE" | "CANCELED";
 export type CreateDatabaseContext = {
   instanceId: InstanceId;
   databaseName: string;
+  // Only applicable to PostgreSQL for "WITH OWNER <<owner>>"
+  owner: string;
   characterSet: string;
   collation: string;
   backupId: BackupId;
@@ -58,7 +60,7 @@ export type UpdateSchemaContext = {
 };
 
 export type UpdateSchemaGhostContext = {
-  updateSchemaDetailList: UpdateSchemaGhostDetail[];
+  updateSchemaGhostDetailList: UpdateSchemaGhostDetail[];
 };
 
 export type PITRContext = {

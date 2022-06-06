@@ -8,13 +8,15 @@ import (
 
 const (
 	// secretLength is the length for the secret used to sign the JWT auto token
-	secreatLength = 32
+	secretLength = 32
 )
 
 // retrieved via the SettingService upon startup
 type config struct {
 	// secret used to sign the JWT auth token
 	secret string
+	// workspaceID used to initial the identify for a new workspace.
+	workspaceID string
 }
 
 // Profile is the configuration to start main server.
@@ -53,6 +55,8 @@ type Profile struct {
 	Version string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
+	// MetricConnectionKey is the connection key for metric.
+	MetricConnectionKey string
 }
 
 func (prof *Profile) useEmbedDB() bool {

@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytebase/bytebase/plugin/vcs"
-	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
 // GitLab is a fake implementation of GitLab.
@@ -201,7 +202,7 @@ func (gl *GitLab) getFakeCommit(c echo.Context) error {
 	commit := gitlab.Commit{
 		ID:         "fake_gitlab_commit_id",
 		AuthorName: "fake_gitlab_bot",
-		CreatedAt:  time.Now().Format(time.RFC3339),
+		CreatedAt:  time.Now(),
 	}
 	buf, err := json.Marshal(commit)
 	if err != nil {

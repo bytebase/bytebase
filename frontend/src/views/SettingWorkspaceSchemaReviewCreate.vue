@@ -1,5 +1,13 @@
 <template>
   <div class="my-4 space-y-4 divide-y divide-block-border">
+    <FeatureAttention
+      v-if="!hasSchemaReviewPolicyFeature"
+      custom-class="mb-5"
+      feature="bb.feature.schema-review-policy"
+      :description="
+        $t('subscription.features.bb-feature-schema-review-policy.desc')
+      "
+    />
     <SchemaReviewCreation
       :selected-rule-list="[]"
       :selected-environment="environment"
@@ -8,17 +16,37 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { useEnvironmentStore } from "@/store";
+import { computed, watchEffect } from "vue";
+import {
+  useEnvironmentStore,
+  featureToRef,
+  useSchemaSystemStore,
+} from "@/store";
+import { EMPTY_ID } from "@/types";
 
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const environmentId = params.get("environmentId") ?? "";
+const store = useSchemaSystemStore();
+
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
+
+watchEffect(() => {
+  store.fetchReviewPolicyList();
+});
 
 const environment = computed(() => {
-  if (Number.isNaN(environmentId)) {
+  if (!environmentId || Number.isNaN(environmentId)) {
     return;
   }
-  return useEnvironmentStore().getEnvironmentById(parseInt(environmentId, 10));
+  const env = useEnvironmentStore().getEnvironmentById(
+    parseInt(environmentId, 10)
+  );
+  if (env.id === EMPTY_ID) {
+    return;
+  }
+  return env;
 });
 </script>

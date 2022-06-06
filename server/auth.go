@@ -99,7 +99,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
 				}
 				// exchange OAuth Token
-				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).ExchangeOAuthToken(
+				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
 					ctx,
 					vcsFound.InstanceURL,
 					&common.OAuthExchange{
@@ -113,7 +113,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
 				}
 
-				gitlabUserInfo, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{Logger: s.l}).TryLogin(ctx,
+				gitlabUserInfo, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
@@ -217,14 +217,14 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 	})
 }
 
-func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int) (*api.Principal, *echo.HTTPError) {
+func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, creatorID int) (*api.Principal, *echo.HTTPError) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(signUp.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate password hash").SetInternal(err)
 	}
 
 	principalCreate := &api.PrincipalCreate{
-		CreatorID:    CreatorID,
+		CreatorID:    creatorID,
 		Type:         api.EndUser,
 		Name:         signUp.Name,
 		Email:        signUp.Email,
@@ -254,7 +254,7 @@ func trySignUp(ctx context.Context, s *Server, signUp *api.SignUp, CreatorID int
 		role = api.Owner
 	}
 	memberCreate := &api.MemberCreate{
-		CreatorID:   CreatorID,
+		CreatorID:   creatorID,
 		Status:      api.Active,
 		Role:        role,
 		PrincipalID: user.ID,

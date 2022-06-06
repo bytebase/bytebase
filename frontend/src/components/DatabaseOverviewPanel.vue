@@ -96,7 +96,7 @@
       </div>
       <ViewTable :view-list="viewList" />
 
-      <template v-if="database.instance.engine == 'POSTGRES' && isDev">
+      <template v-if="database.instance.engine == 'POSTGRES'">
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
           {{ $t("db.extensions") }}
         </div>

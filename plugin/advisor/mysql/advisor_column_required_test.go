@@ -18,7 +18,7 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id",
 				},
 			},
@@ -51,7 +51,7 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
 			},
@@ -85,7 +85,7 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
 			},
@@ -119,7 +119,7 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
 			},
@@ -153,7 +153,7 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: updater_id",
 				},
 			},
@@ -189,14 +189,31 @@ func TestColumnRequirement(t *testing.T) {
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
 				{
 					Status:  advisor.Warn,
 					Code:    common.NoRequiredColumn,
-					Title:   "Require columns",
+					Title:   "column.required",
 					Content: "Table `student` requires columns: creator_id, updater_id",
+				},
+			},
+		},
+		{
+			statement: `CREATE TABLE book(
+							id int,
+							creator int,
+							created_ts timestamp,
+							updater_id int,
+							updated_ts timestamp);
+						DROP TABLE book;`,
+			want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    common.Ok,
+					Title:   "OK",
+					Content: "",
 				},
 			},
 		},

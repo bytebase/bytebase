@@ -1,23 +1,27 @@
-name: build
+name: test
 
 on:
   push:
     branches:
-      - "main"
+      - main
   pull_request:
 
 jobs:
   golangci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+      - name: go generate -tags mysql ./...
+        run: go generate -tags mysql ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           version: v1.45.2
+          args: -v
+
   go-tidy:
     runs-on: ubuntu-latest
     steps:
@@ -25,11 +29,17 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - name: Verify tidy
+      - name: Verify go.mod is tidy
         run: |
           go mod tidy
           git diff --exit-code
+
   go-tests:
+    strategy:
+      matrix:
+        release-tags:
+          - "release,"
+          - ""
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,5 +49,33 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - run: |
-          go test -v ./...
+      - name: Cache MySQL
+        uses: actions/cache@v2
+        with:
+          path: |
+            ./resources/mysql/*.tar.gz
+            ./resources/mysql/*.tar.xz
+          key: ${{ runner.OS }}-build-mysql-cache
+      # Release mode needs to embed fronetend dist
+      - name: Touch garbage dist/index.html
+        if: ${{ matrix.release-tags }}
+        run: |
+          mkdir -p server/dist
+          touch server/dist/index.html
+      - name: Install dependencies and run all tests
+        run: |
+          go generate -tags ${{ matrix.release-tags }}mysql ./...
+          go test -v ./... -tags=${{ matrix.release-tags }}mysql
+
+  # tests if scripts/install_bb.sh is working correctly.
+  install-bb:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: run install script
+        run: ./scripts/install_bb.sh
+      - name: check bb version
+        run: bb version

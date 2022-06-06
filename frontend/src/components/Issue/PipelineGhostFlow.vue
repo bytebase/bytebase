@@ -1,78 +1,67 @@
 <template>
-  <div class="divide-y">
+  <div class="divide-y relative">
     <PipelineStageList>
       <template #task-name-of-stage="{ stage }">
         {{ taskNameOfStage(stage) }}
       </template>
     </PipelineStageList>
 
-    <!--
-      We don't parse the tasks' dependency relationships here, since we have exactly 1
-      [sync->cutover->drop-original-table] thread in each stage.
-
-      If we support multi-tenant-gh-ost mode in the future, we may have more than
-      one series of [sync->cutover->drop-original-table] threads.
-      Then we may repeat the horizon scroller. Each row is a thread of gh-ost migration.
-    -->
-    <NScrollbar x-scrollable>
-      <div class="task-list p-2 md:flex md:items-center relative">
-        <template v-for="(task, j) in taskList" :key="j">
-          <div
-            class="task px-2 py-1 cursor-pointer border rounded md:w-64 flex justify-between items-center"
-            :class="taskClass(task)"
-            @click="onClickTask(task, j)"
-          >
-            <div class="flex-1">
-              <div class="flex items-center pb-1">
-                <TaskStatusIcon
-                  :create="create"
-                  :active="isActiveTask(task)"
-                  :status="task.status"
-                  class="transform scale-75"
-                />
-                <heroicons-solid:arrow-narrow-right
-                  v-if="isActiveTask(task)"
-                  class="name w-5 h-5"
-                />
-                <div class="name">{{ databaseOfTask(task).name }}</div>
-              </div>
-              <div
-                class="flex items-center px-1 py-1 whitespace-pre-wrap break-all"
-              >
-                {{ taskNameOfTask(task) }}
-              </div>
+    <div
+      class="task-list p-2 lg:flex lg:items-center relative space-y-2 lg:space-y-0"
+    >
+      <template v-for="(task, i) in taskList" :key="i">
+        <div
+          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center"
+          :class="taskClass(task)"
+          @click="onClickTask(task, i)"
+        >
+          <div class="flex-1">
+            <div class="flex items-center pb-1">
+              <TaskStatusIcon
+                :create="create"
+                :active="isActiveTask(task)"
+                :status="task.status"
+                class="transform scale-75"
+              />
+              <heroicons-solid:arrow-narrow-right
+                v-if="isActiveTask(task)"
+                class="name w-5 h-5"
+              />
+              <div class="name">{{ databaseOfTask(task).name }}</div>
             </div>
-            <div v-if="getTaskProgress(task) > 0">
-              <BBProgressPie
-                class="w-9 h-9 text-info"
-                :thickness="2"
-                :percent="getTaskProgress(task)"
-              >
-                <template #default="{ percent }">
-                  <span class="text-xs scale-90">{{ percent }}%</span>
-                </template>
-              </BBProgressPie>
+            <div
+              class="flex items-center px-1 py-1 whitespace-pre-wrap break-all"
+            >
+              {{ taskNameOfTask(task) }}
             </div>
           </div>
-
-          <div
-            v-if="j < taskList.length - 1"
-            class="hidden md:flex items-center justify-center w-4 h-2 overflow-visible relative"
-          >
-            <!-- show an arrow indicator between tasks -->
-            <heroicons-outline:chevron-right class="w-4 h-4" />
+          <div v-if="getTaskProgress(task) > 0">
+            <BBProgressPie
+              class="w-9 h-9 text-info"
+              :thickness="2"
+              :percent="getTaskProgress(task)"
+            >
+              <template #default="{ percent }">
+                <span class="text-xs scale-90">{{ percent }}%</span>
+              </template>
+            </BBProgressPie>
           </div>
-        </template>
-      </div>
+        </div>
 
-      <div class="absolute right-0 top-0 bottom-0 w-10 hidden md:block"></div>
-    </NScrollbar>
+        <div
+          v-if="i < taskList.length - 1"
+          class="hidden lg:flex items-center justify-center w-4 h-2 overflow-visible relative"
+        >
+          <!-- show an arrow indicator between tasks -->
+          <heroicons-outline:chevron-right class="w-4 h-4" />
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import { NScrollbar } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import type {
   Pipeline,

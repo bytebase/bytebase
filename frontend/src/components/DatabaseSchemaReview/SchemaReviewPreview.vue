@@ -1,31 +1,6 @@
 <template>
   <div class="flex gap-x-20">
-    <aside class="hidden lg:block">
-      <div class="space-y-6">
-        <h1 class="text-left text-2xl font-semibold">
-          {{ $t("schema-review-policy.rules") }}
-        </h1>
-        <fieldset v-for="(category, index) in categoryList" :key="index">
-          <div class="block text-sm font-medium text-gray-900">
-            {{
-              $t(`schema-review-policy.category.${category.id.toLowerCase()}`)
-            }}
-          </div>
-          <div
-            v-for="(rule, ruleIndex) in category.ruleList"
-            :key="ruleIndex"
-            class="pt-2 flex items-center text-sm group"
-          >
-            <a
-              :href="`#${rule.type.replace(/\./g, '-')}`"
-              class="text-gray-600 hover:underline cursor-pointer"
-            >
-              {{ getRuleLocalization(rule.type).title }}
-            </a>
-          </div>
-        </fieldset>
-      </div>
-    </aside>
+    <SchemaReviewSidebar :selected-rule-list="selectedRuleList" />
     <div class="flex-1">
       <div class="mb-5" v-if="name">
         <h1 class="text-left text-3xl font-bold mb-2">
@@ -81,7 +56,9 @@
               :key="i"
               class="leading-8"
             >
-              {{ component.title }}:
+              {{
+                $t(`schema-review-policy.payload-config.${component.title}`)
+              }}:
               <span
                 v-if="
                   component.payload.type === 'STRING' ||
