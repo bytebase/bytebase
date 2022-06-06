@@ -349,6 +349,10 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
+	if _, err := db.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
+		return pitrDatabaseName, pitrOldDatabase, err
+	}
+
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Check database exists", zap.String("database", database))
 	dbExists, err := r.databaseExists(ctx, database)
@@ -393,6 +397,10 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	log.Debug("generated RENAME TABLE statement", zap.String("stmt", renameStmt))
 
 	if _, err := db.ExecContext(ctx, renameStmt); err != nil {
+		return pitrDatabaseName, pitrOldDatabase, err
+	}
+
+	if _, err := db.ExecContext(ctx, "SET sql_log_bin=ON"); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
