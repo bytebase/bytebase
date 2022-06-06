@@ -45,15 +45,15 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			if err != nil {
 				continue
 			}
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Value)
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 		case api.PolicyTypeBackupPlan:
 			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
 			if err != nil {
 				continue
 			}
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Schedule)
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 		case api.PolicyTypeSchemaReview:
 			key = fmt.Sprintf("%s_%s", policy.Type, policy.Environment.Name)
 			// schema review policy don't need to set the value.
