@@ -22,7 +22,7 @@
     "inter-ui": "^3.15.0",
     "lodash-es": "^4.17.21",
     "monaco-editor": "^0.32.1",
-    "naive-ui": "^2.26.4",
+    "naive-ui": "^2.30.0",
     "node-sql-parser": "^4.0.8",
     "papaparse": "^5.3.1",
     "pinia": "^2.0.12",
