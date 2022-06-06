@@ -728,6 +728,33 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
+// patchTaskStatus patches the status of all tasks in the pipeline stage.
+func (ctl *controller) patchStageTasksStatus(stageTasksStatusPatch api.StageTasksStatusPatch, pipelineID int) ([]*api.Task, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &stageTasksStatusPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal stageTasksStatusPatch, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageTasksStatusPatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*api.Task
+	ts, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Task)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get tasks response, error: %w", err)
+	}
+	for _, t := range ts {
+		task, ok := t.(*api.Task)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert task")
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
 // approveIssueNext approves the next pending approval task.
 func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 	for _, stage := range issue.Pipeline.StageList {
@@ -741,6 +768,26 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 					issue.Pipeline.ID); err != nil {
 
 					return fmt.Errorf("failed to patch task status for task %d, error: %w", task.ID, err)
+				}
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+// approveIssueTasksWithStageApproval approves all pending approval tasks in the next stage.
+func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) error {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				if _, err := ctl.patchStageTasksStatus(
+					api.StageTasksStatusPatch{
+						ID:     stage.ID,
+						Status: api.TaskPending,
+					},
+					issue.Pipeline.ID); err != nil {
+					return fmt.Errorf("failed to patch task status for stage %d, error: %w", stage.ID, err)
 				}
 				return nil
 			}
@@ -780,6 +827,16 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
+}
+
+// waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval)
+}
+
+// waitIssuePipelineImpl waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
@@ -798,7 +855,7 @@ func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 		}
 		switch status {
 		case api.TaskPendingApproval:
-			if err := ctl.approveIssueNext(issue); err != nil {
+			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
 		case api.TaskFailed:
