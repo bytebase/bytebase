@@ -348,7 +348,6 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
-	defer db.Close()
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Check database exists", zap.String("database", database))
