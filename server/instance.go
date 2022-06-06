@@ -149,6 +149,21 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					return err
 				}
 			}
+			// Ensure all databases belong to this instance are under the default project before instance is archived.
+			if v := instancePatch.RowStatus; v != nil && *v == api.Archived.String() {
+				defaultProjectID := 1
+				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+					NotProjectID: &defaultProjectID,
+					InstanceID:   &id,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError,
+						fmt.Errorf("Failed to find databases in the instance %d and not in project %d", id, defaultProjectID)).SetInternal(err)
+				}
+				if len(databases) > 0 {
+					return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the instance to the default project before archiving the instance.")
+				}
+			}
 			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
 			if err != nil {
 				if common.ErrorCode(err) == common.NotFound {
