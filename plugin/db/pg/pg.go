@@ -935,7 +935,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
 	cmd := exec.Command(pgDumpPath, args...)
 	if driver.config.Password != "" {
-		// Unlike mysql, postgresql does not support specifying commands in commands, we can do this by means of environment variables.
+		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
 	cmd.Stderr = os.Stderr
