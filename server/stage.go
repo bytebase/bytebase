@@ -13,6 +13,7 @@ import (
 )
 
 func (s *Server) registerStageRoutes(g *echo.Group) {
+	// This function patches the status of all tasks in the stage.
 	g.PATCH("/pipeline/:pipelineID/stage/:stageID/status", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		stageID, err := strconv.Atoi(c.Param("stageID"))
@@ -25,17 +26,12 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 		}
 
 		currentPrincipalID := c.Get(getPrincipalIDContextKey()).(int)
-		stageTasksStatusPatch := &api.StageTasksStatusPatch{
+		stageAllTaskStatusPatch := &api.StageAllTaskStatusPatch{
 			ID:        stageID,
 			UpdaterID: currentPrincipalID,
 		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, stageTasksStatusPatch); err != nil {
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, stageAllTaskStatusPatch); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update stage tasks status request").SetInternal(err)
-		}
-
-		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
 		}
 
 		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
@@ -57,12 +53,16 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
 		}
 
+		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get tasks").SetInternal(err)
+		}
 		var tasksPatched []*api.Task
 		for _, task := range tasks {
 			taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, &api.TaskStatusPatch{
 				ID:        task.ID,
-				UpdaterID: stageTasksStatusPatch.UpdaterID,
-				Status:    stageTasksStatusPatch.Status,
+				UpdaterID: stageAllTaskStatusPatch.UpdaterID,
+				Status:    stageAllTaskStatusPatch.Status,
 			})
 			if err != nil {
 				if common.ErrorCode(err) == common.Invalid {

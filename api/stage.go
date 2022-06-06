@@ -51,8 +51,8 @@ type StageFind struct {
 	PipelineID *int
 }
 
-// StageTasksStatusPatch is the API message for patching task status for all tasks in a stage.
-type StageTasksStatusPatch struct {
+// StageAllTaskStatusPatch is the API message for patching task status for all tasks in a stage.
+type StageAllTaskStatusPatch struct {
 	ID int
 
 	// Standard fields

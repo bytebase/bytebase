@@ -728,24 +728,24 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
-// patchTaskStatus patches the status of all tasks in the pipeline stage.
-func (ctl *controller) patchStageTasksStatus(stageTasksStatusPatch api.StageTasksStatusPatch, pipelineID int) ([]*api.Task, error) {
+// patchStageAllTaskStatus patches the status of all tasks in the pipeline stage.
+func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.StageAllTaskStatusPatch, pipelineID int) ([]*api.Task, error) {
 	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, &stageTasksStatusPatch); err != nil {
-		return nil, fmt.Errorf("failed to marshal stageTasksStatusPatch, error: %w", err)
+	if err := jsonapi.MarshalPayload(buf, &stageAllTaskStatusPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal StageAllTaskStatusPatch, error: %w", err)
 	}
 
-	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageTasksStatusPatch.ID), buf)
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageAllTaskStatusPatch.ID), buf)
 	if err != nil {
 		return nil, err
 	}
 
 	var tasks []*api.Task
-	ts, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Task)))
+	untypedTasks, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Task)))
 	if err != nil {
 		return nil, fmt.Errorf("fail to unmarshal get tasks response, error: %w", err)
 	}
-	for _, t := range ts {
+	for _, t := range untypedTasks {
 		task, ok := t.(*api.Task)
 		if !ok {
 			return nil, fmt.Errorf("fail to convert task")
@@ -778,19 +778,27 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 
 // approveIssueTasksWithStageApproval approves all pending approval tasks in the next stage.
 func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) error {
+	stageID := 0
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if task.Status == api.TaskPendingApproval {
-				if _, err := ctl.patchStageTasksStatus(
-					api.StageTasksStatusPatch{
-						ID:     stage.ID,
-						Status: api.TaskPending,
-					},
-					issue.Pipeline.ID); err != nil {
-					return fmt.Errorf("failed to patch task status for stage %d, error: %w", stage.ID, err)
-				}
-				return nil
+				stageID = stage.ID
+				break
 			}
+		}
+		if stageID != 0 {
+			break
+		}
+	}
+	if stageID != 0 {
+		if _, err := ctl.patchStageAllTaskStatus(
+			api.StageAllTaskStatusPatch{
+				ID:     stageID,
+				Status: api.TaskPending,
+			},
+			issue.Pipeline.ID,
+		); err != nil {
+			return fmt.Errorf("failed to patch task status for stage %d, error: %w", stageID, err)
 		}
 	}
 	return nil
