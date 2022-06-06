@@ -495,9 +495,6 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.NotProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id != $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

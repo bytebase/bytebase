@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -151,17 +152,20 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			// Ensure all databases belong to this instance are under the default project before instance is archived.
 			if v := instancePatch.RowStatus; v != nil && *v == api.Archived.String() {
-				defaultProjectID := api.DefaultProjectID
-				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-					NotProjectID: &defaultProjectID,
-					InstanceID:   &id,
-				})
+				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError,
-						fmt.Errorf("Failed to find databases in the instance %d and not in project %d", id, defaultProjectID)).SetInternal(err)
+						fmt.Errorf("Failed to find databases in the instance %d", id)).SetInternal(err)
 				}
-				if len(databases) > 0 {
-					return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the instance to the default project before archiving the instance.")
+				databaseNameList := make([]string, 0)
+				for _, database := range databases {
+					if database.ProjectID != api.DefaultProjectID {
+						databaseNameList = append(databaseNameList, database.Name)
+					}
+				}
+				if len(databaseNameList) > 0 {
+					return echo.NewHTTPError(http.StatusBadRequest,
+						"You should transfer these databases to the default project before archiving the instance: "+strings.Join(databaseNameList, ", "))
 				}
 			}
 			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
