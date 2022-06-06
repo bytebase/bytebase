@@ -151,7 +151,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			}
 			// Ensure all databases belong to this instance are under the default project before instance is archived.
 			if v := instancePatch.RowStatus; v != nil && *v == api.Archived.String() {
-				defaultProjectID := 1
+				defaultProjectID := api.DefaultProjectID
 				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
 					NotProjectID: &defaultProjectID,
 					InstanceID:   &id,
