@@ -165,8 +165,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 				}
 				if len(databaseNameList) > 0 {
 					return echo.NewHTTPError(http.StatusBadRequest,
-						"You should transfer these databases to the default project before archiving the instance: "+
-							strings.Join(databaseNameList, ", ")+".")
+						fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
 				}
 			}
 			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
