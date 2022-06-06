@@ -349,7 +349,14 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
-	if _, err := db.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
+	// We use conn to ensure that context operations are performed within a connection(i.e. session in MySQL).
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return pitrDatabaseName, pitrDatabaseName, err
+	}
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -361,7 +368,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	}
 	if !dbExists {
 		log.Debug("Database does not exist, creating...", zap.String("database", database))
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
 			return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to create non-exist database %q, error[%w]", database, err)
 		}
 	}
@@ -382,7 +389,7 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		return pitrDatabaseName, pitrOldDatabase, nil
 	}
 
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", pitrOldDatabase)); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
@@ -396,11 +403,11 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	renameStmt := fmt.Sprintf("RENAME TABLE %s;", strings.Join(tableRenames, ", "))
 	log.Debug("generated RENAME TABLE statement", zap.String("stmt", renameStmt))
 
-	if _, err := db.ExecContext(ctx, renameStmt); err != nil {
+	if _, err := conn.ExecContext(ctx, renameStmt); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
-	if _, err := db.ExecContext(ctx, "SET sql_log_bin=ON"); err != nil {
+	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=ON"); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
