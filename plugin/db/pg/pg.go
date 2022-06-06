@@ -923,8 +923,6 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
 	if driver.config.Password == "" {
 		args = append(args, "--no-password")
-	} else {
-		args = append(args, fmt.Sprintf("--password=%s", driver.config.Password))
 	}
 	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
 	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
@@ -936,6 +934,9 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, database)
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
 	cmd := exec.Command(pgDumpPath, args...)
+	if driver.config.Password != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+	}
 	cmd.Stderr = os.Stderr
 	r, err := cmd.StdoutPipe()
 	if err != nil {
