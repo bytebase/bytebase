@@ -1,20 +1,29 @@
 <template>
   <MonacoEditor
+    ref="editorRef"
     v-model:value="sqlCode"
     :language="selectedLanguage"
+    :readonly="readonly"
     @change="handleChange"
     @change-selection="handleChangeSelection"
     @run-query="handleRunQuery"
-    @save="(e) => emit('save-sheet')"
+    @save="handleSaveSheet"
   />
 </template>
 
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
-import { computed, defineEmits } from "vue";
-
-import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
+import { computed, defineEmits, ref, watch } from "vue";
+import {
+  useInstanceStore,
+  useTabStore,
+  useSQLEditorStore,
+  useDatabaseStore,
+  useTableStore,
+  useSheetStore,
+} from "@/store";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -22,7 +31,12 @@ const emit = defineEmits<{
 
 const instanceStore = useInstanceStore();
 const tabStore = useTabStore();
+const databaseStore = useDatabaseStore();
+const tableStore = useTableStore();
 const sqlEditorStore = useSQLEditorStore();
+const sheetStore = useSheetStore();
+
+const editorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const { execute } = useExecuteSQL();
 
@@ -34,7 +48,6 @@ const selectedInstance = computed(() => {
 const selectedInstanceEngine = computed(() => {
   return instanceStore.formatEngine(selectedInstance.value);
 });
-
 const selectedLanguage = computed(() => {
   const engine = selectedInstanceEngine.value;
   if (engine === "MySQL") {
@@ -45,6 +58,40 @@ const selectedLanguage = computed(() => {
   }
   return "sql";
 });
+const readonly = computed(() => sheetStore.isReadOnly);
+
+watch(selectedInstance, () => {
+  if (selectedInstance.value) {
+    const databaseList = databaseStore.getDatabaseListByInstanceId(
+      selectedInstance.value.id
+    );
+    const tableList = databaseList
+      .map((item) => tableStore.getTableListByDatabaseId(item.id))
+      .flat();
+
+    editorRef.value?.setAutoCompletionContext(databaseList, tableList);
+  }
+});
+
+watch(
+  () => sqlEditorStore.shouldSetContent,
+  () => {
+    if (sqlEditorStore.shouldSetContent) {
+      editorRef.value?.setEditorContent(tabStore.currentTab.statement);
+      sqlEditorStore.setShouldSetContent(false);
+    }
+  }
+);
+
+watch(
+  () => sqlEditorStore.shouldFormatContent,
+  () => {
+    if (sqlEditorStore.shouldFormatContent) {
+      editorRef.value?.formatEditorContent();
+      sqlEditorStore.setShouldFormatContent(false);
+    }
+  }
+);
 
 const handleChange = debounce((value: string) => {
   tabStore.updateCurrentTab({
@@ -67,5 +114,9 @@ const handleRunQuery = ({
   query: string;
 }) => {
   execute({ databaseType: selectedInstanceEngine.value }, { explain });
+};
+
+const handleSaveSheet = () => {
+  emit("save-sheet");
 };
 </script>
