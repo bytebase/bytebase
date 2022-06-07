@@ -458,8 +458,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 }
 
 func hasDatabaseInStatement(databases []*pgDatabaseSchema, createDatabaseStatement string) (bool, error) {
-	r := regexp.MustCompile(`"[^"]+"`)
-	tokens := r.FindAllString(createDatabaseStatement, -1)
+	raw := strings.TrimRight(createDatabaseStatement, ";")
+	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
+	tokens := strings.Fields(raw)
 	if len(tokens) == 0 {
 		return false, fmt.Errorf("database name not found")
 	}

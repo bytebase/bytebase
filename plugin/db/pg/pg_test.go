@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateProjectDBNameTemplate(t *testing.T) {
+func TestHasDatabaseInStatement(t *testing.T) {
 	tests := []struct {
 		databases               []*pgDatabaseSchema
 		createDatabaseStatement string
@@ -34,6 +34,22 @@ func TestValidateProjectDBNameTemplate(t *testing.T) {
 				{name: "hello"},
 			},
 			`CREATE DATABASE "hello";`,
+			true,
+			false,
+		},
+		{
+			[]*pgDatabaseSchema{
+				{name: "hello"},
+			},
+			`CREATE DATABASE hello;`,
+			true,
+			false,
+		},
+		{
+			[]*pgDatabaseSchema{
+				{name: "hello"},
+			},
+			`CREATE DATABASE hello ENCODING "UTF8";`,
 			true,
 			false,
 		},
