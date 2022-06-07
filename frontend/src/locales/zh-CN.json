@@ -1293,7 +1293,7 @@
           "sql-editor": "SQL 编辑器",
           "database-backup-restore": "数据库备份和恢复",
           "archiving": "归档",
-          "sql-check": "SQL 检查",
+          "sql-check": "SQL 检查 / Schema 审核",
           "sql-check-basic": "基础",
           "sql-check-basic-tooltip": "语法检查、数据库连接检查",
           "sql-check-advanced": "高级",
