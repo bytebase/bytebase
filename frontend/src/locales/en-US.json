@@ -685,6 +685,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
+      "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
@@ -693,6 +694,7 @@
     },
     "backup": {
       "name": "Database backup schedule policy",
+      "tip": "The policy is not applied retroactively.",
       "not-enforced": "Not enforced",
       "not-enforced-info": "No backup schedule is enforced.",
       "daily": "Daily backup",
