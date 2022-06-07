@@ -49,7 +49,7 @@ func (ins *Instance) Version(binName binaryName) (string, error) {
 	case MySQLBinlog:
 		cmd = exec.Command(ins.GetPath(MySQLBinlog), "-V")
 	default:
-		return "", fmt.Errorf("Unknown binary name: %s", binName)
+		return "", fmt.Errorf("unknown binary name: %s", binName)
 	}
 
 	cmd.Stdout = &version
@@ -71,7 +71,7 @@ func Install(resourceDir string) (*Instance, error) {
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		tarName = "mysqlutil-8.0.28-linux-glibc2.17-x86_64.tar.gz"
 	default:
-		return nil, fmt.Errorf("Unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
+		return nil, fmt.Errorf("unsupported combination of OS[%s] and ARCH[%s]", runtime.GOOS, runtime.GOARCH)
 	}
 
 	version := strings.TrimRight(tarName, "tar.gz")

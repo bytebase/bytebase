@@ -33,7 +33,10 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnNoNullChecker{level: level}
+	checker := &columnNoNullChecker{
+		level: level,
+		title: string(ctx.Rule.Type),
+	}
 
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -53,6 +56,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 type columnNoNullChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 type columnName struct {
@@ -103,9 +107,9 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columns {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    common.ColumnCanNull,
-			Title:   "Column can have NULL value",
-			Content: fmt.Sprintf("`%s`.`%s` can have NULL value", column.tableName, column.columnName),
+			Code:    common.ColumnCanNotNull,
+			Title:   v.title,
+			Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
 		})
 	}
 

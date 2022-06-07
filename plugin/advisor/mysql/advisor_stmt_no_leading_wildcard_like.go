@@ -49,7 +49,7 @@ func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement st
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.StatementLeadingWildcardLike,
-				Title:   "No leading wildcard LIKE",
+				Title:   string(ctx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 			})
 		}

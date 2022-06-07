@@ -91,22 +91,39 @@ func (exec *DatabaseBackupTaskExecutor) backupDatabase(ctx context.Context, inst
 	return payload, nil
 }
 
-// getAndCreateBackupDirectory returns the path of a database backup.
-func getAndCreateBackupDirectory(dataDir string, database *api.Database) (string, error) {
-	dir := filepath.Join("backup", "db", fmt.Sprintf("%d", database.ID))
-	absDir := filepath.Join(dataDir, dir)
-	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
-		return "", nil
-	}
-
-	return dir, nil
+// Get backup dir relative to the data dir.
+func getBackupRelativeDir(databaseID int) string {
+	return filepath.Join("backup", "db", fmt.Sprintf("%d", databaseID))
 }
 
-// getAndCreateBackupPath returns the path of a database backup.
-func getAndCreateBackupPath(dataDir string, database *api.Database, name string) (string, error) {
-	dir, err := getAndCreateBackupDirectory(dataDir, database)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, fmt.Sprintf("%s.sql", name)), nil
+func getBackupRelativeFilePath(databaseID int, name string) string {
+	dir := getBackupRelativeDir(databaseID)
+	return filepath.Join(dir, fmt.Sprintf("%s.sql", name))
+}
+
+func getBackupAbsFilePath(dataDir string, databaseID int, name string) string {
+	path := getBackupRelativeFilePath(databaseID, name)
+	return filepath.Join(dataDir, path)
+}
+
+// Create backup directory for database.
+func createBackupDirectory(dataDir string, databaseID int) error {
+	dir := getBackupRelativeDir(databaseID)
+	absDir := filepath.Join(dataDir, dir)
+	return os.MkdirAll(absDir, os.ModePerm)
+}
+
+func getBinlogRelativeDir(instanceID int) string {
+	return filepath.Join("backup", "instance", fmt.Sprintf("%d", instanceID))
+}
+
+func getBinlogAbsDir(dataDir string, instanceID int) string {
+	dir := getBinlogRelativeDir(instanceID)
+	return filepath.Join(dataDir, dir)
+}
+
+func createBinlogDir(dataDir string, instanceID int) error {
+	dir := getBinlogRelativeDir(instanceID)
+	absDir := filepath.Join(dataDir, dir)
+	return os.MkdirAll(absDir, os.ModePerm)
 }

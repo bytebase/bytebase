@@ -3,7 +3,7 @@
     type="normal"
     tooltip-mode="DISABLED-ONLY"
     :disabled="!allowAdmin || !pitrAvailable.result"
-    @click="state.showDatabasePITRModal = true"
+    @click="openDialog"
   >
     {{ $t("common.restore") }}
     <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
@@ -35,17 +35,15 @@
           <span>{{ $t("database.pitr.point-in-time") }}</span>
           <span class="text-gray-400 text-xs">{{ timezone }}</span>
         </label>
-        <!--
-            Displaying an input box and a popover date picker panel is somehow
-            awkward here.
-            But it's impossible to use NDatePicker only as a panel by now.
-            I've sent the feature request to the author.
-          -->
         <NDatePicker
           v-model:value="state.pitrTimestampMS"
+          panel
           type="datetime"
           :is-date-disabled="isDateDisabled"
-          :actions="['confirm']"
+          :actions="[]"
+          :time-picker-props="{
+            actions: [],
+          }"
         />
       </div>
 
@@ -142,6 +140,11 @@ const isDateDisabled = (tsInMS: number) => {
 const resetUI = () => {
   state.loading = false;
   state.showDatabasePITRModal = false;
+  state.pitrTimestampMS = Date.now();
+};
+
+const openDialog = () => {
+  state.showDatabasePITRModal = true;
   state.pitrTimestampMS = Date.now();
 };
 

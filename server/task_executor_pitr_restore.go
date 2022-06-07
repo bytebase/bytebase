@@ -2,12 +2,11 @@ package server
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
+	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
@@ -40,17 +39,14 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 		return true, nil, fmt.Errorf("invalid PITR restore payload[%s], error[%w]", task.Payload, err)
 	}
 
-	return exec.pitrRestore(ctx, task, server)
-}
-
-func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir); err != nil {
+	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, payload.PointInTimeTs); err != nil {
+		log.Error("Failed to do PITR restore", zap.Error(err))
 		return true, nil, err
 	}
 
@@ -61,11 +57,16 @@ func (exec *PITRRestoreTaskExecutor) pitrRestore(ctx context.Context, task *api.
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string) error {
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64) error {
 	instance := task.Instance
 	database := task.Database
 
 	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
+	if err != nil {
+		return err
+	}
+
+	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID})
 	if err != nil {
 		return err
 	}
@@ -75,8 +76,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	binlogDir, err := getAndCreateBinlogDirectory(dataDir, task.Instance)
-	if err != nil {
+	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
+	if err := createBinlogDir(dataDir, task.Instance.ID); err != nil {
 		return err
 	}
 
@@ -88,21 +89,37 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
 
-	binlogInfo := api.BinlogInfo{}
-	// TODO(dragonly): Search and put the file io of the logical backup file here.
-	// Currently, let's just use the empty backup dump as a placeholder.
-	var buf bytes.Buffer
-	buf.WriteString("-- This is a fake backup dump")
+	log.Debug("Download all binlog files up to targetTs", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	// TODO(dragonly): Do this on a regular basis.
+	if err := mysqlRestore.IncrementalFetchAllBinlogFiles(ctx); err != nil {
+		return err
+	}
+
+	log.Debug("Get latest backup before or equal to targetTs", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	backup, err := mysqlRestore.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
+	if err != nil {
+		log.Error("Failed to get backup before or equal to targetTs",
+			zap.Time("targetTs", time.Unix(targetTs, 0)),
+			zap.Error(err))
+		return fmt.Errorf("failed to get latest backup before or equal to targetTs[%d], error[%w]", targetTs, err)
+	}
+	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
+	backupFile, err := os.OpenFile(backupFileName, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to open backup file[%s], error[%w]", backupFileName, err)
+	}
+	defer backupFile.Close()
+	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
 
 	log.Debug("Start creating and restoring PITR database",
 		zap.String("instance", instance.Name),
 		zap.String("database", database.Name),
 	)
-
 	// RestorePITR will create the pitr database.
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
-	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(&buf), binlogInfo, database.Name, issue.CreatedTs); err != nil {
+	startBinlogInfo := backup.Payload.BinlogInfo
+	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
@@ -111,17 +128,6 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	return nil
-}
-
-// getAndCreateBinlogDirectory returns the path of a instance binlog directory.
-func getAndCreateBinlogDirectory(dataDir string, instance *api.Instance) (string, error) {
-	dir := filepath.Join("backup", "instance", fmt.Sprintf("%d", instance.ID))
-	absDir := filepath.Join(dataDir, dir)
-	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
-		return "", nil
-	}
-
-	return dir, nil
 }
 
 func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {

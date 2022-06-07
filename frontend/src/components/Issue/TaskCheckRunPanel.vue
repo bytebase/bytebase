@@ -31,7 +31,7 @@
                 >
               </template>
             </div>
-            {{ checkResult.title }}
+            {{ errorTitle(checkResult) }}
           </div>
         </BBTableCell>
         <BBTableCell class="w-64">
@@ -60,8 +60,10 @@ import {
   ErrorCode,
   ERROR_LIST,
   GeneralErrorCode,
+  ruleTemplateList,
+  getRuleLocalization,
   SchemaReviewPolicyErrorCode,
-} from "../../types";
+} from "@/types";
 
 const columnList: BBTableColumn[] = [
   {
@@ -130,13 +132,50 @@ export default defineComponent({
       return [];
     });
 
+    const errorTitle = (checkResult: TaskCheckResult): string => {
+      let title = "";
+
+      switch (checkResult.code) {
+        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+          title = checkResult.title;
+          break;
+        case SchemaReviewPolicyErrorCode.STATEMENT_NO_WHERE:
+        case SchemaReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
+        case SchemaReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SchemaReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.UK_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SchemaReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
+        case SchemaReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SchemaReviewPolicyErrorCode.NOT_INNODB_ENGINE:
+        case SchemaReviewPolicyErrorCode.NO_PK_IN_TABLE:
+          const rule = ruleTemplateList.find(
+            (r) => r.type === checkResult.title
+          );
+
+          if (rule) {
+            const ruleLocalization = getRuleLocalization(rule.type);
+            title = `[${t(
+              `schema-review-policy.category.${rule.category.toLowerCase()}`
+            )}] ${ruleLocalization.title}`;
+          } else {
+            title = checkResult.title;
+          }
+          break;
+      }
+
+      return title ? `${title} (${checkResult.code})` : checkResult.title;
+    };
+
     const errorCodeLink = (code: ErrorCode): ErrorCodeLink | undefined => {
       switch (code) {
         case GeneralErrorCode.OK:
           return;
         case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
           return {
-            title: t("schema-review-policy.create-policy"),
+            title: t("schema-review-policy.configure-policy"),
             target: "_self",
             url: "/setting/schema-review-policy",
           };
@@ -158,6 +197,7 @@ export default defineComponent({
       statusIconClass,
       checkResultList,
       errorCodeLink,
+      errorTitle,
     };
   },
 });

@@ -35,7 +35,10 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 		return nil, err
 	}
 
-	c := &compatibilityChecker{level: level}
+	c := &compatibilityChecker{
+		level: level,
+		title: string(ctx.Rule.Type),
+	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(c)
 	}
@@ -54,6 +57,7 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 type compatibilityChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 // Enter implements the ast.Visitor interface
@@ -148,7 +152,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
-			Title:   "Potential incompatible migration",
+			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
 		})
 	}

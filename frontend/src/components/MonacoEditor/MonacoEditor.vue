@@ -11,20 +11,11 @@ import {
   nextTick,
   onUnmounted,
   watch,
-  computed,
+  defineExpose,
 } from "vue";
-import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
-
+import { SQLDialect } from "@/types";
 import { useMonaco } from "./useMonaco";
-
-import {
-  pushNotification,
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-} from "@/store";
-import { SQLDialect } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -35,6 +26,10 @@ const props = defineProps({
   language: {
     type: String,
     default: "mysql",
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -55,22 +50,16 @@ const emit = defineEmits<{
 const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
-
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
-const { t } = useI18n();
-
-const readonly = computed(() => sheetStore.isReadOnly);
+const readonly = toRef(props, "readonly");
 
 let editorInstance: Editor.IStandaloneCodeEditor;
 
 const {
   monaco,
-  setPositionAtEndOfLine,
   formatContent,
   setContent,
-  completionItemProvider,
+  setAutoCompletionContext,
+  setPositionAtEndOfLine,
 } = await useMonaco(language.value);
 
 const init = async () => {
@@ -143,11 +132,6 @@ const init = async () => {
     contextMenuOrder: 1,
     run: () => {
       if (readonly.value) {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t("sql-editor.notify.sheet-is-read-only"),
-        });
         return;
       }
       formatContent(editorInstance, language.value as SQLDialect);
@@ -158,7 +142,6 @@ const init = async () => {
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
-    // emit("update:value", value);
     emit("change", value);
   });
 
@@ -186,59 +169,52 @@ const init = async () => {
     const value = editorInstance.getValue();
     emit("save", value);
   });
+};
+
+onMounted(() => {
+  init();
 
   // set the editor focus when the tab is selected
   if (!readonly.value) {
     editorInstance.focus();
-
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
-
-  watch(
-    () => readonly.value,
-    (readOnly) => {
-      if (editorInstance) {
-        editorInstance.updateOptions({ readOnly });
-      }
-    },
-    {
-      deep: true,
-      immediate: true,
-    }
-  );
-};
-
-onMounted(init);
+});
 
 onUnmounted(() => {
-  completionItemProvider.dispose();
   editorInstance.dispose();
 });
 
 watch(
-  () => sqlEditorStore.shouldSetContent,
-  () => {
-    if (sqlEditorStore.shouldSetContent) {
-      sqlEditorStore.setShouldSetContent(false);
-      setContent(editorInstance, tabStore.currentTab.statement);
+  () => readonly.value,
+  (readOnly) => {
+    if (editorInstance) {
+      editorInstance.updateOptions({ readOnly });
     }
+  },
+  {
+    deep: true,
+    immediate: true,
   }
 );
 
-// trigger format code from outside
-watch(
-  () => sqlEditorStore.shouldFormatContent,
-  () => {
-    if (sqlEditorStore.shouldFormatContent) {
-      formatContent(editorInstance, language.value as SQLDialect);
-      nextTick(() => {
-        setPositionAtEndOfLine(editorInstance);
-        editorInstance.focus();
-      });
-      sqlEditorStore.setShouldFormatContent(false);
-    }
-  }
-);
+const setEditorContent = (content: string) => {
+  setContent(editorInstance, content);
+};
+
+const formatEditorContent = () => {
+  formatContent(editorInstance, language.value as SQLDialect);
+  nextTick(() => {
+    setPositionAtEndOfLine(editorInstance);
+    editorInstance.focus();
+  });
+};
+
+defineExpose({
+  formatEditorContent,
+  setEditorContent,
+  setAutoCompletionContext,
+});
 </script>
 
 <style>

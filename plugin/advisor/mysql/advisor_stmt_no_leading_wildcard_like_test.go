@@ -27,7 +27,7 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
-					Title:   "No leading wildcard LIKE",
+					Title:   "statement.where.no-leading-wildcard-like",
 					Content: "\"SELECT * FROM t WHERE a LIKE '%abc'\" uses leading wildcard LIKE",
 				},
 			},
@@ -38,7 +38,7 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
-					Title:   "No leading wildcard LIKE",
+					Title:   "statement.where.no-leading-wildcard-like",
 					Content: "\"SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'\" uses leading wildcard LIKE",
 				},
 			},
@@ -49,7 +49,7 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
-					Title:   "No leading wildcard LIKE",
+					Title:   "statement.where.no-leading-wildcard-like",
 					Content: "\"SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'\" uses leading wildcard LIKE",
 				},
 			},
@@ -60,7 +60,7 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
-					Title:   "No leading wildcard LIKE",
+					Title:   "statement.where.no-leading-wildcard-like",
 					Content: "\"SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1\" uses leading wildcard LIKE",
 				},
 			},

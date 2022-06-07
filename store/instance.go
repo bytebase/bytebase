@@ -580,6 +580,9 @@ func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("environment_id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	return strings.Join(where, " AND "), args
 }

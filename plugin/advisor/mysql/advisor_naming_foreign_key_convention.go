@@ -42,6 +42,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 	}
 	checker := &namingFKConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 	}
@@ -64,6 +65,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 type namingFKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
 }
@@ -87,7 +89,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    common.NamingFKConventionMismatch,
-				Title:   "Mismatch foreign key naming convention",
+				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}

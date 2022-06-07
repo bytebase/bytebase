@@ -498,6 +498,9 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.SyncStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
+	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.AllDatabaseName+"'")
 	}
