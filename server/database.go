@@ -107,8 +107,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch database list").SetInternal(err)
 		}
 
-		var filteredList []*api.Database
-		role := c.Get(getRoleContextKey()).(api.Role)
 		// If caller is NOT requesting for a particular project and is NOT requesting for a particular
 		// instance or the caller is a Developer, then we will only return databases belonging to the
 		// project where the caller is a member of.
@@ -116,7 +114,8 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// - The database list left sidebar will only return databases related to the caller regardless of the caller's role.
 		// - The database list on the instance page will return all databases if the caller is Owner or DBA, but will only return
 		//   related databases if the caller is Developer.
-		if projectIDStr == "" && (databaseFind.InstanceID == nil || role == api.Developer) {
+		if role := c.Get(getRoleContextKey()).(api.Role); projectIDStr == "" && (databaseFind.InstanceID == nil || role == api.Developer) {
+			var filteredList []*api.Database
 			principalID := c.Get(getPrincipalIDContextKey()).(int)
 			for _, database := range dbList {
 				for _, projectMember := range database.Project.ProjectMemberList {
@@ -126,12 +125,23 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					}
 				}
 			}
-		} else {
-			filteredList = dbList
+			dbList = filteredList
+		}
+
+		// If caller is NOT requesting for a particular instance, then we will NOT return databases belonging
+		// to the archived instances.
+		if databaseFind.InstanceID == nil {
+			var filteredList []*api.Database
+			for _, database := range dbList {
+				if database.Instance.RowStatus != api.Archived {
+					filteredList = append(filteredList, database)
+				}
+			}
+			dbList = filteredList
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, filteredList); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, dbList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal database list response").SetInternal(err)
 		}
 		return nil
