@@ -1293,7 +1293,7 @@
           "sql-editor": "SQL Editor",
           "database-backup-restore": "Database backup / restore",
           "archiving": "Archiving",
-          "sql-check": "SQL check",
+          "sql-check": "SQL check / Schema review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
