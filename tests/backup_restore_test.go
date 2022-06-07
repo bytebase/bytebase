@@ -513,7 +513,7 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 }
 
 // Concurrently update a single row to mimic the ongoing business workload.
-// Returns the timestamp after inserting the initial value so we could check the PITR is done right.
+// Returns the timestamp after inserting the initial value so we could check the PITR is done right, passes the current id value into done chan when the update is finished.
 func startUpdateRow(ctx context.Context, t *testing.T, database string, port int, createAndInit bool, done chan<- int) int64 {
 	a := require.New(t)
 	db, err := connectTestMySQL(port, database)
