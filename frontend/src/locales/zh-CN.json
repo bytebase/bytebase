@@ -685,6 +685,7 @@
   "policy": {
     "approval": {
       "name": "审批策略",
+      "tip": "新策略仅对新建工单生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动审批。",
       "manual": "需要人工审批",
       "manual-info": "进行中的 schema 改动任务只有被人工审批后才会执行。",
@@ -693,6 +694,7 @@
     },
     "backup": {
       "name": "数据库备份策略",
+      "tip": "新策略仅对新添加的数据库生效",
       "not-enforced": "无策略",
       "not-enforced-info": "无备份策略。",
       "daily": "每日",
