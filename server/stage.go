@@ -34,23 +34,8 @@ func (s *Server) registerStageRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update stage tasks status request").SetInternal(err)
 		}
 
-		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
-		}
-		if issue == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", pipelineID))
-		}
-		if issue.AssigneeID == api.SystemBotID {
-			currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
-			}
-			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update task status")
-			}
-		} else if issue.AssigneeID != currentPrincipalID {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+		if err := s.validateIssueAssignee(ctx, currentPrincipalID, pipelineID); err != nil {
+			return err
 		}
 
 		tasks, err := s.store.FindTask(ctx, &api.TaskFind{PipelineID: &pipelineID, StageID: &stageID}, true /* returnOnErr */)
