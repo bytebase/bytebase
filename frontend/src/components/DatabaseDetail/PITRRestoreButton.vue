@@ -1,15 +1,18 @@
 <template>
-  <BBTooltipButton
-    type="normal"
-    tooltip-mode="DISABLED-ONLY"
-    :disabled="!allowAdmin || !pitrAvailable.result"
-    @click="openDialog"
-  >
-    {{ $t("common.restore") }}
-    <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
-      {{ pitrAvailable.message }}
-    </template>
-  </BBTooltipButton>
+  <div class="relative mr-2">
+    <BBTooltipButton
+      type="normal"
+      tooltip-mode="DISABLED-ONLY"
+      :disabled="!allowAdmin || !pitrAvailable.result"
+      @click="openDialog"
+    >
+      {{ $t("common.restore") }}
+      <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
+        {{ pitrAvailable.message }}
+      </template>
+    </BBTooltipButton>
+    <BBBetaBadge corner />
+  </div>
 
   <BBModal
     v-if="state.showDatabasePITRModal"
