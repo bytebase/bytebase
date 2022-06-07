@@ -301,23 +301,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
-		}
-		if issue == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
-		}
-		if issue.AssigneeID == api.SystemBotID {
-			currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
-			}
-			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update this task status")
-			}
-		} else if issue.AssigneeID != currentPrincipalID {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+		if err := s.validateIssueAssignee(ctx, currentPrincipalID, task.PipelineID); err != nil {
+			return err
 		}
 
 		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
@@ -362,6 +347,28 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+}
+
+func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, pipelineID int) error {
+	issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
+	}
+	if issue == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", pipelineID))
+	}
+	if issue.AssigneeID == api.SystemBotID {
+		currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
+		}
+		if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update task status")
+		}
+	} else if issue.AssigneeID != currentPrincipalID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+	}
+	return nil
 }
 
 func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
