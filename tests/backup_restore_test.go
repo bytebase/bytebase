@@ -159,8 +159,9 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
+		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true) + 1
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		t.Log("restore to pitr database")
@@ -177,8 +178,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
+		<-updateDone
 
 		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
@@ -188,7 +188,7 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table tbl1")
 		validateTbl1(t, db, numRowsTime1)
 		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, 0)
 	})
 
 	t.Run("Drop Database", func(t *testing.T) {
@@ -286,8 +286,9 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
+		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true) + 1
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		suffixTs := time.Now().Unix()
@@ -309,8 +310,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
+		<-updateDone
 
 		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
@@ -320,10 +320,10 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table tbl1")
 		validateTbl1(t, db, numRowsTime1)
 		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, 0)
 	})
 
-	t.Run("PITR PITR-ed BuggyApplication", func(t *testing.T) {
+	t.Run("PITR PITR-ed", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 
@@ -349,10 +349,12 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
+		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true) + 1
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
+		// First PITR
 		t.Log("restore to pitr database")
 		suffixTs := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
@@ -367,8 +369,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
+		correctIdOfUpdateRow := <-updateDone
 
 		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
@@ -378,12 +379,14 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table tbl1")
 		validateTbl1(t, db, numRowsTime1)
 		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, 0)
 
+		// Second PITR
 		t.Log("insert more data again")
 		insertRangeData(t, db, numRowsTime1, numRowsTime2)
 		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
-		targetTs = startUpdateRow(ctxUpdateRow, t, database, mysqlPort, false) + 1
+		updateDone = make(chan int)
+		targetTs = startUpdateRow(ctxUpdateRow, t, database, mysqlPort, false, updateDone) + 1
 		t.Logf("start to concurrently update data again at t1: %v", time.Unix(targetTs, 0))
 
 		t.Log("restore to pitr database again")
@@ -395,8 +398,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("cutover stage")
 		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
+		<-updateDone
 
 		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
@@ -406,7 +408,7 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table tbl1 again")
 		validateTbl1(t, db, numRowsTime2)
 		t.Log("validate table _update_row_ again")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, correctIdOfUpdateRow)
 	})
 }
 
@@ -486,7 +488,7 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func validateTableUpdateRow(t *testing.T, db *sql.DB) {
+func validateTableUpdateRow(t *testing.T, db *sql.DB, id int) {
 	a := require.New(t)
 	rows, err := db.Query("SELECT * FROM _update_row_;")
 	a.NoError(err)
@@ -494,7 +496,7 @@ func validateTableUpdateRow(t *testing.T, db *sql.DB) {
 	a.Equal(true, rows.Next())
 	var col int
 	a.NoError(rows.Scan(&col))
-	a.Equal(0, col)
+	a.Equal(id, col)
 	a.Equal(false, rows.Next())
 
 	a.NoError(rows.Err())
@@ -512,7 +514,7 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 
 // Concurrently update a single row to mimic the ongoing business workload.
 // Returns the timestamp after inserting the initial value so we could check the PITR is done right.
-func startUpdateRow(ctx context.Context, t *testing.T, database string, port int, createAndInit bool) int64 {
+func startUpdateRow(ctx context.Context, t *testing.T, database string, port int, createAndInit bool, done chan<- int) int64 {
 	a := require.New(t)
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
@@ -532,20 +534,22 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	// This will make a clear boundary for the binlog recovery --stop-datetime.
 	// For example, the recovery command is mysqlbinlog --stop-datetime `initTimestamp+1`, and the concurrent updates
 	// later will no be recovered. Then we can validate by checking the table _update_row_ has the initial value (0).
-	time.Sleep(time.Second)
+	time.Sleep(1 * time.Second)
 
 	go func() {
 		defer db.Close()
 		ticker := time.NewTicker(1 * time.Millisecond)
+		defer ticker.Stop()
 		i := 0
 		for {
 			select {
 			case <-ticker.C:
-				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i))
+				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i+1))
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
 				t.Log("Stop updating data concurrently")
+				done <- i
 				return
 			}
 		}
