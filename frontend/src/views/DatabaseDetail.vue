@@ -102,7 +102,7 @@
             </DatabaseLabelProps>
           </dl>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <button
             v-if="allowChangeProject"
             type="button"
