@@ -1291,7 +1291,11 @@
           "schema-change": "Schema 和数据变更",
           "migration-history": "迁移历史",
           "sql-editor": "SQL 编辑器",
-          "database-backup-restore": "数据库备份和恢复",
+          "disaster-recovery": "数据灾备",
+          "disaster-recovery-basic": "基础",
+          "disaster-recovery-basic-tooltip": "数据库备份和恢复",
+          "disaster-recovery-advanced": "高级",
+          "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 基于时间点恢复 (PITR)",
           "archiving": "归档",
           "sql-check": "SQL 检查",
           "sql-check-basic": "基础",
@@ -1305,8 +1309,7 @@
           "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
           "schedule-change": "设定任务执行时间",
           "review-and-backup-policy": "审核和备份策略",
-          "tenancy": "多地域/多租户部署",
-          "point-in-time-recovery": "基于时间点恢复 (PITR)"
+          "tenancy": "多地域/多租户部署"
         }
       },
       "collaboration": {

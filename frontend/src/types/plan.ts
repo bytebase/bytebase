@@ -70,14 +70,13 @@ export const FEATURE_SECTIONS = [
       "schema-change",
       "migration-history",
       "sql-editor",
-      "database-backup-restore",
+      "disaster-recovery",
       "archiving",
       "sql-check",
       "anomaly-detection",
       "schedule-change",
       "review-and-backup-policy",
       "tenancy",
-      "point-in-time-recovery",
     ],
   },
   {
@@ -105,8 +104,6 @@ export const FEATURE_SECTIONS = [
   },
 ];
 
-export const BETA_FEATURES = ["point-in-time-recovery"];
-
 export const FREE_PLAN: Plan = {
   // Plan meta data
   type: PlanType.FREE,
@@ -126,7 +123,13 @@ export const FREE_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -142,7 +145,6 @@ export const FREE_PLAN: Plan = {
       tooltip:
         "subscription.feature-sections.database-management.features.anomaly-detection-basic-tooltip",
     },
-    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },
@@ -171,7 +173,13 @@ export const TEAM_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -189,7 +197,6 @@ export const TEAM_PLAN: Plan = {
     },
     { id: "schedule-change" },
     { id: "review-and-backup-policy" },
-    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },
@@ -222,7 +229,13 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -241,7 +254,6 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "schedule-change" },
     { id: "review-and-backup-policy" },
     { id: "tenancy" },
-    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },

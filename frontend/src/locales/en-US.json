@@ -1291,7 +1291,11 @@
           "schema-change": "Schema and data change",
           "migration-history": "Migration history",
           "sql-editor": "SQL Editor",
-          "database-backup-restore": "Database backup / restore",
+          "disaster-recovery": "Disaster recovery",
+          "disaster-recovery-basic": "Basic",
+          "disaster-recovery-basic-tooltip": "Database backup / restore",
+          "disaster-recovery-advanced": "Advanced",
+          "disaster-recovery-advanced-tooltip": "Database backup / restore + PITR",
           "archiving": "Archiving",
           "sql-check": "SQL check",
           "sql-check-basic": "Basic",
@@ -1305,8 +1309,7 @@
           "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
           "schedule-change": "Scheduled change at specific time",
           "review-and-backup-policy": "Review and backup policy",
-          "tenancy": "Multi-Region / Multi-Tenancy deployment",
-          "point-in-time-recovery": "Point-in-time recovery"
+          "tenancy": "Multi-Region / Multi-Tenancy deployment"
         }
       },
       "collaboration": {
