@@ -295,6 +295,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
+	s.registerStageRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
 	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
