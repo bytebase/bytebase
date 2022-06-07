@@ -105,6 +105,8 @@ export const FEATURE_SECTIONS = [
   },
 ];
 
+export const BETA_FEATURES = ["point-in-time-recovery"];
+
 export const FREE_PLAN: Plan = {
   // Plan meta data
   type: PlanType.FREE,

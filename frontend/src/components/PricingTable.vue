@@ -106,6 +106,7 @@
                   `subscription.feature-sections.${section.id}.features.${feature}`
                 )
               }}
+              <BBBetaBadge v-if="isBetaFeature(feature)" class="ml-1" />
             </th>
             <td
               v-for="plan in plans"
@@ -302,6 +303,7 @@ import {
   FREE_PLAN,
   TEAM_PLAN,
   ENTERPRISE_PLAN,
+  BETA_FEATURES,
 } from "../types";
 import { useI18n } from "vue-i18n";
 
@@ -410,6 +412,10 @@ export default defineComponent({
       }
     };
 
+    const isBetaFeature = (id: string) => {
+      return BETA_FEATURES.includes(id);
+    };
+
     return {
       state,
       plans,
@@ -417,6 +423,7 @@ export default defineComponent({
       getFeature,
       onButtonClick,
       minimumInstanceCount,
+      isBetaFeature,
     };
   },
 });
