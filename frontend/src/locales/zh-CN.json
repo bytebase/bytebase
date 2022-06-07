@@ -1305,7 +1305,8 @@
           "anomaly-detection-advanced-tooltip": "基础版功能 + Schema 偏差检测",
           "schedule-change": "设定任务执行时间",
           "review-and-backup-policy": "审核和备份策略",
-          "tenancy": "多地域/多租户部署"
+          "tenancy": "多地域/多租户部署",
+          "point-in-time-recovery": "基于时间点恢复 (PITR)"
         }
       },
       "collaboration": {

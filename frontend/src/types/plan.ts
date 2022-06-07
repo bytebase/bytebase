@@ -77,6 +77,7 @@ export const FEATURE_SECTIONS = [
       "schedule-change",
       "review-and-backup-policy",
       "tenancy",
+      "point-in-time-recovery",
     ],
   },
   {
@@ -139,6 +140,7 @@ export const FREE_PLAN: Plan = {
       tooltip:
         "subscription.feature-sections.database-management.features.anomaly-detection-basic-tooltip",
     },
+    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },
@@ -185,6 +187,7 @@ export const TEAM_PLAN: Plan = {
     },
     { id: "schedule-change" },
     { id: "review-and-backup-policy" },
+    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },
@@ -236,6 +239,7 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "schedule-change" },
     { id: "review-and-backup-policy" },
     { id: "tenancy" },
+    { id: "point-in-time-recovery" },
     { id: "ui-based-sql-review" },
     { id: "vsc-workflow" },
     { id: "shareable-query-link" },

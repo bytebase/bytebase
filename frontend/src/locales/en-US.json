@@ -1305,7 +1305,8 @@
           "anomaly-detection-advanced-tooltip": "Basic + Drift detection",
           "schedule-change": "Scheduled change at specific time",
           "review-and-backup-policy": "Review and backup policy",
-          "tenancy": "Multi-Region / Multi-Tenancy deployment"
+          "tenancy": "Multi-Region / Multi-Tenancy deployment",
+          "point-in-time-recovery": "Point-in-time recovery"
         }
       },
       "collaboration": {
