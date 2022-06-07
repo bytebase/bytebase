@@ -544,9 +544,9 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 		for {
 			select {
 			case <-ticker.C:
-				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i+1))
-				a.NoError(err)
 				i++
+				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i))
+				a.NoError(err)
 			case <-ctx.Done():
 				t.Log("Stop updating data concurrently")
 				done <- i
