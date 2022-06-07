@@ -1295,7 +1295,7 @@
           "disaster-recovery-basic": "Basic",
           "disaster-recovery-basic-tooltip": "Database backup / restore",
           "disaster-recovery-advanced": "Advanced",
-          "disaster-recovery-advanced-tooltip": "Database backup / restore + PITR",
+          "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
           "sql-check": "SQL check",
           "sql-check-basic": "Basic",

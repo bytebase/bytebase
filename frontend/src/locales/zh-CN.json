@@ -1295,7 +1295,7 @@
           "disaster-recovery-basic": "基础",
           "disaster-recovery-basic-tooltip": "数据库备份和恢复",
           "disaster-recovery-advanced": "高级",
-          "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 基于时间点恢复 (PITR)",
+          "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
           "archiving": "归档",
           "sql-check": "SQL 检查",
           "sql-check-basic": "基础",
