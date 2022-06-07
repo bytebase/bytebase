@@ -348,15 +348,6 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-	defer conn.Close()
-
-	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=OFF;"); err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Check database exists", zap.String("database", database))
@@ -364,6 +355,19 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to check whether database %q exists, error[%w]", database, err)
 	}
+
+	// We use a connection to ensure that the following database write operations are in the same MySQL session.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return pitrDatabaseName, pitrDatabaseName, err
+	}
+	defer conn.Close()
+
+	// Set OFF the session variable sql_log_bin so that the writes in the following SQL statements will not be recorded in the binlog.
+	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
+		return pitrDatabaseName, pitrOldDatabase, err
+	}
+
 	if !dbExists {
 		log.Debug("Database does not exist, creating...", zap.String("database", database))
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", database)); err != nil {
@@ -402,6 +406,10 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	log.Debug("generated RENAME TABLE statement", zap.String("stmt", renameStmt))
 
 	if _, err := conn.ExecContext(ctx, renameStmt); err != nil {
+		return pitrDatabaseName, pitrOldDatabase, err
+	}
+
+	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=ON"); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
