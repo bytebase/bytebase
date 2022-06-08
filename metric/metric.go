@@ -27,6 +27,7 @@ const (
 type InstanceCountMetric struct {
 	Engine        db.Type
 	EnvironmentID int
+	RowStatus     api.RowStatus
 	Count         int
 }
 
