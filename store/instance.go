@@ -155,7 +155,7 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*metric.InstanceCountMetric, error) {
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -163,13 +163,10 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT engine, environment_id, COUNT(*)
+		SELECT engine, environment_id, row_status, COUNT(*)
 		FROM instance
-		WHERE row_status = $1 AND (
-			(id <= 102 AND updater_id != 1) OR id > 102
-		)
-		GROUP BY engine, environment_id`,
-		rowStatus,
+		WHERE (id <= 101 AND updater_id != 1) OR id > 101
+		GROUP BY engine, environment_id, row_status`,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -180,7 +177,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
+		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
