@@ -92,6 +92,18 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 		}
 		databaseList = append(databaseList, database)
 	}
+
+	// If no specified instance, filter out databases belonging to archived instances.
+	if find.InstanceID == nil {
+		var filteredList []*api.Database
+		for _, database := range databaseList {
+			if i := database.Instance; i != nil && i.RowStatus == api.Archived {
+				continue
+			}
+			filteredList = append(filteredList, database)
+		}
+	}
+
 	return databaseList, nil
 }
 
