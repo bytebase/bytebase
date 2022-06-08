@@ -131,19 +131,6 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 		}
 		taskList = append(taskList, task)
 	}
-
-	// Filter tasks belongs to archived instances.
-	{
-		var filteredList []*api.Task
-		for _, task := range taskList {
-			if i := task.Instance; i != nil && i.RowStatus == api.Archived {
-				continue
-			}
-			filteredList = append(filteredList, task)
-		}
-		taskList = filteredList
-	}
-
 	return taskList, nil
 }
 
