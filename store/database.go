@@ -102,6 +102,7 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 			}
 			filteredList = append(filteredList, database)
 		}
+		databaseList = filteredList
 	}
 
 	return databaseList, nil
