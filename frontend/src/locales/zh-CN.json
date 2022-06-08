@@ -685,6 +685,7 @@
   "policy": {
     "approval": {
       "name": "审批策略",
+      "tip": "新策略仅对新建工单生效",
       "info": "要更改数据库 schema，该选项控制了是否需要手动审批。",
       "manual": "需要人工审批",
       "manual-info": "进行中的 schema 改动任务只有被人工审批后才会执行。",
@@ -693,6 +694,7 @@
     },
     "backup": {
       "name": "数据库备份策略",
+      "tip": "新策略仅对新添加的数据库生效",
       "not-enforced": "无策略",
       "not-enforced-info": "无备份策略。",
       "daily": "每日",
@@ -1291,9 +1293,13 @@
           "schema-change": "Schema 和数据变更",
           "migration-history": "迁移历史",
           "sql-editor": "SQL 编辑器",
-          "database-backup-restore": "数据库备份和恢复",
+          "disaster-recovery": "数据灾备",
+          "disaster-recovery-basic": "基础",
+          "disaster-recovery-basic-tooltip": "数据库备份和恢复",
+          "disaster-recovery-advanced": "高级",
+          "disaster-recovery-advanced-tooltip": "数据库备份和恢复 + 恢复到指定时间点 (PITR)",
           "archiving": "归档",
-          "sql-check": "SQL 检查",
+          "sql-check": "SQL 检查 / Schema 审核",
           "sql-check-basic": "基础",
           "sql-check-basic-tooltip": "语法检查、数据库连接检查",
           "sql-check-advanced": "高级",

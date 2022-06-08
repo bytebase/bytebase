@@ -390,9 +390,31 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") || (strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ")) {
-			// We don't use transaction for creating / altering databases in Postgres.
-			// https://github.com/bytebase/bytebase/issues/202
+		// We don't use transaction for creating / altering databases in Postgres.
+		// https://github.com/bytebase/bytebase/issues/202
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			databases, err := driver.getDatabases()
+			if err != nil {
+				return err
+			}
+			databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
+			if err != nil {
+				return err
+			}
+			exist := false
+			for _, database := range databases {
+				if database.name == databaseName {
+					exist = true
+					break
+				}
+			}
+
+			if !exist {
+				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+					return err
+				}
+			}
+		} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
@@ -441,6 +463,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	return nil
+}
+
+func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
+	raw := strings.TrimRight(createDatabaseStatement, ";")
+	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
+	tokens := strings.Fields(raw)
+	if len(tokens) == 0 {
+		return "", fmt.Errorf("database name not found")
+	}
+	databaseName := strings.TrimLeft(tokens[0], `"`)
+	databaseName = strings.TrimRight(databaseName, `"`)
+	return databaseName, nil
 }
 
 func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
@@ -916,6 +950,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 
 	return nil
+}
+
+// RestoreTx restores the database in the given transaction.
+func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return fmt.Errorf("Unimplemented")
 }
 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {

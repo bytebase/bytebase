@@ -127,6 +127,8 @@ func getTestPort(testName string) int {
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
 		"TestCheckEngineInnoDB",
+		"TestCheckServerVersionForPITR",
+		"TestCheckServerVersionAndBinlogForPITR",
 		"TestSchemaSystem",
 	}
 	port := 1234

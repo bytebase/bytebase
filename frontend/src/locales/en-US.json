@@ -685,6 +685,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
+      "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
@@ -693,6 +694,7 @@
     },
     "backup": {
       "name": "Database backup schedule policy",
+      "tip": "The policy is not applied retroactively.",
       "not-enforced": "Not enforced",
       "not-enforced-info": "No backup schedule is enforced.",
       "daily": "Daily backup",
@@ -1291,9 +1293,13 @@
           "schema-change": "Schema and data change",
           "migration-history": "Migration history",
           "sql-editor": "SQL Editor",
-          "database-backup-restore": "Database backup / restore",
+          "disaster-recovery": "Disaster recovery",
+          "disaster-recovery-basic": "Basic",
+          "disaster-recovery-basic-tooltip": "Database backup / restore",
+          "disaster-recovery-advanced": "Advanced",
+          "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check",
+          "sql-check": "SQL check / Schema review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
