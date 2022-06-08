@@ -9,7 +9,6 @@ import (
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
-	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,11 +18,6 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	ctx := context.Background()
 
 	port := getTestPort(t.Name())
-
-	t.Log("install mysqlbinlog binary")
-	tmpDir := t.TempDir()
-	mysqlutilInstance, err := mysqlutil.Install(tmpDir)
-	a.NoError(err)
 
 	t.Run("success", func(t *testing.T) {
 		port := port
@@ -51,7 +45,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
+		mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
@@ -85,9 +79,44 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
+		mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.Error(err)
 	})
+}
+
+func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+
+	port := getTestPort(t.Name())
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	defer stopFn()
+
+	db, err := connectTestMySQL(port, "")
+	a.NoError(err)
+	defer db.Close()
+
+	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), "")
+	a.NoError(err)
+	defer driver.Close(ctx)
+
+	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	a.Equal(true, ok)
+	mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
+
+	// the test MySQL instance is 8.0.
+	err = mysqlRestore.CheckServerVersionForPITR(ctx)
+	a.NoError(err)
+
+	// binlog is default to ON in MySQL 8.0.
+	err = mysqlRestore.CheckBinlogEnabled(ctx)
+	a.NoError(err)
+
+	// binlog format is default to ROW in MySQL 8.0.
+	err = mysqlRestore.CheckBinlogRowFormat(ctx)
+	a.NoError(err)
 }
