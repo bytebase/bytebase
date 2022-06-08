@@ -1,3 +1,4 @@
+import { uniq } from "lodash-es";
 import {
   Database,
   empty,
@@ -237,4 +238,40 @@ export function applicableTaskTransition(
   return list.map((type: TaskStatusTransitionType) => {
     return TASK_STATUS_TRANSITION_LIST.get(type)!;
   });
+}
+
+// The status transition applying to a stage is applying to all tasks in the
+// stage simultaneously.
+export type StageStatusTransition = TaskStatusTransition;
+
+export const APPLICABLE_STAGE_TRANSITION_LIST: Map<
+  TaskStatus,
+  TaskStatusTransitionType[]
+> = new Map([
+  ["PENDING_APPROVAL", ["APPROVE"]],
+  ["PENDING", ["RUN"]],
+  ["RUNNING", ["CANCEL"]],
+  ["DONE", []],
+  ["FAILED", ["RETRY"]],
+]);
+
+export function applicableStageTransition(
+  pipeline: Pipeline
+): StageStatusTransition[] {
+  const task = activeTask(pipeline);
+  if (task.id === EMPTY_ID || task.id === UNKNOWN_ID) {
+    return [];
+  }
+  const stage = task.stage;
+  const statusList = uniq(stage.taskList.map((t) => t.status));
+
+  // Only allowed to apply status patch to a stage when all it's tasks' status
+  // are the same.
+  if (statusList.length > 1) {
+    return [];
+  }
+
+  const transitionTypes = APPLICABLE_STAGE_TRANSITION_LIST.get(statusList[0])!;
+
+  return transitionTypes.map((type) => TASK_STATUS_TRANSITION_LIST.get(type)!);
 }
