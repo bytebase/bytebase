@@ -725,7 +725,7 @@ func (r *Restore) getServerVariable(ctx context.Context, varName string) (string
 	if varName != varNameFound {
 		return "", fmt.Errorf("expecting variable %s, but got %s", varName, varNameFound)
 	}
-	return strings.ToUpper(value), nil
+	return value, nil
 }
 
 // CheckBinlogEnabled checks whether binlog is enabled for the current instance.
@@ -734,7 +734,7 @@ func (r *Restore) CheckBinlogEnabled(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if value != "ON" {
+	if strings.ToUpper(value) != "ON" {
 		return fmt.Errorf("binlog is not enabled")
 	}
 	return nil
@@ -746,7 +746,7 @@ func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if value != "ROW" {
+	if strings.ToUpper(value) != "ROW" {
 		return fmt.Errorf("binlog format is not ROW but %s", value)
 	}
 	return nil
