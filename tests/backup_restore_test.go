@@ -159,9 +159,9 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
-		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
+		targetTs, updateDone := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		targetTs += 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		t.Log("restore to pitr database")
@@ -286,9 +286,9 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
-		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
+		targetTs, updateDone := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		targetTs += 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		suffixTs := time.Now().Unix()
@@ -349,9 +349,9 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
-		updateDone := make(chan int)
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort, true, updateDone) + 1
+		targetTs, updateDone := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		targetTs += 1
 		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		// First PITR
@@ -385,8 +385,8 @@ func TestPITR(t *testing.T) {
 		t.Log("insert more data again")
 		insertRangeData(t, db, numRowsTime1, numRowsTime2)
 		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
-		updateDone = make(chan int)
-		targetTs = startUpdateRow(ctxUpdateRow, t, database, mysqlPort, false, updateDone) + 1
+		targetTs, updateDone = startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
+		targetTs += 1
 		t.Logf("start to concurrently update data again at t1: %v", time.Unix(targetTs, 0))
 
 		t.Log("restore to pitr database again")
@@ -513,21 +513,21 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 }
 
 // Concurrently update a single row to mimic the ongoing business workload.
-// Returns the timestamp after inserting the initial value so we could check the PITR is done right, passes the current id value into done chan when the update is finished.
-func startUpdateRow(ctx context.Context, t *testing.T, database string, port int, createAndInit bool, done chan<- int) int64 {
+// Returns the timestamp after inserting the initial value so we could check the PITR is done right, passes the current id value into chan when the update is finished.
+func startUpdateRow(ctx context.Context, t *testing.T, database string, port int) (int64, <-chan int) {
 	a := require.New(t)
+	done := make(chan int)
+
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
 	t.Log("Start updating data concurrently")
-	if createAndInit {
-		_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
-		a.NoError(err)
+	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
+	a.NoError(err)
 
-		// initial value is (0)
-		_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
-		a.NoError(err)
-	}
+	// initial value is (0)
+	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
+	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
@@ -549,11 +549,13 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 				a.NoError(err)
 			case <-ctx.Done():
 				t.Log("Stop updating data concurrently")
+				_, err = db.Exec(`DROP TABLE _update_row_;`)
+				a.NoError(err)
 				done <- i
 				return
 			}
 		}
 	}()
 
-	return initTimestamp
+	return initTimestamp, done
 }
