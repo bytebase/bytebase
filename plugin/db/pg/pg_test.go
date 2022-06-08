@@ -6,65 +6,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHasDatabaseInStatement(t *testing.T) {
+func TestGetDatabaseInCreateDatabaseStatement(t *testing.T) {
 	tests := []struct {
-		databases               []*pgDatabaseSchema
 		createDatabaseStatement string
-		want                    bool
+		want                    string
 		wantErr                 bool
 	}{
 		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
-			`CREATE DATABASE "h1" ENCODING "UTF8";`,
-			false,
-			false,
-		},
-		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
 			`CREATE DATABASE "hello" ENCODING "UTF8";`,
-			true,
+			"hello",
 			false,
 		},
 		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
 			`CREATE DATABASE "hello";`,
-			true,
+			"hello",
 			false,
 		},
 		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
 			`CREATE DATABASE hello;`,
-			true,
+			"hello",
 			false,
 		},
 		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
 			`CREATE DATABASE hello ENCODING "UTF8";`,
-			true,
+			"hello",
 			false,
 		},
 		{
-			[]*pgDatabaseSchema{
-				{name: "hello"},
-			},
 			`CREATE DATABASE;`,
-			false,
+			"",
 			true,
 		},
 	}
 
 	for _, test := range tests {
-		got, err := hasDatabaseInStatement(test.databases, test.createDatabaseStatement)
+		got, err := getDatabaseInCreateDatabaseStatement(test.createDatabaseStatement)
 		if test.wantErr {
 			require.Error(t, err)
 		} else {

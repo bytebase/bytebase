@@ -397,11 +397,19 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if err != nil {
 				return err
 			}
-			exists, err := hasDatabaseInStatement(databases, stmt)
+			databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
 			if err != nil {
 				return err
 			}
-			if !exists {
+			exist := false
+			for _, database := range databases {
+				if database.name == databaseName {
+					exist = true
+					break
+				}
+			}
+
+			if !exist {
 				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 					return err
 				}
@@ -457,24 +465,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return nil
 }
 
-func hasDatabaseInStatement(databases []*pgDatabaseSchema, createDatabaseStatement string) (bool, error) {
+func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
 	raw := strings.TrimRight(createDatabaseStatement, ";")
 	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
 	tokens := strings.Fields(raw)
 	if len(tokens) == 0 {
-		return false, fmt.Errorf("database name not found")
+		return "", fmt.Errorf("database name not found")
 	}
 	databaseName := strings.TrimLeft(tokens[0], `"`)
 	databaseName = strings.TrimRight(databaseName, `"`)
-
-	exist := false
-	for _, database := range databases {
-		if database.name == databaseName {
-			exist = true
-			break
-		}
-	}
-	return exist, nil
+	return databaseName, nil
 }
 
 func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
