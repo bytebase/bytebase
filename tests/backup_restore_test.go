@@ -323,7 +323,7 @@ func TestPITR(t *testing.T) {
 		validateTableUpdateRow(t, db, 0)
 	})
 
-	t.Run("PITR PITR-ed", func(t *testing.T) {
+	t.Run("Recover a recovered database", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 
