@@ -988,6 +988,22 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+// RestoreTx restores a database in given transaction.
+func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	fnExecuteStmt := func(stmt string) error {
+		if _, err := tx.Exec(stmt); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.

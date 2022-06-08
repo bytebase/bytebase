@@ -145,16 +145,27 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, st
 	if err != nil {
 		return err
 	}
-	if _, err := db.ExecContext(ctx, query); err != nil {
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, query); err != nil {
 		return err
 	}
 
-	if err := r.driver.Restore(ctx, fullBackup); err != nil {
+	if err := r.driver.RestoreTx(ctx, tx, fullBackup); err != nil {
 		return err
 	}
 
 	// The full backup is restored successfully, enable foreign key constraints as normal.
-	if _, err := db.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
+	if _, err := tx.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
