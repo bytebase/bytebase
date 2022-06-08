@@ -105,6 +105,11 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
+					// Skip task belongs to archived instances
+					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
+						continue
+					}
+
 					executor, ok := s.executors[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
