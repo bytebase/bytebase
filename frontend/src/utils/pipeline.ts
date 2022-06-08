@@ -244,17 +244,6 @@ export function applicableTaskTransition(
 // stage simultaneously.
 export type StageStatusTransition = TaskStatusTransition;
 
-export const APPLICABLE_STAGE_TRANSITION_LIST: Map<
-  TaskStatus,
-  TaskStatusTransitionType[]
-> = new Map([
-  ["PENDING_APPROVAL", ["APPROVE"]],
-  ["PENDING", ["RUN"]],
-  ["RUNNING", ["CANCEL"]],
-  ["DONE", []],
-  ["FAILED", ["RETRY"]],
-]);
-
 export function applicableStageTransition(
   pipeline: Pipeline
 ): StageStatusTransition[] {
@@ -271,7 +260,7 @@ export function applicableStageTransition(
     return [];
   }
 
-  const transitionTypes = APPLICABLE_STAGE_TRANSITION_LIST.get(statusList[0])!;
+  const transitionTypes = APPLICABLE_TASK_TRANSITION_LIST.get(statusList[0])!;
 
   return transitionTypes.map((type) => TASK_STATUS_TRANSITION_LIST.get(type)!);
 }
