@@ -970,14 +970,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	}
 	defer txn.Rollback()
 
-	fnExecuteStmt := func(stmt string) error {
-		if _, err := txn.Exec(stmt); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
+	if err := driver.restoreTx(ctx, txn, sc); err != nil {
 		return err
 	}
 
@@ -988,8 +981,12 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
-// RestoreTx restores a database in given transaction.
+// RestoreTx restores a database in the given transaction.
 func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return driver.restoreTx(ctx, tx, sc)
+}
+
+func (driver *Driver) restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
 	fnExecuteStmt := func(stmt string) error {
 		if _, err := tx.Exec(stmt); err != nil {
 			return err
@@ -1000,7 +997,6 @@ func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scann
 	if err := util.ApplyMultiStatements(sc, fnExecuteStmt); err != nil {
 		return err
 	}
-
 	return nil
 }
 

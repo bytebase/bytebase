@@ -433,7 +433,7 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx resotres the database from sc, but provides context consistent.
+	// RestoreTx resotres the database from sc in the given transaction.
 	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
 }
 
