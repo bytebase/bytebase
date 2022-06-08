@@ -952,6 +952,11 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+// RestoreTx restores the database in the given transaction.
+func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return fmt.Errorf("Unimplemented")
+}
+
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	var args []string
 	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
