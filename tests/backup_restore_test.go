@@ -522,11 +522,11 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	a.NoError(err)
 
 	t.Log("Start updating data concurrently")
-	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `_update_row_` (id INT PRIMARY KEY);")
 	a.NoError(err)
 
 	// initial value is (0)
-	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
+	_, err = db.Exec("REPLACE INTO `_update_row_` VALUES (0);")
 	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
@@ -545,12 +545,10 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 			select {
 			case <-ticker.C:
 				i++
-				_, err = db.Exec(fmt.Sprintf("UPDATE _update_row_ SET id = %d;", i))
+				_, err = db.Exec(fmt.Sprintf("UPDATE `_update_row_` SET id = %d;", i))
 				a.NoError(err)
 			case <-ctx.Done():
 				t.Log("Stop updating data concurrently")
-				_, err = db.Exec(`DROP TABLE _update_row_;`)
-				a.NoError(err)
 				done <- i
 				return
 			}
