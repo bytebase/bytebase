@@ -435,6 +435,11 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 		UNIQUE INDEX (pid),
 		CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
 	);
+	CREATE TABLE _update_row_ (
+		id INT,
+		PRIMARY KEY (id)
+	);
+	INSERT INTO _update_row_ VALUES (0);
 	`, database, database))
 	a.NoError(err)
 
@@ -522,12 +527,6 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	a.NoError(err)
 
 	t.Log("Start updating data concurrently")
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `_update_row_` (id INT PRIMARY KEY);")
-	a.NoError(err)
-
-	// initial value is (0)
-	_, err = db.Exec("REPLACE INTO `_update_row_` VALUES (0);")
-	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
