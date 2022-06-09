@@ -26,6 +26,6 @@
    - Collect and display the metrics in the [metrics dashboard](https://metric.bytebase.com/).
 1. Documentation.
    - We should update [public documentation](https://bytebase.com/docs) for new features.
-4. Testing and feedback.
+1. Testing and feedback.
    - Before a feature is released, get some peers to try out these new features by following public documentation. Receive feedback and iterate.
 5. Release and announcement. Cheers!
