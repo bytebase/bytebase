@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://bytebase.com"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
+<a href="https://bytebase.com?source=github"><img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/illustration/banner.webp" /></a>
 </p>
 
 <p align="center" >
@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://demo.bytebase.com" target="_blank">Live Demo</a> •
+  <a href="https://demo.bytebase.com?source=github" target="_blank">Live Demo</a> •
   <a href="#installation">Install</a> •
   <a href="#-docs">Help</a> •
   <a href="#-development">Development</a> •
@@ -30,7 +30,7 @@
 </a>
 </p>
 
-[Bytebase](https://bytebase.com/) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for DBAs and developers.
+[Bytebase](https://bytebase.com/?source=github) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for DBAs and developers.
 
 ## For DBA - 10x operational efficiency
 
@@ -88,7 +88,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 ## Installation
 
-[Detailed installation guide](https://bytebase.com/docs/install/install-with-docker)
+[Detailed installation guide](https://bytebase.com/docs/install/install-with-docker?source=github)
 
 ### Run on localhost:8080
 
@@ -104,9 +104,9 @@ docker run --init --name bytebase --restart always --publish 80:80 --volume ~/.b
 
 ## 📕 Docs
 
-### User doc https://bytebase.com/docs
+### [User doc](https://bytebase.com/docs?source=github)
 
-In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions) and etc.
+In particular, get familar with various product concept such as [data model](https://bytebase.com/docs/concepts/data-model?source=github), [roles and permissions](https://bytebase.com/docs/concepts/roles-and-permissions?source=github) and etc.
 
 ### Design doc
 
@@ -120,7 +120,7 @@ https://github.com/bytebase/bytebase/tree/main/docs/version-management.md
 
 1. Checkout issues tagged with [good first issue](https://github.com/bytebase/bytebase/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
-1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/), you can add/improve content there.
+1. We are maintaining an [online database glossary list](https://bytebase.com/database-glossary/?source=github), you can add/improve content there.
 
 **Note**: We are quite disciplined on <a href="#installation">tech stack</a>. If you consider bringing a new programming language, framework and any non-trivial external dependency, please open a discussion first.
 
@@ -201,4 +201,4 @@ Bytebase should now be running at https://localhost:3000 and change either front
 
 ## We are hiring
 
-We are looking for engineers and developer advocates, interns are also welcomed. Check out our [jobs page](https://bytebase.com/jobs).
+We are looking for engineers and developer advocates, interns are also welcomed. Check out our [jobs page](https://bytebase.com/jobs?source=github).
