@@ -70,7 +70,7 @@
         <template #cancel>
           <a
             class="underline"
-            href="https://bytebase.com/refund"
+            href="https://bytebase.com/refund?source=console"
             target="_blank"
             >{{ $t("subscription.cancel") }}</a
           >
@@ -205,7 +205,7 @@
             <template #cancel>
               <a
                 class="underline"
-                href="https://bytebase.com/refund"
+                href="https://bytebase.com/refund?source=console"
                 target="_blank"
                 >{{ $t("subscription.cancel") }}</a
               >
@@ -406,7 +406,7 @@ export default defineComponent({
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
         );
       } else {
-        window.open("https://bytebase.com/docs", "_self");
+        window.open("https://bytebase.com/docs?source=console", "_self");
       }
     };
 
