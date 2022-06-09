@@ -284,6 +284,11 @@ func findAnomalyListImpl(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind)
 			payload
 		FROM anomaly
 		WHERE `+strings.Join(where, " AND ")+`
+		AND EXISTS (
+			SELECT 1
+			FROM instance
+			WHERE instance.id = anomaly.instance_id AND instance.row_status != 'ARCHIVED'
+		)
 		`,
 		args...,
 	)
