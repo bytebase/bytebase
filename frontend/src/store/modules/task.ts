@@ -3,12 +3,14 @@ import axios from "axios";
 import {
   empty,
   Instance,
+  Issue,
   IssueId,
   Pipeline,
   PipelineId,
   ResourceIdentifier,
   ResourceObject,
   Stage,
+  StageAllTaskStatusPatch,
   StageId,
   Task,
   TaskCheckRun,
@@ -226,6 +228,28 @@ export const useTaskStore = defineStore("task", {
       useIssueStore().fetchIssueById(issueId);
 
       return task;
+    },
+    async updateStageAllTaskStatus({
+      issue,
+      stage,
+      patch,
+    }: {
+      issue: Issue;
+      stage: Stage;
+      patch: StageAllTaskStatusPatch;
+    }) {
+      const { pipeline } = stage;
+      await axios.patch(
+        `/api/pipeline/${pipeline.id}/stage/${stage.id}/status`,
+        {
+          data: {
+            type: "stageAllTaskStatusPatch",
+            attributes: patch,
+          },
+        }
+      );
+
+      useIssueStore().fetchIssueById(issue.id);
     },
     async patchTask({
       issueId,

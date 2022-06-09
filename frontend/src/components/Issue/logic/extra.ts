@@ -12,6 +12,8 @@ import {
   IssueStatus,
   IssueStatusPatch,
   PrincipalId,
+  Stage,
+  StageAllTaskStatusPatch,
   Task,
   TaskCreate,
   TaskPatch,
@@ -171,6 +173,35 @@ export const useExtraIssueLogic = () => {
       });
   };
 
+  const changeStageAllTaskStatus = (
+    stage: Stage,
+    newStatus: TaskStatus,
+    comment: string
+  ) => {
+    // Switch to the last task in this stage
+    const lastTask = stage.taskList[stage.taskList.length - 1];
+    selectStageOrTask(stage.id);
+    nextTick(() => {
+      selectTask(lastTask);
+    });
+
+    // Patch the stage
+    const stageAllTaskStatusPatch: StageAllTaskStatusPatch = {
+      id: stage.id,
+      status: newStatus,
+      comment,
+    };
+    taskStore
+      .updateStageAllTaskStatus({
+        issue: issue.value as Issue,
+        stage,
+        patch: stageAllTaskStatusPatch,
+      })
+      .then(() => {
+        onStatusChanged(true);
+      });
+  };
+
   const changeTaskStatus = (
     task: Task,
     newStatus: TaskStatus,
@@ -221,6 +252,7 @@ export const useExtraIssueLogic = () => {
     removeSubscriberId,
     updateCustomField,
     changeIssueStatus,
+    changeStageAllTaskStatus,
     changeTaskStatus,
     runTaskChecks,
   };
