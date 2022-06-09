@@ -24,7 +24,7 @@
 1. Success metrics
    - What data do we need to prove the feature or business is successful?
    - Collect and display the metrics in the [metrics dashboard](https://metric.bytebase.com/).
-3. Documentation.
+1. Documentation.
    - We should update [public documentation](https://bytebase.com/docs) for new features.
 4. Testing and feedback.
    - Before a feature is released, get some peers to try out these new features by following public documentation. Receive feedback and iterate.
