@@ -12,7 +12,7 @@
    - Put thoughts on naming because it's hard to change the names in database schemas and APIs. We can have different names for technical pieces and products.
    - Collaborate with peers and tech leads.
    - Write docs including comments in English. We are doing open-source with contributors globally.
-2. Coding.
+1. Coding.
    - Follow [code review guide](code-review-guide.md) (small changes, effective communication, collaboration, and ```respect```).
    - Split changes to database schema, API, backend, frontend if possible, because you will get different reviewers looking at different parts. For example, we can make the backend do dual writes for any API changes, switch the reads on UI, and clean up the dual writes in the backend.
    - **(IMPORTANT)** Think about compatibility and don't break existing users. This usually happens if we change database schemas or APIs.
@@ -21,8 +21,11 @@
    - Golang code follows [Go Wiki](https://github.com/golang/go/wiki/CodeReviewComments) and [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
    - Collaborate if a feature requires multiple developers to work on.
    - (Optional) After code is submitted, you can wait for a while and use a docker image with tag `bytebase/bytebase:dev-ci` for testing release build. See [Docker Deployment Guide](https://bytebase.com/docs/install/install-with-docker).
+1. Success metrics
+   - What data do we need to prove the feature or business is successful?
+   - Collect and display the metrics in the [metrics dashboard](https://metric.bytebase.com/).
 1. Documentation.
    - We should update [public documentation](https://bytebase.com/docs) for new features.
-2. Testing and feedback.
+1. Testing and feedback.
    - Before a feature is released, get some peers to try out these new features by following public documentation. Receive feedback and iterate.
-3. Release and announcement. Cheers!
+1. Release and announcement. Cheers!
