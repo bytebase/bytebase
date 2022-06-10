@@ -53,7 +53,7 @@ http_download() {
     echo "Completed downloading ${source_url}"
 }
 
-get_bytebase_version() {
+get_bytebase_latest_version() {
     local version_url="https://raw.githubusercontent.com/bytebase/bytebase/main/scripts/VERSION"
     local local_file=$1
 
