@@ -2,9 +2,6 @@
 
 set -u
 
-BYTEBASE_VERSION="1.1.1"
-readonly BYTEBASE_VERSION
-
 abort() {
     printf "%s\n" "$@" >&2
     exit 1
@@ -46,14 +43,28 @@ http_download() {
     local local_file=$1
     local source_url=$2
 
-    echo "Start downloading bytebase version ${BYTEBASE_VERSION} from ${source_url}..."
+    echo "Start downloading ${source_url}..."
 
     local code=$(curl -w '%{http_code}' -L -o "${local_file}" "${source_url}")
     if [ "$code" != "200" ]; then
-        abort "Failed to download bytebase version ${BYTEBASE_VERSION} from ${source_url}, status code: ${code}"
+        abort "Failed to download from ${source_url}, status code: ${code}"
     fi
 
-    echo "Completed downloading bytebase version ${BYTEBASE_VERSION}"
+    echo "Completed downloading ${source_url}"
+}
+
+get_bytebase_version() {
+    local version_url="https://raw.githubusercontent.com/bytebase/bytebase/main/scripts/VERSION"
+    local local_file=$1
+
+    local code=$(curl -w '%{http_code}' -sL -o "${local_file}" "${version_url}")
+    if [ "$code" != "200" ]; then
+        abort "Failed to get bytebase latest version from ${version_url}, status code: ${code}"
+    fi
+
+    local version=$(<${local_file})
+
+    echo "${version}"
 }
 
 execute() {
@@ -74,6 +85,9 @@ execute() {
     tmp_dir=$(mktemp -d) || abort "cannot create temp directory"
     # Clean the tmpdir automatically if the shell script exit
     trap "rm -r ${tmp_dir}" EXIT
+
+    BYTEBASE_VERSION="$(get_bytebase_version ${tmp_dir}/VERSION)"
+    echo "Get bytebase latest version: ${BYTEBASE_VERSION}"
 
     echo "Downloading tarball into ${tmp_dir}"
     tarball_name="bytebase_${BYTEBASE_VERSION}_${OS}_${ARCH}.tar.gz"
