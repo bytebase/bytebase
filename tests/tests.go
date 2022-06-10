@@ -122,13 +122,16 @@ func getTestPort(testName string) int {
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestPITR",
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
+
+		// PITR related cases
+		"TestPITR",
 		"TestCheckEngineInnoDB",
-		"TestCheckServerVersionForPITR",
 		"TestCheckServerVersionAndBinlogForPITR",
+		"TestFetchBinlogFiles",
+
 		"TestSchemaSystem",
 	}
 	port := 1234

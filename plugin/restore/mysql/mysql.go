@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/blang/semver/v4"
 )
@@ -30,6 +31,39 @@ const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
 )
+
+// BinlogFile is the metadata of the MySQL binlog file
+type BinlogFile struct {
+	Name string
+	Size int64
+
+	// Seq is parsed from Name and is for the sorting purpose.
+	Seq int64
+}
+
+func newBinlogFile(name string, size int64) (BinlogFile, error) {
+	seq, err := getBinlogNameSeq(name)
+	if err != nil {
+		return BinlogFile{}, err
+	}
+	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
+}
+
+// LT compares with another BinlogFile, returns whether the numeric extension in name is larger than `other`.
+func (f BinlogFile) LT(other BinlogFile) bool {
+	return f.Seq < other.Seq
+}
+
+// ZapBinlogFiles is a helper to format zap.Array
+type ZapBinlogFiles []BinlogFile
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface
+func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for _, file := range files {
+		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
+	}
+	return nil
+}
 
 // Restore implements recovery functions for MySQL.
 // For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
@@ -42,11 +76,6 @@ type Restore struct {
 	mysqlutil *mysqlutil.Instance
 	connCfg   db.ConnectionConfig
 	binlogDir string
-}
-
-type binlogItem struct {
-	name string
-	seq  int64
 }
 
 // New creates a new instance of Restore
@@ -188,66 +217,64 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
 	}
 
-	var toBeReplayedBinlogNames []string
-
+	var binlogFilesToReplay []BinlogFile
 	for _, f := range binlogFiles {
 		if f.IsDir() {
 			continue
 		}
-		// for mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
-		// so we cannot directly use string to compare lexicographical order.
-		binlogSeq, err := getBinlogNameSeq(f.Name())
+
+		binlogFile, err := newBinlogFile(f.Name(), f.Size())
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", f.Name(), err)
+			return nil, err
 		}
-		if binlogSeq >= startBinlogSeq {
-			toBeReplayedBinlogNames = append(toBeReplayedBinlogNames, f.Name())
+		if binlogFile.Seq >= startBinlogSeq {
+			binlogFilesToReplay = append(binlogFilesToReplay, binlogFile)
 		}
 	}
 
-	toBeReplayedBinlogItems, err := parseAndSortBinlogFileNames(toBeReplayedBinlogNames)
+	binlogFilesToReplay, err = sortBinlogFiles(binlogFilesToReplay)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := 1; i < len(toBeReplayedBinlogItems); i++ {
-		if toBeReplayedBinlogItems[i].seq != toBeReplayedBinlogItems[i-1].seq+1 {
-			return nil, fmt.Errorf("discontinuous binlog file extensions detected in %s and %s", toBeReplayedBinlogItems[i-1].name, toBeReplayedBinlogItems[i].name)
+	for i := 1; i < len(binlogFilesToReplay); i++ {
+		if binlogFilesToReplay[i].Seq != binlogFilesToReplay[i-1].Seq+1 {
+			return nil, fmt.Errorf("discontinuous binlog file extensions detected in %s and %s", binlogFilesToReplay[i-1].Name, binlogFilesToReplay[i].Name)
 		}
 	}
 
-	var needReplayBinlogFilePath []string
-	for _, item := range toBeReplayedBinlogItems {
-		needReplayBinlogFilePath = append(needReplayBinlogFilePath, filepath.Join(binlogDir, item.name))
+	var binlogReplayList []string
+	for _, binlogFile := range binlogFilesToReplay {
+		binlogReplayList = append(binlogReplayList, filepath.Join(binlogDir, binlogFile.Name))
 	}
 
-	return needReplayBinlogFilePath, nil
+	return binlogReplayList, nil
 }
 
-// parseAndSortBinlogFileNames will parse the binlog file name, and then sort them in ascending order by their numeric extension.
-func parseAndSortBinlogFileNames(binlogFileNames []string) ([]binlogItem, error) {
-	var items []binlogItem
-	for _, name := range binlogFileNames {
-		seq, err := getBinlogNameSeq(name)
+// sortBinlogFiles will parse the binlog file name, and then sort them in ascending order by their numeric extension.
+// For mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
+// so we cannot directly use string to compare lexicographical order.
+func sortBinlogFiles(binlogFiles []BinlogFile) ([]BinlogFile, error) {
+	var ret []BinlogFile
+	for _, binlogFile := range binlogFiles {
+		seq, err := getBinlogNameSeq(binlogFile.Name)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", name, err)
+			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", binlogFile.Name, err)
 		}
-		items = append(items, binlogItem{
-			name: name,
-			seq:  seq,
-		})
+		binlogFile.Seq = seq
+		ret = append(ret, binlogFile)
 	}
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].seq < items[j].seq
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Seq < ret[j].Seq
 	})
-	return items, nil
+	return ret, nil
 }
 
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
 // nolint
-func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
+func (r *Restore) parseLocalBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
 		path.Join(r.binlogDir, binlogInfo.FileName),
 		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
@@ -262,8 +289,8 @@ func (r *Restore) parseBinlogEventTimestamp(ctx context.Context, binlogInfo api.
 	cmd.Stdout = &buf
 
 	if err := cmd.Run(); err != nil {
-		log.Error("Command mysqlbinlog fails", zap.String("cmd", cmd.String()), zap.Error(err))
-		return 0, fmt.Errorf("command %s fails: %w", cmd.Path, err)
+		log.Error("mysqlbinlog command fails", zap.String("cmd", cmd.String()), zap.Error(err))
+		return 0, fmt.Errorf("mysqlbinlog command[%s] fails, error[%w]", cmd.String(), err)
 	}
 
 	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
@@ -306,7 +333,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 
 	var eventTsList []int64
 	for _, b := range backupList {
-		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
+		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
 		}
@@ -457,87 +484,143 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// FetchArchivedBinlogFiles downloads the missing binlog files from the remote instance to `binlogDir`,
-// but exclude latest binlog. We may  download the latest binlog only when doing PITR.
-func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
-	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
+// FetchBinlogFilesToTargetTs downloads the locally missing binlog files from the remote instance to `binlogDir`.
+// After downloading a binlog file, we check it's first event timestamp. If the timestamp is larger than
+// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
+// all the binlog events we need for this recovery task.
+func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64) error {
+	binlogFilesInfoLocal, err := ioutil.ReadDir(r.binlogDir)
 	if err != nil {
 		return err
+	}
+	var binlogFilesLocal []BinlogFile
+	for _, fileInfo := range binlogFilesInfoLocal {
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		if err != nil {
+			return err
+		}
+		binlogFilesLocal = append(binlogFilesLocal, binlogFile)
 	}
 
-	binlogFilesOnServer, err := r.getBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServer, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
-
-	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
-	if err != nil {
-		return err
+	if len(binlogFilesOnServer) == 0 {
+		return fmt.Errorf("no binlog files on server")
 	}
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServer)))
 
 	// build a local file size map from file name to size
-	localFileMap := make(map[string]int64)
-
-	for _, localFile := range binlogFilesLocal {
-		localFileMap[localFile.Name()] = localFile.Size()
+	binlogFilesLocalMap := make(map[string]BinlogFile)
+	for _, file := range binlogFilesLocal {
+		binlogFilesLocalMap[file.Name] = file
 	}
 
-	todo := make(map[string]bool)
-
+	var downloadFileList []BinlogFile
 	for _, serverBinlog := range binlogFilesOnServer {
-		// We don't download the latest binlog in SyncArchivedBinlogFiles()
-		if serverBinlog.Name == latestBinlogFileOnServer.Name {
-			continue
-		}
-
-		localBinlogSize, ok := localFileMap[serverBinlog.Name]
+		localBinlogFile, ok := binlogFilesLocalMap[serverBinlog.Name]
 		if !ok {
-			todo[serverBinlog.Name] = true
+			downloadFileList = append(downloadFileList, serverBinlog)
 			continue
 		}
 
-		if localBinlogSize != serverBinlog.Size {
-			// exist on local and file size not match, delete and then download it
-			log.Warn("inconsistent binlog file size detected", zap.String("binlogFile", serverBinlog.Name), zap.Int64("server", serverBinlog.Size), zap.Int64("local", localBinlogSize))
+		if localBinlogFile.Size != serverBinlog.Size {
+			// Existing local binlog file size does not match size queried from MySQL server, delete and re-download.
+			log.Warn("Deleting partial local binlog file",
+				zap.String("fileName", serverBinlog.Name),
+				zap.Int64("fileSize", localBinlogFile.Size),
+				zap.Int64("serverFileSize", serverBinlog.Size))
 			if err := os.Remove(filepath.Join(r.binlogDir, serverBinlog.Name)); err != nil {
-				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
+				log.Error("Failed to remove the partial local binlog file")
+				return fmt.Errorf("failed to remove the partial local binlog file[%s], error[%w]", serverBinlog.Name, err)
 			}
-			todo[serverBinlog.Name] = true
+			downloadFileList = append(downloadFileList, serverBinlog)
+			delete(binlogFilesLocalMap, serverBinlog.Name)
 		}
 	}
 
-	// download the binlog files not recorded in downloadedIndex
-	for _, serverFile := range binlogFilesOnServer {
-		if _, ok := todo[serverFile.Name]; !ok {
-			continue
+	var binlogFilesLocalValid []BinlogFile
+	for _, file := range binlogFilesLocalMap {
+		binlogFilesLocalValid = append(binlogFilesLocalValid, file)
+	}
+	binlogFilesLocalValidSorted, err := sortBinlogFiles(binlogFilesLocalValid)
+	if err != nil {
+		return err
+	}
+
+	// Find if some local binlog file's first binlog event ts is already larger than targetTs.
+	// If so, we do not need to download the following binlog files on server.
+	var foundLocalFileLTTargetTs bool
+	var localFileExceedsTargetTs BinlogFile
+	for _, file := range binlogFilesLocalValidSorted {
+		firstBinlogEvent := api.BinlogInfo{FileName: file.Name, Position: 4}
+		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
+		path := filepath.Join(r.binlogDir, file.Name)
+		if err != nil {
+			log.Error("Failed to parse the first binlog event timestamp for local binlog file",
+				zap.String("path", path),
+				zap.Error(err))
+			return fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
 		}
-		if err := r.downloadBinlogFile(ctx, serverFile, false); err != nil {
-			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
+		if eventTs > targetTs {
+			log.Info("Found a local binlog file whose first event's timestamp is larger than targetTs",
+				zap.Any("binlogFile", file),
+				zap.Int64("targetTs", targetTs),
+				zap.Int64("eventTs", eventTs))
+			foundLocalFileLTTargetTs = true
+			localFileExceedsTargetTs = file
+			break
+		}
+	}
+
+	log.Debug("Download binlog file list", zap.Array("list", ZapBinlogFiles(downloadFileList)))
+	for _, file := range downloadFileList {
+		log.Debug("Downloading file", zap.Any("binlogFile", file))
+		if foundLocalFileLTTargetTs && localFileExceedsTargetTs.LT(file) {
+			log.Debug("Skip downloading file, because there's already a local binlog file whose first eventTs > targetTs", zap.String("binlogFile", file.Name))
+			break
+		}
+
+		if err := r.downloadBinlogFile(ctx, file, false); err != nil {
+			return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
+		}
+		// We parsed the first binlog event's timestamp of the newly downloaded binlog file.
+		// If the timestamp > targetTs, we skip downloading the following binlog files, because we have already
+		// downloaded all the binlog files needed before targetTs.
+		firstBinlogEvent := api.BinlogInfo{FileName: file.Name, Position: 4}
+		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
+		path := filepath.Join(r.binlogDir, file.Name)
+		if err != nil {
+			log.Error("Failed to parse the first binlog event timestamp for the newly downloaded binlog file",
+				zap.String("path", path),
+				zap.Error(err))
+			return fmt.Errorf("failed to parse the first binlog event timestamp for the newly downloaded binlog file[%s], error[%w]", path, err)
+		}
+		log.Debug("Checking first event ts with targetTs", zap.Int64("eventTs", eventTs), zap.Int64("targetTs", targetTs))
+		if eventTs > targetTs {
+			log.Info("Downloaded a binlog file whose first event's timestamp is larger than targetTs",
+				zap.String("path", path),
+				zap.Int64("targetTs", targetTs),
+				zap.Int64("eventTs", eventTs))
+			break
 		}
 	}
 
 	return nil
 }
 
-// IncrementalFetchAllBinlogFiles fetches all the binlog files that on server but not on local.
-// TODO(zp): It is not yet supported to synchronize some binlog files.
-// The current practice is to download all binlog files, but in the future we hope to only synchronize to the PITR time point
-func (r *Restore) IncrementalFetchAllBinlogFiles(ctx context.Context) error {
-	if err := r.FetchArchivedBinlogFiles(ctx); err != nil {
-		return err
-	}
-	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
-	if err != nil {
-		return err
-	}
-	return r.downloadBinlogFile(ctx, latestBinlogFileOnServer, true)
-}
-
 // downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFile, isLast bool) error {
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlog BinlogFile, isLast bool) (err error) {
+	var resultFilePath string
+	defer func() {
+		if err != nil {
+			os.Remove(resultFilePath)
+		}
+	}()
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
@@ -561,17 +644,15 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	resultFilePath := filepath.Join(resultFileDir, binlog.Name)
+	resultFilePath = filepath.Join(resultFileDir, binlog.Name)
 	if err := cmd.Run(); err != nil {
-		_ = os.Remove(resultFilePath)
-		return fmt.Errorf("mysqlbinlog fails, error: %w", err)
+		return fmt.Errorf("executing mysqlbinlog fails, error: %w", err)
 	}
 
 	log.Debug("Checking binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
-		_ = os.Remove(resultFilePath)
-		return fmt.Errorf("cannot stat %s, error: %w", resultFilePath, err)
+		return fmt.Errorf("cannot get file[%s] stat, error[%w]", resultFilePath, err)
 	}
 	if !isLast {
 		// Case 1: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
@@ -581,7 +662,6 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 				zap.Int64("sizeInfo", binlog.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
-			_ = os.Remove(resultFilePath)
 			return fmt.Errorf("downloaded binlog file[%s] size[%d] does not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
 		}
 	} else {
@@ -594,7 +674,6 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 				zap.Int64("sizeInfo", binlog.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
-			_ = os.Remove(resultFilePath)
 			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
 		}
 	}
@@ -602,8 +681,8 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog mysql.BinlogFil
 	return nil
 }
 
-// getBinlogFilesMetaOnServer returns the metadata of binlog files.
-func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.BinlogFile, error) {
+// GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files.
+func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
@@ -615,41 +694,46 @@ func (r *Restore) getBinlogFilesMetaOnServer(ctx context.Context) ([]mysql.Binlo
 	}
 	defer rows.Close()
 
-	var binlogFiles []mysql.BinlogFile
+	var binlogFiles []BinlogFile
 	for rows.Next() {
-		var binlogFile mysql.BinlogFile
+		var binlogFile BinlogFile
 		var unused interface{}
 		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused /*Encrypted column*/); err != nil {
 			return nil, err
 		}
 		binlogFiles = append(binlogFiles, binlogFile)
 	}
+
+	binlogFiles, err = sortBinlogFiles(binlogFiles)
+	if err != nil {
+		return nil, err
+	}
 	return binlogFiles, nil
 }
 
 // showLatestBinlogFile returns the metadata of latest binlog
-func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (mysql.BinlogFile, error) {
+func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (BinlogFile, error) {
 	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
-		return mysql.BinlogFile{}, err
+		return BinlogFile{}, err
 	}
 
 	rows, err := db.QueryContext(ctx, `SHOW MASTER STATUS;`)
 	if err != nil {
-		return mysql.BinlogFile{}, err
+		return BinlogFile{}, err
 	}
 	defer rows.Close()
 
-	var binlogFile mysql.BinlogFile
+	var binlogFile BinlogFile
 	if rows.Next() {
 		var unused interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
 		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused, &unused, &unused); err != nil {
-			return mysql.BinlogFile{}, err
+			return BinlogFile{}, err
 		}
 		return binlogFile, nil
 	}
-	return mysql.BinlogFile{}, fmt.Errorf("cannot find latest binlog on instance")
+	return BinlogFile{}, fmt.Errorf("cannot find latest binlog on instance")
 }
 
 // getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
@@ -657,7 +741,7 @@ func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (mysql.BinlogFile
 func getBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
-		return 0, fmt.Errorf("expecting two parts in the binlog file name, but get %d", len(s))
+		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name[%s] but get %d", name, len(s))
 	}
 	return strconv.ParseInt(s[1], 10, 0)
 }
