@@ -4,7 +4,7 @@ import { Environment } from "../environment";
 import { EnvironmentId, StageId } from "../id";
 import { Principal } from "../principal";
 import { Pipeline } from "./pipeline";
-import { Task, TaskCreate } from "./task";
+import { Task, TaskCreate, TaskStatus } from "./task";
 
 // THus stage can access both instance and environment info.
 export type Stage = {
@@ -32,4 +32,11 @@ export type StageCreate = {
 
   // Domain specific fields
   name: string;
+};
+
+export type StageAllTaskStatusPatch = {
+  id: StageId;
+
+  status: TaskStatus;
+  comment?: string;
 };

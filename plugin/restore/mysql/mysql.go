@@ -145,16 +145,27 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, st
 	if err != nil {
 		return err
 	}
-	if _, err := db.ExecContext(ctx, query); err != nil {
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, query); err != nil {
 		return err
 	}
 
-	if err := r.driver.Restore(ctx, fullBackup); err != nil {
+	if err := r.driver.RestoreTx(ctx, tx, fullBackup); err != nil {
 		return err
 	}
 
 	// The full backup is restored successfully, enable foreign key constraints as normal.
-	if _, err := db.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
+	if _, err := tx.ExecContext(ctx, "SET foreign_key_checks=ON"); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -673,6 +684,18 @@ func checkVersionForPITR(version string) error {
 	return nil
 }
 
+// CheckServerVersionForPITR checks that the MySQL server version meets the requirements of PITR.
+func (r *Restore) CheckServerVersionForPITR(ctx context.Context) error {
+	value, err := r.getServerVariable(ctx, "version")
+	if err != nil {
+		return err
+	}
+	if err := checkVersionForPITR(value); err != nil {
+		return err
+	}
+	return nil
+}
+
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
 func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error {
 	db, err := r.driver.GetDbConnection(ctx, "")
@@ -698,6 +721,53 @@ func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error 
 	}
 	if len(tablesNotInnoDB) != 0 {
 		return fmt.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
+	}
+	return nil
+}
+
+func (r *Restore) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db, err := r.driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return "", err
+	}
+
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("SHOW VARIABLES LIKE '%s';", varName))
+	if err != nil {
+		return "", err
+	}
+	if ok := rows.Next(); !ok {
+		return "", fmt.Errorf("SHOW VARIABLES LIKE '%s' returns empty set", varName)
+	}
+	var varNameFound, value string
+	if err := rows.Scan(&varNameFound, &value); err != nil {
+		return "", err
+	}
+	if varName != varNameFound {
+		return "", fmt.Errorf("expecting variable %s, but got %s", varName, varNameFound)
+	}
+	return value, nil
+}
+
+// CheckBinlogEnabled checks whether binlog is enabled for the current instance.
+func (r *Restore) CheckBinlogEnabled(ctx context.Context) error {
+	value, err := r.getServerVariable(ctx, "log_bin")
+	if err != nil {
+		return err
+	}
+	if strings.ToUpper(value) != "ON" {
+		return fmt.Errorf("binlog is not enabled")
+	}
+	return nil
+}
+
+// CheckBinlogRowFormat checks whether the binlog format is ROW.
+func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
+	value, err := r.getServerVariable(ctx, "binlog_format")
+	if err != nil {
+		return err
+	}
+	if strings.ToUpper(value) != "ROW" {
+		return fmt.Errorf("binlog format is not ROW but %s", value)
 	}
 	return nil
 }
