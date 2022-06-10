@@ -511,7 +511,6 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	}
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServer)))
 
-	// build a local file size map from file name to size
 	binlogFilesLocalMap := make(map[string]BinlogFile)
 	for _, file := range binlogFilesLocal {
 		binlogFilesLocalMap[file.Name] = file
