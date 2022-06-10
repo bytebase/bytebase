@@ -65,7 +65,7 @@ execute() {
     test_curl
     test_tar
 
-    # Initial bytebase direcoty
+    # Initialize bytebase direcoty
     bytebase_dir="/opt/bytebase"
     (sudo mkdir -p "${bytebase_dir}") || abort "cannot create directory ${bytebase_dir}"
 
