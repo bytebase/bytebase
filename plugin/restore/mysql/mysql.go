@@ -502,14 +502,14 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 		binlogFilesLocal = append(binlogFilesLocal, binlogFile)
 	}
 
-	binlogFilesOnServer, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
-	if len(binlogFilesOnServer) == 0 {
+	if len(binlogFilesOnServerSorted) == 0 {
 		return fmt.Errorf("no binlog files on server")
 	}
-	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServer)))
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	binlogFilesLocalMap := make(map[string]BinlogFile)
 	for _, file := range binlogFilesLocal {
@@ -517,7 +517,7 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	}
 
 	var downloadFileList []BinlogFile
-	for _, serverBinlog := range binlogFilesOnServer {
+	for _, serverBinlog := range binlogFilesOnServerSorted {
 		localBinlogFile, ok := binlogFilesLocalMap[serverBinlog.Name]
 		if !ok {
 			downloadFileList = append(downloadFileList, serverBinlog)
