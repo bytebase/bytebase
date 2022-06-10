@@ -11,16 +11,16 @@
         </router-link>
       </div>
       <div class="hidden sm:block">
-        <div class="ml-6 flex items-baseline space-x-1">
+        <div class="ml-4 flex items-baseline space-x-1">
           <router-link
             to="/sql-editor"
-            class="text-base truncate mr-2"
+            class="router-link"
             exact-active-class="anchor-link"
             >{{ $t("sql-editor.self") }}</router-link
           >
           <router-link
             to="/sheets/my"
-            class="text-base ml-2 truncate"
+            class="router-link"
             exact-active-class="anchor-link"
             >{{ $t("sheet.self") }}</router-link
           >
@@ -277,3 +277,13 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.router-link {
+  @apply text-base ml-2 truncate px-2 py-2 rounded-lg no-underline hover:bg-gray-200;
+}
+
+.router-link-active {
+  @apply bg-gray-200;
+}
+</style>
