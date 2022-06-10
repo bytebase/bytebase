@@ -509,6 +509,7 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	if len(binlogFilesOnServerSorted) == 0 {
 		return fmt.Errorf("no binlog files on server")
 	}
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	binlogFilesLocalMap := make(map[string]BinlogFile)
@@ -581,7 +582,8 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 			break
 		}
 
-		if err := r.downloadBinlogFile(ctx, file, false); err != nil {
+		isLast := file == latestBinlogFileOnServer
+		if err := r.downloadBinlogFile(ctx, file, isLast); err != nil {
 			return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
 		}
 		// We parsed the first binlog event's timestamp of the newly downloaded binlog file.
@@ -609,7 +611,7 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	return nil
 }
 
-// downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
+// Syncs the binlog specified by `meta` between the instance and local.
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
@@ -708,31 +710,6 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 		return nil, err
 	}
 	return binlogFiles, nil
-}
-
-// getLatestBinlogFileMeta returns the metadata of latest binlog
-func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (BinlogFile, error) {
-	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
-	db, err := r.driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return BinlogFile{}, err
-	}
-
-	rows, err := db.QueryContext(ctx, `SHOW MASTER STATUS;`)
-	if err != nil {
-		return BinlogFile{}, err
-	}
-	defer rows.Close()
-
-	var binlogFile BinlogFile
-	if rows.Next() {
-		var unused interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
-		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused, &unused, &unused); err != nil {
-			return BinlogFile{}, err
-		}
-		return binlogFile, nil
-	}
-	return BinlogFile{}, fmt.Errorf("cannot find latest binlog on instance")
 }
 
 // getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
