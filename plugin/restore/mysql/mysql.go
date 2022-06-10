@@ -49,9 +49,9 @@ func newBinlogFile(name string, size int64) (BinlogFile, error) {
 	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
 }
 
-// LT compares with another BinlogFile, returns whether the numeric extension in name is larger than `other`.
-func (f BinlogFile) LT(other BinlogFile) bool {
-	return f.Seq < other.Seq
+// LE compares with another BinlogFile, returns whether the numeric extension in name is less or equal than `other`.
+func (f BinlogFile) LE(other BinlogFile) bool {
+	return f.Seq <= other.Seq
 }
 
 // ZapBinlogFiles is a helper to format zap.Array
@@ -576,7 +576,7 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	log.Debug("Download binlog file list", zap.Array("list", ZapBinlogFiles(downloadFileList)))
 	for _, file := range downloadFileList {
 		log.Debug("Downloading file", zap.Any("binlogFile", file))
-		if foundLocalFileLTTargetTs && localFileExceedsTargetTs.LT(file) {
+		if foundLocalFileLTTargetTs && localFileExceedsTargetTs.LE(file) {
 			log.Debug("Skip downloading file, because there's already a local binlog file whose first eventTs > targetTs", zap.String("binlogFile", file.Name))
 			break
 		}
