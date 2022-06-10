@@ -11,7 +11,7 @@ abort() {
 }
 
 uname_os() {
-    OS="$(uname -s)"
+    local OS="$(uname -s)"
     if [[ "${OS}" != "Darwin" && "${OS}" ]]; then
         abort "OS ${OS} is not support, bytebase is only supported on Linux and MacOS"
     fi
@@ -65,14 +65,14 @@ execute() {
     test_curl
     test_tar
 
-    # initial bytebase direcoty
+    # Initial bytebase direcoty
     bytebase_dir="/opt/bytebase"
     (sudo mkdir -p "${bytebase_dir}") || abort "cannot create directory ${bytebase_dir}"
 
     install_dir="/usr/local/bin"
 
     tmp_dir=$(mktemp -d) || abort "cannot create temp directory"
-    # clean the tmpdir automatically if the shell script exit
+    # Clean the tmpdir automatically if the shell script exit
     trap "rm -r ${tmp_dir}" EXIT
 
     echo "Downloading tarball into ${tmp_dir}"
