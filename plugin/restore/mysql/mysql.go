@@ -710,7 +710,7 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	return binlogFiles, nil
 }
 
-// showLatestBinlogFile returns the metadata of latest binlog
+// getLatestBinlogFileMeta returns the metadata of latest binlog
 func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (BinlogFile, error) {
 	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
 	db, err := r.driver.GetDbConnection(ctx, "")
