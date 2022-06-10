@@ -86,22 +86,22 @@ execute() {
     # Clean the tmpdir automatically if the shell script exit
     trap "rm -r ${tmp_dir}" EXIT
 
-    BYTEBASE_VERSION="$(get_bytebase_version ${tmp_dir}/VERSION)"
-    echo "Get bytebase latest version: ${BYTEBASE_VERSION}"
+    VERSION="$(get_bytebase_latest_version ${tmp_dir}/VERSION)"
+    echo "Get bytebase latest version: ${VERSION}"
 
     echo "Downloading tarball into ${tmp_dir}"
-    tarball_name="bytebase_${BYTEBASE_VERSION}_${OS}_${ARCH}.tar.gz"
+    tarball_name="bytebase_${VERSION}_${OS}_${ARCH}.tar.gz"
     http_download "${tmp_dir}/${tarball_name}" \
-        "https://github.com/bytebase/bytebase/releases/download/${BYTEBASE_VERSION}/${tarball_name}"
+        "https://github.com/bytebase/bytebase/releases/download/${VERSION}/${tarball_name}"
 
     echo "Start extracting tarball into ${bytebase_dir}..."
     cd "${bytebase_dir}" && sudo tar -xzf "${tmp_dir}/${tarball_name}"
 
-    echo "Start installing bytebase and bb ${BYTEBASE_VERSION}"
+    echo "Start installing bytebase and bb ${VERSION}"
     sudo install "${bytebase_dir}/bytebase" "${install_dir}"
-    echo "Installed bytebase ${BYTEBASE_VERSION} to ${install_dir}"
+    echo "Installed bytebase ${VERSION} to ${install_dir}"
     sudo install "${bytebase_dir}/bb" "${install_dir}"
-    echo "Installed bb ${BYTEBASE_VERSION} to ${install_dir}"
+    echo "Installed bb ${VERSION} to ${install_dir}"
     echo ""
     echo "Check the usage with"
     echo "  bytebase --help"
