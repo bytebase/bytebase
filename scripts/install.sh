@@ -65,7 +65,7 @@ execute() {
     test_curl
     test_tar
 
-    # Initial bytebase direcoty
+    # Initialize bytebase direcoty
     bytebase_dir="/opt/bytebase"
     (sudo mkdir -p "${bytebase_dir}") || abort "cannot create directory ${bytebase_dir}"
 
@@ -83,11 +83,11 @@ execute() {
     echo "Start extracting tarball into ${bytebase_dir}..."
     cd "${bytebase_dir}" && sudo tar -xzf "${tmp_dir}/${tarball_name}"
 
-    echo "Start installing bytebase and bb"
+    echo "Start installing bytebase and bb ${VERSION}"
     sudo install "${bytebase_dir}/bytebase" "${install_dir}"
-    echo "Installed bytebase to ${install_dir}"
+    echo "Installed bytebase ${VERSION} to ${install_dir}"
     sudo install "${bytebase_dir}/bb" "${install_dir}"
-    echo "Installed bb to ${install_dir}"
+    echo "Installed bb ${VERSION} to ${install_dir}"
     echo ""
     echo "Check the usage with"
     echo "  bytebase --help"
