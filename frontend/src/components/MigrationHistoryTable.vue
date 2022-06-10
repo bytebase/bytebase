@@ -66,8 +66,9 @@
       <BBTableCell>
         <NPopover
           :disabled="history.statement.length < 100"
-          style="max-height: 300px; max-width: 500px"
+          style="max-height: 300px"
           placement="bottom"
+          width="trigger"
           scrollable
         >
           <highlight-code-block
