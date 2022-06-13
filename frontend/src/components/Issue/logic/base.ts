@@ -179,8 +179,6 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isPITRMode = computed((): boolean => {
-    if (!isDev()) return false;
-
     return issue.value.type === "bb.issue.database.pitr";
   });
 
