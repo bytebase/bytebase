@@ -1133,8 +1133,8 @@ func (c *columnSchema) Statement() string {
 // Statement returns the create statement of a table constraint.
 func (c *tableConstraint) Statement() string {
 	return fmt.Sprintf(""+
-		"ALTER TABLE ONLY %s.%s\n"+
-		"    ADD CONSTRAINT %s %s;\n",
+		`ALTER TABLE ONLY "%s"."%s"\n`+
+		`    ADD CONSTRAINT %s %s;\n`,
 		c.schemaName, c.tableName, c.name, c.constraint)
 }
 
@@ -1209,7 +1209,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf("SELECT COUNT(1) FROM %s.%s;", tbl.schemaName, tbl.name)
+	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM "%s"."%s";`, tbl.schemaName, tbl.name)
 	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err
@@ -1222,7 +1222,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		}
 	}
 
-	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -1379,7 +1379,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -1460,7 +1460,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", idx.schemaName, idx.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
