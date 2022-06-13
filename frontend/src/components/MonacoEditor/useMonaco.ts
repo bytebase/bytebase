@@ -6,6 +6,19 @@ import { Database, Table, CompletionItems, SQLDialect } from "@/types";
 import AutoCompletion from "./AutoCompletion";
 import sqlFormatter from "./sqlFormatter";
 
+monaco.editor.defineTheme("bb-sql-editor-theme", {
+  base: "vs",
+  inherit: true,
+  rules: [],
+  colors: {
+    "editor.lineHighlightBorder": "#FFFFFFFF",
+    "editorCursor.foreground": "#504de2",
+    "editorLineNumber.foreground": "#aaaaaa",
+    "editorLineNumber.activeForeground": "#111111",
+  },
+});
+monaco.editor.setTheme("bb-sql-editor-theme");
+
 const useMonaco = async (lang: string) => {
   const databaseList = ref<Database[]>([]);
   const tableList = ref<Table[]>([]);
