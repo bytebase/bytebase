@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -488,39 +489,7 @@ func (r *Restore) parseFirstLocalBinlogEventTimestamp(ctx context.Context, fileN
 	return r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
 }
 
-// FetchBinlogFilesToTargetTs downloads the locally missing binlog files from the remote instance to `binlogDir`.
-// After downloading a binlog file, we check it's first event timestamp. If the timestamp is larger than
-// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
-// all the binlog events we need for this recovery task.
-func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64) error {
-	// Read the local binlog files.
-	binlogFilesInfoLocal, err := ioutil.ReadDir(r.binlogDir)
-	if err != nil {
-		return err
-	}
-	var binlogFilesLocal []BinlogFile
-	for _, fileInfo := range binlogFilesInfoLocal {
-		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
-		if err != nil {
-			return err
-		}
-		binlogFilesLocal = append(binlogFilesLocal, binlogFile)
-	}
-
-	// Read binlog files list on server.
-	// We compare it with the local binlog files list to generate a download list.
-	// Also compare file sizes to validate local binlog files, and re-download invalid ones.
-	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
-	if err != nil {
-		return err
-	}
-	if len(binlogFilesOnServerSorted) == 0 {
-		// No binlog files on server, so there's nothing to download.
-		return nil
-	}
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
-
+func getBinlogDownloadListAndLocalValidFiles(binlogDir string, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) ([]BinlogFile, []BinlogFile, error) {
 	binlogFilesLocalMap := make(map[string]BinlogFile)
 	for _, file := range binlogFilesLocal {
 		binlogFilesLocalMap[file.Name] = file
@@ -545,9 +514,9 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 				zap.String("fileName", serverBinlog.Name),
 				zap.Int64("fileSize", localBinlogFile.Size),
 				zap.Int64("serverFileSize", serverBinlog.Size))
-			if err := os.Remove(filepath.Join(r.binlogDir, serverBinlog.Name)); err != nil {
+			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
 				log.Error("Failed to remove the partial local binlog file")
-				return fmt.Errorf("failed to remove the partial local binlog file[%s], error[%w]", serverBinlog.Name, err)
+				return nil, nil, fmt.Errorf("failed to remove the partial local binlog file[%s], error[%w]", serverBinlog.Name, err)
 			}
 			downloadFileList = append(downloadFileList, serverBinlog)
 			binlogFilesLocalInvalidMap[serverBinlog.Name] = true
@@ -562,6 +531,55 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 		}
 	}
 	binlogFilesLocalValidSorted, err := sortBinlogFiles(binlogFilesLocalValid)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return downloadFileList, binlogFilesLocalValidSorted, nil
+}
+
+func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
+	var binlogFileList []BinlogFile
+	for _, fileInfo := range binlogFileInfoList {
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		if err != nil {
+			return nil, err
+		}
+		binlogFileList = append(binlogFileList, binlogFile)
+	}
+	return binlogFileList, nil
+}
+
+// FetchBinlogFilesToTargetTs downloads the locally missing binlog files from the remote instance to `binlogDir`.
+// After downloading a binlog file, we check it's first event timestamp. If the timestamp is larger than
+// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
+// all the binlog events we need for this recovery task.
+func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64) error {
+	// Read the local binlog files.
+	binlogFilesInfoLocal, err := ioutil.ReadDir(r.binlogDir)
+	if err != nil {
+		return err
+	}
+	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
+	if err != nil {
+		return err
+	}
+
+	// Read binlog files list on server.
+	// We compare it with the local binlog files list to generate a download list.
+	// Also compare file sizes to validate local binlog files, and re-download invalid ones.
+	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
+	if err != nil {
+		return err
+	}
+	if len(binlogFilesOnServerSorted) == 0 {
+		// No binlog files on server, so there's nothing to download.
+		return nil
+	}
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
+
+	downloadFileList, binlogFilesLocalValidSorted, err := getBinlogDownloadListAndLocalValidFiles(r.binlogDir, binlogFilesLocal, binlogFilesOnServerSorted)
 	if err != nil {
 		return err
 	}
