@@ -14,7 +14,7 @@
   "dependencies": {
     "@bytebase/vue-kbar": "^0.1.6",
     "@soerenmartius/vue3-clipboard": "^0.1.2",
-    "@vueuse/core": "^7.6.0",
+    "@vueuse/core": "^8.6.0",
     "axios": "^0.26.0",
     "dayjs": "^1.10.7",
     "escape-string-regexp": "^5.0.0",
