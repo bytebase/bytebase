@@ -149,11 +149,7 @@
             </template>
           </BBTooltipButton>
 
-          <PITRRestoreButton
-            v-if="isDev()"
-            :database="database"
-            :allow-admin="allowAdmin"
-          />
+          <PITRRestoreButton :database="database" :allow-admin="allowAdmin" />
         </div>
       </div>
     </main>
