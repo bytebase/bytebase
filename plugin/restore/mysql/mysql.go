@@ -310,11 +310,13 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	}
 
 	var eventTsList []int64
+	var backupWithValidBinlogInfoList []*api.Backup
 	for _, b := range backupList {
 		if b.Payload.BinlogInfo.IsEmpty() {
 			log.Debug("Skip parse binlog event timestamp of backup which binlogInfo field in payload field is empty", zap.Int("Id", b.ID))
 			continue
 		}
+		backupWithValidBinlogInfoList = append(backupWithValidBinlogInfoList, b)
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
@@ -323,7 +325,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	}
 	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
-	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupList, eventTsList, targetTs)
+	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupWithValidBinlogInfoList, eventTsList, targetTs)
 	if err != nil {
 		return nil, err
 	}
