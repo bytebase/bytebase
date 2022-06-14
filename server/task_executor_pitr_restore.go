@@ -70,6 +70,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	if err != nil {
 		return err
 	}
+	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
 
 	connCfg, err := getConnectionConfig(ctx, instance, database.Name)
 	if err != nil {
@@ -103,6 +104,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 			zap.Error(err))
 		return fmt.Errorf("failed to get latest backup before or equal to targetTs[%d], error[%w]", targetTs, err)
 	}
+	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
 	backupFile, err := os.OpenFile(backupFileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {
