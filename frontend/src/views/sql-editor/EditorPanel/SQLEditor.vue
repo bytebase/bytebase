@@ -1,14 +1,18 @@
 <template>
-  <MonacoEditor
-    ref="editorRef"
-    v-model:value="sqlCode"
-    :language="selectedLanguage"
-    :readonly="readonly"
-    @change="handleChange"
-    @change-selection="handleChangeSelection"
-    @run-query="handleRunQuery"
-    @save="handleSaveSheet"
-  />
+  <div
+    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-scroll"
+  >
+    <MonacoEditor
+      ref="editorRef"
+      v-model:value="sqlCode"
+      :language="selectedLanguage"
+      :readonly="readonly"
+      @change="handleChange"
+      @change-selection="handleChangeSelection"
+      @run-query="handleRunQuery"
+      @save="handleSaveSheet"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
