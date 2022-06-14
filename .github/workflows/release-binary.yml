@@ -3,7 +3,7 @@ name: build release binaries and create release notes.
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "*.*.*"
 
 jobs:
   release-binary:
