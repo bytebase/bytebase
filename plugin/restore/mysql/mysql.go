@@ -550,8 +550,8 @@ func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error
 	return binlogFileList, nil
 }
 
-// FetchBinlogFilesToTargetTs downloads the locally missing binlog files from the remote instance to `binlogDir`.
-// After downloading a binlog file, we check it's first event timestamp. If the timestamp is larger than
+// FetchBinlogFilesToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
+// After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
 // targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
 // all the binlog events we need for this recovery task.
 func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64) error {
@@ -717,7 +717,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog BinlogFile, isL
 	return nil
 }
 
-// GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files.
+// GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
 func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
 	db, err := r.driver.GetDbConnection(ctx, "")
 	if err != nil {
