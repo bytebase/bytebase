@@ -96,7 +96,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	log.Debug("Get latest backup before or equal to targetTs", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	backup, err := mysqlRestore.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
 		log.Error("Failed to get backup before or equal to targetTs",
