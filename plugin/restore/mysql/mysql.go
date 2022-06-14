@@ -212,6 +212,10 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	if err != nil {
 		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
 	}
+	if len(binlogFiles) == 0 {
+		log.Error("No binlog files found locally")
+		return nil, fmt.Errorf("no binlog files found locally")
+	}
 
 	var binlogFilesToReplay []BinlogFile
 	for _, f := range binlogFiles {
@@ -231,6 +235,11 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	binlogFilesToReplay, err = sortBinlogFiles(binlogFilesToReplay)
 	if err != nil {
 		return nil, err
+	}
+
+	if binlogFilesToReplay[0].Seq != startBinlogSeq {
+		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
+		return nil, fmt.Errorf("the starting binlog file[%s] does not exist locally", startBinlogInfo.FileName)
 	}
 
 	for i := 1; i < len(binlogFilesToReplay); i++ {
@@ -500,11 +509,11 @@ func getBinlogDownloadListAndLocalValidFiles(binlogDir string, binlogFilesLocal,
 	// Check for:
 	// 1. binlog files on server but not locally exist
 	// 2. local binlog files with invalid file size
-	var downloadFileList []BinlogFile
+	var downloadFileListSorted []BinlogFile
 	for _, serverBinlog := range binlogFilesOnServerSorted {
 		localBinlogFile, ok := binlogFilesLocalMap[serverBinlog.Name]
 		if !ok {
-			downloadFileList = append(downloadFileList, serverBinlog)
+			downloadFileListSorted = append(downloadFileListSorted, serverBinlog)
 			continue
 		}
 
@@ -518,7 +527,7 @@ func getBinlogDownloadListAndLocalValidFiles(binlogDir string, binlogFilesLocal,
 				log.Error("Failed to remove the partial local binlog file")
 				return nil, nil, fmt.Errorf("failed to remove the partial local binlog file[%s], error[%w]", serverBinlog.Name, err)
 			}
-			downloadFileList = append(downloadFileList, serverBinlog)
+			downloadFileListSorted = append(downloadFileListSorted, serverBinlog)
 			binlogFilesLocalInvalidMap[serverBinlog.Name] = true
 		}
 	}
@@ -535,7 +544,7 @@ func getBinlogDownloadListAndLocalValidFiles(binlogDir string, binlogFilesLocal,
 		return nil, nil, err
 	}
 
-	return downloadFileList, binlogFilesLocalValidSorted, nil
+	return downloadFileListSorted, binlogFilesLocalValidSorted, nil
 }
 
 func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
@@ -550,11 +559,11 @@ func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error
 	return binlogFileList, nil
 }
 
-// FetchBinlogFilesToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
+// FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
 // After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
 // targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
 // all the binlog events we need for this recovery task.
-func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64) error {
+func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int64) error {
 	// Read the local binlog files.
 	binlogFilesInfoLocal, err := ioutil.ReadDir(r.binlogDir)
 	if err != nil {
@@ -587,7 +596,7 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	// Find if some local binlog file's first binlog event ts is already larger than targetTs.
 	// If so, we do not need to download the following binlog files on server.
 	var foundLocalFileLTTargetTs bool
-	var localFileExceedsTargetTs BinlogFile
+	var localFileSeqExceedsTargetTs int64
 	for _, file := range binlogFilesLocalValidSorted {
 		eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
 		path := filepath.Join(r.binlogDir, file.Name)
@@ -598,12 +607,12 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 			return fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
 		}
 		if eventTs > targetTs {
-			log.Info("Found a local binlog file whose first event's timestamp is larger than targetTs",
-				zap.Any("binlogFile", file),
+			log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
+				zap.String("path", path),
 				zap.Int64("targetTs", targetTs),
 				zap.Int64("eventTs", eventTs))
 			foundLocalFileLTTargetTs = true
-			localFileExceedsTargetTs = file
+			localFileSeqExceedsTargetTs = file.Seq
 			break
 		}
 	}
@@ -611,12 +620,12 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 	// Now it's time to download binlog files up to targetTs.
 	log.Debug("Download binlog file list", zap.Array("list", ZapBinlogFiles(downloadFileList)))
 	for _, file := range downloadFileList {
-		log.Debug("Downloading file", zap.Any("binlogFile", file))
 		// The about-to-download binlog file has eventTs > targetTs, so we should stop downloading the following binlog files.
-		if foundLocalFileLTTargetTs && localFileExceedsTargetTs.Seq <= file.Seq {
+		if foundLocalFileLTTargetTs && localFileSeqExceedsTargetTs <= file.Seq {
 			log.Debug("Skip downloading file, because there's already a local binlog file whose first eventTs > targetTs", zap.String("binlogFile", file.Name))
 			break
 		}
+		log.Debug("Downloading file", zap.String("file", file.Name))
 
 		isLast := file == latestBinlogFileOnServer
 		if err := r.downloadBinlogFile(ctx, file, isLast); err != nil {
@@ -633,9 +642,9 @@ func (r *Restore) FetchBinlogFilesToTargetTs(ctx context.Context, targetTs int64
 				zap.Error(err))
 			return fmt.Errorf("failed to parse the first binlog event timestamp for the newly downloaded binlog file[%s], error[%w]", path, err)
 		}
-		log.Debug("Checking first event ts with targetTs", zap.Int64("eventTs", eventTs), zap.Int64("targetTs", targetTs))
+		log.Debug("Checking first event ts with targetTs", zap.String("path", path), zap.Int64("eventTs", eventTs), zap.Int64("targetTs", targetTs))
 		if eventTs > targetTs {
-			log.Info("Downloaded a binlog file whose first event's timestamp is larger than targetTs",
+			log.Debug("Downloaded a binlog file whose first event's timestamp is larger than targetTs",
 				zap.String("path", path),
 				zap.Int64("targetTs", targetTs),
 				zap.Int64("eventTs", eventTs))

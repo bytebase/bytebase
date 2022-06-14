@@ -91,7 +91,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	log.Debug("Download all binlog files up to targetTs", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	// TODO(dragonly): Do this on a regular basis.
-	if err := mysqlRestore.FetchBinlogFilesToTargetTs(ctx, targetTs); err != nil {
+	if err := mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs); err != nil {
 		return err
 	}
 
