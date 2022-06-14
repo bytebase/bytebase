@@ -197,7 +197,7 @@ DELIMITER ;
 # End of log file
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
-			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.Local).Unix(),
+			timestamp: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(),
 			err:       false,
 		},
 		// Edge case: invalid mysqlbinlog option
