@@ -11,7 +11,6 @@ monaco.editor.defineTheme("bb-sql-editor-theme", {
   inherit: true,
   rules: [],
   colors: {
-    "editor.lineHighlightBorder": "#FFFFFFFF",
     "editorCursor.foreground": "#504de2",
     "editorLineNumber.foreground": "#aaaaaa",
     "editorLineNumber.activeForeground": "#111111",

@@ -87,6 +87,7 @@ const getEditorInstance = () => {
       top: 8,
       bottom: 8,
     },
+    renderLineHighlight: "none",
     codeLens: false,
   });
 
