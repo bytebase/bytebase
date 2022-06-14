@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-action">
+  <div class="w-full flex justify-between items-center p-4 border-b">
     <div class="action-left space-x-2 flex items-center">
       <NButton
         type="primary"
@@ -179,9 +179,3 @@ const handleFormatSQL = () => {
   sqlEditorStore.setShouldFormatContent(true);
 };
 </script>
-
-<style scoped>
-.editor-action {
-  @apply w-full flex justify-between items-center p-2;
-}
-</style>
