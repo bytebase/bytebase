@@ -229,10 +229,11 @@ func TestFetchBinlogFiles(t *testing.T) {
 	for i, targetTs := range startTsList {
 		t.Logf("Round %d\n", i)
 		// fetch and randomly truncate/delete some files
-		t.Log("fetch binlog files to targetTs")
+		t.Log("Fetch binlog files to targetTs")
 		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
 		a.NoError(err)
 		binlogFilesDownloaded, err := ioutil.ReadDir(binlogDir)
+		t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
 		a.NoError(err)
 		truncateIndex := rand.Intn(i + 1)
 		path := filepath.Join(binlogDir, binlogFilesDownloaded[truncateIndex].Name())
@@ -245,7 +246,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		err = os.Remove(path)
 		a.NoError(err)
 		// re-download and check
-		t.Log("re-download binlog files")
+		t.Log("Re-downloading binlog files")
 		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
 		a.NoError(err)
 		binlogFilesDownloadedAgain, err := ioutil.ReadDir(binlogDir)

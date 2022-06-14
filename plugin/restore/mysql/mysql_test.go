@@ -462,52 +462,27 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 	}
 }
 
-func TestGetBinlogDownloadListAndLocalValidFiles(t *testing.T) {
+func TestLocalBinlogFilesAreContinuous(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFilesLocal            []BinlogFile
-		binlogFilesOnServerSorted   []BinlogFile
-		downloadFileList            []BinlogFile
-		binlogFilesLocalValidSorted []BinlogFile
+		binlogFiles []BinlogFile
+		expect      bool
 	}{
-		// No local binlog files.
 		{
-			binlogFilesLocal:            nil,
-			binlogFilesOnServerSorted:   []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}, {Name: "binlog.000002", Size: 157, Seq: 2}},
-			downloadFileList:            []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}, {Name: "binlog.000002", Size: 157, Seq: 2}},
-			binlogFilesLocalValidSorted: nil,
+			binlogFiles: []BinlogFile{{Seq: 1}},
+			expect:      true,
 		},
-		// Skip downloading valid local binlog files.
 		{
-			binlogFilesLocal:            []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}},
-			binlogFilesOnServerSorted:   []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}, {Name: "binlog.000002", Size: 157, Seq: 2}},
-			downloadFileList:            []BinlogFile{{Name: "binlog.000002", Size: 157, Seq: 2}},
-			binlogFilesLocalValidSorted: []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}},
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
+			expect:      true,
 		},
-		// Valid local binlog files but not on server.
 		{
-			binlogFilesLocal:            []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}},
-			binlogFilesOnServerSorted:   []BinlogFile{{Name: "binlog.000002", Size: 157, Seq: 2}, {Name: "binlog.000003", Size: 157, Seq: 3}},
-			downloadFileList:            []BinlogFile{{Name: "binlog.000002", Size: 157, Seq: 2}, {Name: "binlog.000003", Size: 157, Seq: 3}},
-			binlogFilesLocalValidSorted: []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}},
-		},
-		// Invalid local binlog files.
-		{
-			binlogFilesLocal:            []BinlogFile{{Name: "binlog.000001", Size: 1, Seq: 1}},
-			binlogFilesOnServerSorted:   []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}, {Name: "binlog.000002", Size: 157, Seq: 2}},
-			downloadFileList:            []BinlogFile{{Name: "binlog.000001", Size: 157, Seq: 1}, {Name: "binlog.000002", Size: 157, Seq: 2}},
-			binlogFilesLocalValidSorted: nil,
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
+			expect:      false,
 		},
 	}
-	binlogDir := t.TempDir()
 	for _, test := range tests {
-		for _, file := range test.binlogFilesLocal {
-			_, err := os.Create(filepath.Join(binlogDir, file.Name))
-			a.NoError(err)
-		}
-		downloadFileList, binlogFilesLocalValidSorted, err := getBinlogDownloadListAndLocalValidFiles(binlogDir, test.binlogFilesLocal, test.binlogFilesOnServerSorted)
-		a.Equal(test.downloadFileList, downloadFileList)
-		a.Equal(test.binlogFilesLocalValidSorted, binlogFilesLocalValidSorted)
-		a.NoError(err)
+		result := localBinlogFilesAreContinuous(test.binlogFiles)
+		a.Equal(test.expect, result)
 	}
 }

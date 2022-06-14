@@ -232,24 +232,27 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		}
 	}
 
-	binlogFilesToReplay, err = sortBinlogFiles(binlogFilesToReplay)
+	binlogFilesToReplaySorted, err := sortBinlogFiles(binlogFilesToReplay)
 	if err != nil {
 		return nil, err
 	}
 
-	if binlogFilesToReplay[0].Seq != startBinlogSeq {
+	if binlogFilesToReplaySorted[0].Seq != startBinlogSeq {
 		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
 		return nil, fmt.Errorf("the starting binlog file[%s] does not exist locally", startBinlogInfo.FileName)
 	}
 
-	for i := 1; i < len(binlogFilesToReplay); i++ {
-		if binlogFilesToReplay[i].Seq != binlogFilesToReplay[i-1].Seq+1 {
-			return nil, fmt.Errorf("discontinuous binlog file extensions detected in %s and %s", binlogFilesToReplay[i-1].Name, binlogFilesToReplay[i].Name)
+	if !localBinlogFilesAreContinuous(binlogFilesToReplaySorted) {
+		return nil, fmt.Errorf("discontinuous binlog file extensions detected, skip ")
+	}
+	for i := 1; i < len(binlogFilesToReplaySorted); i++ {
+		if binlogFilesToReplaySorted[i].Seq != binlogFilesToReplaySorted[i-1].Seq+1 {
+			return nil, fmt.Errorf("discontinuous binlog file extensions detected in %s and %s", binlogFilesToReplaySorted[i-1].Name, binlogFilesToReplaySorted[i].Name)
 		}
 	}
 
 	var binlogReplayList []string
-	for _, binlogFile := range binlogFilesToReplay {
+	for _, binlogFile := range binlogFilesToReplaySorted {
 		binlogReplayList = append(binlogReplayList, filepath.Join(binlogDir, binlogFile.Name))
 	}
 
@@ -498,55 +501,6 @@ func (r *Restore) parseFirstLocalBinlogEventTimestamp(ctx context.Context, fileN
 	return r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
 }
 
-func getBinlogDownloadListAndLocalValidFiles(binlogDir string, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) ([]BinlogFile, []BinlogFile, error) {
-	binlogFilesLocalMap := make(map[string]BinlogFile)
-	for _, file := range binlogFilesLocal {
-		binlogFilesLocalMap[file.Name] = file
-	}
-	// Record invalid local binlog files to re-download.
-	binlogFilesLocalInvalidMap := make(map[string]bool)
-
-	// Check for:
-	// 1. binlog files on server but not locally exist
-	// 2. local binlog files with invalid file size
-	var downloadFileListSorted []BinlogFile
-	for _, serverBinlog := range binlogFilesOnServerSorted {
-		localBinlogFile, ok := binlogFilesLocalMap[serverBinlog.Name]
-		if !ok {
-			downloadFileListSorted = append(downloadFileListSorted, serverBinlog)
-			continue
-		}
-
-		if localBinlogFile.Size != serverBinlog.Size {
-			// Existing local binlog file size does not match size queried from MySQL server, delete and re-download.
-			log.Warn("Deleting partial local binlog file",
-				zap.String("fileName", serverBinlog.Name),
-				zap.Int64("fileSize", localBinlogFile.Size),
-				zap.Int64("serverFileSize", serverBinlog.Size))
-			if err := os.Remove(filepath.Join(binlogDir, serverBinlog.Name)); err != nil {
-				log.Error("Failed to remove the partial local binlog file")
-				return nil, nil, fmt.Errorf("failed to remove the partial local binlog file[%s], error[%w]", serverBinlog.Name, err)
-			}
-			downloadFileListSorted = append(downloadFileListSorted, serverBinlog)
-			binlogFilesLocalInvalidMap[serverBinlog.Name] = true
-		}
-	}
-
-	var binlogFilesLocalValid []BinlogFile
-	for _, file := range binlogFilesLocalMap {
-		invalid := binlogFilesLocalInvalidMap[file.Name]
-		if !invalid {
-			binlogFilesLocalValid = append(binlogFilesLocalValid, file)
-		}
-	}
-	binlogFilesLocalValidSorted, err := sortBinlogFiles(binlogFilesLocalValid)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return downloadFileListSorted, binlogFilesLocalValidSorted, nil
-}
-
 func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
 	var binlogFileList []BinlogFile
 	for _, fileInfo := range binlogFileInfoList {
@@ -559,88 +513,142 @@ func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error
 	return binlogFileList, nil
 }
 
+func getLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return nil, err
+	}
+	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
+	if err != nil {
+		return nil, err
+	}
+	binlogFilesLocalSorted, err := sortBinlogFiles(binlogFilesLocal)
+	if err != nil {
+		return nil, err
+	}
+	return binlogFilesLocalSorted, nil
+}
+
+func localBinlogFilesAreContinuous(files []BinlogFile) bool {
+	for i := 0; i < len(files)-1; i++ {
+		if files[i].Seq+1 != files[i+1].Seq {
+			return false
+		}
+	}
+	return true
+}
+
 // FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
 // After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
 // targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
 // all the binlog events we need for this recovery task.
 func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int64) error {
-	// Read the local binlog files.
-	binlogFilesInfoLocal, err := ioutil.ReadDir(r.binlogDir)
-	if err != nil {
-		return err
-	}
-	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
-	if err != nil {
-		return err
-	}
-
 	// Read binlog files list on server.
-	// We compare it with the local binlog files list to generate a download list.
-	// Also compare file sizes to validate local binlog files, and re-download invalid ones.
 	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
 	if len(binlogFilesOnServerSorted) == 0 {
 		// No binlog files on server, so there's nothing to download.
+		log.Debug("No binlog file found on server")
 		return nil
 	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
-	downloadFileList, binlogFilesLocalValidSorted, err := getBinlogDownloadListAndLocalValidFiles(r.binlogDir, binlogFilesLocal, binlogFilesOnServerSorted)
+	// Read the local binlog files.
+	binlogFilesLocalSorted, err := getLocalBinlogFiles(r.binlogDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
 
-	// Find if some local binlog file's first binlog event ts is already larger than targetTs.
-	// If so, we do not need to download the following binlog files on server.
-	var foundLocalFileLTTargetTs bool
-	var localFileSeqExceedsTargetTs int64
-	for _, file := range binlogFilesLocalValidSorted {
-		eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
-		path := filepath.Join(r.binlogDir, file.Name)
-		if err != nil {
-			log.Error("Failed to parse the first binlog event timestamp for local binlog file",
-				zap.String("path", path),
-				zap.Error(err))
-			return fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
+	if len(binlogFilesLocalSorted) != 0 {
+		// Re-download corrupted local binlog files.
+		// This is a best-effort task, because the corresponding binlog files may not exist on server.
+		log.Debug("Re-downloading corrupted local binlog files")
+		binlogFilesOnServerMap := make(map[string]BinlogFile)
+		for _, file := range binlogFilesOnServerSorted {
+			binlogFilesOnServerMap[file.Name] = file
 		}
-		if eventTs > targetTs {
-			log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
-				zap.String("path", path),
-				zap.Int64("targetTs", targetTs),
-				zap.Int64("eventTs", eventTs))
-			foundLocalFileLTTargetTs = true
-			localFileSeqExceedsTargetTs = file.Seq
-			break
+		for _, file := range binlogFilesLocalSorted {
+			fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
+			if existOnServer && file.Size != fileOnServer.Size {
+				path := filepath.Join(r.binlogDir, file.Name)
+				log.Debug("Deleting corrupted local binlog file",
+					zap.String("path", path),
+					zap.Int64("sizeLocal", file.Size),
+					zap.Int64("sizeOnServer", fileOnServer.Size))
+				if err := os.Remove(path); err != nil {
+					log.Error("Failed to remove corrupted local binlog file", zap.String("path", path), zap.Error(err))
+					return fmt.Errorf("failed to remove corrupted local binlog file[%s], error[%w]", path, err)
+				}
+				if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
+					log.Error("Failed to re-download corrupted local binlog file", zap.String("path", path), zap.Error(err))
+					return fmt.Errorf("failed to re-download corrupted local binlog file[%s], error[%w]", path, err)
+				}
+			}
+		}
+
+		// Check whether we can only use local binlog files to restore to targetTs:
+		// 1. The local binlog files have no gaps.
+		// 2. Some file's first binlog event ts is already larger than targetTs.
+		// 3. The first local binlog file <= first server binlog file
+		// If all true, we can skip downloading binlog files at all.
+		log.Debug("Checking whether we can skip download binlog files on server")
+		if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
+			isContinuous := localBinlogFilesAreContinuous(binlogFilesLocalSorted)
+			containsTargetTs := false
+			if isContinuous {
+				for _, file := range binlogFilesLocalSorted {
+					eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
+					path := filepath.Join(r.binlogDir, file.Name)
+					if err != nil {
+						log.Error("Failed to parse the first binlog event timestamp for local binlog file",
+							zap.String("path", path),
+							zap.Error(err))
+						return fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
+					}
+					if eventTs > targetTs {
+						log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
+							zap.String("path", path),
+							zap.Int64("targetTs", targetTs),
+							zap.Int64("eventTs", eventTs))
+						containsTargetTs = true
+						break
+					}
+				}
+			}
+			if isContinuous && containsTargetTs {
+				log.Debug("The local binlog files are continuous and already contain targetTs, skip download")
+				return nil
+			}
 		}
 	}
 
-	// Now it's time to download binlog files up to targetTs.
-	log.Debug("Download binlog file list", zap.Array("list", ZapBinlogFiles(downloadFileList)))
-	for _, file := range downloadFileList {
-		// The about-to-download binlog file has eventTs > targetTs, so we should stop downloading the following binlog files.
-		if foundLocalFileLTTargetTs && localFileSeqExceedsTargetTs <= file.Seq {
-			log.Debug("Skip downloading file, because there's already a local binlog file whose first eventTs > targetTs", zap.String("binlogFile", file.Name))
-			break
+	// We are sure that the local binlog files are not enough to recover to targetTs.
+	// It's time to download binlog files from the server.
+	binlogFilesLocalMap := make(map[string]bool)
+	for _, file := range binlogFilesLocalSorted {
+		binlogFilesLocalMap[file.Name] = true
+	}
+	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	for _, file := range binlogFilesOnServerSorted {
+		if existLocal := binlogFilesLocalMap[file.Name]; !existLocal {
+			if err := r.downloadBinlogFile(ctx, file, file == latestBinlogFileOnServer); err != nil {
+				log.Error("Failed to download binlog file", zap.String("filename", file.Name), zap.Error(err))
+				return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
+			}
 		}
-		log.Debug("Downloading file", zap.String("file", file.Name))
-
-		isLast := file == latestBinlogFileOnServer
-		if err := r.downloadBinlogFile(ctx, file, isLast); err != nil {
-			return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
-		}
-		// We parsed the first binlog event's timestamp of the newly downloaded binlog file.
+		// We parsed the first binlog event's timestamp of the current inspected binlog file.
 		// If the timestamp > targetTs, we skip downloading the following binlog files, because we have already
 		// downloaded all the binlog files needed before targetTs.
 		eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
 		path := filepath.Join(r.binlogDir, file.Name)
 		if err != nil {
-			log.Error("Failed to parse the first binlog event timestamp for the newly downloaded binlog file",
+			log.Error("Failed to parse the first binlog event timestamp for the current inspected binlog file",
 				zap.String("path", path),
 				zap.Error(err))
-			return fmt.Errorf("failed to parse the first binlog event timestamp for the newly downloaded binlog file[%s], error[%w]", path, err)
+			return fmt.Errorf("failed to parse the first binlog event timestamp for the current inspected binlog file[%s], error[%w]", path, err)
 		}
 		log.Debug("Checking first event ts with targetTs", zap.String("path", path), zap.Int64("eventTs", eventTs), zap.Int64("targetTs", targetTs))
 		if eventTs > targetTs {
@@ -659,7 +667,7 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlog BinlogFile, isLast bool) (err error) {
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) (err error) {
 	var resultFilePath string
 	defer func() {
 		if err != nil {
@@ -670,7 +678,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog BinlogFile, isL
 	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	args := []string{
-		binlog.Name,
+		binlogFileToDownload.Name,
 		"--read-from-remote-server",
 		"--raw",
 		"--host", r.connCfg.Host,
@@ -689,37 +697,37 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlog BinlogFile, isL
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	resultFilePath = filepath.Join(resultFileDir, binlog.Name)
+	resultFilePath = filepath.Join(resultFileDir, binlogFileToDownload.Name)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("executing mysqlbinlog fails, error: %w", err)
 	}
 
-	log.Debug("Checking binlog file stat", zap.String("path", resultFilePath))
+	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot get file[%s] stat, error[%w]", resultFilePath, err)
 	}
 	if !isLast {
 		// Case 1: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
-		if fileInfo.Size() != binlog.Size {
-			log.Error("Downloaded binlog file size does not match size queried on the MySQL server",
-				zap.String("binlog", binlog.Name),
-				zap.Int64("sizeInfo", binlog.Size),
+		if fileInfo.Size() != binlogFileToDownload.Size {
+			log.Error("Downloaded binlog file size does not equal to size queried on the MySQL server",
+				zap.String("binlog", binlogFileToDownload.Name),
+				zap.Int64("sizeInfo", binlogFileToDownload.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
-			return fmt.Errorf("downloaded binlog file[%s] size[%d] does not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
+			return fmt.Errorf("downloaded binlog file[%s] size[%d] does not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	} else {
 		// Case 2: It's the last binlog file we need (contains the targetTs).
 		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
 		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
-		if fileInfo.Size() < binlog.Size {
+		if fileInfo.Size() < binlogFileToDownload.Size {
 			log.Error("Downloaded latest binlog file size is smaller than size queried on the MySQL server",
-				zap.String("binlog", binlog.Name),
-				zap.Int64("sizeInfo", binlog.Size),
+				zap.String("binlog", binlogFileToDownload.Name),
+				zap.Int64("sizeInfo", binlogFileToDownload.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
-			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlog.Size)
+			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	}
 
