@@ -441,3 +441,28 @@ func TestParseAndSortBinlogFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestBinlogFilesAreContinuous(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		binlogFiles []BinlogFile
+		expect      bool
+	}{
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}},
+			expect:      true,
+		},
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
+			expect:      true,
+		},
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
+			expect:      false,
+		},
+	}
+	for _, test := range tests {
+		result := binlogFilesAreContinuous(test.binlogFiles)
+		a.Equal(test.expect, result)
+	}
+}
