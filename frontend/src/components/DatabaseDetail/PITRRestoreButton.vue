@@ -1,12 +1,12 @@
 <template>
-  <div class="relative mr-2">
+  <div class="relative mr-6">
     <BBTooltipButton
       type="normal"
       tooltip-mode="DISABLED-ONLY"
       :disabled="!allowAdmin || !pitrAvailable.result"
       @click="openDialog"
     >
-      {{ $t("common.restore") }}
+      {{ $t("database.pitr.restore-to-point-in-time") }}
       <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
         {{ pitrAvailable.message }}
       </template>
