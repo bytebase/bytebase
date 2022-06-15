@@ -81,8 +81,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 	t.Logf("backup content:\n%s", buf.String())
 
-	// drop all tables
-	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", table))
+	// drop all tables and views
+	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s; DROP VIEW v_%s", table, table))
 	a.NoError(err)
 
 	// restore
