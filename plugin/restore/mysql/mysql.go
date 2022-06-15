@@ -594,7 +594,7 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 		// 2. Some file's first binlog event ts is already larger than targetTs.
 		// 3. The first local binlog file <= first server binlog file
 		// If all true, we can skip downloading binlog files at all.
-		log.Debug("Checking whether we can skip download binlog files on server")
+		log.Debug("Checking whether we can just replay existing local binlog files to restore")
 		if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
 			isContinuous := localBinlogFilesAreContinuous(binlogFilesLocalSorted)
 			containsTargetTs := false
@@ -619,13 +619,13 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 				}
 			}
 			if isContinuous && containsTargetTs {
-				log.Debug("The local binlog files are continuous and already contain targetTs, skip download")
+				log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
 				return nil
 			}
 		}
 	}
 
-	// We are sure that the local binlog files are not enough to recover to targetTs.
+	// We are sure that the local binlog files are not enough to replay to targetTs.
 	// It's time to download binlog files from the server.
 	binlogFilesLocalMap := make(map[string]bool)
 	for _, file := range binlogFilesLocalSorted {
@@ -641,7 +641,7 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 		}
 		// We parsed the first binlog event's timestamp of the current inspected binlog file.
 		// If the timestamp > targetTs, we skip downloading the following binlog files, because we have already
-		// downloaded all the binlog files needed before targetTs.
+		// downloaded all the binlog files needed for replaying to targetTs.
 		eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
 		path := filepath.Join(r.binlogDir, file.Name)
 		if err != nil {
