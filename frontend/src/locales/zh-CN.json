@@ -806,7 +806,9 @@
       "point-in-time": "时间点",
       "help-info": "将数据库的状态恢复到一个时间点。{link}。",
       "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}",
-      "restore-to-point-in-time": "恢复到指定时间点"
+      "restore-to-point-in-time": "恢复到指定时间点",
+      "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
+      "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     }
   },
   "repository": {

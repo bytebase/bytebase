@@ -806,7 +806,9 @@
       "point-in-time": "Point in time",
       "help-info": "Restore the database state to a point in time. {link}.",
       "minimum-supported-engine-and-version": "{engine} >= {min_version} required",
-      "restore-to-point-in-time": "Restore to point in time"
+      "restore-to-point-in-time": "Restore to point in time",
+      "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
+      "no-later-than-now": "Restore point-in-time cannot be later than now."
     }
   },
   "repository": {
