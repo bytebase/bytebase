@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -491,6 +492,34 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
+func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
+	var binlogFileList []BinlogFile
+	for _, fileInfo := range binlogFileInfoList {
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		if err != nil {
+			return nil, err
+		}
+		binlogFileList = append(binlogFileList, binlogFile)
+	}
+	return binlogFileList, nil
+}
+
+func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return nil, err
+	}
+	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
+	if err != nil {
+		return nil, err
+	}
+	binlogFilesLocalSorted, err := parseAndSortBinlogFiles(binlogFilesLocal)
+	if err != nil {
+		return nil, err
+	}
+	return binlogFilesLocalSorted, nil
+}
+
 func binlogFilesAreContinuous(files []BinlogFile) bool {
 	for i := 0; i < len(files)-1; i++ {
 		if files[i].Seq+1 != files[i+1].Seq {
@@ -503,24 +532,28 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 // FetchArchivedBinlogFiles downloads the missing binlog files from the remote instance to `binlogDir`,
 // but exclude latest binlog. We may  download the latest binlog only when doing PITR.
 func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
-	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
-	if err != nil {
-		return err
-	}
-
+	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
-
+	if len(binlogFilesOnServerSorted) == 0 {
+		// No binlog files on server, so there's nothing to download.
+		log.Debug("No binlog file found on server")
+		return nil
+	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
+	// Read the local binlog files.
+	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
+	if err != nil {
+		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
+	}
 	// build a local file size map from file name to size
 	localFileMap := make(map[string]int64)
-
-	for _, localFile := range binlogFilesLocal {
-		localFileMap[localFile.Name()] = localFile.Size()
+	for _, localFile := range binlogFilesLocalSorted {
+		localFileMap[localFile.Name] = localFile.Size
 	}
 
 	todo := make(map[string]bool)
