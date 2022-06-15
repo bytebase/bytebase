@@ -668,6 +668,10 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 		binlogFiles = append(binlogFiles, binlogFile)
 	}
 
+	binlogFiles, err = parseAndSortBinlogFiles(binlogFiles)
+	if err != nil {
+		return nil, err
+	}
 	return binlogFiles, nil
 }
 
