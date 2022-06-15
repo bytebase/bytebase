@@ -418,11 +418,10 @@ func TestSortBinlogFiles(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		items := sortBinlogFiles(test.binlogFileNames)
-		a.Equal(len(test.expect), len(items))
-		for idx := range items {
-			a.Equal(items[idx].Name, test.expect[idx].Name)
-			a.Equal(items[idx].Seq, test.expect[idx].Seq)
+		sorted := sortBinlogFiles(test.binlogFileNames)
+		a.Equal(len(test.expect), len(sorted))
+		for i := range sorted {
+			a.Equal(sorted[i].Seq, test.expect[i].Seq)
 		}
 	}
 }
