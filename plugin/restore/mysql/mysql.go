@@ -311,6 +311,11 @@ func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	// The first occurrence is the target.
 	for _, line := range lines {
 		if strings.Contains(line, "server id") {
+			if strings.Contains(line, "end_log_pos 0") {
+				// https://github.com/mysql/mysql-server/blob/8.0/client/mysqlbinlog.cc#L1209-L1212
+				// Fake events with end_log_pos=0 could be generated and we need to ignore them.
+				continue
+			}
 			fields := strings.Fields(line)
 			// fields should starts with ["#220421", "14:49:26", "server", "id"]
 			if len(fields) < 4 ||
@@ -342,6 +347,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		}
 		eventTsList = append(eventTsList, eventTs)
 	}
+	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
 	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupList, eventTsList, targetTs)
 	if err != nil {

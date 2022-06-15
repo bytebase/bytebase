@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-pane h-full">
+  <div class="flex h-full w-full flex-col justify-start items-start">
     <EditorAction @save-sheet="handleSaveSheet" />
 
     <template v-if="!sqlEditorStore.isDisconnected">

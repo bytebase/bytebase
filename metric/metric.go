@@ -21,6 +21,8 @@ const (
 	DatabaseCountMetricName metric.Name = "bb.database.count"
 	// SheetCountMetricName is the metric name for sheet count
 	SheetCountMetricName metric.Name = "bb.sheet.count"
+	// MemberCountMetricName is the metric name for member count
+	MemberCountMetricName metric.Name = "bb.member.count"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count
@@ -75,4 +77,12 @@ type SheetCountMetric struct {
 	Source     api.SheetSource
 	Type       api.SheetType
 	Count      int
+}
+
+// MemberCountMetric is the API message for member count metric
+type MemberCountMetric struct {
+	Count     int
+	Role      api.Role
+	Status    api.MemberStatus
+	RowStatus api.RowStatus
 }

@@ -63,17 +63,27 @@
           </router-link>
         </template>
       </BBTableCell>
-      <BBTableCell class="tooltip-wrapper">
-        <span
-          v-if="history.statement.length > 100"
-          class="tooltip whitespace-pre-wrap"
-          >{{ history.statement }}</span
+      <BBTableCell>
+        <NPopover
+          :disabled="history.statement.length < 100"
+          style="max-height: 300px"
+          placement="bottom"
+          width="trigger"
+          scrollable
         >
-        {{
-          history.statement.length > 100
-            ? history.statement.substring(0, 100) + "..."
-            : history.statement
-        }}
+          <highlight-code-block
+            :code="history.statement"
+            class="whitespace-pre-wrap"
+          />
+
+          <template #trigger>
+            {{
+              history.statement.length > 100
+                ? history.statement.substring(0, 100) + "..."
+                : history.statement
+            }}
+          </template>
+        </NPopover>
       </BBTableCell>
       <BBTableCell>
         {{ nanosecondsToString(history.executionDurationNs) }}
@@ -90,6 +100,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue";
+import { NPopover } from "naive-ui";
 import { Database, MigrationHistory } from "../types";
 import {
   databaseSlug,
@@ -105,7 +116,10 @@ type Mode = "DATABASE" | "PROJECT";
 
 export default defineComponent({
   name: "MigrationHistoryTable",
-  components: { MigrationHistoryStatusIcon },
+  components: {
+    NPopover,
+    MigrationHistoryStatusIcon,
+  },
   props: {
     mode: {
       default: "DATABASE",
