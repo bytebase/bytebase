@@ -256,6 +256,20 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 			},
 			err: false,
 		},
+		// backup with empty binlog info does not count
+		{
+			backupList: []*api.Backup{
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{}}},
+				{Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000002", Position: 10}}},
+			},
+			eventTsList: []int64{1, 2, 3},
+			targetTs:    2,
+			targetBackup: &api.Backup{
+				Payload: api.BackupPayload{BinlogInfo: api.BinlogInfo{FileName: "binlog.000001", Position: 10}},
+			},
+			err: false,
+		},
 		// no valid backup found
 		{
 			backupList: []*api.Backup{
