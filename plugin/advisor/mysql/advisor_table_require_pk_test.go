@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -214,9 +213,9 @@ func TestRequirePK(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &TableRequirePKAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleTableRequirePK,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &TableRequirePKAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleTableRequirePK,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
 	}, &MockCatalogService{})
 }

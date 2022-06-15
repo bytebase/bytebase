@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -36,7 +35,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := api.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +120,10 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				}
 
 				metaData := map[string]string{
-					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					api.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
-					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					advisor.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
+					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
 
 				res = append(res, &indexMetaData{
@@ -147,10 +146,10 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				}
 
 				metaData := map[string]string{
-					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
-					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					advisor.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
+					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
 				res = append(res, &indexMetaData{
 					indexName: spec.Constraint.Name,

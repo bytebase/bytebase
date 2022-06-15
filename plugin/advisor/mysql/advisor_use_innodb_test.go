@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -88,9 +87,9 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 	}
-	runSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleMySQLEngine,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleMySQLEngine,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
 	}, &MockCatalogService{})
 }

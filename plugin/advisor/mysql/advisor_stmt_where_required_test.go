@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -89,9 +88,9 @@ func TestWhereRequirement(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleStatementRequireWhere,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &WhereRequirementAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleStatementRequireWhere,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, &MockCatalogService{})
 }
