@@ -541,6 +541,7 @@ CREATE TABLE backup (
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
     comment TEXT NOT NULL DEFAULT ''
+    payload JSONB NOT NULL DEFAULT '{}',
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);
