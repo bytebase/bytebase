@@ -1,1 +1,0 @@
-ALTER TABLE backup ADD payload JSONB NOT NULL DEFAULT '{}';
