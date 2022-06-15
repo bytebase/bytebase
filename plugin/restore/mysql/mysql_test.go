@@ -415,11 +415,6 @@ func TestSortBinlogFiles(t *testing.T) {
 			binlogFileNames: []BinlogFile{{Seq: 1}, {Seq: 7}, {Seq: 4}},
 			expect:          []BinlogFile{{Seq: 1}, {Seq: 4}, {Seq: 7}},
 		},
-		// 999999
-		{
-			binlogFileNames: []BinlogFile{{Name: "binlog.999999"}, {Name: "binlog.1000000"}},
-			expect:          []BinlogFile{{Name: "binlog.999999", Seq: 999999}, {Name: "binlog.1000000", Seq: 1000000}},
-		},
 	}
 
 	for _, test := range tests {
