@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -126,6 +128,46 @@ func TestCheckVersionForPITR(t *testing.T) {
 	}
 }
 
+func TestGetBinlogFileNameSeqNumber(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		name   string
+		prefix string
+		expect int64
+		err    bool
+	}{
+		{
+			name:   "binlog.096865",
+			expect: 96865,
+			err:    false,
+		},
+		{
+			name:   "binlog.178923",
+			expect: 178923,
+			err:    false,
+		},
+		{
+			name:   "binlog.000001",
+			expect: 1,
+			err:    false,
+		},
+		{
+			name:   "binlog.x8dft",
+			expect: 0,
+			err:    true,
+		},
+	}
+	for _, test := range tests {
+		ext, err := getBinlogNameSeq(test.name)
+		a.EqualValues(ext, test.expect)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}
+
 func TestParseBinlogEventTimestampImpl(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
@@ -155,7 +197,7 @@ DELIMITER ;
 # End of log file
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
-			timestamp: time.Date(2022, 4, 21, 14, 49, 26, 0, time.Local).Unix(),
+			timestamp: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(),
 			err:       false,
 		},
 		// Edge case: invalid mysqlbinlog option
@@ -241,7 +283,6 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 			err:          true,
 		},
 	}
-
 	for _, test := range tests {
 		backup, err := getLatestBackupBeforeOrEqualTsImpl(test.backupList, test.eventTsList, test.targetTs)
 		a.Equal(test.targetBackup, backup)
@@ -249,6 +290,174 @@ func TestGetLatestBackupBeforeOrEqualTsImpl(t *testing.T) {
 			a.Error(err)
 		} else {
 			a.NoError(err)
+		}
+	}
+}
+
+func TestGetReplayBinlogPathList(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		subDirNames     []string
+		binlogFileNames []string
+		startBinlogInfo api.BinlogInfo
+		expect          []string
+		err             bool
+	}{
+		{
+			// Test skip directory
+			subDirNames:     []string{"subdir_a", "subdir_b"},
+			binlogFileNames: []string{},
+			startBinlogInfo: api.BinlogInfo{},
+			expect:          []string{},
+			err:             false,
+		},
+		{
+			// Test skip stale binlog
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{"binlog.000002", "binlog.000003"},
+			err:    false,
+		},
+		{
+			// Test binlogs no hole
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000004"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{},
+			err:    true,
+		},
+		{
+			// Test mysql-bin prefix
+			subDirNames:     []string{},
+			binlogFileNames: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "bin.000001",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{"mysql-bin.000001", "mysql-bin.000002", "mysql-bin.000003"},
+			err:    false,
+		},
+		{
+			// Test out of binlog.999999
+			subDirNames:     []string{},
+			binlogFileNames: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.999999",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{"binlog.999999", "binlog.1000000", "binlog.1000001"},
+			err:    false,
+		},
+		{
+			subDirNames:     []string{"sub_dir"},
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			startBinlogInfo: api.BinlogInfo{
+				FileName: "binlog.000002",
+				Position: 0xdeadbeaf,
+			},
+			expect: []string{"binlog.000002", "binlog.000003"},
+			err:    false,
+		},
+	}
+
+	for _, test := range tests {
+		tmpDir := t.TempDir()
+
+		for _, subDir := range test.subDirNames {
+			err := os.MkdirAll(filepath.Join(tmpDir, subDir), os.ModePerm)
+			a.NoError(err)
+		}
+
+		for _, binlogFileName := range test.binlogFileNames {
+			f, err := os.Create(filepath.Join(tmpDir, binlogFileName))
+			a.NoError(err)
+			err = f.Close()
+			a.NoError(err)
+		}
+
+		result, err := getBinlogReplayList(test.startBinlogInfo, tmpDir)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.EqualValues(len(result), len(test.expect))
+			for idx := range test.expect {
+				a.EqualValues(result[idx], filepath.Join(tmpDir, test.expect[idx]))
+			}
+		}
+	}
+}
+
+func TestParseAndSortBinlogFileName(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		binlogFileNames []string
+		expect          []binlogItem
+		err             bool
+	}{
+		// Normal
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
+			expect: []binlogItem{
+				{
+					name: "binlog.000001",
+					seq:  1,
+				},
+				{
+					name: "binlog.000002",
+					seq:  2,
+				},
+				{
+					name: "binlog.000003",
+					seq:  3,
+				},
+			},
+			err: false,
+		},
+		// parse error
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog000002"},
+			expect:          []binlogItem{},
+			err:             true,
+		},
+		// gap
+		{
+			binlogFileNames: []string{"binlog.000001", "binlog.000007", "binlog.000004"},
+			expect: []binlogItem{
+				{
+					name: "binlog.000001",
+					seq:  1,
+				},
+				{
+					name: "binlog.000004",
+					seq:  4,
+				},
+				{
+					name: "binlog.000007",
+					seq:  7,
+				},
+			},
+			err: false,
+		},
+	}
+
+	for _, test := range tests {
+		items, err := parseAndSortBinlogFileNames(test.binlogFileNames)
+
+		if test.err {
+			a.Error(err)
+		} else {
+			a.EqualValues(len(items), len(test.expect))
+			for idx := range items {
+				a.EqualValues(items[idx].name, test.expect[idx].name)
+				a.EqualValues(items[idx].seq, test.expect[idx].seq)
+			}
 		}
 	}
 }

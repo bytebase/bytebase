@@ -11,12 +11,8 @@
     >
       <div class="relative -mt-4 -ml-4 flex items-center justify-between">
         <div class="ml-4 text-xl text-main">
-          {{ title }}
-          <div v-if="subtitle" class="text-sm text-control whitespace-nowrap">
-            <span class="inline-block">
-              {{ subtitle }}
-            </span>
-          </div>
+          <component :is="renderTitle" />
+          <component :is="renderSubtitle" />
         </div>
         <button
           v-if="showClose"
@@ -37,8 +33,30 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  defineComponent,
+  h,
+  inject,
+  onBeforeMount,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  Ref,
+  RenderFunction,
+  VNode,
+} from "vue";
 import { useModalStack } from "./BBModalStack.vue";
+
+type Overrides = {
+  title: string | RenderFunction | undefined;
+  subtitle: string | RenderFunction | undefined;
+};
+type BBModalContext = {
+  overrides: Ref<Overrides>;
+};
+const BB_MODAL_CONTEXT = Symbol("bb.modal.context");
 
 export default defineComponent({
   name: "BBModal",
@@ -68,6 +86,11 @@ export default defineComponent({
       "z-index": 40 + index.value, // "40 + " because the container in BBModalStack is z-40
     }));
 
+    const overrides = ref<Overrides>({
+      title: undefined,
+      subtitle: undefined,
+    });
+
     const close = () => {
       emit("close");
     };
@@ -96,6 +119,39 @@ export default defineComponent({
       document.removeEventListener("keydown", escHandler);
     });
 
+    provide<BBModalContext>(BB_MODAL_CONTEXT, {
+      overrides,
+    });
+
+    const renderTitle = () => {
+      if (typeof overrides.value.title === "function") {
+        return overrides.value.title();
+      }
+      if (typeof overrides.value.title === "string") {
+        return overrides.value.title;
+      }
+      return props.title;
+    };
+
+    const renderSubtitle = () => {
+      if (typeof overrides.value.subtitle === "function") {
+        return overrides.value.subtitle();
+      }
+      if (typeof overrides.value.subtitle === "string") {
+        return overrides.value.subtitle;
+      }
+      if (props.subtitle) {
+        return h(
+          "div",
+          {
+            class: "text-sm text-control whitespace-nowrap",
+          },
+          [h("span", { class: "inline-block" }, props.subtitle)]
+        );
+      }
+      return null;
+    };
+
     return {
       style,
       close,
@@ -103,9 +159,50 @@ export default defineComponent({
       id,
       index,
       active,
+      overrides,
+      renderTitle,
+      renderSubtitle,
     };
   },
 });
+
+const useBBModalContext = () => inject<BBModalContext>(BB_MODAL_CONTEXT);
+
+export const useOverrideTitle = (
+  title: string | RenderFunction | undefined
+) => {
+  const context = useBBModalContext();
+  let originalTitle: string | RenderFunction | undefined = undefined;
+  onBeforeMount(() => {
+    if (context) {
+      originalTitle = context.overrides.value.title;
+      context.overrides.value.title = title;
+    }
+  });
+  onUnmounted(() => {
+    if (context) {
+      context.overrides.value.title = originalTitle;
+    }
+  });
+};
+
+export const useOverrideSubtitle = (
+  subtitle: string | RenderFunction | undefined
+) => {
+  const context = useBBModalContext();
+  let originalSubtitle: string | RenderFunction | undefined = undefined;
+  onMounted(() => {
+    if (context) {
+      originalSubtitle = context.overrides.value.subtitle;
+      context.overrides.value.subtitle = subtitle;
+    }
+  });
+  onUnmounted(() => {
+    if (context) {
+      context.overrides.value.subtitle = originalSubtitle;
+    }
+  });
+};
 </script>
 
 <style scoped>

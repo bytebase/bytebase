@@ -181,6 +181,7 @@ const issueContext = computed((): IssueContext => {
 
 const {
   applicableTaskStatusTransitionList,
+  applicableStageStatusTransitionList,
   applicableIssueStatusTransitionList,
   getApplicableIssueStatusTransitionList,
   getApplicableTaskStatusTransitionList,
@@ -345,5 +346,22 @@ const onSubmit = async (comment: string) => {
   }
 
   cleanup();
+};
+
+const allowApplyTransitionToStage = (transition: TaskStatusTransition) => {
+  const stage = currentTask.value.stage;
+
+  // Only available when the stage has multiple tasks.
+  if (stage.taskList.length <= 1) {
+    return false;
+  }
+
+  // Available to apply a taskStatusTransition to the stage when the transition
+  // type is also applicable to the stage.
+  return (
+    applicableStageStatusTransitionList.value.findIndex(
+      (t) => t.type === transition.type
+    ) >= 0
+  );
 };
 </script>

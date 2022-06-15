@@ -92,6 +92,19 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 		}
 		databaseList = append(databaseList, database)
 	}
+
+	// If no specified instance, filter out databases belonging to archived instances.
+	if find.InstanceID == nil {
+		var filteredList []*api.Database
+		for _, database := range databaseList {
+			if i := database.Instance; i == nil || i.RowStatus == api.Archived {
+				continue
+			}
+			filteredList = append(filteredList, database)
+		}
+		databaseList = filteredList
+	}
+
 	return databaseList, nil
 }
 
@@ -497,6 +510,9 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 	}
 	if v := find.Name; v != nil {
 		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.SyncStatus; v != nil {
+		where, args = append(where, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.IncludeAllDatabase {
 		where = append(where, "name != '"+api.AllDatabaseName+"'")

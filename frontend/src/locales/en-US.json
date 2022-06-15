@@ -685,6 +685,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
+      "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
@@ -693,6 +694,7 @@
     },
     "backup": {
       "name": "Database backup schedule policy",
+      "tip": "The policy is not applied retroactively.",
       "not-enforced": "Not enforced",
       "not-enforced-info": "No backup schedule is enforced.",
       "daily": "Daily backup",
@@ -1076,7 +1078,8 @@
     "wont-be-deployed-explanation": "These databases won't be deployed, since they hit none of the selectors.",
     "wont-be-deployed": "Won't be deployed",
     "pipeline-generated-from-deployment-config": "The deployment pipeline is generated according to the project's {deployment_config}.",
-    "preview-deployment-pipeline": "Preview Deployment Pipeline"
+    "preview-deployment-pipeline": "Preview Deployment Pipeline",
+    "select-database-group": "Select database group"
   },
   "datasource": {
     "role-type": "Role Type",
@@ -1290,9 +1293,13 @@
           "schema-change": "Schema and data change",
           "migration-history": "Migration history",
           "sql-editor": "SQL Editor",
-          "database-backup-restore": "Database backup / restore",
+          "disaster-recovery": "Disaster recovery",
+          "disaster-recovery-basic": "Basic",
+          "disaster-recovery-basic-tooltip": "Database backup / restore",
+          "disaster-recovery-advanced": "Advanced",
+          "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check",
+          "sql-check": "SQL check / Schema review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
@@ -1373,8 +1380,10 @@
   },
   "schema-review-policy": {
     "title": "Schema Review",
+    "disabled": "Disabled",
     "no-policy-set": "No schema review policy",
     "create-policy": "Create policy",
+    "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
@@ -1382,8 +1391,8 @@
     "rules": "Rules",
     "filter": "Filter",
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",
-    "disable": "Disable schema review policy",
-    "enable": "Enable schema review policy",
+    "disable": "Disable",
+    "enable": "Enable",
     "delete": "Delete schema review policy",
     "category": {
       "engine": "Engine",
@@ -1395,10 +1404,10 @@
     },
     "template": {
       "policy-for-prod": {
-        "title": "Schema review for Prod"
+        "title": "Production Environment Template"
       },
       "policy-for-dev": {
-        "title": "Schema review for Dev"
+        "title": "Development Environment Template"
       }
     },
     "rule": {

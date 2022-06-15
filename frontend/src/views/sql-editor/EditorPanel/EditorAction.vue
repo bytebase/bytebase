@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-action">
+  <div class="w-full flex justify-between items-center p-4 border-b">
     <div class="action-left space-x-2 flex items-center">
       <NButton
         type="primary"
@@ -96,13 +96,7 @@
       >
         <carbon:save class="h-5 w-5" /> &nbsp; {{ $t("common.save") }} (⌘+S)
       </NButton>
-      <NPopover
-        trigger="click"
-        placement="bottom-end"
-        :show-arrow="false"
-        :show="isShowSharePopover"
-        :on-clickoutside="handleClickoutside"
-      >
+      <NPopover trigger="click" placement="bottom-end" :show-arrow="false">
         <template #trigger>
           <NButton
             :disabled="
@@ -110,26 +104,26 @@
               sqlEditorStore.isDisconnected ||
               !tabStore.currentTab.isSaved
             "
-            @click.stop.prevent="toggleSharePopover"
           >
             <carbon:share class="h-5 w-5" /> &nbsp; {{ $t("common.share") }}
           </NButton>
         </template>
-        <SharePopover @close="isShowSharePopover = false" />
+        <template #default>
+          <SharePopover />
+        </template>
       </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, defineEmits } from "vue";
-
+import { computed, defineEmits } from "vue";
+import { useRouter } from "vue-router";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useInstanceStore, useTabStore, useSQLEditorStore } from "@/store";
 import { UNKNOWN_ID, Instance } from "@/types";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { instanceSlug } from "@/utils/slug";
 import SharePopover from "./SharePopover.vue";
-import { useRouter } from "vue-router";
-import { instanceSlug } from "../../../utils/slug";
 
 const emit = defineEmits<{
   (e: "save-sheet", content?: string): void;
@@ -141,8 +135,6 @@ const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
 
 const connectionContext = computed(() => sqlEditorStore.connectionContext);
-
-const isShowSharePopover = ref(false);
 
 const isEmptyStatement = computed(
   () => !tabStore.currentTab || tabStore.currentTab.statement === ""
@@ -183,21 +175,7 @@ const gotoInstanceDetailPage = () => {
   });
 };
 
-const handleClickoutside = (e: any) => {
-  isShowSharePopover.value = false;
-};
-
-const toggleSharePopover = () => {
-  isShowSharePopover.value = !isShowSharePopover.value;
-};
-
 const handleFormatSQL = () => {
   sqlEditorStore.setShouldFormatContent(true);
 };
 </script>
-
-<style scoped>
-.editor-action {
-  @apply w-full flex justify-between items-center p-2;
-}
-</style>

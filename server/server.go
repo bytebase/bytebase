@@ -295,6 +295,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
+	s.registerStageRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
 	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
@@ -346,6 +347,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
 		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
 		metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
+		metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
 		s.MetricReporter = metricReporter
 	}
 }

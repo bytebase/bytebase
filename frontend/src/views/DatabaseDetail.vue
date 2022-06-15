@@ -102,7 +102,7 @@
             </DatabaseLabelProps>
           </dl>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-x-2">
           <button
             v-if="allowChangeProject"
             type="button"
@@ -149,11 +149,7 @@
             </template>
           </BBTooltipButton>
 
-          <PITRRestoreButton
-            v-if="isDev()"
-            :database="database"
-            :allow-admin="allowAdmin"
-          />
+          <PITRRestoreButton :database="database" :allow-admin="allowAdmin" />
         </div>
       </div>
     </main>

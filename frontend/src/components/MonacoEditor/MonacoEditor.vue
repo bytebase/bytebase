@@ -1,5 +1,5 @@
 <template>
-  <div ref="editorRef" style="height: 100%; width: 100%"></div>
+  <div ref="editorContainerRef" style="width: 100%; height: 100%"></div>
 </template>
 
 <script lang="ts" setup>
@@ -11,20 +11,12 @@ import {
   nextTick,
   onUnmounted,
   watch,
-  computed,
+  defineExpose,
+  shallowRef,
 } from "vue";
-import { useI18n } from "vue-i18n";
 import { editor as Editor } from "monaco-editor";
-
+import { SQLDialect } from "@/types";
 import { useMonaco } from "./useMonaco";
-
-import {
-  pushNotification,
-  useTabStore,
-  useSQLEditorStore,
-  useSheetStore,
-} from "@/store";
-import { SQLDialect } from "../../types";
 import { useLineDecorations } from "./lineDecorations";
 
 const props = defineProps({
@@ -35,6 +27,10 @@ const props = defineProps({
   language: {
     type: String,
     default: "mysql",
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -50,33 +46,27 @@ const emit = defineEmits<{
     }
   ): void;
   (e: "save", content: string): void;
+  (e: "ready"): void;
 }>();
 
-const editorRef = ref();
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
-
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
-const sheetStore = useSheetStore();
-const { t } = useI18n();
-
-const readonly = computed(() => sheetStore.isReadOnly);
-
-let editorInstance: Editor.IStandaloneCodeEditor;
+const readOnly = toRef(props, "readonly");
+const editorContainerRef = ref();
+// use shallowRef to avoid deep conversion which will cause page crash.
+const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
 
 const {
   monaco,
-  setPositionAtEndOfLine,
   formatContent,
   setContent,
-  completionItemProvider,
+  setAutoCompletionContext,
+  setPositionAtEndOfLine,
 } = await useMonaco(language.value);
 
-const init = async () => {
+const getEditorInstance = () => {
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
-
-  editorInstance = monaco.editor.create(editorRef.value, {
+  const editorInstance = monaco.editor.create(editorContainerRef.value, {
     model,
     tabSize: 2,
     insertSpaces: true,
@@ -84,12 +74,21 @@ const init = async () => {
     detectIndentation: false,
     folding: false,
     automaticLayout: true,
-    theme: "vs-light",
+    readOnly: readOnly.value,
     minimap: {
       enabled: false,
     },
     wordWrap: "on",
     fixedOverflowWidgets: true,
+    fontSize: 15,
+    lineHeight: 24,
+    scrollBeyondLastLine: false,
+    padding: {
+      top: 8,
+      bottom: 8,
+    },
+    renderLineHighlight: "none",
+    codeLens: false,
   });
 
   // add the run query action in context menu
@@ -103,10 +102,7 @@ const init = async () => {
       const typedValue = editorInstance.getValue();
       const selectedValue = editorInstance
         .getModel()
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        ?.getValueInRange(editorInstance.getSelection()) as string;
-
+        ?.getValueInRange(editorInstance.getSelection()!) as string;
       const query = selectedValue || typedValue;
       emit("run-query", { explain: false, query });
     },
@@ -123,9 +119,7 @@ const init = async () => {
       const typedValue = editorInstance.getValue();
       const selectedValue = editorInstance
         .getModel()
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        ?.getValueInRange(editorInstance.getSelection()) as string;
+        ?.getValueInRange(editorInstance.getSelection()!) as string;
 
       const query = selectedValue || typedValue;
       emit("run-query", { explain: true, query });
@@ -142,12 +136,7 @@ const init = async () => {
     contextMenuGroupId: "operation",
     contextMenuOrder: 1,
     run: () => {
-      if (readonly.value) {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t("sql-editor.notify.sheet-is-read-only"),
-        });
+      if (readOnly.value) {
         return;
       }
       formatContent(editorInstance, language.value as SQLDialect);
@@ -158,7 +147,6 @@ const init = async () => {
   // typed something, change the text
   editorInstance.onDidChangeModelContent(() => {
     const value = editorInstance.getValue();
-    // emit("update:value", value);
     emit("change", value);
   });
 
@@ -187,64 +175,75 @@ const init = async () => {
     emit("save", value);
   });
 
-  // set the editor focus when the tab is selected
-  if (!readonly.value) {
-    editorInstance.focus();
+  return editorInstance;
+};
 
+onMounted(() => {
+  const editorInstance = getEditorInstance();
+  editorInstanceRef.value = editorInstance;
+
+  // set the editor focus when the tab is selected
+  if (!readOnly.value) {
+    editorInstance.focus();
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
 
-  watch(
-    () => readonly.value,
-    (readOnly) => {
-      if (editorInstance) {
-        editorInstance.updateOptions({ readOnly });
-      }
-    },
-    {
-      deep: true,
-      immediate: true,
-    }
-  );
-};
-
-onMounted(init);
+  nextTick(() => {
+    emit("ready");
+  });
+});
 
 onUnmounted(() => {
-  completionItemProvider.dispose();
-  editorInstance.dispose();
+  editorInstanceRef.value?.dispose();
 });
 
 watch(
-  () => sqlEditorStore.shouldSetContent,
-  () => {
-    if (sqlEditorStore.shouldSetContent) {
-      sqlEditorStore.setShouldSetContent(false);
-      setContent(editorInstance, tabStore.currentTab.statement);
-    }
+  () => readOnly.value,
+  (readOnly) => {
+    editorInstanceRef.value?.updateOptions({
+      readOnly: readOnly,
+    });
+  },
+  {
+    deep: true,
+    immediate: true,
   }
 );
 
-// trigger format code from outside
-watch(
-  () => sqlEditorStore.shouldFormatContent,
-  () => {
-    if (sqlEditorStore.shouldFormatContent) {
-      formatContent(editorInstance, language.value as SQLDialect);
-      nextTick(() => {
-        setPositionAtEndOfLine(editorInstance);
-        editorInstance.focus();
-      });
-      sqlEditorStore.setShouldFormatContent(false);
-    }
-  }
-);
+const getEditorContent = () => {
+  return editorInstanceRef.value?.getValue();
+};
+
+const setEditorContent = (content: string) => {
+  setContent(editorInstanceRef.value!, content);
+};
+
+const getEditorContentHeight = () => {
+  return editorInstanceRef.value?.getContentHeight();
+};
+
+const formatEditorContent = () => {
+  formatContent(editorInstanceRef.value!, language.value as SQLDialect);
+  nextTick(() => {
+    setPositionAtEndOfLine(editorInstanceRef.value!);
+    editorInstanceRef.value?.focus();
+  });
+};
+
+defineExpose({
+  formatEditorContent,
+  getEditorContent,
+  setEditorContent,
+  getEditorContentHeight,
+  setAutoCompletionContext,
+});
 </script>
 
 <style>
-.monaco-editor .cldr.sql-fragment {
-  @apply bg-indigo-600;
-  width: 3px !important;
-  margin-left: 2px;
+.monaco-editor .monaco-mouse-cursor-text {
+  box-shadow: none !important;
+}
+.monaco-editor .scroll-decoration {
+  display: none !important;
 }
 </style>

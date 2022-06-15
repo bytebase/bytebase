@@ -390,9 +390,31 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
-		if strings.HasPrefix(stmt, "CREATE DATABASE ") || (strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ")) {
-			// We don't use transaction for creating / altering databases in Postgres.
-			// https://github.com/bytebase/bytebase/issues/202
+		// We don't use transaction for creating / altering databases in Postgres.
+		// https://github.com/bytebase/bytebase/issues/202
+		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
+			databases, err := driver.getDatabases()
+			if err != nil {
+				return err
+			}
+			databaseName, err := getDatabaseInCreateDatabaseStatement(stmt)
+			if err != nil {
+				return err
+			}
+			exist := false
+			for _, database := range databases {
+				if database.name == databaseName {
+					exist = true
+					break
+				}
+			}
+
+			if !exist {
+				if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+					return err
+				}
+			}
+		} else if strings.HasPrefix(stmt, "ALTER DATABASE") && strings.Contains(stmt, " OWNER TO ") {
 			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
 				return err
 			}
@@ -441,6 +463,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return err
 	}
 	return nil
+}
+
+func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
+	raw := strings.TrimRight(createDatabaseStatement, ";")
+	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
+	tokens := strings.Fields(raw)
+	if len(tokens) == 0 {
+		return "", fmt.Errorf("database name not found")
+	}
+	databaseName := strings.TrimLeft(tokens[0], `"`)
+	databaseName = strings.TrimRight(databaseName, `"`)
+	return databaseName, nil
 }
 
 func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
@@ -918,13 +952,16 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 	return nil
 }
 
+// RestoreTx restores the database in the given transaction.
+func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+	return fmt.Errorf("Unimplemented")
+}
+
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
 	var args []string
 	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
 	if driver.config.Password == "" {
 		args = append(args, "--no-password")
-	} else {
-		args = append(args, fmt.Sprintf("--password=%s", driver.config.Password))
 	}
 	args = append(args, fmt.Sprintf("--host=%s", driver.config.Host))
 	args = append(args, fmt.Sprintf("--port=%s", driver.config.Port))
@@ -936,6 +973,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, database)
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
 	cmd := exec.Command(pgDumpPath, args...)
+	if driver.config.Password != "" {
+		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
+	}
 	cmd.Stderr = os.Stderr
 	r, err := cmd.StdoutPipe()
 	if err != nil {
@@ -1092,8 +1133,8 @@ func (c *columnSchema) Statement() string {
 // Statement returns the create statement of a table constraint.
 func (c *tableConstraint) Statement() string {
 	return fmt.Sprintf(""+
-		"ALTER TABLE ONLY %s.%s\n"+
-		"    ADD CONSTRAINT %s %s;\n",
+		`ALTER TABLE ONLY "%s"."%s"\n`+
+		`    ADD CONSTRAINT %s %s;\n`,
 		c.schemaName, c.tableName, c.name, c.constraint)
 }
 
@@ -1168,7 +1209,7 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 }
 
 func getTable(txn *sql.Tx, tbl *tableSchema) error {
-	countQuery := fmt.Sprintf("SELECT COUNT(1) FROM %s.%s;", tbl.schemaName, tbl.name)
+	countQuery := fmt.Sprintf(`SELECT COUNT(1) FROM "%s"."%s";`, tbl.schemaName, tbl.name)
 	rows, err := txn.Query(countQuery)
 	if err != nil {
 		return err
@@ -1181,7 +1222,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		}
 	}
 
-	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -1338,7 +1379,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -1419,7 +1460,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass);", idx.schemaName, idx.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err

@@ -1,9 +1,9 @@
 <template>
-  <div class="editor-pane h-full">
+  <div class="flex h-full w-full flex-col justify-start items-start">
     <EditorAction @save-sheet="handleSaveSheet" />
 
     <template v-if="!sqlEditorStore.isDisconnected">
-      <QueryEditor @save-sheet="handleSaveSheet" />
+      <SQLEditor @save-sheet="handleSaveSheet" />
     </template>
     <template v-else>
       <ConnectionHolder />
@@ -30,12 +30,12 @@
 import { ref } from "vue";
 
 import { useTabStore, useSQLEditorStore, useSheetStore } from "@/store";
+import { defaultTabName } from "@/utils/tab";
 import EditorAction from "./EditorAction.vue";
-import QueryEditor from "./QueryEditor.vue";
+import SQLEditor from "./SQLEditor.vue";
 import ExecuteHint from "./ExecuteHint.vue";
 import ConnectionHolder from "./ConnectionHolder.vue";
 import SaveSheetModal from "./SaveSheetModal.vue";
-import { defaultTabName } from "../../../utils/tab";
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();

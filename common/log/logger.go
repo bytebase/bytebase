@@ -53,8 +53,8 @@ func Warn(msg string, fields ...zap.Field) {
 // Error wraps the zap Logger's Error method.
 func Error(msg string, fields ...zap.Field) {
 	// Append the stack info in Error logging for better debugging experience.
-	// Note that we should skip 2 stack frames so that the top frame start at the caller of log.Error.
-	fields = append(fields, zap.StackSkip("stack", 2))
+	// Note that we should skip one stack frames so that the top frame start at the caller of log.Error.
+	fields = append(fields, zap.StackSkip("stack", 1))
 	gl.Error(msg, fields...)
 }
 

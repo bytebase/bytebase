@@ -65,14 +65,16 @@
         tabindex="-1"
       >
         <div class="flex max-w-3xl mx-auto px-6 lg:max-w-full">
-          <div class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2">
+          <div
+            class="flex flex-col flex-1 lg:flex-row-reverse lg:col-span-2 overflow-x-hidden"
+          >
             <div
-              class="py-6 lg:pl-4 lg:w-96 xl:w-112 lg:border-l lg:border-block-border overflow-hidden"
+              class="py-6 lg:pl-4 lg:w-72 xl:w-96 lg:border-l lg:border-block-border overflow-hidden"
             >
-              <IssueSidebar :database="database" :instance="instance" />
+              <IssueSidebar :database="selectedDatabase" :instance="instance" />
             </div>
             <div class="lg:hidden border-t border-block-border" />
-            <div class="w-full py-4 pr-4">
+            <div class="w-full lg:w-auto lg:flex-1 py-4 pr-4 overflow-x-hidden">
               <section v-if="showIssueTaskStatementPanel" class="border-b mb-4">
                 <div v-if="!create" class="mb-4">
                   <TaskCheckBar
@@ -127,7 +129,6 @@ import TaskCheckBar from "./TaskCheckBar.vue";
 import type {
   Issue,
   IssueCreate,
-  Database,
   Instance,
   Task,
   TaskDatabaseSchemaUpdatePayload,
@@ -137,7 +138,6 @@ import type {
 import { defaultTemplate, templateForType } from "@/plugins";
 import {
   featureToRef,
-  useDatabaseStore,
   useInstanceStore,
   useProjectStore,
   useTaskStore,
@@ -171,7 +171,6 @@ const route = useRoute();
 
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
-const databaseStore = useDatabaseStore();
 
 const create = computed(() => props.create);
 const issue = computed(() => props.issue);
@@ -184,6 +183,7 @@ const {
   createIssue,
   selectedStage,
   selectedTask,
+  selectedDatabase,
   selectStageOrTask,
   selectTask,
   taskStatusOfStage,
@@ -251,22 +251,11 @@ const showIssueTaskStatementPanel = computed(() => {
   return TaskTypeWithStatement.includes(task.type);
 });
 
-const database = computed((): Database | undefined => {
-  if (props.create) {
-    const databaseId = (selectedTask.value as TaskCreate).databaseId;
-    if (databaseId) {
-      return databaseStore.getDatabaseById(databaseId);
-    }
-    return undefined;
-  }
-  return (selectedTask.value as Task).database;
-});
-
 const instance = computed((): Instance => {
   if (props.create) {
     // If database is available, then we derive the instance from database because we always fetch database's instance.
-    if (database.value) {
-      return database.value.instance;
+    if (selectedDatabase.value) {
+      return selectedDatabase.value.instance;
     }
     return useInstanceStore().getInstanceById(
       (selectedTask.value as TaskCreate).instanceId
@@ -346,6 +335,7 @@ provideIssueLogic(
     template: issueTemplate,
     selectedStage,
     selectedTask,
+    selectedDatabase,
     isTenantMode,
     isGhostMode,
     isPITRMode,

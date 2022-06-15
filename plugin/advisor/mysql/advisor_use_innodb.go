@@ -42,6 +42,7 @@ func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 
 	checker := &useInnoDBChecker{
 		level: level,
+		title: string(ctx.Rule.Type),
 	}
 
 	for _, stmtNode := range root {
@@ -62,6 +63,7 @@ func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 type useInnoDBChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 // Enter implements the ast.Visitor interface
@@ -116,7 +118,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
-			Title:   "InnoDB engine is not used",
+			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
 		})
 	}

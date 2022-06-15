@@ -73,6 +73,10 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					mu.Unlock()
 
 					db := backupSetting.Database
+					if db.Name == api.AllDatabaseName {
+						// Skip backup job for wildcard database `*`.
+						continue
+					}
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
 						log.Debug("Schedule auto backup",
@@ -112,8 +116,8 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string) error {
-	path, err := getAndCreateBackupPath(s.server.profile.DataDir, database, backupName)
-	if err != nil {
+	path := getBackupRelativeFilePath(database.ID, backupName)
+	if err := createBackupDirectory(s.server.profile.DataDir, database.ID); err != nil {
 		return err
 	}
 
