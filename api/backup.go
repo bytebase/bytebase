@@ -85,6 +85,11 @@ type BinlogInfo struct {
 	Position int64  `json:"position"`
 }
 
+// IsEmpty return true if the BinlogInfo is empty.
+func (b BinlogInfo) IsEmpty() bool {
+	return b == BinlogInfo{}
+}
+
 // BackupPayload contains backup related database specific info, it differs for different database types.
 // It is encoded in JSON and stored in the backup table.
 type BackupPayload struct {

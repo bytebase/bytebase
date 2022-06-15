@@ -148,8 +148,6 @@
               </div>
             </template>
           </BBTooltipButton>
-
-          <PITRRestoreButton :database="database" :allow-admin="allowAdmin" />
         </div>
       </div>
     </main>
@@ -306,7 +304,6 @@ import {
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import { PITRRestoreButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUser,
@@ -346,7 +343,7 @@ const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: t("common.overview"), hash: "overview" },
   { name: t("migration-history.self"), hash: "migration-history" },
-  { name: t("common.backups"), hash: "backup" },
+  { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
 ];
 
 const state = reactive<LocalState>({
