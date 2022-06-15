@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/stretchr/testify/assert"
@@ -56,8 +55,8 @@ func runSchemaReviewRuleTests(
 	t *testing.T,
 	tests []test,
 	adv advisor.Advisor,
-	rule *api.SchemaReviewRule,
-	catalog catalog.Service,
+	rule *advisor.SchemaReviewRule,
+	catalog catalog.Catalog,
 ) {
 	ctx := advisor.Context{
 		Charset:   "",

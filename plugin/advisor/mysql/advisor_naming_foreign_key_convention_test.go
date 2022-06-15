@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
@@ -58,13 +57,13 @@ func TestNamingFKConvention(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(api.NamingRulePayload{
+	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleFKNaming,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleFKNaming,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
 	}, &MockCatalogService{})
 }

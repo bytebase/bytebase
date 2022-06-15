@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
@@ -151,13 +150,13 @@ func TestNamingColumnConvention(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(api.NamingRulePayload{
+	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleColumnNaming,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleColumnNaming,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, &MockCatalogService{})
 }

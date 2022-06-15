@@ -5,7 +5,6 @@ import (
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -86,9 +85,9 @@ func TestBasic(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleSchemaBackwardCompatibility,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, &MockCatalogService{})
 }
@@ -260,9 +259,9 @@ func TestAlterTable(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleSchemaBackwardCompatibility,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, &MockCatalogService{})
 }
@@ -326,9 +325,9 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleSchemaBackwardCompatibility,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &CompatibilityAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, &MockCatalogService{})
 }
