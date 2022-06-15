@@ -90,7 +90,7 @@ export default {
       currentPlan,
       expireAt,
       isTrialing,
-      isExpired: true,
+      isExpired,
       isNearExpireTime,
       daysBeforeExpire,
       extendTrialingEmail: `mailto:support@bytebase.com?subject=Request to extend trial&body=${encodeURIComponent(

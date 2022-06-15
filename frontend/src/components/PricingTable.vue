@@ -60,12 +60,12 @@
               >
                 {{ plan.buttonText }}
               </button>
-              <span
+              <div
                 v-if="canTrial && plan.trialDays"
-                class="font-bold text-sm my-2"
+                class="font-bold text-sm my-2 text-center"
               >
                 {{ $t("subscription.free-trial") }}
-              </span>
+              </div>
             </div>
           </td>
         </tr>
@@ -205,6 +205,12 @@
         >
           {{ plan.buttonText }}
         </button>
+        <div
+          v-if="canTrial && plan.trialDays"
+          class="font-bold text-sm my-2 text-center"
+        >
+          {{ $t("subscription.free-trial") }}
+        </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
           <i18n-t keypath="subscription.announcement">
