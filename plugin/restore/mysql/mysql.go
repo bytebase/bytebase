@@ -310,7 +310,13 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	}
 
 	var eventTsList []int64
+	var validBackupList []*api.Backup
 	for _, b := range backupList {
+		if b.Payload.BinlogInfo.IsEmpty() {
+			log.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", zap.Int("backupId", b.ID), zap.String("backupName", b.Name))
+			continue
+		}
+		validBackupList = append(validBackupList, b)
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
@@ -319,7 +325,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	}
 	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
-	backup, err := getLatestBackupBeforeOrEqualTsImpl(backupList, eventTsList, targetTs)
+	backup, err := getLatestBackupBeforeOrEqualTsImpl(validBackupList, eventTsList, targetTs)
 	if err != nil {
 		return nil, err
 	}
@@ -332,10 +338,9 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 	var maxEventTsLETargetTs int64
 	var minEventTs int64 = math.MaxInt64
 	var backup *api.Backup
-	emptyBinlogInfo := api.BinlogInfo{}
 	for i, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		if b.Payload.BinlogInfo == emptyBinlogInfo {
+		if b.Payload.BinlogInfo.IsEmpty() {
 			continue
 		}
 		eventTs := eventTsList[i]
