@@ -806,7 +806,9 @@
       "no-available-backup": "No available backup",
       "point-in-time": "Point in time",
       "help-info": "Restore the database state to a point in time. {link}.",
-      "minimum-supported-engine-and-version": "{engine} >= {min_version} required"
+      "minimum-supported-engine-and-version": "{engine} >= {min_version} required",
+      "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
+      "no-later-than-now": "Restore point-in-time cannot be later than now."
     }
   },
   "repository": {
