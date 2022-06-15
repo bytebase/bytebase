@@ -313,7 +313,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	var validBackupList []*api.Backup
 	for _, b := range backupList {
 		if b.Payload.BinlogInfo.IsEmpty() {
-			log.Debug("Skip parse binlog event timestamp of backup which binlogInfo field in payload field is empty", zap.Int("Id", b.ID))
+			log.Debug("Skip parsing binlog event timestamp of the backup where BinlogInfo is empty", zap.Int("backupId", b.ID), zap.String("backupName", b.Name))
 			continue
 		}
 		validBackupList = append(validBackupList, b)
