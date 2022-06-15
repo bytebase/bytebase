@@ -3,8 +3,8 @@
     <template v-if="isDemo">
       <BannerDemo />
     </template>
-    <template v-else-if="isNearTrialExpireTime">
-      <BannerTrial />
+    <template v-else-if="isExpired || isTrialing">
+      <BannerSubscription />
     </template>
 
     <nav class="bg-white border-b border-block-border">
@@ -38,7 +38,7 @@
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
-import BannerTrial from "@/views/BannerTrial.vue";
+import BannerSubscription from "@/views/BannerSubscription.vue";
 import { ServerInfo } from "../types";
 import {
   pushNotification,
@@ -61,5 +61,5 @@ const ping = () => {
 };
 
 const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-const { isNearTrialExpireTime } = storeToRefs(subscriptionStore);
+const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 </script>

@@ -159,7 +159,7 @@ export const TEAM_PLAN: Plan = {
   type: PlanType.TEAM,
   trialDays: 14,
   unitPrice: 1740,
-  trialPrice: 14,
+  trialPrice: 0,
   freeInstanceCount: 5,
   pricePerInstancePerMonth: 29,
   // Plan desc and feature
@@ -213,7 +213,7 @@ export const TEAM_PLAN: Plan = {
 export const ENTERPRISE_PLAN: Plan = {
   // Plan meta data
   type: PlanType.ENTERPRISE,
-  trialDays: 7,
+  trialDays: 0,
   unitPrice: 0,
   trialPrice: 0,
   freeInstanceCount: 5,

@@ -19,7 +19,7 @@
           <div class="flex items-center">
             {{ currentPlan }}
             <span
-              v-if="subscription.trialing"
+              v-if="isTrialing"
               class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
             >
               {{ $t("subscription.trialing") }}
@@ -37,7 +37,7 @@
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
         </dt>
-        <dd class="mt-1 text-4xl">{{ expiresAt }}</dd>
+        <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
     </dl>
     <div class="w-full mt-5 flex flex-col">
@@ -65,7 +65,7 @@
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
-      <PricingTable :subscription="subscription" />
+      <PricingTable />
     </div>
   </div>
 </template>
@@ -127,18 +127,11 @@ export default defineComponent({
       }
     };
 
-    const { subscription } = storeToRefs(subscriptionStore);
+    const { subscription, expireAt, isTrialing } =
+      storeToRefs(subscriptionStore);
 
     const instanceCount = computed((): number => {
       return subscription.value?.instanceCount ?? 5;
-    });
-
-    const expiresAt = computed((): string => {
-      const expiresTs = subscription.value?.expiresTs ?? 0;
-      if (expiresTs <= 0) {
-        return "n/a";
-      }
-      return dayjs(expiresTs * 1000).format("YYYY-MM-DD");
     });
 
     const currentPlan = computed((): string => {
@@ -156,10 +149,10 @@ export default defineComponent({
     return {
       state,
       disabled,
-      expiresAt,
+      expireAt,
+      isTrialing,
       currentPlan,
       instanceCount,
-      subscription,
       uploadLicense,
     };
   },
