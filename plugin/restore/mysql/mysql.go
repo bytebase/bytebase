@@ -242,13 +242,8 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, fmt.Errorf("the starting binlog file[%s] does not exist locally", startBinlogInfo.FileName)
 	}
 
-	if !localBinlogFilesAreContinuous(binlogFilesToReplaySorted) {
+	if !binlogFilesAreContinuous(binlogFilesToReplaySorted) {
 		return nil, fmt.Errorf("discontinuous binlog file extensions detected, skip ")
-	}
-	for i := 1; i < len(binlogFilesToReplaySorted); i++ {
-		if binlogFilesToReplaySorted[i].Seq != binlogFilesToReplaySorted[i-1].Seq+1 {
-			return nil, fmt.Errorf("discontinuous binlog file extensions detected in %s and %s", binlogFilesToReplaySorted[i-1].Name, binlogFilesToReplaySorted[i].Name)
-		}
 	}
 
 	var binlogReplayList []string
@@ -513,7 +508,7 @@ func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error
 	return binlogFileList, nil
 }
 
-func getLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return nil, err
@@ -529,7 +524,7 @@ func getLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	return binlogFilesLocalSorted, nil
 }
 
-func localBinlogFilesAreContinuous(files []BinlogFile) bool {
+func binlogFilesAreContinuous(files []BinlogFile) bool {
 	for i := 0; i < len(files)-1; i++ {
 		if files[i].Seq+1 != files[i+1].Seq {
 			return false
@@ -557,15 +552,15 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := getLocalBinlogFiles(r.binlogDir)
+	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
 
 	if len(binlogFilesLocalSorted) != 0 {
-		// Re-download corrupted local binlog files.
+		// Re-download inconsistent local binlog files.
 		// This is a best-effort task, because the corresponding binlog files may not exist on server.
-		log.Debug("Re-downloading corrupted local binlog files")
+		log.Debug("Re-downloading inconsistent local binlog files")
 		binlogFilesOnServerMap := make(map[string]BinlogFile)
 		for _, file := range binlogFilesOnServerSorted {
 			binlogFilesOnServerMap[file.Name] = file
@@ -574,17 +569,17 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 			fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
 			if existOnServer && file.Size != fileOnServer.Size {
 				path := filepath.Join(r.binlogDir, file.Name)
-				log.Debug("Deleting corrupted local binlog file",
+				log.Debug("Deleting inconsistent local binlog file",
 					zap.String("path", path),
 					zap.Int64("sizeLocal", file.Size),
 					zap.Int64("sizeOnServer", fileOnServer.Size))
 				if err := os.Remove(path); err != nil {
-					log.Error("Failed to remove corrupted local binlog file", zap.String("path", path), zap.Error(err))
-					return fmt.Errorf("failed to remove corrupted local binlog file[%s], error[%w]", path, err)
+					log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+					return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
 				}
 				if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
-					log.Error("Failed to re-download corrupted local binlog file", zap.String("path", path), zap.Error(err))
-					return fmt.Errorf("failed to re-download corrupted local binlog file[%s], error[%w]", path, err)
+					log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+					return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
 				}
 			}
 		}
@@ -596,7 +591,7 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 		// If all true, we can skip downloading binlog files at all.
 		log.Debug("Checking whether we can just replay existing local binlog files to restore")
 		if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
-			isContinuous := localBinlogFilesAreContinuous(binlogFilesLocalSorted)
+			isContinuous := binlogFilesAreContinuous(binlogFilesLocalSorted)
 			containsTargetTs := false
 			if isContinuous {
 				for _, file := range binlogFilesLocalSorted {

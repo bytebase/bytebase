@@ -482,7 +482,7 @@ func TestLocalBinlogFilesAreContinuous(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		result := localBinlogFilesAreContinuous(test.binlogFiles)
+		result := binlogFilesAreContinuous(test.binlogFiles)
 		a.Equal(test.expect, result)
 	}
 }
