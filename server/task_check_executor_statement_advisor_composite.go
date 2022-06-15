@@ -9,8 +9,8 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
@@ -70,7 +70,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 
 	result = []api.TaskCheckResult{}
 	for _, rule := range policy.RuleList {
-		if rule.Level == api.SchemaRuleLevelDisabled {
+		if rule.Level == advisor.SchemaRuleLevelDisabled {
 			continue
 		}
 		advisorType, err := getAdvisorTypeByRule(rule.Type, payload.DbType)
@@ -85,7 +85,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 				Charset:   payload.Charset,
 				Collation: payload.Collation,
 				Rule:      rule,
-				Catalog:   catalog.NewService(task.DatabaseID, server.store),
+				Catalog:   store.NewCatalog(task.DatabaseID, server.store),
 			},
 			payload.Statement,
 		)
@@ -129,69 +129,69 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 
 }
 
-func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (advisor.Type, error) {
+func getAdvisorTypeByRule(ruleType advisor.SchemaReviewRuleType, engine db.Type) (advisor.Type, error) {
 	switch ruleType {
-	case api.SchemaRuleStatementRequireWhere:
+	case advisor.SchemaRuleStatementRequireWhere:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLWhereRequirement, nil
 		}
-	case api.SchemaRuleStatementNoLeadingWildcardLike:
+	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNoLeadingWildcardLike, nil
 		}
-	case api.SchemaRuleStatementNoSelectAll:
+	case advisor.SchemaRuleStatementNoSelectAll:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNoSelectAll, nil
 		}
-	case api.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLMigrationCompatibility, nil
 		}
-	case api.SchemaRuleTableNaming:
+	case advisor.SchemaRuleTableNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingTableConvention, nil
 		}
-	case api.SchemaRuleIDXNaming:
+	case advisor.SchemaRuleIDXNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingIndexConvention, nil
 		}
-	case api.SchemaRuleUKNaming:
+	case advisor.SchemaRuleUKNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingUKConvention, nil
 		}
-	case api.SchemaRuleFKNaming:
+	case advisor.SchemaRuleFKNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingFKConvention, nil
 		}
-	case api.SchemaRuleColumnNaming:
+	case advisor.SchemaRuleColumnNaming:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLNamingColumnConvention, nil
 		}
-	case api.SchemaRuleRequiredColumn:
+	case advisor.SchemaRuleRequiredColumn:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLColumnRequirement, nil
 		}
-	case api.SchemaRuleColumnNotNull:
+	case advisor.SchemaRuleColumnNotNull:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLColumnNoNull, nil
 		}
-	case api.SchemaRuleTableRequirePK:
+	case advisor.SchemaRuleTableRequirePK:
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return advisor.MySQLTableRequirePK, nil
 		}
-	case api.SchemaRuleMySQLEngine:
+	case advisor.SchemaRuleMySQLEngine:
 		if engine == db.MySQL {
 			return advisor.MySQLUseInnoDB, nil
 		}

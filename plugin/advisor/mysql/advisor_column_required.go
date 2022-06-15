@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -36,7 +35,7 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 	if err != nil {
 		return nil, err
 	}
-	payload, err := api.UnmarshalRequiredColumnRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalRequiredColumnRulePayload(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
@@ -218,7 +217,7 @@ func TestColumnRequirement(t *testing.T) {
 			},
 		},
 	}
-	payload, err := json.Marshal(api.RequiredColumnRulePayload{
+	payload, err := json.Marshal(advisor.RequiredColumnRulePayload{
 		ColumnList: []string{
 			"id",
 			"created_ts",
@@ -228,9 +227,9 @@ func TestColumnRequirement(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleRequiredColumn,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &ColumnRequirementAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleRequiredColumn,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
 	}, &MockCatalogService{})
 }

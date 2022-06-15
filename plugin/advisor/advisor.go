@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -40,11 +39,11 @@ func (e Status) String() string {
 }
 
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
+func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
-	case api.SchemaRuleLevelError:
+	case SchemaRuleLevelError:
 		return Error, nil
-	case api.SchemaRuleLevelWarning:
+	case SchemaRuleLevelWarning:
 		return Warn, nil
 	}
 	return "", fmt.Errorf("unexpected rule level type: %s", level)
@@ -114,8 +113,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *api.SchemaReviewRule
-	Catalog catalog.Service
+	Rule    *SchemaReviewRule
+	Catalog catalog.Catalog
 }
 
 // Advisor is the interface for advisor.

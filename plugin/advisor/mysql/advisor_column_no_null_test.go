@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -106,9 +105,9 @@ func TestColumnNoNull(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleColumnNotNull,
-		Level:   api.SchemaRuleLevelWarning,
+	runSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleColumnNotNull,
+		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
 	}, &MockCatalogService{})
 }
