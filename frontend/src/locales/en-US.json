@@ -263,7 +263,7 @@
     "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
     "update-license": "Update license",
     "license-expires": "Your license for {plan} has expired on {expireAt}.",
-    "trial-expires": "Your free trial for {plan} will expires in {days} days on {expireAt}.",
+    "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown."
