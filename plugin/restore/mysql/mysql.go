@@ -513,10 +513,8 @@ func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 		return err
 	}
 
-	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
-	if err != nil {
-		return err
-	}
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// build a local file size map from file name to size
 	localFileMap := make(map[string]int64)
