@@ -66,7 +66,8 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID})
+	backupStatus := api.BackupStatusDone
+	backupList, err := store.FindBackup(ctx, &api.BackupFind{DatabaseID: task.DatabaseID, Status: &backupStatus})
 	if err != nil {
 		return err
 	}
