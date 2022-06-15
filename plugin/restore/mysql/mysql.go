@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -485,18 +484,6 @@ func getPITRDatabaseName(database string, suffixTs int64) string {
 func getPITROldDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
 	return getSafeName(database, suffix)
-}
-
-func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
-	var binlogFileList []BinlogFile
-	for _, fileInfo := range binlogFileInfoList {
-		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
-		if err != nil {
-			return nil, err
-		}
-		binlogFileList = append(binlogFileList, binlogFile)
-	}
-	return binlogFileList, nil
 }
 
 func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
