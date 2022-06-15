@@ -1019,6 +1019,9 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 
 	var tableNames []string
 	for _, table := range tables {
+		if table.TableType != baseTableType {
+			continue
+		}
 		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
 	}
 	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))
