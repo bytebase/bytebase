@@ -48,12 +48,6 @@ func init() {
 	db.Register(db.TiDB, newDriver)
 }
 
-// BinlogFile is the metadata of the MySQL binlog file
-type BinlogFile struct {
-	Name string
-	Size int64
-}
-
 // Driver is the MySQL driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext

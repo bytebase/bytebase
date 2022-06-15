@@ -397,50 +397,50 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 func TestParseAndSortBinlogFileName(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		binlogFileNames []string
-		expect          []binlogItem
+		binlogFileNames []BinlogFile
+		expect          []BinlogFile
 		err             bool
 	}{
 		// Normal
 		{
-			binlogFileNames: []string{"binlog.000001", "binlog.000002", "binlog.000003"},
-			expect: []binlogItem{
+			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000002"}, {Name: "binlog.000003"}},
+			expect: []BinlogFile{
 				{
-					name: "binlog.000001",
-					seq:  1,
+					Name: "binlog.000001",
+					Seq:  1,
 				},
 				{
-					name: "binlog.000002",
-					seq:  2,
+					Name: "binlog.000002",
+					Seq:  2,
 				},
 				{
-					name: "binlog.000003",
-					seq:  3,
+					Name: "binlog.000003",
+					Seq:  3,
 				},
 			},
 			err: false,
 		},
 		// parse error
 		{
-			binlogFileNames: []string{"binlog.000001", "binlog000002"},
-			expect:          []binlogItem{},
+			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog000002"}},
+			expect:          []BinlogFile{},
 			err:             true,
 		},
 		// gap
 		{
-			binlogFileNames: []string{"binlog.000001", "binlog.000007", "binlog.000004"},
-			expect: []binlogItem{
+			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000007"}, {Name: "binlog.000004"}},
+			expect: []BinlogFile{
 				{
-					name: "binlog.000001",
-					seq:  1,
+					Name: "binlog.000001",
+					Seq:  1,
 				},
 				{
-					name: "binlog.000004",
-					seq:  4,
+					Name: "binlog.000004",
+					Seq:  4,
 				},
 				{
-					name: "binlog.000007",
-					seq:  7,
+					Name: "binlog.000007",
+					Seq:  7,
 				},
 			},
 			err: false,
@@ -448,16 +448,41 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		items, err := parseAndSortBinlogFileNames(test.binlogFileNames)
+		items, err := sortBinlogFiles(test.binlogFileNames)
 
 		if test.err {
 			a.Error(err)
 		} else {
 			a.EqualValues(len(items), len(test.expect))
 			for idx := range items {
-				a.EqualValues(items[idx].name, test.expect[idx].name)
-				a.EqualValues(items[idx].seq, test.expect[idx].seq)
+				a.EqualValues(items[idx].Name, test.expect[idx].Name)
+				a.EqualValues(items[idx].Seq, test.expect[idx].Seq)
 			}
 		}
+	}
+}
+
+func TestLocalBinlogFilesAreContinuous(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		binlogFiles []BinlogFile
+		expect      bool
+	}{
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}},
+			expect:      true,
+		},
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 2}},
+			expect:      true,
+		},
+		{
+			binlogFiles: []BinlogFile{{Seq: 1}, {Seq: 3}},
+			expect:      false,
+		},
+	}
+	for _, test := range tests {
+		result := binlogFilesAreContinuous(test.binlogFiles)
+		a.Equal(test.expect, result)
 	}
 }
