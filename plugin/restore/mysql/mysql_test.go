@@ -449,6 +449,10 @@ func TestBinlogFilesAreContinuous(t *testing.T) {
 		expect      bool
 	}{
 		{
+			binlogFiles: []BinlogFile{},
+			expect:      true,
+		},
+		{
 			binlogFiles: []BinlogFile{{Seq: 1}},
 			expect:      true,
 		},
