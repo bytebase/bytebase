@@ -142,8 +142,13 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 			err:    false,
 		},
 		{
-			name:   "binlog.178923",
-			expect: 178923,
+			name:   "binlog.999999",
+			expect: 999999,
+			err:    false,
+		},
+		{
+			name:   "binlog.1000000",
+			expect: 1000000,
 			err:    false,
 		},
 		{
@@ -394,50 +399,29 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 	}
 }
 
-func TestParseAndSortBinlogFiles(t *testing.T) {
+func TestSortBinlogFiles(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		binlogFileNames []BinlogFile
 		expect          []BinlogFile
-		err             bool
 	}{
 		// Normal
 		{
-			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000002"}, {Name: "binlog.000003"}},
-			expect:          []BinlogFile{{Name: "binlog.000001", Seq: 1}, {Name: "binlog.000002", Seq: 2}, {Name: "binlog.000003", Seq: 3}},
-			err:             false,
-		},
-		// parse error
-		{
-			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog000002"}},
-			expect:          []BinlogFile{},
-			err:             true,
+			binlogFileNames: []BinlogFile{{Seq: 1}, {Seq: 2}, {Seq: 3}},
+			expect:          []BinlogFile{{Seq: 1}, {Seq: 2}, {Seq: 3}},
 		},
 		// gap
 		{
-			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000007"}, {Name: "binlog.000004"}},
-			expect:          []BinlogFile{{Name: "binlog.000001", Seq: 1}, {Name: "binlog.000004", Seq: 4}, {Name: "binlog.000007", Seq: 7}},
-			err:             false,
-		},
-		// 999999
-		{
-			binlogFileNames: []BinlogFile{{Name: "binlog.999999"}, {Name: "binlog.1000000"}},
-			expect:          []BinlogFile{{Name: "binlog.999999", Seq: 999999}, {Name: "binlog.1000000", Seq: 1000000}},
-			err:             false,
+			binlogFileNames: []BinlogFile{{Seq: 1}, {Seq: 7}, {Seq: 4}},
+			expect:          []BinlogFile{{Seq: 1}, {Seq: 4}, {Seq: 7}},
 		},
 	}
 
 	for _, test := range tests {
-		items, err := parseAndSortBinlogFiles(test.binlogFileNames)
-
-		if test.err {
-			a.Error(err)
-		} else {
-			a.EqualValues(len(items), len(test.expect))
-			for idx := range items {
-				a.EqualValues(items[idx].Name, test.expect[idx].Name)
-				a.EqualValues(items[idx].Seq, test.expect[idx].Seq)
-			}
+		sorted := sortBinlogFiles(test.binlogFileNames)
+		a.Equal(len(test.expect), len(sorted))
+		for i := range sorted {
+			a.Equal(sorted[i].Seq, test.expect[i].Seq)
 		}
 	}
 }
