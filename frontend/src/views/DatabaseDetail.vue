@@ -343,7 +343,7 @@ const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: t("common.overview"), hash: "overview" },
   { name: t("migration-history.self"), hash: "migration-history" },
-  { name: t("common.backup-and-restore"), hash: "backup-n-restore" },
+  { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
 ];
 
 const state = reactive<LocalState>({
