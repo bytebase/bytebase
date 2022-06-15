@@ -58,7 +58,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`, database, database, table))
+	CREATE VIEW v_%s AS SELECT * FROM %s;
+	`, database, database, table, table, table))
 	a.NoError(err)
 
 	const numRecords = 10
@@ -417,10 +418,13 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 	var buf bytes.Buffer
 	var backupPayload api.BackupPayload
 	backupPayloadString, err := driver.Dump(ctx, database, &buf, false)
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := json.Unmarshal([]byte(backupPayloadString), &backupPayload); err != nil {
 		return nil, nil, err
 	}
-	return &buf, &backupPayload, err
+	return &buf, &backupPayload, nil
 }
 
 // Concurrently update a single row to mimic the ongoing business workload.
