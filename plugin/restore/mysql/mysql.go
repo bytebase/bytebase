@@ -568,13 +568,7 @@ func (r *Restore) IncrementalFetchAllBinlogFiles(ctx context.Context) error {
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) (err error) {
-	var resultFilePath string
-	defer func() {
-		if err != nil {
-			os.Remove(resultFilePath)
-		}
-	}()
+func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
 	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
@@ -598,14 +592,16 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 	cmd.Stderr = os.Stderr
 
 	log.Debug("Downloading binlog files using mysqlbinlog", zap.String("cmd", cmd.String()))
-	resultFilePath = filepath.Join(resultFileDir, binlogFileToDownload.Name)
+	resultFilePath := filepath.Join(resultFileDir, binlogFileToDownload.Name)
 	if err := cmd.Run(); err != nil {
+		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("executing mysqlbinlog fails, error: %w", err)
 	}
 
 	log.Debug("Checking downloaded binlog file stat", zap.String("path", resultFilePath))
 	fileInfo, err := os.Stat(resultFilePath)
 	if err != nil {
+		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("cannot get file[%s] stat, error[%w]", resultFilePath, err)
 	}
 	if !isLast {
@@ -616,6 +612,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 				zap.Int64("sizeInfo", binlogFileToDownload.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
+			_ = os.Remove(resultFilePath)
 			return fmt.Errorf("downloaded binlog file[%s] size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	} else {
@@ -628,6 +625,7 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 				zap.Int64("sizeInfo", binlogFileToDownload.Size),
 				zap.Int64("downloadedSize", fileInfo.Size()),
 			)
+			_ = os.Remove(resultFilePath)
 			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	}
