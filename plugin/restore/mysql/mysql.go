@@ -604,19 +604,8 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 		_ = os.Remove(resultFilePath)
 		return fmt.Errorf("cannot get file[%s] stat, error[%w]", resultFilePath, err)
 	}
-	if !isLast {
-		// Case 1: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
-		if fileInfo.Size() != binlogFileToDownload.Size {
-			log.Error("Downloaded binlog file size is not equal to size queried on the MySQL server",
-				zap.String("binlog", binlogFileToDownload.Name),
-				zap.Int64("sizeInfo", binlogFileToDownload.Size),
-				zap.Int64("downloadedSize", fileInfo.Size()),
-			)
-			_ = os.Remove(resultFilePath)
-			return fmt.Errorf("downloaded binlog file[%s] size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
-		}
-	} else {
-		// Case 2: It's the last binlog file we need (contains the targetTs).
+	if isLast {
+		// Case 1: It's the last binlog file we need (contains the targetTs).
 		// If it's the last (incomplete) binlog file on the MySQL server, it will grow as new writes hit the database server.
 		// We just need to check that the downloaded file size >= queried size, so it contains the targetTs event.
 		if fileInfo.Size() < binlogFileToDownload.Size {
@@ -627,6 +616,17 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 			)
 			_ = os.Remove(resultFilePath)
 			return fmt.Errorf("downloaded latest binlog file[%s] size[%d] is smaller than size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
+		}
+	} else {
+		// Case 2: It's an archived binlog file, and we must ensure the file size equals what we queried from the MySQL server earlier.
+		if fileInfo.Size() != binlogFileToDownload.Size {
+			log.Error("Downloaded binlog file size is not equal to size queried on the MySQL server",
+				zap.String("binlog", binlogFileToDownload.Name),
+				zap.Int64("sizeInfo", binlogFileToDownload.Size),
+				zap.Int64("downloadedSize", fileInfo.Size()),
+			)
+			_ = os.Remove(resultFilePath)
+			return fmt.Errorf("downloaded binlog file[%s] size[%d] is not equal to size[%d] queried on MySQL server earlier", resultFilePath, fileInfo.Size(), binlogFileToDownload.Size)
 		}
 	}
 
