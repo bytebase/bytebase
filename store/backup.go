@@ -529,90 +529,49 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 		patch.Payload = "{}"
 	}
 
-	if s.db.mode == common.ReleaseModeDev {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, patch.Payload)
-		args = append(args, patch.ID)
+	set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, patch.Payload)
+	args = append(args, patch.ID)
 
-		// Execute update query with RETURNING.
-		row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	// Execute update query with RETURNING.
+	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
 			UPDATE backup
 			SET `+strings.Join(set, ", ")+`
 			WHERE id = $%d
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment, payload
 		`, len(args)),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
-
-		if row.Next() {
-			var backupRaw backupRaw
-			var payload []byte
-			if err := row.Scan(
-				&backupRaw.ID,
-				&backupRaw.CreatorID,
-				&backupRaw.CreatedTs,
-				&backupRaw.UpdaterID,
-				&backupRaw.UpdatedTs,
-				&backupRaw.DatabaseID,
-				&backupRaw.Name,
-				&backupRaw.Status,
-				&backupRaw.Type,
-				&backupRaw.StorageBackend,
-				&backupRaw.MigrationHistoryVersion,
-				&backupRaw.Path,
-				&backupRaw.Comment,
-				&payload,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-			if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
-				return nil, err
-			}
-			return &backupRaw, nil
-		}
-	} else {
-		args = append(args, patch.ID)
-
-		// Execute update query with RETURNING.
-		row, err := tx.QueryContext(ctx, fmt.Sprintf(`
-			UPDATE backup
-			SET `+strings.Join(set, ", ")+`
-			WHERE id = $%d
-			RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, status, type, storage_backend, migration_history_version, path, comment
-		`, len(args)),
-			args...,
-		)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
-
-		if row.Next() {
-			var backupRaw backupRaw
-			if err := row.Scan(
-				&backupRaw.ID,
-				&backupRaw.CreatorID,
-				&backupRaw.CreatedTs,
-				&backupRaw.UpdaterID,
-				&backupRaw.UpdatedTs,
-				&backupRaw.DatabaseID,
-				&backupRaw.Name,
-				&backupRaw.Status,
-				&backupRaw.Type,
-				&backupRaw.StorageBackend,
-				&backupRaw.MigrationHistoryVersion,
-				&backupRaw.Path,
-				&backupRaw.Comment,
-			); err != nil {
-				return nil, FormatError(err)
-			}
-			return &backupRaw, nil
-		}
+		args...,
+	)
+	if err != nil {
+		return nil, FormatError(err)
 	}
+	defer row.Close()
 
+	if row.Next() {
+		var backupRaw backupRaw
+		var payload []byte
+		if err := row.Scan(
+			&backupRaw.ID,
+			&backupRaw.CreatorID,
+			&backupRaw.CreatedTs,
+			&backupRaw.UpdaterID,
+			&backupRaw.UpdatedTs,
+			&backupRaw.DatabaseID,
+			&backupRaw.Name,
+			&backupRaw.Status,
+			&backupRaw.Type,
+			&backupRaw.StorageBackend,
+			&backupRaw.MigrationHistoryVersion,
+			&backupRaw.Path,
+			&backupRaw.Comment,
+			&payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if err := json.Unmarshal(payload, &backupRaw.Payload); err != nil {
+			return nil, err
+		}
+		return &backupRaw, nil
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("backup ID not found: %d", patch.ID)}
 }
 
