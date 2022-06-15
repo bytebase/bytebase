@@ -394,7 +394,7 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 	}
 }
 
-func TestParseAndSortBinlogFileName(t *testing.T) {
+func TestParseAndSortBinlogFiles(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		binlogFileNames []BinlogFile
@@ -404,21 +404,8 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 		// Normal
 		{
 			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000002"}, {Name: "binlog.000003"}},
-			expect: []BinlogFile{
-				{
-					Name: "binlog.000001",
-					Seq:  1,
-				},
-				{
-					Name: "binlog.000002",
-					Seq:  2,
-				},
-				{
-					Name: "binlog.000003",
-					Seq:  3,
-				},
-			},
-			err: false,
+			expect:          []BinlogFile{{Name: "binlog.000001", Seq: 1}, {Name: "binlog.000002", Seq: 2}, {Name: "binlog.000003", Seq: 3}},
+			err:             false,
 		},
 		// parse error
 		{
@@ -429,26 +416,19 @@ func TestParseAndSortBinlogFileName(t *testing.T) {
 		// gap
 		{
 			binlogFileNames: []BinlogFile{{Name: "binlog.000001"}, {Name: "binlog.000007"}, {Name: "binlog.000004"}},
-			expect: []BinlogFile{
-				{
-					Name: "binlog.000001",
-					Seq:  1,
-				},
-				{
-					Name: "binlog.000004",
-					Seq:  4,
-				},
-				{
-					Name: "binlog.000007",
-					Seq:  7,
-				},
-			},
-			err: false,
+			expect:          []BinlogFile{{Name: "binlog.000001", Seq: 1}, {Name: "binlog.000004", Seq: 4}, {Name: "binlog.000007", Seq: 7}},
+			err:             false,
+		},
+		// 999999
+		{
+			binlogFileNames: []BinlogFile{{Name: "binlog.999999"}, {Name: "binlog.1000000"}},
+			expect:          []BinlogFile{{Name: "binlog.999999", Seq: 999999}, {Name: "binlog.1000000", Seq: 1000000}},
+			err:             false,
 		},
 	}
 
 	for _, test := range tests {
-		items, err := sortBinlogFiles(test.binlogFileNames)
+		items, err := parseAndSortBinlogFiles(test.binlogFileNames)
 
 		if test.err {
 			a.Error(err)

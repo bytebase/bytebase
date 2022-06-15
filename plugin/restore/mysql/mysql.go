@@ -230,7 +230,7 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		}
 	}
 
-	binlogFilesToReplaySorted, err := sortBinlogFiles(binlogFilesToReplay)
+	binlogFilesToReplaySorted, err := parseAndSortBinlogFiles(binlogFilesToReplay)
 	if err != nil {
 		return nil, err
 	}
@@ -249,10 +249,10 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	return binlogReplayList, nil
 }
 
-// sortBinlogFiles will parse the binlog file name, and then sort them in ascending order by their numeric extension.
+// parseAndSortBinlogFiles will parse the binlog file name, and then sort them in ascending order by their numeric extension.
 // For mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 // so we cannot directly use string to compare lexicographical order.
-func sortBinlogFiles(binlogFiles []BinlogFile) ([]BinlogFile, error) {
+func parseAndSortBinlogFiles(binlogFiles []BinlogFile) ([]BinlogFile, error) {
 	var ret []BinlogFile
 	for _, binlogFile := range binlogFiles {
 		seq, err := getBinlogNameSeq(binlogFile.Name)
