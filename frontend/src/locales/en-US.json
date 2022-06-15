@@ -261,7 +261,9 @@
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
     "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
-    "trial-expires": "Your trial for {plan} plan will expires in {days} days.",
+    "update-license": "Update license",
+    "license-expires": "Your license for {plan} has expired on {expireAt}.",
+    "trial-expires": "Your free trial for {plan} will expires in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown."
@@ -1205,12 +1207,13 @@
     "current": "Current plan",
     "instance-count": "Instance count",
     "expires-at": "Expires at",
+    "free-trial": "Your first 14 days are free - no credit card required",
     "description-highlight": "Purchase a license",
     "sensitive-placeholder": "Paste your license here - write only",
     "upload-license": "Upload license",
     "plan-compare": "Compare features between different plans",
     "disabled-feature": "This is a premium feature in subscription plan",
-    "trial": "You can start a trial with $14 for 14 days.",
+    "trial": "You can start a free trial - no credit card required",
     "upgrade": "Upgrade subscription",
     "per-month": "/ month",
     "per-instance": "Per instance",
@@ -1219,7 +1222,7 @@
     "enterprise-price-intro": "Customized, billed annually",
     "deploy": "Deploy",
     "contact-us": "Contact us",
-    "start-trial": "Start trial with ${price} for {days} days",
+    "start-trial": "Try free now",
     "subscribe": "Subscribe now",
     "current-plan": "Current plan",
     "buy": "Buy {plan} plan",
@@ -1262,11 +1265,11 @@
       },
       "bb-feature-schema-review-policy": {
         "title": "Schema review policy",
-        "desc": "Customize the schema review policy for different environments. @:{'subscription.upgrade'} to unlock this feature."
+        "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
-        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to unlock this feature."
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.trial'}."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
@@ -1274,7 +1277,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.trial'}.",
         "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {
