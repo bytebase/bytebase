@@ -340,6 +340,9 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 	var backup *api.Backup
 	for i, b := range backupList {
 		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
+		if b.Payload.BinlogInfo.IsEmpty() {
+			continue
+		}
 		eventTs := eventTsList[i]
 		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
 			maxEventTsLETargetTs = eventTs
