@@ -18,26 +18,42 @@ export const useSubscriptionStore = defineStore("subscription", {
     currentPlan(state): PlanType {
       return state.subscription?.plan ?? PlanType.FREE;
     },
-    nextPaymentDays(state): number {
+    expireAt(state): string {
+      if (!state.subscription || state.subscription.expiresTs <= 0) {
+        return "";
+      }
+
+      return dayjs(state.subscription.expiresTs * 1000).format("YYYY-MM-DD");
+    },
+    isTrialing(state): boolean {
+      return !!state.subscription?.trialing;
+    },
+    isExpired(state): boolean {
+      if (!state.subscription || state.subscription.expiresTs <= 0) {
+        return false;
+      }
+      return dayjs(state.subscription.expiresTs * 1000).isBefore(new Date());
+    },
+    daysBeforeExpire(state): number {
       if (!state.subscription || state.subscription.expiresTs <= 0) {
         return -1;
       }
 
       const expiresTime = dayjs(state.subscription.expiresTs * 1000);
-      return expiresTime.diff(new Date(), "day");
+      return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
-    isNearTrialExpireTime(): boolean {
-      if (!this.subscription || !this.subscription?.trialing) return false;
+    isNearExpireTime(state): boolean {
+      if (!state.subscription || !state.subscription?.trialing) return false;
 
-      const nextPaymentDays = this.nextPaymentDays;
-      if (nextPaymentDays <= 0) return false;
+      const daysBeforeExpire = this.daysBeforeExpire;
+      if (daysBeforeExpire <= 0) return false;
 
-      const trialEndTime = dayjs(this.subscription.expiresTs * 1000);
+      const trialEndTime = dayjs(state.subscription.expiresTs * 1000);
       const total = trialEndTime.diff(
-        this.subscription.startedTs * 1000,
+        state.subscription.startedTs * 1000,
         "day"
       );
-      return nextPaymentDays / total < 0.5;
+      return daysBeforeExpire / total < 0.5;
     },
   },
   actions: {
