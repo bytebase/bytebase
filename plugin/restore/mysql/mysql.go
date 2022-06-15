@@ -78,7 +78,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
-		"--stop-datetime", common.GetDateTime(targetTs),
+		"--stop-datetime", common.FormatDateTime(targetTs),
 	}
 
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
@@ -350,8 +350,8 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 		}
 	}
 
-	targetDateTime := common.GetDateTime(targetTs)
-	minEventDateTime := common.GetDateTime(minEventTs)
+	targetDateTime := common.FormatDateTime(targetTs)
+	minEventDateTime := common.FormatDateTime(minEventTs)
 	if maxEventTsLETargetTs == 0 {
 		log.Debug(fmt.Sprintf("the target restore time %s[%d] is earlier than the oldest backup time %s[%d]", targetDateTime, targetTs, minEventDateTime, minEventTs))
 
