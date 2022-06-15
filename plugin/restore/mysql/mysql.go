@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
@@ -77,7 +78,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
-		"--stop-datetime", getDateTime(targetTs),
+		"--stop-datetime", common.GetDateTime(targetTs),
 	}
 
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
@@ -313,7 +314,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 	for _, b := range backupList {
 		eventTs, err := r.parseBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
+			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
 		}
 		eventTsList = append(eventTsList, eventTs)
 	}
@@ -348,8 +349,14 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 			minEventTs = eventTs
 		}
 	}
+
+	targetDateTime := common.GetDateTime(targetTs)
+	minEventDateTime := common.GetDateTime(minEventTs)
 	if maxEventTsLETargetTs == 0 {
-		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, minEventTs)
+		// We will print the timestamp in debug message to make debug easier.
+		log.Debug(fmt.Sprintf("the target restore time %s[%d] is earlier than the oldest backup time %s[%d]", targetDateTime, targetTs, minEventDateTime, minEventTs))
+
+		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
 	}
 	return backup, nil
 }
@@ -776,10 +783,4 @@ func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
 		return fmt.Errorf("binlog format is not ROW but %s", value)
 	}
 	return nil
-}
-
-// getDateTime returns converts the targetTs to the local date-time.
-func getDateTime(targetTs int64) string {
-	t := time.Unix(targetTs, 0)
-	return fmt.Sprintf("%d-%d-%d %d:%d:%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }

@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"path"
 	"sort"
@@ -69,4 +70,10 @@ func GetResourceDir(dataDir string) string {
 // We cannot add task ID because tenant mode databases should use the same migration version string when applying a schema update.
 func DefaultMigrationVersion() string {
 	return time.Now().Format("20060102150405")
+}
+
+// GetDateTime returns converts the targetTs to the local date-time as string.
+func GetDateTime(targetTs int64) string {
+	t := time.Unix(targetTs, 0)
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
