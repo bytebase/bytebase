@@ -211,10 +211,6 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	if err != nil {
 		return nil, fmt.Errorf("cannot read binlog directory %s, error %w", binlogDir, err)
 	}
-	if len(binlogFiles) == 0 {
-		log.Error("No binlog files found locally")
-		return nil, fmt.Errorf("no binlog files found locally")
-	}
 
 	var binlogFilesToReplay []BinlogFile
 	for _, f := range binlogFiles {
@@ -228,6 +224,10 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		if binlogFile.Seq >= startBinlogSeq {
 			binlogFilesToReplay = append(binlogFilesToReplay, binlogFile)
 		}
+	}
+	if len(binlogFilesToReplay) == 0 {
+		log.Error("No binlog files found locally after given start binlog info", zap.Any("startBinlogInfo", startBinlogInfo))
+		return nil, fmt.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
 	}
 
 	binlogFilesToReplaySorted, err := parseAndSortBinlogFiles(binlogFilesToReplay)
