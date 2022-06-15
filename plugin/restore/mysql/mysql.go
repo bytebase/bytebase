@@ -353,7 +353,6 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 	targetDateTime := common.GetDateTime(targetTs)
 	minEventDateTime := common.GetDateTime(minEventTs)
 	if maxEventTsLETargetTs == 0 {
-		// We will print the timestamp in debug message to make debug easier.
 		log.Debug(fmt.Sprintf("the target restore time %s[%d] is earlier than the oldest backup time %s[%d]", targetDateTime, targetTs, minEventDateTime, minEventTs))
 
 		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
