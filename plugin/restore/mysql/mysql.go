@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -492,34 +491,6 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-func convertToBinlogFiles(binlogFileInfoList []fs.FileInfo) ([]BinlogFile, error) {
-	var binlogFileList []BinlogFile
-	for _, fileInfo := range binlogFileInfoList {
-		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
-		if err != nil {
-			return nil, err
-		}
-		binlogFileList = append(binlogFileList, binlogFile)
-	}
-	return binlogFileList, nil
-}
-
-func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
-	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
-	if err != nil {
-		return nil, err
-	}
-	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
-	if err != nil {
-		return nil, err
-	}
-	binlogFilesLocalSorted, err := sortBinlogFiles(binlogFilesLocal)
-	if err != nil {
-		return nil, err
-	}
-	return binlogFilesLocalSorted, nil
-}
-
 func binlogFilesAreContinuous(files []BinlogFile) bool {
 	for i := 0; i < len(files)-1; i++ {
 		if files[i].Seq+1 != files[i+1].Seq {
@@ -549,7 +520,7 @@ func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 	}
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
+	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
@@ -557,8 +528,8 @@ func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
 	// build a local file size map from file name to size
 	localFileMap := make(map[string]int64)
 
-	for _, localFile := range binlogFilesLocalSorted {
-		localFileMap[localFile.Name] = localFile.Size
+	for _, localFile := range binlogFilesLocal {
+		localFileMap[localFile.Name()] = localFile.Size()
 	}
 
 	todo := make(map[string]bool)
