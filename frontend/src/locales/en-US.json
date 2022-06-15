@@ -197,7 +197,8 @@
     "clear-search": "Clear search",
     "enable": "Enable",
     "disable": "Disable",
-    "view-doc": "View doc"
+    "view-doc": "View doc",
+    "backup-and-restore": "Backup and restore"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -804,7 +805,8 @@
       "no-available-backup": "No available backup",
       "point-in-time": "Point in time",
       "help-info": "Restore the database state to a point in time. {link}.",
-      "minimum-supported-engine-and-version": "{engine} >= {min_version} required"
+      "minimum-supported-engine-and-version": "{engine} >= {min_version} required",
+      "restore-to-point-in-time": "Restore to point in time"
     }
   },
   "repository": {
