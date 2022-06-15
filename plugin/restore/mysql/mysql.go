@@ -231,10 +231,7 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, fmt.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
 	}
 
-	binlogFilesToReplaySorted, err := parseAndSortBinlogFiles(binlogFilesToReplay)
-	if err != nil {
-		return nil, err
-	}
+	binlogFilesToReplaySorted := sortBinlogFiles(binlogFilesToReplay)
 
 	if binlogFilesToReplaySorted[0].Seq != startBinlogSeq {
 		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
@@ -253,23 +250,16 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	return binlogReplayList, nil
 }
 
-// parseAndSortBinlogFiles will parse the binlog file name, and then sort them in ascending order by their numeric extension.
+// sortBinlogFiles will sort binlog files in ascending order by their numeric extension.
 // For mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 // so we cannot directly use string to compare lexicographical order.
-func parseAndSortBinlogFiles(binlogFiles []BinlogFile) ([]BinlogFile, error) {
-	var ret []BinlogFile
-	for _, binlogFile := range binlogFiles {
-		seq, err := getBinlogNameSeq(binlogFile.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", binlogFile.Name, err)
-		}
-		binlogFile.Seq = seq
-		ret = append(ret, binlogFile)
-	}
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Seq < ret[j].Seq
+func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
+	var sorted []BinlogFile
+	sorted = append(sorted, binlogFiles...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Seq < sorted[j].Seq
 	})
-	return ret, nil
+	return sorted
 }
 
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
@@ -514,15 +504,15 @@ func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	binlogFilesLocal, err := convertToBinlogFiles(binlogFilesInfoLocal)
-	if err != nil {
-		return nil, err
+	var binlogFilesLocal []BinlogFile
+	for _, fileInfo := range binlogFilesInfoLocal {
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		if err != nil {
+			return nil, err
+		}
+		binlogFilesLocal = append(binlogFilesLocal, binlogFile)
 	}
-	binlogFilesLocalSorted, err := parseAndSortBinlogFiles(binlogFilesLocal)
-	if err != nil {
-		return nil, err
-	}
-	return binlogFilesLocalSorted, nil
+	return sortBinlogFiles(binlogFilesLocal), nil
 }
 
 func binlogFilesAreContinuous(files []BinlogFile) bool {
@@ -696,19 +686,20 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 
 	var binlogFiles []BinlogFile
 	for rows.Next() {
-		var binlogFile BinlogFile
+		var name string
+		var size int64
 		var unused interface{}
-		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused /*Encrypted column*/); err != nil {
+		if err := rows.Scan(&name, &size, &unused /*Encrypted column*/); err != nil {
+			return nil, err
+		}
+		binlogFile, err := newBinlogFile(name, size)
+		if err != nil {
 			return nil, err
 		}
 		binlogFiles = append(binlogFiles, binlogFile)
 	}
 
-	binlogFiles, err = parseAndSortBinlogFiles(binlogFiles)
-	if err != nil {
-		return nil, err
-	}
-	return binlogFiles, nil
+	return sortBinlogFiles(binlogFiles), nil
 }
 
 // showLatestBinlogFile returns the metadata of latest binlog
