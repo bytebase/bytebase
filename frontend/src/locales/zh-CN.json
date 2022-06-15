@@ -804,7 +804,9 @@
       "no-available-backup": "没有可用的备份",
       "point-in-time": "时间点",
       "help-info": "将数据库的状态恢复到一个时间点。{link}。",
-      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}"
+      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}",
+      "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
+      "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     }
   },
   "repository": {
