@@ -26,6 +26,7 @@
             <a
               class="normal-link inline-flex items-center"
               href="https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md"
+              target="__BLANK"
             >
               {{ $t("common.learn-more") }}
             </a>
