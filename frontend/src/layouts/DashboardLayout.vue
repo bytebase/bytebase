@@ -6,8 +6,8 @@
     <template v-if="showDebugBanner">
       <BannerDebug />
     </template>
-    <template v-else-if="isNearTrialExpireTime">
-      <BannerTrial />
+    <template v-else-if="isExpired || isTrialing">
+      <BannerSubscription />
     </template>
     <template v-else-if="isReadonly">
       <div
@@ -48,7 +48,7 @@
 import ProvideDashboardContext from "../components/ProvideDashboardContext.vue";
 import DashboardHeader from "../views/DashboardHeader.vue";
 import BannerDemo from "../views/BannerDemo.vue";
-import BannerTrial from "../views/BannerTrial.vue";
+import BannerSubscription from "../views/BannerSubscription.vue";
 import BannerDebug from "../views/BannerDebug.vue";
 import { ServerInfo } from "../types";
 import { isDBAOrOwner } from "../utils";
@@ -68,7 +68,7 @@ export default defineComponent({
     ProvideDashboardContext,
     DashboardHeader,
     BannerDemo,
-    BannerTrial,
+    BannerSubscription,
     BannerDebug,
   },
   setup() {
@@ -87,7 +87,7 @@ export default defineComponent({
     };
 
     const { isDemo, isReadonly } = storeToRefs(actuatorStore);
-    const { isNearTrialExpireTime } = storeToRefs(subscriptionStore);
+    const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
     const { isDebug } = storeToRefs(debugStore);
 
@@ -104,7 +104,8 @@ export default defineComponent({
       ping,
       isDemo,
       isReadonly,
-      isNearTrialExpireTime,
+      isTrialing,
+      isExpired,
       showDebugBanner,
     };
   },

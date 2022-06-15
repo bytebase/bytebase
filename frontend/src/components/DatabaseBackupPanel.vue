@@ -98,14 +98,23 @@
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("common.backups") }}
         </div>
-        <button
-          v-if="allowEdit"
-          type="button"
-          class="btn-normal whitespace-nowrap items-center"
-          @click.prevent="state.showCreateBackupModal = true"
-        >
-          {{ $t("database.backup-now") }}
-        </button>
+
+        <div class="flex-1 flex items-center justify-end">
+          <PITRRestoreButton
+            v-if="allowAdmin"
+            :database="database"
+            :allow-admin="allowAdmin"
+          />
+
+          <button
+            v-if="allowEdit"
+            type="button"
+            class="btn-normal whitespace-nowrap items-center"
+            @click.prevent="state.showCreateBackupModal = true"
+          >
+            {{ $t("database.backup-now") }}
+          </button>
+        </div>
       </div>
       <BackupTable
         :database="database"
