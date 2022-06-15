@@ -230,10 +230,7 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 		return nil, fmt.Errorf("no binlog files found locally after given start binlog info: %v", startBinlogInfo)
 	}
 
-	binlogFilesToReplaySorted, err := parseAndSortBinlogFiles(binlogFilesToReplay)
-	if err != nil {
-		return nil, err
-	}
+	binlogFilesToReplaySorted := sortBinlogFiles(binlogFilesToReplay)
 
 	if binlogFilesToReplaySorted[0].Seq != startBinlogSeq {
 		log.Error("The starting binlog file does not exist locally", zap.String("filename", startBinlogInfo.FileName))
@@ -252,23 +249,16 @@ func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]st
 	return binlogReplayList, nil
 }
 
-// parseAndSortBinlogFiles will parse the binlog file name, and then sort them in ascending order by their numeric extension.
+// sortBinlogFiles will sort binlog files in ascending order by their numeric extension.
 // For mysql binlog, after the serial number reaches 999999, the next serial number will not return to 000000, but 1000000,
 // so we cannot directly use string to compare lexicographical order.
-func parseAndSortBinlogFiles(binlogFiles []BinlogFile) ([]BinlogFile, error) {
-	var ret []BinlogFile
-	for _, binlogFile := range binlogFiles {
-		seq, err := getBinlogNameSeq(binlogFile.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse the binlog file name[%s], error[%w]", binlogFile.Name, err)
-		}
-		binlogFile.Seq = seq
-		ret = append(ret, binlogFile)
-	}
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Seq < ret[j].Seq
+func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
+	var sorted []BinlogFile
+	sorted = append(sorted, binlogFiles...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Seq < sorted[j].Seq
 	})
-	return ret, nil
+	return sorted
 }
 
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
@@ -496,6 +486,22 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
+func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
+	if err != nil {
+		return nil, err
+	}
+	var binlogFilesLocal []BinlogFile
+	for _, fileInfo := range binlogFilesInfoLocal {
+		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
+		if err != nil {
+			return nil, err
+		}
+		binlogFilesLocal = append(binlogFilesLocal, binlogFile)
+	}
+	return sortBinlogFiles(binlogFilesLocal), nil
+}
+
 func binlogFilesAreContinuous(files []BinlogFile) bool {
 	for i := 0; i < len(files)-1; i++ {
 		if files[i].Seq+1 != files[i+1].Seq {
@@ -508,24 +514,28 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 // FetchArchivedBinlogFiles downloads the missing binlog files from the remote instance to `binlogDir`,
 // but exclude latest binlog. We may  download the latest binlog only when doing PITR.
 func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
-	binlogFilesLocal, err := ioutil.ReadDir(r.binlogDir)
-	if err != nil {
-		return err
-	}
-
+	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
-
+	if len(binlogFilesOnServerSorted) == 0 {
+		// No binlog files on server, so there's nothing to download.
+		log.Debug("No binlog file found on server")
+		return nil
+	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
+	// Read the local binlog files.
+	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
+	if err != nil {
+		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
+	}
 	// build a local file size map from file name to size
 	localFileMap := make(map[string]int64)
-
-	for _, localFile := range binlogFilesLocal {
-		localFileMap[localFile.Name()] = localFile.Size()
+	for _, localFile := range binlogFilesLocalSorted {
+		localFileMap[localFile.Name] = localFile.Size
 	}
 
 	todo := make(map[string]bool)
@@ -663,19 +673,20 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 
 	var binlogFiles []BinlogFile
 	for rows.Next() {
-		var binlogFile BinlogFile
+		var name string
+		var size int64
 		var unused interface{}
-		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused /*Encrypted column*/); err != nil {
+		if err := rows.Scan(&name, &size, &unused /*Encrypted column*/); err != nil {
+			return nil, err
+		}
+		binlogFile, err := newBinlogFile(name, size)
+		if err != nil {
 			return nil, err
 		}
 		binlogFiles = append(binlogFiles, binlogFile)
 	}
 
-	binlogFiles, err = parseAndSortBinlogFiles(binlogFiles)
-	if err != nil {
-		return nil, err
-	}
-	return binlogFiles, nil
+	return sortBinlogFiles(binlogFiles), nil
 }
 
 // showLatestBinlogFile returns the metadata of latest binlog
