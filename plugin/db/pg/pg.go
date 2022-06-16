@@ -456,7 +456,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 
 	if _, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n")); err != nil {
-		return nil
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
