@@ -186,7 +186,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	}
 	t.Logf("startTsList: %v\n", startTsList)
 
-	binlogFilesOnServer, err := mysqlRestore.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := mysqlRestore.GetSortedBinlogFilesMetaOnServer(ctx)
 	a.NoError(err)
 
 	t.Log("Download binlog files in empty dir up to targetTs")
@@ -210,8 +210,8 @@ func TestFetchBinlogFiles(t *testing.T) {
 		}
 		a.Equal(num, len(binlogFilesDownloaded))
 		for j := range binlogFilesDownloaded {
-			a.Equal(binlogFilesOnServer[j].Name, binlogFilesDownloaded[j].Name)
-			a.Equal(binlogFilesOnServer[j].Size, binlogFilesDownloaded[j].Size)
+			a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloaded[j].Name)
+			a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloaded[j].Size)
 		}
 	}
 
@@ -247,7 +247,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		t.Log("Re-downloading binlog files")
 		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
 		a.NoError(err)
-		binlogFilesDownloadedAgain, err := ioutil.ReadDir(binlogDir)
+		binlogFilesDownloadedAgain, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
 		a.NoError(err)
 		// We will always download one more file to find out that it exceeds the targetTs.
 		num := (i + 1) + 1
@@ -256,8 +256,8 @@ func TestFetchBinlogFiles(t *testing.T) {
 		}
 		a.Equal(num, len(binlogFilesDownloadedAgain))
 		for j := range binlogFilesDownloadedAgain {
-			a.Equal(binlogFilesOnServer[j].Name, binlogFilesDownloadedAgain[j].Name())
-			a.Equal(binlogFilesOnServer[j].Size, binlogFilesDownloadedAgain[j].Size())
+			a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloadedAgain[j].Name)
+			a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloadedAgain[j].Size)
 		}
 	}
 }
