@@ -579,7 +579,6 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 		log.Debug("Checking whether we can just replay existing local binlog files to restore")
 		if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
 			isContinuous := binlogFilesAreContinuous(binlogFilesLocalSorted)
-			containsTargetTs := false
 			if isContinuous {
 				for _, file := range binlogFilesLocalSorted {
 					eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
@@ -595,14 +594,10 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 							zap.String("path", path),
 							zap.Int64("targetTs", targetTs),
 							zap.Int64("eventTs", eventTs))
-						containsTargetTs = true
-						break
+						log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
+						return nil
 					}
 				}
-			}
-			if isContinuous && containsTargetTs {
-				log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
-				return nil
 			}
 		}
 	}
