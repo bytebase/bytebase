@@ -210,6 +210,8 @@ const (
 	Done MigrationStatus = "DONE"
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
+	// WaitRetry is the migration status for WAIT_RETRY.
+	WaitRetry MigrationStatus = "WAIT_RETRY"
 )
 
 func (e MigrationStatus) String() string {
@@ -220,6 +222,8 @@ func (e MigrationStatus) String() string {
 		return "DONE"
 	case Failed:
 		return "FAILED"
+	case WaitRetry:
+		return "WAIT_RETRY"
 	}
 	return "UNKNOWN"
 }
@@ -375,6 +379,13 @@ type MigrationHistoryFind struct {
 	Limit *int
 }
 
+// MigrationHistoryPatch is the API message for patching migration history.
+type MigrationHistoryPatch struct {
+	ID *int
+
+	Status MigrationStatus
+}
+
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
 	Host      string
@@ -425,6 +436,8 @@ type Driver interface {
 	ExecuteMigration(ctx context.Context, m *MigrationInfo, statement string) (int64, string, error)
 	// Find the migration history list and return most recent item first.
 	FindMigrationHistoryList(ctx context.Context, find *MigrationHistoryFind) ([]*MigrationHistory, error)
+	// Patch the migration history status with the given id.
+	PatchMigrationHistory(ctx context.Context, patch *MigrationHistoryPatch) error
 
 	// Dump and restore
 	// Dump the database, if dbName is empty, then dump all databases.

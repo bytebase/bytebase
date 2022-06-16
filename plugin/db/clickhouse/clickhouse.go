@@ -714,6 +714,19 @@ const (
 		"%s;\n"
 )
 
+// PatchMigrationHistory patches the migration history.
+func (driver *Driver) PatchMigrationHistory(ctx context.Context, patch *db.MigrationHistoryPatch) error {
+	const patchMigrationHistoryQuery = `
+	UPDATE
+		migration_history
+	SET
+		status = $1,
+	WHERE id = $2
+	`
+	_, err := driver.db.ExecContext(ctx, patchMigrationHistoryQuery, patch.Status, patch.ID)
+	return err
+}
+
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})

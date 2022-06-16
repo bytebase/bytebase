@@ -217,6 +217,9 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			return -1, common.Errorf(common.MigrationPending,
 				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
 		case db.Failed:
+			return -1, common.Errorf(common.MigrationFailed,
+				fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version))
+		case db.WaitRetry:
 			isRetry = true
 			retryID = int64(list[0].ID)
 		}

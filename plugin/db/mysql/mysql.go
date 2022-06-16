@@ -854,6 +854,19 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	return nil
 }
 
+// PatchMigrationHistory patches the migration history.
+func (driver *Driver) PatchMigrationHistory(ctx context.Context, patch *db.MigrationHistoryPatch) error {
+	const patchMigrationHistoryQuery = `
+	UPDATE
+		migration_history
+	SET
+		status = ?,
+	WHERE id = ?
+	`
+	_, err := driver.db.ExecContext(ctx, patchMigrationHistoryQuery, patch.Status, patch.ID)
+	return err
+}
+
 // Dump and restore
 const (
 	databaseHeaderFmt = "" +
