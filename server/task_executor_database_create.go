@@ -47,14 +47,6 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		zap.String("statement", statement),
 	)
 
-	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
-	if err != nil {
-		return true, nil, err
-	}
-	if database != nil {
-		return true, nil, fmt.Errorf("database %q already exists in project %q", database.Name, database.Project.Name)
-	}
-
 	// Create a baseline migration history upon creating the database.
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
@@ -111,7 +103,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
 	// sync will place the synced db into the default project.
 	// 2. Allow user to see the created database right away.
-	database, err = server.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
+	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
 	if err != nil {
 		return true, nil, err
 	}
