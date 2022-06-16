@@ -1,12 +1,22 @@
 package advisor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/catalog"
+	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap"
 )
+
+// How to add a schema review rule:
+//   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
+//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
+//   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // SchemaReviewRuleLevel is the error level for schema review rule.
 type SchemaReviewRuleLevel string
@@ -190,4 +200,129 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 		return nil, fmt.Errorf("invalid required column rule payload, column list cannot be empty")
 	}
 	return &rcr, nil
+}
+
+// SchemaReviewCheckContext is the context for schema review check.
+type SchemaReviewCheckContext struct {
+	Charset   string
+	Collation string
+	DbType    db.Type
+	Catalog   catalog.Catalog
+}
+
+// SchemaReviewCheck checks the statments with schema review policy.
+func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaReviewPolicy, context SchemaReviewCheckContext) ([]Advice, error) {
+	var result []Advice
+	for _, rule := range policy.RuleList {
+		if rule.Level == SchemaRuleLevelDisabled {
+			continue
+		}
+
+		advisorType, err := getAdvisorTypeByRule(rule.Type, context.DbType)
+		if err != nil {
+			log.Debug("not supported rule", zap.Error(err))
+			continue
+		}
+
+		adviceList, err := Check(
+			context.DbType,
+			advisorType,
+			Context{
+				Charset:   context.Charset,
+				Collation: context.Collation,
+				Rule:      rule,
+				Catalog:   context.Catalog,
+			},
+			statements,
+		)
+		if err != nil {
+			return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+		}
+
+		result = append(result, adviceList...)
+	}
+
+	// There may be multiple syntax errors, return one only.
+	if len(result) > 0 && result[0].Title == SyntaxErrorTitle {
+		return result[:1], nil
+	}
+	if len(result) == 0 {
+		result = append(result, Advice{
+			Status:  Success,
+			Code:    common.Ok,
+			Title:   "OK",
+			Content: "",
+		})
+	}
+	return result, nil
+}
+
+func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine db.Type) (Type, error) {
+	switch ruleType {
+	case SchemaRuleStatementRequireWhere:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLWhereRequirement, nil
+		}
+	case SchemaRuleStatementNoLeadingWildcardLike:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNoLeadingWildcardLike, nil
+		}
+	case SchemaRuleStatementNoSelectAll:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNoSelectAll, nil
+		}
+	case SchemaRuleSchemaBackwardCompatibility:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLMigrationCompatibility, nil
+		}
+	case SchemaRuleTableNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingTableConvention, nil
+		}
+	case SchemaRuleIDXNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingIndexConvention, nil
+		}
+	case SchemaRuleUKNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingUKConvention, nil
+		}
+	case SchemaRuleFKNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingFKConvention, nil
+		}
+	case SchemaRuleColumnNaming:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLNamingColumnConvention, nil
+		}
+	case SchemaRuleRequiredColumn:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnRequirement, nil
+		}
+	case SchemaRuleColumnNotNull:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLColumnNoNull, nil
+		}
+	case SchemaRuleTableRequirePK:
+		switch engine {
+		case db.MySQL, db.TiDB:
+			return MySQLTableRequirePK, nil
+		}
+	case SchemaRuleMySQLEngine:
+		if engine == db.MySQL {
+			return MySQLUseInnoDB, nil
+		}
+	}
+	return Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 }
