@@ -163,14 +163,10 @@ export const useExtraIssueLogic = () => {
       status: newStatus,
       comment: comment,
     };
-    issueStore
-      .updateIssueStatus({
-        issueId: (issue.value as Issue).id,
-        issueStatusPatch,
-      })
-      .then(() => {
-        // pollIssue(POST_CHANGE_POLL_INTERVAL);
-      });
+    issueStore.updateIssueStatus({
+      issueId: (issue.value as Issue).id,
+      issueStatusPatch,
+    });
   };
 
   const changeStageAllTaskStatus = (
