@@ -122,6 +122,8 @@ type MigrationExecutor interface {
 	UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, updatedSchema string, insertedID int64) error
 	// UpdateHistoryAsFailed will update the migration record as failed.
 	UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDurationNs int64, insertedID int64) error
+	// UpdateHistoryAsPending will update the migration record as pending.
+	UpdateHistoryAsPending(ctx context.Context, tx *sql.Tx, insertedID int64) error
 }
 
 // ExecuteMigration will execute the database migration.
@@ -196,6 +198,11 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	}
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
+
+	var (
+		isRetry bool
+		retryID int64
+	)
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Version:  &m.Version,
@@ -209,6 +216,9 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		case db.Pending:
 			return -1, common.Errorf(common.MigrationPending,
 				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
+		case db.Failed:
+			isRetry = true
+			retryID = int64(list[0].ID)
 		}
 	}
 
@@ -222,6 +232,15 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	}
 	defer tx.Rollback()
+	if isRetry {
+		err = executor.UpdateHistoryAsPending(ctx, tx, retryID)
+		if err != nil {
+			return -1, common.Errorf(common.MigrationFailed,
+				fmt.Errorf("database %q version %s retry failed", m.Database, m.Version))
+		} else {
+			return retryID, nil
+		}
+	}
 
 	largestSequence, err := executor.FindLargestSequence(ctx, tx, m.Namespace, false /* baseline */)
 	if err != nil {

@@ -573,6 +573,20 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 	return err
 }
 
+// UpdateHistoryAsPending will update the migration record as pending.
+func (Driver) UpdateHistoryAsPending(ctx context.Context, tx *sql.Tx, insertedID int64) error {
+	const updateHistoryAsFailedQuery = `
+	UPDATE
+		bytebase_migration_history
+	SET
+		status = 'PENDING',
+		execution_duration_ns = 0
+	WHERE id = ?
+	`
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, insertedID)
+	return err
+}
+
 // ExecuteMigration will execute the migration.
 func (driver *Driver) ExecuteMigration(ctx context.Context, m *db.MigrationInfo, statement string) (int64, string, error) {
 	return util.ExecuteMigration(ctx, driver, m, statement, bytebaseDatabase)
