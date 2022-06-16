@@ -520,6 +520,66 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
+func (r *Restore) reconcileAndCheckLocalBinlogFilesAreEnoughToReplayToTargetTs(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) (skip bool, err error) {
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
+	// Re-download inconsistent local binlog files.
+	// This is a best-effort task, because the corresponding binlog files may not exist on server.
+	log.Debug("Re-downloading inconsistent local binlog files")
+	binlogFilesOnServerMap := make(map[string]BinlogFile)
+	for _, file := range binlogFilesOnServerSorted {
+		binlogFilesOnServerMap[file.Name] = file
+	}
+	for _, file := range binlogFilesLocalSorted {
+		fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
+		if existOnServer && file.Size != fileOnServer.Size {
+			path := filepath.Join(r.binlogDir, file.Name)
+			log.Debug("Deleting inconsistent local binlog file",
+				zap.String("path", path),
+				zap.Int64("sizeLocal", file.Size),
+				zap.Int64("sizeOnServer", fileOnServer.Size))
+			if err := os.Remove(path); err != nil {
+				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+				return false, fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
+			}
+			if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
+				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+				return false, fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
+			}
+		}
+	}
+
+	// Check whether we can only use local binlog files to restore to targetTs:
+	// 1. The local binlog files have no gaps.
+	// 2. Some file's first binlog event ts is already larger than targetTs.
+	// 3. The first local binlog file <= first server binlog file
+	// If all true, we can skip downloading binlog files at all.
+	log.Debug("Checking whether we can just replay existing local binlog files to restore")
+	if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
+		isContinuous := binlogFilesAreContinuous(binlogFilesLocalSorted)
+		if isContinuous {
+			for _, file := range binlogFilesLocalSorted {
+				eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
+				path := filepath.Join(r.binlogDir, file.Name)
+				if err != nil {
+					log.Error("Failed to parse the first binlog event timestamp for local binlog file",
+						zap.String("path", path),
+						zap.Error(err))
+					return false, fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
+				}
+				if eventTs > targetTs {
+					log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
+						zap.String("path", path),
+						zap.Int64("targetTs", targetTs),
+						zap.Int64("eventTs", eventTs))
+					log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
 // FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
 // After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
 // targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
@@ -545,60 +605,12 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 	}
 
 	if len(binlogFilesLocalSorted) != 0 {
-		// Re-download inconsistent local binlog files.
-		// This is a best-effort task, because the corresponding binlog files may not exist on server.
-		log.Debug("Re-downloading inconsistent local binlog files")
-		binlogFilesOnServerMap := make(map[string]BinlogFile)
-		for _, file := range binlogFilesOnServerSorted {
-			binlogFilesOnServerMap[file.Name] = file
+		skipDownload, err := r.reconcileAndCheckLocalBinlogFilesAreEnoughToReplayToTargetTs(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
+		if err != nil {
+			return err
 		}
-		for _, file := range binlogFilesLocalSorted {
-			fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
-			if existOnServer && file.Size != fileOnServer.Size {
-				path := filepath.Join(r.binlogDir, file.Name)
-				log.Debug("Deleting inconsistent local binlog file",
-					zap.String("path", path),
-					zap.Int64("sizeLocal", file.Size),
-					zap.Int64("sizeOnServer", fileOnServer.Size))
-				if err := os.Remove(path); err != nil {
-					log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-					return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
-				}
-				if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
-					log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-					return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
-				}
-			}
-		}
-
-		// Check whether we can only use local binlog files to restore to targetTs:
-		// 1. The local binlog files have no gaps.
-		// 2. Some file's first binlog event ts is already larger than targetTs.
-		// 3. The first local binlog file <= first server binlog file
-		// If all true, we can skip downloading binlog files at all.
-		log.Debug("Checking whether we can just replay existing local binlog files to restore")
-		if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
-			isContinuous := binlogFilesAreContinuous(binlogFilesLocalSorted)
-			if isContinuous {
-				for _, file := range binlogFilesLocalSorted {
-					eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
-					path := filepath.Join(r.binlogDir, file.Name)
-					if err != nil {
-						log.Error("Failed to parse the first binlog event timestamp for local binlog file",
-							zap.String("path", path),
-							zap.Error(err))
-						return fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
-					}
-					if eventTs > targetTs {
-						log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
-							zap.String("path", path),
-							zap.Int64("targetTs", targetTs),
-							zap.Int64("eventTs", eventTs))
-						log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
-						return nil
-					}
-				}
-			}
+		if skipDownload {
+			return nil
 		}
 	}
 
