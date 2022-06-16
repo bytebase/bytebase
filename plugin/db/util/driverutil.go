@@ -159,7 +159,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Branch migration type always has empty sql.
 	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
 	// https://github.com/bytebase/bytebase/issues/394
-	doMigrate := true
+	var doMigrate = true
 	if statement == "" {
 		doMigrate = false
 	}
@@ -209,9 +209,6 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		case db.Pending:
 			return -1, common.Errorf(common.MigrationPending,
 				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
-		case db.Failed:
-			return -1, common.Errorf(common.MigrationFailed,
-				fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version))
 		}
 	}
 
