@@ -1024,7 +1024,6 @@ func stripComment(schema string) (string, error) {
 		}
 		if _, err := io.WriteString(&schemaBuf, scanner.Text()); err != nil {
 			return "", err
-
 		}
 	}
 	return schemaBuf.String(), nil
