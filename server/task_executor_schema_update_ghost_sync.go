@@ -135,8 +135,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	}
 	migrationContext.ServeSocketFile = config.socketFilename
 	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
-	// TODO(p0ny): set OkToDropTable to false and drop table in dropOriginalTable Task.
-	migrationContext.OkToDropTable = true
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
 	migrationContext.SetChunkSize(chunkSize)
