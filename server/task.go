@@ -472,7 +472,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 
 	database := taskPatched.Database
-	// If patch status is running, we need to mark migration_history as wait_retry.
+	// If patch status is running, we need to mark migration_history as db.WaitRetry.
 	if taskPatched.Status == api.TaskRunning {
 		driver, err := getAdminDatabaseDriver(ctx, database.Instance, "", s.pgInstanceDir)
 		if err != nil {
@@ -488,7 +488,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		if err != nil || len(histories) == 0 {
 			return nil, fmt.Errorf("failed to find latest migration_history: %w", err)
 		}
-		// mark migration_history status as wait_retry
+		// mark migration_history status as db.WaitRetry
 		if err := driver.PatchMigrationHistory(ctx, &db.MigrationHistoryPatch{
 			ID:     &histories[0].ID,
 			Status: db.WaitRetry,
