@@ -521,9 +521,9 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 }
 
 func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile) error {
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	// Re-download inconsistent local binlog files.
 	// This is a best-effort task, because the corresponding binlog files may not exist on server.
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Re-downloading inconsistent local binlog files")
 	binlogFilesOnServerMap := make(map[string]BinlogFile)
 	for _, file := range binlogFilesOnServerSorted {
@@ -583,45 +583,10 @@ func (r *Restore) canSkipDownloadBinlogFilesOnServer(ctx context.Context, binlog
 	return false, nil
 }
 
-// FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
-// After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
-// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
-// all the binlog events we need for this recovery task.
-func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int64) error {
-	// Read binlog files list on server.
-	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
-	if err != nil {
-		return err
-	}
-	if len(binlogFilesOnServerSorted) == 0 {
-		// No binlog files on server, so there's nothing to download.
-		log.Debug("No binlog file found on server")
-		return nil
-	}
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
-
-	// Read the local binlog files.
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
-	if err != nil {
-		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
-	}
-
-	if len(binlogFilesLocalSorted) != 0 {
-		if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
-			return err
-		}
-		skipDownload, err := r.canSkipDownloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
-		if err != nil {
-			return err
-		}
-		if skipDownload {
-			return nil
-		}
-	}
-
+func (r *Restore) downloadBinlogFilesOnServerUpToTargetTs(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) error {
 	// We are sure that the local binlog files are not enough to replay to targetTs.
 	// It's time to download binlog files from the server.
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	binlogFilesLocalMap := make(map[string]bool)
 	for _, file := range binlogFilesLocalSorted {
 		binlogFilesLocalMap[file.Name] = true
@@ -651,11 +616,49 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 				zap.String("path", path),
 				zap.Int64("targetTs", targetTs),
 				zap.Int64("eventTs", eventTs))
-			break
+			return nil
+		}
+	}
+	return nil
+}
+
+// FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
+// After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
+// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
+// all the binlog events we need for this recovery task.
+func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int64) error {
+	// Read binlog files list on server.
+	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
+	if err != nil {
+		return err
+	}
+	if len(binlogFilesOnServerSorted) == 0 {
+		// No binlog files on server, so there's nothing to download.
+		log.Debug("No binlog file found on server")
+		return nil
+	}
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
+
+	// Read the local binlog files.
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
+	if err != nil {
+		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
+	}
+
+	if len(binlogFilesLocalSorted) != 0 {
+		if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
+			return err
+		}
+		skipDownload, err := r.canSkipDownloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
+		if err != nil {
+			return err
+		}
+		if skipDownload {
+			return nil
 		}
 	}
 
-	return nil
+	return r.downloadBinlogFilesOnServerUpToTargetTs(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
