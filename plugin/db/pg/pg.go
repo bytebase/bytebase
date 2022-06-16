@@ -998,11 +998,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		if strings.HasPrefix(line, "--") {
 			previousLineComment = true
 			continue
-		} else {
-			if previousLineComment && line == "" {
-				previousLineComment = false
-				continue
-			}
+		}
+		if previousLineComment && line == "" {
+			previousLineComment = false
+			continue
 		}
 		previousLineComment = false
 		// Skip extra empty lines.
