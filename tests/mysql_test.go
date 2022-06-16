@@ -201,7 +201,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		}
 		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
 		a.NoError(err)
-		binlogFilesDownloaded, err := ioutil.ReadDir(binlogDir)
+		binlogFilesDownloaded, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
 		a.NoError(err)
 		// We will always download one more file to find out that it exceeds the targetTs.
 		num := (i + 1) + 1
@@ -210,8 +210,8 @@ func TestFetchBinlogFiles(t *testing.T) {
 		}
 		a.Equal(num, len(binlogFilesDownloaded))
 		for j := range binlogFilesDownloaded {
-			a.Equal(binlogFilesOnServer[j].Name, binlogFilesDownloaded[j].Name())
-			a.Equal(binlogFilesOnServer[j].Size, binlogFilesDownloaded[j].Size())
+			a.Equal(binlogFilesOnServer[j].Name, binlogFilesDownloaded[j].Name)
+			a.Equal(binlogFilesOnServer[j].Size, binlogFilesDownloaded[j].Size)
 		}
 	}
 

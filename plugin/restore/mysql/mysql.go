@@ -494,7 +494,8 @@ func (r *Restore) parseFirstLocalBinlogEventTimestamp(ctx context.Context, fileN
 	return r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
 }
 
-func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+// GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
+func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return nil, err
@@ -538,7 +539,7 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
