@@ -101,7 +101,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
-		"--stop-datetime", getDateTime(targetTs),
+		"--stop-datetime", formatDateTime(targetTs),
 	}
 
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
@@ -337,7 +337,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		validBackupList = append(validBackupList, b)
 		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse binlog event timestamp, error[%w]", err)
+			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
 		}
 		eventTsList = append(eventTsList, eventTs)
 	}
@@ -371,8 +371,17 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 			minEventTs = eventTs
 		}
 	}
+
 	if maxEventTsLETargetTs == 0 {
-		return nil, fmt.Errorf("the target restore timestamp[%d] is earlier than the oldest backup time[%d]", targetTs, minEventTs)
+		targetDateTime := time.Unix(targetTs, 0).Format(time.RFC822)
+		minEventDateTime := time.Unix(minEventTs, 0).Format(time.RFC822)
+		log.Debug("the target restore time is earlier than the oldest backup time",
+			zap.String("targetDatetime", targetDateTime),
+			zap.Int64("targetTimestamp", targetTs),
+			zap.String("minEventDateTime", minEventDateTime),
+			zap.Int64("minEventTimestamp", minEventTs))
+
+		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
 	}
 	return backup, nil
 }
@@ -834,8 +843,8 @@ func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
 	return nil
 }
 
-// getDateTime returns converts the targetTs to the local date-time.
-func getDateTime(targetTs int64) string {
-	t := time.Unix(targetTs, 0)
+// formatDateTime formats the timestamp to the local time string.
+func formatDateTime(ts int64) string {
+	t := time.Unix(ts, 0)
 	return fmt.Sprintf("%d-%d-%d %d:%d:%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }

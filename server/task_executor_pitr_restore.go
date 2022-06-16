@@ -36,7 +36,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return true, nil, fmt.Errorf("invalid PITR restore payload[%s], error[%w]", task.Payload, err)
+		return true, nil, fmt.Errorf("invalid PITR restore payload: %s, error: %w", task.Payload, err)
 	}
 
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
@@ -100,16 +100,18 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	backup, err := mysqlRestore.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
-		log.Error("Failed to get backup before or equal to targetTs",
+		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
+		log.Error("Failed to get backup before or equal to time",
+			zap.String("dateTime", dateTime),
 			zap.Time("targetTs", time.Unix(targetTs, 0)),
 			zap.Error(err))
-		return fmt.Errorf("failed to get latest backup before or equal to targetTs[%d], error[%w]", targetTs, err)
+		return fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", dateTime, err)
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
 	backupFile, err := os.OpenFile(backupFileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to open backup file[%s], error[%w]", backupFileName, err)
+		return fmt.Errorf("failed to open backup file: %s, error: %w", backupFileName, err)
 	}
 	defer backupFile.Close()
 	log.Debug("Successfully opened backup file", zap.String("filename", backupFileName))
@@ -127,7 +129,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),
 			zap.Error(err))
-		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error[%w]", err)
+		return fmt.Errorf("failed to perform a PITR restore in the PITR database, error: %w", err)
 	}
 
 	return nil
@@ -137,11 +139,11 @@ func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*ap
 	issue, err := store.GetIssueByPipelineID(ctx, pid)
 	if err != nil {
 		log.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
-		return nil, fmt.Errorf("failed to get issue by PipelineID[%d], error[%w]", pid, err)
+		return nil, fmt.Errorf("failed to get issue by PipelineID: %d, error: %w", pid, err)
 	}
 	if issue == nil {
 		log.Error("issue not found with PipelineID", zap.Int("PipelineID", pid))
-		return nil, fmt.Errorf("issue not found with PipelineID[%d]", pid)
+		return nil, fmt.Errorf("issue not found with PipelineID: %d", pid)
 	}
 	return issue, nil
 }
