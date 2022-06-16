@@ -217,7 +217,6 @@ const runTaskChecks = (task: Task) => {
       taskId: task.id,
     })
     .then(() => {
-      // pollIssue(POST_CHANGE_POLL_INTERVAL);
       emit("status-changed", true);
     });
 };

@@ -159,7 +159,7 @@ import {
   NORMAL_POLL_INTERVAL,
   BackupPlanPolicyPayload,
   POLL_JITTER,
-  POST_CHANGE_POLL_INTERVAL,
+  MINIMUM_POLL_INTERVAL,
   UNKNOWN_ID,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
@@ -332,7 +332,7 @@ export default defineComponent({
         databaseId: props.database.id,
         newBackup: newBackup,
       });
-      pollBackups(POST_CHANGE_POLL_INTERVAL);
+      pollBackups(MINIMUM_POLL_INTERVAL);
     };
 
     // pollBackups invalidates the current timer and schedule a new timer in <<interval>> microseconds
