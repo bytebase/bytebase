@@ -398,7 +398,7 @@ export default defineComponent({
     const onButtonClick = (plan: Plan) => {
       if (plan.type === PlanType.TEAM) {
         window.open(
-          "https://hub.bytebase.com/pricing?plan=team&source=console.subscription",
+          "https://bytebase.com/pricing?source=console.subscription",
           "__blank"
         );
       } else if (plan.type === PlanType.ENTERPRISE) {
