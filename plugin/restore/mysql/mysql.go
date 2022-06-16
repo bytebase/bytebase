@@ -520,7 +520,7 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
-func (r *Restore) reconcileAndCheckLocalBinlogFilesAreEnoughToReplayToTargetTs(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) (skip bool, err error) {
+func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile) error {
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	// Re-download inconsistent local binlog files.
 	// This is a best-effort task, because the corresponding binlog files may not exist on server.
@@ -539,15 +539,18 @@ func (r *Restore) reconcileAndCheckLocalBinlogFilesAreEnoughToReplayToTargetTs(c
 				zap.Int64("sizeOnServer", fileOnServer.Size))
 			if err := os.Remove(path); err != nil {
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return false, fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
+				return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
 			}
 			if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return false, fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
+				return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
 			}
 		}
 	}
+	return nil
+}
 
+func (r *Restore) canSkipDownloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) (skip bool, err error) {
 	// Check whether we can only use local binlog files to restore to targetTs:
 	// 1. The local binlog files have no gaps.
 	// 2. Some file's first binlog event ts is already larger than targetTs.
@@ -605,7 +608,10 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 	}
 
 	if len(binlogFilesLocalSorted) != 0 {
-		skipDownload, err := r.reconcileAndCheckLocalBinlogFilesAreEnoughToReplayToTargetTs(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
+		if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
+			return err
+		}
+		skipDownload, err := r.canSkipDownloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
 		if err != nil {
 			return err
 		}
