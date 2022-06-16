@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
@@ -100,7 +99,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	backup, err := mysqlRestore.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
-		dateTime := common.FormatDateTime(targetTs)
+		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
 			zap.String("dateTime", dateTime),
 			zap.Time("targetTs", time.Unix(targetTs, 0)),

@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
@@ -78,7 +77,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
 		"--start-position", fmt.Sprintf("%d", startBinlogInfo.Position),
 		// Stop reading the binary log at the first event having a timestamp equal to or later than the datetime argument.
-		"--stop-datetime", common.FormatDateTime(targetTs),
+		"--stop-datetime", formatDateTime(targetTs),
 	}
 
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
@@ -351,8 +350,8 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 	}
 
 	if maxEventTsLETargetTs == 0 {
-		targetDateTime := common.FormatDateTime(targetTs)
-		minEventDateTime := common.FormatDateTime(minEventTs)
+		targetDateTime := time.Unix(targetTs, 0).Format(time.RFC822)
+		minEventDateTime := time.Unix(minEventTs, 0).Format(time.RFC822)
 		log.Debug("the target restore time is earlier than the oldest backup time", zap.String("targetDatetime", targetDateTime), zap.Int64("targetTimestamp", targetTs), zap.String("minEventDateTime", minEventDateTime), zap.Int64("minEventTimestamp", minEventTs))
 
 		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
@@ -782,4 +781,10 @@ func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
 		return fmt.Errorf("binlog format is not ROW but %s", value)
 	}
 	return nil
+}
+
+// formatDateTime formats the timestamp to the local time string.
+func formatDateTime(ts int64) string {
+	t := time.Unix(ts, 0)
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
