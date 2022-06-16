@@ -353,8 +353,10 @@ func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []
 		targetDateTime := time.Unix(targetTs, 0).Format(time.RFC822)
 		minEventDateTime := time.Unix(minEventTs, 0).Format(time.RFC822)
 		log.Debug("the target restore time is earlier than the oldest backup time",
-			zap.String("targetDatetime", targetDateTime), zap.Int64("targetTimestamp", targetTs),
-			zap.String("minEventDateTime", minEventDateTime), zap.Int64("minEventTimestamp", minEventTs))
+			zap.String("targetDatetime", targetDateTime),
+			zap.Int64("targetTimestamp", targetTs),
+			zap.String("minEventDateTime", minEventDateTime),
+			zap.Int64("minEventTimestamp", minEventTs))
 
 		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
 	}
