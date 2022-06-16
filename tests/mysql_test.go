@@ -215,20 +215,18 @@ func TestFetchBinlogFiles(t *testing.T) {
 		}
 	}
 
-	t.Log("Clean up binlog dir")
-	binlogFiles, err := ioutil.ReadDir(binlogDir)
-	a.NoError(err)
-	for _, file := range binlogFiles {
-		path := filepath.Join(binlogDir, file.Name())
-		err = os.Remove(path)
-		a.NoError(err)
-	}
-
 	t.Log("Truncate or delete downloaded files and re-download")
 	rand.Seed(time.Now().Unix())
 	for i, targetTs := range startTsList {
 		t.Logf("Round %d\n", i)
-		// Fetch and randomly truncate/delete some binlog files.
+		// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
+		binlogFiles, err := ioutil.ReadDir(binlogDir)
+		a.NoError(err)
+		for _, file := range binlogFiles {
+			path := filepath.Join(binlogDir, file.Name())
+			err = os.Remove(path)
+			a.NoError(err)
+		}
 		t.Log("Fetch binlog files to targetTs")
 		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
 		a.NoError(err)
