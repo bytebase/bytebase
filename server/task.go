@@ -471,10 +471,36 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		s.syncEngineVersionAndSchema(ctx, instance)
 	}
 
+	database := taskPatched.Database
+	// If patch status is running, we need to mark migration_history as wait_retry.
+	if taskPatched.Status == api.TaskRunning {
+		driver, err := getAdminDatabaseDriver(ctx, database.Instance, "", s.pgInstanceDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get admin database driver: %w", err)
+		}
+		defer driver.Close(ctx)
+		// find latest migration_history
+		limit := 1
+		histories, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
+			Database: &database.Name,
+			Limit:    &limit,
+		})
+		if err != nil || len(histories) == 0 {
+			return nil, fmt.Errorf("failed to find latest migration_history: %w", err)
+		}
+		// mark migration_history status as wait_retry
+		if err := driver.PatchMigrationHistory(ctx, &db.MigrationHistoryPatch{
+			ID:     &histories[0].ID,
+			Status: db.WaitRetry,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to patch migration_history status to WAIT_RETRY: %w", err)
+		}
+	}
+
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
 	// Case 1: If the task is associated with an issue, then we mark the issue (including the pipeline) as DONE.
 	// Case 2: If the task is NOT associated with an issue, then we mark the pipeline as DONE.
-	if taskPatched.Status == "DONE" && (issue == nil || issue.AssigneeID == api.SystemBotID) {
+	if taskPatched.Status == api.TaskDone && (issue == nil || issue.AssigneeID == api.SystemBotID) {
 		pipeline, err := s.store.GetPipelineByID(ctx, taskPatched.PipelineID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch pipeline/issue as DONE after completing task %v", taskPatched.Name)
