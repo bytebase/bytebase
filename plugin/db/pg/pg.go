@@ -986,15 +986,32 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		return err
 	}
 	s := bufio.NewScanner(r)
+	previousLineComment := false
+	previousLineEmpty := false
 	for s.Scan() {
 		line := s.Text()
 		// Skip "SET SESSION AUTHORIZATION" till we can support it.
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
 		}
-		// Skip dump client and server version header.
-		if strings.HasPrefix(line, "-- Dumped from database version") || strings.HasPrefix(line, "-- Dumped by pg_dump version") {
+		// Skip comment lines.
+		if strings.HasPrefix(line, "--") {
+			previousLineComment = true
 			continue
+		}
+		if previousLineComment && line == "" {
+			previousLineComment = false
+			continue
+		}
+		previousLineComment = false
+		// Skip extra empty lines.
+		if line == "" {
+			if previousLineEmpty {
+				continue
+			}
+			previousLineEmpty = true
+		} else {
+			previousLineEmpty = false
 		}
 
 		if _, err := io.WriteString(out, line); err != nil {
