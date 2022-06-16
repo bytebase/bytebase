@@ -1,12 +1,15 @@
 package server
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -240,7 +243,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
 						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
 					}
-					if peerSchema != schemaBuf.String() {
+					peerSchema, err := stripComment(peerSchema)
+					if err != nil {
+						return fmt.Errorf("failed to strip peerSchema comment for %v: %v", database.Name, err)
+					}
+					schema, err := stripComment(schemaBuf.String())
+					if err != nil {
+						return fmt.Errorf("failed to strip schema comment for %v: %v", database.Name, err)
+					}
+					if peerSchema != schema {
 						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name)
 					}
 				}
@@ -1001,4 +1012,20 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 	}
 
 	return nil
+}
+
+// stripComment removes comments from the SQL statement.
+func stripComment(schema string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(schema))
+	var schemaBuf bytes.Buffer
+	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), "--") {
+			continue
+		}
+		if _, err := io.WriteString(&schemaBuf, scanner.Text()); err != nil {
+			return "", err
+
+		}
+	}
+	return schemaBuf.String(), nil
 }
