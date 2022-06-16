@@ -4,7 +4,7 @@
       {{ $t("subscription.description") }}
       <a
         class="text-accent"
-        href="https://hub.bytebase.com/pricing?plan=team&source=console.subscription"
+        href="https://bytebase.com/pricing?source=console.subscription"
         target="__blank"
       >
         {{ $t("subscription.description-highlight") }}
@@ -73,7 +73,6 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import dayjs from "dayjs";
 import PricingTable from "../components/PricingTable.vue";
 import { PlanType } from "../types";
 import { pushNotification, useSubscriptionStore } from "@/store";
