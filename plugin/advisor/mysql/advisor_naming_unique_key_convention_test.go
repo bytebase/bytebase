@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
@@ -133,13 +132,13 @@ func TestNamingUKConvention(t *testing.T) {
 		},
 	}
 
-	payload, err := json.Marshal(api.NamingRulePayload{
+	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format: "^uk_{{table}}_{{column_list}}$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleUKNaming,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleUKNaming,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
 	}, &MockCatalogService{})
 }

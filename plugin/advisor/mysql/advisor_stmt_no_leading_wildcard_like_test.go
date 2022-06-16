@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -67,9 +66,9 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &NoLeadingWildcardLikeAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleStatementNoLeadingWildcardLike,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &NoLeadingWildcardLikeAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleStatementNoLeadingWildcardLike,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
 	}, &MockCatalogService{})
 }

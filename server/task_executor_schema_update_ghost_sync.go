@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -160,27 +159,32 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 		return true, nil, err
 	}
 
-	waitSync := &sync.WaitGroup{}
-	waitSync.Add(1)
+	syncDone := make(chan struct{})
+	syncError := make(chan error)
 
-	go func(waitSync *sync.WaitGroup) {
-		migrationID, schema, err := executeSync(ctx, task, mi, statement, waitSync)
+	go func() {
+		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
+			syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err)
 			return
 		}
 		_, _, err = postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync postMigration", zap.Error(err))
 		}
-	}(waitSync)
+	}()
 
-	waitSync.Wait()
+	select {
+	case <-syncDone:
+		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
+	case err := <-syncError:
+		return true, nil, err
+	}
 
-	return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 }
 
-func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, statement string, waitSync *sync.WaitGroup) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, statement string, syncDone chan<- struct{}) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
 
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, "" /* pgInstanceDir */)
@@ -217,7 +221,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 			)
 		}
 	}()
-	if err = executeGhost(task, startedNs, statement, waitSync); err != nil {
+	if err = executeGhost(task, startedNs, statement, syncDone); err != nil {
 		return -1, "", err
 	}
 
@@ -229,7 +233,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func executeGhost(task *api.Task, startedNs int64, statement string, waitSync *sync.WaitGroup) error {
+func executeGhost(task *api.Task, startedNs int64, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -267,21 +271,21 @@ func executeGhost(task *api.Task, startedNs int64, statement string, waitSync *s
 	defer cancel()
 	migrator := logic.NewMigrator(migrationContext)
 
-	go func(ctx context.Context, migrationContext *base.MigrationContext, waitSync *sync.WaitGroup) {
+	go func(ctx context.Context, migrationContext *base.MigrationContext) {
 		ticker := time.NewTicker(1 * time.Second)
-		defer waitSync.Done()
 		for {
 			select {
 			case <-ticker.C:
 				// Since we are using postpone flag file to postpone cutover, it's gh-ost mechanism to set migrationContext.IsPostponingCutOver to 1 after synced and before postpone flag file is removed. We utilize this mechanism here to check if synced.
 				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
+					close(syncDone)
 					return
 				}
 			case <-ctx.Done():
 				return
 			}
 		}
-	}(ctx, migrationContext, waitSync)
+	}(ctx, migrationContext)
 
 	if err = migrator.Migrate(); err != nil {
 		return fmt.Errorf("failed to run gh-ost, error: %w", err)

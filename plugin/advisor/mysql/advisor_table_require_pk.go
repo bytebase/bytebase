@@ -61,7 +61,7 @@ type tableRequirePKChecker struct {
 	level      advisor.Status
 	title      string
 	tables     tablePK
-	catalog    catalog.Service
+	catalog    catalog.Catalog
 }
 
 // Enter implements the ast.Visitor interface

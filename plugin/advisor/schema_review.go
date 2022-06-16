@@ -1,9 +1,11 @@
-package api
+package advisor
 
 import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+
+	"github.com/bytebase/bytebase/common"
 )
 
 // SchemaReviewRuleLevel is the error level for schema review rule.
@@ -167,7 +169,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	}
 
 	template := nr.Format
-	keys, _ := parseTemplateTokens(template)
+	keys, _ := common.ParseTemplateTokens(template)
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
