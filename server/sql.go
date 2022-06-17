@@ -731,9 +731,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 		Payload: string(activityBytes),
 	}
 
-	_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-
-	if err != nil {
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
 		log.Warn("Failed to create activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
 			zap.String("instance_name", payload.InstanceName),
