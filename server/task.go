@@ -472,15 +472,29 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 
 	// If patch status is running, we need to mark migration_history as db.WaitRetry.
-	if taskPatched.Status == api.TaskRunning && task.DatabaseID != nil {
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
-		if err != nil {
-			return nil, err
+	if taskPatched.Status == api.TaskRunning {
+		var databaseName string
+		if taskPatched.Type == api.TaskDatabaseCreate {
+			// get database name from TaskDatabaseCreatePayload
+			payload := api.TaskDatabaseCreatePayload{}
+			if err := json.Unmarshal([]byte(taskPatched.Payload), &payload); err != nil {
+				return nil, fmt.Errorf("failed to find database name from TaskDatabaseCreatePayload: %w", err)
+			}
+			databaseName = payload.DatabaseName
+		} else {
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+			if err != nil {
+				return nil, err
+			}
+			if database == nil {
+				return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
+			}
+			databaseName = database.Name
 		}
-		if database == nil {
-			return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
+		if taskPatched.Instance == nil {
+			return nil, fmt.Errorf("task instance missing")
 		}
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, "", s.pgInstanceDir)
+		driver, err := getAdminDatabaseDriver(ctx, taskPatched.Instance, "", s.pgInstanceDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get admin database driver: %w", err)
 		}
@@ -488,7 +502,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		// find latest migration_history
 		limit := 1
 		histories, err := driver.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
-			Database: &database.Name,
+			Database: &databaseName,
 			Limit:    &limit,
 		})
 		if err != nil || len(histories) == 0 {
