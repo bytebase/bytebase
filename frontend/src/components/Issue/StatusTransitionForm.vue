@@ -45,10 +45,7 @@
         </template>
       </template>
 
-      <div
-        v-if="mode == 'TASK' && task.taskCheckRunList.length > 0"
-        class="sm:col-span-4 mb-4 space-y-4"
-      >
+      <div v-if="showTaskCheckBar" class="sm:col-span-4 mb-4 space-y-4">
         <template v-if="runningCheckCount > 0">
           <BBAttention
             :style="'INFO'"
@@ -148,7 +145,7 @@ export default defineComponent({
   props: {
     mode: {
       required: true,
-      type: String as PropType<"ISSUE" | "TASK">,
+      type: String as PropType<"ISSUE" | "STAGE" | "TASK">,
     },
     okText: {
       type: String,
@@ -202,6 +199,7 @@ export default defineComponent({
           }
           break; // only to make eslint happy
         }
+        case "STAGE": // fallthrough the same as TASK
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).type) {
             case "RUN":
@@ -220,6 +218,12 @@ export default defineComponent({
       return ""; // only to make eslint happy
     });
 
+    const showTaskCheckBar = computed((): boolean => {
+      if (props.mode !== "TASK") return false;
+      const taskCheckCount = props.task?.taskCheckRunList.length ?? 0;
+      return taskCheckCount > 0;
+    });
+
     // Code block below will raise an eslint ERROR.
     // But I won't change it this time.
     // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
@@ -228,6 +232,7 @@ export default defineComponent({
         case "ISSUE": {
           return true;
         }
+        case "STAGE": // fallthrough the same as TASK
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).to) {
             case "RUNNING":
@@ -292,6 +297,7 @@ export default defineComponent({
     return {
       state,
       environmentId,
+      showTaskCheckBar,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,

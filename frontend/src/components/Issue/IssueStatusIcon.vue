@@ -1,15 +1,22 @@
 <template>
   <span
-    class="flex items-center justify-center rounded-full select-none"
+    class="flex items-center justify-center rounded-full select-none overflow-hidden"
     :class="issueIconClass()"
   >
     <template v-if="issueStatus === `OPEN`">
-      <span
-        v-if="taskStatus === 'RUNNING'"
-        class="h-2 w-2 bg-info rounded-full"
-        style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-        aria-hidden="true"
-      ></span>
+      <template v-if="taskStatus === 'RUNNING'">
+        <div class="flex h-2 w-2 relative overflow-visible">
+          <span
+            class="w-full h-full rounded-full z-0 absolute animate-ping-slow"
+            style="background-color: rgba(37, 99, 235, 0.5); /* bg-info/50 */"
+            aria-hidden="true"
+          ></span>
+          <span
+            class="w-full h-full rounded-full z-[1] bg-info"
+            aria-hidden="true"
+          ></span>
+        </div>
+      </template>
       <span
         v-else-if="taskStatus === 'FAILED'"
         class="h-2 w-2 rounded-full text-center pb-6 font-normal text-base"

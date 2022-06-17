@@ -66,7 +66,7 @@
           tooltip-mode="DISABLED-ONLY"
           :disabled="!!pitrTimestampError"
           class="ml-3"
-          @click.prevent="onConfirm"
+          @click="onConfirm"
         >
           {{ $t("common.confirm") }}
           <template #tooltip>
