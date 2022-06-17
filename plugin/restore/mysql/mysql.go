@@ -564,7 +564,7 @@ func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLoca
 	return nil
 }
 
-// Download all binlog files on server.
+// Download binlog files on server.
 func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	binlogFilesLocalMap := make(map[string]bool)
