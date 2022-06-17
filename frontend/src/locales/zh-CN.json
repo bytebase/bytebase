@@ -480,7 +480,8 @@
       }
     },
     "new-issue": "@:common.new@:common.issue",
-    "format-on-save": "保存时格式化"
+    "format-on-save": "保存时格式化",
+    "action-to-current-stage": "{action}当前阶段"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
