@@ -152,13 +152,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					InstanceName: instance.Name,
 					DatabaseName: exec.DatabaseName,
 					Error:        "",
-					Advice:       adviceList,
+					AdviceList:   adviceList,
 				}); err != nil {
 					return err
 				}
 
 				resultSet := api.SQLResultSet{
-					Advice: adviceList,
+					AdviceList: adviceList,
 				}
 
 				c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -201,18 +201,18 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			InstanceName: instance.Name,
 			DatabaseName: exec.DatabaseName,
 			Error:        errMessage,
-			Advice:       adviceList,
+			AdviceList:   adviceList,
 		}); err != nil {
 			return err
 		}
 
-		resultSet := &api.SQLResultSet{Advice: adviceList}
+		resultSet := &api.SQLResultSet{AdviceList: adviceList}
 		if queryErr == nil {
 			resultSet.Data = string(bytes)
 			log.Debug("Query result",
 				zap.String("statement", exec.Statement),
 				zap.String("data", resultSet.Data),
-				zap.Array("advice", resultSet.Advice),
+				zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 			)
 		} else {
 			resultSet.Error = queryErr.Error()
@@ -220,13 +220,13 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				log.Error("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
-					zap.Array("advice", resultSet.Advice),
+					zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 				)
 			} else {
 				log.Debug("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
-					zap.Array("advice", resultSet.Advice),
+					zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 				)
 			}
 		}

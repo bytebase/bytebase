@@ -117,14 +117,13 @@ func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// AdviceList is a slice of Advice.
-// TODO(rebelice): use AdviceList instead of []Advice
-type AdviceList []Advice
+// ZapAdviceArray is a helper to format zap.Array.
+type ZapAdviceArray []Advice
 
-// MarshalLogArray constructs a filed that carries a slice of Advice.
-func (list AdviceList) MarshalLogArray(enc zapcore.ArrayEncoder) error {
-	for i := range list {
-		if err := enc.AppendObject(list[i]); err != nil {
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range array {
+		if err := enc.AppendObject(array[i]); err != nil {
 			return err
 		}
 	}
