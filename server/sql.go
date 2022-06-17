@@ -804,6 +804,15 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 
 			adviceList = append(adviceList, advice)
 		}
+
+		if len(adviceList) == 0 {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Success,
+				Code:    common.Ok,
+				Title:   "OK",
+				Content: "",
+			})
+		}
 	}
 	return adviceLevel, adviceList, nil
 }
