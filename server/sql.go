@@ -745,7 +745,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api.SQLExecute) (advisor.Status, []advisor.Advice, error) {
 	adviceLevel := advisor.Success
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, instance.EnvironmentID)
+	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &instance.EnvironmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			adviceLevel = advisor.Warn
