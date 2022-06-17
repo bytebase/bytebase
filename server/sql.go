@@ -788,13 +788,11 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 		for _, advice := range res {
 			switch advice.Status {
 			case advisor.Warn:
-				if adviceLevel == advisor.Success {
+				if adviceLevel != advisor.Error {
 					adviceLevel = advisor.Warn
 				}
 			case advisor.Error:
-				if adviceLevel != advisor.Error {
-					adviceLevel = advisor.Error
-				}
+				adviceLevel = advisor.Error
 			case advisor.Success:
 				continue
 			}
