@@ -247,7 +247,7 @@ type ActivitySQLEditorQueryPayload struct {
 	InstanceName string             `json:"instanceName"`
 	DatabaseName string             `json:"databaseName"`
 	Error        string             `json:"error"`
-	Advice       advisor.AdviceList `json:"advice"`
+	AdviceList       advisor.AdviceList `json:"adviceList"`
 }
 
 // Activity is the API message for an activity.
