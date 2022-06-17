@@ -42,6 +42,8 @@ type SQLResultSet struct {
 	Data string `jsonapi:"attr,data"`
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
 	Error string `jsonapi:"attr,error"`
+	// A list of SQL check advice.
+	Advice []string `jsonapi:"attr,advice"`
 }
 
 // SQLService is the service for SQL.

@@ -177,6 +177,22 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
 
+// GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
+func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, environmentID int) (*advisor.SchemaReviewPolicy, error) {
+	pType := api.PolicyTypeSchemaReview
+	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
+		EnvironmentID: &environmentID,
+		Type:          &pType,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if policy.RowStatus == api.Archived || policy.ID == api.DefaultPolicyID {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy for environment %d is archived", environmentID)}
+	}
+	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+}
+
 // GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
 func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
 	pType := api.PolicyTypeSchemaReview
