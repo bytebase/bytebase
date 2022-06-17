@@ -16,7 +16,6 @@ import {
   activeTaskInStage,
   idFromSlug,
   indexFromSlug,
-  isDev,
   issueSlug,
   stageSlug,
   taskSlug,
@@ -173,8 +172,6 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isGhostMode = computed((): boolean => {
-    if (!isDev()) return false;
-
     return issue.value.type === "bb.issue.database.schema.update.ghost";
   });
 
