@@ -667,7 +667,7 @@ UPDATE
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task_dag describes task dependency relationship
--- from_task_id is blocked by to_task_id
+-- from_task_id blocks to_task_id
 CREATE TABLE task_dag (
     id SERIAL PRIMARY KEY,
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
