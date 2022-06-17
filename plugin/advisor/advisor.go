@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap/zapcore"
 )
 
 // Status is the advisor result status.
@@ -105,6 +106,29 @@ type Advice struct {
 	Code    common.Code
 	Title   string
 	Content string
+}
+
+// MarshalLogObject constructs a field that carries Advice.
+func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("status", a.Status.String())
+	enc.AddInt("code", int(a.Code))
+	enc.AddString("title", a.Title)
+	enc.AddString("content", a.Content)
+	return nil
+}
+
+// AdviceList is a slice of Advice.
+// TODO(rebelice): use AdviceList instead of []Advice
+type AdviceList []Advice
+
+// MarshalLogArray constructs a filed that carries a slice of Advice.
+func (list AdviceList) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range list {
+		if err := enc.AppendObject(list[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Context is the context for advisor.
