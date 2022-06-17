@@ -886,7 +886,7 @@ func (driver *Driver) PatchMigrationHistory(ctx context.Context, patch *db.Migra
 	UPDATE
 		migration_history
 	SET
-		status = ?,
+		status = ?
 	WHERE id = ?
 	`
 	_, err := driver.db.ExecContext(ctx, patchMigrationHistoryQuery, patch.Status, patch.ID)

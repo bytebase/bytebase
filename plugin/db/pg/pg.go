@@ -902,7 +902,7 @@ func (driver *Driver) PatchMigrationHistory(ctx context.Context, patch *db.Migra
 	UPDATE
 		migration_history
 	SET
-		status = $1,
+		status = $1
 	WHERE id = $2
 	`
 	_, err := driver.db.ExecContext(ctx, patchMigrationHistoryQuery, patch.Status, patch.ID)
