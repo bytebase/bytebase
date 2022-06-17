@@ -471,9 +471,15 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		s.syncEngineVersionAndSchema(ctx, instance)
 	}
 
-	database := taskPatched.Database
 	// If patch status is running, we need to mark migration_history as db.WaitRetry.
-	if taskPatched.Status == api.TaskRunning {
+	if taskPatched.Status == api.TaskRunning && task.DatabaseID != nil {
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
+		if err != nil {
+			return nil, err
+		}
+		if database == nil {
+			return nil, fmt.Errorf("database not found with ID %v", task.DatabaseID)
+		}
 		driver, err := getAdminDatabaseDriver(ctx, database.Instance, "", s.pgInstanceDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get admin database driver: %w", err)
