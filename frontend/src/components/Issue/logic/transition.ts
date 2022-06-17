@@ -21,12 +21,16 @@ import {
 import { useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
-  const { activeTaskOfPipeline } = useIssueLogic();
+  const { create, activeTaskOfPipeline } = useIssueLogic();
   const currentUser = useCurrentUser();
 
   const getApplicableIssueStatusTransitionList = (
     issue: Issue
   ): IssueStatusTransition[] => {
+    if (create.value) {
+      return [];
+    }
+
     const currentTask = activeTaskOfPipeline(issue.pipeline);
 
     const issueEntity = issue as Issue;
@@ -81,6 +85,9 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   };
 
   const getApplicableStageStatusTransitionList = (issue: Issue) => {
+    if (create.value) {
+      return [];
+    }
     if (issue.id == ONBOARDING_ISSUE_ID) {
       return [];
     }
@@ -109,6 +116,9 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
   const getApplicableTaskStatusTransitionList = (
     issue: Issue
   ): TaskStatusTransition[] => {
+    if (create.value) {
+      return [];
+    }
     if (issue.id == ONBOARDING_ISSUE_ID) {
       return [];
     }
