@@ -480,7 +480,8 @@
       }
     },
     "new-issue": "@:common.new @:common.issue",
-    "format-on-save": "Format on save"
+    "format-on-save": "Format on save",
+    "action-to-current-stage": "{action} current stage"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
