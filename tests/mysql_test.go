@@ -190,74 +190,58 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 
 	t.Log("Download binlog files in empty dir up to targetTs")
-	for i, targetTs := range startTsList {
-		t.Logf("Round %d\n", i)
-		binlogFilesBefore, err := ioutil.ReadDir(binlogDir)
+	binlogFilesBefore, err := ioutil.ReadDir(binlogDir)
+	a.NoError(err)
+	for _, file := range binlogFilesBefore {
+		path := filepath.Join(binlogDir, file.Name())
+		err = os.Remove(path)
 		a.NoError(err)
-		for _, file := range binlogFilesBefore {
-			path := filepath.Join(binlogDir, file.Name())
-			err = os.Remove(path)
-			a.NoError(err)
-		}
-		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
-		a.NoError(err)
-		binlogFilesDownloaded, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
-		a.NoError(err)
-		// We will always download one more file to find out that it exceeds the targetTs.
-		num := (i + 1) + 1
-		if num > numBinlogFiles {
-			num = numBinlogFiles
-		}
-		a.Equal(num, len(binlogFilesDownloaded))
-		for j := range binlogFilesDownloaded {
-			a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloaded[j].Name)
-			a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloaded[j].Size)
-		}
+	}
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloaded, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	a.Equal(numBinlogFiles, len(binlogFilesDownloaded))
+	for j := range binlogFilesDownloaded {
+		a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloaded[j].Name)
+		a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloaded[j].Size)
 	}
 
 	t.Log("Truncate or delete downloaded files and re-download")
 	rand.Seed(time.Now().Unix())
-	for i, targetTs := range startTsList {
-		t.Logf("Round %d\n", i)
-		// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
-		binlogFiles, err := ioutil.ReadDir(binlogDir)
-		a.NoError(err)
-		for _, file := range binlogFiles {
-			path := filepath.Join(binlogDir, file.Name())
-			err = os.Remove(path)
-			a.NoError(err)
-		}
-		t.Log("Fetch binlog files to targetTs")
-		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
-		a.NoError(err)
-		binlogFilesDownloaded, err := ioutil.ReadDir(binlogDir)
-		t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
-		a.NoError(err)
-		truncateIndex := rand.Intn(i + 1)
-		path := filepath.Join(binlogDir, binlogFilesDownloaded[truncateIndex].Name())
-		t.Logf("Truncating file %s", binlogFilesDownloaded[truncateIndex].Name())
-		err = os.Truncate(path, 1)
-		a.NoError(err)
-		deleteIndex := rand.Intn(i + 1)
-		path = filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name())
-		t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name())
+	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
+	binlogFiles, err := ioutil.ReadDir(binlogDir)
+	a.NoError(err)
+	for _, file := range binlogFiles {
+		path := filepath.Join(binlogDir, file.Name())
 		err = os.Remove(path)
 		a.NoError(err)
-		// Re-download and check.
-		t.Log("Re-downloading binlog files")
-		err = mysqlRestore.FetchBinlogFilesUpToTargetTs(ctx, targetTs)
-		a.NoError(err)
-		binlogFilesDownloadedAgain, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
-		a.NoError(err)
-		// We will always download one more file to find out that it exceeds the targetTs.
-		num := (i + 1) + 1
-		if num > numBinlogFiles {
-			num = numBinlogFiles
-		}
-		a.Equal(num, len(binlogFilesDownloadedAgain))
-		for j := range binlogFilesDownloadedAgain {
-			a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloadedAgain[j].Name)
-			a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloadedAgain[j].Size)
-		}
+	}
+	t.Log("Fetch binlog files to targetTs")
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloaded, err = restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
+	truncateIndex := rand.Intn(numBinlogFiles)
+	path := filepath.Join(binlogDir, binlogFilesDownloaded[truncateIndex].Name)
+	t.Logf("Truncating file %s", binlogFilesDownloaded[truncateIndex].Name)
+	err = os.Truncate(path, 1)
+	a.NoError(err)
+	deleteIndex := rand.Intn(numBinlogFiles)
+	path = filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
+	t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name)
+	err = os.Remove(path)
+	a.NoError(err)
+	// Re-download and check.
+	t.Log("Re-downloading binlog files")
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloadedAgain, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	a.Equal(numBinlogFiles, len(binlogFilesDownloadedAgain))
+	for i := range binlogFilesDownloadedAgain {
+		a.Equal(binlogFilesOnServerSorted[i].Name, binlogFilesDownloadedAgain[i].Name)
+		a.Equal(binlogFilesOnServerSorted[i].Size, binlogFilesDownloadedAgain[i].Size)
 	}
 }

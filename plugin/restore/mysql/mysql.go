@@ -486,6 +486,8 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 }
 
 // Parse the first eventTs of a local binlog file.
+// TODO(dragonly): remove nolint when implemented convertTsToBinlogCoordinate().
+// nolint
 func (r *Restore) parseFirstLocalBinlogEventTimestamp(ctx context.Context, fileName string) (int64, error) {
 	// https://dev.mysql.com/doc/internals/en/binlog-file-header.html
 	// > A binlog file starts with a Binlog File Header \0xfe'bin'
@@ -520,9 +522,12 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
+// Re-download inconsistent local binlog files.
+// This is a best-effort task, because the corresponding binlog files may not exist on server.
 func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile) error {
-	// Re-download inconsistent local binlog files.
-	// This is a best-effort task, because the corresponding binlog files may not exist on server.
+	if len(binlogFilesOnServerSorted) == 0 {
+		return fmt.Errorf("no binlog files on server")
+	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Re-downloading inconsistent local binlog files")
 	binlogFilesOnServerMap := make(map[string]BinlogFile)
@@ -550,45 +555,11 @@ func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLoca
 	return nil
 }
 
-func (r *Restore) canSkipDownloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) (skip bool, err error) {
-	// Check whether we can only use local binlog files to restore to targetTs:
-	// 1. The local binlog files have no gaps.
-	// 2. Some file's first binlog event ts is already larger than targetTs.
-	// 3. The first local binlog file <= first server binlog file
-	// If all true, we can skip downloading binlog files at all.
-	log.Debug("Checking whether we can just replay existing local binlog files to restore")
-	if binlogFilesLocalSorted[0].Seq <= binlogFilesOnServerSorted[0].Seq {
-		isContinuous := binlogFilesAreContinuous(binlogFilesLocalSorted)
-		if isContinuous {
-			for _, file := range binlogFilesLocalSorted {
-				eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
-				path := filepath.Join(r.binlogDir, file.Name)
-				if err != nil {
-					log.Error("Failed to parse the first binlog event timestamp for local binlog file",
-						zap.String("path", path),
-						zap.Error(err))
-					return false, fmt.Errorf("failed to parse the first binlog event timestamp for local binlog file[%s], error[%w]", path, err)
-				}
-				if eventTs > targetTs {
-					log.Debug("Found a local binlog file whose first event's timestamp is larger than targetTs",
-						zap.String("path", path),
-						zap.Int64("targetTs", targetTs),
-						zap.Int64("eventTs", eventTs))
-					log.Debug("The local binlog files are continuous and can replay to targetTs, no need to download extra binlog files from server")
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
-}
-
-func (r *Restore) downloadBinlogFilesOnServerUpToTargetTs(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile, targetTs int64) error {
-	// We are sure that the local binlog files are not enough to replay to targetTs.
-	// It's time to download binlog files from the server.
+// Download all binlog files on server.
+func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	binlogFilesLocalMap := make(map[string]bool)
-	for _, file := range binlogFilesLocalSorted {
+	for _, file := range binlogFilesLocal {
 		binlogFilesLocalMap[file.Name] = true
 	}
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
@@ -599,34 +570,12 @@ func (r *Restore) downloadBinlogFilesOnServerUpToTargetTs(ctx context.Context, b
 				return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
 			}
 		}
-		// We parsed the first binlog event's timestamp of the current inspected binlog file.
-		// If the timestamp > targetTs, we skip downloading the following binlog files, because we have already
-		// downloaded all the binlog files needed for replaying to targetTs.
-		eventTs, err := r.parseFirstLocalBinlogEventTimestamp(ctx, file.Name)
-		path := filepath.Join(r.binlogDir, file.Name)
-		if err != nil {
-			log.Error("Failed to parse the first binlog event timestamp for the current inspected binlog file",
-				zap.String("path", path),
-				zap.Error(err))
-			return fmt.Errorf("failed to parse the first binlog event timestamp for the current inspected binlog file[%s], error[%w]", path, err)
-		}
-		log.Debug("Checking first event ts with targetTs", zap.String("path", path), zap.Int64("eventTs", eventTs), zap.Int64("targetTs", targetTs))
-		if eventTs > targetTs {
-			log.Debug("Downloaded a binlog file whose first event's timestamp is larger than targetTs",
-				zap.String("path", path),
-				zap.Int64("targetTs", targetTs),
-				zap.Int64("eventTs", eventTs))
-			return nil
-		}
 	}
 	return nil
 }
 
-// FetchBinlogFilesUpToTargetTs downloads the locally missing binlog files required to replay to `targetTs` from the remote instance to `binlogDir`.
-// After downloading a binlog file, we check its first event timestamp. If the timestamp is larger than
-// targetTs, we stop the following downloads and return eagerly, because now the local binlog files contain
-// all the binlog events we need for this recovery task.
-func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int64) error {
+// FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
+func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
@@ -645,20 +594,11 @@ func (r *Restore) FetchBinlogFilesUpToTargetTs(ctx context.Context, targetTs int
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
 
-	if len(binlogFilesLocalSorted) != 0 {
-		if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
-			return err
-		}
-		skipDownload, err := r.canSkipDownloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
-		if err != nil {
-			return err
-		}
-		if skipDownload {
-			return nil
-		}
+	if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
+		return err
 	}
 
-	return r.downloadBinlogFilesOnServerUpToTargetTs(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, targetTs)
+	return r.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
