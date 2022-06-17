@@ -712,7 +712,6 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 
 func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Context, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) error {
 	activityBytes, err := json.Marshal(payload)
-
 	if err != nil {
 		log.Warn("Failed to marshal activity after executing sql statement",
 			zap.String("database_name", payload.DatabaseName),
