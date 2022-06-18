@@ -17,6 +17,7 @@ require (
 	github.com/gosimple/slug v1.10.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/jackc/pgx/v4 v4.15.0
+	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
@@ -32,7 +33,7 @@ require (
 	github.com/xo/dburl v0.9.1
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/sys v0.0.0-20220224003255-dbe011f71a99 // indirect
 )
