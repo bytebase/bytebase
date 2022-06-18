@@ -994,8 +994,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		if strings.HasPrefix(line, "SET SESSION AUTHORIZATION ") {
 			continue
 		}
-		// Skip comment lines.
-		if strings.HasPrefix(line, "--") {
+		if strings.HasPrefix(strings.TrimSpace(line), "--") {
 			previousLineComment = true
 			continue
 		}
