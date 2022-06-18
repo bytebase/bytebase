@@ -33,6 +33,7 @@ func activeProfile(dataDir string) server.Profile {
 		DemoDataDir:          demoDataDir,
 		BackupRunnerInterval: 10 * time.Minute,
 		Version:              version,
+		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
 		MetricConnectionKey:  "so9lLwj5zLjH09sxNabsyVNYSsAHn68F",
 	}
