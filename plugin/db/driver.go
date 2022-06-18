@@ -253,6 +253,10 @@ type MigrationInfo struct {
 	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
+	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
+	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retriable.
+	// We don't use force option for DATA type of migrations yet till there's customer needs.
+	Force bool
 }
 
 // ParseMigrationInfo matches filePath against filePathTemplate

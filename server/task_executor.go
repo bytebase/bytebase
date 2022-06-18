@@ -117,6 +117,10 @@ func preMigration(ctx context.Context, server *Server, task *api.Task, migration
 	if mi.Type != db.Baseline && statement == "" {
 		return nil, fmt.Errorf("empty statement")
 	}
+	// We will force migration for baseline and migrate type of migrations.
+	if mi.Type == db.Baseline || mi.Type == db.Migrate {
+		mi.Force = true
+	}
 
 	return mi, nil
 }
