@@ -59,6 +59,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Type:           db.Baseline,
 		Description:    "Create database",
 		CreateDatabase: true,
+		Force:          true,
 	}
 	creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
