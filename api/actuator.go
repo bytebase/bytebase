@@ -4,6 +4,7 @@ package api
 // Actuator concept is similar to the Spring Boot Actuator
 type ServerInfo struct {
 	Version        string `json:"version"`
+	GitCommit      string `json:"gitCommit"`
 	Readonly       bool   `json:"readonly"`
 	Demo           bool   `json:"demo"`
 	Host           string `json:"host"`

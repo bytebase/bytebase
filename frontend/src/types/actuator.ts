@@ -1,5 +1,6 @@
 export type ServerInfo = {
   version: string;
+  gitCommit: string;
   readonly: boolean;
   demo: boolean;
   host: string;
