@@ -17,6 +17,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/pprof"
+	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
@@ -312,6 +313,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	})
 	// Register pprof endpoints.
 	pprof.Register(e)
+	// Register prometheus metrics endpoint.
+	p := prometheus.NewPrometheus("api", nil)
+	p.Use(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
