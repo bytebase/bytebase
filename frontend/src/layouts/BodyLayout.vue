@@ -44,7 +44,10 @@
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </router-link>
-            <div class="text-sm ml-auto text-control-light">{{ version }}</div>
+            <div class="text-sm ml-auto text-control-light tooltip-wrapper">
+              {{ version }}
+              <span v-if="gitCommit" class="tooltip">{{ gitCommit }}</span>
+            </div>
           </div>
         </div>
         <div class="flex-shrink-0 w-14" aria-hidden="true">
@@ -83,8 +86,9 @@
             <heroicons-outline:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
           </router-link>
-          <div class="text-sm ml-auto text-control-light">
+          <div class="text-sm ml-auto text-control-light tooltip-wrapper">
             {{ version }}
+            <span v-if="gitCommit" class="tooltip">{{ gitCommit }}</span>
           </div>
         </div>
       </div>
@@ -245,6 +249,10 @@ export default defineComponent({
       return v;
     });
 
+    const gitCommit = computed(() => {
+      return `Git hash ${actuatorStore.gitCommit.substring(0, 7)}`;
+    });
+
     const currentPlan = computed((): string => {
       const plan = subscriptionStore.currentPlan;
       switch (plan) {
@@ -269,6 +277,7 @@ export default defineComponent({
       showIntro,
       showQuickstart,
       version,
+      gitCommit,
       currentPlan,
       isFreePlan,
     };
