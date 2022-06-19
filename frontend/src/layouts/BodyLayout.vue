@@ -46,7 +46,9 @@
             </router-link>
             <div class="text-sm ml-auto text-control-light tooltip-wrapper">
               {{ version }}
-              <span v-if="gitCommit" class="tooltip">{{ gitCommit }}</span>
+              <span v-if="gitCommit" class="tooltip"
+                >Git hash {{ gitCommit }}</span
+              >
             </div>
           </div>
         </div>
@@ -88,7 +90,9 @@
           </router-link>
           <div class="text-sm ml-auto text-control-light tooltip-wrapper">
             {{ version }}
-            <span v-if="gitCommit" class="tooltip">{{ gitCommit }}</span>
+            <span v-if="gitCommit" class="tooltip"
+              >Git hash {{ gitCommit }}</span
+            >
           </div>
         </div>
       </div>
@@ -250,7 +254,7 @@ export default defineComponent({
     });
 
     const gitCommit = computed(() => {
-      return `Git hash ${actuatorStore.gitCommit.substring(0, 7)}`;
+      return `${actuatorStore.gitCommit.substring(0, 7)}`;
     });
 
     const currentPlan = computed((): string => {
