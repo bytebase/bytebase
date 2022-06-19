@@ -177,6 +177,27 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 	return api.UnmarshalPipelineApprovalPolicy(policy.Payload)
 }
 
+// GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
+func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SchemaReviewPolicy, error) {
+	if find.ID != nil && *find.ID == api.DefaultPolicyID {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", *find.ID)}
+	}
+
+	pType := api.PolicyTypeSchemaReview
+	find.Type = &pType
+	policy, err := s.getPolicyRaw(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if policy.RowStatus == api.Archived {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
+	}
+	if policy.ID == api.DefaultPolicyID {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
+	}
+	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+}
+
 // GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
 func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentID int) (int, error) {
 	pType := api.PolicyTypeSchemaReview
@@ -188,28 +209,6 @@ func (s *Store) GetSchemaReviewPolicyIDByEnvID(ctx context.Context, environmentI
 		return 0, err
 	}
 	return policy.ID, nil
-}
-
-// GetSchemaReviewPolicyNormalByID will get the schema review policy for an environment.
-// If policy.ID is DefaultPolicyID or policy is archived, return the default empty policy.
-func (s *Store) GetSchemaReviewPolicyNormalByID(ctx context.Context, id int) (*advisor.SchemaReviewPolicy, error) {
-	pType := api.PolicyTypeSchemaReview
-
-	if id == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", id)}
-	}
-
-	policy, err := s.getPolicyRaw(ctx, &api.PolicyFind{
-		ID:   &id,
-		Type: &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy with ID %d is archived", id)}
-	}
-	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }
 
 //
@@ -263,10 +262,12 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 
 	if len(policyRawList) == 0 {
 		ret = &policyRaw{
-			CreatorID:     api.SystemBotID,
-			UpdaterID:     api.SystemBotID,
-			EnvironmentID: *find.EnvironmentID,
-			Type:          *find.Type,
+			CreatorID: api.SystemBotID,
+			UpdaterID: api.SystemBotID,
+			Type:      *find.Type,
+		}
+		if find.EnvironmentID != nil {
+			ret.EnvironmentID = *find.EnvironmentID
 		}
 	} else if len(policyRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}

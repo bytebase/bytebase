@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -241,11 +242,12 @@ type ActivityProjectDatabaseTransferPayload struct {
 // ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
-	Statement    string `json:"statement"`
-	DurationNs   int64  `json:"durationNs"`
-	InstanceName string `json:"instanceName"`
-	DatabaseName string `json:"databaseName"`
-	Error        string `json:"error"`
+	Statement    string           `json:"statement"`
+	DurationNs   int64            `json:"durationNs"`
+	InstanceName string           `json:"instanceName"`
+	DatabaseName string           `json:"databaseName"`
+	Error        string           `json:"error"`
+	AdviceList   []advisor.Advice `json:"adviceList"`
 }
 
 // Activity is the API message for an activity.
