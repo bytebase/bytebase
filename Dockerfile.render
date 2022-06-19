@@ -1,6 +1,4 @@
-# *******************************************************
-# * This script is for demo.bytebase.com on Render ONLY *
-# *******************************************************
+# This script is for demo.bytebase.com and staging.bytebase.com on Render ONLY
 
 FROM node:14 as frontend
 
@@ -25,6 +23,9 @@ ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
+# Build in release mode so we will embed the frontend
+ARG RELEASE="release"
+
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apk --no-cache add gcc musl-dev
 
@@ -40,9 +41,9 @@ COPY ./scripts .
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
-RUN STAGING_VERSION=`cat ./VERSION`-${RENDER_GIT_COMMIT:0:5} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-        --tags "alpine" \
-        -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${STAGING_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
+RUN CMD_VERSION=`cat ./VERSION`-${RENDER_GIT_COMMIT:0:5} && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+        --tags "${RELEASE} alpine" \
+        -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${CMD_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
         -o bytebase \
         ./bin/server/main.go;
 
