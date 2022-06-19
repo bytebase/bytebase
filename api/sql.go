@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -42,6 +43,8 @@ type SQLResultSet struct {
 	Data string `jsonapi:"attr,data"`
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
 	Error string `jsonapi:"attr,error"`
+	// A list of SQL check advice.
+	AdviceList []advisor.Advice `jsonapi:"attr,adviceList"`
 }
 
 // SQLService is the service for SQL.
