@@ -157,7 +157,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 					return err
 				}
 
-				resultSet := api.SQLResultSet{
+				resultSet := &api.SQLResultSet{
 					AdviceList: adviceList,
 				}
 
