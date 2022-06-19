@@ -190,10 +190,10 @@ func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.Polic
 		return nil, err
 	}
 	if policy.RowStatus == api.Archived {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy for environment %d is archived", *find.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d is archived", policy.ID, policy.EnvironmentID)}
 	}
 	if policy.ID == api.DefaultPolicyID {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy for environment %d not found", *find.EnvironmentID)}
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
 	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
 }
@@ -262,10 +262,12 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 
 	if len(policyRawList) == 0 {
 		ret = &policyRaw{
-			CreatorID:     api.SystemBotID,
-			UpdaterID:     api.SystemBotID,
-			EnvironmentID: *find.EnvironmentID,
-			Type:          *find.Type,
+			CreatorID: api.SystemBotID,
+			UpdaterID: api.SystemBotID,
+			Type:      *find.Type,
+		}
+		if find.EnvironmentID != nil {
+			ret.EnvironmentID = *find.EnvironmentID
 		}
 	} else if len(policyRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d policy with filter %+v, expect 1. ", len(policyRawList), find)}
