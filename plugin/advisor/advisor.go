@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap/zapcore"
 )
 
 // Status is the advisor result status.
@@ -105,6 +106,28 @@ type Advice struct {
 	Code    common.Code
 	Title   string
 	Content string
+}
+
+// MarshalLogObject constructs a field that carries Advice.
+func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("status", a.Status.String())
+	enc.AddInt("code", int(a.Code))
+	enc.AddString("title", a.Title)
+	enc.AddString("content", a.Content)
+	return nil
+}
+
+// ZapAdviceArray is a helper to format zap.Array.
+type ZapAdviceArray []Advice
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range array {
+		if err := enc.AppendObject(array[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Context is the context for advisor.

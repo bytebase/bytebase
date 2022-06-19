@@ -40,7 +40,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	policy, err := server.store.GetSchemaReviewPolicyNormalByID(ctx, payload.PolicyID)
+	policy, err := server.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{

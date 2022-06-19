@@ -17,8 +17,10 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/store"
 )
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
@@ -131,9 +133,45 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", exec.InstanceID))
 		}
 
+		adviceLevel := advisor.Success
+		var adviceList []advisor.Advice
+
+		if s.feature(api.FeatureSchemaReviewPolicy) &&
+			// For now we only support MySQL dialect schema review check.
+			(instance.Engine == db.MySQL || instance.Engine == db.TiDB) {
+
+			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
+			if err != nil {
+				return err
+			}
+
+			if adviceLevel == advisor.Error {
+				if err := s.createSQLEditorQueryActivity(ctx, c, api.ActivityError, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
+					Statement:    exec.Statement,
+					DurationNs:   0,
+					InstanceName: instance.Name,
+					DatabaseName: exec.DatabaseName,
+					Error:        "",
+					AdviceList:   adviceList,
+				}); err != nil {
+					return err
+				}
+
+				resultSet := api.SQLResultSet{
+					AdviceList: adviceList,
+				}
+
+				c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+				if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
+				}
+				return nil
+			}
+		}
+
 		start := time.Now().UnixNano()
 
-		bytes, err := func() ([]byte, error) {
+		bytes, queryErr := func() ([]byte, error) {
 			driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, exec.DatabaseName)
 			if err != nil {
 				return nil, err
@@ -148,71 +186,47 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			return json.Marshal(rowSet)
 		}()
 
-		{
-			errMessage := ""
-			activityLevel := api.ActivityInfo
-			if err != nil {
-				errMessage = err.Error()
-				activityLevel = api.ActivityError
-			}
-
-			activityBytes, err := json.Marshal(api.ActivitySQLEditorQueryPayload{
-				Statement:    exec.Statement,
-				DurationNs:   time.Now().UnixNano() - start,
-				InstanceName: instance.Name,
-				DatabaseName: exec.DatabaseName,
-				Error:        errMessage,
-			})
-
-			if err != nil {
-				log.Warn("Failed to marshal activity after executing sql statement",
-					zap.String("database_name", exec.DatabaseName),
-					zap.String("instance_name", instance.Name),
-					zap.String("statement", exec.Statement),
-					zap.Error(err))
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
-			}
-
-			activityCreate := &api.ActivityCreate{
-				CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
-				Type:        api.ActivitySQLEditorQuery,
-				ContainerID: exec.InstanceID,
-				Level:       activityLevel,
-				Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
-					exec.Statement, exec.DatabaseName, instance.Name),
-				Payload: string(activityBytes),
-			}
-
-			_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-
-			if err != nil {
-				log.Warn("Failed to create activity after executing sql statement",
-					zap.String("database_name", exec.DatabaseName),
-					zap.String("instance_name", instance.Name),
-					zap.String("statement", exec.Statement),
-					zap.Error(err))
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
-			}
+		level := api.ActivityInfo
+		errMessage := ""
+		if adviceLevel == advisor.Warn {
+			level = api.ActivityWarn
+		}
+		if queryErr != nil {
+			level = api.ActivityError
+			errMessage = err.Error()
+		}
+		if err := s.createSQLEditorQueryActivity(ctx, c, level, exec.InstanceID, api.ActivitySQLEditorQueryPayload{
+			Statement:    exec.Statement,
+			DurationNs:   time.Now().UnixNano() - start,
+			InstanceName: instance.Name,
+			DatabaseName: exec.DatabaseName,
+			Error:        errMessage,
+			AdviceList:   adviceList,
+		}); err != nil {
+			return err
 		}
 
-		resultSet := &api.SQLResultSet{}
-		if err == nil {
+		resultSet := &api.SQLResultSet{AdviceList: adviceList}
+		if queryErr == nil {
 			resultSet.Data = string(bytes)
 			log.Debug("Query result",
 				zap.String("statement", exec.Statement),
 				zap.String("data", resultSet.Data),
+				zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 			)
 		} else {
-			resultSet.Error = err.Error()
+			resultSet.Error = queryErr.Error()
 			if s.profile.Mode == common.ReleaseModeDev {
 				log.Error("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
+					zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 				)
 			} else {
 				log.Debug("Failed to execute query",
 					zap.Error(err),
 					zap.String("statement", exec.Statement),
+					zap.Array("advice", advisor.ZapAdviceArray(resultSet.AdviceList)),
 				)
 			}
 		}
@@ -694,4 +708,106 @@ func validateSQLSelectStatement(sqlStatement string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Context, level api.ActivityLevel, containerID int, payload api.ActivitySQLEditorQueryPayload) error {
+	activityBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Warn("Failed to marshal activity after executing sql statement",
+			zap.String("database_name", payload.DatabaseName),
+			zap.String("instance_name", payload.InstanceName),
+			zap.String("statement", payload.Statement),
+			zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   c.Get(getPrincipalIDContextKey()).(int),
+		Type:        api.ActivitySQLEditorQuery,
+		ContainerID: containerID,
+		Level:       level,
+		Comment: fmt.Sprintf("Executed `%q` in database %q of instance %q.",
+			payload.Statement, payload.DatabaseName, payload.InstanceName),
+		Payload: string(activityBytes),
+	}
+
+	if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+		log.Warn("Failed to create activity after executing sql statement",
+			zap.String("database_name", payload.DatabaseName),
+			zap.String("instance_name", payload.InstanceName),
+			zap.String("statement", payload.Statement),
+			zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create activity").SetInternal(err)
+	}
+	return nil
+}
+
+func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api.SQLExecute) (advisor.Status, []advisor.Advice, error) {
+	adviceLevel := advisor.Success
+	var adviceList []advisor.Advice
+	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &instance.EnvironmentID})
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			adviceLevel = advisor.Warn
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Warn,
+				Code:    common.TaskCheckEmptySchemaReviewPolicy,
+				Title:   "Empty schema review policy or disabled",
+				Content: "",
+			})
+		} else {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch schema review policy by environment ID: %d", instance.EnvironmentID)).SetInternal(err)
+		}
+	}
+	if adviceLevel == advisor.Success {
+		databaseFind := &api.DatabaseFind{
+			InstanceID: &instance.ID,
+			Name:       &exec.DatabaseName,
+		}
+		db, err := s.store.FindDatabase(ctx, databaseFind)
+		if err != nil {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+		}
+		if len(db) == 0 {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
+		}
+		if len(db) > 1 {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
+		}
+
+		res, err := advisor.SchemaReviewCheck(ctx, exec.Statement, policy, advisor.SchemaReviewCheckContext{
+			Charset:   db[0].CharacterSet,
+			Collation: db[0].Collation,
+			DbType:    instance.Engine,
+			Catalog:   store.NewCatalog(&db[0].ID, s.store),
+		})
+		if err != nil {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
+		}
+
+		for _, advice := range res {
+			switch advice.Status {
+			case advisor.Warn:
+				if adviceLevel != advisor.Error {
+					adviceLevel = advisor.Warn
+				}
+			case advisor.Error:
+				adviceLevel = advisor.Error
+			case advisor.Success:
+				continue
+			}
+
+			adviceList = append(adviceList, advice)
+		}
+
+		if len(adviceList) == 0 {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Success,
+				Code:    common.Ok,
+				Title:   "OK",
+				Content: "",
+			})
+		}
+	}
+	return adviceLevel, adviceList, nil
 }
