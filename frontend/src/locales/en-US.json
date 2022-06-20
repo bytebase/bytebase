@@ -1165,7 +1165,7 @@
     "view-all-tabs": "View all Tabs",
     "sheet": "Sheet",
     "sheets": "Sheets",
-    "connection-holder": "Select a connection from left panel to get started",
+    "connection-holder": "Set a connection context from left panel to get started",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
