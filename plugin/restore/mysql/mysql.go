@@ -523,7 +523,8 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 // Download binlog files on server.
 func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	if len(binlogFilesOnServerSorted) == 0 {
-		return fmt.Errorf("no binlog files on server")
+		log.Debug("No binlog file found on server to download")
+		return nil
 	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	binlogFilesLocalMap := make(map[string]BinlogFile)
@@ -565,8 +566,7 @@ func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 		return err
 	}
 	if len(binlogFilesOnServerSorted) == 0 {
-		// No binlog files on server, so there's nothing to download.
-		log.Debug("No binlog file found on server")
+		log.Debug("No binlog file found on server to download")
 		return nil
 	}
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))

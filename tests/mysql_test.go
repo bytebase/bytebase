@@ -178,8 +178,6 @@ func TestFetchBinlogFiles(t *testing.T) {
 			INSERT INTO tbl VALUES (%d);
 			`, i))
 		a.NoError(err)
-		// Make a one-second gap between the two binlog files' events
-		time.Sleep(time.Second)
 		// Rotate the binlog file.
 		_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
 		a.NoError(err)
@@ -189,7 +187,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	binlogFilesOnServerSorted, err := mysqlRestore.GetSortedBinlogFilesMetaOnServer(ctx)
 	a.NoError(err)
 
-	t.Log("Download binlog files in empty dir up to targetTs")
+	t.Log("Download binlog files in empty dir")
 	binlogFilesBefore, err := ioutil.ReadDir(binlogDir)
 	a.NoError(err)
 	for _, file := range binlogFilesBefore {
@@ -217,7 +215,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		err = os.Remove(path)
 		a.NoError(err)
 	}
-	t.Log("Fetch binlog files to targetTs")
+	t.Log("Fetch binlog files")
 	err = mysqlRestore.FetchAllBinlogFiles(ctx)
 	a.NoError(err)
 	binlogFilesDownloaded, err = restoremysql.GetSortedLocalBinlogFiles(binlogDir)
