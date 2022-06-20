@@ -1177,7 +1177,8 @@
     "save-sheet": "保存工作表",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "untitled-sheet": "未命名工作表",
-    "format": "格式化"
+    "format": "格式化",
+    "sql-review-result": "SQL 检查结果"
   },
   "label": {
     "empty-label-value": "<空值>",
