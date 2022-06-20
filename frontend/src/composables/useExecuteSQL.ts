@@ -114,7 +114,7 @@ const useExecuteSQL = () => {
       });
       // TODO(steven): use BBModel instead of notify to show the advice from schema review.
       let adviceStatus = "";
-      let notifyMessage = "";
+      let adviceNotifyMessage = "";
       for (const advice of sqlResultSet.adviceList) {
         if (advice.status === "ERROR") {
           adviceStatus = "ERROR";
@@ -122,11 +122,18 @@ const useExecuteSQL = () => {
           adviceStatus = advice.status;
         }
 
-        notifyMessage += `${advice.status}: ${advice.content}\n`;
+        adviceNotifyMessage += `${advice.status}: ${advice.title}\n`;
+        if (advice.content) {
+          adviceNotifyMessage += `${advice.content}\n`;
+        }
       }
       if (adviceStatus) {
         const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
-        notify(notifyStyle, t("sql-editor.sql-review-result"), notifyMessage);
+        notify(
+          notifyStyle,
+          t("sql-editor.sql-review-result"),
+          adviceNotifyMessage
+        );
       }
       tabStore.updateCurrentTab({
         queryResult: sqlResultSet.data as any,
