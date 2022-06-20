@@ -752,8 +752,8 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Warn,
 				Code:    common.TaskCheckEmptySchemaReviewPolicy,
-				Title:   "Empty schema review policy or disabled",
-				Content: "",
+				Title:   "",
+				Content: "Empty schema review policy or disabled",
 			})
 		} else {
 			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch schema review policy by environment ID: %d", instance.EnvironmentID)).SetInternal(err)
