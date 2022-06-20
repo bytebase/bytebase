@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
@@ -293,8 +294,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		// For now we only supported MySQL dialect syntax and compatibility check
-		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
+		if advisor.IsSupportedEngine(database.Instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,

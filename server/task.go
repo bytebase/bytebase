@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -178,8 +179,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
 
-				// For now, we supported MySQL and TiDB dialect check
-				if taskPatched.Database.Instance.Engine == db.MySQL || taskPatched.Database.Instance.Engine == db.TiDB {
+				if advisor.IsSupportedEngine(taskPatched.Database.Instance.Engine) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
 						DbType:    taskPatched.Database.Instance.Engine,
@@ -204,11 +204,13 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 							zap.Error(err),
 						)
 					}
+				}
 
-					if s.feature(api.FeatureSchemaReviewPolicy) {
-						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
-						}
+				if s.feature(api.FeatureSchemaReviewPolicy) &&
+					// For now, we supported MySQL and TiDB dialect schema review check
+					(taskPatched.Database.Instance.Engine == db.MySQL || taskPatched.Database.Instance.Engine == db.TiDB) {
+					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}
 				}
 			}

@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNamingTableConvention(t *testing.T) {
-	tests := []test{
+func TestMySQLNamingTableConvention(t *testing.T) {
+	tests := []advisor.TestCase{
 		{
-			statement: "CREATE TABLE techBook(id int, name varchar(255))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE techBook(id int, name varchar(255))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
@@ -23,8 +23,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE tech_book(id int, name varchar(255))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE tech_book(id int, name varchar(255))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -34,8 +34,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE techBook RENAME TO TechBook",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE techBook RENAME TO TechBook",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
@@ -45,8 +45,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE techBook RENAME TO tech_book",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE techBook RENAME TO tech_book",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -56,8 +56,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "RENAME TABLE techBook TO tech_book, literaryBook TO LiteraryBook",
-			want: []advisor.Advice{
+			Statement: "RENAME TABLE techBook TO tech_book, literaryBook TO LiteraryBook",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
@@ -67,8 +67,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "RENAME TABLE techBook TO TechBook, literaryBook TO LiteraryBook",
-			want: []advisor.Advice{
+			Statement: "RENAME TABLE techBook TO TechBook, literaryBook TO LiteraryBook",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingTableConventionMismatch,
@@ -84,8 +84,8 @@ func TestNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "RENAME TABLE techBook TO tech_book, literaryBook TO literary_book",
-			want: []advisor.Advice{
+			Statement: "RENAME TABLE techBook TO tech_book, literaryBook TO literary_book",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -99,9 +99,9 @@ func TestNamingTableConvention(t *testing.T) {
 		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleTableNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

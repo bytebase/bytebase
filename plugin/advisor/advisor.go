@@ -57,6 +57,8 @@ const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
 
+	// MySQL Advisor
+
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
 
@@ -98,6 +100,11 @@ const (
 
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
+
+	// PostgreSQL Advisor
+
+	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
+	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
 )
 
 // Advice is the result of an advisor.
@@ -161,6 +168,7 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 	}
 	dbAdvisors, ok := advisors[dbType]
 	if !ok {
+		fmt.Printf("[]%s:%s\n", dbType, advType)
 		advisors[dbType] = map[Type]Advisor{
 			advType: f,
 		}
@@ -168,6 +176,7 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 		if _, dup := dbAdvisors[advType]; dup {
 			panic(fmt.Sprintf("advisor: Register called twice for advisor %v for %v", advType, dbType))
 		}
+		fmt.Printf("[]%s:%s\n", dbType, advType)
 		dbAdvisors[advType] = f
 	}
 }
@@ -178,13 +187,22 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown advisor %v for %v 1", advType, dbType)
 	}
 
 	f, ok := dbAdvisors[advType]
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown advisor %v for %v 2", advType, dbType)
 	}
 
 	return f.Check(ctx, statement)
+}
+
+// IsSupportedEngine checks the engine type if advisor supports it.
+func IsSupportedEngine(engine db.Type) bool {
+	switch engine {
+	case db.MySQL, db.TiDB, db.Postgres:
+		return true
+	}
+	return false
 }
