@@ -520,52 +520,37 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
-// Re-download inconsistent local binlog files.
-// This is a best-effort task, because the corresponding binlog files may not exist on server.
-func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile) error {
+// Download binlog files on server.
+func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		return fmt.Errorf("no binlog files on server")
 	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	log.Debug("Re-downloading inconsistent local binlog files")
-	binlogFilesOnServerMap := make(map[string]BinlogFile)
-	for _, file := range binlogFilesOnServerSorted {
-		binlogFilesOnServerMap[file.Name] = file
+	binlogFilesLocalMap := make(map[string]BinlogFile)
+	for _, file := range binlogFilesLocal {
+		binlogFilesLocalMap[file.Name] = file
 	}
-	for _, file := range binlogFilesLocalSorted {
-		fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
-		if existOnServer && file.Size != fileOnServer.Size {
-			path := filepath.Join(r.binlogDir, file.Name)
+	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	for _, fileOnServer := range binlogFilesOnServerSorted {
+		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
+		path := filepath.Join(r.binlogDir, fileOnServer.Name)
+		if !existLocal {
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
+				return fmt.Errorf("failed to download binlog file[%s], error[%w]", path, err)
+			}
+		} else if fileLocal.Size != fileOnServer.Size {
 			log.Debug("Deleting inconsistent local binlog file",
 				zap.String("path", path),
-				zap.Int64("sizeLocal", file.Size),
+				zap.Int64("sizeLocal", fileOnServer.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
 			if err := os.Remove(path); err != nil {
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
 			}
-			if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
-			}
-		}
-	}
-	return nil
-}
-
-// Download binlog files on server.
-func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	binlogFilesLocalMap := make(map[string]bool)
-	for _, file := range binlogFilesLocal {
-		binlogFilesLocalMap[file.Name] = true
-	}
-	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
-	for _, file := range binlogFilesOnServerSorted {
-		if existLocal := binlogFilesLocalMap[file.Name]; !existLocal {
-			if err := r.downloadBinlogFile(ctx, file, file == latestBinlogFileOnServer); err != nil {
-				log.Error("Failed to download binlog file", zap.String("filename", file.Name), zap.Error(err))
-				return fmt.Errorf("failed to download binlog file[%s], error[%w]", file.Name, err)
 			}
 		}
 	}
@@ -590,10 +575,6 @@ func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
-	}
-
-	if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
-		return err
 	}
 
 	return r.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
