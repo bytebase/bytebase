@@ -5,7 +5,7 @@
     >
       <span>{{ $t("migration-history.self") }}</span>
       <BBTooltipButton
-        v-if="allowEdit"
+        v-if="!isTenantProject && allowEdit"
         type="primary"
         :disabled="!allowMigrate"
         tooltip-mode="DISABLED-ONLY"
