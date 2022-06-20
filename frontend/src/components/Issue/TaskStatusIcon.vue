@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex flex-shrink-0 items-center justify-center rounded-full select-none w-6 h-6"
+    class="relative flex flex-shrink-0 items-center justify-center rounded-full select-none w-6 h-6 overflow-hidden"
     :class="classes"
   >
     <template v-if="status === 'PENDING'">
@@ -19,11 +19,17 @@
       <heroicons-outline:user class="w-4 h-4" />
     </template>
     <template v-else-if="status === 'RUNNING'">
-      <span
-        class="h-2.5 w-2.5 bg-info rounded-full"
-        style="animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-        aria-hidden="true"
-      ></span>
+      <div class="flex h-2.5 w-2.5 relative overflow-visible">
+        <span
+          class="w-full h-full rounded-full z-0 absolute animate-ping-slow"
+          style="background-color: rgba(37, 99, 235, 0.5); /* bg-info/50 */"
+          aria-hidden="true"
+        ></span>
+        <span
+          class="w-full h-full rounded-full z-[1] bg-info"
+          aria-hidden="true"
+        ></span>
+      </div>
     </template>
     <template v-else-if="status === 'DONE'">
       <heroicons-solid:check class="w-5 h-5" />

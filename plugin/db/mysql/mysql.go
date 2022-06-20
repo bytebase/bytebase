@@ -48,12 +48,6 @@ func init() {
 	db.Register(db.TiDB, newDriver)
 }
 
-// BinlogFile is the metadata of the MySQL binlog file
-type BinlogFile struct {
-	Name string
-	Size int64
-}
-
 // Driver is the MySQL driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
@@ -1019,6 +1013,9 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 
 	var tableNames []string
 	for _, table := range tables {
+		if table.TableType != baseTableType {
+			continue
+		}
 		tableNames = append(tableNames, fmt.Sprintf("`%s`", table.Name))
 	}
 	flushTableStmt := fmt.Sprintf("FLUSH TABLES %s WITH READ LOCK;", strings.Join(tableNames, ", "))

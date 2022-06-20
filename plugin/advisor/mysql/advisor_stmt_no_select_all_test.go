@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
@@ -45,9 +44,9 @@ func TestNoSelectAll(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleStatementNoSelectAll,
-		Level:   api.SchemaRuleLevelError,
+	runSchemaReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleStatementNoSelectAll,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
 	}, &MockCatalogService{})
 }

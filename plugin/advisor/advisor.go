@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap/zapcore"
 )
 
 // Status is the advisor result status.
@@ -40,11 +40,11 @@ func (e Status) String() string {
 }
 
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
+func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
-	case api.SchemaRuleLevelError:
+	case SchemaRuleLevelError:
 		return Error, nil
-	case api.SchemaRuleLevelWarning:
+	case SchemaRuleLevelWarning:
 		return Warn, nil
 	}
 	return "", fmt.Errorf("unexpected rule level type: %s", level)
@@ -102,10 +102,32 @@ const (
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status
-	Code    common.Code
-	Title   string
-	Content string
+	Status  Status      `json:"status"`
+	Code    common.Code `json:"code"`
+	Title   string      `json:"title"`
+	Content string      `json:"content"`
+}
+
+// MarshalLogObject constructs a field that carries Advice.
+func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("status", a.Status.String())
+	enc.AddInt("code", int(a.Code))
+	enc.AddString("title", a.Title)
+	enc.AddString("content", a.Content)
+	return nil
+}
+
+// ZapAdviceArray is a helper to format zap.Array.
+type ZapAdviceArray []Advice
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range array {
+		if err := enc.AppendObject(array[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Context is the context for advisor.
@@ -114,8 +136,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *api.SchemaReviewRule
-	Catalog catalog.Service
+	Rule    *SchemaReviewRule
+	Catalog catalog.Catalog
 }
 
 // Advisor is the interface for advisor.

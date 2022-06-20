@@ -92,13 +92,13 @@ const dropdownOptions = computed(() => {
   } else {
     return [
       {
-        label: "Open in new tab",
-        key: "editor.sheet.new",
+        label: "Set as context",
+        key: "editor.sheet.set-context",
         item: sheetContext.value,
       },
       {
-        label: "Set as context",
-        key: "editor.sheet.set-context",
+        label: "Open in new tab",
+        key: "editor.sheet.new",
         item: sheetContext.value,
       },
     ];

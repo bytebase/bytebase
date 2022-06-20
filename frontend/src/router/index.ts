@@ -325,8 +325,8 @@ const routes: Array<RouteRecordRaw> = [
                   title: () => t("common.projects"),
                   quickActionListByRole: () => {
                     return new Map([
-                      ["OWNER", ["quickaction.bb.project.create"]],
-                      ["DBA", ["quickaction.bb.project.create"]],
+                      ["OWNER", []],
+                      ["DBA", []],
                       ["DEVELOPER", []],
                     ]);
                   },

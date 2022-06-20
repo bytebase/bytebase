@@ -28,6 +28,7 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
+# Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
 # Need gcc musl-dev for CGO_ENABLED=1

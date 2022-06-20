@@ -53,6 +53,8 @@ type Profile struct {
 	BackupRunnerInterval time.Duration
 	// Version is the bytebase's version
 	Version string
+	// Git commit hash of the build
+	GitCommit string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
 	// MetricConnectionKey is the connection key for metric.
