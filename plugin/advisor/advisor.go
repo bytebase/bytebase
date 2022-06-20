@@ -168,7 +168,6 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 	}
 	dbAdvisors, ok := advisors[dbType]
 	if !ok {
-		fmt.Printf("[]%s:%s\n", dbType, advType)
 		advisors[dbType] = map[Type]Advisor{
 			advType: f,
 		}
@@ -176,7 +175,6 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 		if _, dup := dbAdvisors[advType]; dup {
 			panic(fmt.Sprintf("advisor: Register called twice for advisor %v for %v", advType, dbType))
 		}
-		fmt.Printf("[]%s:%s\n", dbType, advType)
 		dbAdvisors[advType] = f
 	}
 }
