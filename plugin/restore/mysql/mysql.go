@@ -494,17 +494,6 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// Parse the first eventTs of a local binlog file.
-// TODO(dragonly): remove nolint when implemented convertTsToBinlogCoordinate().
-// nolint
-func (r *Restore) parseFirstLocalBinlogEventTimestamp(ctx context.Context, fileName string) (int64, error) {
-	// https://dev.mysql.com/doc/internals/en/binlog-file-header.html
-	// > A binlog file starts with a Binlog File Header \0xfe'bin'
-	// The starting point of the first binlog event is at position 4 of a binlog file.
-	firstBinlogEvent := api.BinlogInfo{FileName: fileName, Position: 4}
-	return r.parseLocalBinlogEventTimestamp(ctx, firstBinlogEvent)
-}
-
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
 func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
