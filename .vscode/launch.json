@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Binary",
+            "name": "Debug Dev Binary",
             "type": "go",
             "request": "launch",
             "mode": "exec",
-            "program": "${file}"
+            "program": "${workspaceFolder}/.air/bytebase"
         },
         {
             "name": "Attach to Process",
