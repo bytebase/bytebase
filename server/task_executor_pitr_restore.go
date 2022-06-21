@@ -91,9 +91,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
 
-	log.Debug("Download all binlog files up to targetTs", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	log.Debug("Downloading all binlog files")
 	// TODO(dragonly): Do this on a regular basis.
-	if err := mysqlRestore.IncrementalFetchAllBinlogFiles(ctx); err != nil {
+	if err := mysqlRestore.FetchAllBinlogFiles(ctx); err != nil {
 		return err
 	}
 
