@@ -102,10 +102,10 @@ const (
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status
-	Code    common.Code
-	Title   string
-	Content string
+	Status  Status      `json:"status"`
+	Code    common.Code `json:"code"`
+	Title   string      `json:"title"`
+	Content string      `json:"content"`
 }
 
 // MarshalLogObject constructs a field that carries Advice.
