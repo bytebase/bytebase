@@ -56,6 +56,11 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				Password: password,
 				Host:     connectionInfo.Host,
 				Port:     connectionInfo.Port,
+				TLSConfig: db.TLSConfig{
+					SslCA:   connectionInfo.SslCa,
+					SslCert: connectionInfo.SslCert,
+					SslKey:  connectionInfo.SslKey,
+				},
 			},
 			db.ConnectionContext{},
 		)
