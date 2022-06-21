@@ -99,8 +99,6 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
 	mysqlbinlogArgs := []string{
-		// tell mysqlbinlog to suppress the BINLOG statements for row events
-		"--base64-output=DECODE-ROWS",
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
