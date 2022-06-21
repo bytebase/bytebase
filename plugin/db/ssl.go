@@ -19,9 +19,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 	rootCertPool := x509.NewCertPool()
-	pem := []byte(tc.SslCA)
-
-	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+	if ok := rootCertPool.AppendCertsFromPEM([]byte(tc.SslCA)); !ok {
 		return nil, fmt.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
 	}
 
