@@ -7,14 +7,16 @@ import {
   QueryInfo,
   ResourceObject,
   SQLResultSet,
+  Advice,
 } from "@/types";
 import { useDatabaseStore } from "./database";
 import { useInstanceStore } from "./instance";
 
 function convert(resultSet: ResourceObject): SQLResultSet {
   return {
-    data: JSON.parse((resultSet.attributes.data as string) || "{}"),
+    data: JSON.parse((resultSet.attributes.data as string) || "null"),
     error: resultSet.attributes.error as string,
+    adviceList: resultSet.attributes.adviceList as Advice[],
   };
 }
 
@@ -25,19 +27,19 @@ export const useSQLStore = defineStore("sql", {
     },
 
     async ping(connectionInfo: ConnectionInfo) {
-      const data = (
+      const res = (
         await axios.post(`/api/sql/ping`, {
           data: {
             type: "connectionInfo",
             attributes: connectionInfo,
           },
         })
-      ).data.data;
+      ).data;
 
-      return convert(data);
+      return convert(res.data);
     },
     async syncSchema(instanceId: InstanceId) {
-      const data = (
+      const res = (
         await axios.post(
           `/api/sql/sync-schema`,
           {
@@ -52,9 +54,9 @@ export const useSQLStore = defineStore("sql", {
             timeout: INSTANCE_OPERATION_TIMEOUT,
           }
         )
-      ).data.data;
+      ).data;
 
-      const resultSet = convert(data);
+      const resultSet = convert(res.data);
       if (!resultSet.error) {
         // Refresh the corresponding list.
         useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
@@ -63,8 +65,8 @@ export const useSQLStore = defineStore("sql", {
 
       return resultSet;
     },
-    async query(queryInfo: QueryInfo) {
-      const data = (
+    async query(queryInfo: QueryInfo): Promise<SQLResultSet> {
+      const res = (
         await axios.post(
           `/api/sql/execute`,
           {
@@ -80,14 +82,14 @@ export const useSQLStore = defineStore("sql", {
             timeout: INSTANCE_OPERATION_TIMEOUT,
           }
         )
-      ).data.data;
+      ).data;
 
-      const resultSet = convert(data);
+      const resultSet = convert(res.data);
       if (resultSet.error) {
         throw new Error(resultSet.error);
       }
 
-      return resultSet.data;
+      return resultSet;
     },
   },
 });
