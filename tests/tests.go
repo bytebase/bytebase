@@ -131,6 +131,7 @@ func getTestPort(testName string) int {
 		"TestPITR",
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
+		"TestFetchBinlogFiles",
 
 		"TestSchemaSystem",
 	}
