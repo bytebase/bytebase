@@ -11,11 +11,10 @@ import {
   nextTick,
   onUnmounted,
   watch,
-  defineExpose,
   shallowRef,
 } from "vue";
 import { editor as Editor } from "monaco-editor";
-import { SQLDialect } from "@/types";
+import { Database, SQLDialect, Table } from "@/types";
 import { useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
 
@@ -52,19 +51,15 @@ const emit = defineEmits<{
 const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 const readOnly = toRef(props, "readonly");
+const monacoInstanceRef = ref();
 const editorContainerRef = ref();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
 
-const {
-  monaco,
-  formatContent,
-  setContent,
-  setAutoCompletionContext,
-  setPositionAtEndOfLine,
-} = await useMonaco(language.value);
-
 const getEditorInstance = () => {
+  const { monaco, formatContent, setPositionAtEndOfLine } =
+    monacoInstanceRef.value;
+
   const model = monaco.editor.createModel(sqlCode.value, toRaw(language.value));
   const editorInstance = monaco.editor.create(editorContainerRef.value, {
     model,
@@ -151,14 +146,14 @@ const getEditorInstance = () => {
   });
 
   // when editor change selection, emit change-selection event with selected text
-  editorInstance.onDidChangeCursorSelection((e) => {
+  editorInstance.onDidChangeCursorSelection((e: any) => {
     const selectedText = editorInstance
       .getModel()
       ?.getValueInRange(e.selection) as string;
     emit("change-selection", selectedText);
   });
 
-  editorInstance.onDidChangeCursorPosition((e) => {
+  editorInstance.onDidChangeCursorPosition((e: any) => {
     const { defineLineDecorations, disposeLineDecorations } =
       useLineDecorations(editorInstance, e.position);
     // clear the old decorations
@@ -178,7 +173,23 @@ const getEditorInstance = () => {
   return editorInstance;
 };
 
-onMounted(() => {
+onMounted(async () => {
+  const {
+    monaco,
+    formatContent,
+    setContent,
+    setAutoCompletionContext,
+    setPositionAtEndOfLine,
+  } = await useMonaco(language.value);
+
+  monacoInstanceRef.value = {
+    monaco,
+    formatContent,
+    setContent,
+    setAutoCompletionContext,
+    setPositionAtEndOfLine,
+  };
+
   const editorInstance = getEditorInstance();
   editorInstanceRef.value = editorInstance;
 
@@ -215,7 +226,7 @@ const getEditorContent = () => {
 };
 
 const setEditorContent = (content: string) => {
-  setContent(editorInstanceRef.value!, content);
+  monacoInstanceRef.value?.setContent(editorInstanceRef.value!, content);
 };
 
 const getEditorContentHeight = () => {
@@ -223,11 +234,21 @@ const getEditorContentHeight = () => {
 };
 
 const formatEditorContent = () => {
-  formatContent(editorInstanceRef.value!, language.value as SQLDialect);
+  monacoInstanceRef.value?.formatContent(
+    editorInstanceRef.value!,
+    language.value as SQLDialect
+  );
   nextTick(() => {
-    setPositionAtEndOfLine(editorInstanceRef.value!);
+    monacoInstanceRef.value?.setPositionAtEndOfLine(editorInstanceRef.value!);
     editorInstanceRef.value?.focus();
   });
+};
+
+const setEditorAutoCompletionContext = (
+  databases: Database[],
+  tables: Table[]
+) => {
+  monacoInstanceRef.value?.setAutoCompletionContext(databases, tables);
 };
 
 defineExpose({
@@ -235,7 +256,7 @@ defineExpose({
   getEditorContent,
   setEditorContent,
   getEditorContentHeight,
-  setAutoCompletionContext,
+  setEditorAutoCompletionContext,
 });
 </script>
 
