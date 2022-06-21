@@ -286,11 +286,16 @@ export default defineComponent({
       (): string => prevMigrationHistoryList.value[1].schema
     );
 
-    const hasDrift = computed(
-      (): boolean =>
+    const hasDrift = computed((): boolean => {
+      if (migrationHistory.value.type === "BASELINE") {
+        return false;
+      }
+
+      return (
         prevMigrationHistoryList.value.length > 1 && // no drift if no previous migration history
         previousHistorySchema.value !== migrationHistory.value.schemaPrev
-    );
+      );
+    });
 
     const state = reactive<LocalState>({
       showDiff:
