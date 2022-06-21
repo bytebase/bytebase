@@ -105,6 +105,9 @@ const (
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
+	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
 )
 
 // Advice is the result of an advisor.
