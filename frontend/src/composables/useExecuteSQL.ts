@@ -127,7 +127,7 @@ const useExecuteSQL = () => {
           adviceNotifyMessage += `${advice.content}\n`;
         }
       }
-      if (adviceStatus) {
+      if (adviceStatus !== "SUCCESS") {
         const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
         notify(
           notifyStyle,
