@@ -136,9 +136,9 @@ type DataSourcePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
-	SslCa            string  `jsonapi:"attr,sslCa"`
-	SslCert          string  `jsonapi:"attr,sslCert"`
-	SslKey           string  `jsonapi:"attr,sslKey"`
+	SslCa            *string `jsonapi:"attr,sslCa"`
+	SslCert          *string `jsonapi:"attr,sslCert"`
+	SslKey           *string `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after patching the data source. The client
 	// may set to false if the target data source's instance contains too many databases
 	// to avoid the request timeout.

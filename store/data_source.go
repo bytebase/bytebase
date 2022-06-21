@@ -377,7 +377,15 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	if v := patch.Password; v != nil {
 		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
 	}
-
+	if v := patch.SslCa; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_ca= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslKey; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_key= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCert; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
