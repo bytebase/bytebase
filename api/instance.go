@@ -34,7 +34,7 @@ type Instance struct {
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
 	Username      string  `jsonapi:"attr,username"`
-	// These fields are not returned to the client
+	// Password is not returned to the client
 	Password string
 }
 
