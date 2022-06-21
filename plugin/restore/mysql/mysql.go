@@ -304,8 +304,8 @@ func parseBinlogEventImpl(output string, startLine int) (event binlogEvent, pars
 		return binlogEvent{}, 0, fmt.Errorf("startLine %d is larger than the total number of lines %d", startLine, len(lines))
 	}
 	linesTruncated := lines[startLine:]
-	// The mysqlbinlog output will contains a line starting with "# at 35065".
-	// And the next line will start with "#220421 14:49:26 server id 1 end_log_pos 35096", which has the timestamp we are looking for.
+	// The mysqlbinlog output will contains a line starting with "# at 35065", which is the binlog event's start position.
+	// And the next line will start with "#220421 14:49:26 server id 1 end_log_pos 35096", which is the binlog event's timestamp and end position.
 	// The first occurrence is the target.
 	for i, line := range linesTruncated {
 		if strings.HasPrefix(line, "# at ") {
