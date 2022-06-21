@@ -388,15 +388,27 @@ const cancel = () => {
 };
 
 const tryCreate = () => {
+  const { instance } = state;
   const connectionInfo: ConnectionInfo = {
-    engine: state.instance.engine,
-    username: state.instance.username,
-    password: state.instance.password,
+    engine: instance.engine,
+    username: instance.username,
+    password: instance.password,
     // When creating instance, the password is always needed.
     useEmptyPassword: false,
-    host: state.instance.host,
-    port: state.instance.port,
+    host: instance.host,
+    port: instance.port,
   };
+
+  if (typeof instance.sslCa !== "undefined") {
+    connectionInfo.sslCa = instance.sslCa;
+  }
+  if (typeof instance.sslKey !== "undefined") {
+    connectionInfo.sslKey = instance.sslKey;
+  }
+  if (typeof instance.sslCert !== "undefined") {
+    connectionInfo.sslCert = instance.sslCert;
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       doCreate();
@@ -435,15 +447,28 @@ const doCreate = () => {
 };
 
 const testConnection = () => {
+  const { instance } = state;
+
   const connectionInfo: ConnectionInfo = {
-    host: state.instance.host,
-    port: state.instance.port,
-    engine: state.instance.engine,
-    username: state.instance.username,
-    password: state.instance.password,
+    host: instance.host,
+    port: instance.port,
+    engine: instance.engine,
+    username: instance.username,
+    password: instance.password,
     useEmptyPassword: false,
     instanceId: undefined,
   };
+
+  if (typeof instance.sslCa !== "undefined") {
+    connectionInfo.sslCa = instance.sslCa;
+  }
+  if (typeof instance.sslKey !== "undefined") {
+    connectionInfo.sslKey = instance.sslKey;
+  }
+  if (typeof instance.sslCert !== "undefined") {
+    connectionInfo.sslCert = instance.sslCert;
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({

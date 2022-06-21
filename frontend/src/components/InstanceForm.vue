@@ -641,17 +641,28 @@ const doUpdate = () => {
 };
 
 const testConnection = () => {
+  const instance = state.instance;
+  const dataSource = currentDataSource.value;
   const connectionInfo: ConnectionInfo = {
-    engine: state.instance.engine,
-    username: currentDataSource.value.username,
-    password: currentDataSource.value.useEmptyPassword
-      ? ""
-      : currentDataSource.value.updatedPassword,
-    useEmptyPassword: currentDataSource.value.useEmptyPassword,
-    host: state.instance.host,
-    port: state.instance.port,
-    instanceId: state.instance.id,
+    engine: instance.engine,
+    username: dataSource.username,
+    password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
+    useEmptyPassword: dataSource.useEmptyPassword,
+    host: instance.host,
+    port: instance.port,
+    instanceId: instance.id,
   };
+
+  if (typeof dataSource.sslCa !== "undefined") {
+    connectionInfo.sslCa = dataSource.sslCa;
+  }
+  if (typeof dataSource.sslKey !== "undefined") {
+    connectionInfo.sslKey = dataSource.sslKey;
+  }
+  if (typeof dataSource.sslCert !== "undefined") {
+    connectionInfo.sslCert = dataSource.sslCert;
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({
