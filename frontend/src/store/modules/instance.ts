@@ -388,13 +388,13 @@ export const useInstanceStore = defineStore("instance", {
       };
     },
     async createMigrationSetup(instanceId: InstanceId): Promise<SQLResultSet> {
-      const data = (
+      const res = (
         await axios.post(`/api/instance/${instanceId}/migration`, undefined, {
           timeout: INSTANCE_OPERATION_TIMEOUT,
         })
-      ).data.data;
+      ).data;
 
-      return useSQLStore().convert(data) as SQLResultSet;
+      return useSQLStore().convert(res.data) as SQLResultSet;
     },
     async fetchMigrationHistoryById({
       instanceId,

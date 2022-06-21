@@ -158,8 +158,8 @@ const hasReadonlyDataSource = computed(() => {
 
 const { execute, state: executeState } = useExecuteSQL();
 
-const handleRunQuery = () => {
-  execute({ databaseType: selectedInstanceEngine.value });
+const handleRunQuery = async () => {
+  await execute({ databaseType: selectedInstanceEngine.value });
 };
 
 const handleExplainQuery = () => {

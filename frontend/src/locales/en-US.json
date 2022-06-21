@@ -1177,7 +1177,8 @@
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
-    "format": "Format"
+    "format": "Format",
+    "sql-review-result": "SQL review result"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
