@@ -190,7 +190,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 
 	f, ok := dbAdvisors[advType]
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v 2", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
 	}
 
 	return f.Check(ctx, statement)
@@ -206,7 +206,7 @@ func IsSyntaxCheckSupported(engine db.Type) bool {
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
 func IsSchemaReviewSupported(engine db.Type) bool {
-	if engine == db.MySQL || engine == db.TiDB {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
 		return true
 	}
 	return false
