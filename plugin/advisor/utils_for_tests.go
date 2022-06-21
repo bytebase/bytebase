@@ -1,28 +1,33 @@
-package mysql
+package advisor
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bmizerany/assert"
 	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// MockCatalogService is the mock catalog service for test.
 type MockCatalogService struct{}
 
 const (
+	// MockOldIndexName is the mock old index for test.
 	MockOldIndexName = "old_index"
-	MockOldUKName    = "old_uk"
-	MockOldPKName    = "PRIMARY"
+	// MockOldUKName is the mock old unique key for test.
+	MockOldUKName = "old_uk"
+	// MockOldPKName is the mock old foreign key for test.
+	MockOldPKName = "PRIMARY"
 )
 
 var (
+	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
 )
 
+// FindIndex implements the catalog interface.
 func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
 	switch find.IndexName {
 	case MockOldIndexName:
@@ -46,27 +51,29 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	return nil, fmt.Errorf("cannot find index for %v", find)
 }
 
-type test struct {
-	statement string
-	want      []advisor.Advice
+// TestCase is the data struct for test.
+type TestCase struct {
+	Statement string
+	Want      []Advice
 }
 
-func runSchemaReviewRuleTests(
+// RunSchemaReviewRuleTests helps to test the schema review rule.
+func RunSchemaReviewRuleTests(
 	t *testing.T,
-	tests []test,
-	adv advisor.Advisor,
-	rule *advisor.SchemaReviewRule,
+	tests []TestCase,
+	adv Advisor,
+	rule *SchemaReviewRule,
 	catalog catalog.Catalog,
 ) {
-	ctx := advisor.Context{
+	ctx := Context{
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
 		Catalog:   catalog,
 	}
 	for _, tc := range tests {
-		adviceList, err := adv.Check(ctx, tc.statement)
+		adviceList, err := adv.Check(ctx, tc.Statement)
 		require.NoError(t, err)
-		assert.Equal(t, tc.want, adviceList)
+		assert.Equal(t, tc.Want, adviceList)
 	}
 }
