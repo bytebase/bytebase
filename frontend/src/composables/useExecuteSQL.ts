@@ -113,7 +113,7 @@ const useExecuteSQL = () => {
         statement: selectStatement,
       });
       // TODO(steven): use BBModel instead of notify to show the advice from schema review.
-      let adviceStatus = "";
+      let adviceStatus = "SUCCESS";
       let adviceNotifyMessage = "";
       for (const advice of sqlResultSet.adviceList) {
         if (advice.status === "ERROR") {
