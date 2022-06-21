@@ -204,7 +204,7 @@ DELIMITER ;
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
 			startLine: 0,
-			event:     binlogEvent{ts: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(), startPos: 24500, endPos: 24604},
+			event:     binlogEvent{ts: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(), startPos: 24500},
 			err:       false,
 		},
 		// A real one from `mysqlbinlog --start-datetime`.
@@ -232,7 +232,7 @@ CigAAVf+YJo=
 /*!80014 SET @@session.immediate_server_version=80028*//*!*/;
 SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;`,
 			startLine: 7,
-			event:     binlogEvent{ts: time.Date(2022, 6, 20, 17, 00, 23, 0, time.Local).Unix(), startPos: 428, endPos: 507},
+			event:     binlogEvent{ts: time.Date(2022, 6, 20, 17, 00, 23, 0, time.Local).Unix(), startPos: 428},
 			err:       false,
 		},
 		// Edge case: invalid mysqlbinlog option
