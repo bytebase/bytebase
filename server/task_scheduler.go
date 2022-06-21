@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 
 	"go.uber.org/zap"
 )
@@ -278,7 +277,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if instance == nil {
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
-		if advisor.IsSupportedEngine(instance.Engine) {
+		if advisor.IsSyntaxCheckSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
@@ -288,9 +287,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) &&
-			// For now we only supported MySQL schema review check
-			(instance.Engine == db.MySQL || instance.Engine == db.TiDB) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return nil, err
