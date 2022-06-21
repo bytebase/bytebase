@@ -64,7 +64,6 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 type binlogEvent struct {
 	ts       int64
 	startPos int64
-	endPos   int64
 }
 
 // Restore implements recovery functions for MySQL.
@@ -271,10 +270,10 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
-func (r *Restore) parseLocalBinlogEvent(ctx context.Context, binlogInfo api.BinlogInfo) (binlogEvent, error) {
+func (r *Restore) parseLocalBinlogEventTs(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
 		path.Join(r.binlogDir, binlogInfo.FileName),
-		// tell mysqlbinlog to suppress the BINLOG statements for row events
+		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
 		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
@@ -289,11 +288,11 @@ func (r *Restore) parseLocalBinlogEvent(ctx context.Context, binlogInfo api.Binl
 
 	if err := cmd.Run(); err != nil {
 		log.Error("mysqlbinlog command fails", zap.String("cmd", cmd.String()), zap.Error(err))
-		return binlogEvent{}, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
+		return 0, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
 	}
 
 	event, _, err := parseBinlogEventImpl(buf.String(), 0)
-	return event, err
+	return event.ts, err
 }
 
 func parseBinlogEventImpl(output string, startLine int) (event binlogEvent, parsedLineIndex int, err error) {
@@ -339,11 +338,7 @@ func parseBinlogEventImpl(output string, startLine int) (event binlogEvent, pars
 			if err != nil {
 				return binlogEvent{}, 0, err
 			}
-			endPos, err := strconv.Atoi(fields[6])
-			if err != nil {
-				return binlogEvent{}, 0, err
-			}
-			return binlogEvent{ts: date.Unix(), startPos: int64(startPos), endPos: int64(endPos)}, i, nil
+			return binlogEvent{ts: date.Unix(), startPos: int64(startPos)}, i, nil
 		}
 	}
 	return binlogEvent{}, 0, common.Errorf(common.NotFound, fmt.Errorf("no timestamp found in mysqlbinlog output"))
@@ -364,11 +359,11 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 			continue
 		}
 		validBackupList = append(validBackupList, b)
-		event, err := r.parseLocalBinlogEvent(ctx, b.Payload.BinlogInfo)
+		eventTs, err := r.parseLocalBinlogEventTs(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
 		}
-		eventTsList = append(eventTsList, event.ts)
+		eventTsList = append(eventTsList, eventTs)
 	}
 	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
@@ -524,16 +519,6 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-// Parse the first binlog eventTs of a local binlog file.
-func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName string) (int64, error) {
-	// https://dev.mysql.com/doc/internals/en/binlog-file-header.html
-	// > A binlog file starts with a Binlog File Header \0xfe'bin'
-	// The starting point of the first binlog event is at position 4 of a binlog file.
-	firstBinlogEvent := api.BinlogInfo{FileName: fileName, Position: 4}
-	event, err := r.parseLocalBinlogEvent(ctx, firstBinlogEvent)
-	return event.ts, err
-}
-
 // GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
 func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
@@ -560,52 +545,38 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
-// Re-download inconsistent local binlog files.
-// This is a best-effort task, because the corresponding binlog files may not exist on server.
-func (r *Restore) reconcileLocalBinlogFiles(ctx context.Context, binlogFilesLocalSorted, binlogFilesOnServerSorted []BinlogFile) error {
+// Download binlog files on server.
+func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	if len(binlogFilesOnServerSorted) == 0 {
-		return fmt.Errorf("no binlog files on server")
+		log.Debug("No binlog file found on server to download")
+		return nil
 	}
 	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	log.Debug("Re-downloading inconsistent local binlog files")
-	binlogFilesOnServerMap := make(map[string]BinlogFile)
-	for _, file := range binlogFilesOnServerSorted {
-		binlogFilesOnServerMap[file.Name] = file
+	binlogFilesLocalMap := make(map[string]BinlogFile)
+	for _, file := range binlogFilesLocal {
+		binlogFilesLocalMap[file.Name] = file
 	}
-	for _, file := range binlogFilesLocalSorted {
-		fileOnServer, existOnServer := binlogFilesOnServerMap[file.Name]
-		if existOnServer && file.Size != fileOnServer.Size {
-			path := filepath.Join(r.binlogDir, file.Name)
+	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	for _, fileOnServer := range binlogFilesOnServerSorted {
+		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
+		path := filepath.Join(r.binlogDir, fileOnServer.Name)
+		if !existLocal {
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
+				return fmt.Errorf("failed to download binlog file[%s], error[%w]", path, err)
+			}
+		} else if fileLocal.Size != fileOnServer.Size {
 			log.Debug("Deleting inconsistent local binlog file",
 				zap.String("path", path),
-				zap.Int64("sizeLocal", file.Size),
+				zap.Int64("sizeLocal", fileOnServer.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
 			if err := os.Remove(path); err != nil {
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to remove inconsistent local binlog file %q, error: %w", path, err)
+				return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
 			}
-			if err := r.downloadBinlogFile(ctx, fileOnServer, file.Name == latestBinlogFileOnServer.Name); err != nil {
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to re-download inconsistent local binlog file %q, error: %w", path, err)
-			}
-		}
-	}
-	return nil
-}
-
-// Download binlog files on server.
-func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
-	binlogFilesLocalMap := make(map[string]bool)
-	for _, file := range binlogFilesLocal {
-		binlogFilesLocalMap[file.Name] = true
-	}
-	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
-	for _, file := range binlogFilesOnServerSorted {
-		if existLocal := binlogFilesLocalMap[file.Name]; !existLocal {
-			if err := r.downloadBinlogFile(ctx, file, file == latestBinlogFileOnServer); err != nil {
-				log.Error("Failed to download binlog file", zap.String("filename", file.Name), zap.Error(err))
-				return fmt.Errorf("failed to download binlog file %q, error: %w", file.Name, err)
+				return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
 			}
 		}
 	}
@@ -620,8 +591,7 @@ func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 		return err
 	}
 	if len(binlogFilesOnServerSorted) == 0 {
-		// No binlog files on server, so there's nothing to download.
-		log.Debug("No binlog file found on server")
+		log.Debug("No binlog file found on server to download")
 		return nil
 	}
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
@@ -629,11 +599,7 @@ func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 	// Read the local binlog files.
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
-		return fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
-	}
-
-	if err := r.reconcileLocalBinlogFiles(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted); err != nil {
-		return err
+		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
 
 	return r.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
@@ -737,6 +703,16 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	}
 
 	return sortBinlogFiles(binlogFiles), nil
+}
+
+// Parse the first binlog eventTs of a local binlog file.
+func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName string) (int64, error) {
+	// https://dev.mysql.com/doc/internals/en/binlog-file-header.html
+	// > A binlog file starts with a Binlog File Header \0xfe'bin'
+	// The starting point of the first binlog event is at position 4 of a binlog file.
+	firstBinlogEvent := api.BinlogInfo{FileName: fileName, Position: 4}
+	eventTs, err := r.parseLocalBinlogEventTs(ctx, firstBinlogEvent)
+	return eventTs, err
 }
 
 // Use command like mysqlbinlog --start-datetime=targetTs+1 binlog.000001 to parse the first binlog event ts after targetTs.
