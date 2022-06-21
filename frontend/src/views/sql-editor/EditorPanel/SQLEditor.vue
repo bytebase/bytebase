@@ -110,14 +110,14 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = ({
+const handleRunQuery = async ({
   explain,
   query,
 }: {
   explain: boolean;
   query: string;
 }) => {
-  execute({ databaseType: selectedInstanceEngine.value }, { explain });
+  await execute({ databaseType: selectedInstanceEngine.value }, { explain });
 };
 
 const handleSaveSheet = () => {
