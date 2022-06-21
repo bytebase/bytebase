@@ -134,7 +134,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		adviceLevel := advisor.Success
-		var adviceList []advisor.Advice
+		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSchemaReviewPolicy) &&
 			// For now we only support MySQL dialect schema review check.
