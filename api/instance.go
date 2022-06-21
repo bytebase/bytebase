@@ -55,6 +55,9 @@ type InstanceCreate struct {
 	Port         string  `jsonapi:"attr,port"`
 	Username     string  `jsonapi:"attr,username"`
 	Password     string  `jsonapi:"attr,password"`
+	SslCa        string  `jsonapi:"attr,sslCa"`
+	SslCert      string  `jsonapi:"attr,sslCert"`
+	SslKey       string  `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after adding the instance. The client
 	// may set to false if the target instance contains too many databases
 	// to avoid the request timeout.
