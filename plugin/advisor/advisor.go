@@ -198,8 +198,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(engine db.Type) bool {
-	switch engine {
-	case db.MySQL, db.TiDB, db.Postgres:
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
 		return true
 	}
 	return false
@@ -207,8 +206,7 @@ func IsSyntaxCheckSupported(engine db.Type) bool {
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
 func IsSchemaReviewSupported(engine db.Type) bool {
-	switch engine {
-	case db.MySQL, db.TiDB:
+	if engine == db.MySQL || engine == db.TiDB {
 		return true
 	}
 	return false
