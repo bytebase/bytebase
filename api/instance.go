@@ -34,8 +34,11 @@ type Instance struct {
 	Host          string  `jsonapi:"attr,host"`
 	Port          string  `jsonapi:"attr,port"`
 	Username      string  `jsonapi:"attr,username"`
-	// Password is not returned to the client
+	// These fields are not returned to the client
 	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
 }
 
 // InstanceCreate is the API message for creating an instance.
@@ -55,6 +58,9 @@ type InstanceCreate struct {
 	Port         string  `jsonapi:"attr,port"`
 	Username     string  `jsonapi:"attr,username"`
 	Password     string  `jsonapi:"attr,password"`
+	SslCa        string  `jsonapi:"attr,sslCa"`
+	SslCert      string  `jsonapi:"attr,sslCert"`
+	SslKey       string  `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after adding the instance. The client
 	// may set to false if the target instance contains too many databases
 	// to avoid the request timeout.
