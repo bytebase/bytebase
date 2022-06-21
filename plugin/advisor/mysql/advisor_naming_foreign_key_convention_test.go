@@ -10,10 +10,10 @@ import (
 )
 
 func TestNamingFKConvention(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -23,8 +23,8 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingFKConventionMismatch,
@@ -34,8 +34,8 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -45,8 +45,8 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NamingFKConventionMismatch,
@@ -61,9 +61,9 @@ func TestNamingFKConvention(t *testing.T) {
 		Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleFKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

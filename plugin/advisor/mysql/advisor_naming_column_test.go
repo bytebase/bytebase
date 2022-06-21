@@ -10,10 +10,10 @@ import (
 )
 
 func TestNamingColumnConvention(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "CREATE TABLE book(id int, creatorId int)",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int, creatorId int)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
@@ -23,8 +23,8 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int, creator_id int)",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int, creator_id int)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -34,9 +34,9 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(id int, creator_id int);
+			Statement: `CREATE TABLE book(id int, creator_id int);
 						ALTER TABLE book RENAME COLUMN creator_id TO creatorId`,
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
@@ -46,8 +46,8 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `ALTER TABLE book RENAME COLUMN creatorId TO creator_id;`,
-			want: []advisor.Advice{
+			Statement: `ALTER TABLE book RENAME COLUMN creatorId TO creator_id;`,
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -57,14 +57,14 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
+			Statement: `CREATE TABLE book(
 							id int,
 							creator_id int,
 							created_ts timestamp,
 							updater_id int,
 							updated_ts timestamp);
 						ALTER TABLE book CHANGE COLUMN creator_id creatorId int;`,
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
@@ -74,8 +74,8 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `ALTER TABLE book CHANGE COLUMN creatorId creator_id int;`,
-			want: []advisor.Advice{
+			Statement: `ALTER TABLE book CHANGE COLUMN creatorId creator_id int;`,
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -85,8 +85,8 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `ALTER TABLE book DROP COLUMN contentString;`,
-			want: []advisor.Advice{
+			Statement: `ALTER TABLE book DROP COLUMN contentString;`,
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -96,13 +96,13 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
+			Statement: `CREATE TABLE book(
 							id int,
 							creator_id int,
 							created_ts timestamp,
 							updated_ts timestamp);
 						ALTER TABLE book ADD COLUMN contentString varchar(255);`,
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
@@ -112,7 +112,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			statement: `CREATE TABLE book(
+			Statement: `CREATE TABLE book(
 							id int,
 							createdTs timestamp,
 							updaterId int,
@@ -121,7 +121,7 @@ func TestNamingColumnConvention(t *testing.T) {
 							id int,
 							createdTs timestamp,
 							updatedTs timestamp);`,
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.NamingColumnConventionMismatch,
@@ -154,9 +154,9 @@ func TestNamingColumnConvention(t *testing.T) {
 		Format: "^[a-z]+(_[a-z]+)*$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleColumnNaming,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }
