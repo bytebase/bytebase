@@ -8,10 +8,10 @@ import (
 )
 
 func TestColumnNoNull(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "CREATE TABLE book(id int, name varchar(255))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int, name varchar(255))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.ColumnCanNotNull,
@@ -27,8 +27,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int PRIMARY KEY, name varchar(255))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int PRIMARY KEY, name varchar(255))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.ColumnCanNotNull,
@@ -38,8 +38,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int NOT NULL, name varchar(255))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int NOT NULL, name varchar(255))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.ColumnCanNotNull,
@@ -49,8 +49,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -60,8 +60,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book ADD COLUMN (id int, name varchar(255) NOT NULL)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.ColumnCanNotNull,
@@ -71,8 +71,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book ADD COLUMN (id int PRIMARY KEY, name varchar(255) NOT NULL)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -82,8 +82,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    common.ColumnCanNotNull,
@@ -93,8 +93,8 @@ func TestColumnNoNull(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book CHANGE COLUMN id name varchar(255) NOT NULL",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -105,9 +105,9 @@ func TestColumnNoNull(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &ColumnNoNullAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleColumnNotNull,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

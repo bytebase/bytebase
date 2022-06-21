@@ -8,10 +8,10 @@ import (
 )
 
 func TestNoSelectAll(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "SELECT * FROM t",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM t",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementSelectAll,
@@ -21,8 +21,8 @@ func TestNoSelectAll(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT a, b FROM t",
-			want: []advisor.Advice{
+			Statement: "SELECT a, b FROM t",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -32,8 +32,8 @@ func TestNoSelectAll(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT a, b FROM (SELECT * from t1 JOIN t2) t",
-			want: []advisor.Advice{
+			Statement: "SELECT a, b FROM (SELECT * from t1 JOIN t2) t",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementSelectAll,
@@ -44,9 +44,9 @@ func TestNoSelectAll(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NoSelectAllAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleStatementNoSelectAll,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

@@ -8,10 +8,10 @@ import (
 )
 
 func TestNoLeadingWildcardLike(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "SELECT * FROM t WHERE a LIKE 'abc%'",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM t WHERE a LIKE 'abc%'",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -21,8 +21,8 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT * FROM t WHERE a LIKE '%abc'",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM t WHERE a LIKE '%abc'",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
@@ -32,8 +32,8 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
@@ -43,8 +43,8 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
@@ -54,8 +54,8 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 			},
 		},
 		{
-			statement: "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1",
-			want: []advisor.Advice{
+			Statement: "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.StatementLeadingWildcardLike,
@@ -66,9 +66,9 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 		},
 	}
 
-	runSchemaReviewRuleTests(t, tests, &NoLeadingWildcardLikeAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NoLeadingWildcardLikeAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleStatementNoLeadingWildcardLike,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }
