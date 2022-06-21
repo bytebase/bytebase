@@ -164,6 +164,18 @@
             @input="handleInstancePasswordInput"
           />
         </div>
+
+        <div v-if="showSSL" class="sm:col-span-3 sm:col-start-1">
+          <div class="flex flex-row items-center space-x-2">
+            <label class="textlabel block">{{
+              $t("datasource.ssl-connection")
+            }}</label>
+          </div>
+          <SslCertificateForm
+            :value="state.instance"
+            @change="Object.assign(state.instance, $event)"
+          />
+        </div>
       </div>
 
       <div class="mt-6 border-none">
@@ -233,10 +245,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
+import { SslCertificateForm } from "./InstanceForm";
 import { instanceSlug, isDev } from "../utils";
 import {
   InstanceCreate,
@@ -313,6 +326,19 @@ const defaultPort = computed(() => {
     return "4000";
   }
   return "3306";
+});
+
+const showSSL = computed((): boolean => {
+  return state.instance.engine === "CLICKHOUSE";
+});
+
+watch(showSSL, (ssl) => {
+  // Clean up SSL options when they are not needed.
+  if (!ssl) {
+    state.instance.sslCa = "";
+    state.instance.sslKey = "";
+    state.instance.sslCert = "";
+  }
 });
 
 const engineName = (type: EngineType): string => {
