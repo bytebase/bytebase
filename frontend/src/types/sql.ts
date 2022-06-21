@@ -1,4 +1,4 @@
-import { EngineType } from ".";
+import { EngineType, TaskCheckResult } from ".";
 import { InstanceId } from "./id";
 
 export type ConnectionInfo = {
@@ -23,7 +23,10 @@ export type QueryInfo = {
   limit?: number;
 };
 
+export type Advice = TaskCheckResult;
+
 export type SQLResultSet = {
-  data: string;
+  data: any[];
   error: string;
+  adviceList: Advice[];
 };
