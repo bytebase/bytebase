@@ -36,9 +36,6 @@ type Instance struct {
 	Username      string  `jsonapi:"attr,username"`
 	// These fields are not returned to the client
 	Password string
-	SslCa    string
-	SslCert  string
-	SslKey   string
 }
 
 // InstanceCreate is the API message for creating an instance.

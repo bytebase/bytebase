@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"os"
 )
 
 // TLSConfig is the configuration for SSL connection.
@@ -20,10 +19,8 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 	rootCertPool := x509.NewCertPool()
-	pem, err := os.ReadFile(tc.SslCA)
-	if err != nil {
-		return nil, err
-	}
+	pem := []byte(tc.SslCA)
+
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
 		return nil, fmt.Errorf("rootCertPool.AppendCertsFromPEM() failed to append server CA pem")
 	}
@@ -36,7 +33,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 	}
 	if tc.SslCert != "" && tc.SslKey != "" {
 		var clientCert []tls.Certificate
-		certs, err := tls.LoadX509KeyPair(tc.SslCert, tc.SslKey)
+		certs, err := tls.X509KeyPair([]byte(tc.SslCert), []byte(tc.SslKey))
 		if err != nil {
 			return nil, err
 		}

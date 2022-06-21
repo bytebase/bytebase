@@ -30,6 +30,9 @@ type dataSourceRaw struct {
 	Type     api.DataSourceType
 	Username string
 	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
 }
 
 // toDataSource creates an instance of DataSource based on the dataSourceRaw.
@@ -53,6 +56,9 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		Type:     raw.Type,
 		Username: raw.Username,
 		Password: raw.Password,
+		SslCa:    raw.SslCa,
+		SslCert:  raw.SslCert,
+		SslKey:   raw.SslKey,
 	}
 }
 
@@ -238,10 +244,13 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 			name,
 			type,
 			username,
-			password
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -251,6 +260,9 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 		create.Type,
 		create.Username,
 		create.Password,
+		create.SslKey,
+		create.SslCert,
+		create.SslCa,
 	)
 
 	if err != nil {
@@ -272,6 +284,9 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 		&dataSourceRaw.Type,
 		&dataSourceRaw.Username,
 		&dataSourceRaw.Password,
+		&dataSourceRaw.SslKey,
+		&dataSourceRaw.SslCert,
+		&dataSourceRaw.SslCa,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -307,7 +322,10 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.Da
 			name,
 			type,
 			username,
-			password
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -333,6 +351,9 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.Da
 			&dataSourceRaw.Type,
 			&dataSourceRaw.Username,
 			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -364,7 +385,7 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		UPDATE data_source
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
 	`, len(args)),
 		args...,
 	)
@@ -387,6 +408,9 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 			&dataSourceRaw.Type,
 			&dataSourceRaw.Username,
 			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
 		); err != nil {
 			return nil, FormatError(err)
 		}
