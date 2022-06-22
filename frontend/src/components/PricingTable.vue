@@ -35,10 +35,13 @@
               </p>
 
               <p class="mt-4 flex items-baseline text-gray-900 text-xl">
+                <span v-if="plan.pricePrefix" class="text-3xl">
+                  {{ plan.pricePrefix }}&nbsp;</span
+                >
                 <span class="text-4xl">
                   ${{ plan.pricePerInstancePerMonth }}
                 </span>
-                {{ $t("subscription.per-month") }}
+                {{ plan.priceUnit }}
               </p>
 
               <div class="text-gray-400">
@@ -329,6 +332,8 @@ interface LocalPlan extends Plan {
   highlight: boolean;
   isFreePlan: boolean;
   isAvailable: boolean;
+  pricePrefix: string;
+  priceUnit: string;
 }
 
 const minimumInstanceCount = 5;
@@ -350,19 +355,6 @@ export default defineComponent({
         (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
     );
 
-    const getInstancePricePerYear = (plan: Plan): number => {
-      return (
-        (state.instanceCount - minimumInstanceCount) *
-        plan.pricePerInstancePerMonth *
-        12
-      );
-    };
-
-    const getPlanPrice = (plan: Plan): number => {
-      if (plan.type !== PlanType.TEAM) return plan.unitPrice;
-      return plan.unitPrice + getInstancePricePerYear(plan);
-    };
-
     const plans = computed((): LocalPlan[] => {
       return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
         ...plan,
@@ -375,6 +367,12 @@ export default defineComponent({
         isAvailable: plan.type === PlanType.TEAM,
         isFreePlan: plan.type === PlanType.FREE,
         label: t(`subscription.plan.${plan.title}.label`),
+        pricePrefix:
+          plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
+        priceUnit:
+          plan.type === PlanType.ENTERPRISE
+            ? t("subscription.price-unit-for-enterprise")
+            : t("subscription.per-month"),
       }));
     });
 
