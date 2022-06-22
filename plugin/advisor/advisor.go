@@ -105,6 +105,9 @@ const (
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
+	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
 )
 
 // Advice is the result of an advisor.
@@ -206,7 +209,7 @@ func IsSyntaxCheckSupported(engine db.Type) bool {
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
 func IsSchemaReviewSupported(engine db.Type) bool {
-	if engine == db.MySQL || engine == db.TiDB {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
 		return true
 	}
 	return false
