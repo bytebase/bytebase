@@ -540,8 +540,20 @@ const updateInstanceDataSource = () => {
   const newValue = {
     ...state.instance.dataSourceList[index],
     username: curr.username,
-    password: curr.useEmptyPassword ? "" : curr.updatedPassword,
   };
+
+  if (curr.useEmptyPassword) {
+    // When 'Password: Empty' is checked, we set the password to empty string.
+    newValue.password = "";
+  } else if (curr.updatedPassword) {
+    // When the user has typed something in the password textbox, we use the typed value.
+    newValue.password = curr.updatedPassword;
+  } else {
+    // When the user didn't touch the password textbox, or the user did typed something
+    // but cleared the textbox again, we won't update the password.
+    delete newValue.password;
+  }
+
   if (curr.updateSsl) {
     newValue.sslCa = curr.sslCa;
     newValue.sslKey = curr.sslKey;
