@@ -2,11 +2,9 @@ package mysql
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -261,64 +259,6 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 	return sorted
 }
 
-// Locate the binlog event at (filename, position), parse the event and return its timestamp.
-// The current mechanism is by invoking mysqlbinlog and parse the output string.
-// Maybe we should parse the raw binlog header to get better documented structure?
-func (r *Restore) parseLocalBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
-	args := []string{
-		path.Join(r.binlogDir, binlogInfo.FileName),
-		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
-		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
-		// the --stop-position is in the middle of the binlog event.
-		// It's OK, since we are only parsing for the timestamp in the binlog event header.
-		"--stop-position", fmt.Sprintf("%d", binlogInfo.Position+1),
-	}
-	var buf bytes.Buffer
-	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = &buf
-
-	if err := cmd.Run(); err != nil {
-		log.Error("mysqlbinlog command fails", zap.String("cmd", cmd.String()), zap.Error(err))
-		return 0, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
-	}
-
-	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
-	if err != nil {
-		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename %q, position %d, error: %w", binlogInfo.FileName, binlogInfo.Position, err)
-	}
-
-	return timestamp, nil
-}
-
-func parseBinlogEventTimestampImpl(output string) (int64, error) {
-	lines := strings.Split(output, "\n")
-	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
-	// which has the timestamp we are looking for.
-	// The first occurrence is the target.
-	for _, line := range lines {
-		if strings.Contains(line, "server id") {
-			if strings.Contains(line, "end_log_pos 0") {
-				// https://github.com/mysql/mysql-server/blob/8.0/client/mysqlbinlog.cc#L1209-L1212
-				// Fake events with end_log_pos=0 could be generated and we need to ignore them.
-				continue
-			}
-			fields := strings.Fields(line)
-			// fields should starts with ["#220421", "14:49:26", "server", "id"]
-			if len(fields) < 4 ||
-				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
-				return 0, fmt.Errorf("invalid mysqlbinlog output line: %q", line)
-			}
-			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
-			if err != nil {
-				return 0, err
-			}
-			return date.Unix(), nil
-		}
-	}
-	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
-}
-
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
 func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
@@ -326,7 +266,11 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		return nil, fmt.Errorf("no valid backup")
 	}
 
-	var eventTsList []int64
+	targetBinlogCoord, err := r.GetBinlogCoordinateByTs(ctx, targetTs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
+	}
+
 	var validBackupList []*api.Backup
 	for _, b := range backupList {
 		if b.Payload.BinlogInfo.IsEmpty() {
@@ -334,15 +278,9 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 			continue
 		}
 		validBackupList = append(validBackupList, b)
-		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
-		}
-		eventTsList = append(eventTsList, eventTs)
 	}
-	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
-	backup, err := getLatestBackupBeforeOrEqualTsImpl(validBackupList, eventTsList, targetTs)
+	backup, err := getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoord)
 	if err != nil {
 		return nil, err
 	}
@@ -350,39 +288,52 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 
 }
 
-// The backupList must 1 to 1 maps to the eventTsList, and the sorting order is not required.
-func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []int64, targetTs int64) (*api.Backup, error) {
-	var maxEventTsLETargetTs int64
-	var minEventTs int64 = math.MaxInt64
-	var backup *api.Backup
-	for i, b := range backupList {
-		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		if b.Payload.BinlogInfo.IsEmpty() {
-			continue
+func parseAndSortBackupDesc(backupList []*api.Backup) ([]*api.Backup, error) {
+	var backupListSorted []*api.Backup
+	backupListSorted = append(backupListSorted, backupList...)
+	for i := range backupListSorted {
+		seq, err := getBinlogNameSeq(backupListSorted[i].Payload.BinlogInfo.FileName)
+		if err != nil {
+			return nil, err
 		}
-		eventTs := eventTsList[i]
-		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
-			maxEventTsLETargetTs = eventTs
-			backup = b
+		backupListSorted[i].Payload.BinlogInfo.Seq = seq
+	}
+	// Sort backup so that the latest comes first
+	sort.Slice(backupListSorted, func(i, j int) bool {
+		if backupListSorted[i].Payload.BinlogInfo.Seq > backupListSorted[j].Payload.BinlogInfo.Seq {
+			return true
 		}
-		// This is only for composing the error message when no valid backup found.
-		if eventTs < minEventTs {
-			minEventTs = eventTs
+		if backupListSorted[i].Payload.BinlogInfo.Seq == backupListSorted[j].Payload.BinlogInfo.Seq {
+			return backupListSorted[i].Payload.BinlogInfo.Position > backupListSorted[j].Payload.BinlogInfo.Position
+		}
+		return false
+	})
+	return backupListSorted, nil
+}
+
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, binlogCoord api.BinlogInfo) (*api.Backup, error) {
+	targetSeq, err := getBinlogNameSeq(binlogCoord.FileName)
+	if err != nil {
+		return nil, err
+	}
+
+	backupListSortedDesc, err := parseAndSortBackupDesc(backupList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sort backup list, error: %w", err)
+	}
+
+	// Traverse the sorted backup list from the latest to the oldest, so the first backup meeting requirements is the expected.
+	for _, b := range backupListSortedDesc {
+		// Note for the equal condition: if backup payload's binlog seq and pos are all equal to `binlogCoord`, we could use this backup, and skip replaying binlog.
+		if b.Payload.BinlogInfo.Seq < targetSeq || (b.Payload.BinlogInfo.Seq == targetSeq && b.Payload.BinlogInfo.Position <= binlogCoord.Position) {
+			return b, nil
 		}
 	}
 
-	if maxEventTsLETargetTs == 0 {
-		targetDateTime := time.Unix(targetTs, 0).Format(time.RFC822)
-		minEventDateTime := time.Unix(minEventTs, 0).Format(time.RFC822)
-		log.Debug("the target restore time is earlier than the oldest backup time",
-			zap.String("targetDatetime", targetDateTime),
-			zap.Int64("targetTimestamp", targetTs),
-			zap.String("minEventDateTime", minEventDateTime),
-			zap.Int64("minEventTimestamp", minEventTs))
-
-		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
-	}
-	return backup, nil
+	log.Error("The binlog coordinate is earlier than the oldest backup",
+		zap.Any("binlogCoord", binlogCoord),
+		zap.Any("oldestBackupBinlogCoord", backupListSortedDesc[len(backupListSortedDesc)-1].Payload.BinlogInfo))
+	return nil, fmt.Errorf("the binlog coordinate is earlier than the oldest backup")
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
