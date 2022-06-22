@@ -1222,6 +1222,8 @@
     "trial": "您可以免费试用 14 天",
     "upgrade": "升级订阅",
     "per-month": "/ 月",
+    "price-unit-for-enterprise": "/ 月起",
+    "start-from": "",
     "per-instance": "每个实例",
     "free-price-intro": "最多 5 个实例",
     "team-price-intro": "5 个起步，按年付费",
