@@ -21,6 +21,7 @@
       <textarea
         v-model="state.value.sslCa"
         class="textarea block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="YOUR_CA_CERTIFICATE"
       />
     </NTabPane>
     <NTabPane
@@ -32,6 +33,7 @@
       <textarea
         v-model="state.value.sslKey"
         class="textarea block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="YOUR_CLIENT_KEY"
       />
     </NTabPane>
     <NTabPane
@@ -43,6 +45,7 @@
       <textarea
         v-model="state.value.sslCert"
         class="textarea block w-full resize-none whitespace-pre-wrap h-24"
+        placeholder="YOUR_CLIENT_CERT"
       />
     </NTabPane>
   </NTabs>
