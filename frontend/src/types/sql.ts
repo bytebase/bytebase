@@ -14,6 +14,9 @@ export type ConnectionInfo = {
   // not transfer the password back to client, thus we here pass the instanceId so the server
   // can fetch the corresponding password.
   instanceId?: InstanceId;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
 };
 
 export type QueryInfo = {
