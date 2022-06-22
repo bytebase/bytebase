@@ -47,20 +47,37 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			password = adminPassword
 		}
 
+		var tlsConfig db.TLSConfig
+		if connectionInfo.Engine == db.ClickHouse {
+			if connectionInfo.SslCa == nil && connectionInfo.SslCert == nil && connectionInfo.SslKey == nil && connectionInfo.InstanceID != nil {
+				// Frontend will not pass ssl related field if user don't modify ssl suite, we need get ssl suite from database for this case.
+				tc, err := s.store.GetInstanceSslSuiteByID(ctx, *connectionInfo.InstanceID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve ssl suite for instance: %d", *connectionInfo.InstanceID)).SetInternal(err)
+				}
+				tlsConfig = tc
+			} else if connectionInfo.SslCa != nil && connectionInfo.SslCert != nil && connectionInfo.SslKey != nil {
+				// Users may add instance and click test connection button now, we need get ssl suite from request for this case.
+				tlsConfig = db.TLSConfig{
+					SslCA:   *connectionInfo.SslCa,
+					SslCert: *connectionInfo.SslCert,
+					SslKey:  *connectionInfo.SslKey,
+				}
+			} else {
+				// Unexpected case
+				return echo.NewHTTPError(http.StatusBadRequest, "TLS/SSL suite must all be set or not be set")
+			}
+		}
 		db, err := db.Open(
 			ctx,
 			connectionInfo.Engine,
 			db.DriverConfig{},
 			db.ConnectionConfig{
-				Username: connectionInfo.Username,
-				Password: password,
-				Host:     connectionInfo.Host,
-				Port:     connectionInfo.Port,
-				TLSConfig: db.TLSConfig{
-					SslCA:   connectionInfo.SslCa,
-					SslCert: connectionInfo.SslCert,
-					SslKey:  connectionInfo.SslKey,
-				},
+				Username:  connectionInfo.Username,
+				Password:  password,
+				Host:      connectionInfo.Host,
+				Port:      connectionInfo.Port,
+				TLSConfig: tlsConfig,
 			},
 			db.ConnectionContext{},
 		)
