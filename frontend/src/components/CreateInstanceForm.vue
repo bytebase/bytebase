@@ -487,9 +487,9 @@ const testConnection = () => {
 
   if (showSSL.value) {
     // Default to "NONE"
-    connectionInfo.sslCa = instance.sslCa || "";
-    connectionInfo.sslKey = instance.sslKey || "";
-    connectionInfo.sslCert = instance.sslCert || "";
+    connectionInfo.sslCa = instance.sslCa ?? "";
+    connectionInfo.sslKey = instance.sslKey ?? "";
+    connectionInfo.sslCert = instance.sslCert ?? "";
   }
 
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
