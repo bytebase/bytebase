@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
@@ -59,11 +58,6 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
 	}
 	return nil
-}
-
-type binlogEvent struct {
-	ts       int64
-	startPos int64
 }
 
 // Restore implements recovery functions for MySQL.
@@ -270,11 +264,9 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
-func (r *Restore) parseLocalBinlogEventTs(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
+func (r *Restore) parseLocalBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
 		path.Join(r.binlogDir, binlogInfo.FileName),
-		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
-		"--base64-output=DECODE-ROWS",
 		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
 		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
 		// the --stop-position is in the middle of the binlog event.
@@ -291,57 +283,40 @@ func (r *Restore) parseLocalBinlogEventTs(ctx context.Context, binlogInfo api.Bi
 		return 0, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
 	}
 
-	event, _, err := parseBinlogEventImpl(buf.String(), 0)
-	return event.ts, err
+	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
+	if err != nil {
+		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename[%s], position[%d], error[%w]", binlogInfo.FileName, binlogInfo.Position, err)
+	}
+
+	return timestamp, nil
 }
 
-func parseBinlogEventImpl(output string, startLine int) (event binlogEvent, parsedLineIndex int, err error) {
+func parseBinlogEventTimestampImpl(output string) (int64, error) {
 	lines := strings.Split(output, "\n")
-	if startLine >= len(lines) {
-		return binlogEvent{}, 0, fmt.Errorf("startLine %d is larger than the total number of lines %d", startLine, len(lines))
-	}
-	linesTruncated := lines[startLine:]
-	// The mysqlbinlog output will contains a line starting with "# at 35065", which is the binlog event's start position.
-	// And the next line will start with "#220421 14:49:26 server id 1 end_log_pos 35096", which is the binlog event's timestamp and end position.
+	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
+	// which has the timestamp we are looking for.
 	// The first occurrence is the target.
-	for i, line := range linesTruncated {
-		if strings.HasPrefix(line, "# at ") {
-			// This is the line containing the start position of the binlog event.
-			fields := strings.Fields(line)
-			if len(fields) != 3 {
-				return binlogEvent{}, 0, fmt.Errorf("unexpected mysqlbinlog output line %q when parsing binlog event start position", line)
-			}
-			startPos, err := strconv.Atoi(fields[2])
-			if err != nil {
-				return binlogEvent{}, 0, err
-			}
-			if i == len(linesTruncated)-1 {
-				return binlogEvent{}, 0, fmt.Errorf("unexpected mysqlbinlog output, there should be more content after line %q", line)
-			}
-
-			nextLine := linesTruncated[i+1]
-			if !strings.Contains(nextLine, "server id") {
-				return binlogEvent{}, 0, fmt.Errorf("unexpected mysqlbinlog output, the next line after %q should contains \"server id\"", line)
-			}
-			if strings.Contains(nextLine, "end_log_pos 0") {
+	for _, line := range lines {
+		if strings.Contains(line, "server id") {
+			if strings.Contains(line, "end_log_pos 0") {
 				// https://github.com/mysql/mysql-server/blob/8.0/client/mysqlbinlog.cc#L1209-L1212
 				// Fake events with end_log_pos=0 could be generated and we need to ignore them.
 				continue
 			}
-			fields = strings.Fields(nextLine)
-			// fields should starts with ["#220421", "14:49:26", "server", "id", "1", "end_log_pos", "126"]
-			if len(fields) < 7 ||
-				(len(fields[0]) != 7 || len(fields[1]) != 8 || fields[2] != "server" || fields[3] != "id" || fields[5] != "end_log_pos") {
-				return binlogEvent{}, 0, fmt.Errorf("unexpected mysqlbinlog output line %q when parsing binlog event timestamp and end position", nextLine)
+			fields := strings.Fields(line)
+			// fields should starts with ["#220421", "14:49:26", "server", "id"]
+			if len(fields) < 4 ||
+				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
+				return 0, fmt.Errorf("invalid mysqlbinlog output line: %q", line)
 			}
 			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
 			if err != nil {
-				return binlogEvent{}, 0, err
+				return 0, err
 			}
-			return binlogEvent{ts: date.Unix(), startPos: int64(startPos)}, i, nil
+			return date.Unix(), nil
 		}
 	}
-	return binlogEvent{}, 0, common.Errorf(common.NotFound, fmt.Errorf("no timestamp found in mysqlbinlog output"))
+	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
 }
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
@@ -359,7 +334,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 			continue
 		}
 		validBackupList = append(validBackupList, b)
-		eventTs, err := r.parseLocalBinlogEventTs(ctx, b.Payload.BinlogInfo)
+		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
 		}
@@ -372,7 +347,6 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		return nil, err
 	}
 	return backup, nil
-
 }
 
 // The backupList must 1 to 1 maps to the eventTsList, and the sorting order is not required.
@@ -705,14 +679,94 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	return sortBinlogFiles(binlogFiles), nil
 }
 
+func parseBinlogEventTs(line string) (eventTs int64, found bool, err error) {
+	// The target line starts with string like "#220421 14:49:26 server id 1"
+	if !strings.Contains(line, "server id") {
+		return 0, false, nil
+	}
+	if strings.Contains(line, "end_log_pos 0") {
+		// https://github.com/mysql/mysql-server/blob/8.0/client/mysqlbinlog.cc#L1209-L1212
+		// Fake events with end_log_pos=0 could be generated and we need to ignore them.
+		return 0, false, nil
+	}
+	fields := strings.Fields(line)
+	// fields should starts with ["#220421", "14:49:26", "server", "id", "1"]
+	if len(fields) < 5 ||
+		(len(fields[0]) != 7 || len(fields[1]) != 8 || fields[2] != "server" || fields[3] != "id") {
+		return 0, false, fmt.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp and end position", line)
+	}
+	datetime, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
+	if err != nil {
+		return 0, false, err
+	}
+	return datetime.Unix(), true, nil
+}
+
+func parseBinlogEventStartPos(line string) (startPos int64, found bool, err error) {
+	// The mysqlbinlog output will contains a line starting with "# at 35065", which is the binlog event's start position.
+	if !strings.HasPrefix(line, "# at ") {
+		return 0, false, nil
+	}
+	// This is the line containing the start position of the binlog event.
+	fields := strings.Fields(line)
+	if len(fields) != 3 {
+		return 0, false, fmt.Errorf("unexpected mysqlbinlog output line %q when parsing binlog event start position", line)
+	}
+	startPos, err = strconv.ParseInt(fields[2], 10, 0)
+	if err != nil {
+		return 0, false, err
+	}
+	return startPos, true, nil
+}
+
 // Parse the first binlog eventTs of a local binlog file.
-func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName string) (int64, error) {
-	// https://dev.mysql.com/doc/internals/en/binlog-file-header.html
-	// > A binlog file starts with a Binlog File Header \0xfe'bin'
-	// The starting point of the first binlog event is at position 4 of a binlog file.
-	firstBinlogEvent := api.BinlogInfo{FileName: fileName, Position: 4}
-	eventTs, err := r.parseLocalBinlogEventTs(ctx, firstBinlogEvent)
-	return eventTs, err
+func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName string) (eventTs int64, err error) {
+	args := []string{
+		// Local binlog file path.
+		path.Join(r.binlogDir, fileName),
+		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
+		"--base64-output=DECODE-ROWS",
+	}
+	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd.Stderr = os.Stderr
+	pr, err := cmd.StdoutPipe()
+	if err != nil {
+		return 0, err
+	}
+	s := bufio.NewScanner(pr)
+	if err := cmd.Start(); err != nil {
+		return 0, err
+	}
+	defer func() {
+		pr.Close()
+		err = cmd.Process.Kill()
+	}()
+
+	// s.Scan() could panic, so we should recover and handle this.
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(error)
+			if !ok {
+				err = fmt.Errorf("%v", r)
+			}
+			log.Error("bufio.Scanner panic", zap.Error(err))
+		}
+	}()
+	var found bool
+	for s.Scan() {
+		line := s.Text()
+		eventTs, found, err = parseBinlogEventTs(line)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse binlog eventTs from mysqlbinlog output, error: %w", err)
+		}
+		if !found {
+			continue
+		}
+		break
+	}
+
+	return eventTs, nil
 }
 
 // Use command like mysqlbinlog --start-datetime=targetTs+1 binlog.000001 to parse the first binlog event ts after targetTs.
@@ -720,32 +774,67 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 // TODO(dragonly): Optimize to kill mysqlbinlog process after we parsed the first binlog event ts after targetTs.
 // The current implementation will parse the entire binlog file. This optimization may significantly reduce CPU/memory/disk IO usage.
 // TODO(dragonly): Add integration test.
-func (r *Restore) getFirstBinlogEventStartPosAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (int64, error) {
+func (r *Restore) getFirstBinlogEventStartPosAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (startPos int64, err error) {
 	args := []string{
+		// Local binlog file path.
 		path.Join(r.binlogDir, binlogFile.Name),
+		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
+		"--base64-output=DECODE-ROWS",
+		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs+1.
 		"--start-datetime", formatDateTime(targetTs + 1),
 	}
-	var buf bytes.Buffer
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stderr = os.Stderr
-	cmd.Stdout = &buf
-
-	if err := cmd.Run(); err != nil {
-		log.Error("mysqlbinlog command fails", zap.String("cmd", cmd.String()), zap.Error(err))
-		return 0, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
-	}
-
-	// When invoking mysqlbinlog with --start-datetime, the first valid event will always be the starting event at position 4, and the timestamp is when the binlog file is created.
-	// We must skip this event, and parse the next one.
-	_, parsedLineIndex, err := parseBinlogEventImpl(buf.String(), 0)
+	pr, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Error("Failed to parse binlog event", zap.Error(err))
-		return 0, fmt.Errorf("failed to parse binlog event, error: %w", err)
+		return 0, err
+	}
+	s := bufio.NewScanner(pr)
+	if err := cmd.Start(); err != nil {
+		return 0, err
+	}
+	defer func() {
+		pr.Close()
+		err = cmd.Process.Kill()
+	}()
+
+	// s.Scan() could panic, so we should recover and handle this.
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(error)
+			if !ok {
+				err = fmt.Errorf("%v", r)
+			}
+			log.Error("bufio.Scanner panic", zap.Error(err))
+		}
+	}()
+
+	// When invoking mysqlbinlog with --start-datetime, the first valid event will always be the starting event, and the timestamp is when the binlog file is created.
+	// We must skip this event, and parse the next one.
+	foundEvent := 0
+	var found bool
+	for s.Scan() {
+		line := s.Text()
+		startPos, found, err = parseBinlogEventStartPos(line)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse binlog event start position from mysqlbinlog output, error: %w", err)
+		}
+		if !found {
+			continue
+		}
+
+		foundEvent++
+		if foundEvent == 2 {
+			break
+		}
 	}
 
-	// Parse the wanted binlog event.
-	event, _, err := parseBinlogEventImpl(buf.String(), parsedLineIndex+1)
-	if common.ErrorCode(err) == common.NotFound {
+	if foundEvent == 0 {
+		// This is unexpected behavior, because there should be at least one event parsed (the binlog start event).
+		return 0, fmt.Errorf("no event parsed from mysqlbinlog output, expecting at least one (the binlog start event)")
+	}
+	if foundEvent == 1 {
 		// There's no binlog event in this binlog file with ts > targetTs.
 		// There are two possibilities:
 		// 1. It's the last binlog file, which means the targetTs > any eventTs of all the binlog files. In this case we return the last event's end pos.
@@ -753,11 +842,8 @@ func (r *Restore) getFirstBinlogEventStartPosAfterTs(ctx context.Context, binlog
 		// We should return the end pos of the last binlog event, i.e, the size of the binlog file.
 		return binlogFile.Size, nil
 	}
-	if err != nil {
-		log.Error("Failed to parse binlog event", zap.Error(err))
-		return 0, fmt.Errorf("failed to parse binlog event, error: %w", err)
-	}
-	return event.startPos, nil
+
+	return startPos, nil
 }
 
 // ConvertTsToLocalBinlogCoordinate converts a timestamp to binlog coordinate using local binlog files.

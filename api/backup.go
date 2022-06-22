@@ -83,6 +83,8 @@ func (e BackupStorageBackend) String() string {
 type BinlogInfo struct {
 	FileName string `json:"fileName"`
 	Position int64  `json:"position"`
+	// Seq is parsed from FileName and for sorting only.
+	Seq int64
 }
 
 // IsEmpty return true if the BinlogInfo is empty.

@@ -177,11 +177,10 @@ func TestParseBinlogEventTimestampImpl(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
 		binlogText string
-		startLine  int
-		event      binlogEvent
+		timestamp  int64
 		err        bool
 	}{
-		// A real one from `mysqlbinlog --start-position 24500 --stop-position 24501`.
+		// This is a real one from mysqlbinlog output.
 		{
 			binlogText: `# The proper term is pseudo_replica_mode, but we use this compatibility alias
 # to make the statement usable on server versions 8.0.24 and older.
@@ -203,50 +202,20 @@ DELIMITER ;
 # End of log file
 /*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;
 /*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;`,
-			startLine: 0,
-			event:     binlogEvent{ts: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(), startPos: 24500},
-			err:       false,
-		},
-		// A real one from `mysqlbinlog --start-datetime`.
-		{
-			binlogText: `# The proper term is pseudo_replica_mode, but we use this compatibility alias
-# to make the statement usable on server versions 8.0.24 and older.
-/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=1*/;
-/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;
-DELIMITER /*!*/;
-# at 4
-#220620 13:23:55 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.28 created 220620 13:23:55 at startup
-ROLLBACK/*!*/;
-BINLOG '
-awSwYg8BAAAAegAAAH4AAAAAAAQAOC4wLjI4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAABrBLBiEwANAAgAAAAABAAEAAAAYgAEGggAAAAICAgCAAAACgoKKioAEjQA
-CigAAVf+YJo=
-'/*!*/;
-# at 428
-#220620 17:00:23 server id 1  end_log_pos 507 CRC32 0x7dbdc0dc 	Anonymous_GTID	last_committed=1	sequence_number=2	rbr_only=yes	original_committed_timestamp=1655715623024386	immediate_commit_timestamp=1655715623024386	transaction_length=271
-/*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
-# original_commit_timestamp=1655715623024386 (2022-06-20 17:00:23.024386 CST)
-# immediate_commit_timestamp=1655715623024386 (2022-06-20 17:00:23.024386 CST)
-/*!80001 SET @@session.original_commit_timestamp=1655715623024386*//*!*/;
-/*!80014 SET @@session.original_server_version=80028*//*!*/;
-/*!80014 SET @@session.immediate_server_version=80028*//*!*/;
-SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;`,
-			startLine: 7,
-			event:     binlogEvent{ts: time.Date(2022, 6, 20, 17, 00, 23, 0, time.Local).Unix(), startPos: 428},
+			timestamp: time.Date(2022, 4, 25, 17, 32, 13, 0, time.Local).Unix(),
 			err:       false,
 		},
 		// Edge case: invalid mysqlbinlog option
 		{
 			binlogText: "mysqlbinlog: [ERROR] mysqlbinlog: unknown option '-n'.",
-			startLine:  0,
-			event:      binlogEvent{},
+			timestamp:  0,
 			err:        true,
 		},
 	}
 
 	for _, test := range tests {
-		event, _, err := parseBinlogEventImpl(test.binlogText, test.startLine)
-		a.Equal(test.event.ts, event.ts)
+		timestamp, err := parseBinlogEventTimestampImpl(test.binlogText)
+		a.Equal(test.timestamp, timestamp)
 		if test.err {
 			a.Error(err)
 		} else {
