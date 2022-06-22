@@ -104,7 +104,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	driver.dbType = dbType
 	driver.db = db
