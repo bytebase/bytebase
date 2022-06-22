@@ -73,9 +73,9 @@
 import {
   computed,
   defineComponent,
+  onBeforeMount,
   PropType,
   reactive,
-  watchEffect,
 } from "vue";
 import MigrationHistoryTable from "../components/MigrationHistoryTable.vue";
 import {
@@ -148,7 +148,7 @@ export default defineComponent({
         });
     };
 
-    watchEffect(prepareMigrationHistoryList);
+    onBeforeMount(prepareMigrationHistoryList);
 
     const isCurrentUserDBAOrOwner = computed((): boolean => {
       return isDBAOrOwner(currentUser.value.role);
