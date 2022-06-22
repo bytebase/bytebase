@@ -198,7 +198,8 @@
     "enable": "开启",
     "disable": "禁用",
     "view-doc": "查看文档",
-    "backup-and-restore": "备份与恢复"
+    "backup-and-restore": "备份与恢复",
+    "write-only": "仅写入"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1112,7 +1113,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "我们也把被授予的数据库链接到了申请工单 '{0}'。",
     "new-data-source": "新数据源",
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "不使用"
+    },
+    "ssl": {
+      "ca-cert": "CA 证书",
+      "client-key": "客户端密钥",
+      "client-cert": "客户端证书"
+    },
+    "ssl-connection": "SSL 连接"
   },
   "setting": {
     "project": {
