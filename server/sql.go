@@ -141,10 +141,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) &&
-			// For now we only support MySQL dialect schema review check.
-			(instance.Engine == db.MySQL || instance.Engine == db.TiDB) {
-
+		if s.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
 			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
 			if err != nil {
 				return err
