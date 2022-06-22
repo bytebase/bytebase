@@ -16,9 +16,9 @@ type ConnectionInfo struct {
 	Password         string  `jsonapi:"attr,password"`
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
 	InstanceID       *int    `jsonapi:"attr,instanceId"`
-	SslCa            string  `jsonapi:"attr,sslCa"`
-	SslCert          string  `jsonapi:"attr,sslCert"`
-	SslKey           string  `jsonapi:"attr,sslKey"`
+	SslCa            *string `jsonapi:"attr,sslCa"`
+	SslCert          *string `jsonapi:"attr,sslCert"`
+	SslKey           *string `jsonapi:"attr,sslKey"`
 }
 
 // SQLSyncSchema is the API message for sync schemas.
