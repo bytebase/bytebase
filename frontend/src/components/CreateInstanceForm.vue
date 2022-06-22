@@ -425,14 +425,11 @@ const tryCreate = () => {
     port: instance.port,
   };
 
-  if (typeof instance.sslCa !== "undefined") {
-    connectionInfo.sslCa = instance.sslCa;
-  }
-  if (typeof instance.sslKey !== "undefined") {
-    connectionInfo.sslKey = instance.sslKey;
-  }
-  if (typeof instance.sslCert !== "undefined") {
-    connectionInfo.sslCert = instance.sslCert;
+  if (showSSL.value) {
+    // Default to "NONE"
+    connectionInfo.sslCa = instance.sslCa ?? "";
+    connectionInfo.sslKey = instance.sslKey ?? "";
+    connectionInfo.sslCert = instance.sslCert ?? "";
   }
 
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
@@ -485,14 +482,11 @@ const testConnection = () => {
     instanceId: undefined,
   };
 
-  if (typeof instance.sslCa !== "undefined") {
-    connectionInfo.sslCa = instance.sslCa;
-  }
-  if (typeof instance.sslKey !== "undefined") {
-    connectionInfo.sslKey = instance.sslKey;
-  }
-  if (typeof instance.sslCert !== "undefined") {
-    connectionInfo.sslCert = instance.sslCert;
+  if (showSSL.value) {
+    // Default to "NONE"
+    connectionInfo.sslCa = instance.sslCa ?? "";
+    connectionInfo.sslKey = instance.sslKey ?? "";
+    connectionInfo.sslCert = instance.sslCert ?? "";
   }
 
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
