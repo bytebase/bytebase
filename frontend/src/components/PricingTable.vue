@@ -35,7 +35,9 @@
               </p>
 
               <p class="mt-4 flex items-baseline text-gray-900 text-xl">
-                <span class="text-3xl"> {{ plan.pricePrefix }}</span>
+                <span v-if="plan.pricePrefix" class="text-3xl">
+                  {{ plan.pricePrefix }}&nbsp;</span
+                >
                 <span class="text-4xl">
                   ${{ plan.pricePerInstancePerMonth }}
                 </span>
