@@ -79,6 +79,10 @@ export type InstanceCreate = {
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
+
   syncSchema: boolean;
 };
 

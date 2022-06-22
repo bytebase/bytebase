@@ -236,6 +236,42 @@
             @input="handleCurrentDataSourcePasswordInput"
           />
         </div>
+
+        <div v-if="showSSL" class="mt-2 sm:col-span-3 sm:col-start-1">
+          <div class="flex flex-row items-center">
+            <label for="password" class="textlabel block">
+              {{ $t("datasource.ssl-connection") }}
+            </label>
+          </div>
+          <template v-if="currentDataSource.id === UNKNOWN_ID">
+            <SslCertificateForm
+              :value="currentDataSource"
+              @change="handleCurrentDataSourceSslChange"
+            />
+          </template>
+          <template v-else>
+            <template v-if="currentDataSource.updateSsl">
+              <SslCertificateForm
+                :value="currentDataSource"
+                @change="handleCurrentDataSourceSslChange"
+              />
+              <button
+                class="btn-normal mt-2"
+                @click.prevent="handleEditSsl(false)"
+              >
+                {{ $t("common.revert") }}
+              </button>
+            </template>
+            <template v-else>
+              <button
+                class="btn-normal mt-2"
+                @click.prevent="handleEditSsl(true)"
+              >
+                {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+              </button>
+            </template>
+          </template>
+        </div>
       </div>
       <div class="mt-6 pt-0 border-none">
         <div class="flex flex-row space-x-2">
@@ -289,6 +325,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
 import EnvironmentSelect from "../components/EnvironmentSelect.vue";
 import InstanceEngineIcon from "../components/InstanceEngineIcon.vue";
+import { SslCertificateForm } from "./InstanceForm";
 import { isDBAOrOwner } from "../utils";
 import {
   InstancePatch,
@@ -298,6 +335,7 @@ import {
   ConnectionInfo,
   DataSource,
   UNKNOWN_ID,
+  DataSourceCreate,
 } from "../types";
 import isEmpty from "lodash-es/isEmpty";
 import { useI18n } from "vue-i18n";
@@ -431,6 +469,10 @@ const instanceLink = (instance: Instance): string => {
   return instance.host;
 };
 
+const showSSL = computed((): boolean => {
+  return state.instance.engine === "CLICKHOUSE";
+});
+
 const handleInstanceNameInput = (event: Event) => {
   updateInstance("name", (event.target as HTMLInputElement).value);
 };
@@ -468,17 +510,48 @@ const handleCurrentDataSourcePasswordInput = (event: Event) => {
   updateInstanceDataSource();
 };
 
+const handleEditSsl = (edit: boolean) => {
+  const curr = currentDataSource.value;
+  if (!edit) {
+    delete curr.sslCa;
+    delete curr.sslCert;
+    delete curr.sslKey;
+    delete curr.updateSsl;
+  } else {
+    curr.sslCa = "";
+    curr.sslCert = "";
+    curr.sslKey = "";
+    curr.updateSsl = true;
+  }
+  updateInstanceDataSource();
+};
+
+const handleCurrentDataSourceSslChange = (
+  value: Pick<DataSource, "sslCa" | "sslCert" | "sslKey">
+) => {
+  Object.assign(currentDataSource.value, value);
+  currentDataSource.value.updateSsl = true;
+  updateInstanceDataSource();
+};
+
 const updateInstanceDataSource = () => {
-  const index = state.dataSourceList.findIndex(
-    (ds) => ds === currentDataSource.value
-  );
-  state.instance.dataSourceList[index] = {
+  const curr = currentDataSource.value;
+  const index = state.dataSourceList.findIndex((ds) => ds === curr);
+  const newValue = {
     ...state.instance.dataSourceList[index],
-    username: currentDataSource.value.username,
-    password: currentDataSource.value.useEmptyPassword
-      ? ""
-      : currentDataSource.value.updatedPassword,
+    username: curr.username,
+    password: curr.useEmptyPassword ? "" : curr.updatedPassword,
   };
+  if (curr.updateSsl) {
+    newValue.sslCa = curr.sslCa;
+    newValue.sslKey = curr.sslKey;
+    newValue.sslCert = curr.sslCert;
+  } else {
+    delete newValue.sslCa;
+    delete newValue.sslCert;
+    delete newValue.sslKey;
+  }
+  state.instance.dataSourceList[index] = newValue;
 };
 
 const handleCreateDataSource = (type: DataSourceType) => {
@@ -570,17 +643,25 @@ const doUpdate = () => {
         if (dataSource.id === UNKNOWN_ID) {
           // Only used to create ReadOnly data source right now.
           if (dataSource.type === "RO") {
-            requests.push(
-              dataSourceStore.createDataSource({
-                databaseId: dataSource.databaseId,
-                instanceId: state.instance.id,
-                name: dataSource.name,
-                type: dataSource.type,
-                username: dataSource.username,
-                password: dataSource.password,
-                syncSchema: state.syncSchema,
-              })
-            );
+            const dataSourceCreate: DataSourceCreate = {
+              databaseId: dataSource.databaseId,
+              instanceId: state.instance.id,
+              name: dataSource.name,
+              type: dataSource.type,
+              username: dataSource.username,
+              password: dataSource.password,
+              syncSchema: state.syncSchema,
+            };
+            if (typeof dataSource.sslCa !== "undefined") {
+              dataSourceCreate.sslCa = dataSource.sslCa;
+            }
+            if (typeof dataSource.sslKey !== "undefined") {
+              dataSourceCreate.sslKey = dataSource.sslKey;
+            }
+            if (typeof dataSource.sslCert !== "undefined") {
+              dataSourceCreate.sslCert = dataSource.sslCert;
+            }
+            requests.push(dataSourceStore.createDataSource(dataSourceCreate));
           }
         } else if (
           !isEqual(dataSource, state.originalInstance.dataSourceList[i])
@@ -641,17 +722,28 @@ const doUpdate = () => {
 };
 
 const testConnection = () => {
+  const instance = state.instance;
+  const dataSource = currentDataSource.value;
   const connectionInfo: ConnectionInfo = {
-    engine: state.instance.engine,
-    username: currentDataSource.value.username,
-    password: currentDataSource.value.useEmptyPassword
-      ? ""
-      : currentDataSource.value.updatedPassword,
-    useEmptyPassword: currentDataSource.value.useEmptyPassword,
-    host: state.instance.host,
-    port: state.instance.port,
-    instanceId: state.instance.id,
+    engine: instance.engine,
+    username: dataSource.username,
+    password: dataSource.useEmptyPassword ? "" : dataSource.updatedPassword,
+    useEmptyPassword: dataSource.useEmptyPassword,
+    host: instance.host,
+    port: instance.port,
+    instanceId: instance.id,
   };
+
+  if (typeof dataSource.sslCa !== "undefined") {
+    connectionInfo.sslCa = dataSource.sslCa;
+  }
+  if (typeof dataSource.sslKey !== "undefined") {
+    connectionInfo.sslKey = dataSource.sslKey;
+  }
+  if (typeof dataSource.sslCert !== "undefined") {
+    connectionInfo.sslCert = dataSource.sslCert;
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({

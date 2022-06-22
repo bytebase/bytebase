@@ -198,7 +198,8 @@
     "enable": "Enable",
     "disable": "Disable",
     "view-doc": "View doc",
-    "backup-and-restore": "Backup and restore"
+    "backup-and-restore": "Backup and restore",
+    "write-only": "write only"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1112,7 +1113,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "We also linked the granted database to the requested issue '{0}'.",
     "new-data-source": "New data source",
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "None"
+    },
+    "ssl": {
+      "ca-cert": "CA Certificate",
+      "client-key": "Client Key",
+      "client-cert": "Client Certificate"
+    },
+    "ssl-connection": "SSL Connection"
   },
   "setting": {
     "project": {
