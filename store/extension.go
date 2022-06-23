@@ -57,11 +57,11 @@ func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
 func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCreate) (*api.DBExtension, error) {
 	dbExtensionRaw, err := s.createDBExtensionRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error: %w", create, err)
 	}
 	dbExtension, err := s.composeDBExtension(ctx, dbExtensionRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", dbExtensionRaw, err)
+		return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error: %w", dbExtensionRaw, err)
 	}
 	return dbExtension, nil
 }
@@ -70,13 +70,13 @@ func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCr
 func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
 	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error: %w", find, err)
 	}
 	var dbExtensionList []*api.DBExtension
 	for _, raw := range dbExtensionRawList {
 		dbExtension, err := s.composeDBExtension(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error: %w", raw, err)
 		}
 		dbExtensionList = append(dbExtensionList, dbExtension)
 	}

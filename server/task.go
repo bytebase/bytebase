@@ -76,7 +76,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			// Tenant mode project don't allow updating SQL statement.
 			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issue.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
 			}
 			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
 				err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")

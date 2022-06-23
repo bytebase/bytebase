@@ -76,7 +76,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 			zap.Int("issueID", issue.ID),
 			zap.String("database", task.Database.Name),
 			zap.Error(err))
-		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
+		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
 
 	log.Info("Finish swapping the original and PITR database",
@@ -100,7 +100,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
-		return true, nil, fmt.Errorf("failed to add migration history record, error[%w]", err)
+		return true, nil, fmt.Errorf("failed to add migration history record, error: %w", err)
 	}
 
 	// Sync database schema after restore is completed.
