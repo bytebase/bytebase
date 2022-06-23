@@ -33,6 +33,8 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/advisor/fake"
 	// Register mysql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
+	// Register postgresql advisor.
+	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------

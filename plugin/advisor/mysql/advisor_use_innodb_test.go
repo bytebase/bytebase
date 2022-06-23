@@ -8,10 +8,10 @@ import (
 )
 
 func TestUseInnoDB(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "CREATE TABLE book(id int) ENGINE = INNODB",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int) ENGINE = INNODB",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -21,8 +21,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int)",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -32,8 +32,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "CREATE TABLE book(id int) ENGINE = CSV",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE book(id int) ENGINE = CSV",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
@@ -43,8 +43,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book ENGINE = INNODB",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book ENGINE = INNODB",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -54,8 +54,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "ALTER TABLE book ENGINE = CSV",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE book ENGINE = CSV",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
@@ -65,8 +65,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "SET default_storage_engine=INNODB",
-			want: []advisor.Advice{
+			Statement: "SET default_storage_engine=INNODB",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
 					Code:    common.Ok,
@@ -76,8 +76,8 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 		{
-			statement: "SET default_storage_engine=CSV",
-			want: []advisor.Advice{
+			Statement: "SET default_storage_engine=CSV",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    common.NotInnoDBEngine,
@@ -87,9 +87,9 @@ func TestUseInnoDB(t *testing.T) {
 			},
 		},
 	}
-	runSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &UseInnoDBAdvisor{}, &advisor.SchemaReviewRule{
 		Type:    advisor.SchemaRuleMySQLEngine,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

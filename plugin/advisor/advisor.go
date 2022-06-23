@@ -57,6 +57,8 @@ const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
 
+	// MySQL Advisor
+
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
 
@@ -98,6 +100,17 @@ const (
 
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
+
+	// PostgreSQL Advisor
+
+	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
+	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
+	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
+
+	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
+	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 )
 
 // Advice is the result of an advisor.
@@ -178,7 +191,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown db advisor type %v", dbType)
 	}
 
 	f, ok := dbAdvisors[advType]
@@ -187,4 +200,20 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	}
 
 	return f.Check(ctx, statement)
+}
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(engine db.Type) bool {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+		return true
+	}
+	return false
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(engine db.Type) bool {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+		return true
+	}
+	return false
 }

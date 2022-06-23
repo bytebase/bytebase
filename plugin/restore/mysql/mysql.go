@@ -264,7 +264,6 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 // Locate the binlog event at (filename, position), parse the event and return its timestamp.
 // The current mechanism is by invoking mysqlbinlog and parse the output string.
 // Maybe we should parse the raw binlog header to get better documented structure?
-// nolint
 func (r *Restore) parseLocalBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
 	args := []string{
 		path.Join(r.binlogDir, binlogInfo.FileName),
@@ -495,7 +494,8 @@ func getPITROldDatabaseName(database string, suffixTs int64) string {
 	return getSafeName(database, suffix)
 }
 
-func getSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
+// GetSortedLocalBinlogFiles returns a sorted BinlogFile list in the given binlog dir.
+func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	binlogFilesInfoLocal, err := ioutil.ReadDir(binlogDir)
 	if err != nil {
 		return nil, err
@@ -520,85 +520,67 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 	return true
 }
 
-// FetchArchivedBinlogFiles downloads the missing binlog files from the remote instance to `binlogDir`,
-// but exclude latest binlog. We may  download the latest binlog only when doing PITR.
-func (r *Restore) FetchArchivedBinlogFiles(ctx context.Context) error {
+// Download binlog files on server.
+func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
+	if len(binlogFilesOnServerSorted) == 0 {
+		log.Debug("No binlog file found on server to download")
+		return nil
+	}
+	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
+	binlogFilesLocalMap := make(map[string]BinlogFile)
+	for _, file := range binlogFilesLocal {
+		binlogFilesLocalMap[file.Name] = file
+	}
+	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	for _, fileOnServer := range binlogFilesOnServerSorted {
+		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
+		path := filepath.Join(r.binlogDir, fileOnServer.Name)
+		if !existLocal {
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
+				return fmt.Errorf("failed to download binlog file[%s], error[%w]", path, err)
+			}
+		} else if fileLocal.Size != fileOnServer.Size {
+			log.Debug("Deleting inconsistent local binlog file",
+				zap.String("path", path),
+				zap.Int64("sizeLocal", fileOnServer.Size),
+				zap.Int64("sizeOnServer", fileOnServer.Size))
+			if err := os.Remove(path); err != nil {
+				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+				return fmt.Errorf("failed to remove inconsistent local binlog file[%s], error[%w]", path, err)
+			}
+			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
+				return fmt.Errorf("failed to re-download inconsistent local binlog file[%s], error[%w]", path, err)
+			}
+		}
+	}
+	return nil
+}
+
+// FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
+func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
 	if len(binlogFilesOnServerSorted) == 0 {
-		// No binlog files on server, so there's nothing to download.
-		log.Debug("No binlog file found on server")
+		log.Debug("No binlog file found on server to download")
 		return nil
 	}
-	latestBinlogFileOnServer := binlogFilesOnServerSorted[len(binlogFilesOnServerSorted)-1]
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := getSortedLocalBinlogFiles(r.binlogDir)
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error[%w]", err)
 	}
-	// build a local file size map from file name to size
-	localFileMap := make(map[string]int64)
-	for _, localFile := range binlogFilesLocalSorted {
-		localFileMap[localFile.Name] = localFile.Size
-	}
 
-	todo := make(map[string]bool)
-
-	for _, serverBinlog := range binlogFilesOnServerSorted {
-		// We don't download the latest binlog in SyncArchivedBinlogFiles()
-		if serverBinlog.Name == latestBinlogFileOnServer.Name {
-			continue
-		}
-
-		localBinlogSize, ok := localFileMap[serverBinlog.Name]
-		if !ok {
-			todo[serverBinlog.Name] = true
-			continue
-		}
-
-		if localBinlogSize != serverBinlog.Size {
-			// exist on local and file size not match, delete and then download it
-			log.Warn("inconsistent binlog file size detected", zap.String("binlogFile", serverBinlog.Name), zap.Int64("server", serverBinlog.Size), zap.Int64("local", localBinlogSize))
-			if err := os.Remove(filepath.Join(r.binlogDir, serverBinlog.Name)); err != nil {
-				return fmt.Errorf("cannot remove %s, error: %w", serverBinlog.Name, err)
-			}
-			todo[serverBinlog.Name] = true
-		}
-	}
-
-	// download the binlog files not recorded in downloadedIndex
-	for _, serverFile := range binlogFilesOnServerSorted {
-		if _, ok := todo[serverFile.Name]; !ok {
-			continue
-		}
-		if err := r.downloadBinlogFile(ctx, serverFile, false); err != nil {
-			return fmt.Errorf("cannot sync binlog %s, error: %w", serverFile.Name, err)
-		}
-	}
-
-	return nil
+	return r.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
 }
 
-// IncrementalFetchAllBinlogFiles fetches all the binlog files that on server but not on local.
-// TODO(zp): It is not yet supported to synchronize some binlog files.
-// The current practice is to download all binlog files, but in the future we hope to only synchronize to the PITR time point
-func (r *Restore) IncrementalFetchAllBinlogFiles(ctx context.Context) error {
-	if err := r.FetchArchivedBinlogFiles(ctx); err != nil {
-		return err
-	}
-	latestBinlogFileOnServer, err := r.getLatestBinlogFileMeta(ctx)
-	if err != nil {
-		return err
-	}
-	return r.downloadBinlogFile(ctx, latestBinlogFileOnServer, true)
-}
-
-// downloadBinlogFile syncs the binlog specified by `meta` between the instance and local.
+// Syncs the binlog specified by `meta` between the instance and local.
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
@@ -696,31 +678,6 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	}
 
 	return sortBinlogFiles(binlogFiles), nil
-}
-
-// showLatestBinlogFile returns the metadata of latest binlog
-func (r *Restore) getLatestBinlogFileMeta(ctx context.Context) (BinlogFile, error) {
-	// TODO(zp): refactor to reuse getBinlogInfo() in plugin/db/mysql.go
-	db, err := r.driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return BinlogFile{}, err
-	}
-
-	rows, err := db.QueryContext(ctx, `SHOW MASTER STATUS;`)
-	if err != nil {
-		return BinlogFile{}, err
-	}
-	defer rows.Close()
-
-	var binlogFile BinlogFile
-	if rows.Next() {
-		var unused interface{} /*Binlog_Do_DB, Binlog_Ignore_DB, Executed_Gtid_Set*/
-		if err := rows.Scan(&binlogFile.Name, &binlogFile.Size, &unused, &unused, &unused); err != nil {
-			return BinlogFile{}, err
-		}
-		return binlogFile, nil
-	}
-	return BinlogFile{}, fmt.Errorf("cannot find latest binlog on instance")
 }
 
 // getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.

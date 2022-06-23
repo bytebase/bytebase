@@ -198,7 +198,8 @@
     "enable": "Enable",
     "disable": "Disable",
     "view-doc": "View doc",
-    "backup-and-restore": "Backup and restore"
+    "backup-and-restore": "Backup and restore",
+    "write-only": "write only"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -712,13 +713,15 @@
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
-    "schema-drift": "Schema drift detected",
+    "schema-drift": "Schema drift",
+    "schema-drift-detected": "A schema drift was detected.",
+    "view-drift": "View drift",
     "before-left-schema-choice": "Compare the schema",
     "left-schema-choice-prev-history-schema": "after prev migration",
     "left-schema-choice-current-history-schema-prev": "before this migration",
     "after-left-schema-choice": "and after this migration",
     "show-diff": "Show diff",
-    "left-vs-right": "Prev (left) vs This version (right)",
+    "left-vs-right": "Prev {prevLink} vs This version",
     "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
     "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
     "no-history-in-project": "Do not find migration history from any database in this project.",
@@ -1112,7 +1115,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "We also linked the granted database to the requested issue '{0}'.",
     "new-data-source": "New data source",
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "None"
+    },
+    "ssl": {
+      "ca-cert": "CA Certificate",
+      "client-key": "Client Key",
+      "client-cert": "Client Certificate"
+    },
+    "ssl-connection": "SSL Connection"
   },
   "setting": {
     "project": {
@@ -1177,7 +1191,8 @@
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
-    "format": "Format"
+    "format": "Format",
+    "sql-review-result": "SQL review result"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
@@ -1221,6 +1236,8 @@
     "trial": "You can start a free trial - no credit card required",
     "upgrade": "Upgrade subscription",
     "per-month": "/ month",
+    "price-unit-for-enterprise": "/ month",
+    "start-from": "Start from",
     "per-instance": "Per instance",
     "free-price-intro": "Up to 5",
     "team-price-intro": "5 minimum, billed annually",
