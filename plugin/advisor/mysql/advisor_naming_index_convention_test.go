@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +17,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -29,7 +28,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingIndexConventionMismatch,
+					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
@@ -44,7 +43,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -58,7 +57,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingIndexConventionMismatch,
+					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `idx_tech_book`",
 				},
@@ -69,7 +68,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -80,7 +79,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingIndexConventionMismatch,
+					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
@@ -91,7 +90,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -102,7 +101,7 @@ func TestNamingIndexConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingIndexConventionMismatch,
+					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_name$\" but found ``",
 				},

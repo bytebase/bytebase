@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
@@ -14,7 +13,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -25,7 +24,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -36,7 +35,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NotInnoDBEngine,
+					Code:    advisor.NotInnoDBEngine,
 					Title:   "engine.mysql.use-innodb",
 					Content: "\"CREATE TABLE book(id int) ENGINE = CSV\" doesn't use InnoDB engine",
 				},
@@ -47,7 +46,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -58,7 +57,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NotInnoDBEngine,
+					Code:    advisor.NotInnoDBEngine,
 					Title:   "engine.mysql.use-innodb",
 					Content: "\"ALTER TABLE book ENGINE = CSV\" doesn't use InnoDB engine",
 				},
@@ -69,7 +68,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -80,7 +79,7 @@ func TestUseInnoDB(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NotInnoDBEngine,
+					Code:    advisor.NotInnoDBEngine,
 					Title:   "engine.mysql.use-innodb",
 					Content: "\"SET default_storage_engine=CSV\" doesn't use InnoDB engine",
 				},

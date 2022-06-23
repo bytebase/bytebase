@@ -17,6 +17,7 @@ const (
 	NotFound       Code = 4
 	Conflict       Code = 5
 	NotImplemented Code = 6
+	Unknown        Code = 99
 
 	// 101 ~ 199 db error
 	DbConnectionFailure    Code = 101

@@ -7,7 +7,6 @@ import (
 	"github.com/auxten/postgresql-parser/pkg/sql/parser"
 	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
 	"github.com/auxten/postgresql-parser/pkg/walk"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
@@ -58,7 +57,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -103,7 +102,7 @@ func check(ctx interface{}, node interface{}) (stop bool) {
 		if !checker.format.MatchString(tableName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingTableConventionMismatch,
+				Code:    advisor.NamingTableConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
 			})

@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
@@ -26,7 +25,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 		return nil, []advisor.Advice{
 			{
 				Status:  advisor.Error,
-				Code:    common.DbStatementSyntaxError,
+				Code:    advisor.DbStatementSyntaxError,
 				Title:   advisor.SyntaxErrorTitle,
 				Content: err.Error(),
 			},

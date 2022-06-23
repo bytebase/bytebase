@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/pingcap/log"
 	"github.com/pingcap/tidb/parser/ast"
 	"go.uber.org/zap"
 )
@@ -124,7 +123,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 		if len(v.tables[tableName]) == 0 {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.TableNoPK,
+				Code:    advisor.TableNoPK,
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
 			})
@@ -134,7 +133,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 	if len(v.adviceList) == 0 {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
