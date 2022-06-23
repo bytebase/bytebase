@@ -70,11 +70,11 @@ func (raw *tableRaw) toTable() *api.Table {
 func (s *Store) CreateTable(ctx context.Context, create *api.TableCreate) (*api.Table, error) {
 	tableRaw, err := s.createTableRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Table with TableCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Table with TableCreate[%+v], error: %w", create, err)
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", tableRaw, err)
+		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
 	}
 	return table, nil
 }
@@ -83,14 +83,14 @@ func (s *Store) CreateTable(ctx context.Context, create *api.TableCreate) (*api.
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error: %w", find, err)
 	}
 	if tableRaw == nil {
 		return nil, nil
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", tableRaw, err)
+		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
 	}
 	return table, nil
 }
@@ -99,13 +99,13 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Table list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Table list, error: %w", err)
 	}
 	var tableList []*api.Table
 	for _, raw := range tableRawList {
 		table, err := s.composeTable(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", raw, err)
 		}
 		tableList = append(tableList, table)
 	}

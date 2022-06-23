@@ -50,11 +50,11 @@ func (raw *settingRaw) toSetting() *api.Setting {
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, error) {
 	settingRaw, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Setting with SettingCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Setting with SettingCreate[%+v], error: %w", create, err)
 	}
 	setting, err := s.composeSetting(ctx, settingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", settingRaw, err)
+		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", settingRaw, err)
 	}
 	return setting, nil
 }
@@ -63,13 +63,13 @@ func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.Setting
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
 	settingRawList, err := s.findSettingRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Setting list with SettingFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Setting list with SettingFind[%+v], error: %w", find, err)
 	}
 	var settingList []*api.Setting
 	for _, raw := range settingRawList {
 		setting, err := s.composeSetting(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", raw, err)
 		}
 		settingList = append(settingList, setting)
 	}
@@ -80,11 +80,11 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
 	settingRaw, err := s.patchSettingRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Setting with SettingPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Setting with SettingPatch[%+v], error: %w", patch, err)
 	}
 	setting, err := s.composeSetting(ctx, settingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", settingRaw, err)
+		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", settingRaw, err)
 	}
 	return setting, nil
 }

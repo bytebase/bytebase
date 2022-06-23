@@ -38,7 +38,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseCreate.EnvironmentID = instance.EnvironmentID
 		project, err := s.store.GetProjectByID(ctx, databaseCreate.ProjectID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID[%d]", databaseCreate.ProjectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", databaseCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			err := fmt.Errorf("project ID not found %v", databaseCreate.ProjectID)
@@ -146,15 +146,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 		// Wildcard(*) database is used to connect all database at instance level.
 		// Do not return it via `get database by id` API.
 		if database.Name == api.AllDatabaseName {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID[%d] is a wildcard *", id))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID %d is a wildcard *", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -182,10 +182,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		targetProject := database.Project
@@ -201,7 +201,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 			toProject, err := s.store.GetProjectByID(ctx, *dbPatch.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID[%d]", *dbPatch.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", *dbPatch.ProjectID)).SetInternal(err)
 			}
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
@@ -262,10 +262,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if dbPatch.ProjectID != nil {
 			dbExisting, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &dbPatch.ID})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
 			}
 			if dbExisting == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 			}
 		}
 
