@@ -324,6 +324,8 @@ func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine db.Type) (Type, 
 		switch engine {
 		case db.MySQL, db.TiDB:
 			return MySQLNamingColumnConvention, nil
+		case db.Postgres:
+			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {

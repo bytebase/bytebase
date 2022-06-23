@@ -11,7 +11,7 @@
     >
       <div class="relative -mt-4 -ml-4 flex items-center justify-between">
         <div class="ml-4 text-xl text-main">
-          <component :is="renderTitle" />
+          <slot name="title"><component :is="renderTitle" /></slot>
           <component :is="renderSubtitle" />
         </div>
         <button
@@ -62,7 +62,7 @@ export default defineComponent({
   name: "BBModal",
   props: {
     title: {
-      required: true,
+      default: "",
       type: String,
     },
     subtitle: {

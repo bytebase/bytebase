@@ -2,17 +2,11 @@ import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import { createApp } from "vue";
 
-import App from "./App.vue";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
-import "./assets/css/inter.css";
-import "./assets/css/tailwind.css";
-
-import dataSourceType from "./directives/data-source-type";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+import "./plugins/guide";
 import { router } from "./router";
 import {
   pinia,
@@ -37,6 +31,10 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
+import dataSourceType from "./directives/data-source-type";
+import App from "./App.vue";
+import "./assets/css/inter.css";
+import "./assets/css/tailwind.css";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
