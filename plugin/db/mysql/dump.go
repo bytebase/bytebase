@@ -229,7 +229,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// Table and view statement.
 		tables, err := GetTablesTx(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
+			return fmt.Errorf("failed to get tables of database %q, error: %w", dbName, err)
 		}
 		for _, tbl := range tables {
 			if schemaOnly && tbl.TableType == baseTableType {
