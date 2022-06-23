@@ -679,7 +679,38 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	return sortBinlogFiles(binlogFiles), nil
 }
 
-func parseBinlogEventTs(line string) (eventTs int64, found bool, err error) {
+// ConvertTsToLocalBinlogCoordinate converts a timestamp to binlog coordinate using local binlog files.
+// We do all kinds of comparison like finding proper backup using the converted BinlogInfo, but not the original timestamp.
+func (r *Restore) ConvertTsToLocalBinlogCoordinate(ctx context.Context, targetTs int64) (*api.BinlogInfo, error) {
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
+	}
+	if !binlogFilesAreContinuous(binlogFilesLocalSorted) {
+		return nil, fmt.Errorf("local binlog files are not continuous")
+	}
+
+	var firstEventTsListSorted []int64
+	for _, file := range binlogFilesLocalSorted {
+		eventTs, err := r.parseFirstLocalBinlogEventTs(ctx, file.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
+		}
+		firstEventTsListSorted = append(firstEventTsListSorted, eventTs)
+	}
+	binlogFileTargetIndex, err := getLastTsIndexBeforeTargetTs(firstEventTsListSorted, targetTs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find the local binlog file containing targetTs %d, error: %w", targetTs, err)
+	}
+	binlogFileTarget := binlogFilesLocalSorted[binlogFileTargetIndex]
+	eventStartPos, err := r.getFirstBinlogEventStartPosAfterTs(ctx, binlogFileTarget, targetTs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
+	}
+	return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: eventStartPos}, nil
+}
+
+func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
 	// The target line starts with string like "#220421 14:49:26 server id 1"
 	if !strings.Contains(line, "server id") {
 		return 0, false, nil
@@ -702,7 +733,7 @@ func parseBinlogEventTs(line string) (eventTs int64, found bool, err error) {
 	return datetime.Unix(), true, nil
 }
 
-func parseBinlogEventStartPos(line string) (startPos int64, found bool, err error) {
+func parseBinlogEventStartPosInLine(line string) (startPos int64, found bool, err error) {
 	// The mysqlbinlog output will contains a line starting with "# at 35065", which is the binlog event's start position.
 	if !strings.HasPrefix(line, "# at ") {
 		return 0, false, nil
@@ -756,7 +787,7 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 	var found bool
 	for s.Scan() {
 		line := s.Text()
-		eventTs, found, err = parseBinlogEventTs(line)
+		eventTs, found, err = parseBinlogEventTsInLine(line)
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse binlog eventTs from mysqlbinlog output, error: %w", err)
 		}
@@ -816,7 +847,7 @@ func (r *Restore) getFirstBinlogEventStartPosAfterTs(ctx context.Context, binlog
 	var found bool
 	for s.Scan() {
 		line := s.Text()
-		startPos, found, err = parseBinlogEventStartPos(line)
+		startPos, found, err = parseBinlogEventStartPosInLine(line)
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse binlog event start position from mysqlbinlog output, error: %w", err)
 		}
@@ -844,37 +875,6 @@ func (r *Restore) getFirstBinlogEventStartPosAfterTs(ctx context.Context, binlog
 	}
 
 	return startPos, nil
-}
-
-// ConvertTsToLocalBinlogCoordinate converts a timestamp to binlog coordinate using local binlog files.
-// We do all kinds of comparison like finding proper backup using the converted BinlogInfo, but not the original timestamp.
-func (r *Restore) ConvertTsToLocalBinlogCoordinate(ctx context.Context, targetTs int64) (*api.BinlogInfo, error) {
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
-	}
-	if !binlogFilesAreContinuous(binlogFilesLocalSorted) {
-		return nil, fmt.Errorf("local binlog files are not continuous")
-	}
-
-	var firstEventTsListSorted []int64
-	for _, file := range binlogFilesLocalSorted {
-		eventTs, err := r.parseFirstLocalBinlogEventTs(ctx, file.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
-		}
-		firstEventTsListSorted = append(firstEventTsListSorted, eventTs)
-	}
-	binlogFileTargetIndex, err := getLastTsIndexBeforeTargetTs(firstEventTsListSorted, targetTs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the local binlog file containing targetTs %d, error: %w", targetTs, err)
-	}
-	binlogFileTarget := binlogFilesLocalSorted[binlogFileTargetIndex]
-	eventStartPos, err := r.getFirstBinlogEventStartPosAfterTs(ctx, binlogFileTarget, targetTs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
-	}
-	return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: eventStartPos}, nil
 }
 
 // get the index of the last ts > targetTs.
