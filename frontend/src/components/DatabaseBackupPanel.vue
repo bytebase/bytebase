@@ -101,7 +101,7 @@
 
         <div class="flex-1 flex items-center justify-end">
           <PITRRestoreButton
-            v-if="isDev && allowAdmin"
+            v-if="allowAdmin"
             :database="database"
             :allow-admin="allowAdmin"
           />
