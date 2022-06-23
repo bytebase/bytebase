@@ -79,7 +79,7 @@
         {{ $t("repository.file-path-template") }}
         <span class="text-red-600">*</span>
         <a
-          href="https://bytebase.com/docs/use-bytebase/vcs-integration/name-and-organize-schema-files#file-path-template"
+          href="https://bytebase.com/docs/use-bytebase/vcs-integration/name-and-organize-schema-files#file-path-template?source=console"
           target="__blank"
           class="font-normal normal-link"
         >
@@ -131,7 +131,7 @@
       <div class="textlabel">
         {{ $t("repository.schema-path-template") }}
         <a
-          href="https://bytebase.com/docs/use-bytebase/vcs-integration/name-and-organize-schema-files#schema-path-template"
+          href="https://bytebase.com/docs/use-bytebase/vcs-integration/name-and-organize-schema-files#schema-path-template?source=console"
           target="__blank"
           class="font-normal normal-link"
         >

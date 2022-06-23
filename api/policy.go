@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 // PolicyType is the type or name of a policy.
@@ -157,8 +159,8 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 }
 
 // UnmarshalSchemaReviewPolicy will unmarshal payload to schema review policy.
-func UnmarshalSchemaReviewPolicy(payload string) (*SchemaReviewPolicy, error) {
-	var sr SchemaReviewPolicy
+func UnmarshalSchemaReviewPolicy(payload string) (*advisor.SchemaReviewPolicy, error) {
+	var sr advisor.SchemaReviewPolicy
 	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema review policy %q: %q", payload, err)
 	}

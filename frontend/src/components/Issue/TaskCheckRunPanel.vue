@@ -187,7 +187,7 @@ export default defineComponent({
           return {
             title: t("common.view-doc"),
             target: "__blank",
-            url: `https://bytebase.com/docs/error-code#${error.hash}`,
+            url: `https://bytebase.com/docs/error-code#${error.hash}?source=console`,
           };
       }
     };

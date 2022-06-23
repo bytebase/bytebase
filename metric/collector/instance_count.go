@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
@@ -29,7 +28,7 @@ func NewInstanceCountCollector(store *store.Store) metric.Collector {
 func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx, api.Normal)
+	instanceCountMetricList, err := c.store.CountInstanceGroupByEngineAndEnvironmentID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +46,7 @@ func (c *instanceCountCollector) Collect(ctx context.Context) ([]*metric.Metric,
 			Labels: map[string]string{
 				"engine":      string(instanceCountMetric.Engine),
 				"environment": env.Name,
+				"status":      string(instanceCountMetric.RowStatus),
 			},
 		})
 	}

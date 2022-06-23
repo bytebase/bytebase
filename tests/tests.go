@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/bin/server/cmd"
 	"github.com/bytebase/bytebase/common/log"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/server"
 	"github.com/bytebase/bytebase/tests/fake"
@@ -122,11 +123,16 @@ func getTestPort(testName string) int {
 		"TestTenantDatabaseNameTemplate",
 		"TestGhostSchemaUpdate",
 		"TestBackupRestoreBasic",
-		"TestPITR",
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
+
+		// PITR related cases
+		"TestPITR",
 		"TestCheckEngineInnoDB",
+		"TestCheckServerVersionAndBinlogForPITR",
+		"TestFetchBinlogFiles",
+
 		"TestSchemaSystem",
 	}
 	port := 1234
@@ -728,6 +734,33 @@ func (ctl *controller) patchTaskStatus(taskStatusPatch api.TaskStatusPatch, pipe
 	return task, nil
 }
 
+// patchStageAllTaskStatus patches the status of all tasks in the pipeline stage.
+func (ctl *controller) patchStageAllTaskStatus(stageAllTaskStatusPatch api.StageAllTaskStatusPatch, pipelineID int) ([]*api.Task, error) {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &stageAllTaskStatusPatch); err != nil {
+		return nil, fmt.Errorf("failed to marshal StageAllTaskStatusPatch, error: %w", err)
+	}
+
+	body, err := ctl.patch(fmt.Sprintf("/pipeline/%d/stage/%d/status", pipelineID, stageAllTaskStatusPatch.ID), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*api.Task
+	untypedTasks, err := jsonapi.UnmarshalManyPayload(body, reflect.TypeOf(new(api.Task)))
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal get tasks response, error: %w", err)
+	}
+	for _, t := range untypedTasks {
+		task, ok := t.(*api.Task)
+		if !ok {
+			return nil, fmt.Errorf("fail to convert task")
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
 // approveIssueNext approves the next pending approval task.
 func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 	for _, stage := range issue.Pipeline.StageList {
@@ -744,6 +777,34 @@ func (ctl *controller) approveIssueNext(issue *api.Issue) error {
 				}
 				return nil
 			}
+		}
+	}
+	return nil
+}
+
+// approveIssueTasksWithStageApproval approves all pending approval tasks in the next stage.
+func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) error {
+	stageID := 0
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if task.Status == api.TaskPendingApproval {
+				stageID = stage.ID
+				break
+			}
+		}
+		if stageID != 0 {
+			break
+		}
+	}
+	if stageID != 0 {
+		if _, err := ctl.patchStageAllTaskStatus(
+			api.StageAllTaskStatusPatch{
+				ID:     stageID,
+				Status: api.TaskPending,
+			},
+			issue.Pipeline.ID,
+		); err != nil {
+			return fmt.Errorf("failed to patch task status for stage %d, error: %w", stageID, err)
 		}
 	}
 	return nil
@@ -780,6 +841,16 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
+}
+
+// waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval)
+}
+
+// waitIssuePipelineImpl waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
@@ -798,7 +869,7 @@ func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 		}
 		switch status {
 		case api.TaskPendingApproval:
-			if err := ctl.approveIssueNext(issue); err != nil {
+			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
 		case api.TaskFailed:
@@ -1337,37 +1408,37 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 }
 
 // setDefaultSchemaReviewRulePayload sets the default payload for this rule.
-func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string, error) {
+func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
-	case api.SchemaRuleMySQLEngine:
-	case api.SchemaRuleStatementNoSelectAll:
-	case api.SchemaRuleStatementRequireWhere:
-	case api.SchemaRuleStatementNoLeadingWildcardLike:
-	case api.SchemaRuleTableRequirePK:
-	case api.SchemaRuleColumnNotNull:
-	case api.SchemaRuleSchemaBackwardCompatibility:
-	case api.SchemaRuleTableNaming:
+	case advisor.SchemaRuleMySQLEngine:
+	case advisor.SchemaRuleStatementNoSelectAll:
+	case advisor.SchemaRuleStatementRequireWhere:
+	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
+	case advisor.SchemaRuleTableRequirePK:
+	case advisor.SchemaRuleColumnNotNull:
+	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleTableNaming:
 		fallthrough
-	case api.SchemaRuleColumnNaming:
-		payload, err = json.Marshal(api.NamingRulePayload{
+	case advisor.SchemaRuleColumnNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^[a-z]+(_[a-z]+)*$",
 		})
-	case api.SchemaRuleIDXNaming:
-		payload, err = json.Marshal(api.NamingRulePayload{
+	case advisor.SchemaRuleIDXNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^idx_{{table}}_{{column_list}}$",
 		})
-	case api.SchemaRuleUKNaming:
-		payload, err = json.Marshal(api.NamingRulePayload{
+	case advisor.SchemaRuleUKNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^uk_{{table}}_{{column_list}}$",
 		})
-	case api.SchemaRuleFKNaming:
-		payload, err = json.Marshal(api.NamingRulePayload{
+	case advisor.SchemaRuleFKNaming:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
 			Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 		})
-	case api.SchemaRuleRequiredColumn:
-		payload, err = json.Marshal(api.RequiredColumnRulePayload{
+	case advisor.SchemaRuleRequiredColumn:
+		payload, err = json.Marshal(advisor.RequiredColumnRulePayload{
 			ColumnList: []string{
 				"id",
 				"created_ts",
@@ -1388,60 +1459,60 @@ func setDefaultSchemaReviewRulePayload(ruleTp api.SchemaReviewRuleType) (string,
 
 // prodTemplateSchemaReviewPolicy returns the default schema review policy.
 func prodTemplateSchemaReviewPolicy() (string, error) {
-	policy := api.SchemaReviewPolicy{
+	policy := advisor.SchemaReviewPolicy{
 		Name: "Prod",
-		RuleList: []*api.SchemaReviewRule{
+		RuleList: []*advisor.SchemaReviewRule{
 			{
-				Type:  api.SchemaRuleMySQLEngine,
-				Level: api.SchemaRuleLevelError,
+				Type:  advisor.SchemaRuleMySQLEngine,
+				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  api.SchemaRuleTableNaming,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleTableNaming,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleColumnNaming,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleColumnNaming,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleIDXNaming,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleIDXNaming,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleUKNaming,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleUKNaming,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleFKNaming,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleFKNaming,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleStatementNoSelectAll,
-				Level: api.SchemaRuleLevelError,
+				Type:  advisor.SchemaRuleStatementNoSelectAll,
+				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  api.SchemaRuleStatementRequireWhere,
-				Level: api.SchemaRuleLevelError,
+				Type:  advisor.SchemaRuleStatementRequireWhere,
+				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  api.SchemaRuleStatementNoLeadingWildcardLike,
-				Level: api.SchemaRuleLevelError,
+				Type:  advisor.SchemaRuleStatementNoLeadingWildcardLike,
+				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  api.SchemaRuleTableRequirePK,
-				Level: api.SchemaRuleLevelError,
+				Type:  advisor.SchemaRuleTableRequirePK,
+				Level: advisor.SchemaRuleLevelError,
 			},
 			{
-				Type:  api.SchemaRuleRequiredColumn,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleRequiredColumn,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleColumnNotNull,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleColumnNotNull,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 			{
-				Type:  api.SchemaRuleSchemaBackwardCompatibility,
-				Level: api.SchemaRuleLevelWarning,
+				Type:  advisor.SchemaRuleSchemaBackwardCompatibility,
+				Level: advisor.SchemaRuleLevelWarning,
 			},
 		},
 	}

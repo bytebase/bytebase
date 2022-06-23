@@ -3,14 +3,21 @@ package tests
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
+	"github.com/bytebase/bytebase/common/log"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestCheckEngineInnoDB(t *testing.T) {
@@ -19,11 +26,6 @@ func TestCheckEngineInnoDB(t *testing.T) {
 	ctx := context.Background()
 
 	port := getTestPort(t.Name())
-
-	t.Log("install mysqlbinlog binary")
-	tmpDir := t.TempDir()
-	mysqlutilInstance, err := mysqlutil.Install(tmpDir)
-	a.NoError(err)
 
 	t.Run("success", func(t *testing.T) {
 		port := port
@@ -51,7 +53,7 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
+		mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
@@ -85,9 +87,159 @@ func TestCheckEngineInnoDB(t *testing.T) {
 
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, "" /*binlog directory*/)
+		mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 
 		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
 		a.Error(err)
 	})
+}
+
+func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+
+	port := getTestPort(t.Name())
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	defer stopFn()
+
+	db, err := connectTestMySQL(port, "")
+	a.NoError(err)
+	defer db.Close()
+
+	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), "")
+	a.NoError(err)
+	defer driver.Close(ctx)
+
+	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	a.Equal(true, ok)
+	mysqlRestore := restoremysql.New(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
+
+	// the test MySQL instance is 8.0.
+	err = mysqlRestore.CheckServerVersionForPITR(ctx)
+	a.NoError(err)
+
+	// binlog is default to ON in MySQL 8.0.
+	err = mysqlRestore.CheckBinlogEnabled(ctx)
+	a.NoError(err)
+
+	// binlog format is default to ROW in MySQL 8.0.
+	err = mysqlRestore.CheckBinlogRowFormat(ctx)
+	a.NoError(err)
+}
+
+func TestFetchBinlogFiles(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	log.SetLevel(zapcore.DebugLevel)
+
+	port := getTestPort(t.Name())
+	_, stopFn := resourcemysql.SetupTestInstance(t, port)
+	defer stopFn()
+
+	db, err := connectTestMySQL(port, "")
+	a.NoError(err)
+	defer db.Close()
+
+	driver, err := getTestMySQLDriver(ctx, strconv.Itoa(port), "")
+	a.NoError(err)
+	defer driver.Close(ctx)
+
+	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	a.Equal(true, ok)
+	utilDir := t.TempDir()
+	utilInstance, err := mysqlutil.Install(utilDir)
+	a.NoError(err)
+	binlogDir := t.TempDir()
+	mysqlRestore := restoremysql.New(mysqlDriver, utilInstance, connCfg, binlogDir)
+
+	// init schema
+	_, err = db.ExecContext(ctx, `
+		CREATE DATABASE test;
+		USE test;
+		CREATE TABLE tbl (id int);
+		`)
+	a.NoError(err)
+
+	// Rotate to create multiple binlog files for test.
+	var startTsList []int64
+	numRotate := 10
+	// There'll be `numBinlogFiles` binlog files generated, and the last one contains no actual data.
+	numBinlogFiles := numRotate + 1
+	for i := 0; i < numRotate; i++ {
+		// Record the start event ts of the current binlog file.
+		startTsList = append(startTsList, time.Now().Unix())
+		// Insert some data to grow the current binlog file.
+		_, err = db.ExecContext(ctx, fmt.Sprintf(`
+			USE test;
+			INSERT INTO tbl VALUES (%d);
+			`, i))
+		a.NoError(err)
+		// Rotate the binlog file.
+		_, err = db.ExecContext(ctx, "FLUSH BINARY LOGS;")
+		a.NoError(err)
+	}
+	t.Logf("startTsList: %v\n", startTsList)
+
+	binlogFilesOnServerSorted, err := mysqlRestore.GetSortedBinlogFilesMetaOnServer(ctx)
+	a.NoError(err)
+
+	t.Log("Download binlog files in empty dir")
+	binlogFilesBefore, err := ioutil.ReadDir(binlogDir)
+	a.NoError(err)
+	for _, file := range binlogFilesBefore {
+		path := filepath.Join(binlogDir, file.Name())
+		err = os.Remove(path)
+		a.NoError(err)
+	}
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloaded, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	a.Equal(numBinlogFiles, len(binlogFilesDownloaded))
+	for j := range binlogFilesDownloaded {
+		a.Equal(binlogFilesOnServerSorted[j].Name, binlogFilesDownloaded[j].Name)
+		a.Equal(binlogFilesOnServerSorted[j].Size, binlogFilesDownloaded[j].Size)
+	}
+
+	t.Log("Truncate or delete downloaded files and re-download")
+	rand.Seed(time.Now().Unix())
+	// Fetch and randomly truncate/delete some binlog files.t.Log("Clean up binlog dir")
+	binlogFiles, err := ioutil.ReadDir(binlogDir)
+	a.NoError(err)
+	for _, file := range binlogFiles {
+		path := filepath.Join(binlogDir, file.Name())
+		err = os.Remove(path)
+		a.NoError(err)
+	}
+	t.Log("Fetch binlog files")
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloaded, err = restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	t.Logf("Downloaded %d files to empty dir", len(binlogFilesDownloaded))
+	truncateIndex := rand.Intn(numBinlogFiles)
+	path := filepath.Join(binlogDir, binlogFilesDownloaded[truncateIndex].Name)
+	t.Logf("Truncating file %s", binlogFilesDownloaded[truncateIndex].Name)
+	err = os.Truncate(path, 1)
+	a.NoError(err)
+	deleteIndex := rand.Intn(numBinlogFiles)
+	path = filepath.Join(binlogDir, binlogFilesDownloaded[deleteIndex].Name)
+	t.Logf("Deleting file %s", binlogFilesDownloaded[deleteIndex].Name)
+	err = os.Remove(path)
+	a.NoError(err)
+	// Re-download and check.
+	t.Log("Re-downloading binlog files")
+	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	a.NoError(err)
+	binlogFilesDownloadedAgain, err := restoremysql.GetSortedLocalBinlogFiles(binlogDir)
+	a.NoError(err)
+	a.Equal(numBinlogFiles, len(binlogFilesDownloadedAgain))
+	for i := range binlogFilesDownloadedAgain {
+		a.Equal(binlogFilesOnServerSorted[i].Name, binlogFilesDownloadedAgain[i].Name)
+		a.Equal(binlogFilesOnServerSorted[i].Size, binlogFilesDownloadedAgain[i].Size)
+	}
 }

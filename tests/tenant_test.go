@@ -392,7 +392,8 @@ func TestTenantVCS(t *testing.T) {
 	a.NoError(err)
 	a.Equal(len(issues), 1)
 	issue := issues[0]
-	status, err := ctl.waitIssuePipeline(issue.ID)
+	// Test pipeline stage patch status.
+	status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
 	a.NoError(err)
 	a.Equal(status, api.TaskDone)
 

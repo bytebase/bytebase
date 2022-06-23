@@ -12,19 +12,25 @@ import {
 } from "@/types";
 import {
   allTaskList,
+  applicableStageTransition,
   applicableTaskTransition,
   isDBAOrOwner,
+  StageStatusTransition,
   TaskStatusTransition,
 } from "@/utils";
 import { useIssueLogic } from ".";
 
 export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
-  const { activeTaskOfPipeline } = useIssueLogic();
+  const { create, activeTaskOfPipeline } = useIssueLogic();
   const currentUser = useCurrentUser();
 
   const getApplicableIssueStatusTransitionList = (
     issue: Issue
   ): IssueStatusTransition[] => {
+    if (create.value) {
+      return [];
+    }
+
     const currentTask = activeTaskOfPipeline(issue.pipeline);
 
     const issueEntity = issue as Issue;
@@ -78,9 +84,41 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
       .reverse();
   };
 
+  const getApplicableStageStatusTransitionList = (issue: Issue) => {
+    if (create.value) {
+      return [];
+    }
+    if (issue.id == ONBOARDING_ISSUE_ID) {
+      return [];
+    }
+    switch (issue.status) {
+      case "DONE":
+      case "CANCELED":
+        return [];
+      case "OPEN": {
+        let list: TaskStatusTransition[] = [];
+
+        // Allow assignee, or assignee is the system bot and current user is DBA or owner
+        if (
+          currentUser.value.id === issue.assignee?.id ||
+          (issue.assignee?.id == SYSTEM_BOT_ID &&
+            isDBAOrOwner(currentUser.value.role))
+        ) {
+          list = applicableStageTransition(issue.pipeline);
+        }
+
+        return list;
+      }
+    }
+    console.assert(false, "Should never reach this line");
+  };
+
   const getApplicableTaskStatusTransitionList = (
     issue: Issue
   ): TaskStatusTransition[] => {
+    if (create.value) {
+      return [];
+    }
     if (issue.id == ONBOARDING_ISSUE_ID) {
       return [];
     }
@@ -110,20 +148,26 @@ export const useIssueTransitionLogic = (issue: Ref<Issue>) => {
     getApplicableTaskStatusTransitionList(issue.value)
   );
 
+  const applicableStageStatusTransitionList = computed(() =>
+    getApplicableStageStatusTransitionList(issue.value)
+  );
+
   const applicableIssueStatusTransitionList = computed(() =>
     getApplicableIssueStatusTransitionList(issue.value)
   );
 
   return {
     getApplicableIssueStatusTransitionList,
+    getApplicableStageStatusTransitionList,
     getApplicableTaskStatusTransitionList,
     applicableIssueStatusTransitionList,
+    applicableStageStatusTransitionList,
     applicableTaskStatusTransitionList,
   };
 };
 
 export function isApplicableTransition<
-  T extends IssueStatusTransition | TaskStatusTransition
+  T extends IssueStatusTransition | TaskStatusTransition | StageStatusTransition
 >(target: T, list: T[]): boolean {
   return (
     list.findIndex((applicable) => {

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"go.uber.org/zap/zapcore"
 )
 
 // Status is the advisor result status.
@@ -40,11 +40,11 @@ func (e Status) String() string {
 }
 
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
+func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
-	case api.SchemaRuleLevelError:
+	case SchemaRuleLevelError:
 		return Error, nil
-	case api.SchemaRuleLevelWarning:
+	case SchemaRuleLevelWarning:
 		return Warn, nil
 	}
 	return "", fmt.Errorf("unexpected rule level type: %s", level)
@@ -56,6 +56,8 @@ type Type string
 const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
+
+	// MySQL Advisor
 
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
@@ -98,14 +100,44 @@ const (
 
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
+
+	// PostgreSQL Advisor
+
+	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
+	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
+	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
 )
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status
-	Code    common.Code
-	Title   string
-	Content string
+	Status  Status      `json:"status"`
+	Code    common.Code `json:"code"`
+	Title   string      `json:"title"`
+	Content string      `json:"content"`
+}
+
+// MarshalLogObject constructs a field that carries Advice.
+func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("status", a.Status.String())
+	enc.AddInt("code", int(a.Code))
+	enc.AddString("title", a.Title)
+	enc.AddString("content", a.Content)
+	return nil
+}
+
+// ZapAdviceArray is a helper to format zap.Array.
+type ZapAdviceArray []Advice
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range array {
+		if err := enc.AppendObject(array[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Context is the context for advisor.
@@ -114,8 +146,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *api.SchemaReviewRule
-	Catalog catalog.Service
+	Rule    *SchemaReviewRule
+	Catalog catalog.Catalog
 }
 
 // Advisor is the interface for advisor.
@@ -156,7 +188,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown db advisor type %v", dbType)
 	}
 
 	f, ok := dbAdvisors[advType]
@@ -165,4 +197,20 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	}
 
 	return f.Check(ctx, statement)
+}
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(engine db.Type) bool {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+		return true
+	}
+	return false
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(engine db.Type) bool {
+	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+		return true
+	}
+	return false
 }

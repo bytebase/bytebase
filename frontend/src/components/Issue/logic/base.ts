@@ -16,12 +16,11 @@ import {
   activeTaskInStage,
   idFromSlug,
   indexFromSlug,
-  isDev,
   issueSlug,
   stageSlug,
   taskSlug,
 } from "@/utils";
-import { useIssueStore, useProjectStore } from "@/store";
+import { useDatabaseStore, useIssueStore, useProjectStore } from "@/store";
 import { flattenTaskList, TaskTypeWithStatement } from "./common";
 
 export const useBaseIssueLogic = (params: {
@@ -33,6 +32,7 @@ export const useBaseIssueLogic = (params: {
   const router = useRouter();
   const issueStore = useIssueStore();
   const projectStore = useProjectStore();
+  const databaseStore = useDatabaseStore();
 
   const project = computed((): Project => {
     if (create.value) {
@@ -145,6 +145,17 @@ export const useBaseIssueLogic = (params: {
     return taskList[0];
   });
 
+  const selectedDatabase = computed(() => {
+    if (create.value) {
+      const databaseId = (selectedTask.value as TaskCreate).databaseId;
+      if (databaseId) {
+        return databaseStore.getDatabaseById(databaseId);
+      }
+      return undefined;
+    }
+    return (selectedTask.value as Task).database;
+  });
+
   const isTenantMode = computed((): boolean => {
     if (project.value.tenantMode !== "TENANT") return false;
     const { type } = issue.value;
@@ -161,14 +172,10 @@ export const useBaseIssueLogic = (params: {
   });
 
   const isGhostMode = computed((): boolean => {
-    if (!isDev()) return false;
-
     return issue.value.type === "bb.issue.database.schema.update.ghost";
   });
 
   const isPITRMode = computed((): boolean => {
-    if (!isDev()) return false;
-
     return issue.value.type === "bb.issue.database.pitr";
   });
 
@@ -203,6 +210,7 @@ export const useBaseIssueLogic = (params: {
     createIssue,
     selectedStage,
     selectedTask,
+    selectedDatabase,
     selectStageOrTask,
     selectTask,
     taskStatusOfStage,

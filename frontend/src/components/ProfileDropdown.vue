@@ -99,7 +99,7 @@
           @click.prevent="resetQuickstart"
           >{{ $t("common.quickstart") }}</a
         >
-        <a href="https://bytebase.com/docs" target="_blank" class="menu-item">
+        <a href="https://bytebase.com/docs?source=console" target="_blank" class="menu-item">
           {{ $t("common.help") }}
         </a>
       </div>

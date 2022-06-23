@@ -16,6 +16,8 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/google/uuid"
+	"github.com/labstack/echo-contrib/pprof"
+	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
@@ -295,6 +297,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerIssueRoutes(apiGroup)
 	s.registerIssueSubscriberRoutes(apiGroup)
 	s.registerTaskRoutes(apiGroup)
+	s.registerStageRoutes(apiGroup)
 	s.registerActivityRoutes(apiGroup)
 	s.registerInboxRoutes(apiGroup)
 	s.registerBookmarkRoutes(apiGroup)
@@ -309,7 +312,10 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return c.String(http.StatusOK, "OK!\n")
 	})
 	// Register pprof endpoints.
-	registerPProfEndpoints(e)
+	pprof.Register(e)
+	// Register prometheus metrics endpoint.
+	p := prometheus.NewPrometheus("api", nil)
+	p.Use(e)
 
 	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
 	if err != nil {
@@ -346,6 +352,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
 		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
 		metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
+		metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
 		s.MetricReporter = metricReporter
 	}
 }

@@ -167,7 +167,11 @@ export default defineComponent({
           },
         })
         .then((policy: Policy) => {
-          state.backupPolicy = policy;
+          if (type === "bb.policy.pipeline-approval") {
+            state.approvalPolicy = policy;
+          } else if (type === "bb.policy.backup-plan") {
+            state.backupPolicy = policy;
+          }
         });
     };
 

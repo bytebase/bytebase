@@ -79,7 +79,7 @@
             <template #link>
               <a
                 class="normal-link inline-flex items-center"
-                href="https://bytebase.com/docs/features/tenant-database-management#database-name-template"
+                href="https://bytebase.com/docs/features/tenant-database-management#database-name-template?source=console"
                 target="__BLANK"
               >
                 {{ $t("common.learn-more") }}

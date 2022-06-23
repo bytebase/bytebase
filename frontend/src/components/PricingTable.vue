@@ -35,10 +35,13 @@
               </p>
 
               <p class="mt-4 flex items-baseline text-gray-900 text-xl">
+                <span v-if="plan.pricePrefix" class="text-3xl">
+                  {{ plan.pricePrefix }}&nbsp;</span
+                >
                 <span class="text-4xl">
                   ${{ plan.pricePerInstancePerMonth }}
                 </span>
-                {{ $t("subscription.per-month") }}
+                {{ plan.priceUnit }}
               </p>
 
               <div class="text-gray-400">
@@ -54,12 +57,18 @@
                   plan.highlight
                     ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
                     : 'border-accent text-accent hover:bg-accent',
-                  'mt-8 block w-full border rounded-md py-2 lg:py-4 text-sm md:text-base font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
+                  'mt-8 block w-full border rounded-md py-2 lg:py-4 text-sm md:text-xl font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
                 ]"
                 @click="onButtonClick(plan)"
               >
                 {{ plan.buttonText }}
               </button>
+              <div
+                v-if="canTrial && plan.trialDays"
+                class="font-bold text-sm my-2 text-center"
+              >
+                {{ $t("subscription.free-trial") }}
+              </div>
             </div>
           </td>
         </tr>
@@ -70,7 +79,7 @@
         <template #cancel>
           <a
             class="underline"
-            href="https://bytebase.com/refund"
+            href="https://bytebase.com/refund?source=console"
             target="_blank"
             >{{ $t("subscription.cancel") }}</a
           >
@@ -145,7 +154,7 @@
           <td v-for="plan in plans" :key="plan.type" class="pt-5 px-6">
             <button
               v-if="!plan.isFreePlan"
-              class="block w-full py-4 bg-gray-800 border border-gray-800 rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-gray-900"
+              class="block w-full bg-gray-800 border border-gray-800 rounded-md py-2 text-lg font-semibold text-white text-center hover:bg-gray-900"
               @click="onButtonClick(plan)"
             >
               {{ plan.buttonText }}
@@ -193,19 +202,25 @@
             plan.highlight
               ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
               : 'border-accent text-accent hover:bg-accent',
-            'mt-8 block w-full border rounded-md py-4 text-base font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
+            'mt-8 block w-full border rounded-md py-4 font-semibold text-center text-xl hover:text-white whitespace-nowrap overflow-hidden',
           ]"
           @click="onButtonClick(plan)"
         >
           {{ plan.buttonText }}
         </button>
+        <div
+          v-if="canTrial && plan.trialDays"
+          class="font-bold text-sm my-2 text-center"
+        >
+          {{ $t("subscription.free-trial") }}
+        </div>
 
         <div v-if="plan.isAvailable" class="px-4 py-8 text-right text-gray-500">
           <i18n-t keypath="subscription.announcement">
             <template #cancel>
               <a
                 class="underline"
-                href="https://bytebase.com/refund"
+                href="https://bytebase.com/refund?source=console"
                 target="_blank"
                 >{{ $t("subscription.cancel") }}</a
               >
@@ -282,7 +297,7 @@
           plan.highlight
             ? 'border-indigo-500  text-white  bg-indigo-500 hover:bg-indigo-600 hover:border-indigo-600'
             : 'border-accent text-accent hover:bg-accent',
-          'mt-8 block w-full border rounded-md py-4 text-base font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
+          'mt-8 block w-full border rounded-md py-4 text-lg font-semibold text-center hover:text-white whitespace-nowrap overflow-hidden',
         ]"
         @click="onButtonClick(plan)"
       >
@@ -293,10 +308,9 @@
 </template>
 
 <script lang="ts">
-import { reactive, computed, watch, PropType, defineComponent } from "vue";
+import { reactive, computed, watch, defineComponent } from "vue";
 import {
   Plan,
-  Subscription,
   PlanType,
   FEATURE_SECTIONS,
   FREE_PLAN,
@@ -304,6 +318,7 @@ import {
   ENTERPRISE_PLAN,
 } from "../types";
 import { useI18n } from "vue-i18n";
+import { useSubscriptionStore } from "@/store";
 
 interface LocalState {
   isMonthly: boolean;
@@ -313,49 +328,32 @@ interface LocalState {
 interface LocalPlan extends Plan {
   label: string;
   image: string;
-  price: string;
   buttonText: string;
   highlight: boolean;
   isFreePlan: boolean;
   isAvailable: boolean;
+  pricePrefix: string;
+  priceUnit: string;
 }
 
 const minimumInstanceCount = 5;
 
 export default defineComponent({
   name: "PricingTable",
-  props: {
-    subscription: {
-      required: false,
-      default: undefined,
-      type: Object as PropType<Subscription>,
-    },
-  },
-  setup(props) {
+  setup() {
     const { t } = useI18n();
+    const subscriptionStore = useSubscriptionStore();
     const state = reactive<LocalState>({
       isMonthly: false,
-      instanceCount: props.subscription?.instanceCount ?? minimumInstanceCount,
+      instanceCount:
+        subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
     });
 
     watch(
-      () => props.subscription,
+      () => subscriptionStore.subscription,
       (val) =>
         (state.instanceCount = val?.instanceCount ?? minimumInstanceCount)
     );
-
-    const getInstancePricePerYear = (plan: Plan): number => {
-      return (
-        (state.instanceCount - minimumInstanceCount) *
-        plan.pricePerInstancePerMonth *
-        12
-      );
-    };
-
-    const getPlanPrice = (plan: Plan): number => {
-      if (plan.type !== PlanType.TEAM) return plan.unitPrice;
-      return plan.unitPrice + getInstancePricePerYear(plan);
-    };
 
     const plans = computed((): LocalPlan[] => {
       return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
@@ -364,15 +362,17 @@ export default defineComponent({
           `../assets/plan-${plan.title.toLowerCase()}.png`,
           import.meta.url
         ).href,
-        price:
-          plan.type === PlanType.ENTERPRISE
-            ? t("subscription.contact-us")
-            : t("subscription.price", { price: getPlanPrice(plan) }),
         buttonText: getButtonText(plan),
         highlight: plan.type === PlanType.TEAM,
         isAvailable: plan.type === PlanType.TEAM,
         isFreePlan: plan.type === PlanType.FREE,
         label: t(`subscription.plan.${plan.title}.label`),
+        pricePrefix:
+          plan.type === PlanType.ENTERPRISE ? t("subscription.start-from") : "",
+        priceUnit:
+          plan.type === PlanType.ENTERPRISE
+            ? t("subscription.price-unit-for-enterprise")
+            : t("subscription.per-month"),
       }));
     });
 
@@ -384,21 +384,19 @@ export default defineComponent({
       if (plan.type === PlanType.FREE) return t("subscription.deploy");
       if (plan.type === PlanType.ENTERPRISE)
         return t("subscription.contact-us");
-      if (plan.type === props.subscription?.plan)
+
+      if (subscriptionStore.isTrialing) return t("subscription.subscribe");
+      if (plan.type === subscriptionStore.subscription?.plan)
         return t("subscription.upgrade");
-      if (plan.trialDays && plan.trialPrice) {
-        return t("subscription.start-trial", {
-          price: plan.trialPrice,
-          days: plan.trialDays,
-        });
-      }
+      if (plan.trialDays) return t("subscription.start-trial");
+
       return t("subscription.subscribe");
     };
 
     const onButtonClick = (plan: Plan) => {
       if (plan.type === PlanType.TEAM) {
         window.open(
-          "https://hub.bytebase.com/pricing?plan=team&source=console.subscription",
+          "https://bytebase.com/pricing?source=console.subscription",
           "__blank"
         );
       } else if (plan.type === PlanType.ENTERPRISE) {
@@ -406,13 +404,18 @@ export default defineComponent({
           "mailto:support@bytebase.com?subject=Request for enterprise plan"
         );
       } else {
-        window.open("https://bytebase.com/docs", "_self");
+        window.open("https://bytebase.com/docs?source=console", "_self");
       }
     };
+
+    const canTrial = computed((): boolean => {
+      return subscriptionStore.currentPlan === PlanType.FREE;
+    });
 
     return {
       state,
       plans,
+      canTrial,
       sections: FEATURE_SECTIONS,
       getFeature,
       onButtonClick,

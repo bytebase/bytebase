@@ -197,7 +197,9 @@
     "clear-search": "Clear search",
     "enable": "Enable",
     "disable": "Disable",
-    "view-doc": "View doc"
+    "view-doc": "View doc",
+    "backup-and-restore": "Backup and restore",
+    "write-only": "write only"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -261,7 +263,9 @@
   "banner": {
     "demo-intro": "This is a demo version of Bytebase.",
     "demo-intro-readonly": "This is a demo version of Bytebase in read-only mode.",
-    "trial-expires": "Your trial for {plan} plan will expires in {days} days.",
+    "update-license": "Update license",
+    "license-expires": "Your license for {plan} has expired on {expireAt}.",
+    "trial-expires": "Your free trial for {plan} will expire in {days} days on {expireAt}.",
     "extend-trial": "Extend trialing time",
     "action": "Deploy yours in 5 seconds",
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown."
@@ -477,7 +481,8 @@
       }
     },
     "new-issue": "@:common.new @:common.issue",
-    "format-on-save": "Format on save"
+    "format-on-save": "Format on save",
+    "action-to-current-stage": "{action} current stage"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -685,6 +690,7 @@
   "policy": {
     "approval": {
       "name": "Approval Policy",
+      "tip": "The policy is not applied retroactively.",
       "info": "For updating schema on the existing database, this setting controls whether the task requires manual approval.",
       "manual": "Require manual approval",
       "manual-info": "Pending schema migration task will only be executed after it's manually approved.",
@@ -693,6 +699,7 @@
     },
     "backup": {
       "name": "Database backup schedule policy",
+      "tip": "The policy is not applied retroactively.",
       "not-enforced": "Not enforced",
       "not-enforced-info": "No backup schedule is enforced.",
       "daily": "Daily backup",
@@ -706,13 +713,15 @@
     "workflow": "Workflow",
     "commit-info": "by {author} at {time}",
     "no-schema-change": "this migration has no schema change",
-    "schema-drift": "Schema drift detected",
+    "schema-drift": "Schema drift",
+    "schema-drift-detected": "A schema drift was detected.",
+    "view-drift": "View drift",
     "before-left-schema-choice": "Compare the schema",
     "left-schema-choice-prev-history-schema": "after prev migration",
     "left-schema-choice-current-history-schema-prev": "before this migration",
     "after-left-schema-choice": "and after this migration",
     "show-diff": "Show diff",
-    "left-vs-right": "Prev (left) vs This version (right)",
+    "left-vs-right": "Prev {prevLink} vs This version",
     "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
     "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
     "no-history-in-project": "Do not find migration history from any database in this project.",
@@ -802,7 +811,10 @@
       "no-available-backup": "No available backup",
       "point-in-time": "Point in time",
       "help-info": "Restore the database state to a point in time. {link}.",
-      "minimum-supported-engine-and-version": "{engine} >= {min_version} required"
+      "minimum-supported-engine-and-version": "{engine} >= {min_version} required",
+      "restore-to-point-in-time": "Restore to point in time",
+      "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
+      "no-later-than-now": "Restore point-in-time cannot be later than now."
     }
   },
   "repository": {
@@ -1103,7 +1115,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "We also linked the granted database to the requested issue '{0}'.",
     "new-data-source": "New data source",
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "None"
+    },
+    "ssl": {
+      "ca-cert": "CA Certificate",
+      "client-key": "Client Key",
+      "client-cert": "Client Certificate"
+    },
+    "ssl-connection": "SSL Connection"
   },
   "setting": {
     "project": {
@@ -1156,7 +1179,7 @@
     "view-all-tabs": "View all Tabs",
     "sheet": "Sheet",
     "sheets": "Sheets",
-    "connection-holder": "Select a connection from left panel to get started",
+    "connection-holder": "Set a connection context from left panel to get started",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -1168,7 +1191,8 @@
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
     "untitled-sheet": "Untitled Sheet",
-    "format": "Format"
+    "format": "Format",
+    "sql-review-result": "SQL review result"
   },
   "label": {
     "empty-label-value": "<Empty Value>",
@@ -1203,21 +1227,24 @@
     "current": "Current plan",
     "instance-count": "Instance count",
     "expires-at": "Expires at",
+    "free-trial": "Your first 14 days are free - no credit card required",
     "description-highlight": "Purchase a license",
     "sensitive-placeholder": "Paste your license here - write only",
     "upload-license": "Upload license",
     "plan-compare": "Compare features between different plans",
     "disabled-feature": "This is a premium feature in subscription plan",
-    "trial": "You can start a trial with $14 for 14 days.",
+    "trial": "You can start a free trial - no credit card required",
     "upgrade": "Upgrade subscription",
     "per-month": "/ month",
+    "price-unit-for-enterprise": "/ month",
+    "start-from": "Start from",
     "per-instance": "Per instance",
     "free-price-intro": "Up to 5",
     "team-price-intro": "5 minimum, billed annually",
     "enterprise-price-intro": "Customized, billed annually",
     "deploy": "Deploy",
     "contact-us": "Contact us",
-    "start-trial": "Start trial with ${price} for {days} days",
+    "start-trial": "Try free now",
     "subscribe": "Subscribe now",
     "current-plan": "Current plan",
     "buy": "Buy {plan} plan",
@@ -1260,11 +1287,11 @@
       },
       "bb-feature-schema-review-policy": {
         "title": "Schema review policy",
-        "desc": "Customize the schema review policy for different environments. @:{'subscription.upgrade'} to unlock this feature."
+        "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
       },
       "bb-feature-rbac": {
         "title": "Role management",
-        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.upgrade'} to unlock this feature."
+        "desc": "Role management can assign a particular role (e.g. DBA) to a member. @:{'subscription.trial'}."
       },
       "bb-feature-schema-drift": {
         "title": "Schema drift",
@@ -1272,7 +1299,7 @@
       },
       "bb-feature-3rd-party-auth": {
         "title": "3rd party authentication & authorization",
-        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.upgrade'} to unlock this feature.",
+        "desc": "Bytebase supports 3rd-party authentication & authorization based on your VCS configuration. @:{'subscription.trial'}.",
         "login": "@:{'subscription.upgrade'} to unlock this feature"
       },
       "bb-feature-branding": {
@@ -1291,9 +1318,13 @@
           "schema-change": "Schema and data change",
           "migration-history": "Migration history",
           "sql-editor": "SQL Editor",
-          "database-backup-restore": "Database backup / restore",
+          "disaster-recovery": "Disaster recovery",
+          "disaster-recovery-basic": "Basic",
+          "disaster-recovery-basic-tooltip": "Database backup / restore",
+          "disaster-recovery-advanced": "Advanced",
+          "disaster-recovery-advanced-tooltip": "Database backup / restore + Point-in-Time-Recovery (PITR)",
           "archiving": "Archiving",
-          "sql-check": "SQL check",
+          "sql-check": "SQL check / Schema review",
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",

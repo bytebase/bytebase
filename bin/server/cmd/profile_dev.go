@@ -29,6 +29,7 @@ func activeProfile(dataDir string) server.Profile {
 		DemoDataDir:          fmt.Sprintf("demo/%s", common.ReleaseModeDev),
 		BackupRunnerInterval: 10 * time.Second,
 		Version:              version,
+		GitCommit:            gitcommit,
 		PgURL:                flags.pgURL,
 		MetricConnectionKey:  "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT",
 	}

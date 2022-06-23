@@ -1,15 +1,18 @@
 <template>
-  <BBTooltipButton
-    type="normal"
-    tooltip-mode="DISABLED-ONLY"
-    :disabled="!allowAdmin || !pitrAvailable.result"
-    @click="openDialog"
-  >
-    {{ $t("common.restore") }}
-    <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
-      {{ pitrAvailable.message }}
-    </template>
-  </BBTooltipButton>
+  <div class="relative mr-6">
+    <BBTooltipButton
+      type="normal"
+      tooltip-mode="DISABLED-ONLY"
+      :disabled="!allowAdmin || !pitrAvailable.result"
+      @click="openDialog"
+    >
+      {{ $t("database.pitr.restore-to-point-in-time") }}
+      <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
+        {{ pitrAvailable.message }}
+      </template>
+    </BBTooltipButton>
+    <BBBetaBadge corner />
+  </div>
 
   <BBModal
     v-if="state.showDatabasePITRModal"
@@ -23,6 +26,7 @@
             <a
               class="normal-link inline-flex items-center"
               href="https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md"
+              target="__BLANK"
             >
               {{ $t("common.learn-more") }}
             </a>
@@ -35,17 +39,14 @@
           <span>{{ $t("database.pitr.point-in-time") }}</span>
           <span class="text-gray-400 text-xs">{{ timezone }}</span>
         </label>
-        <!--
-            Displaying an input box and a popover date picker panel is somehow
-            awkward here.
-            But it's impossible to use NDatePicker only as a panel by now.
-            I've sent the feature request to the author.
-          -->
         <NDatePicker
           v-model:value="state.pitrTimestampMS"
+          panel
           type="datetime"
-          :is-date-disabled="isDateDisabled"
-          :actions="['confirm']"
+          :actions="[]"
+          :time-picker-props="{
+            actions: [],
+          }"
         />
       </div>
 
@@ -59,13 +60,21 @@
         >
           {{ $t("common.cancel") }}
         </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          @click.prevent="onConfirm"
+
+        <BBTooltipButton
+          type="primary"
+          tooltip-mode="DISABLED-ONLY"
+          :disabled="!!pitrTimestampError"
+          class="ml-3"
+          @click="onConfirm"
         >
           {{ $t("common.confirm") }}
-        </button>
+          <template #tooltip>
+            <div class="whitespace-pre-wrap max-w-[20rem]">
+              {{ pitrTimestampError }}
+            </div>
+          </template>
+        </BBTooltipButton>
       </div>
 
       <div
@@ -83,6 +92,7 @@ import { computed, PropType, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { NDatePicker } from "naive-ui";
 import dayjs from "dayjs";
+import { useI18n } from "vue-i18n";
 import { Database } from "@/types";
 import { usePITRLogic } from "@/plugins";
 import { issueSlug } from "@/utils";
@@ -105,6 +115,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const { t } = useI18n();
 
 const state = reactive<LocalState>({
   showDatabasePITRModal: false,
@@ -118,26 +129,32 @@ const { pitrAvailable, doneBackupList, createPITRIssue } = usePITRLogic(
   computed(() => props.database)
 );
 
-const earliest = computed(() => {
+const earliest = computed((): number => {
   if (!pitrAvailable.value) {
     return Infinity;
   }
   const timestamps = doneBackupList.value.map((backup) => backup.createdTs);
   const earliestAllowedRestoreTS = Math.min(...timestamps);
-  return dayjs(earliestAllowedRestoreTS * 1000);
+  return earliestAllowedRestoreTS * 1000;
 });
 
-const isDateDisabled = (tsInMS: number) => {
-  const date = dayjs(tsInMS);
-  if (date.isBefore(earliest.value, "day")) {
-    return true;
+const pitrTimestampError = computed((): string | undefined => {
+  const val = state.pitrTimestampMS;
+  const now = Date.now();
+  const min = earliest.value;
+  if (val < min) {
+    const formattedMin = `${dayjs(min).format("YYYY-MM-DD HH:mm:ss")} ${
+      timezone.value
+    }`;
+    return t("database.pitr.no-earlier-than", {
+      earliest: formattedMin,
+    });
   }
-  const now = dayjs();
-  if (date.isAfter(now, "day")) {
-    return true;
+  if (val > now) {
+    return t("database.pitr.no-later-than-now");
   }
-  return false;
-};
+  return undefined;
+});
 
 const resetUI = () => {
   state.loading = false;

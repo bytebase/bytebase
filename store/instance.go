@@ -155,7 +155,7 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
-func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, rowStatus api.RowStatus) ([]*metric.InstanceCountMetric, error) {
+func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
@@ -163,13 +163,10 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 	defer tx.PTx.Rollback()
 
 	rows, err := tx.PTx.QueryContext(ctx, `
-		SELECT engine, environment_id, COUNT(*)
+		SELECT engine, environment_id, row_status, COUNT(*)
 		FROM instance
-		WHERE row_status = $1 AND (
-			(id <= 102 AND updater_id != 1) OR id > 102
-		)
-		GROUP BY engine, environment_id`,
-		rowStatus,
+		WHERE (id <= 101 AND updater_id != 1) OR id > 101
+		GROUP BY engine, environment_id, row_status`,
 	)
 	if err != nil {
 		return nil, FormatError(err)
@@ -180,7 +177,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context, 
 
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.Count); err != nil {
+		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
@@ -204,6 +201,25 @@ func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int
 		}
 	}
 	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
+}
+
+// GetInstanceSslSuiteByID gets ssl suite of instance.
+func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db.TLSConfig, error) {
+	dataSourceFind := &api.DataSourceFind{
+		InstanceID: &instanceID,
+	}
+	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	if err != nil {
+		return db.TLSConfig{}, err
+	}
+	for _, dataSourceRaw := range dataSourceRawList {
+		return db.TLSConfig{
+			SslCA:   dataSourceRaw.SslCa,
+			SslKey:  dataSourceRaw.SslKey,
+			SslCert: dataSourceRaw.SslCert,
+		}, nil
+	}
+	return db.TLSConfig{}, &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing ssl suite for instance with ID %d", instanceID)}
 }
 
 //
@@ -298,6 +314,9 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		Type:       api.Admin,
 		Username:   create.Username,
 		Password:   create.Password,
+		SslKey:     create.SslKey,
+		SslCert:    create.SslCert,
+		SslCa:      create.SslCa,
 	}
 	if err := s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err

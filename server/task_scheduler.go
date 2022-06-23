@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor"
 
 	"go.uber.org/zap"
 )
@@ -102,6 +102,11 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 				for _, task := range taskList {
 					if task.ID == api.OnboardingTaskID1 || task.ID == api.OnboardingTaskID2 {
+						continue
+					}
+
+					// Skip task belongs to archived instances
+					if i := task.Instance; i == nil || i.RowStatus == api.Archived {
 						continue
 					}
 
@@ -272,8 +277,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if instance == nil {
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
-		// For now we only supported MySQL dialect syntax and compatibility check
-		if instance.Engine == db.MySQL || instance.Engine == db.TiDB {
+		if advisor.IsSyntaxCheckSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
@@ -281,15 +285,15 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			if !pass {
 				return task, nil
 			}
+		}
 
-			if s.server.feature(api.FeatureSchemaReviewPolicy) {
-				pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
-				if err != nil {
-					return nil, err
-				}
-				if !pass {
-					return task, nil
-				}
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
+			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
+			if err != nil {
+				return nil, err
+			}
+			if !pass {
+				return task, nil
 			}
 		}
 	}

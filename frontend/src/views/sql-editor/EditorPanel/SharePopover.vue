@@ -1,6 +1,6 @@
 <template>
-  <div class="share-popover w-112 p-2 space-y-4">
-    <section class="flex justify-between">
+  <div class="share-popover w-96 p-2 space-y-4">
+    <section class="w-full flex flex-row justify-between items-center">
       <div class="pr-4">
         <h2 class="text-lg font-semibold">{{ $t("common.share") }}</h2>
       </div>
@@ -11,8 +11,12 @@
             @click="isShowAccessPopover = !isShowAccessPopover"
           >
             <span class="pr-2">{{ $t("sql-editor.link-access") }}:</span>
-            <strong>{{ currentAccess.label }}</strong>
-            <heroicons-solid:chevron-down />
+            <div
+              class="border flex flex-row justify-start items-center px-2 py-1 rounded hover:border-accent"
+            >
+              <strong>{{ currentAccess.label }}</strong>
+              <heroicons-solid:chevron-down />
+            </div>
           </div>
         </template>
         <div class="access-content space-y-2 w-80">
@@ -58,8 +62,12 @@
       </NPopover>
     </section>
     <NInputGroup class="flex items-center justify-center">
-      <n-input-group-label class="flex items-center">
-        <heroicons-solid:link class="h-4 w-4" />
+      <n-input-group-label>
+        <div
+          class="w-full h-full flex flex-row items-center justify-center m-auto"
+        >
+          <heroicons-solid:link class="w-5 h-auto" />
+        </div>
       </n-input-group-label>
       <n-input v-model:value="sharedTabLink" disabled />
       <NButton
@@ -80,7 +88,6 @@ import { ref, computed, onMounted } from "vue";
 import { useClipboard } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import slug from "slug";
-
 import {
   pushNotification,
   useTabStore,
@@ -88,10 +95,6 @@ import {
   useSheetStore,
 } from "@/store";
 import { AccessOption } from "@/types";
-
-const emit = defineEmits<{
-  (e: "close"): void;
-}>();
 
 const { t } = useI18n();
 const tabStore = useTabStore();
@@ -119,11 +122,9 @@ const accessOptions = computed<AccessOption[]>(() => {
 });
 
 const ctx = computed(() => sqlEditorStore.connectionContext);
-
 const sheet = computed(() => sheetStore.currentSheet);
 const creator = computed(() => sheetStore.isCreator);
 
-const host = window.location.host;
 const connectionSlug = [
   slug(ctx.value.instanceName as string),
   ctx.value.instanceId,
@@ -164,7 +165,9 @@ const handleChangeAccess = (option: AccessOption) => {
 const sheetSlug = `${slug(tabStore.currentTab.name)}_${
   tabStore.currentTab.sheetId
 }`;
-const sharedTabLink = ref(`${host}/sql-editor/${connectionSlug}/${sheetSlug}`);
+const sharedTabLink = ref(
+  `${window.location.origin}/sql-editor/${connectionSlug}/${sheetSlug}`
+);
 
 const { copy, copied } = useClipboard({
   source: sharedTabLink.value,
@@ -177,7 +180,6 @@ const handleCopy = async () => {
     style: "SUCCESS",
     title: t("sql-editor.notify.copy-share-link"),
   });
-  emit("close");
 };
 
 onMounted(() => {

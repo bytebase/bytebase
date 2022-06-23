@@ -325,8 +325,8 @@ const routes: Array<RouteRecordRaw> = [
                   title: () => t("common.projects"),
                   quickActionListByRole: () => {
                     return new Map([
-                      ["OWNER", ["quickaction.bb.project.create"]],
-                      ["DBA", ["quickaction.bb.project.create"]],
+                      ["OWNER", []],
+                      ["DBA", []],
                       ["DEVELOPER", []],
                     ]);
                   },
@@ -753,7 +753,9 @@ const routes: Array<RouteRecordRaw> = [
                   allowBookmark: true,
                 },
                 component: () => import("../views/MigrationHistoryDetail.vue"),
-                props: true,
+                props: (to) => ({
+                  key: to.fullPath, // force refresh the component when slug changed
+                }),
               },
             ],
           },

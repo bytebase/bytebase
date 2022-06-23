@@ -59,6 +59,7 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 		Type:           db.Baseline,
 		Description:    "Create database",
 		CreateDatabase: true,
+		Force:          true,
 	}
 	creator, err := server.store.GetPrincipalByID(ctx, task.CreatorID)
 	if err != nil {
@@ -103,20 +104,35 @@ func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	// 1. Assign the proper project to the newly created database. Otherwise, the periodic schema
 	// sync will place the synced db into the default project.
 	// 2. Allow user to see the created database right away.
-	databaseCreate := &api.DatabaseCreate{
-		CreatorID:     api.SystemBotID,
-		ProjectID:     payload.ProjectID,
-		InstanceID:    task.InstanceID,
-		EnvironmentID: instance.EnvironmentID,
-		Name:          payload.DatabaseName,
-		CharacterSet:  payload.CharacterSet,
-		Collation:     payload.Collation,
-		Labels:        &payload.Labels,
-		SchemaVersion: payload.SchemaVersion,
-	}
-	database, err := server.store.CreateDatabase(ctx, databaseCreate)
+	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{InstanceID: &task.InstanceID, Name: &payload.DatabaseName})
 	if err != nil {
 		return true, nil, err
+	}
+	if database == nil {
+		databaseCreate := &api.DatabaseCreate{
+			CreatorID:     api.SystemBotID,
+			ProjectID:     payload.ProjectID,
+			InstanceID:    task.InstanceID,
+			EnvironmentID: instance.EnvironmentID,
+			Name:          payload.DatabaseName,
+			CharacterSet:  payload.CharacterSet,
+			Collation:     payload.Collation,
+			Labels:        &payload.Labels,
+			SchemaVersion: payload.SchemaVersion,
+		}
+		createdDatabase, err := server.store.CreateDatabase(ctx, databaseCreate)
+		if err != nil {
+			return true, nil, err
+		}
+		database = createdDatabase
+	} else {
+		// The database didn't exist before the current run so there was a race condition between sync schema and migration execution.
+		// We need to update the project ID from the default project to the target project.
+		updatedDatabase, err := server.store.PatchDatabase(ctx, &api.DatabasePatch{ID: database.ID, UpdaterID: api.SystemBotID, ProjectID: &payload.ProjectID})
+		if err != nil {
+			return true, nil, err
+		}
+		database = updatedDatabase
 	}
 
 	// After the task related database entry created successfully,

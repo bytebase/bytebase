@@ -75,6 +75,7 @@ p, OWNER, /inbox/{id}, PATCH_SELF
 p, OWNER, /bookmark, POST
 p, OWNER, /bookmark/user/{userID}, GET_SELF
 p, OWNER, /bookmark/{id}, DELETE_SELF
+p, OWNER, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, OWNER, /pipeline/{pipelineID}/task/{taskID}/check, POST

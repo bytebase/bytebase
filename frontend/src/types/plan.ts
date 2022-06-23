@@ -70,7 +70,7 @@ export const FEATURE_SECTIONS = [
       "schema-change",
       "migration-history",
       "sql-editor",
-      "database-backup-restore",
+      "disaster-recovery",
       "archiving",
       "sql-check",
       "anomaly-detection",
@@ -123,7 +123,13 @@ export const FREE_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -153,9 +159,9 @@ export const TEAM_PLAN: Plan = {
   type: PlanType.TEAM,
   trialDays: 14,
   unitPrice: 1740,
-  trialPrice: 14,
+  trialPrice: 0,
   freeInstanceCount: 5,
-  pricePerInstancePerMonth: 29,
+  pricePerInstancePerMonth: 79,
   // Plan desc and feature
   title: "team",
   features: [
@@ -167,7 +173,13 @@ export const TEAM_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -201,7 +213,7 @@ export const TEAM_PLAN: Plan = {
 export const ENTERPRISE_PLAN: Plan = {
   // Plan meta data
   type: PlanType.ENTERPRISE,
-  trialDays: 7,
+  trialDays: 0,
   unitPrice: 0,
   trialPrice: 0,
   freeInstanceCount: 5,
@@ -217,7 +229,13 @@ export const ENTERPRISE_PLAN: Plan = {
     { id: "schema-change" },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",

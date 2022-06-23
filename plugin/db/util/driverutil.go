@@ -159,7 +159,14 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Branch migration type always has empty sql.
 	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
 	// https://github.com/bytebase/bytebase/issues/394
-	if statement != "" && (m.Type != db.Baseline || m.CreateDatabase) {
+	doMigrate := true
+	if statement == "" {
+		doMigrate = false
+	}
+	if m.Type == db.Baseline && !m.CreateDatabase {
+		doMigrate = false
+	}
+	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
 			if _, err := executor.GetDbConnection(ctx, m.Database); err != nil {
@@ -200,11 +207,21 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			return -1, common.Errorf(common.MigrationAlreadyApplied,
 				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
-			return -1, common.Errorf(common.MigrationPending,
-				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
+			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return int64(list[0].ID), nil
+			}
+			return -1, common.Errorf(common.MigrationPending, err)
 		case db.Failed:
-			return -1, common.Errorf(common.MigrationFailed,
-				fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version))
+			err := fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return int64(list[0].ID), nil
+			}
+			return -1, common.Errorf(common.MigrationFailed, err)
 		}
 	}
 

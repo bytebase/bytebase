@@ -15,6 +15,9 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
+        <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
+          $t("policy.approval.tip")
+        }}</span>
         <div class="mt-1 textinfolabel">
           {{ $t("policy.approval.info") }}
         </div>
@@ -63,6 +66,9 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
+        <span v-show="valueChanged('backupPolicy')" class="textlabeltip">{{
+          $t("policy.backup.tip")
+        }}</span>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
@@ -128,7 +134,7 @@
           </div>
         </div>
       </div>
-      <div class="col-span-1" v-if="!create">
+      <div v-if="!create" class="col-span-1">
         <label class="textlabel">
           {{ $t("schema-review-policy.title") }}
         </label>
@@ -211,7 +217,7 @@
         <button
           type="button"
           class="btn-normal py-2 px-4"
-          :disabled="!valueChanged"
+          :disabled="!valueChanged()"
           @click.prevent="revertEnvironment"
         >
           {{ $t("common.revert") }}
@@ -219,7 +225,7 @@
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged"
+          :disabled="!valueChanged()"
           @click.prevent="updateEnvironment"
         >
           {{ $t("common.update") }}
@@ -386,17 +392,29 @@ export default defineComponent({
       );
     });
 
-    const valueChanged = computed(() => {
-      return (
-        !isEqual(props.environment, state.environment) ||
-        !isEqual(props.approvalPolicy, state.approvalPolicy) ||
-        !isEqual(props.backupPolicy, state.backupPolicy)
-      );
-    });
-
     const allowCreate = computed(() => {
       return !isEmpty(state.environment?.name);
     });
+
+    const valueChanged = (
+      field?: "environment" | "approvalPolicy" | "backupPolicy"
+    ): boolean => {
+      switch (field) {
+        case "environment":
+          return !isEqual(props.environment, state.environment);
+        case "approvalPolicy":
+          return !isEqual(props.approvalPolicy, state.approvalPolicy);
+        case "backupPolicy":
+          return !isEqual(props.backupPolicy, state.backupPolicy);
+
+        default:
+          return (
+            !isEqual(props.environment, state.environment) ||
+            !isEqual(props.approvalPolicy, state.approvalPolicy) ||
+            !isEqual(props.backupPolicy, state.backupPolicy)
+          );
+      }
+    };
 
     const revertEnvironment = () => {
       state.environment = cloneDeep(props.environment!);

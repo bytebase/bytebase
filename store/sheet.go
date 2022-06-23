@@ -159,7 +159,7 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT row_status, visibility, source, type, COUNT(*) AS count
-		FROM sheets
+		FROM sheet
 		GROUP BY row_status, visibility, source, type`)
 	if err != nil {
 		return nil, FormatError(err)

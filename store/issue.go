@@ -153,6 +153,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM issue
+		WHERE (id <= 101 AND updater_id != 1) OR id > 101
 		GROUP BY type, status`,
 	)
 	if err != nil {

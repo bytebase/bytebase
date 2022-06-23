@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // memberRaw is the store model for an Member.
@@ -123,6 +124,38 @@ func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.M
 		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
 	}
 	return member, nil
+}
+
+// CountMemberGroupByRoleAndStatus counts the number of member and group by role and status.
+// Used by the metric collector.
+func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.MemberCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT role, status, row_status, COUNT(*)
+		FROM member
+		GROUP BY role, status, row_status`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.MemberCountMetric
+
+	for rows.Next() {
+		var metric metric.MemberCountMetric
+		if err := rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+
+	return res, nil
 }
 
 //

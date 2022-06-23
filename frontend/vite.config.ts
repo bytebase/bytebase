@@ -8,7 +8,6 @@ import Components from "unplugin-vue-components/vite";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
 const HTTPS_PORT = 443;
-const r = (...args: string[]) => resolve(__dirname, ...args);
 
 export default defineConfig(() => {
   // NOTE: the following lines is to solve https://github.com/gitpod-io/gitpod/issues/6719
@@ -24,7 +23,7 @@ export default defineConfig(() => {
         include: [resolve(__dirname, "src/locales/**")],
       }),
       Components({
-        dirs: [r("src/components"), r("src/bbkit")],
+        dirs: [resolve("src/components"), resolve("src/bbkit")],
         // auto import icons
         resolvers: [
           IconsResolver({

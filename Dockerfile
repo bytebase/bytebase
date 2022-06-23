@@ -28,6 +28,7 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
+# Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
 # Need gcc musl-dev for CGO_ENABLED=1
@@ -61,6 +62,11 @@ LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
+
+# We need copy timezone file from backend layer.
+# Otherwise, clickhouse cannot be connected due to the missing time zone file in alpine.
+COPY --from=backend /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
+ENV ZONEINFO /opt/zoneinfo.zip
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 

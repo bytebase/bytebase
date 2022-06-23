@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -147,6 +148,24 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
 				if err := s.instanceCountGuard(ctx); err != nil {
 					return err
+				}
+			}
+			// Ensure all databases belong to this instance are under the default project before instance is archived.
+			if v := instancePatch.RowStatus; v != nil && *v == api.Archived.String() {
+				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError,
+						fmt.Errorf("Failed to find databases in the instance %d", id)).SetInternal(err)
+				}
+				var databaseNameList []string
+				for _, database := range databases {
+					if database.ProjectID != api.DefaultProjectID {
+						databaseNameList = append(databaseNameList, database.Name)
+					}
+				}
+				if len(databaseNameList) > 0 {
+					return echo.NewHTTPError(http.StatusBadRequest,
+						fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
 				}
 			}
 			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)

@@ -122,6 +122,10 @@
   @apply text-sm font-normal text-control-light;
 }
 
+.textlabeltip {
+  @apply text-xs font-normal text-red-500 ml-2;
+}
+
 .textfield {
   @apply text-main disabled:text-control disabled:bg-gray-50 focus:ring-control focus:border-control sm:text-sm border-control-border rounded-md;
 }
