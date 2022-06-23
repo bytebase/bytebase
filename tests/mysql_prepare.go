@@ -50,6 +50,7 @@ func insert(db *sql.DB, insertCount int, batchCount int) error {
 	var buf bytes.Buffer
 	for i := 0; i < insertCount; i += batchCount {
 		buf.Reset()
+		// We use bytes.Buffer here to concat the strings because strings are too slow.
 		buf.WriteString(insertSql)
 		for j := 0; j < batchCount; j++ {
 			id := i + j
@@ -60,6 +61,7 @@ func insert(db *sql.DB, insertCount int, batchCount int) error {
 			if j > 0 {
 				delimiter = ", "
 			}
+			// append the values after "VALUES ".
 			fmt.Fprintf(&buf, "%s(%d, %d, '%s', '%s')", delimiter, id, rand.Intn(insertCount), uuid.New().String(), uuid.New().String())
 		}
 		_, err := db.Exec(buf.String())
