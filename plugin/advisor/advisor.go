@@ -108,6 +108,9 @@ const (
 
 	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
 	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
+
+	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
+	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 )
 
 // Advice is the result of an advisor.
