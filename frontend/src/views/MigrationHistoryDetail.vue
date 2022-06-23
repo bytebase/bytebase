@@ -124,76 +124,55 @@
           </button>
         </a>
 
-        <div v-if="hasDrift" class="flex flex-row items-center space-x-2 mt-2">
-          <div class="text-sm font-normal text-accent">
-            ({{ $t("migration-history.schema-drift") }})
+        <div v-if="hasDrift" class="flex items-center space-x-2 mt-2">
+          <div class="flex items-center text-sm font-normal">
+            <heroicons-outline:exclamation-circle
+              class="w-5 h-5 mr-0.5 text-error"
+            />
+            <span>{{ $t("migration-history.schema-drift-detected") }}</span>
           </div>
-          <span class="textinfolabel">
-            {{ $t("migration-history.before-left-schema-choice") }}
-          </span>
-          <div>
-            <BBSelect
-              :selected-item="state.leftSelected"
-              :item-list="['previousHistorySchema', 'currentHistorySchemaPrev']"
-              @select-item="
-                (value) => {
-                  state.leftSelected = value;
-                  state.leftSchema =
-                    state.leftSelected === 'previousHistorySchema'
-                      ? previousHistorySchema
-                      : migrationHistory.schemaPrev;
-                  state.showDiff = state.leftSchema !== state.rightSchema;
-                }
-              "
-            >
-              <template #menuItem="{ item: value }">
-                {{
-                  value === "previousHistorySchema"
-                    ? $t(
-                        "migration-history.left-schema-choice-prev-history-schema"
-                      )
-                    : $t(
-                        "migration-history.left-schema-choice-current-history-schema-prev"
-                      )
-                }}
-              </template>
-            </BBSelect>
+          <div class="normal-link text-sm" @click="state.viewDrift = true">
+            {{ $t("migration-history.view-drift") }}
           </div>
-          <span class="textinfolabel">
-            {{ $t("migration-history.after-left-schema-choice") }}
-          </span>
         </div>
 
         <div class="flex flex-row items-center space-x-2 mt-2">
           <BBSwitch
-            v-if="state.leftSchema !== state.rightSchema"
+            v-if="allowShowDiff"
             :label="$t('migration-history.show-diff')"
             :value="state.showDiff"
-            @toggle="
-              (on: any) => {
-                state.showDiff = on;
-              }
-            "
+            @toggle="state.showDiff = $event"
           />
           <div class="textinfolabel">
-            {{
-              state.showDiff
-                ? $t("migration-history.left-vs-right")
-                : $t("migration-history.schema-snapshot-after-migration")
-            }}
+            <i18n-t
+              v-if="state.showDiff"
+              tag="span"
+              keypath="migration-history.left-vs-right"
+            >
+              <template #prevLink>
+                <router-link
+                  v-if="previousHistory"
+                  class="normal-link"
+                  :to="previousHistoryLink"
+                >
+                  ({{ previousHistory.version }})
+                </router-link>
+              </template>
+            </i18n-t>
+            <template v-else>
+              {{ $t("migration-history.schema-snapshot-after-migration") }}
+            </template>
           </div>
-          <div
-            v-if="state.leftSchema === state.rightSchema"
-            class="text-sm font-normal text-accent"
-          >
+          <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
             ({{ $t("migration-history.no-schema-change") }})
           </div>
         </div>
+
         <code-diff
           v-if="state.showDiff"
           class="mt-4 w-full"
-          :old-string="state.leftSchema"
-          :new-string="state.rightSchema"
+          :old-string="migrationHistory.schemaPrev"
+          :new-string="migrationHistory.schema"
           output-format="side-by-side"
         />
         <highlight-code-block
@@ -203,40 +182,69 @@
         />
       </div>
     </main>
+
+    <BBModal
+      v-if="previousHistory && state.viewDrift"
+      @close="state.viewDrift = false"
+    >
+      <template #title>
+        <span>{{ $t("migration-history.schema-drift") }}</span>
+        <span class="mx-2">-</span>
+        <i18n-t tag="span" keypath="migration-history.left-vs-right">
+          <template #prevLink>
+            <router-link class="normal-link" :to="previousHistoryLink">
+              ({{ previousHistory.version }})
+            </router-link>
+          </template>
+        </i18n-t>
+      </template>
+
+      <div class="space-y-4">
+        <code-diff
+          class="w-full"
+          :old-string="previousHistory.schema"
+          :new-string="migrationHistory.schema"
+          output-format="side-by-side"
+        />
+        <div class="flex justify-end px-4">
+          <button
+            type="button"
+            class="btn-primary"
+            @click.prevent="state.viewDrift = false"
+          >
+            {{ $t("common.close") }}
+          </button>
+        </div>
+      </div>
+    </BBModal>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, reactive, defineComponent } from "vue";
+import { computed, reactive, defineComponent, onMounted } from "vue";
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
 import { CodeDiff } from "v-code-diff";
 import MigrationHistoryStatusIcon from "../components/MigrationHistoryStatusIcon.vue";
-import { idFromSlug, nanosecondsToString } from "../utils";
+import {
+  idFromSlug,
+  nanosecondsToString,
+  migrationHistorySlug,
+} from "../utils";
 import {
   MigrationHistory,
   MigrationHistoryPayload,
   VCSPushEvent,
 } from "../types";
-import { BBSelect } from "../bbkit";
 import { pushNotification, useDatabaseStore, useInstanceStore } from "@/store";
-
-type LeftSchemaSelected =
-  | "previousHistorySchema" // schema after last migration
-  | "currentHistorySchemaPrev"; // schema before this migration
 
 interface LocalState {
   showDiff: boolean;
-  leftSelected: LeftSchemaSelected;
-  // leftSchema is the schema snapshot at the left side of the diff.
-  // Default to migrationHistory.schemaPrev. If drift is detected, it can be selected to be lastRecordedSchema.
-  leftSchema: string;
-  // rightSchema is the schema snapshot at the right side of the diff. Always migrationHistory.schema.
-  rightSchema: string;
+  viewDrift: boolean;
 }
 
 export default defineComponent({
   name: "MigrationHistoryDetail",
-  components: { CodeDiff, MigrationHistoryStatusIcon, BBSelect },
+  components: { CodeDiff, MigrationHistoryStatusIcon },
   props: {
     databaseSlug: {
       required: true,
@@ -256,6 +264,13 @@ export default defineComponent({
 
     const migrationHistoryId = idFromSlug(props.migrationHistorySlug);
 
+    onMounted(() => {
+      instanceStore.fetchMigrationHistory({
+        instanceId: database.value.instance.id,
+        databaseName: database.value.name,
+      });
+    });
+
     // get all migration histories before (include) the one of given id, ordered by descending version.
     const prevMigrationHistoryList = computed((): MigrationHistory[] => {
       const migrationHistoryList =
@@ -273,6 +288,7 @@ export default defineComponent({
       return migrationHistoryList.filter((mh) => mh.id <= migrationHistoryId);
     });
 
+    // migrationHistory is the latest migration NOW.
     const migrationHistory = computed((): MigrationHistory => {
       if (prevMigrationHistoryList.value.length > 0) {
         return prevMigrationHistoryList.value[0];
@@ -280,12 +296,21 @@ export default defineComponent({
       return instanceStore.getMigrationHistoryById(migrationHistoryId)!;
     });
 
-    // previousHistorySchema is the schema snapshot of the last migration history before the one of given id.
+    // previousHistory is the last migration history before the one of given id.
     // Only referenced if hasDrift is true.
-    const previousHistorySchema = computed(
-      (): string => prevMigrationHistoryList.value[1].schema
-    );
+    const previousHistory = computed((): MigrationHistory | undefined => {
+      return prevMigrationHistoryList.value[1];
+    });
 
+    // "Show diff" feature is enabled when current migration has changed the schema.
+    const allowShowDiff = computed((): boolean => {
+      return (
+        migrationHistory.value.schema !== migrationHistory.value.schemaPrev
+      );
+    });
+
+    // A schema drift is detected when the schema AFTER previousHistory has been
+    // changed unexpectedly BEFORE current migrationHistory.
     const hasDrift = computed((): boolean => {
       if (migrationHistory.value.type === "BASELINE") {
         return false;
@@ -293,16 +318,22 @@ export default defineComponent({
 
       return (
         prevMigrationHistoryList.value.length > 1 && // no drift if no previous migration history
-        previousHistorySchema.value !== migrationHistory.value.schemaPrev
+        previousHistory.value?.schema !== migrationHistory.value.schemaPrev
       );
     });
 
     const state = reactive<LocalState>({
-      showDiff:
-        migrationHistory.value.schema != migrationHistory.value.schemaPrev,
-      leftSelected: "currentHistorySchemaPrev",
-      leftSchema: migrationHistory.value.schemaPrev,
-      rightSchema: migrationHistory.value.schema,
+      showDiff: allowShowDiff.value, // "Show diff" is turned on by default if available.
+      viewDrift: false,
+    });
+
+    const previousHistoryLink = computed(() => {
+      const previous = previousHistory.value;
+      if (!previous) return "";
+      return `/db/${props.databaseSlug}/history/${migrationHistorySlug(
+        previous.id,
+        previous.version
+      )}`;
     });
 
     const pushEvent = computed((): VCSPushEvent | undefined => {
@@ -354,8 +385,10 @@ export default defineComponent({
       nanosecondsToString,
       database,
       migrationHistory,
-      previousHistorySchema,
+      previousHistory,
+      allowShowDiff,
       hasDrift,
+      previousHistoryLink,
       pushEvent,
       vcsBranch,
       vcsBranchUrl,

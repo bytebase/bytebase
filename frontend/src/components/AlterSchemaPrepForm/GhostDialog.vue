@@ -4,7 +4,7 @@
     :title="$t('issue.migration-mode.title')"
     :positive-text="$t('common.next')"
   >
-    <div class="w-[24rem] space-y-4 pl-8 pr-2 pb-4">
+    <div class="w-[28rem] space-y-4 pl-8 pr-2 pb-4">
       <div class="flex items-start space-x-2">
         <input
           v-model="state.mode"
@@ -31,8 +31,9 @@
           value="online"
         />
         <div @click="state.mode = 'online'">
-          <div class="textlabel">
-            {{ $t("issue.migration-mode.online.title") }}
+          <div class="textlabel space-x-2">
+            <span>{{ $t("issue.migration-mode.online.title") }}</span>
+            <BBBetaBadge />
           </div>
           <div class="textinfolabel mt-1">
             <i18n-t tag="p" keypath="issue.migration-mode.online.description">

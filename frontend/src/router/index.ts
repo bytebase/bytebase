@@ -753,7 +753,9 @@ const routes: Array<RouteRecordRaw> = [
                   allowBookmark: true,
                 },
                 component: () => import("../views/MigrationHistoryDetail.vue"),
-                props: true,
+                props: (to) => ({
+                  key: to.fullPath, // force refresh the component when slug changed
+                }),
               },
             ],
           },

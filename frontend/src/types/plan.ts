@@ -161,7 +161,7 @@ export const TEAM_PLAN: Plan = {
   unitPrice: 1740,
   trialPrice: 0,
   freeInstanceCount: 5,
-  pricePerInstancePerMonth: 29,
+  pricePerInstancePerMonth: 79,
   // Plan desc and feature
   title: "team",
   features: [

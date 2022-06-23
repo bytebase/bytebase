@@ -68,6 +68,11 @@ RUN apt-get update && apt-get install -y locales
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
+# We need copy timezone file from backend layer.
+# Otherwise, clickhouse cannot be connected due to the missing time zone file in alpine.
+COPY --from=backend /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
+ENV ZONEINFO /opt/zoneinfo.zip
+
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 
 # Copy utility scripts, we have
