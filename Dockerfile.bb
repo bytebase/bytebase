@@ -5,7 +5,7 @@
 
 # $ docker run --init --rm --name bb bytebase/bb
 
-FROM golang:1.16.5-alpine3.13 as bb
+FROM golang:1.16.5 as bb
 
 ARG VERSION="development"
 ARG GO_VERSION="1.16.5"
@@ -24,8 +24,8 @@ RUN GOOS=linux GOARCH=amd64 go build \
     -o bb \
     ./bin/bb/main.go
 
-# Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
-FROM alpine:3.14.3 as monolithic
+# Use debian because mysql requires glibc.
+FROM debian:bullseye-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
