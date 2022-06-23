@@ -46,11 +46,11 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	}
 
 	walker := &walk.AstWalker{
-		Fn: namingTableConventioncheck,
+		Fn: checker.check,
 	}
 
 	for _, stmt := range stmts {
-		if _, err := walker.Walk(parser.Statements{stmt}, checker); err != nil {
+		if _, err := walker.Walk(parser.Statements{stmt}, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -73,12 +73,7 @@ type namingTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-func namingTableConventioncheck(ctx interface{}, node interface{}) (stop bool) {
-	checker, ok := ctx.(*namingTableConventionChecker)
-	if !ok {
-		return true
-	}
-
+func (checker *namingTableConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
 	var tableNames []string
 
 	switch n := node.(type) {

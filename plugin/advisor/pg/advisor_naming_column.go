@@ -46,11 +46,11 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 	}
 
 	walker := &walk.AstWalker{
-		Fn: namingColumnConventionCheck,
+		Fn: checker.check,
 	}
 
 	for _, stmt := range stmts {
-		if _, err := walker.Walk(parser.Statements{stmt}, checker); err != nil {
+		if _, err := walker.Walk(parser.Statements{stmt}, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -73,12 +73,7 @@ type namingColumnConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-func namingColumnConventionCheck(ctx interface{}, node interface{}) (stop bool) {
-	checker, ok := ctx.(*namingColumnConventionChecker)
-	if !ok {
-		return true
-	}
-
+func (checker *namingColumnConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
 	var columnList []string
 	var tableName string
 
