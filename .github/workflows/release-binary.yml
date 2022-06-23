@@ -22,11 +22,6 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-<<<<<<< HEAD
-      - name: Extract version
-        run: git tag ${GITHUB_REF_NAME#release/}
-=======
->>>>>>> 95df7bead5576ea9e8c6cd6eda2723aa88d698e1
       - uses: actions/setup-go@v2
         with:
           go-version: 1.16
