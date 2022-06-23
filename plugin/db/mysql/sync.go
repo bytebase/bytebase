@@ -10,6 +10,17 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
+var (
+	systemDatabases = map[string]bool{
+		"information_schema": true,
+		// TiDB only
+		"metrics_schema":     true,
+		"mysql":              true,
+		"performance_schema": true,
+		"sys":                true,
+	}
+)
+
 // SyncSchema syncs the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query MySQL version
