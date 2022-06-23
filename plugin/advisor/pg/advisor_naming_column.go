@@ -13,19 +13,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*NamingTableConventionAdvisor)(nil)
+	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(db.Postgres, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
-type NamingTableConventionAdvisor struct {
+// NamingColumnConventionAdvisor is the advisor checking for column convention.
+type NamingColumnConventionAdvisor struct {
 }
 
-// Check checks for table naming convention.
-func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+// Check checks for column naming convention.
+func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -39,7 +39,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	checker := &namingTableConventionChecker{
+	checker := &namingColumnConventionChecker{
 		level:  level,
 		title:  string(ctx.Rule.Type),
 		format: format,
@@ -66,41 +66,48 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	return checker.adviceList, nil
 }
 
-type namingTableConventionChecker struct {
+type namingColumnConventionChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
 }
 
-func (checker *namingTableConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
-	var tableNames []string
+func (checker *namingColumnConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
+	var columnList []string
+	var tableName string
 
 	switch n := node.(type) {
 	// CREATE TABLE
 	case *tree.CreateTable:
-		tableNames = append(tableNames, n.Table.Table())
-	// ALTER TABLE
-	case *tree.AlterTable:
-		for _, cmd := range n.Cmds {
-			if c, ok := cmd.(*tree.AlterTableRenameTable); ok {
-				tableNames = append(tableNames, c.NewName.Table())
+		tableName = n.Table.Table()
+		for _, def := range n.Defs {
+			if column, ok := def.(*tree.ColumnTableDef); ok {
+				columnList = append(columnList, string(column.Name))
 			}
 		}
-	// RENAME TABLE
-	case *tree.RenameTable:
-		if !n.IsSequence && !n.IsView {
-			tableNames = append(tableNames, string(n.NewName.ToTableName().TableName))
+	// ALTER TABLE
+	case *tree.AlterTable:
+		tableName = string(n.Table.ToTableName().TableName)
+		for _, cmd := range n.Cmds {
+			switch c := cmd.(type) {
+			// ADD COLUMN
+			case *tree.AlterTableAddColumn:
+				columnList = append(columnList, string(c.ColumnDef.Name))
+			// RENAME COLUMN
+			case *tree.AlterTableRenameColumn:
+				columnList = append(columnList, string(c.NewName))
+			}
 		}
 	}
 
-	for _, tableName := range tableNames {
-		if !checker.format.MatchString(tableName) {
+	for _, column := range columnList {
+		if !checker.format.MatchString(column) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingTableConventionMismatch,
+				Code:    common.NamingColumnConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column, checker.format),
 			})
 		}
 	}
