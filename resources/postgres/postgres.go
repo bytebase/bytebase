@@ -101,11 +101,7 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 	case "darwin":
 		tarName = "postgres-darwin-x86_64.txz"
 	case "linux":
-		if isAlpineLinux() {
-			tarName = "postgres-linux-x86_64-alpine_linux.txz"
-		} else {
-			tarName = "postgres-linux-x86_64.txz"
-		}
+		tarName = "postgres-linux-x86_64.txz"
 	default:
 		return nil, fmt.Errorf("OS %q is not supported", runtime.GOOS)
 	}
@@ -164,11 +160,6 @@ func Install(resourceDir, pgDataDir, pgUser string) (*Instance, error) {
 		BaseDir: pgBinDir,
 		dataDir: pgDataDir,
 	}, nil
-}
-
-func isAlpineLinux() bool {
-	_, err := os.Stat("/etc/alpine-release")
-	return err == nil
 }
 
 // initDB inits a postgres database if not yet.
