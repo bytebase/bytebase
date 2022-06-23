@@ -14,7 +14,8 @@ import (
 // How to add a schema review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
 //   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
-//   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
+//   3. Add advisor error code if needed. After new code added, we also need to update the ConvertToErrorCode in api/task_check_run.go
+//   4. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // SchemaReviewRuleLevel is the error level for schema review rule.
 type SchemaReviewRuleLevel string
