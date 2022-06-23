@@ -460,6 +460,111 @@ func TestBinlogFilesAreContinuous(t *testing.T) {
 	}
 }
 
+func TestParseBinlogEventTsInLine(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		line    string
+		eventTs int64
+		found   bool
+		err     bool
+	}{
+		// normal case
+		{
+			line: "#220620 13:23:55 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.28 created 220620 13:23:55 at startup",
+			eventTs: time.Date(2022, 6, 20, 13, 23, 55, 0, time.Local).Unix(),
+			found:   true,
+			err:     false,
+		},
+		// no "server id"
+		{
+			line:    "/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;",
+			eventTs: 0,
+			found:   false,
+			err:     false,
+		},
+		// fake event with "end_log_pos 0"
+		{
+			line: "#220609 11:59:57 server id 1  end_log_pos 0 CRC32 0x031d41f6 	Start: binlog v 4, server v 8.0.28 created 220609 11:59:57",
+			eventTs: 0,
+			found:   false,
+			err:     false,
+		},
+		// incomplete line
+		{
+			line:    "#220620 13:23:55 server id 1  end_log_",
+			eventTs: 0,
+			found:   false,
+			err:     true,
+		},
+		// parse time error
+		{
+			line: "#220620 99:99:99 server id 1  end_log_pos 126 CRC32 0x9a60fe57 	Start: binlog v 4, server v 8.0.28 created 220620 13:23:55 at startup",
+			eventTs: 0,
+			found:   false,
+			err:     true,
+		},
+	}
+	for _, test := range tests {
+		eventTs, found, err := parseBinlogEventTsInLine(test.line)
+		a.Equal(test.eventTs, eventTs)
+		a.Equal(test.found, found)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}
+
+func TestParseBinlogEventStartPosInLine(t *testing.T) {
+	a := require.New(t)
+	tests := []struct {
+		line     string
+		startPos int64
+		found    bool
+		err      bool
+	}{
+		// normal case
+		{
+			line:     "# at 34794",
+			startPos: 34794,
+			found:    true,
+			err:      false,
+		},
+		// no "# at "
+		{
+			line:     "/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;",
+			startPos: 0,
+			found:    false,
+			err:      false,
+		},
+		// incomplete line
+		{
+			line:     "# at ",
+			startPos: 0,
+			found:    false,
+			err:      true,
+		},
+		// parse int error
+		{
+			line:     "# at x",
+			startPos: 0,
+			found:    false,
+			err:      true,
+		},
+	}
+	for _, test := range tests {
+		startPos, found, err := parseBinlogEventStartPosInLine(test.line)
+		a.Equal(test.startPos, startPos)
+		a.Equal(test.found, found)
+		if test.err {
+			a.Error(err)
+		} else {
+			a.NoError(err)
+		}
+	}
+}
+
 func TestGetLastTsIndexBeforeTargetTs(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
