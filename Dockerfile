@@ -20,19 +20,16 @@ COPY ./frontend/ .
 # Build frontend
 RUN pnpm release-docker
 
-
-FROM golang:1.16.15 as backend
+FROM golang:1.16.5 as backend
 
 ARG VERSION="development"
-ARG GO_VERSION="1.16.15"
+ARG GO_VERSION="1.16.5"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
 # Build in release mode so we will embed the frontend
 ARG RELEASE="release"
-
-ENV GOPROXY=https://goproxy.io,direct
 
 # Need gcc musl-dev for CGO_ENABLED=1
 RUN apt-get install -y gcc
@@ -52,8 +49,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
     -o bytebase \
     ./bin/server/main.go
 
-
-# Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
+# Use debian because mysql requires glibc.
 FROM debian:bullseye-slim as monolithic
 
 ARG VERSION="development"
@@ -85,7 +81,6 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 RUN mkdir -p /var/opt/bytebase
 
 CMD ["--host", "http://localhost", "--port", "80", "--data", "/var/opt/bytebase"]
-EXPOSE 80
 
 HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:80/healthz || exit 1
 
