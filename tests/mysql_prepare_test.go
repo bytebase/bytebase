@@ -27,7 +27,7 @@ func TestPrepare(t *testing.T) {
 	a.NoError(err)
 
 	var count int
-	err = db.QueryRow("select count(*) from sbtest.sbtest1").Scan(&count)
+	err = db.QueryRow("SELECT COUNT(*) FROM sbtest.sbtest1").Scan(&count)
 	a.NoError(err)
 	a.Equal(tableSize, count)
 }

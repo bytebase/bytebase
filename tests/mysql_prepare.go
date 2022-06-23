@@ -14,13 +14,13 @@ import (
 )
 
 func prepare(port int, tableSize int) error {
-	const createTableSql = `create table sbtest1 (
-id int not null ,
-k int not null default 0,
-c char(120) not null default '',
-pad char(60) not null default '',
-primary key (id),
-key k_1 (k)
+	const createTableSql = `CREATE TABLE sbtest1 (
+id INT NOT NULL,
+k INT NOT NULL DEFAULT 0,
+c CHAR(120) NOT NULL DEFAULT '',
+pad CHAR(60) NOT NULL DEFAULT'',
+PRIMARY KEY (id),
+KEY k_1 (k)
 )`
 	db, err := connectTestMySQL(port, "")
 	if err != nil {
@@ -28,7 +28,7 @@ key k_1 (k)
 	}
 	defer db.Close()
 
-	_, err = db.Exec("create database sbtest; use sbtest;")
+	_, err = db.Exec("CREATE DATABAE sbtest; USE sbtest;")
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ key k_1 (k)
 }
 
 func insert(db *sql.DB, insertCount int, batchCount int) error {
-	const insertSql = `insert into sbtest1 (id, k, c, pad) values `
+	const insertSql = `INSERT INTO sbtest1 (id, k, c, pad) VALUES `
 	var buf bytes.Buffer
 	for i := 0; i < insertCount; i += batchCount {
 		buf.Reset()
