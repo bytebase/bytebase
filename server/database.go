@@ -907,6 +907,11 @@ func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseNa
 	return db.ConnectionConfig{
 		Username: adminDataSource.Username,
 		Password: adminDataSource.Password,
+		TLSConfig: db.TLSConfig{
+			SslCA:   adminDataSource.SslCa,
+			SslCert: adminDataSource.SslCert,
+			SslKey:  adminDataSource.SslKey,
+		},
 		Host:     instance.Host,
 		Port:     instance.Port,
 		Database: databaseName,
