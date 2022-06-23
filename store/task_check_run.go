@@ -64,11 +64,11 @@ func (raw *taskCheckRunRaw) toTaskCheckRun() *api.TaskCheckRun {
 func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.createTaskCheckRunRawIfNeeded(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TaskCheckRun with TaskCheckRunCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create TaskCheckRun with TaskCheckRunCreate[%+v], error: %w", create, err)
 	}
 	taskCheckRun, err := s.composeTaskCheckRun(ctx, taskCheckRunRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose TaskCheckRun with taskCheckRunRaw[%+v], error[%w]", taskCheckRunRaw, err)
+		return nil, fmt.Errorf("failed to compose TaskCheckRun with taskCheckRunRaw[%+v], error: %w", taskCheckRunRaw, err)
 	}
 	return taskCheckRun, nil
 }
@@ -77,13 +77,13 @@ func (s *Store) CreateTaskCheckRunIfNeeded(ctx context.Context, create *api.Task
 func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind) ([]*api.TaskCheckRun, error) {
 	taskCheckRunRawList, err := s.findTaskCheckRunRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find TaskCheckRun list with TaskCheckRunFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find TaskCheckRun list with TaskCheckRunFind[%+v], error: %w", find, err)
 	}
 	var taskCheckRunList []*api.TaskCheckRun
 	for _, raw := range taskCheckRunRawList {
 		taskCheckRun, err := s.composeTaskCheckRun(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose TaskCheckRun with taskCheckRunRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose TaskCheckRun with taskCheckRunRaw[%+v], error: %w", raw, err)
 		}
 		taskCheckRunList = append(taskCheckRunList, taskCheckRun)
 	}
@@ -94,11 +94,11 @@ func (s *Store) FindTaskCheckRun(ctx context.Context, find *api.TaskCheckRunFind
 func (s *Store) PatchTaskCheckRunStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*api.TaskCheckRun, error) {
 	taskCheckRunRaw, err := s.patchTaskCheckRunRawStatus(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch TaskCheckRunStatus with TaskCheckRunStatusPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch TaskCheckRunStatus with TaskCheckRunStatusPatch[%+v], error: %w", patch, err)
 	}
 	taskCheckRun, err := s.composeTaskCheckRun(ctx, taskCheckRunRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose TaskCheckRunStatus with taskCheckRunRaw[%+v], error[%w]", taskCheckRunRaw, err)
+		return nil, fmt.Errorf("failed to compose TaskCheckRunStatus with taskCheckRunRaw[%+v], error: %w", taskCheckRunRaw, err)
 	}
 	return taskCheckRun, nil
 }

@@ -432,7 +432,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		// Find project
 		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
@@ -541,7 +541,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				return nil, fmt.Errorf("failed to find backup %v", c.BackupID)
 			}
 			if backup == nil {
-				return nil, fmt.Errorf("backup not found with ID[%d]", c.BackupID)
+				return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
 			}
 			restorePayload := api.TaskDatabaseRestorePayload{}
 			restorePayload.DatabaseName = c.DatabaseName
@@ -668,7 +668,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		}
 		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 		}
 
 		schemaVersion := common.DefaultMigrationVersion()
@@ -813,7 +813,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 
 		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID[%d]", issueCreate.ProjectID)).SetInternal(err)
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
 		}
 		if project.TenantMode == api.TenantModeTenant {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
@@ -911,7 +911,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	}
 	bytesRestore, err := json.Marshal(payloadRestore)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error[%w]", err)
+		return nil, nil, fmt.Errorf("failed to create PITR restore task, unable to marshal payload, error: %w", err)
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -927,7 +927,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 	bytesCutover, err := json.Marshal(payloadCutover)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error[%w]", err)
+		return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -1085,7 +1085,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 		Status:    &pipelineStatus,
 	}
 	if _, err := s.store.PatchPipeline(ctx, pipelinePatch); err != nil {
-		return nil, fmt.Errorf("failed to update issue[%s] status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
+		return nil, fmt.Errorf("failed to update issue %q's status, failed to update pipeline status with patch %+v, error: %w", issue.Name, pipelinePatch, err)
 	}
 
 	issuePatch := &api.IssuePatch{
@@ -1095,7 +1095,7 @@ func (s *Server) changeIssueStatus(ctx context.Context, issue *api.Issue, newSta
 	}
 	updatedIssue, err := s.store.PatchIssue(ctx, issuePatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update issue[%s] status with patch %v, error: %w", issue.Name, issuePatch, err)
+		return nil, fmt.Errorf("failed to update issue %q's status with patch %v, error: %w", issue.Name, issuePatch, err)
 	}
 
 	payload, err := json.Marshal(api.ActivityIssueStatusUpdatePayload{

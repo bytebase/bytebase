@@ -253,7 +253,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	if err != nil {
 		return "", fmt.Errorf("failed to find database matching database %q referenced by the committed file", mi.Database)
 	} else if len(databaseList) == 0 {
-		return "", fmt.Errorf("project with ID[%d] does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
+		return "", fmt.Errorf("project with ID %d does not own database %q referenced by the committed file", repository.ProjectID, mi.Database)
 	}
 
 	// We support 3 patterns on how to organize the schema files.
