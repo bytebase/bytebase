@@ -625,3 +625,19 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 
 	return cols, nil
 }
+
+// quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
+func quoteIdentifier(s string) string {
+	quote := false
+	if reserved[strings.ToUpper(s)] {
+		quote = true
+	}
+	if !ident.MatchString(s) {
+		quote = true
+	}
+	if quote {
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(s, "\"", "\"\""))
+	}
+	return s
+
+}
