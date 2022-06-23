@@ -55,11 +55,11 @@ func (raw *viewRaw) toView() *api.View {
 func (s *Store) CreateView(ctx context.Context, create *api.ViewCreate) (*api.View, error) {
 	viewRaw, err := s.createViewRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create View with ViewCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create View with ViewCreate[%+v], error: %w", create, err)
 	}
 	view, err := s.composeView(ctx, viewRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error[%w]", viewRaw, err)
+		return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", viewRaw, err)
 	}
 	return view, nil
 }
@@ -68,13 +68,13 @@ func (s *Store) CreateView(ctx context.Context, create *api.ViewCreate) (*api.Vi
 func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
 	viewRawList, err := s.findViewRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find View list with ViewFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find View list with ViewFind[%+v], error: %w", find, err)
 	}
 	var viewList []*api.View
 	for _, raw := range viewRawList {
 		view, err := s.composeView(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", raw, err)
 		}
 		viewList = append(viewList, view)
 	}

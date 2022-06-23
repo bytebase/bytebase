@@ -131,7 +131,7 @@ func (pa PipelineApprovalPolicy) String() (string, error) {
 func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, error) {
 	var pa PipelineApprovalPolicy
 	if err := json.Unmarshal([]byte(payload), &pa); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q, error[%w]", payload, err)
+		return nil, fmt.Errorf("failed to unmarshal pipeline approval policy %q, error: %w", payload, err)
 	}
 	return &pa, nil
 }
