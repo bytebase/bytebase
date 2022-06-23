@@ -58,11 +58,11 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.createProjectMemberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create ProjectMember with ProjectMemberCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create ProjectMember with ProjectMemberCreate[%+v], error: %w", create, err)
 	}
 	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error[%w]", projectMemberRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
 	}
 	return projectMember, nil
 }
@@ -71,13 +71,13 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find ProjectMember list with ProjectMemberFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find ProjectMember list with ProjectMemberFind[%+v], error: %w", find, err)
 	}
 	var projectMemberList []*api.ProjectMember
 	for _, raw := range projectMemberRawList {
 		projectMember, err := s.composeProjectMember(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", raw, err)
 		}
 		projectMemberList = append(projectMemberList, projectMember)
 	}
@@ -89,14 +89,14 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	find := &api.ProjectMemberFind{ID: &id}
 	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ProjectMember with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get ProjectMember with ID %d, error: %w", id, err)
 	}
 	if projectMemberRaw == nil {
 		return nil, nil
 	}
 	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error[%w]", projectMemberRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
 	}
 	return projectMember, nil
 }
@@ -105,11 +105,11 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch ProjectMember with ProjectMemberPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch ProjectMember with ProjectMemberPatch[%+v], error: %w", patch, err)
 	}
 	projectMember, err := s.composeProjectMember(ctx, projectMemberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error[%w]", projectMemberRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectMember with projectMemberRaw[%+v], error: %w", projectMemberRaw, err)
 	}
 	return projectMember, nil
 }
@@ -137,20 +137,20 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*api.ProjectMember, []*api.ProjectMember, error) {
 	createdMemberRawList, deletedMemberRawList, err := s.batchUpdateProjectMemberRaw(ctx, batchUpdate)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to batch update projectMemberRaw with ProjectMemberBatchUpdate[%+v], error[%w]", batchUpdate, err)
+		return nil, nil, fmt.Errorf("failed to batch update projectMemberRaw with ProjectMemberBatchUpdate[%+v], error: %w", batchUpdate, err)
 	}
 	var createdMemberList, deletedMemberList []*api.ProjectMember
 	for _, raw := range createdMemberRawList {
 		createdMember, err := s.composeProjectMember(ctx, raw)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to compose created ProjectMember with projectMemberRaw[%+v], error[%w]", raw, err)
+			return nil, nil, fmt.Errorf("failed to compose created ProjectMember with projectMemberRaw[%+v], error: %w", raw, err)
 		}
 		createdMemberList = append(createdMemberList, createdMember)
 	}
 	for _, raw := range deletedMemberRawList {
 		deletedMember, err := s.composeProjectMember(ctx, raw)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to compose deleted ProjectMember with projectMemberRaw[%+v], error[%w]", raw, err)
+			return nil, nil, fmt.Errorf("failed to compose deleted ProjectMember with projectMemberRaw[%+v], error: %w", raw, err)
 		}
 		deletedMemberList = append(deletedMemberList, deletedMember)
 	}
