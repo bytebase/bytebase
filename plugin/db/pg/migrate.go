@@ -392,3 +392,7 @@ func (driver *Driver) hasBytebaseDatabase(ctx context.Context) (bool, error) {
 	}
 	return exist, nil
 }
+
+func (driver *Driver) strictUseDb() bool {
+	return len(driver.strictDatabase) != 0
+}

@@ -9,6 +9,13 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
+var (
+	excludedDatabaseList = map[string]bool{
+		// Skip our internal "bytebase" database
+		bytebaseDatabase: true,
+	}
+)
+
 // indexSchema describes the schema of an index.
 type indexSchema struct {
 	name      string
