@@ -3,14 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pingcap/log"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 const (
@@ -166,10 +165,10 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 			IndexName: primaryKeyName,
 		})
 		if err != nil {
-			log.Error(
-				"Cannot find primary key in table",
-				zap.String("table_name", table),
-				zap.Error(err),
+			log.Printf(
+				"Cannot find primary key in table %s with error %v\n",
+				table,
+				err,
 			)
 			return
 		}

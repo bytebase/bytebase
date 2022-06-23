@@ -3,15 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/pingcap/log"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 var (
@@ -147,11 +146,11 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					log.Error(
-						"Cannot find index in table",
-						zap.String("table_name", node.Table.Name.String()),
-						zap.String("index_name", spec.FromKey.String()),
-						zap.Error(err),
+					log.Printf(
+						"Cannot find index %s in table %s with error %v\n",
+						node.Table.Name.String(),
+						spec.FromKey.String(),
+						err,
 					)
 					continue
 				}

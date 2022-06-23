@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
 )
 
 // How to add a schema review rule:
@@ -240,7 +239,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 
 		advisorType, err := getAdvisorTypeByRule(rule.Type, context.DbType)
 		if err != nil {
-			log.Println("not supported rule", zap.Error(err))
+			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
 			continue
 		}
 
