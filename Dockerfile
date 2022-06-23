@@ -21,10 +21,10 @@ COPY ./frontend/ .
 RUN pnpm release-docker
 
 
-FROM golang:1.16.5 as backend
+FROM golang:1.16.15 as backend
 
 ARG VERSION="development"
-ARG GO_VERSION="1.16.5"
+ARG GO_VERSION="1.16.15"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
@@ -67,7 +67,7 @@ LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
-RUN apt-get update && apt-get install -y locales libncurses5
+RUN apt-get update && apt-get install -y locales
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
