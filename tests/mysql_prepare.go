@@ -28,7 +28,7 @@ KEY k_1 (k)
 	}
 	defer db.Close()
 
-	_, err = db.Exec("CREATE DATABAE sbtest; USE sbtest;")
+	_, err = db.Exec("CREATE DATABASE sbtest; USE sbtest;")
 	if err != nil {
 		return err
 	}
