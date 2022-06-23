@@ -1,6 +1,3 @@
-//go:build !alpine
-// +build !alpine
-
 package postgres
 
 import "embed"
