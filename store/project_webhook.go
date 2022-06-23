@@ -61,11 +61,11 @@ func (raw *projectWebhookRaw) toProjectWebhook() *api.ProjectWebhook {
 func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.createProjectWebhookRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create ProjectWebhook with ProjectWebhookCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create ProjectWebhook with ProjectWebhookCreate[%+v], error: %w", create, err)
 	}
 	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error[%w]", projectWebhookRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error: %w", projectWebhookRaw, err)
 	}
 	return projectWebhook, nil
 }
@@ -75,14 +75,14 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 	find := &api.ProjectWebhookFind{ID: &id}
 	projectWebhookRaw, err := s.getProjectWebhookRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ProjectWebhook with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get ProjectWebhook with ID %d, error: %w", id, err)
 	}
 	if projectWebhookRaw == nil {
 		return nil, nil
 	}
 	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error[%w]", projectWebhookRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error: %w", projectWebhookRaw, err)
 	}
 	return projectWebhook, nil
 }
@@ -91,13 +91,13 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
 	projectWebhookRawList, err := s.findProjectWebhookRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find ProjectWebhook list with ProjectWebhookFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find ProjectWebhook list with ProjectWebhookFind[%+v], error: %w", find, err)
 	}
 	var projectWebhookList []*api.ProjectWebhook
 	for _, raw := range projectWebhookRawList {
 		projectWebhook, err := s.composeProjectWebhook(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error: %w", raw, err)
 		}
 		projectWebhookList = append(projectWebhookList, projectWebhook)
 	}
@@ -108,11 +108,11 @@ func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhook
 func (s *Store) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.patchProjectWebhookRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch ProjectWebhook with ProjectWebhookPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch ProjectWebhook with ProjectWebhookPatch[%+v], error: %w", patch, err)
 	}
 	projectWebhook, err := s.composeProjectWebhook(ctx, projectWebhookRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error[%w]", projectWebhookRaw, err)
+		return nil, fmt.Errorf("failed to compose ProjectWebhook with projectWebhookRaw[%+v], error: %w", projectWebhookRaw, err)
 	}
 	return projectWebhook, nil
 }
