@@ -31,7 +31,7 @@ ARG BUILD_USER="unknown"
 # Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
-# Need gcc musl-dev for CGO_ENABLED=1
+# Need gcc for CGO_ENABLED=1
 RUN apt-get install -y gcc
 
 WORKDIR /backend-build
