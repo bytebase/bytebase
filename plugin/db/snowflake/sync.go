@@ -10,6 +10,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
+var (
+	systemSchemas = map[string]bool{
+		"information_schema": true,
+	}
+)
+
 // SyncSchema synces the schema.
 func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
 	// Query user info
