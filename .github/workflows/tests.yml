@@ -67,16 +67,3 @@ jobs:
         run: |
           go generate -tags ${{ matrix.release-tags }}mysql ./...
           go test -v ./... -tags=${{ matrix.release-tags }}mysql
-
-  # tests if scripts/install_bb.sh is working correctly.
-  install-bb:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v2
-      - name: run install script
-        run: ./scripts/install_bb.sh
-      - name: check bb version
-        run: bb version
