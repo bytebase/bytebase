@@ -148,12 +148,6 @@
               </div>
             </template>
           </BBTooltipButton>
-
-          <PITRRestoreButton
-            v-if="isDev()"
-            :database="database"
-            :allow-admin="allowAdmin"
-          />
         </div>
       </div>
     </main>
@@ -295,7 +289,6 @@ import {
   isDBAOrOwner,
   connectionSlug,
   hidePrefix,
-  isDev,
   allowGhostMigration,
 } from "@/utils";
 import {
@@ -310,7 +303,6 @@ import {
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
 import { GhostDialog } from "@/components/AlterSchemaPrepForm";
-import { PITRRestoreButton } from "@/components/DatabaseDetail";
 import {
   pushNotification,
   useCurrentUser,
@@ -350,7 +342,7 @@ const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
 const databaseTabItemList: DatabaseTabItem[] = [
   { name: t("common.overview"), hash: "overview" },
   { name: t("migration-history.self"), hash: "migration-history" },
-  { name: t("common.backups"), hash: "backup" },
+  { name: t("common.backup-and-restore"), hash: "backup-and-restore" },
 ];
 
 const state = reactive<LocalState>({
@@ -477,10 +469,6 @@ const tryTransferProject = () => {
 // 'online' -> online migration
 // false -> user clicked cancel button
 const isUsingGhostMigration = async (databaseList: Database[]) => {
-  if (!isDev()) {
-    return "normal";
-  }
-
   // check if all selected databases supports gh-ost
   if (allowGhostMigration(databaseList)) {
     // open the dialog to ask the user

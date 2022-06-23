@@ -58,7 +58,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`, database, database, table))
+	CREATE VIEW v_%s AS SELECT * FROM %s;
+	`, database, database, table, table, table))
 	a.NoError(err)
 
 	const numRecords = 10
@@ -80,8 +81,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 	t.Logf("backup content:\n%s", buf.String())
 
-	// drop all tables
-	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", table))
+	// drop all tables and views
+	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s; DROP VIEW v_%s;", table, table))
 	a.NoError(err)
 
 	// restore
@@ -169,7 +170,7 @@ func TestPITR(t *testing.T) {
 		binlogDir := t.TempDir()
 		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.IncrementalFetchAllBinlogFiles(ctx)
+		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
@@ -248,7 +249,7 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.IncrementalFetchAllBinlogFiles(ctx)
+		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
@@ -301,7 +302,7 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
 		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.IncrementalFetchAllBinlogFiles(ctx)
+		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
@@ -417,10 +418,13 @@ func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*by
 	var buf bytes.Buffer
 	var backupPayload api.BackupPayload
 	backupPayloadString, err := driver.Dump(ctx, database, &buf, false)
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := json.Unmarshal([]byte(backupPayloadString), &backupPayload); err != nil {
 		return nil, nil, err
 	}
-	return &buf, &backupPayload, err
+	return &buf, &backupPayload, nil
 }
 
 // Concurrently update a single row to mimic the ongoing business workload.

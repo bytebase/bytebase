@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -40,7 +39,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := api.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,7 @@ type namingUKConventionChecker struct {
 	title        string
 	format       string
 	templateList []string
-	catalog      catalog.Service
+	catalog      catalog.Catalog
 }
 
 // Enter implements the ast.Visitor interface
@@ -122,8 +121,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					columnList = append(columnList, key.Column.Name.String())
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: constraint.Name,
@@ -155,8 +154,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					continue
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: spec.ToKey.String(),
@@ -172,8 +171,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					}
 
 					metaData := map[string]string{
-						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-						api.TableNameTemplateToken:  node.Table.Name.String(),
+						advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+						advisor.TableNameTemplateToken:  node.Table.Name.String(),
 					}
 					res = append(res, &indexMetaData{
 						indexName: spec.Constraint.Name,
@@ -190,8 +189,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				columnList = append(columnList, spec.Column.Name.String())
 			}
 			metaData := map[string]string{
-				api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				api.TableNameTemplateToken:  node.Table.Name.String(),
+				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+				advisor.TableNameTemplateToken:  node.Table.Name.String(),
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.IndexName,

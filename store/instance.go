@@ -203,6 +203,25 @@ func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int
 	return "", &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing admin password for instance with ID %d", instanceID)}
 }
 
+// GetInstanceSslSuiteByID gets ssl suite of instance.
+func (s *Store) GetInstanceSslSuiteByID(ctx context.Context, instanceID int) (db.TLSConfig, error) {
+	dataSourceFind := &api.DataSourceFind{
+		InstanceID: &instanceID,
+	}
+	dataSourceRawList, err := s.FindDataSource(ctx, dataSourceFind)
+	if err != nil {
+		return db.TLSConfig{}, err
+	}
+	for _, dataSourceRaw := range dataSourceRawList {
+		return db.TLSConfig{
+			SslCA:   dataSourceRaw.SslCa,
+			SslKey:  dataSourceRaw.SslKey,
+			SslCert: dataSourceRaw.SslCert,
+		}, nil
+	}
+	return db.TLSConfig{}, &common.Error{Code: common.NotFound, Err: fmt.Errorf("missing ssl suite for instance with ID %d", instanceID)}
+}
+
 //
 // private function
 //
@@ -295,6 +314,9 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		Type:       api.Admin,
 		Username:   create.Username,
 		Password:   create.Password,
+		SslKey:     create.SslKey,
+		SslCert:    create.SslCert,
+		SslCa:      create.SslCa,
 	}
 	if err := s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err

@@ -12,7 +12,7 @@
     "wecom": "企业微信",
     "custom": "自定义",
     "overview": "概览",
-    "migration-history": "迁移历史",
+    "migration-history": "变更历史",
     "webhook": "Webhook",
     "webhooks": "Webhook",
     "key": "键值",
@@ -109,7 +109,7 @@
     "confirm-and-update": "确认并更新",
     "query": "查询",
     "transfer": "转移",
-    "migration": "迁移",
+    "migration": "变更",
     "schema": "Schema",
     "anomalies": "异常",
     "do-not-show-again": "不再显示",
@@ -197,7 +197,9 @@
     "clear-search": "清空搜索",
     "enable": "开启",
     "disable": "禁用",
-    "view-doc": "查看文档"
+    "view-doc": "查看文档",
+    "backup-and-restore": "备份与恢复",
+    "write-only": "仅写入"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -231,7 +233,7 @@
       "syntax": "语法",
       "compatibility": "兼容性",
       "connection": "连接",
-      "migration-schema": "迁移 schema",
+      "migration-schema": "变更 schema",
       "sql-review": "SQL 审查",
       "earliest-allowed-time": "最早执行时间"
     },
@@ -240,8 +242,8 @@
     "invoker": "执行者",
     "started": "开始于",
     "ended": "结束于",
-    "view-migration": "查看迁移",
-    "view-migration-history": "查看迁移历史",
+    "view-migration": "查看变更",
+    "view-migration-history": "查看变更历史",
     "earliest-allowed-time-unset": "未设置",
     "status": {
       "running": "运行中",
@@ -261,7 +263,9 @@
   "banner": {
     "demo-intro": "这是 Bytebase 的演示版本。",
     "demo-intro-readonly": "这是 Bytebase 的只读演示版本",
-    "trial-expires": "您的{plan}试用仅剩 {days} 天",
+    "update-license": "更新证书",
+    "license-expires": "您的{plan}证书已在 {expireAt} 过期",
+    "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
     "action": "5 秒部署您自己的服务",
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
@@ -466,7 +470,7 @@
     },
     "not-allowed-to-single-database-in-tenant-mode": "在多租户模式下无法对单个数据库{operation}",
     "migration-mode": {
-      "title": "迁移模式",
+      "title": "变更模式",
       "normal": {
         "title": "普通变更 (适用于正常大小的表)",
         "description": "直接在目标表上执行 schema 变更。"
@@ -477,7 +481,8 @@
       }
     },
     "new-issue": "@:common.new@:common.issue",
-    "format-on-save": "保存时格式化"
+    "format-on-save": "保存时格式化",
+    "action-to-current-stage": "{action}当前阶段"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -538,14 +543,14 @@
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
     "unable-to-connect-instance-to-check-migration-schema": "无法连接到@:{'common.instance'}以检查@:{'common.migration'} @:{'common.schema'}",
-    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「迁移 schema」来记录这个实例上的数据库 schema 迁移。如果没有设置「迁移 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
+    "bytebase-relies-on-migration-schema-to-manage-version-control-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase 需要依赖「变更 schema」来记录这个实例上的数据库 schema 变更。如果没有设置「变更 schema」，您无法对这个实例上的数据库进行表结构和数据变更。",
     "please-contact-your-dba-to-configure-it": "请联系 DBA 配置。",
     "please-check-the-instance-connection-info-is-correct": "请检查实例连接信息是否正确。",
     "users": "用户",
     "successfully-archived-instance-updatedinstance-name": "成功归档实例'{0}'。",
     "successfully-restored-instance-updatedinstance-name": "成功恢复实例'{0}'。",
-    "failed-to-create-migration-schema-for-instance-instance-value-name": "为实例'{0}'创建迁移schema失败。",
-    "successfully-created-migration-schema-for-instance-value-name": "成功为'{0}'创建迁移Schema。",
+    "failed-to-create-migration-schema-for-instance-instance-value-name": "为实例'{0}'创建变更schema失败。",
+    "successfully-created-migration-schema-for-instance-value-name": "成功为'{0}'创建变更Schema。",
     "failed-to-sync-schema-for-instance-instance-value-name": "为实例'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
     "archive-instance-instance-name": "归档实例'{0}'?",
@@ -704,28 +709,30 @@
     }
   },
   "migration-history": {
-    "self": "迁移历史",
+    "self": "变更历史",
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
-    "no-schema-change": "本次迁移没有任何 Schema 的改动",
-    "schema-drift": "上次迁移后的 Schema 与本次迁移前不一致",
+    "no-schema-change": "本次变更没有任何 Schema 的改动",
+    "schema-drift": "Schema 偏差",
+    "schema-drift-detected": "上次变更后的 Schema 与本次变更前不一致。",
+    "view-drift": "查看偏差",
     "before-left-schema-choice": "比较",
-    "left-schema-choice-prev-history-schema": "上次迁移后",
-    "left-schema-choice-current-history-schema-prev": "本次迁移前",
-    "after-left-schema-choice": "和本次迁移后的 Schema",
+    "left-schema-choice-prev-history-schema": "上次变更后",
+    "left-schema-choice-current-history-schema-prev": "本次变更前",
+    "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
-    "left-vs-right": "之前 (左) vs 当前版本 (右)",
-    "schema-snapshot-after-migration": "完成这次迁移后的 schema 快照",
-    "list-limit": "对于有迁移历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
-    "no-history-in-project": "这个项目下没有发现任何数据库有迁移历史。",
-    "recording-info": "每当数据库 schema 变更时，我们便会记录下迁移历史。",
+    "left-vs-right": "之前{prevLink} vs 当前版本",
+    "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
+    "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
+    "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
+    "recording-info": "每当数据库 schema 变更时，我们便会记录下变更历史。",
     "establish-baseline": "建立新的基线",
     "refreshing-history": "刷新历史中 ...",
     "config-instance": "配置实例",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。您应该检查当前的基线确实反映了期望的状态。 对于 VCS 工作流来说，也只有在建立起基线的前提下，才能进行数据库变更。",
     "establish-database-baseline": "建立「{name}」基线",
-    "instance-missing-migration-schema": "实例「{name}」缺失用于记录迁移历史的 schema。",
-    "instance-bad-connection": "无法连接实例「{name}」以获取迁移历史。",
+    "instance-missing-migration-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
+    "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。"
   },
   "database": {
@@ -804,7 +811,10 @@
       "no-available-backup": "没有可用的备份",
       "point-in-time": "时间点",
       "help-info": "将数据库的状态恢复到一个时间点。{link}。",
-      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}"
+      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}",
+      "restore-to-point-in-time": "恢复到指定时间点",
+      "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
+      "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     }
   },
   "repository": {
@@ -814,10 +824,10 @@
     "base-directory-description": "Bytebase 跟踪文件变更的根目录。如果为空，则他会跟踪整个仓库。",
     "file-path-template": "文件路径模版",
     "file-path-template-description": "Bytebase 仅会跟踪那些文件路径匹配模版 (相对于指定根目录）的文件。",
-    "file-path-example-normal-migration": "针对普通迁移类型的文件路径样例",
-    "file-path-example-baseline-migration": "针对基线迁移类型的文件路径样例",
+    "file-path-example-normal-migration": "针对普通变更类型的文件路径样例",
+    "file-path-example-baseline-migration": "针对基线变更类型的文件路径样例",
     "schema-path-template": "Schema 路径模版",
-    "schema-writeback-description": "如果指定，在每一次迁移之后，Bytebase 将把最新的 Schema 回写到本来触发迁移的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。",
+    "schema-writeback-description": "如果指定，在每一次变更之后，Bytebase 将把最新的 Schema 回写到本来触发变更的提交分支，回写的具体路径则是相对于前面指定的根目录。如果您不希望 Bytebase 这样做，则置为空。",
     "schema-writeback-protected-branch": "请保证被变更的分支不是处于保护 (protected) 状态，或者仓库允许他的 maintainer 可以推送变更到保护分支。",
     "if-specified": "如果指定",
     "schema-path-example": "Schema 路径样例",
@@ -825,7 +835,7 @@
     "sheet-path-template-description": "Bytebase 仅跟踪文件路径匹配模版 (相对于指定根目录）的文件。匹配的文件将被同步到 SQL Editor 以供使用。",
     "git-provider": "Git 提供方",
     "version-control-status": "@.capitalize:common.version-control 已{status}",
-    "version-control-description-file-path": "数据库迁移脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的迁移脚本。",
+    "version-control-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {fullPathTemplate} 文件路径格式的变更脚本。",
     "version-control-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动发起一条流水线来执行新的 schema 变更。",
     "version-control-description-description-schema-path": "当 schema 变更完成后, Bytebase 会把变更后的最新 schema 回写到指定的 {schemaPathTemplate}。",
     "restore-to-ui-workflow": "恢复到 UI 工作流",
@@ -851,7 +861,7 @@
     "ui-workflow": "UI 工作流",
     "ui-workflow-description": "经典的 SQL 审核工作流。开发者直接在 Bytebase 上提交一个 SQL 审核工单，然后等待被指派的 DBA 或者开发同事审核。在审核通过后，Bytebase 会进行相应的 SQL schema 变更。",
     "gitops-workflow": "GitOps 工作流",
-    "gitops-workflow-description": "数据库迁移脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个迁移脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。",
+    "gitops-workflow-description": "数据库变更脚本保存在 Git 仓库中。为了进行一次 schema 变更，开发者会创建一个变更脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动开启流水线来进行新的 schema 变更。",
     "configure-gitops": "配置 Git",
     "configure-gitops-success": "开启「{project}」GitOps 工作流成功",
     "change-gitops-success": "变更「{project}」仓库成功"
@@ -864,7 +874,7 @@
     "tooltip": "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常",
     "types": {
       "connection-failure": "连接失败",
-      "missing-migration-schema": "缺少迁移 Schema",
+      "missing-migration-schema": "缺少变更 Schema",
       "schema-drift": "Schema 偏差",
       "backup-enforcement-viloation": "违反备份策略约束",
       "missing-backup": "缺少备份"
@@ -994,7 +1004,7 @@
   },
   "version-control": {
     "setting": {
-      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库迁移脚本存储在版本控制系统上 (VCS)，新创建的迁移脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
+      "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 的所有者先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
       "description-highlight": "配置 VCS 后，在付费版订阅下，Bytebase 将自动开启通过 VCS 的第三方认证登录",
       "add-git-provider": {
         "self": "添加 Git 提供方",
@@ -1105,7 +1115,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "我们也把被授予的数据库链接到了申请工单 '{0}'。",
     "new-data-source": "新数据源",
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "不使用"
+    },
+    "ssl": {
+      "ca-cert": "CA 证书",
+      "client-key": "客户端密钥",
+      "client-cert": "客户端证书"
+    },
+    "ssl-connection": "SSL 连接"
   },
   "setting": {
     "project": {
@@ -1158,7 +1179,7 @@
     "view-all-tabs": "查看所有标签页",
     "sheet": "工作表",
     "sheets": "工作表",
-    "connection-holder": "选择一个数据连接以开始",
+    "connection-holder": "请先从左侧数据库列表中设置一个连接上下文",
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
@@ -1170,7 +1191,8 @@
     "save-sheet": "保存工作表",
     "save-sheet-input-placeholder": "请输入工作表名称",
     "untitled-sheet": "未命名工作表",
-    "format": "格式化"
+    "format": "格式化",
+    "sql-review-result": "SQL 检查结果"
   },
   "label": {
     "empty-label-value": "<空值>",
@@ -1205,21 +1227,24 @@
     "current": "当前版本",
     "instance-count": "实例数",
     "expires-at": "过期时间",
+    "free-trial": "无需信用卡即可免费试用",
     "description-highlight": "购买证书",
     "sensitive-placeholder": "粘贴您的证书 - 仅写入",
     "upload-license": "上传证书",
     "plan-compare": "比较不同版本的功能，寻找适合您的方案",
     "disabled-feature": "这是一个订阅版高级功能",
-    "trial": "您可以以 $14 的价格试用 14 天",
+    "trial": "您可以免费试用 14 天",
     "upgrade": "升级订阅",
     "per-month": "/ 月",
+    "price-unit-for-enterprise": "/ 月起",
+    "start-from": "",
     "per-instance": "每个实例",
     "free-price-intro": "最多 5 个实例",
     "team-price-intro": "5 个起步，按年付费",
     "enterprise-price-intro": "自定义实例数，按年付费",
     "deploy": "部署",
     "contact-us": "联系我们",
-    "start-trial": "以 {days} 天 {price} 美元的价格试用",
+    "start-trial": "免费试用",
     "subscribe": "开始订阅",
     "current-plan": "当前订阅",
     "buy": "购买{plan}",
@@ -1291,7 +1316,7 @@
           "instance-minimum-5": "5 ~ 无限制",
           "instance-customized": "自定义",
           "schema-change": "Schema 和数据变更",
-          "migration-history": "迁移历史",
+          "migration-history": "变更历史",
           "sql-editor": "SQL 编辑器",
           "disaster-recovery": "数据灾备",
           "disaster-recovery-basic": "基础",

@@ -13,6 +13,9 @@ export const useActuatorStore = defineStore("actuator", {
     version: (state) => {
       return state.serverInfo?.version || "";
     },
+    gitCommit: (state) => {
+      return state.serverInfo?.gitCommit || "";
+    },
     isDemo: (state) => {
       return state.serverInfo?.demo || false;
     },

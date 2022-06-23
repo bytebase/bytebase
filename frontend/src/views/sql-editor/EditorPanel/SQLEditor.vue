@@ -1,14 +1,18 @@
 <template>
-  <MonacoEditor
-    ref="editorRef"
-    v-model:value="sqlCode"
-    :language="selectedLanguage"
-    :readonly="readonly"
-    @change="handleChange"
-    @change-selection="handleChangeSelection"
-    @run-query="handleRunQuery"
-    @save="handleSaveSheet"
-  />
+  <div
+    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-scroll"
+  >
+    <MonacoEditor
+      ref="editorRef"
+      v-model:value="sqlCode"
+      :language="selectedLanguage"
+      :readonly="readonly"
+      @change="handleChange"
+      @change-selection="handleChangeSelection"
+      @run-query="handleRunQuery"
+      @save="handleSaveSheet"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -60,18 +64,21 @@ const selectedLanguage = computed(() => {
 });
 const readonly = computed(() => sheetStore.isReadOnly);
 
-watch(selectedInstance, () => {
-  if (selectedInstance.value) {
-    const databaseList = databaseStore.getDatabaseListByInstanceId(
-      selectedInstance.value.id
-    );
-    const tableList = databaseList
-      .map((item) => tableStore.getTableListByDatabaseId(item.id))
-      .flat();
+watch(
+  () => selectedInstance.value,
+  () => {
+    if (selectedInstance.value) {
+      const databaseList = databaseStore.getDatabaseListByInstanceId(
+        selectedInstance.value.id
+      );
+      const tableList = databaseList
+        .map((item) => tableStore.getTableListByDatabaseId(item.id))
+        .flat();
 
-    editorRef.value?.setAutoCompletionContext(databaseList, tableList);
+      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
+    }
   }
-});
+);
 
 watch(
   () => sqlEditorStore.shouldSetContent,
@@ -106,14 +113,14 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = ({
+const handleRunQuery = async ({
   explain,
   query,
 }: {
   explain: boolean;
   query: string;
 }) => {
-  execute({ databaseType: selectedInstanceEngine.value }, { explain });
+  await execute({ databaseType: selectedInstanceEngine.value }, { explain });
 };
 
 const handleSaveSheet = () => {

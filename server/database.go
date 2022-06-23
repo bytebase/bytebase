@@ -235,13 +235,6 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						return err
 					}
 					defer driver.Close(ctx)
-					schemaVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
-					if err != nil {
-						return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
-					}
-					if peerSchemaVersion != schemaVersion {
-						return fmt.Errorf("the schema version %q does not match the peer database schema version %q in the target tenant mode project %q", schemaVersion, peerSchemaVersion, toProject.Name)
-					}
 
 					var schemaBuf bytes.Buffer
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
@@ -914,6 +907,11 @@ func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseNa
 	return db.ConnectionConfig{
 		Username: adminDataSource.Username,
 		Password: adminDataSource.Password,
+		TLSConfig: db.TLSConfig{
+			SslCA:   adminDataSource.SslCa,
+			SslCert: adminDataSource.SslCert,
+			SslKey:  adminDataSource.SslKey,
+		},
 		Host:     instance.Host,
 		Port:     instance.Port,
 		Database: databaseName,

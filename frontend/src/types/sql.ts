@@ -1,4 +1,4 @@
-import { EngineType } from ".";
+import { EngineType, TaskCheckResult } from ".";
 import { InstanceId } from "./id";
 
 export type ConnectionInfo = {
@@ -14,6 +14,9 @@ export type ConnectionInfo = {
   // not transfer the password back to client, thus we here pass the instanceId so the server
   // can fetch the corresponding password.
   instanceId?: InstanceId;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
 };
 
 export type QueryInfo = {
@@ -23,7 +26,10 @@ export type QueryInfo = {
   limit?: number;
 };
 
+export type Advice = TaskCheckResult;
+
 export type SQLResultSet = {
-  data: string;
+  data: any[];
   error: string;
+  adviceList: Advice[];
 };

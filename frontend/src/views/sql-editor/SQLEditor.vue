@@ -2,7 +2,7 @@
   <div class="sqleditor--wrapper">
     <TabListContainer />
     <Splitpanes class="default-theme splitpanes-wrap">
-      <Pane size="20" min-size="0" max-size="30">
+      <Pane size="20" min-size="20" max-size="30">
         <AsidePanel />
       </Pane>
       <Pane size="80">

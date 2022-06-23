@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // NewTaskCheckStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
@@ -21,17 +22,24 @@ type TaskCheckStatementAdvisorSimpleExecutor struct {
 
 // Run will run the task check statement advisor executor once.
 func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
+	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
+		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+	}
+
 	var advisorType advisor.Type
 	switch taskCheckRun.Type {
 	case api.TaskCheckDatabaseStatementFakeAdvise:
 		advisorType = advisor.Fake
 	case api.TaskCheckDatabaseStatementSyntax:
-		advisorType = advisor.MySQLSyntax
-	}
-
-	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
-	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+		switch payload.DbType {
+		case db.MySQL, db.TiDB:
+			advisorType = advisor.MySQLSyntax
+		case db.Postgres:
+			advisorType = advisor.PostgreSQLSyntax
+		default:
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid database type: %s for syntax statement advisor", payload.DbType))
+		}
 	}
 
 	adviceList, err := advisor.Check(
