@@ -66,11 +66,11 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 func (s *Store) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
 	instanceRaw, err := s.createInstanceRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Instance with InstanceCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Instance with InstanceCreate[%+v], error: %w", create, err)
 	}
 	instance, err := s.composeInstance(ctx, instanceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error: %w", instanceRaw, err)
 	}
 	return instance, nil
 }
@@ -80,14 +80,14 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 	find := &api.InstanceFind{ID: &id}
 	instanceRaw, err := s.getInstanceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Instance with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Instance with ID %d, error: %w", id, err)
 	}
 	if instanceRaw == nil {
 		return nil, nil
 	}
 	instance, err := s.composeInstance(ctx, instanceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error: %w", instanceRaw, err)
 	}
 	return instance, nil
 }
@@ -96,13 +96,13 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
 	instanceRawList, err := s.findInstanceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Instance list with InstanceFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Instance list with InstanceFind[%+v], error: %w", find, err)
 	}
 	var instanceList []*api.Instance
 	for _, raw := range instanceRawList {
 		instance, err := s.composeInstance(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error: %w", raw, err)
 		}
 		instanceList = append(instanceList, instance)
 	}
@@ -113,11 +113,11 @@ func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*ap
 func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
 	instanceRaw, err := s.patchInstanceRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Instance with InstancePatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Instance with InstancePatch[%+v], error: %w", patch, err)
 	}
 	instance, err := s.composeInstance(ctx, instanceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error[%w]", instanceRaw, err)
+		return nil, fmt.Errorf("failed to compose Instance with instanceRaw[%+v], error: %w", instanceRaw, err)
 	}
 	return instance, nil
 }
