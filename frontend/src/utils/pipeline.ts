@@ -217,7 +217,7 @@ const APPLICABLE_TASK_TRANSITION_LIST: Map<
 > = new Map([
   ["PENDING", ["RUN"]],
   ["PENDING_APPROVAL", ["APPROVE"]],
-  ["RUNNING", ["CANCEL"]],
+  ["RUNNING", []],
   ["DONE", []],
   ["FAILED", ["RETRY"]],
 ]);
