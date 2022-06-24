@@ -714,7 +714,7 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		binlogFileTarget = binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
 
-	eventPos, err := r.getBinlogEventPositionAfterTs(ctx, binlogFileTarget, targetTs)
+	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, binlogFileTarget, targetTs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
@@ -802,7 +802,7 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 
 // Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
 // TODO(dragonly): Add integration test.
-func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (pos int64, err error) {
+func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (pos int64, err error) {
 	args := []string{
 		// Local binlog file path.
 		path.Join(r.binlogDir, binlogFile.Name),
