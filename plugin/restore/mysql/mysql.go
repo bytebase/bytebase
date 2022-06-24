@@ -784,8 +784,8 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 		err = cmd.Process.Kill()
 	}()
 
-	var found bool
 	for s.Scan() {
+		var found bool
 		line := s.Text()
 		eventTs, found, err = parseBinlogEventTsInLine(line)
 		if err != nil {
@@ -827,9 +827,8 @@ func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile 
 		err = cmd.Process.Kill()
 	}()
 
-	foundEvent := 0
-	var found bool
 	for s.Scan() {
+		var found bool
 		line := s.Text()
 		pos, found, err = parseBinlogEventPosInLine(line)
 		if err != nil {
@@ -838,20 +837,14 @@ func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile 
 		if !found {
 			continue
 		}
-
-		foundEvent++
-		// When invoking mysqlbinlog with --start-datetime, the first valid event will always be the starting event, and the timestamp is when the binlog file is created.
-		// We must skip this event, and parse the next one.
-		if foundEvent == 2 {
-			break
+		if pos == 4 {
+			// When invoking mysqlbinlog with --start-datetime, the first valid event will always be FORMAT_DESCRIPTION_EVENT which should be skipped.
+			continue
 		}
+		break
 	}
 
-	if foundEvent == 0 {
-		// This is unexpected behavior, because there should be at least one event parsed (the binlog start event).
-		return 0, fmt.Errorf("no event parsed from mysqlbinlog output, expecting at least one (the binlog start event)")
-	}
-	if foundEvent == 1 {
+	if pos == 4 {
 		// There's no binlog event in this binlog file with ts > targetTs.
 		// There are two possibilities:
 		// 1. It's the last binlog file, which means the targetTs > any eventTs of all the binlog files. In this case we return the last event's end pos.
