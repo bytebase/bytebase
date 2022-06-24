@@ -3,6 +3,7 @@
     ref="dialog"
     :title="$t('issue.migration-mode.title')"
     :positive-text="$t('common.next')"
+    data-label="bb-migration-mode-dialog"
   >
     <div class="w-[28rem] space-y-4 pl-8 pr-2 pb-4">
       <div class="flex items-start space-x-2">
