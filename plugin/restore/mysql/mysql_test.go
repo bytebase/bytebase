@@ -516,46 +516,46 @@ func TestParseBinlogEventTsInLine(t *testing.T) {
 	}
 }
 
-func TestParseBinlogEventStartPosInLine(t *testing.T) {
+func TestParseBinlogEventPosInLine(t *testing.T) {
 	a := require.New(t)
 	tests := []struct {
-		line     string
-		startPos int64
-		found    bool
-		err      bool
+		line  string
+		pos   int64
+		found bool
+		err   bool
 	}{
 		// normal case
 		{
-			line:     "# at 34794",
-			startPos: 34794,
-			found:    true,
-			err:      false,
+			line:  "# at 34794",
+			pos:   34794,
+			found: true,
+			err:   false,
 		},
 		// no "# at "
 		{
-			line:     "/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;",
-			startPos: 0,
-			found:    false,
-			err:      false,
+			line:  "/*!50003 SET @OLD_COMPLETION_TYPE=@@COMPLETION_TYPE,COMPLETION_TYPE=0*/;",
+			pos:   0,
+			found: false,
+			err:   false,
 		},
 		// incomplete line
 		{
-			line:     "# at ",
-			startPos: 0,
-			found:    false,
-			err:      true,
+			line:  "# at ",
+			pos:   0,
+			found: false,
+			err:   true,
 		},
 		// parse int error
 		{
-			line:     "# at x",
-			startPos: 0,
-			found:    false,
-			err:      true,
+			line:  "# at x",
+			pos:   0,
+			found: false,
+			err:   true,
 		},
 	}
 	for _, test := range tests {
-		startPos, found, err := parseBinlogEventStartPosInLine(test.line)
-		a.Equal(test.startPos, startPos)
+		pos, found, err := parseBinlogEventPosInLine(test.line)
+		a.Equal(test.pos, pos)
 		a.Equal(test.found, found)
 		if test.err {
 			a.Error(err)
