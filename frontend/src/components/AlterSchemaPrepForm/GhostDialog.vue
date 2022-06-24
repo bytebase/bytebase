@@ -39,7 +39,7 @@
             <i18n-t tag="p" keypath="issue.migration-mode.online.description">
               <template #link>
                 <LearnMoreLink
-                  url="https://github.com/bytebase/bytebase/blob/main/docs/design/gh-ost-integration.md"
+                  url="https://www.bytebase.com/docs/features/online-schema-change"
                 />
               </template>
             </i18n-t>
