@@ -690,19 +690,30 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		return nil, fmt.Errorf("local binlog files are not continuous")
 	}
 
-	var firstEventTsListSorted []int64
-	for _, file := range binlogFilesLocalSorted {
+	var binlogFileTarget BinlogFile
+	var found bool
+	for i, file := range binlogFilesLocalSorted {
 		eventTs, err := r.parseFirstLocalBinlogEventTs(ctx, file.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
-		firstEventTsListSorted = append(firstEventTsListSorted, eventTs)
+		if eventTs > targetTs {
+			if i == 0 {
+				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d", targetTs, eventTs)
+			}
+			// The previous local binlog file contains targetTs.
+			found = true
+			binlogFileTarget = binlogFilesLocalSorted[i-1]
+			break
+		}
 	}
-	binlogFileTargetIndex, err := getLastTsIndexBeforeTargetTs(firstEventTsListSorted, targetTs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the local binlog file containing targetTs %d, error: %w", targetTs, err)
+	// All of the local binlog files' first event start ts <= targetTs, so we choose the last binlog file as "containing" targetTs.
+	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
+	// In this case, we think that the user want's to recover to the latest state of the database, and convert the ts to the last eventTs of the last binlog file.
+	if !found {
+		binlogFileTarget = binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
-	binlogFileTarget := binlogFilesLocalSorted[binlogFileTargetIndex]
+
 	eventPos, err := r.getBinlogEventPositionAfterTs(ctx, binlogFileTarget, targetTs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
@@ -850,23 +861,6 @@ func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile 
 	}
 
 	return pos, nil
-}
-
-// get the index of the last ts > targetTs.
-func getLastTsIndexBeforeTargetTs(firstEventTsListSorted []int64, targetTs int64) (int, error) {
-	for i, eventTs := range firstEventTsListSorted {
-		if eventTs > targetTs {
-			if i == 0 {
-				return 0, fmt.Errorf("the targetTs %d is before the first event ts %d", targetTs, eventTs)
-			}
-			// The previous local binlog file contains targetTs.
-			return i - 1, nil
-		}
-	}
-	// All of the local binlog files' first event start ts <= targetTs, so w e return the last binlog file as "containing" targetTs.
-	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
-	// In this case, we think the user want's to recover to the latest state of the database, and convert the ts to the last eventTs of the last binlog file.
-	return len(firstEventTsListSorted) - 1, nil
 }
 
 // getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
