@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
@@ -52,7 +51,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -78,7 +77,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for foreign key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
@@ -87,7 +86,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingFKConventionMismatch,
+				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})

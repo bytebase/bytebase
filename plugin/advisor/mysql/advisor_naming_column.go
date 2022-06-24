@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
@@ -52,7 +51,7 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -104,7 +103,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !v.format.MatchString(column) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.NamingColumnConventionMismatch,
+				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
 			})

@@ -3,15 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 const (
@@ -124,7 +122,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 		if len(v.tables[tableName]) == 0 {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.TableNoPK,
+				Code:    advisor.TableNoPK,
 				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
 			})
@@ -134,7 +132,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 	if len(v.adviceList) == 0 {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -167,10 +165,10 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 			IndexName: primaryKeyName,
 		})
 		if err != nil {
-			log.Error(
-				"Cannot find primary key in table",
-				zap.String("table_name", table),
-				zap.Error(err),
+			log.Printf(
+				"Cannot find primary key in table %s with error %v\n",
+				table,
+				err,
 			)
 			return
 		}
