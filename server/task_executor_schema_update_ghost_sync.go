@@ -80,7 +80,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
 		hooksStatusIntervalSec              = 60
-		replicaServerID                     = 99999
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
 		chunkSize                           = 1000
