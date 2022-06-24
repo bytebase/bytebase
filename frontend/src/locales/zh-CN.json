@@ -477,7 +477,7 @@
       },
       "online": {
         "title": "在线变更 (适用于大数据量的表)",
-        "description": "使用临时表做准备，之后再执行变更。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
+        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
     "new-issue": "@:common.new@:common.issue",
