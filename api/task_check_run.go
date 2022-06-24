@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -189,4 +190,65 @@ type TaskCheckRunStatusPatch struct {
 	Status TaskCheckRunStatus
 	Code   common.Code
 	Result string
+}
+
+// ConvertToErrorCode will convert advisor code into common code
+func ConvertToErrorCode(code advisor.Code) common.Code {
+	switch code {
+	case advisor.Ok:
+		return common.Ok
+	case advisor.Internal:
+		return common.Internal
+	case advisor.DbStatementSyntaxError:
+		return common.DbStatementSyntaxError
+	case advisor.EmptySchemaReviewPolicy:
+		return common.TaskCheckEmptySchemaReviewPolicy
+	case advisor.CompatibilityDropDatabase:
+		return common.CompatibilityDropDatabase
+	case advisor.CompatibilityRenameTable:
+		return common.CompatibilityRenameTable
+	case advisor.CompatibilityDropTable:
+		return common.CompatibilityDropTable
+	case advisor.CompatibilityRenameColumn:
+		return common.CompatibilityRenameColumn
+	case advisor.CompatibilityDropColumn:
+		return common.CompatibilityDropColumn
+	case advisor.CompatibilityAddPrimaryKey:
+		return common.CompatibilityAddPrimaryKey
+	case advisor.CompatibilityAddUniqueKey:
+		return common.CompatibilityAddUniqueKey
+	case advisor.CompatibilityAddForeignKey:
+		return common.CompatibilityAddForeignKey
+	case advisor.CompatibilityAddCheck:
+		return common.CompatibilityAddCheck
+	case advisor.CompatibilityAlterCheck:
+		return common.CompatibilityAlterCheck
+	case advisor.CompatibilityAlterColumn:
+		return common.CompatibilityAlterColumn
+	case advisor.StatementNoWhere:
+		return common.StatementNoWhere
+	case advisor.StatementSelectAll:
+		return common.StatementSelectAll
+	case advisor.StatementLeadingWildcardLike:
+		return common.StatementLeadingWildcardLike
+	case advisor.NamingTableConventionMismatch:
+		return common.NamingTableConventionMismatch
+	case advisor.NamingColumnConventionMismatch:
+		return common.NamingColumnConventionMismatch
+	case advisor.NamingIndexConventionMismatch:
+		return common.NamingIndexConventionMismatch
+	case advisor.NamingUKConventionMismatch:
+		return common.NamingUKConventionMismatch
+	case advisor.NamingFKConventionMismatch:
+		return common.NamingFKConventionMismatch
+	case advisor.NoRequiredColumn:
+		return common.NoRequiredColumn
+	case advisor.ColumnCanNotNull:
+		return common.ColumnCanNotNull
+	case advisor.NotInnoDBEngine:
+		return common.NotInnoDBEngine
+	case advisor.TableNoPK:
+		return common.TableNoPK
+	}
+	return common.Internal
 }

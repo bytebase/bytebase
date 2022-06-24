@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id",
 				},
@@ -32,7 +31,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -49,7 +48,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
@@ -66,7 +65,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -83,7 +82,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
@@ -100,7 +99,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -117,7 +116,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
@@ -135,7 +134,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -151,7 +150,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: updater_id",
 				},
@@ -168,7 +167,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -187,13 +186,13 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `book` requires columns: creator_id",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.NoRequiredColumn,
+					Code:    advisor.NoRequiredColumn,
 					Title:   "column.required",
 					Content: "Table `student` requires columns: creator_id, updater_id",
 				},
@@ -210,7 +209,7 @@ func TestColumnRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},

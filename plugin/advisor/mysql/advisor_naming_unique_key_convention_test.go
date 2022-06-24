@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +17,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -29,7 +28,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
@@ -40,7 +39,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -51,7 +50,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
@@ -66,7 +65,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -80,7 +79,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `uk_tech_book`",
 				},
@@ -91,7 +90,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -102,7 +101,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
@@ -113,7 +112,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
@@ -124,7 +123,7 @@ func TestNamingUKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
+					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},

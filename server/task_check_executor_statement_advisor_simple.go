@@ -69,7 +69,7 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 
 		result = append(result, api.TaskCheckResult{
 			Status:  status,
-			Code:    advice.Code,
+			Code:    api.ConvertToErrorCode(advice.Code),
 			Title:   advice.Title,
 			Content: advice.Content,
 		})
