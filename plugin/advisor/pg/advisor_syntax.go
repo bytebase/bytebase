@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
@@ -27,7 +26,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 	return []advisor.Advice{
 		{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "Syntax OK",
 			Content: "OK",
 		},

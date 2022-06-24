@@ -1,7 +1,6 @@
 package fake
 
 import (
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
@@ -25,19 +24,19 @@ func (adv *Advisor) Check(ctx advisor.Context, statement string) ([]advisor.Advi
 	return []advisor.Advice{
 		{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "INFO check",
 			Content: statement,
 		},
 		{
 			Status:  advisor.Warn,
-			Code:    common.Internal,
+			Code:    advisor.Internal,
 			Title:   "WARN check",
 			Content: statement,
 		},
 		{
 			Status:  advisor.Error,
-			Code:    common.Internal,
+			Code:    advisor.Internal,
 			Title:   "ERROR check",
 			Content: statement,
 		},

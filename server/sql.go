@@ -770,7 +770,7 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			adviceLevel = advisor.Warn
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Warn,
-				Code:    common.TaskCheckEmptySchemaReviewPolicy,
+				Code:    advisor.EmptySchemaReviewPolicy,
 				Title:   "Empty schema review policy or disabled",
 				Content: "",
 			})
@@ -822,7 +822,7 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 		if len(adviceList) == 0 {
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Success,
-				Code:    common.Ok,
+				Code:    advisor.Ok,
 				Title:   "OK",
 				Content: "",
 			})
