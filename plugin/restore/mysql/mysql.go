@@ -773,17 +773,6 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 		err = cmd.Process.Kill()
 	}()
 
-	// s.Scan() could panic, so we should recover and handle this.
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			err, ok = r.(error)
-			if !ok {
-				err = fmt.Errorf("%v", r)
-			}
-			log.Error("bufio.Scanner panic", zap.Error(err))
-		}
-	}()
 	var found bool
 	for s.Scan() {
 		line := s.Text()
@@ -825,18 +814,6 @@ func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile 
 	defer func() {
 		pr.Close()
 		err = cmd.Process.Kill()
-	}()
-
-	// s.Scan() could panic, so we should recover and handle this.
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			err, ok = r.(error)
-			if !ok {
-				err = fmt.Errorf("%v", r)
-			}
-			log.Error("bufio.Scanner panic", zap.Error(err))
-		}
 	}()
 
 	foundEvent := 0
