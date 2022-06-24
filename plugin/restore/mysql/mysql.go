@@ -697,7 +697,7 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
-		if eventTs > targetTs {
+		if eventTs >= targetTs {
 			if i == 0 {
 				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d", targetTs, eventTs)
 			}
@@ -800,7 +800,7 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 	return eventTs, nil
 }
 
-// Use command like mysqlbinlog --start-datetime=targetTs+1 binlog.000001 to parse the first binlog event ts after targetTs.
+// Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
 // TODO(dragonly): Add integration test.
 func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (pos int64, err error) {
 	args := []string{
@@ -808,9 +808,8 @@ func (r *Restore) getBinlogEventPositionAfterTs(ctx context.Context, binlogFile 
 		path.Join(r.binlogDir, binlogFile.Name),
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
-		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs+1.
-		// The --start-datetime is inclusive, so we use targetTs+1 as the argument, which gives the position after all events before targetTs (inclusive) are replayed.
-		"--start-datetime", formatDateTime(targetTs + 1),
+		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
+		"--start-datetime", formatDateTime(targetTs),
 	}
 	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stderr = os.Stderr
