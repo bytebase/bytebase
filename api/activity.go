@@ -54,15 +54,15 @@ const (
 	// ActivityProjectMemberRoleUpdate is the type for updating project member roles.
 	ActivityProjectMemberRoleUpdate ActivityType = "bb.project.member.role.update"
 
-	// Database related
-
-	// ActivityDatabaseRecoveryPITR is the type for performing PITR on the database.
-	ActivityDatabaseRecoveryPITR ActivityType = "bb.database.recovery.pitr"
-
 	// SQL Editor related
 
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
+
+	// Database related
+
+	// ActivityDatabaseRecoveryPITR is the type for performing PITR on the database.
+	ActivityDatabaseRecoveryPITR ActivityType = "bb.database.recovery.pitr"
 )
 
 func (e ActivityType) String() string {
@@ -99,10 +99,10 @@ func (e ActivityType) String() string {
 		return "bb.project.member.delete"
 	case ActivityProjectMemberRoleUpdate:
 		return "bb.project.member.role.update"
-	case ActivityDatabaseRecoveryPITR:
-		return "bb.database.recovery.pitr"
 	case ActivitySQLEditorQuery:
 		return "bb.sql-editor.query"
+	case ActivityDatabaseRecoveryPITR:
+		return "bb.database.recovery.pitr"
 	}
 	return "bb.activity.unknown"
 }
