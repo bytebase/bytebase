@@ -114,7 +114,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
