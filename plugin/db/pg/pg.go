@@ -278,7 +278,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		return nil
 	}
 
-	fmt.Printf("Barny1: %v\n", remainingStmts)
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -302,7 +301,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 
 func isSuperuserStatement(stmt string) bool {
 	upperCaseStmt := strings.ToUpper(stmt)
-	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") {
+	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
 	return false
