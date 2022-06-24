@@ -250,5 +250,5 @@ func ConvertToErrorCode(code advisor.Code) common.Code {
 	case advisor.TableNoPK:
 		return common.TableNoPK
 	}
-	return common.Unknown
+	return common.Internal
 }

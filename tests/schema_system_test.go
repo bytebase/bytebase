@@ -54,7 +54,7 @@ func TestSchemaSystem(t *testing.T) {
 		noSchemaReviewPolicy = []api.TaskCheckResult{
 			{
 				Status:  api.TaskCheckStatusWarn,
-				Code:    api.ConvertToErrorCode(advisor.EmptySchemaReviewPolicy),
+				Code:    common.TaskCheckEmptySchemaReviewPolicy,
 				Title:   "Empty schema review policy or disabled",
 				Content: "",
 			},
@@ -76,7 +76,7 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.DbStatementSyntaxError),
+						Code:    common.DbStatementSyntaxError,
 						Title:   advisor.SyntaxErrorTitle,
 						Content: "line 1 column 21 near \");\" ",
 					},
@@ -87,67 +87,67 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.NotInnoDBEngine),
+						Code:    common.NotInnoDBEngine,
 						Title:   "engine.mysql.use-innodb",
 						Content: fmt.Sprintf("%q doesn't use InnoDB engine", statements[1]),
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NamingTableConventionMismatch),
+						Code:    common.NamingTableConventionMismatch,
 						Title:   "naming.table",
 						Content: "`userTable` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NamingColumnConventionMismatch),
+						Code:    common.NamingColumnConventionMismatch,
 						Title:   "naming.column",
 						Content: "`userTable`.`roomId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NamingIndexConventionMismatch),
+						Code:    common.NamingIndexConventionMismatch,
 						Title:   "naming.index.idx",
 						Content: "Index in table `userTable` mismatches the naming convention, expect \"^idx_userTable_name$\" but found `idx1`",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NamingUKConventionMismatch),
+						Code:    common.NamingUKConventionMismatch,
 						Title:   "naming.index.uk",
 						Content: "Unique key in table `userTable` mismatches the naming convention, expect \"^uk_userTable_id_name$\" but found `uk1`",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NamingFKConventionMismatch),
+						Code:    common.NamingFKConventionMismatch,
 						Title:   "naming.index.fk",
 						Content: "Foreign key in table `userTable` mismatches the naming convention, expect \"^fk_userTable_roomId_room_id$\" but found `fk1`",
 					},
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.TableNoPK),
+						Code:    common.TableNoPK,
 						Title:   "table.require-pk",
 						Content: "Table `userTable` requires PRIMARY KEY",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.NoRequiredColumn),
+						Code:    common.NoRequiredColumn,
 						Title:   "column.required",
 						Content: "Table `userTable` requires columns: created_ts, creator_id, updated_ts, updater_id",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.ColumnCanNotNull),
+						Code:    common.ColumnCanNotNull,
 						Title:   "column.no-null",
 						Content: "`userTable`.`id` can not have NULL value",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.ColumnCanNotNull),
+						Code:    common.ColumnCanNotNull,
 						Title:   "column.no-null",
 						Content: "`userTable`.`name` can not have NULL value",
 					},
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.ColumnCanNotNull),
+						Code:    common.ColumnCanNotNull,
 						Title:   "column.no-null",
 						Content: "`userTable`.`roomId` can not have NULL value",
 					},
@@ -158,7 +158,7 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.StatementNoWhere),
+						Code:    common.StatementNoWhere,
 						Title:   "statement.where.require",
 						Content: "\"DELETE FROM t\" requires WHERE clause",
 					},
@@ -169,7 +169,7 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.StatementLeadingWildcardLike),
+						Code:    common.StatementLeadingWildcardLike,
 						Title:   "statement.where.no-leading-wildcard-like",
 						Content: "\"DELETE FROM t WHERE a like `%abc`\" uses leading wildcard LIKE",
 					},
@@ -180,13 +180,13 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.StatementSelectAll),
+						Code:    common.StatementSelectAll,
 						Title:   "statement.select.no-select-all",
 						Content: "\"INSERT INTO t_copy SELECT * FROM t\" uses SELECT all",
 					},
 					{
 						Status:  api.TaskCheckStatusError,
-						Code:    api.ConvertToErrorCode(advisor.StatementNoWhere),
+						Code:    common.StatementNoWhere,
 						Title:   "statement.where.require",
 						Content: "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
 					},
@@ -208,7 +208,7 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:  api.TaskCheckStatusWarn,
-						Code:    api.ConvertToErrorCode(advisor.CompatibilityDropTable),
+						Code:    common.CompatibilityDropTable,
 						Title:   "schema.backward-compatibility",
 						Content: "\"DROP TABLE user\" may cause incompatibility with the existing data and code",
 					},
