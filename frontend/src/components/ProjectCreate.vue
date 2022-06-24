@@ -218,42 +218,46 @@ export default defineComponent({
         state.showFeatureModal = true;
         return;
       }
-      state.isCreating = true;
 
-      const createdProject = await projectStore.createProject(state.project);
-      useUIStateStore().saveIntroStateByKey({
-        key: "project.visit",
-        newState: true,
-      });
+      try {
+        state.isCreating = true;
 
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("project.create-modal.success-prompt", {
-          name: createdProject.name,
-        }),
-      });
-
-      const url = {
-        path: `/project/${projectSlug(createdProject)}`,
-        hash: "",
-      };
-      if (state.project.tenantMode === "TENANT") {
-        // Generate and save default deployment configuration if it's a tenant mode project
-        const environmentList = useEnvironmentList(["NORMAL"]);
-        const schedule = generateDefaultSchedule(environmentList.value);
-        await useDeploymentStore().patchDeploymentConfigByProjectId({
-          projectId: createdProject.id,
-          deploymentConfigPatch: {
-            payload: JSON.stringify(schedule),
-          },
+        const createdProject = await projectStore.createProject(state.project);
+        useUIStateStore().saveIntroStateByKey({
+          key: "project.visit",
+          newState: true,
         });
 
-        url.hash = "deployment-config";
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("project.create-modal.success-prompt", {
+            name: createdProject.name,
+          }),
+        });
+
+        const url = {
+          path: `/project/${projectSlug(createdProject)}`,
+          hash: "",
+        };
+        if (state.project.tenantMode === "TENANT") {
+          // Generate and save default deployment configuration if it's a tenant mode project
+          const environmentList = useEnvironmentList(["NORMAL"]);
+          const schedule = generateDefaultSchedule(environmentList.value);
+          await useDeploymentStore().patchDeploymentConfigByProjectId({
+            projectId: createdProject.id,
+            deploymentConfigPatch: {
+              payload: JSON.stringify(schedule),
+            },
+          });
+
+          url.hash = "deployment-config";
+        }
+        router.push(url);
+        emit("dismiss");
+      } finally {
+        state.isCreating = false;
       }
-      state.isCreating = false;
-      router.push(url);
-      emit("dismiss");
     };
 
     const cancel = () => {
