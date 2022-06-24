@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
@@ -14,7 +13,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -25,7 +24,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -36,7 +35,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
@@ -48,7 +47,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -60,7 +59,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -72,7 +71,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
@@ -84,7 +83,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
@@ -96,7 +95,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -108,7 +107,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -120,7 +119,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -132,7 +131,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -144,7 +143,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -156,7 +155,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -168,7 +167,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
@@ -180,7 +179,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},
@@ -192,7 +191,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -205,7 +204,7 @@ func TestRequirePK(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.TableNoPK,
+					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
 					Content: "Table `t` requires PRIMARY KEY",
 				},

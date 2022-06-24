@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -27,7 +26,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -39,7 +38,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -50,7 +49,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -67,7 +66,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`creatorId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -78,7 +77,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -89,7 +88,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -105,7 +104,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`contentString` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -124,25 +123,25 @@ func TestNamingColumnConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`book`.`updaterId` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`student`.`createdTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.NamingColumnConventionMismatch,
+					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
 					Content: "`student`.`updatedTs` mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},

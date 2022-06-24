@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap/zapcore"
@@ -115,10 +114,10 @@ const (
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status      `json:"status"`
-	Code    common.Code `json:"code"`
-	Title   string      `json:"title"`
-	Content string      `json:"content"`
+	Status  Status `json:"status"`
+	Code    Code   `json:"code"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 // MarshalLogObject constructs a field that carries Advice.

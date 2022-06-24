@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,7 @@ func TestNamingFKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -27,7 +26,7 @@ func TestNamingFKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingFKConventionMismatch,
+					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
 					Content: "Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found `fk_author_id`",
 				},
@@ -38,7 +37,7 @@ func TestNamingFKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -49,7 +48,7 @@ func TestNamingFKConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingFKConventionMismatch,
+					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
 					Content: "Foreign key in table `book` mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" but found `fk_book_author_id`",
 				},
