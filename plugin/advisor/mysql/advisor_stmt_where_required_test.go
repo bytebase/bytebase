@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
@@ -14,7 +13,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.StatementNoWhere,
+					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
 					Content: "\"DELETE FROM t1\" requires WHERE clause",
 				},
@@ -25,7 +24,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.StatementNoWhere,
+					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
 					Content: "\"UPDATE t1 SET a = 1\" requires WHERE clause",
 				},
@@ -36,7 +35,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -47,7 +46,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -58,7 +57,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.StatementNoWhere,
+					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
 					Content: "\"SELECT a FROM t\" requires WHERE clause",
 				},
@@ -69,7 +68,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -80,7 +79,7 @@ func TestWhereRequirement(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.StatementNoWhere,
+					Code:    advisor.StatementNoWhere,
 					Title:   "statement.where.require",
 					Content: "\"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)\" requires WHERE clause",
 				},

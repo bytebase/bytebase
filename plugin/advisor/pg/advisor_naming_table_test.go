@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingTableConventionMismatch,
+					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "\"techBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -27,7 +26,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingTableConventionMismatch,
+					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "\"_techbook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -39,7 +38,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -50,7 +49,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -61,7 +60,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingTableConventionMismatch,
+					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
 					Content: "\"TechBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
@@ -72,7 +71,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
