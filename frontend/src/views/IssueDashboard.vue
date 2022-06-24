@@ -107,7 +107,9 @@ export default defineComponent({
       openList: [],
       closedList: [],
       searchText: "",
-      selectedPrincipalId: currentUser.value.id,
+      selectedPrincipalId:
+        parseInt(router.currentRoute.value.query.user as string, 10) ||
+        currentUser.value.id,
       selectedEnvironment: router.currentRoute.value.query.environment
         ? useEnvironmentStore().getEnvironmentById(
             parseInt(router.currentRoute.value.query.environment as string, 10)
