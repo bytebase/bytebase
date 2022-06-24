@@ -473,11 +473,11 @@
       "title": "Migration mode",
       "normal": {
         "title": "Normal migration (for normal-sized table)",
-        "description": "Perform schema change directly on the target table."
+        "description": "Perform schema change directly on the target table. A lock will be held during the entire migration."
       },
       "online": {
         "title": "Online migration (for large-sized table)",
-        "description": "Perform schema change on a duplicated empty table. Sync the data and swap the table name after sync finishes. Applying migration on a large table directly would cause long-time unavailability {link}."
+        "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
       }
     },
     "new-issue": "@:common.new @:common.issue",

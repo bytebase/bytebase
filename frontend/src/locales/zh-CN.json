@@ -473,11 +473,11 @@
       "title": "变更模式",
       "normal": {
         "title": "普通变更 (适用于正常大小的表)",
-        "description": "直接在目标表上执行 schema 变更。"
+        "description": "直接在目标表上执行 schema 变更，表在整个变更期间会被锁住。"
       },
       "online": {
-        "title": "在线变更 (适用于数据量大的表)",
-        "description": "在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。"
+        "title": "在线变更 (适用于大数据量的表)",
+        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
     "new-issue": "@:common.new@:common.issue",
