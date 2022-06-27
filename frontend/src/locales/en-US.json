@@ -815,7 +815,8 @@
       "restore-to-point-in-time": "Restore to point in time",
       "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
       "no-later-than-now": "Restore point-in-time cannot be later than now."
-    }
+    },
+    "show-reserved-tables": "Show bytebase reserved tables"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
