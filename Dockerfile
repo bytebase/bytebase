@@ -69,6 +69,7 @@ RUN apt-get update && apt-get install -y locales
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
+COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
