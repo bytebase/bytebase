@@ -91,9 +91,18 @@ export default defineComponent({
 
     const router = useRouter();
 
-    const clickInstance = function (section: number, row: number) {
+    const clickInstance = function (
+      section: number,
+      row: number,
+      e: MouseEvent
+    ) {
       const instance = props.instanceList[row];
-      router.push(`/instance/${instanceSlug(instance)}`);
+      const url = `/instance/${instanceSlug(instance)}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     };
 
     const environmentNameFromId = function (id: EnvironmentId) {
