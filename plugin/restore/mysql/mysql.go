@@ -848,7 +848,7 @@ func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogF
 		break
 	}
 
-	if pos != 0 {
+	if pos == 0 {
 		// There's no binlog event in this binlog file with ts > targetTs, which means the next binlog file's first eventTs > targetTs.
 		// We should return the end position of the last binlog event, i.e, the size of the binlog file.
 		// However, if this is the last binlog file, which means the user wants to recover to a time in the future and we should return an error.
