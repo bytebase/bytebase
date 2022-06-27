@@ -279,7 +279,7 @@ const routes: Array<RouteRecordRaw> = [
           {
             path: "setting",
             name: "setting",
-            meta: { title: () => t("common.setting") },
+            meta: { title: () => t("common.settings") },
             components: {
               content: () => import("../layouts/SettingLayout.vue"),
               leftSidebar: () => import("../views/SettingSidebar.vue"),
@@ -435,7 +435,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "issue",
             name: "workspace.issue",
             meta: {
-              title: () => t("common.issue"),
+              title: () => t("common.issues"),
             },
             components: {
               content: () => import("../views/IssueDashboard.vue"),
@@ -447,7 +447,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "environment",
             name: "workspace.environment",
             meta: {
-              title: () => t("common.environment"),
+              title: () => t("common.environments"),
               quickActionListByRole: () => {
                 return new Map([
                   [
@@ -495,7 +495,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "project",
             name: "workspace.project",
             meta: {
-              title: () => t("common.project"),
+              title: () => t("common.projects"),
               quickActionListByRole: () => {
                 return new Map([
                   ["OWNER", ["quickaction.bb.project.create"]],
@@ -629,7 +629,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "instance",
             name: "workspace.instance",
             meta: {
-              title: () => t("common.instance"),
+              title: () => t("common.instances"),
               quickActionListByRole: () => {
                 return new Map([
                   ["OWNER", ["quickaction.bb.instance.create"]],
@@ -647,7 +647,7 @@ const routes: Array<RouteRecordRaw> = [
             path: "db",
             name: "workspace.database",
             meta: {
-              title: () => t("common.database"),
+              title: () => t("common.databases"),
               quickActionListByRole: () => {
                 const hasDBAWorkflowFeature = hasFeature(
                   "bb.feature.dba-workflow"
