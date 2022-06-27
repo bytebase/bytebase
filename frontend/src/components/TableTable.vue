@@ -1,43 +1,73 @@
 <template>
   <BBTable
     :column-list="COLUMN_LIST"
-    :data-source="tableList"
+    :data-source="mixedTableList"
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
     :row-clickable="true"
+    :custom-footer="true"
     @click-row="clickTable"
   >
     <template #body="{ rowData: table }">
-      <BBTableCell :left-padding="4" class="w-16">
-        {{ table.name }}
+      <BBTableCell :left-padding="4">
+        <div class="flex items-center space-x-2">
+          <span>{{ table.name }}</span>
+          <BBBadge
+            v-if="isGhostTable(table)"
+            text="gh-ost"
+            :can-remove="false"
+            class="text-xs"
+          />
+        </div>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[14%]">
         {{ table.engine }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[14%]">
         {{ table.rowCount }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[14%]">
         {{ bytesToString(table.dataSize) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[14%]">
         {{ bytesToString(table.indexSize) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[14%]">
         {{ humanizeTs(table.createdTs) }}
       </BBTableCell>
+    </template>
+
+    <template v-if="hasReservedTables && !state.showReservedTableList" #footer>
+      <tfoot>
+        <tr>
+          <td :colspan="COLUMN_LIST.length" class="p-0">
+            <div
+              class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
+              @click="state.showReservedTableList = true"
+            >
+              {{ $t("database.show-reserved-tables") }}
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </template>
   </BBTable>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { computed, defineComponent, PropType, reactive } from "vue";
 import { BBTableColumn } from "../bbkit/types";
 import { Table } from "../types";
 import { bytesToString, databaseSlug } from "../utils";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+
+const GHOST_LOGO = new URL("../assets/gh-ost-logo.png", import.meta.url).href;
+
+type LocalState = {
+  showReservedTableList: boolean;
+};
 
 export default defineComponent({
   name: "TableTable",
@@ -50,6 +80,10 @@ export default defineComponent({
   setup(props) {
     const router = useRouter();
     const { t } = useI18n();
+
+    const state = reactive<LocalState>({
+      showReservedTableList: false,
+    });
 
     const COLUMN_LIST: BBTableColumn[] = [
       {
@@ -72,6 +106,25 @@ export default defineComponent({
       },
     ];
 
+    const regularTableList = computed(() =>
+      props.tableList.filter((table) => !isGhostTable(table))
+    );
+    const reservedTableList = computed(() =>
+      props.tableList.filter((table) => isGhostTable(table))
+    );
+    const hasReservedTables = computed(
+      () => reservedTableList.value.length > 0
+    );
+
+    const mixedTableList = computed(() => {
+      const tableList = [...regularTableList.value];
+      if (state.showReservedTableList) {
+        tableList.push(...reservedTableList.value);
+      }
+
+      return tableList;
+    });
+
     const clickTable = (section: number, row: number, e: MouseEvent) => {
       const table = props.tableList[row];
       const url = `/db/${databaseSlug(table.database)}/table/${table.name}`;
@@ -83,10 +136,29 @@ export default defineComponent({
     };
 
     return {
+      GHOST_LOGO,
       COLUMN_LIST,
+      state,
       bytesToString,
       clickTable,
+      hasReservedTables,
+      mixedTableList,
+      isGhostTable,
     };
   },
 });
+
+function isGhostTable(table: Table): boolean {
+  const { name } = table;
+  // for future name support with timestamp, e.g. ~table_1234567890_del or _table_1234567890_del
+  if (name.match(/^(_|~)(.+?)_(\d+)_(ghc|gho|del)$/)) {
+    return true;
+  }
+  // for legacy name support without timestamp, e.g. _table_del or ~table_del
+  if (name.match(/^(_|~)(.+?)_(ghc|gho|del)$/)) {
+    return true;
+  }
+
+  return false;
+}
 </script>
