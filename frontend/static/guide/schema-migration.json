@@ -4,15 +4,27 @@
     {},
     {
       "title": "Click the Alter Schema button",
+      "description": "Alter schema is a main feature of Bytebase",
+      "url": "http://localhost:3000",
+      "selectors": [["[data-label='bb-alter-schema-button']"]]
+    },
+    {
+      "title": "Select the database",
       "description": "",
-      "url": "http://localhost:3000/"
+      "selectors": [
+        [
+          "[data-label='bb-alter-schema-modal'] [data-label='bb-database-table'] tbody tr"
+        ]
+      ]
     },
     {
-      "title": "Select one of your database",
-      "description": ""
-    },
-    {
-      "title": "Select Normal migration and click Next"
+      "title": "Choose Normal migration and click Next",
+      "description": "",
+      "selectors": [
+        [
+          "[data-label='bb-migration-mode-dialog'] [data-label='bb-modal-confirm-button']"
+        ]
+      ]
     },
     {
       "title": "Input the `DROP COLUMN` SQL string in the editor",

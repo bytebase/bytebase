@@ -89,7 +89,11 @@
         v-if="quickAction == 'quickaction.bb.database.schema.update'"
         class="flex flex-col items-center w-28"
       >
-        <button class="btn-icon-primary p-3" @click.prevent="alterSchema">
+        <button
+          class="btn-icon-primary p-3"
+          data-label="bb-alter-schema-button"
+          @click.prevent="alterSchema"
+        >
           <heroicons-outline:pencil-alt class="w-6 h-6" />
         </button>
         <h3 class="mt-1 text-center text-base font-normal text-main">
@@ -178,6 +182,7 @@
     class="relative overflow-hidden"
     :title="state.modalTitle"
     :subtitle="state.modalSubtitle"
+    :data-label="`bb-${kebabCase(state.modalTitle)}-modal`"
     @close="state.showModal = false"
   >
     <template v-if="state.quickActionType == 'quickaction.bb.project.create'">
@@ -246,6 +251,7 @@
 <script lang="ts">
 import { defineComponent, reactive, PropType, computed } from "vue";
 import { useRouter } from "vue-router";
+import { kebabCase } from "lodash-es";
 import ProjectCreate from "../components/ProjectCreate.vue";
 import CreateInstanceForm from "../components/CreateInstanceForm.vue";
 import AlterSchemaPrepForm from "./AlterSchemaPrepForm/";
@@ -444,6 +450,7 @@ export default defineComponent({
       requestDatabase,
       createEnvironment,
       reorderEnvironment,
+      kebabCase,
     };
   },
 });
