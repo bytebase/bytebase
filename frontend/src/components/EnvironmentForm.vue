@@ -3,7 +3,8 @@
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
-          {{ $t("common.environments") }} <span class="text-red-600">*</span>
+          {{ $t("common.environment-name") }}
+          <span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-2 w-full"
