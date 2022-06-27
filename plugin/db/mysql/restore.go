@@ -694,7 +694,6 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 	}
 
 	var binlogFileTarget *BinlogFile
-	var binlogFileNext BinlogFile
 	for i, file := range binlogFilesLocalSorted {
 		eventTs, err := r.parseLocalBinlogFirstEventTs(ctx, file.Name)
 		if err != nil {
@@ -706,7 +705,6 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 			}
 			// The previous local binlog file contains targetTs.
 			binlogFileTarget = &binlogFilesLocalSorted[i-1]
-			binlogFileNext = file
 			break
 		}
 	}
@@ -722,13 +720,13 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			// There's no binlog event in this binlog file with ts > targetTs, which means the next binlog file's first eventTs > targetTs.
-			// We should return the start position of the first binlog event of the next binlog file, i.e, 4.
-			// However, if this is the last binlog file, which means the user wants to recover to a time in the future and we should return an error.
+			// All the binlog events in this binlog file have ts < targetTs.
+			// If this is the last binlog file, the user wants to recover to a time in the future and we should return an error.
+			// Otherwise, we should return the end position of the current binlog file.
 			if isLastBinlogFile {
 				return nil, fmt.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFileTarget.Name)
 			}
-			return &api.BinlogInfo{FileName: binlogFileNext.Name, Position: 0}, nil
+			return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: math.MaxInt64}, nil
 		}
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
