@@ -7,6 +7,7 @@
     :right-bordered="bordered"
     :top-bordered="bordered"
     :bottom-bordered="bordered"
+    data-label="bb-database-table"
     @click-row="clickDatabase"
   >
     <template #body="{ rowData: database }: { rowData: Database }">

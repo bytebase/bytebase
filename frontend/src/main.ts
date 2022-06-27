@@ -35,6 +35,7 @@ import dataSourceType from "./directives/data-source-type";
 import App from "./App.vue";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
+import "./plugins/guide/style.css";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
