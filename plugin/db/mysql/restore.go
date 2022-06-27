@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -67,14 +66,14 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 // 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
 // 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
 type Restore struct {
-	driver    *mysql.Driver
+	driver    *Driver
 	mysqlutil *mysqlutil.Instance
 	connCfg   db.ConnectionConfig
 	binlogDir string
 }
 
-// New creates a new instance of Restore
-func New(driver *mysql.Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
+// NewRestore creates a new instance of Restore
+func NewRestore(driver *Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
 	return &Restore{
 		driver:    driver,
 		mysqlutil: instance,
@@ -423,11 +422,11 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 		}
 	}
 
-	tables, err := mysql.GetTables(ctx, db, database)
+	tables, err := GetTables(ctx, db, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error: %w", database, err)
 	}
-	tablesPITR, err := mysql.GetTables(ctx, db, pitrDatabaseName)
+	tablesPITR, err := GetTables(ctx, db, pitrDatabaseName)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error: %w", pitrDatabaseName, err)
 	}
