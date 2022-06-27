@@ -765,7 +765,7 @@ func parseBinlogEventPosInLine(line string) (pos int64, found bool, err error) {
 }
 
 // Parse the first binlog eventTs of a local binlog file.
-func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName string) (eventTs int64, err error) {
+func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName string) (int64, error) {
 	args := []string{
 		// Local binlog file path.
 		path.Join(r.binlogDir, fileName),
@@ -783,12 +783,11 @@ func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName str
 		return 0, err
 	}
 	defer func() {
-		pr.Close()
-		if err1 := cmd.Process.Kill(); err1 != nil {
-			err = err1
-		}
+		_ = pr.Close()
+		_ = cmd.Process.Kill()
 	}()
 
+	var eventTs int64
 	for s.Scan() {
 		line := s.Text()
 		eventTsParsed, found, err := parseBinlogEventTsInLine(line)
@@ -807,7 +806,7 @@ func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName str
 
 // Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
 // TODO(dragonly): Add integration test.
-func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64, isLastBinlogFile bool) (pos int64, err error) {
+func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64, isLastBinlogFile bool) (int64, error) {
 	args := []string{
 		// Local binlog file path.
 		path.Join(r.binlogDir, binlogFile.Name),
@@ -827,12 +826,11 @@ func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogF
 		return 0, err
 	}
 	defer func() {
-		pr.Close()
-		if err1 := cmd.Process.Kill(); err1 != nil {
-			err = err1
-		}
+		_ = pr.Close()
+		_ = cmd.Process.Kill()
 	}()
 
+	var pos int64
 	for s.Scan() {
 		line := s.Text()
 		posParsed, found, err := parseBinlogEventPosInLine(line)
