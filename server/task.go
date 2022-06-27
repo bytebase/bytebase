@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -500,6 +501,31 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 					return nil, fmt.Errorf("failed to mark issue %v as DONE after completing task %v: %w", issue.Name, taskPatched.Name, err)
 				}
 			}
+		}
+	}
+
+	// We will create an PITR activity when cutover stage done.
+	if issue != nil && issue.Type == api.IssueDatabasePITR && taskPatched.Type == api.TaskDatabasePITRCutover && taskPatched.Status == api.TaskDone {
+		taskPayload := api.TaskDatabasePITRCutoverPayload{}
+		if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall PITR cutover payload, err: %w", err)
+		}
+
+		targetDate := time.Unix(taskPayload.PointInTimeTs, 0)
+		dateStr := fmt.Sprintf("%d-%d-%d %d:%d:%d", targetDate.Year(), targetDate.Month(), targetDate.Day(), targetDate.Hour(), targetDate.Minute(), targetDate.Second())
+		activityCreate = &api.ActivityCreate{
+			CreatorID:   taskStatusPatch.UpdaterID,
+			ContainerID: issue.ProjectID,
+			Type:        api.ActivityDatabaseRecoveryPITRDone,
+			Level:       level,
+			Payload:     string(payload),
+			Comment:     fmt.Sprintf("Restore database %s in instance %s to time %s successfully", task.Database.Name, task.Instance.Name, dateStr),
+		}
+		activityMeta := ActivityMeta{}
+		activityMeta.issue = issue
+		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta)
+		if err != nil {
+			return nil, err
 		}
 	}
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -31,8 +32,10 @@ type PITRCutoverTaskExecutor struct {
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
-	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
-
+	payload := api.TaskDatabasePITRCutoverPayload{}
+	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+		return true, nil, fmt.Errorf("invalid PITR restore payload: %s, error: %w", task.Payload, err)
+	}
 	return exec.pitrCutover(ctx, task, server)
 }
 
