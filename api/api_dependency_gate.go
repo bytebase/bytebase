@@ -11,7 +11,6 @@ import (
 	// _ "github.com/bytebase/bytebase/plugin/restore/mysql"
 
 	_ "github.com/bytebase/bytebase/plugin/advisor"
-	_ "github.com/bytebase/bytebase/plugin/catalog"
 	_ "github.com/bytebase/bytebase/plugin/db"
 	_ "github.com/bytebase/bytebase/plugin/metric"
 	_ "github.com/bytebase/bytebase/plugin/vcs"

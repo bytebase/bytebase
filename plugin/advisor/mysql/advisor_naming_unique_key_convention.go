@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -17,8 +16,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.

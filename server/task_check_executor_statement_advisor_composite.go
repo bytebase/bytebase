@@ -62,10 +62,15 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 
 	catalog := store.NewCatalog(task.DatabaseID, server.store)
 
+	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	if err != nil {
+		return nil, err
+	}
+
 	adviceList, err := advisor.SchemaReviewCheck(ctx, payload.Statement, policy, advisor.SchemaReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
-		DbType:    payload.DbType,
+		DbType:    dbType,
 		Catalog:   catalog,
 	})
 	if err != nil {
