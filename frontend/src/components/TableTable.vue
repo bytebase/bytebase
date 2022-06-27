@@ -41,7 +41,7 @@
     <template v-if="hasReservedTables && !state.showReservedTableList" #footer>
       <tfoot>
         <tr>
-          <td colspan="100000" class="p-0">
+          <td :colspan="COLUMN_LIST.length" class="p-0">
             <div
               class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
               @click="state.showReservedTableList = true"
