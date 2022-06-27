@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap/zapcore"
@@ -169,7 +168,7 @@ func TestPITR(t *testing.T) {
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
 		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
@@ -248,7 +247,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
@@ -301,7 +300,7 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
+		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
 		err = mysqlRestore.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
 		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
