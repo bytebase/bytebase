@@ -9,8 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
@@ -58,13 +57,13 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
-	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("failed to cast driver to mysql.Driver")
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
+	mysqlRestore := mysql.NewRestore(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
 
 	log.Info("Start swapping the original and PITR database",
 		zap.String("instance", task.Instance.Name),
