@@ -846,7 +846,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			}
 
 			create.StageList = append(create.StageList, api.StageCreate{
-				Name:             fmt.Sprintf("%s%s", database.Instance.Environment.Name, database.Name),
+				Name:             fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
 				EnvironmentID:    database.Instance.Environment.ID,
 				TaskList:         taskCreateList,
 				TaskIndexDAGList: taskIndexDAGList,
