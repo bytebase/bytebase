@@ -686,35 +686,40 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
 	}
+	if len(binlogFilesLocalSorted) == 0 {
+		return nil, fmt.Errorf("no local binlog files found")
+	}
 	if !binlogFilesAreContinuous(binlogFilesLocalSorted) {
 		return nil, fmt.Errorf("local binlog files are not continuous")
 	}
 
 	var binlogFileTarget BinlogFile
-	var found bool
+	var foundBinlogFile bool
 	for i, file := range binlogFilesLocalSorted {
-		eventTs, err := r.parseFirstLocalBinlogEventTs(ctx, file.Name)
+		eventTs, err := r.parseLocalBinlogFirstEventTs(ctx, file.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
 		if eventTs >= targetTs {
 			if i == 0 {
-				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d", targetTs, eventTs)
+				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
 			}
 			// The previous local binlog file contains targetTs.
-			found = true
+			foundBinlogFile = true
 			binlogFileTarget = binlogFilesLocalSorted[i-1]
 			break
 		}
 	}
-	// All of the local binlog files' first event start ts <= targetTs, so we choose the last binlog file as "containing" targetTs.
+	// All of the local binlog files' first event start ts <= targetTs, so we choose the last binlog file as probably "containing" targetTs.
 	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
-	// In this case, we think that the user want's to recover to the latest state of the database, and convert the ts to the last eventTs of the last binlog file.
-	if !found {
+	// In this case, we should return an error.
+	var isLastBinlogFile bool
+	if !foundBinlogFile {
+		isLastBinlogFile = true
 		binlogFileTarget = binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
 
-	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, binlogFileTarget, targetTs)
+	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, binlogFileTarget, targetTs, isLastBinlogFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
@@ -735,7 +740,7 @@ func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error
 	// fields should starts with ["#220421", "14:49:26", "server", "id", "1", "end_log_pos", "34794"]
 	if len(fields) < 7 ||
 		(len(fields[0]) != 7 || len(fields[1]) != 8 || fields[2] != "server" || fields[3] != "id" || fields[5] != "end_log_pos") {
-		return 0, false, fmt.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp and end position", line)
+		return 0, false, fmt.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp", line)
 	}
 	datetime, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
 	if err != nil {
@@ -762,7 +767,7 @@ func parseBinlogEventPosInLine(line string) (pos int64, found bool, err error) {
 }
 
 // Parse the first binlog eventTs of a local binlog file.
-func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName string) (eventTs int64, err error) {
+func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName string) (eventTs int64, err error) {
 	args := []string{
 		// Local binlog file path.
 		path.Join(r.binlogDir, fileName),
@@ -785,15 +790,15 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 	}()
 
 	for s.Scan() {
-		var found bool
 		line := s.Text()
-		eventTs, found, err = parseBinlogEventTsInLine(line)
+		eventTsParsed, found, err := parseBinlogEventTsInLine(line)
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse binlog eventTs from mysqlbinlog output, error: %w", err)
 		}
 		if !found {
 			continue
 		}
+		eventTs = eventTsParsed
 		break
 	}
 
@@ -802,7 +807,7 @@ func (r *Restore) parseFirstLocalBinlogEventTs(ctx context.Context, fileName str
 
 // Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
 // TODO(dragonly): Add integration test.
-func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (pos int64, err error) {
+func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64, isLastBinlogFile bool) (pos int64, err error) {
 	args := []string{
 		// Local binlog file path.
 		path.Join(r.binlogDir, binlogFile.Name),
@@ -826,29 +831,32 @@ func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogF
 		err = cmd.Process.Kill()
 	}()
 
+	var foundPos bool
 	for s.Scan() {
-		var found bool
 		line := s.Text()
-		pos, found, err = parseBinlogEventPosInLine(line)
+		posParsed, found, err := parseBinlogEventPosInLine(line)
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse binlog event start position from mysqlbinlog output, error: %w", err)
 		}
 		if !found {
 			continue
 		}
-		if pos == 4 {
+		if posParsed == 4 {
 			// When invoking mysqlbinlog with --start-datetime, the first valid event will always be FORMAT_DESCRIPTION_EVENT which should be skipped.
 			continue
 		}
+		pos = posParsed
+		foundPos = true
 		break
 	}
 
-	if pos == 4 {
-		// There's no binlog event in this binlog file with ts > targetTs.
-		// There are two possibilities:
-		// 1. It's the last binlog file, which means the targetTs > any eventTs of all the binlog files. In this case we return the last event's end pos.
-		// 2. It's not the last binlog file, which means the next binlog file's first eventTs > targetTs. In this case we also return the last event's end pos.
-		// We should return the end pos of the last binlog event, i.e, the size of the binlog file.
+	if !foundPos {
+		// There's no binlog event in this binlog file with ts > targetTs, which means the next binlog file's first eventTs > targetTs.
+		// We should return the end position of the last binlog event, i.e, the size of the binlog file.
+		// However, if this is the last binlog file, which means the user wants to recover to a time in the future and we should return an error.
+		if isLastBinlogFile {
+			return 0, fmt.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFile.Name)
+		}
 		return binlogFile.Size, nil
 	}
 
