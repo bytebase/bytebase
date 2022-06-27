@@ -72,9 +72,14 @@ export default defineComponent({
       },
     ];
 
-    const clickTable = (section: number, row: number) => {
+    const clickTable = (section: number, row: number, e: MouseEvent) => {
       const table = props.tableList[row];
-      router.push(`/db/${databaseSlug(table.database)}/table/${table.name}`);
+      const url = `/db/${databaseSlug(table.database)}/table/${table.name}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     };
 
     return {
