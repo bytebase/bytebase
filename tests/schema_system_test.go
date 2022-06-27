@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysql"
@@ -65,8 +66,8 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.Ok.Int(),
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
 						Title:     "OK",
 						Content:   "",
 					},
@@ -116,10 +117,11 @@ func TestSchemaSystem(t *testing.T) {
 						Content:   "Index in table `userTable` mismatches the naming convention, expect \"^idx_userTable_name$\" but found `idx1`",
 					},
 					{
-						Status:  api.TaskCheckStatusWarn,
-						Code:    advisor.NamingUKConventionMismatch.Int(),
-						Title:   "naming.index.uk",
-						Content: "Unique key in table `userTable` mismatches the naming convention, expect \"^uk_userTable_id_name$\" but found `uk1`",
+						Status:    api.TaskCheckStatusWarn,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.NamingUKConventionMismatch.Int(),
+						Title:     "naming.index.uk",
+						Content:   "Unique key in table `userTable` mismatches the naming convention, expect \"^uk_userTable_id_name$\" but found `uk1`",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,
@@ -200,10 +202,11 @@ func TestSchemaSystem(t *testing.T) {
 						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" uses SELECT all",
 					},
 					{
-						Status:  api.TaskCheckStatusError,
-						Code:    advisor.StatementNoWhere.Int(),
-						Title:   "statement.where.require",
-						Content: "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.StatementNoWhere.Int(),
+						Title:     "statement.where.require",
+						Content:   "\"INSERT INTO t_copy SELECT * FROM t\" requires WHERE clause",
 					},
 				},
 			},
@@ -212,8 +215,8 @@ func TestSchemaSystem(t *testing.T) {
 				result: []api.TaskCheckResult{
 					{
 						Status:    api.TaskCheckStatusSuccess,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.Ok.Int(),
+						Namespace: api.BBNamespace,
+						Code:      common.Ok.Int(),
 						Title:     "OK",
 						Content:   "",
 					},

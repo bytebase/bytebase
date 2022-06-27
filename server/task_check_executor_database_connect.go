@@ -28,7 +28,7 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 			{
 				Status:    api.TaskCheckStatusError,
 				Namespace: api.BBNamespace,
-				Code:      int(common.Internal),
+				Code:      common.Internal.Int(),
 				Title:     fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
 				Content:   err.Error(),
 			},
