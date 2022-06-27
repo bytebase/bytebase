@@ -693,8 +693,7 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		return nil, fmt.Errorf("local binlog files are not continuous")
 	}
 
-	var binlogFileTarget BinlogFile
-	var foundBinlogFile bool
+	var binlogFileTarget *BinlogFile
 	for i, file := range binlogFilesLocalSorted {
 		eventTs, err := r.parseLocalBinlogFirstEventTs(ctx, file.Name)
 		if err != nil {
@@ -705,8 +704,7 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
 			}
 			// The previous local binlog file contains targetTs.
-			foundBinlogFile = true
-			binlogFileTarget = binlogFilesLocalSorted[i-1]
+			binlogFileTarget = &binlogFilesLocalSorted[i-1]
 			break
 		}
 	}
@@ -714,12 +712,12 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 	// This may not be true, because possibly targetTs > last eventTs of the last binlog file.
 	// In this case, we should return an error.
 	var isLastBinlogFile bool
-	if !foundBinlogFile {
+	if binlogFileTarget == nil {
 		isLastBinlogFile = true
-		binlogFileTarget = binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
+		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
 
-	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, binlogFileTarget, targetTs, isLastBinlogFile)
+	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs, isLastBinlogFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
@@ -786,7 +784,9 @@ func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName str
 	}
 	defer func() {
 		pr.Close()
-		err = cmd.Process.Kill()
+		if err1 := cmd.Process.Kill(); err1 != nil {
+			err = err1
+		}
 	}()
 
 	for s.Scan() {
@@ -828,10 +828,11 @@ func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogF
 	}
 	defer func() {
 		pr.Close()
-		err = cmd.Process.Kill()
+		if err1 := cmd.Process.Kill(); err1 != nil {
+			err = err1
+		}
 	}()
 
-	var foundPos bool
 	for s.Scan() {
 		line := s.Text()
 		posParsed, found, err := parseBinlogEventPosInLine(line)
@@ -846,11 +847,10 @@ func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogF
 			continue
 		}
 		pos = posParsed
-		foundPos = true
 		break
 	}
 
-	if !foundPos {
+	if pos != 0 {
 		// There's no binlog event in this binlog file with ts > targetTs, which means the next binlog file's first eventTs > targetTs.
 		// We should return the end position of the last binlog event, i.e, the size of the binlog file.
 		// However, if this is the last binlog file, which means the user wants to recover to a time in the future and we should return an error.
