@@ -46,6 +46,7 @@
     "instances": "实例",
     "environment": "环境",
     "environments": "环境",
+    "environment-name": "环境名",
     "bookmark": "书签",
     "bookmarks": "书签",
     "quick-action": "快捷操作",
@@ -198,7 +199,8 @@
     "enable": "开启",
     "disable": "禁用",
     "view-doc": "查看文档",
-    "backup-and-restore": "备份与恢复"
+    "backup-and-restore": "备份与恢复",
+    "write-only": "仅写入"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -472,11 +474,11 @@
       "title": "变更模式",
       "normal": {
         "title": "普通变更 (适用于正常大小的表)",
-        "description": "直接在目标表上执行 schema 变更。"
+        "description": "直接在目标表上执行 schema 变更，表在整个变更期间会被锁住。"
       },
       "online": {
-        "title": "在线变更 (适用于数据量大的表)",
-        "description": "在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。"
+        "title": "在线变更 (适用于大数据量的表)",
+        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
     "new-issue": "@:common.new@:common.issue",
@@ -712,13 +714,15 @@
     "workflow": "工作流",
     "commit-info": "由 {author} 于 {time}",
     "no-schema-change": "本次变更没有任何 Schema 的改动",
-    "schema-drift": "上次变更后的 Schema 与本次变更前不一致",
+    "schema-drift": "Schema 偏差",
+    "schema-drift-detected": "上次变更后的 Schema 与本次变更前不一致。",
+    "view-drift": "查看偏差",
     "before-left-schema-choice": "比较",
     "left-schema-choice-prev-history-schema": "上次变更后",
     "left-schema-choice-current-history-schema-prev": "本次变更前",
     "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
-    "left-vs-right": "之前 (左) vs 当前版本 (右)",
+    "left-vs-right": "之前{prevLink} vs 当前版本",
     "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
     "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
@@ -812,7 +816,8 @@
       "restore-to-point-in-time": "恢复到指定时间点",
       "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
-    }
+    },
+    "show-reserved-tables": "显示 bytebase 保留的表"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1112,7 +1117,18 @@
     "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "我们也把被授予的数据库链接到了申请工单 '{0}'。",
     "new-data-source": "新数据源",
     "connection-name-string-copied-to-clipboard": "{0} 字符串已复制到剪贴板。",
-    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} "
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC 无法连接到 socket {0} ",
+    "ssl-type": {
+      "ca": "@:{'datasource.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'datasource.ssl.ca-cert'} + @:{'datasource.ssl.client-key'} + @:{'datasource.ssl.client-cert'}",
+      "none": "不使用"
+    },
+    "ssl": {
+      "ca-cert": "CA 证书",
+      "client-key": "客户端密钥",
+      "client-cert": "客户端证书"
+    },
+    "ssl-connection": "SSL 连接"
   },
   "setting": {
     "project": {
@@ -1222,6 +1238,8 @@
     "trial": "您可以免费试用 14 天",
     "upgrade": "升级订阅",
     "per-month": "/ 月",
+    "price-unit-for-enterprise": "/ 月起",
+    "start-from": "",
     "per-instance": "每个实例",
     "free-price-intro": "最多 5 个实例",
     "team-price-intro": "5 个起步，按年付费",

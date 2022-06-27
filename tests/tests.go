@@ -126,6 +126,7 @@ func getTestPort(testName string) int {
 		"TestTenantVCSDatabaseNameTemplate",
 		"TestBootWithExternalPg",
 		"TestSheetVCS",
+		"TestPrepare",
 
 		// PITR related cases
 		"TestPITR",

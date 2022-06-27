@@ -268,9 +268,14 @@ export default defineComponent({
       });
     };
 
-    const clickIssue = (section: number, row: number) => {
+    const clickIssue = (section: number, row: number, e: MouseEvent) => {
       const issue = props.issueSectionList[section].list[row];
-      router.push(`/issue/${issueSlug(issue.name, issue.id)}`);
+      const url = `/issue/${issueSlug(issue.name, issue.id)}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     };
 
     const clickIssueStep = (issue: Issue, step: BBStep) => {

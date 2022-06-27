@@ -19,6 +19,7 @@ import (
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
+	ghostlog "github.com/openark/golib/log"
 	"go.uber.org/zap"
 )
 
@@ -79,7 +80,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
 		hooksStatusIntervalSec              = 60
-		replicaServerID                     = 99999
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
 		chunkSize                           = 1000
@@ -91,6 +91,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
 	migrationContext := base.NewMigrationContext()
+	migrationContext.Log.SetLevel(ghostlog.ERROR)
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
 	port := 3306
 	if config.port != "" {
@@ -112,7 +113,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {

@@ -15,6 +15,7 @@ import {
   useSQLEditorStore,
   useTabStore,
   useSheetStore,
+  useDebugStore,
 } from "@/store";
 import {
   Instance,
@@ -153,5 +154,6 @@ onMounted(async () => {
   await prepareAccessibleConnectionByProject();
   await prepareSQLEditorContext();
   await prepareSheetFromQuery();
+  await useDebugStore().fetchDebug();
 });
 </script>

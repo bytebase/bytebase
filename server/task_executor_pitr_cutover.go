@@ -9,8 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
@@ -58,13 +57,13 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
-	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("failed to cast driver to mysql.Driver")
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
+	mysqlRestore := mysql.NewRestore(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
 
 	log.Info("Start swapping the original and PITR database",
 		zap.String("instance", task.Instance.Name),
@@ -76,7 +75,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 			zap.Int("issueID", issue.ID),
 			zap.String("database", task.Database.Name),
 			zap.Error(err))
-		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error[%w]", err)
+		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
 
 	log.Info("Finish swapping the original and PITR database",
@@ -100,7 +99,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	if _, _, err := driver.ExecuteMigration(ctx, m, "/* pitr cutover */"); err != nil {
 		log.Error("Failed to add migration history record", zap.Error(err))
-		return true, nil, fmt.Errorf("failed to add migration history record, error[%w]", err)
+		return true, nil, fmt.Errorf("failed to add migration history record, error: %w", err)
 	}
 
 	// Sync database schema after restore is completed.

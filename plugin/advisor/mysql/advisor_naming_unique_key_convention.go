@@ -3,15 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 var (
@@ -57,7 +55,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -83,7 +81,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for unique key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
@@ -92,7 +90,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingUKConventionMismatch,
+				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
@@ -141,11 +139,11 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					log.Error(
-						"Cannot find index in table",
-						zap.String("table_name", node.Table.Name.String()),
-						zap.String("index_name", spec.FromKey.String()),
-						zap.Error(err),
+					log.Printf(
+						"Cannot find index %s in table %s with error %v\n",
+						node.Table.Name.String(),
+						spec.FromKey.String(),
+						err,
 					)
 					continue
 				}

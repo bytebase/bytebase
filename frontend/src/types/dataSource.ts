@@ -32,6 +32,12 @@ export type DataSource = {
   // In mysql, username can be empty which means anonymous user
   username?: string;
   password?: string;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
+
+  // UI-only fields
+  updateSsl?: boolean;
 };
 
 export type DataSourceCreate = {
@@ -44,6 +50,10 @@ export type DataSourceCreate = {
   type: DataSourceType;
   username?: string;
   password?: string;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
+
   syncSchema: boolean;
 };
 
@@ -53,6 +63,10 @@ export type DataSourcePatch = {
   username?: string;
   password?: string;
   useEmptyPassword?: boolean;
+  sslCa?: string;
+  sslCert?: string;
+  sslKey?: string;
+
   syncSchema: boolean;
 };
 

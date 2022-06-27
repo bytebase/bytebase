@@ -115,7 +115,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeleteVCS(ctx, vcsDelete); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete VCS with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete VCS with ID %d", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

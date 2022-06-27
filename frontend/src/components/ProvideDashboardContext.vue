@@ -11,6 +11,7 @@ import {
   useUIStateStore,
   useProjectStore,
   useLabelStore,
+  useDebugStore,
 } from "@/store";
 import { defineComponent } from "vue";
 import { DEFAULT_PROJECT_ID } from "../types";
@@ -32,6 +33,7 @@ export default defineComponent({
       useProjectStore().fetchProjectById(DEFAULT_PROJECT_ID),
       useLabelStore().fetchLabelList(),
       useUIStateStore().restoreState(),
+      useDebugStore().fetchDebug(),
     ]);
   },
 });

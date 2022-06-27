@@ -30,6 +30,9 @@ type dataSourceRaw struct {
 	Type     api.DataSourceType
 	Username string
 	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
 }
 
 // toDataSource creates an instance of DataSource based on the dataSourceRaw.
@@ -53,6 +56,9 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 		Type:     raw.Type,
 		Username: raw.Username,
 		Password: raw.Password,
+		SslCa:    raw.SslCa,
+		SslCert:  raw.SslCert,
+		SslKey:   raw.SslKey,
 	}
 }
 
@@ -60,11 +66,11 @@ func (raw *dataSourceRaw) toDataSource() *api.DataSource {
 func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCreate) (*api.DataSource, error) {
 	dataSourceRaw, err := s.createDataSourceRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error: %w", create, err)
 	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
 	}
 	return dataSource, nil
 }
@@ -73,14 +79,14 @@ func (s *Store) CreateDataSource(ctx context.Context, create *api.DataSourceCrea
 func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*api.DataSource, error) {
 	dataSourceRaw, err := s.getDataSourceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data source with DataSourceFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get data source with DataSourceFind[%+v], error: %w", find, err)
 	}
 	if dataSourceRaw == nil {
 		return nil, nil
 	}
 	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+		return nil, fmt.Errorf("failed to compose data source with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
 	}
 	return dataSource, nil
 }
@@ -89,13 +95,13 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
 	DataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find DataSource list with DataSourceFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find DataSource list with DataSourceFind[%+v], error: %w", find, err)
 	}
 	var DataSourceList []*api.DataSource
 	for _, raw := range DataSourceRawList {
 		DataSource, err := s.composeDataSource(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", raw, err)
 		}
 		DataSourceList = append(DataSourceList, DataSource)
 	}
@@ -106,11 +112,11 @@ func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([
 func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch) (*api.DataSource, error) {
 	dataSourceRaw, err := s.patchDataSourceRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch DataSource with DataSourcePatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch DataSource with DataSourcePatch[%+v], error: %w", patch, err)
 	}
 	DataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error[%w]", dataSourceRaw, err)
+		return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
 	}
 	return DataSource, nil
 }
@@ -124,7 +130,7 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 func (s *Store) createDataSourceRawTx(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) error {
 	_, err := s.createDataSourceImpl(ctx, tx, create)
 	if err != nil {
-		return fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error[%w]", create, err)
+		return fmt.Errorf("failed to create data source with DataSourceCreate[%+v], error: %w", create, err)
 	}
 	return nil
 }
@@ -238,10 +244,13 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 			name,
 			type,
 			username,
-			password
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
 	`,
 		create.CreatorID,
 		create.CreatorID,
@@ -251,6 +260,9 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 		create.Type,
 		create.Username,
 		create.Password,
+		create.SslKey,
+		create.SslCert,
+		create.SslCa,
 	)
 
 	if err != nil {
@@ -272,6 +284,9 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 		&dataSourceRaw.Type,
 		&dataSourceRaw.Username,
 		&dataSourceRaw.Password,
+		&dataSourceRaw.SslKey,
+		&dataSourceRaw.SslCert,
+		&dataSourceRaw.SslCa,
 	); err != nil {
 		return nil, FormatError(err)
 	}
@@ -307,7 +322,10 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.Da
 			name,
 			type,
 			username,
-			password
+			password,
+			ssl_key,
+			ssl_cert,
+			ssl_ca
 		FROM data_source
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -333,6 +351,9 @@ func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.Da
 			&dataSourceRaw.Type,
 			&dataSourceRaw.Username,
 			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
 		); err != nil {
 			return nil, FormatError(err)
 		}
@@ -356,7 +377,15 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	if v := patch.Password; v != nil {
 		set, args = append(set, fmt.Sprintf("password = $%d", len(args)+1)), append(args, *v)
 	}
-
+	if v := patch.SslCa; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_ca= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslKey; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_key= $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.SslCert; v != nil {
+		set, args = append(set, fmt.Sprintf("ssl_cert= $%d", len(args)+1)), append(args, *v)
+	}
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
@@ -364,7 +393,7 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		UPDATE data_source
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
 	`, len(args)),
 		args...,
 	)
@@ -387,6 +416,9 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 			&dataSourceRaw.Type,
 			&dataSourceRaw.Username,
 			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
 		); err != nil {
 			return nil, FormatError(err)
 		}
