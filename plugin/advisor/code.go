@@ -52,3 +52,8 @@ const (
 	// 10501 table rule advisor error code
 	TableNoPK Code = 10501
 )
+
+// Int returns the int type of code.
+func (c Code) Int() int {
+	return int(c)
+}
