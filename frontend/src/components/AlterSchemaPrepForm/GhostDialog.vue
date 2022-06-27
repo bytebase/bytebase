@@ -3,6 +3,7 @@
     ref="dialog"
     :title="$t('issue.migration-mode.title')"
     :positive-text="$t('common.next')"
+    data-label="bb-migration-mode-dialog"
   >
     <div class="w-[28rem] space-y-4 pl-8 pr-2 pb-4">
       <div class="flex items-start space-x-2">
@@ -39,7 +40,7 @@
             <i18n-t tag="p" keypath="issue.migration-mode.online.description">
               <template #link>
                 <LearnMoreLink
-                  url="https://github.com/bytebase/bytebase/blob/main/docs/design/gh-ost-integration.md"
+                  url="https://www.bytebase.com/docs/features/online-schema-change"
                 />
               </template>
             </i18n-t>
