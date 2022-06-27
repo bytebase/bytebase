@@ -203,7 +203,7 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(engine db.Type) bool {
-	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+	if engine == db.MySQL || engine == db.TiDB {
 		return true
 	}
 	return false
