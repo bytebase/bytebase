@@ -47,9 +47,9 @@
               :key="j"
               :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
               @click.stop="
-                () => {
+                (e) => {
                   if (rowClickable) {
-                    $emit('click-row', i, j);
+                    $emit('click-row', i, j, e);
                   }
                 }
               "
@@ -77,9 +77,9 @@
           :key="index"
           :class="rowClickable ? 'cursor-pointer hover:bg-gray-200' : ''"
           @click.stop="
-            () => {
+            (e) => {
               if (rowClickable) {
-                $emit('click-row', 0, index);
+                $emit('click-row', 0, index, e);
               }
             }
           "
@@ -129,7 +129,7 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "click-row", section: number, row: number): void;
+  (event: "click-row", section: number, row: number, e: MouseEvent): void;
 }>();
 
 const borderVisibility = computed(() => {
