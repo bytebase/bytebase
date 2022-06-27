@@ -20,6 +20,7 @@
       <button
         type="button"
         class="btn-primary py-2 px-4"
+        data-label="bb-modal-confirm-button"
         @click.prevent="onPositiveClick"
       >
         {{ positiveText || $t("common.confirm") }}
