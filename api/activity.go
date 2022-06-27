@@ -61,8 +61,8 @@ const (
 
 	// Database related
 
-	// ActivityDatabaseRecoveryPITR is the type for performing PITR on the database.
-	ActivityDatabaseRecoveryPITR ActivityType = "bb.database.recovery.pitr"
+	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
+	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
 func (e ActivityType) String() string {
@@ -101,8 +101,8 @@ func (e ActivityType) String() string {
 		return "bb.project.member.role.update"
 	case ActivitySQLEditorQuery:
 		return "bb.sql-editor.query"
-	case ActivityDatabaseRecoveryPITR:
-		return "bb.database.recovery.pitr"
+	case ActivityDatabaseRecoveryPITRDone:
+		return "bb.database.recovery.pitr.done"
 	}
 	return "bb.activity.unknown"
 }
