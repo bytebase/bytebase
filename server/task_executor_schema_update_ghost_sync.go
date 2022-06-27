@@ -271,6 +271,7 @@ func executeGhost(task *api.Task, startedNs int64, statement string, syncDone ch
 
 	go func(ctx context.Context, migrationContext *base.MigrationContext) {
 		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
