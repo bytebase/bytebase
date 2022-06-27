@@ -1,5 +1,5 @@
 import { uniqBy } from "lodash-es";
-import * as monaco from "monaco-editor";
+
 import {
   Database,
   Table,
@@ -40,7 +40,8 @@ export default class AutoCompletion {
     return range;
   }
 
-  getCompletionItemsForKeywords() {
+  async getCompletionItemsForKeywords() {
+    const monaco = await import("monaco-editor");
     const suggestions: CompletionItems = [];
     const range = this.getWordRange();
 
@@ -59,11 +60,11 @@ export default class AutoCompletion {
     return uniqBy(suggestions, "label");
   }
 
-  getCompletionItemsForDatabaseList(): CompletionItems {
+  async getCompletionItemsForDatabaseList(): Promise<CompletionItems> {
     const suggestions: CompletionItems = [];
     const range = this.getWordRange();
-
-    this.databaseList.forEach((database) => {
+    const monaco = await import("monaco-editor");
+    this.databaseList.forEach(async (database) => {
       suggestions.push({
         label: database.name,
         kind: monaco.languages.CompletionItemKind.Struct,
@@ -74,16 +75,19 @@ export default class AutoCompletion {
         range,
       });
 
-      suggestions.push(...this.getCompletionItemsForTableList(database));
+      suggestions.push(
+        ...(await this.getCompletionItemsForTableList(database))
+      );
     });
 
     return uniqBy(suggestions, "label");
   }
 
-  getCompletionItemsForTableList(
+  async getCompletionItemsForTableList(
     db?: Database,
     withDatabasePrefix = true
-  ): CompletionItems {
+  ): Promise<CompletionItems> {
+    const monaco = await import("monaco-editor");
     const suggestions: CompletionItems = [];
     const range = this.getWordRange();
 
@@ -93,7 +97,7 @@ export default class AutoCompletion {
 
     const tableList = db ? filterTableListByDB : this.tableList;
 
-    tableList.forEach((table) => {
+    tableList.forEach(async (table) => {
       const label =
         withDatabasePrefix && db ? `${db?.name}.${table.name}` : table.name;
       suggestions.push({
@@ -106,17 +110,20 @@ export default class AutoCompletion {
         range,
       });
       if (table.columnList && table.columnList.length > 0) {
-        suggestions.push(...this.getCompletionItemsForTableColumnList(table));
+        suggestions.push(
+          ...(await this.getCompletionItemsForTableColumnList(table))
+        );
       }
     });
 
     return uniqBy(suggestions, "label");
   }
 
-  getCompletionItemsForTableColumnList(
+  async getCompletionItemsForTableColumnList(
     table: Table,
     withTablePrefix = true
-  ): CompletionItems {
+  ): Promise<CompletionItems> {
+    const monaco = await import("monaco-editor");
     const suggestions: CompletionItems = [];
     const range = this.getWordRange();
 
