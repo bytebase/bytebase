@@ -80,25 +80,29 @@
     class="whitespace-pre-wrap mt-2 w-full overflow-hidden"
     :class="state.editing ? 'border-t border-x' : 'border-t border-x'"
   >
-    <EmbeddedMonacoEditor
-      :value="state.editing ? state.editStatement : statement"
-      :database-list="databaseList"
-      :table-list="tableList"
+    <MonacoEditor
+      ref="editorRef"
+      class="w-full h-auto max-h-[360px]"
+      :value="state.editStatement"
       :readonly="!state.editing"
-      :min-height="
-        state.editing ? EDITOR_MIN_HEIGHT.EDITABLE : EDITOR_MIN_HEIGHT.READONLY
-      "
-      :max-height="EDITOR_MAX_HEIGHT"
       @change="onStatementChange"
+      @ready="handleMonacoEditorReady"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { onMounted, reactive, watch, defineComponent, computed } from "vue";
+import {
+  onMounted,
+  reactive,
+  watch,
+  defineComponent,
+  computed,
+  ref,
+} from "vue";
 import { useTableStore, useUIStateStore } from "@/store";
 import { useIssueLogic } from "./logic";
-import EmbeddedMonacoEditor from "../MonacoEditor/EmbeddedMonacoEditor.vue";
+import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 
 interface LocalState {
   editing: boolean;
@@ -109,12 +113,11 @@ const EDITOR_MIN_HEIGHT = {
   READONLY: 0, // not limited to keep the UI compact
   EDITABLE: 120, // ~= 6 lines, a reasonable size to start writing SQL
 };
-const EDITOR_MAX_HEIGHT = 360; // ~= 20 lines, not too high for most screen size
 
 export default defineComponent({
   name: "IssueTaskStatementPanel",
   components: {
-    EmbeddedMonacoEditor,
+    MonacoEditor,
   },
   props: {
     sqlHint: {
@@ -140,6 +143,8 @@ export default defineComponent({
       editStatement: statement.value,
     });
 
+    const editorRef = ref<InstanceType<typeof MonacoEditor>>();
+
     const formatOnSave = computed({
       get: () => uiStateStore.issueFormatStatementOnSave,
       set: (value: boolean) =>
@@ -157,7 +162,11 @@ export default defineComponent({
     // Reset the edit state after creating the issue.
     watch(create, (curNew, prevNew) => {
       if (!curNew && prevNew) {
+        if (formatOnSave.value) {
+          editorRef.value?.formatEditorContent();
+        }
         state.editing = false;
+        updateEditorHeight();
       }
     });
 
@@ -165,12 +174,34 @@ export default defineComponent({
       state.editStatement = cur;
     });
 
+    const handleMonacoEditorReady = () => {
+      editorRef.value?.setEditorAutoCompletionContext(
+        databaseList.value,
+        tableList.value
+      );
+
+      updateEditorHeight();
+    };
+
+    const updateEditorHeight = () => {
+      const contentHeight =
+        editorRef.value?.editorInstance?.getContentHeight() as number;
+      let actualHeight = contentHeight;
+      if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
+        actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
+      }
+      editorRef.value?.setEditorContentHeight(actualHeight);
+    };
+
     const beginEdit = () => {
       state.editStatement = statement.value;
       state.editing = true;
     };
 
     const saveEdit = () => {
+      if (formatOnSave.value) {
+        editorRef.value?.formatEditorContent();
+      }
       updateStatement(state.editStatement, () => {
         state.editing = false;
       });
@@ -188,25 +219,25 @@ export default defineComponent({
         // time the user types.
         updateStatement(state.editStatement);
       }
+
+      updateEditorHeight();
     };
 
     return {
       create,
       allowEditStatement,
       statement,
-      databaseList,
-      tableList,
-      updateStatement,
       allowApplyStatementToOtherStages,
-      applyStatementToOtherStages,
       formatOnSave,
       state,
+      editorRef,
+      updateStatement,
+      applyStatementToOtherStages,
       beginEdit,
       saveEdit,
       cancelEdit,
       onStatementChange,
-      EDITOR_MIN_HEIGHT,
-      EDITOR_MAX_HEIGHT,
+      handleMonacoEditorReady,
     };
   },
 });
