@@ -1,5 +1,5 @@
 <template>
-  <div ref="editorContainerRef" style="width: 100%; height: 100%"></div>
+  <div ref="editorContainerRef"></div>
 </template>
 
 <script lang="ts" setup>
@@ -34,16 +34,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update:value", content: string): void;
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
-  (
-    e: "run-query",
-    content: {
-      explain: boolean;
-      query: string;
-    }
-  ): void;
   (e: "save", content: string): void;
   (e: "ready"): void;
 }>();
@@ -52,7 +44,7 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 const readOnly = toRef(props, "readonly");
 const monacoInstanceRef = ref();
-const editorContainerRef = ref();
+const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
 
@@ -86,44 +78,9 @@ const getEditorInstance = () => {
     codeLens: false,
   });
 
-  // add the run query action in context menu
+  // add `Format SQL` action into context menu
   editorInstance.addAction({
-    id: "RunQuery",
-    label: "Run Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
-    run: async () => {
-      const typedValue = editorInstance.getValue();
-      const selectedValue = editorInstance
-        .getModel()
-        ?.getValueInRange(editorInstance.getSelection()!) as string;
-      const query = selectedValue || typedValue;
-      emit("run-query", { explain: false, query });
-    },
-  });
-
-  // add the run query action in context menu
-  editorInstance.addAction({
-    id: "ExplainQuery",
-    label: "Explain Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
-    run: async () => {
-      const typedValue = editorInstance.getValue();
-      const selectedValue = editorInstance
-        .getModel()
-        ?.getValueInRange(editorInstance.getSelection()!) as string;
-
-      const query = selectedValue || typedValue;
-      emit("run-query", { explain: true, query });
-    },
-  });
-
-  // add format sql action in context menu
-  editorInstance.addAction({
-    id: "FormatSQL",
+    id: "format-sql",
     label: "Format SQL",
     keybindings: [
       monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
@@ -233,7 +190,16 @@ const getEditorContentHeight = () => {
   return editorInstanceRef.value?.getContentHeight();
 };
 
+const setEditorContentHeight = (height: number) => {
+  editorContainerRef.value!.style.height = `${
+    height ?? getEditorContentHeight()
+  }px`;
+};
+
 const formatEditorContent = () => {
+  if (readOnly.value) {
+    return;
+  }
   monacoInstanceRef.value?.formatContent(
     editorInstanceRef.value!,
     language.value as SQLDialect
@@ -252,10 +218,12 @@ const setEditorAutoCompletionContext = (
 };
 
 defineExpose({
+  editorInstance: editorInstanceRef,
   formatEditorContent,
   getEditorContent,
   setEditorContent,
   getEditorContentHeight,
+  setEditorContentHeight,
   setEditorAutoCompletionContext,
 });
 </script>

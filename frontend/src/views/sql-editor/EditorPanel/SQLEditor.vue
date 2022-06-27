@@ -5,19 +5,21 @@
     <MonacoEditor
       ref="editorRef"
       v-model:value="sqlCode"
+      class="w-full h-full"
       :language="selectedLanguage"
       :readonly="readonly"
       @change="handleChange"
       @change-selection="handleChangeSelection"
-      @run-query="handleRunQuery"
       @save="handleSaveSheet"
+      @ready="handleEditorReady"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
-import { computed, defineEmits, ref, watch } from "vue";
+import { computed, defineEmits, ref, watch, watchEffect } from "vue";
+import * as monaco from "monaco-editor";
 import {
   useInstanceStore,
   useTabStore,
@@ -65,22 +67,6 @@ const selectedLanguage = computed(() => {
 const readonly = computed(() => sheetStore.isReadOnly);
 
 watch(
-  () => selectedInstance.value,
-  () => {
-    if (selectedInstance.value) {
-      const databaseList = databaseStore.getDatabaseListByInstanceId(
-        selectedInstance.value.id
-      );
-      const tableList = databaseList
-        .map((item) => tableStore.getTableListByDatabaseId(item.id))
-        .flat();
-
-      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
-    }
-  }
-);
-
-watch(
   () => sqlEditorStore.shouldSetContent,
   () => {
     if (sqlEditorStore.shouldSetContent) {
@@ -113,17 +99,62 @@ const handleChangeSelection = debounce((value: string) => {
   });
 }, 300);
 
-const handleRunQuery = async ({
-  explain,
-  query,
-}: {
-  explain: boolean;
-  query: string;
-}) => {
-  await execute({ databaseType: selectedInstanceEngine.value }, { explain });
-};
-
 const handleSaveSheet = () => {
   emit("save-sheet");
+};
+
+const handleEditorReady = () => {
+  editorRef.value?.editorInstance?.addAction({
+    id: "RunQuery",
+    label: "Run Query",
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 0,
+    run: async () => {
+      const typedValue = editorRef.value?.editorInstance?.getValue();
+      const selectedValue = editorRef.value?.editorInstance
+        ?.getModel()
+        ?.getValueInRange(
+          editorRef.value?.editorInstance?.getSelection() as any
+        ) as string;
+      const query = selectedValue || typedValue || "";
+      await execute(query, { databaseType: selectedInstanceEngine.value });
+    },
+  });
+
+  editorRef.value?.editorInstance?.addAction({
+    id: "ExplainQuery",
+    label: "Explain Query",
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 0,
+    run: async () => {
+      const typedValue = editorRef.value?.editorInstance?.getValue();
+      const selectedValue = editorRef.value?.editorInstance
+        ?.getModel()
+        ?.getValueInRange(
+          editorRef.value?.editorInstance?.getSelection() as any
+        ) as string;
+      const query = selectedValue || typedValue || "";
+      await execute(
+        query,
+        { databaseType: selectedInstanceEngine.value },
+        { explain: true }
+      );
+    },
+  });
+
+  watchEffect(() => {
+    if (selectedInstance.value) {
+      const databaseList = databaseStore.getDatabaseListByInstanceId(
+        selectedInstance.value.id
+      );
+      const tableList = databaseList
+        .map((item) => tableStore.getTableListByDatabaseId(item.id))
+        .flat();
+
+      editorRef.value?.setEditorAutoCompletionContext(databaseList, tableList);
+    }
+  });
 };
 </script>

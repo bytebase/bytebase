@@ -159,11 +159,23 @@ const hasReadonlyDataSource = computed(() => {
 const { execute, state: executeState } = useExecuteSQL();
 
 const handleRunQuery = async () => {
-  await execute({ databaseType: selectedInstanceEngine.value });
+  const currentTab = tabStore.currentTab;
+  const statement = currentTab.statement;
+  const selectedStatement = currentTab.selectedStatement;
+  const query = selectedStatement || statement;
+  await execute(query, { databaseType: selectedInstanceEngine.value });
 };
 
 const handleExplainQuery = () => {
-  execute({ databaseType: selectedInstanceEngine.value }, { explain: true });
+  const currentTab = tabStore.currentTab;
+  const statement = currentTab.statement;
+  const selectedStatement = currentTab.selectedStatement;
+  const query = selectedStatement || statement;
+  execute(
+    query,
+    { databaseType: selectedInstanceEngine.value },
+    { explain: true }
+  );
 };
 
 const gotoInstanceDetailPage = () => {
