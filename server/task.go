@@ -460,8 +460,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, err
 	}
 
-	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
-	// On gh-ost tasks, sync instance schema immediately.
+	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
 	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
