@@ -87,6 +87,7 @@
           <slot name="body" :rowData="item" />
         </tr></tbody
     ></template>
+    <slot name="footer" />
   </table>
 </template>
 
