@@ -2,7 +2,7 @@
 
 ## Overview
 
-Currently, bytebase runs DDL statements directly on databases. With this feature, users can choose to use gh-ost to migrate MySQL versions 5.6 or greater.
+Currently, Bytebase runs DDL statements directly on databases. With this feature, users can choose to use gh-ost to migrate MySQL versions 5.6 or greater.
 
 ### gh-ost: a brief introduction (quoted from gh-ost docs)
 
@@ -231,7 +231,7 @@ Users can change the gh-ost configuration in the related issue tab.
 
 We will only support "connect to primary and migrate on primary" for now.
 
-In the future, bytebase will support detecting primary and replicas. We may support "connect to replica" then.
+In the future, Bytebase will support detecting primary and replicas. We may support "connect to replica" then.
 
 ### Privileges
 
@@ -411,7 +411,7 @@ type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
 
 #### How migration works now
 
-Here's how bytebase executes migration now.
+Here's how Bytebase executes migration now.
 
 1. `server/task_scheduler.go` schedules a migration task.
 2. `server/task_executor_schema_update.go` `func RunOnce()`
