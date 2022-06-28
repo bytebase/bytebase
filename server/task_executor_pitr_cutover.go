@@ -70,7 +70,6 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	activityMeta.issue = issue
 	if _, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta); err != nil {
 		log.Error("cannot create an pitr activity", zap.Error(err))
-		return terminated, result, nil
 	}
 
 	return terminated, result, nil
