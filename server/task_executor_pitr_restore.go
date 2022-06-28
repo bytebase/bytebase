@@ -61,7 +61,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	instance := task.Instance
 	database := task.Database
 
-	issue, err := getNonNilIssueByPipelineID(ctx, store, task.PipelineID)
+	issue, err := getIssueByPipelineID(ctx, store, task.PipelineID)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	return nil
 }
 
-func getNonNilIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
+func getIssueByPipelineID(ctx context.Context, store *store.Store, pid int) (*api.Issue, error) {
 	issue, err := store.GetIssueByPipelineID(ctx, pid)
 	if err != nil {
 		log.Error("failed to get issue by PipelineID", zap.Int("PipelineID", pid), zap.Error(err))
