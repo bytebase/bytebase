@@ -4,6 +4,7 @@
       type="button"
       class="btn-primary px-4 py-2"
       :disabled="!allowCreate"
+      data-label="bb-issue-create-button"
       @click.prevent="doCreate"
     >
       {{ $t("common.create") }}

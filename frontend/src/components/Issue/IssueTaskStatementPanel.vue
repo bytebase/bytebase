@@ -83,6 +83,7 @@
     <MonacoEditor
       ref="editorRef"
       class="w-full h-auto max-h-[360px]"
+      data-label="bb-issue-sql-editor"
       :value="state.editStatement"
       :readonly="!state.editing"
       @change="onStatementChange"
