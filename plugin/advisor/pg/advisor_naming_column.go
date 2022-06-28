@@ -8,7 +8,6 @@ import (
 	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
 	"github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -16,7 +15,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(advisor.Postgres, advisor.PostgreSQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column convention.

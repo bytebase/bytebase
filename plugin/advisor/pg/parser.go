@@ -11,7 +11,7 @@ func parseStatement(statement string) (parser.Statements, []advisor.Advice) {
 		return nil, []advisor.Advice{
 			{
 				Status:  advisor.Error,
-				Code:    advisor.DbStatementSyntaxError,
+				Code:    advisor.StatementSyntaxError,
 				Title:   advisor.SyntaxErrorTitle,
 				Content: err.Error(),
 			},

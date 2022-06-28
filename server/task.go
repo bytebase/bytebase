@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 var (
@@ -178,10 +177,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
 
-				if advisor.IsSyntaxCheckSupported(taskPatched.Database.Instance.Engine) {
+				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
-						DbType:    taskPatched.Database.Instance.Engine,
+						DbType:    task.Database.Instance.Engine,
 						Charset:   taskPatched.Database.CharacterSet,
 						Collation: taskPatched.Database.Collation,
 					})
@@ -205,7 +204,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if s.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(taskPatched.Database.Instance.Engine) {
+				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine) {
 					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}

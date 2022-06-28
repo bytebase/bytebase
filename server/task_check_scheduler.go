@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"go.uber.org/zap"
 )
 
@@ -293,7 +292,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		if advisor.IsSyntaxCheckSupported(database.Instance.Engine) {
+		if api.IsSyntaxCheckSupported(database.Instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
@@ -315,7 +314,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(database.Instance.Engine) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine) {
 			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)

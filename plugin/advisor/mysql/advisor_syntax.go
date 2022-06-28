@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -10,8 +9,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLSyntax, &SyntaxAdvisor{})
 }
 
 // SyntaxAdvisor is the advisor for checking syntax.
@@ -27,7 +26,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 		return []advisor.Advice{
 			{
 				Status:  advisor.Error,
-				Code:    advisor.DbStatementSyntaxError,
+				Code:    advisor.StatementSyntaxError,
 				Title:   "Syntax error",
 				Content: err.Error(),
 			},
@@ -38,7 +37,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 	for _, warn := range warns {
 		adviceList = append(adviceList, advisor.Advice{
 			Status:  advisor.Warn,
-			Code:    advisor.DbStatementSyntaxError,
+			Code:    advisor.StatementSyntaxError,
 			Title:   "Syntax Warning",
 			Content: warn.Error(),
 		})
