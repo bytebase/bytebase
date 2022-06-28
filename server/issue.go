@@ -924,9 +924,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	})
 
 	// task: swap PITR and the original database
-	payloadCutover := api.TaskDatabasePITRCutoverPayload{
-		PointInTimeTs: targetTs,
-	}
+	payloadCutover := api.TaskDatabasePITRCutoverPayload{}
 	bytesCutover, err := json.Marshal(payloadCutover)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create PITR cutover task, unable to marshal payload, error: %w", err)
