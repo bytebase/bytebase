@@ -701,7 +701,7 @@ func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error
 	fields := strings.Fields(line)
 	// fields should starts with ["#220421", "14:49:26", "server", "id", "1", "end_log_pos", "34794"]
 	if len(fields) < 7 ||
-		(len(fields[0]) != 7 || len(fields[1]) != 8 || fields[2] != "server" || fields[3] != "id" || fields[5] != "end_log_pos") {
+		(len(fields[0]) != 7 || fields[2] != "server" || fields[3] != "id" || fields[5] != "end_log_pos") {
 		return 0, false, fmt.Errorf("found unexpected mysqlbinlog output line %q when parsing binlog event timestamp", line)
 	}
 	datetime, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
