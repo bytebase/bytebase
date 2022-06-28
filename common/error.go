@@ -19,9 +19,8 @@ const (
 	NotImplemented Code = 6
 
 	// 101 ~ 199 db error
-	DbConnectionFailure    Code = 101
-	DbStatementSyntaxError Code = 102
-	DbExecutionError       Code = 103
+	DbConnectionFailure Code = 101
+	DbExecutionError    Code = 102
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error
@@ -34,47 +33,12 @@ const (
 
 	// 301 task error
 	TaskTimingNotAllowed Code = 301
-
-	// 401 task check error
-	TaskCheckEmptySchemaReviewPolicy Code = 401
-
-	// 10001 advisor error code
-	CompatibilityDropDatabase  Code = 10001
-	CompatibilityRenameTable   Code = 10002
-	CompatibilityDropTable     Code = 10003
-	CompatibilityRenameColumn  Code = 10004
-	CompatibilityDropColumn    Code = 10005
-	CompatibilityAddPrimaryKey Code = 10006
-	CompatibilityAddUniqueKey  Code = 10007
-	CompatibilityAddForeignKey Code = 10008
-	CompatibilityAddCheck      Code = 10009
-	CompatibilityAlterCheck    Code = 10010
-	CompatibilityAlterColumn   Code = 10011
-
-	StatementNoWhere             Code = 10101
-	StatementSelectAll           Code = 10102
-	StatementLeadingWildcardLike Code = 10103
-
-	// 10201 table naming advisor error code
-	NamingTableConventionMismatch Code = 10201
-	// 10202 column naming advisor error code
-	NamingColumnConventionMismatch Code = 10202
-	// 10203 index naming advisor error code
-	NamingIndexConventionMismatch Code = 10203
-	// 10204 unique key naming advisor error code
-	NamingUKConventionMismatch Code = 10204
-	// 10205 foreign key naming advisor error code
-	NamingFKConventionMismatch Code = 10205
-
-	// 10301 column rule advisor error code
-	NoRequiredColumn Code = 10301
-	ColumnCanNotNull Code = 10302
-
-	NotInnoDBEngine Code = 10401
-
-	// 10501 table rule advisor error code
-	TableNoPK Code = 10501
 )
+
+// Int returns the int type of code.
+func (c Code) Int() int {
+	return int(c)
+}
 
 // Error represents an application-specific error. Application errors can be
 // unwrapped by the caller to extract out the code & message.

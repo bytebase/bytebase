@@ -26,10 +26,11 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 	if task == nil {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.Internal,
-				Title:   "Error",
-				Content: fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Error",
+				Content:   fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
 			},
 		}, nil
 	}
@@ -53,20 +54,22 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 	if setup {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.MigrationSchemaMissing,
-				Title:   "Error",
-				Content: fmt.Sprintf("Missing migration schema for instance %q", instance.Name),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.MigrationSchemaMissing.Int(),
+				Title:     "Error",
+				Content:   fmt.Sprintf("Missing migration schema for instance %q", instance.Name),
 			},
 		}, nil
 	}
 
 	return []api.TaskCheckResult{
 		{
-			Status:  api.TaskCheckStatusSuccess,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: fmt.Sprintf("Instance %q has setup migration schema", instance.Name),
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   fmt.Sprintf("Instance %q has setup migration schema", instance.Name),
 		},
 	}, nil
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/advisor"
 
 	"go.uber.org/zap"
 )
@@ -277,7 +276,8 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		if instance == nil {
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
-		if advisor.IsSyntaxCheckSupported(instance.Engine) {
+
+		if api.IsSyntaxCheckSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
@@ -287,7 +287,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return nil, err

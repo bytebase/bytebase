@@ -7,48 +7,51 @@ type Code int
 const (
 	Ok       Code = 0
 	Internal Code = 1
+	NotFound Code = 2
 
-	// db error
-	DbStatementSyntaxError Code = 102
+	// 101 ~ 199 compatibility error code
+	CompatibilityDropDatabase  Code = 101
+	CompatibilityRenameTable   Code = 102
+	CompatibilityDropTable     Code = 103
+	CompatibilityRenameColumn  Code = 104
+	CompatibilityDropColumn    Code = 105
+	CompatibilityAddPrimaryKey Code = 106
+	CompatibilityAddUniqueKey  Code = 107
+	CompatibilityAddForeignKey Code = 108
+	CompatibilityAddCheck      Code = 109
+	CompatibilityAlterCheck    Code = 110
+	CompatibilityAlterColumn   Code = 111
 
-	// task check error
-	EmptySchemaReviewPolicy Code = 401
+	// 201 ~ 299 statement error code
+	StatementSyntaxError         Code = 201
+	StatementNoWhere             Code = 202
+	StatementSelectAll           Code = 203
+	StatementLeadingWildcardLike Code = 204
 
-	// 10001 ~ 10100 compatibility error code
-	CompatibilityDropDatabase  Code = 10001
-	CompatibilityRenameTable   Code = 10002
-	CompatibilityDropTable     Code = 10003
-	CompatibilityRenameColumn  Code = 10004
-	CompatibilityDropColumn    Code = 10005
-	CompatibilityAddPrimaryKey Code = 10006
-	CompatibilityAddUniqueKey  Code = 10007
-	CompatibilityAddForeignKey Code = 10008
-	CompatibilityAddCheck      Code = 10009
-	CompatibilityAlterCheck    Code = 10010
-	CompatibilityAlterColumn   Code = 10011
+	// 301 ～ 399 naming error code
+	// 301 table naming advisor error code
+	NamingTableConventionMismatch Code = 301
+	// 302 column naming advisor error code
+	NamingColumnConventionMismatch Code = 302
+	// 303 index naming advisor error code
+	NamingIndexConventionMismatch Code = 303
+	// 304 unique key naming advisor error code
+	NamingUKConventionMismatch Code = 304
+	// 305 foreign key naming advisor error code
+	NamingFKConventionMismatch Code = 305
 
-	// 10101 ~ 10200 statement error code
-	StatementNoWhere             Code = 10101
-	StatementSelectAll           Code = 10102
-	StatementLeadingWildcardLike Code = 10103
+	// 401 ~ 499 column error code
+	NoRequiredColumn Code = 401
+	ColumnCanNotNull Code = 402
 
-	// 10201 table naming advisor error code
-	NamingTableConventionMismatch Code = 10201
-	// 10202 column naming advisor error code
-	NamingColumnConventionMismatch Code = 10202
-	// 10203 index naming advisor error code
-	NamingIndexConventionMismatch Code = 10203
-	// 10204 unique key naming advisor error code
-	NamingUKConventionMismatch Code = 10204
-	// 10205 foreign key naming advisor error code
-	NamingFKConventionMismatch Code = 10205
+	// 501 engine error code
+	NotInnoDBEngine Code = 501
 
-	// 10301 column rule advisor error code
-	NoRequiredColumn Code = 10301
-	ColumnCanNotNull Code = 10302
-
-	NotInnoDBEngine Code = 10401
-
-	// 10501 table rule advisor error code
-	TableNoPK Code = 10501
+	// 601 table rule advisor error code
+	TableNoPK Code = 601
 )
+
+// Int returns the int type of code.
+func (c Code) Int() int {
+	return int(c)
+}

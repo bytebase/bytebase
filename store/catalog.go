@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/plugin/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 )
 
 var (
