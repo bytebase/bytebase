@@ -28,18 +28,35 @@
     },
     {
       "title": "Input the `DROP COLUMN` SQL string in the editor",
-      "description": ""
+      "description": "",
+      "url": "http://localhost:3000/issue/new",
+      "value": ".+",
+      "selectors": [
+        [
+          "[data-label='bb-issue-sql-editor'] >.monaco-editor .editor-scrollable"
+        ]
+      ]
     },
     {
-      "title": "Let's choose a member as the Assignee"
+      "title": "Let's choose a member as the Assignee",
+      "url": "http://localhost:3000/issue/new",
+      "selectors": [["[data-label='bb-assignee-select-container']"]]
     },
     {
       "title": "That's him, Demo Owner!",
-      "description": ""
+      "description": "",
+      "url": "http://localhost:3000/issue/new",
+      "selectors": [
+        [
+          "[data-label='bb-assignee-select-container'] [data-label='bb-assignee-select-item'] ul li"
+        ]
+      ]
     },
     {
       "title": "Click Create button",
-      "description": ""
+      "description": "",
+      "url": "http://localhost:3000/issue/new",
+      "selectors": [["[data-label='bb-issue-create-button']"]]
     }
   ]
 }
