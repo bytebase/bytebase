@@ -1,24 +1,25 @@
 import { ref } from "vue";
 import { uniqBy } from "lodash-es";
-import * as monaco from "monaco-editor";
+
 import type { editor as Editor } from "monaco-editor";
 import { Database, Table, CompletionItems, SQLDialect } from "@/types";
 import AutoCompletion from "./AutoCompletion";
 import sqlFormatter from "./sqlFormatter";
 
-monaco.editor.defineTheme("bb-sql-editor-theme", {
-  base: "vs",
-  inherit: true,
-  rules: [],
-  colors: {
-    "editorCursor.foreground": "#504de2",
-    "editorLineNumber.foreground": "#aaaaaa",
-    "editorLineNumber.activeForeground": "#111111",
-  },
-});
-monaco.editor.setTheme("bb-sql-editor-theme");
+export const useMonaco = async (lang: string) => {
+  const monaco = await import("monaco-editor");
 
-const useMonaco = async (lang: string) => {
+  monaco.editor.defineTheme("bb-sql-editor-theme", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editorCursor.foreground": "#504de2",
+      "editorLineNumber.foreground": "#aaaaaa",
+      "editorLineNumber.activeForeground": "#111111",
+    },
+  });
+  monaco.editor.setTheme("bb-sql-editor-theme");
   const databaseList = ref<Database[]>([]);
   const tableList = ref<Table[]>([]);
 
@@ -34,7 +35,7 @@ const useMonaco = async (lang: string) => {
 
   monaco.languages.registerCompletionItemProvider(lang, {
     triggerCharacters: [" ", "."],
-    provideCompletionItems: (model, position) => {
+    provideCompletionItems: async (model, position) => {
       let suggestions: CompletionItems = [];
 
       const { lineNumber, column } = position;
@@ -72,12 +73,12 @@ const useMonaco = async (lang: string) => {
       // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
       const suggestionsForDatabase =
         lang === "mysql"
-          ? autoCompletion.getCompletionItemsForDatabaseList()
+          ? await autoCompletion.getCompletionItemsForDatabaseList()
           : [];
       const suggestionsForTable =
-        autoCompletion.getCompletionItemsForTableList();
+        await autoCompletion.getCompletionItemsForTableList();
       const suggestionsForKeyword =
-        autoCompletion.getCompletionItemsForKeywords();
+        await autoCompletion.getCompletionItemsForKeywords();
 
       // if enter a dot
       if (lastToken.endsWith(".")) {
@@ -105,7 +106,7 @@ const useMonaco = async (lang: string) => {
 
         // if the last token is a database name
         if (lang === "mysql" && dbIdx !== -1 && tokenLevel === 1) {
-          suggestions = autoCompletion.getCompletionItemsForTableList(
+          suggestions = await autoCompletion.getCompletionItemsForTableList(
             databaseList.value[dbIdx],
             true
           );
@@ -114,10 +115,11 @@ const useMonaco = async (lang: string) => {
         if (tableIdx !== -1 || tokenLevel === 2) {
           const table = tableList.value[tableIdx];
           if (table.columnList && table.columnList.length > 0) {
-            suggestions = autoCompletion.getCompletionItemsForTableColumnList(
-              tableList.value[tableIdx],
-              false
-            );
+            suggestions =
+              await autoCompletion.getCompletionItemsForTableColumnList(
+                tableList.value[tableIdx],
+                false
+              );
           }
         }
       } else {
@@ -218,5 +220,3 @@ const useMonaco = async (lang: string) => {
     setPositionAtEndOfLine,
   };
 };
-
-export { useMonaco };
