@@ -95,8 +95,7 @@ type TaskDatabasePITRRestorePayload struct {
 
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.
 // It is currently only a placeholder.
-type TaskDatabasePITRCutoverPayload struct {
-}
+type TaskDatabasePITRCutoverPayload struct{}
 
 // TaskDatabaseCreatePayload is the task payload for creating databases.
 type TaskDatabaseCreatePayload struct {

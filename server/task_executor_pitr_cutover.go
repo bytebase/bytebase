@@ -33,6 +33,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
+
 	terminated, result, err = exec.pitrCutover(ctx, task, server)
 	if err != nil {
 		return terminated, result, err
