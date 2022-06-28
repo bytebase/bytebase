@@ -5,7 +5,7 @@
 }
 
 .bb-guide-dialog {
-  @apply absolute bg-white w-72 mt-1 text-black p-2 px-3 rounded-lg text-left;
+  @apply absolute bg-white w-72 m-1 text-black p-2 px-3 rounded-lg text-left;
   box-shadow: 0 3px 30px rgb(33 33 33 / 30%);
   z-index: 10000000;
 }
