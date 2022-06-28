@@ -27,13 +27,10 @@ const tryToShowGuideDialog = async () => {
 
   if (guide) {
     const guideData = await fetchGuideDataWithName(guide.name);
-
-    // remove useless type guideData
-    guideData.steps = guideData.steps.filter(
-      (s: any) => s.type !== "setViewport" && s.type !== "navigate"
-    );
-
-    showGuideDialog(guideData.steps[guide.stepIndex]);
+    const stepData = guideData.steps[guide.stepIndex];
+    if (stepData) {
+      showGuideDialog(stepData);
+    }
   } else {
     removeGuideDialog();
   }
@@ -62,13 +59,11 @@ const initLocationListener = () => {
 // initStorageListener detecting storage changes
 const initStorageListener = () => {
   window.addEventListener("storage", async () => {
-    console.log("storage changed");
     tryToShowGuideDialog();
   });
 };
 
 const initGuideListeners = () => {
-  console.log("init listeners");
   initLocationListener();
   initStorageListener();
 };

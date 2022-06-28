@@ -5,8 +5,8 @@
     {
       "title": "Click the Alter Schema button",
       "description": "Alter schema is a main feature of Bytebase",
-      "url": "http://localhost:3000",
-      "selectors": [["[data-label='bb-alter-schema-button']"]]
+      "selectors": [["[data-label='bb-alter-schema-button']"]],
+      "url": "http://localhost:3000"
     },
     {
       "title": "Select the database",
@@ -29,34 +29,32 @@
     {
       "title": "Input the `DROP COLUMN` SQL string in the editor",
       "description": "",
-      "url": "http://localhost:3000/issue/new",
-      "value": ".+",
       "selectors": [
         [
-          "[data-label='bb-issue-sql-editor'] >.monaco-editor .editor-scrollable"
+          "[data-label='bb-issue-sql-editor'] > .monaco-editor .editor-scrollable"
         ]
-      ]
+      ],
+      "url": "http://localhost:3000/issue/new",
+      "value": ".+"
     },
     {
       "title": "Let's choose a member as the Assignee",
-      "url": "http://localhost:3000/issue/new",
-      "selectors": [["[data-label='bb-assignee-select-container']"]]
+      "description": "",
+      "selectors": [["[data-label='bb-assignee-select-container']"]],
+      "url": "http://localhost:3000/issue/new"
     },
     {
       "title": "That's him, Demo Owner!",
       "description": "",
-      "url": "http://localhost:3000/issue/new",
-      "selectors": [
-        [
-          "[data-label='bb-assignee-select-container'] [data-label='bb-assignee-select-item'] ul li"
-        ]
-      ]
+      "selectors": [["[data-label='bb-assignee-select-item'] ul li"]],
+      "url": "http://localhost:3000/issue/new"
     },
     {
       "title": "Click Create button",
       "description": "",
+      "selectors": [["[data-label='bb-issue-create-button']"]],
       "url": "http://localhost:3000/issue/new",
-      "selectors": [["[data-label='bb-issue-create-button']"]]
+      "position": "left"
     }
   ]
 }
