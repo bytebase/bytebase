@@ -63,7 +63,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 		Type:        api.ActivityDatabaseRecoveryPITRDone,
 		Level:       api.ActivityInfo,
 		Payload:     string(payload),
-		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully", task.Database.Name, task.Instance.Name),
+		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully.", task.Database.Name, task.Instance.Name),
 	}
 	activityMeta := ActivityMeta{}
 	activityMeta.issue = issue
