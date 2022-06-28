@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -30,22 +31,55 @@ type PITRCutoverTaskExecutor struct {
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
+	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
+
+	if err != nil {
+		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
+		return true, nil, err
+	}
+
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
 
-	return exec.pitrCutover(ctx, task, server)
+	terminated, result, err = exec.pitrCutover(ctx, task, server, issue)
+	if err != nil {
+		return terminated, result, err
+	}
+
+	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
+		TaskID:    task.ID,
+		OldStatus: task.Status,
+		NewStatus: api.TaskDone,
+		IssueName: issue.Name,
+		TaskName:  task.Name,
+	})
+	if err != nil {
+		log.Error("failed to marshal activity", zap.Error(err))
+		return terminated, result, nil
+	}
+
+	activityCreate := &api.ActivityCreate{
+		CreatorID:   task.UpdaterID,
+		ContainerID: issue.ProjectID,
+		Type:        api.ActivityDatabaseRecoveryPITRDone,
+		Level:       api.ActivityInfo,
+		Payload:     string(payload),
+		Comment:     fmt.Sprintf("Restore database %s in instance %s successfully", task.Database.Name, task.Instance.Name),
+	}
+	activityMeta := ActivityMeta{}
+	activityMeta.issue = issue
+	if _, err = server.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta); err != nil {
+		log.Error("cannot create an pitr activity", zap.Error(err))
+	}
+
+	return terminated, result, nil
 }
 
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
-	if err != nil {
-		return true, nil, err
-	}
 
 	connCfg, err := getConnectionConfig(ctx, task.Instance, task.Database.Name)
 	if err != nil {
