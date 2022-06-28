@@ -1,4 +1,4 @@
-# bb - the bytebase CLI
+# bb - the Bytebase CLI
 
 ## Supported database engines
 

@@ -1226,7 +1226,7 @@
     "unknown-event": "Unexpeted event type, OAuth failed."
   },
   "subscription": {
-    "description": "You can upload your bytebase license to unlock team/enterprise features.",
+    "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "current": "Current plan",
     "instance-count": "Instance count",
     "expires-at": "Expires at",
