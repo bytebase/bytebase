@@ -47,7 +47,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 				{
 					Status:    api.TaskCheckStatusWarn,
 					Namespace: api.AdvisorNamespace,
-					Code:      advisor.EmptySchemaReviewPolicy.Int(),
+					Code:      advisor.NotFound.Int(),
 					Title:     "Empty schema review policy or disabled",
 					Content:   "",
 				},

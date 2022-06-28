@@ -20,7 +20,7 @@ const (
 
 	// 101 ~ 199 db error
 	DbConnectionFailure Code = 101
-	DbExecutionError    Code = 103
+	DbExecutionError    Code = 102
 
 	// 201 db migration error
 	// Db migration is a core feature, so we separate it from the db error

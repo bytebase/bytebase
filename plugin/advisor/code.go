@@ -7,12 +7,10 @@ type Code int
 const (
 	Ok       Code = 0
 	Internal Code = 1
+	NotFound Code = 2
 
 	// db error
-	DbStatementSyntaxError Code = 102
-
-	// task check error
-	EmptySchemaReviewPolicy Code = 401
+	DbStatementSyntaxError Code = 101
 
 	// 10001 ~ 10100 compatibility error code
 	CompatibilityDropDatabase  Code = 10001

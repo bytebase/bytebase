@@ -104,9 +104,9 @@ type Namespace string
 
 const (
 	// AdvisorNamespace is task check result namespace for advisor.
-	AdvisorNamespace Namespace = "advisor"
+	AdvisorNamespace Namespace = "bb.advisor"
 	// BBNamespace is task check result namespace for bytebase.
-	BBNamespace Namespace = "bb"
+	BBNamespace Namespace = "bb.core"
 )
 
 // TaskCheckResult is the result of task checks.
