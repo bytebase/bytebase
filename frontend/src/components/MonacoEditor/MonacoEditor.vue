@@ -1,5 +1,9 @@
 <template>
   <div ref="editorContainerRef"></div>
+  <BBSpin
+    v-if="!isEditorLoaded"
+    class="h-full w-full flex items-center justify-center"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -47,6 +51,8 @@ const monacoInstanceRef = ref();
 const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
+
+const isEditorLoaded = ref(false);
 
 const getEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
@@ -155,6 +161,8 @@ onMounted(async () => {
     editorInstance.focus();
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
+
+  isEditorLoaded.value = true;
 
   nextTick(() => {
     emit("ready");
