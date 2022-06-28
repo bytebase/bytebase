@@ -41,8 +41,9 @@ export function useModalStack() {
   const active = computed(() => index.value === stack.value.length - 1);
 
   onUnmounted(() => {
-    if (index.value >= 0) {
-      stack.value.splice(index.value, 1);
+    const index = stack.value.indexOf(id);
+    if (index >= 0) {
+      stack.value.splice(index, 1);
     }
   });
 
