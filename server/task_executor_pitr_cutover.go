@@ -36,7 +36,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
-		return terminated, result, nil
+		return true, nil, nil
 	}
 
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
