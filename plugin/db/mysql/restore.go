@@ -302,23 +302,23 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 		binlogCoordinate
 		backup *api.Backup
 	}
-	var backupCoordinateList []backupBinlogCoordinate
+	var backupCoordinateListSorted []backupBinlogCoordinate
 	for _, b := range backupList {
 		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
 		if err != nil {
 			return nil, err
 		}
-		backupCoordinateList = append(backupCoordinateList, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
+		backupCoordinateListSorted = append(backupCoordinateListSorted, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
 	}
 
 	// Sort in order that latest binlog coordinate comes first.
-	sort.Slice(backupCoordinateList, func(i, j int) bool {
-		return backupCoordinateList[i].Seq > backupCoordinateList[j].Seq ||
-			(backupCoordinateList[i].Seq == backupCoordinateList[j].Seq && backupCoordinateList[i].Pos > backupCoordinateList[j].Pos)
+	sort.Slice(backupCoordinateListSorted, func(i, j int) bool {
+		return backupCoordinateListSorted[i].Seq > backupCoordinateListSorted[j].Seq ||
+			(backupCoordinateListSorted[i].Seq == backupCoordinateListSorted[j].Seq && backupCoordinateListSorted[i].Pos > backupCoordinateListSorted[j].Pos)
 	})
 
 	var backup *api.Backup
-	for _, bc := range backupCoordinateList {
+	for _, bc := range backupCoordinateListSorted {
 		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
 			backup = bc.backup
 			break
@@ -326,7 +326,7 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 	}
 
 	if backup == nil {
-		oldestBackupBinlogCoordinate := backupCoordinateList[len(backupCoordinateList)-1]
+		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
 			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
