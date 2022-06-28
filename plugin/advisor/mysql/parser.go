@@ -25,7 +25,7 @@ func parseStatement(statement string, charset string, collation string) ([]ast.S
 		return nil, []advisor.Advice{
 			{
 				Status:  advisor.Error,
-				Code:    advisor.DbStatementSyntaxError,
+				Code:    advisor.StatementSyntaxError,
 				Title:   advisor.SyntaxErrorTitle,
 				Content: err.Error(),
 			},

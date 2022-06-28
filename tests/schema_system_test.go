@@ -79,7 +79,7 @@ func TestSchemaSystem(t *testing.T) {
 					{
 						Status:    api.TaskCheckStatusError,
 						Namespace: api.AdvisorNamespace,
-						Code:      advisor.DbStatementSyntaxError.Int(),
+						Code:      advisor.StatementSyntaxError.Int(),
 						Title:     advisor.SyntaxErrorTitle,
 						Content:   "line 1 column 21 near \");\" ",
 					},
