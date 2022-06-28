@@ -40,12 +40,12 @@ type BinlogFile struct {
 	Seq int64
 }
 
-func newBinlogFile(name string, size int64) (BinlogFile, error) {
-	seq, err := getBinlogNameSeq(name)
+func newBinlogFile(binlogFileName string, size int64) (BinlogFile, error) {
+	seq, err := getBinlogNameSeq(binlogFileName)
 	if err != nil {
 		return BinlogFile{}, err
 	}
-	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
+	return BinlogFile{Name: binlogFileName, Size: size, Seq: seq}, nil
 }
 
 // ZapBinlogFiles is a helper to format zap.Array
@@ -57,6 +57,19 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
 	}
 	return nil
+}
+
+type binlogCoordinate struct {
+	Seq int64
+	Pos int64
+}
+
+func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
+	seq, err := getBinlogNameSeq(binlogFileName)
+	if err != nil {
+		return binlogCoordinate{}, err
+	}
+	return binlogCoordinate{Seq: seq, Pos: pos}, nil
 }
 
 // Restore implements recovery functions for MySQL.
@@ -267,7 +280,7 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		return nil, fmt.Errorf("no valid backup")
 	}
 
-	targetBinlogCoord, err := r.GetBinlogCoordinateByTs(ctx, targetTs)
+	targetBinlogCoordinate, err := r.getBinlogCoordinateByTs(ctx, targetTs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
 	}
@@ -281,60 +294,50 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		validBackupList = append(validBackupList, b)
 	}
 
-	backup, err := getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoord)
-	if err != nil {
-		return nil, err
-	}
-	return backup, nil
-
+	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
 }
 
-func parseAndSortBackupDesc(backupList []*api.Backup) ([]*api.Backup, error) {
-	var backupListSorted []*api.Backup
-	backupListSorted = append(backupListSorted, backupList...)
-	for i := range backupListSorted {
-		seq, err := getBinlogNameSeq(backupListSorted[i].Payload.BinlogInfo.FileName)
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
+	var backupCoordinateList []binlogCoordinate
+	for _, b := range backupList {
+		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
 		if err != nil {
 			return nil, err
 		}
-		backupListSorted[i].Payload.BinlogInfo.Seq = seq
-	}
-	// Sort backup so that the latest comes first
-	sort.Slice(backupListSorted, func(i, j int) bool {
-		if backupListSorted[i].Payload.BinlogInfo.Seq > backupListSorted[j].Payload.BinlogInfo.Seq {
-			return true
-		}
-		if backupListSorted[i].Payload.BinlogInfo.Seq == backupListSorted[j].Payload.BinlogInfo.Seq {
-			return backupListSorted[i].Payload.BinlogInfo.Position > backupListSorted[j].Payload.BinlogInfo.Position
-		}
-		return false
-	})
-	return backupListSorted, nil
-}
-
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, binlogCoord api.BinlogInfo) (*api.Backup, error) {
-	targetSeq, err := getBinlogNameSeq(binlogCoord.FileName)
-	if err != nil {
-		return nil, err
+		backupCoordinateList = append(backupCoordinateList, c)
 	}
 
-	backupListSortedDesc, err := parseAndSortBackupDesc(backupList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sort backup list, error: %w", err)
-	}
-
-	// Traverse the sorted backup list from the latest to the oldest, so the first backup meeting requirements is the expected.
-	for _, b := range backupListSortedDesc {
-		// Note for the equal condition: if backup payload's binlog seq and pos are all equal to `binlogCoord`, we could use this backup, and skip replaying binlog.
-		if b.Payload.BinlogInfo.Seq < targetSeq || (b.Payload.BinlogInfo.Seq == targetSeq && b.Payload.BinlogInfo.Position <= binlogCoord.Position) {
-			return b, nil
+	var maxSeq int64
+	var maxPos int64
+	var backup *api.Backup
+	for i, c := range backupCoordinateList {
+		if c.Seq < targetBinlogCoordinate.Seq || (c.Seq == targetBinlogCoordinate.Seq && c.Pos <= targetBinlogCoordinate.Pos) {
+			if c.Seq > maxSeq || (c.Seq == maxSeq && c.Pos > maxPos) {
+				maxSeq = c.Seq
+				maxPos = c.Pos
+				backup = backupList[i]
+			}
 		}
 	}
 
-	log.Error("The binlog coordinate is earlier than the oldest backup",
-		zap.Any("binlogCoord", binlogCoord),
-		zap.Any("oldestBackupBinlogCoord", backupListSortedDesc[len(backupListSortedDesc)-1].Payload.BinlogInfo))
-	return nil, fmt.Errorf("the binlog coordinate is earlier than the oldest backup")
+	if backup == nil {
+		var minSeq int64 = math.MaxInt64
+		var minPos int64 = math.MaxInt64
+		var oldestBackupBinlogCoordinate binlogCoordinate
+		for _, c := range backupCoordinateList {
+			if c.Seq < minSeq || (c.Seq == minSeq && c.Pos < minPos) {
+				minSeq = c.Seq
+				minPos = c.Pos
+				oldestBackupBinlogCoordinate = c
+			}
+		}
+		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
+			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
+			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
+		return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
+	}
+
+	return backup, nil
 }
 
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
@@ -632,8 +635,8 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	return sortBinlogFiles(binlogFiles), nil
 }
 
-// GetBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*api.BinlogInfo, error) {
+// getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
+func (r *Restore) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
@@ -668,6 +671,10 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		isLastBinlogFile = true
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
+	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
+	}
 
 	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
 	if err != nil {
@@ -678,11 +685,11 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 			if isLastBinlogFile {
 				return nil, fmt.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFileTarget.Name)
 			}
-			return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: math.MaxInt64}, nil
+			return &binlogCoordinate{Seq: targetSeq, Pos: math.MaxInt64}, nil
 		}
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
-	return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: eventPos}, nil
+	return &binlogCoordinate{Seq: targetSeq, Pos: eventPos}, nil
 }
 
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
