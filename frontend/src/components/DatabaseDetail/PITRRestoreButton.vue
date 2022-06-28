@@ -6,7 +6,13 @@
       :disabled="!allowAdmin || !pitrAvailable.result"
       @click="openDialog"
     >
-      {{ $t("database.pitr.restore-to-point-in-time") }}
+      <div class="flex items-center space-x-2">
+        <span>{{ $t("database.pitr.restore-to-point-in-time") }}</span>
+        <FeatureBadge
+          feature="bb.feature.disaster-recovery-pitr"
+          class="text-accent"
+        />
+      </div>
       <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
         {{ pitrAvailable.message }}
       </template>
@@ -85,6 +91,12 @@
       </div>
     </div>
   </BBModal>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.disaster-recovery-pitr"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -96,11 +108,13 @@ import { useI18n } from "vue-i18n";
 import { Database } from "@/types";
 import { usePITRLogic } from "@/plugins";
 import { issueSlug } from "@/utils";
+import { featureToRef } from "@/store";
 
 interface LocalState {
   showDatabasePITRModal: boolean;
   pitrTimestampMS: number;
   loading: boolean;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps({
@@ -121,7 +135,10 @@ const state = reactive<LocalState>({
   showDatabasePITRModal: false,
   pitrTimestampMS: Date.now(),
   loading: false,
+  showFeatureModal: false,
 });
+
+const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
 
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 
@@ -168,6 +185,11 @@ const openDialog = () => {
 };
 
 const onConfirm = async () => {
+  if (!hasPITRFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+
   state.loading = true;
 
   try {

@@ -1,5 +1,7 @@
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // Database management
+  | "bb.feature.disaster-recovery-pitr"
   // Change Workflow
   | "bb.feature.schema-review-policy"
   | "bb.feature.schema-drift"
@@ -46,6 +48,8 @@ export interface Plan {
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
 // so that it can be shared between frontend/backend.
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
+  // Database management
+  ["bb.feature.disaster-recovery-pitr", [false, true, true]],
   // Change Workflow
   ["bb.feature.schema-review-policy", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
