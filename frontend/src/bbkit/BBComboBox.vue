@@ -45,6 +45,7 @@
           v-if="state.open"
           ref="popup"
           class="z-50 rounded-md bg-white shadow-lg"
+          v-bind="dataLabelAttrs"
           :style="{ width: `${width}px` }"
         >
           <ul
@@ -89,6 +90,7 @@
 import { reactive, watch, ref, withDefaults } from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
+import useDataLabelAttrs from "@/composables/useDataLabelAttrs";
 import { isAncestorOf, scrollIntoViewIfNeeded } from "./BBUtil";
 
 export type ItemType = number | string | object | any;
@@ -135,6 +137,8 @@ const state = reactive<LocalState>({
   activeIndex: props.options.indexOf(props.value),
   activeItem: props.value,
 });
+
+const dataLabelAttrs = useDataLabelAttrs("", "-item");
 
 const button = ref<HTMLButtonElement | null>(null);
 const popup = ref<HTMLElement | null>(null);

@@ -25,7 +25,7 @@ export const showGuideDialog = async (guideStep: any) => {
   const targetElement = await waitForTargetElement(guideStep.selectors);
   if (targetElement) {
     renderHighlightWrapper(targetElement);
-    renderGuideDialog(targetElement, guideStep.title, guideStep.description);
+    renderGuideDialog(targetElement, guideStep);
   }
 };
 
@@ -40,11 +40,8 @@ const renderHighlightWrapper = (targetElement: HTMLElement) => {
   highlightWrapper.style.height = `${bounding.height}px`;
 };
 
-const renderGuideDialog = (
-  targetElement: HTMLElement,
-  title: string,
-  description: string
-) => {
+const renderGuideDialog = (targetElement: HTMLElement, guideStep: any) => {
+  const { description, title, type } = guideStep;
   const guideDialogDiv = document.createElement("div");
   guideDialogDiv.className = "bb-guide-dialog";
   const bounding = getElementBounding(targetElement);
@@ -61,34 +58,47 @@ const renderGuideDialog = (
 
   const buttonsContainer = document.createElement("div");
   buttonsContainer.className = "bb-guide-btns-container";
-  const prevButton = document.createElement("button");
-  prevButton.className = "button";
-  prevButton.innerText = "Back";
+
   const nextButton = document.createElement("button");
   nextButton.className = "button";
   nextButton.innerText = "Next";
-  buttonsContainer.appendChild(prevButton);
   buttonsContainer.appendChild(nextButton);
   guideDialogDiv.appendChild(buttonsContainer);
 
-  prevButton.onclick = () => {
-    // ...how to do prev?
-  };
-
-  nextButton.onclick = () => {
-    targetElement.click();
-  };
-
-  // TOOD(steven): support more action type: input value change...
-  targetElement.addEventListener("click", () => {
-    const { guide } = storage.get(["guide"]);
-    storage.set({
-      guide: merge(guide, {
-        stepIndex: (guide?.stepIndex ?? 0) + 1,
-      }),
+  if (type === "click") {
+    targetElement.addEventListener("click", () => {
+      const { guide } = storage.get(["guide"]);
+      storage.set({
+        guide: merge(guide, {
+          stepIndex: (guide?.stepIndex ?? 0) + 1,
+        }),
+      });
+      storage.emitStorageChangedEvent();
     });
-    storage.emitStorageChangedEvent();
-  });
+
+    nextButton.onclick = () => {
+      targetElement.click();
+    };
+  } else if (type === "change") {
+    nextButton.onclick = () => {
+      const value =
+        targetElement.textContent ||
+        targetElement.nodeValue ||
+        (targetElement as HTMLInputElement).value ||
+        "";
+      if (RegExp(guideStep.value).test(value)) {
+        const { guide } = storage.get(["guide"]);
+        storage.set({
+          guide: merge(guide, {
+            stepIndex: (guide?.stepIndex ?? 0) + 1,
+          }),
+        });
+        storage.emitStorageChangedEvent();
+      } else {
+        // ...show invalid value message
+      }
+    };
+  }
 
   document.body.appendChild(guideDialogDiv);
 };
