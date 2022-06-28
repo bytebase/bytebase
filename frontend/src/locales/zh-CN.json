@@ -1314,7 +1314,7 @@
         "desc": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级。"
       },
       "bb-feature-disaster-recovery-pitr": {
-        "title": "恢复到制定时间点 (PITR)",
+        "title": "恢复到指定时间点 (PITR)",
         "desc": "将数据库的状态恢复到一个时间点。"
       }
     },
