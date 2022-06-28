@@ -26,7 +26,7 @@ func TestPostgreSQLSyntax(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    advisor.DbStatementSyntaxError,
+					Code:    advisor.StatementSyntaxError,
 					Title:   "Syntax error",
 					Content: "at or near \"engine\": syntax error",
 				},

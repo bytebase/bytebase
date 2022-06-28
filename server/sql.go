@@ -158,7 +158,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
+		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
 			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
 			if err != nil {
 				return err
@@ -770,7 +770,7 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			adviceLevel = advisor.Warn
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Warn,
-				Code:    advisor.EmptySchemaReviewPolicy,
+				Code:    advisor.NotFound,
 				Title:   "Empty schema review policy or disabled",
 				Content: "",
 			})
@@ -794,10 +794,15 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
 		}
 
+		dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
+		if err != nil {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
+		}
+
 		res, err := advisor.SchemaReviewCheck(ctx, exec.Statement, policy, advisor.SchemaReviewCheckContext{
 			Charset:   db[0].CharacterSet,
 			Collation: db[0].Collation,
-			DbType:    instance.Engine,
+			DbType:    dbType,
 			Catalog:   store.NewCatalog(&db[0].ID, s.store),
 		})
 		if err != nil {

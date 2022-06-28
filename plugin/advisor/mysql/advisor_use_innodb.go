@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 )
@@ -20,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.

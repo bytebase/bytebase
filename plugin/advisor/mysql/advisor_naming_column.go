@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -14,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingColumnConvention, &NamingColumnConventionAdvisor{})
 }
 
 // NamingColumnConventionAdvisor is the advisor checking for column naming convention.
