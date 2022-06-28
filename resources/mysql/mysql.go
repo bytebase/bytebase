@@ -21,7 +21,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Instance is MySQL instance installed by bytebase for testing.
+// Instance is MySQL instance installed by Bytebase for testing.
 type Instance struct {
 	// basedir is the directory where the mysql binary is installed.
 	basedir string

@@ -25,7 +25,7 @@ Please read and follow [Google's Code Review Guideline](https://google.github.io
 
 # Tools
 
-- Install [Neat](https://neat.run/) to subscribe GitHub notification, make sure to watch the bytebase repository.
+- Install [Neat](https://neat.run/) to subscribe GitHub notification, make sure to watch the Bytebase repository.
 
 - You can also try [graphite](https://graphite.dev/) which is a new code review tool for GitHub. One nice feature is it displays who should take the turn for each ongoing PR.
 

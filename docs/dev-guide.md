@@ -14,7 +14,7 @@ Since git utilizes branches as a primary development pattern, we usually face th
 After forking the `bytebase/bytebase` repository, set up the git remote tracking.
 
 ```bash
-# clone your bytebase fork
+# clone your Bytebase fork
 git clone git@github.com:${YourGithubID}/bytebase.git
 cd bytebase
 # setup upstream pointing to bytebase/bytebase
