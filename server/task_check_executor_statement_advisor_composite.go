@@ -45,10 +45,11 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{
 				{
-					Status:  api.TaskCheckStatusWarn,
-					Code:    common.TaskCheckEmptySchemaReviewPolicy,
-					Title:   "Empty schema review policy or disabled",
-					Content: "",
+					Status:    api.TaskCheckStatusWarn,
+					Namespace: api.AdvisorNamespace,
+					Code:      advisor.NotFound.Int(),
+					Title:     "Empty schema review policy or disabled",
+					Content:   "",
 				},
 			}, nil
 		}
@@ -62,10 +63,15 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 
 	catalog := store.NewCatalog(task.DatabaseID, server.store)
 
+	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	if err != nil {
+		return nil, err
+	}
+
 	adviceList, err := advisor.SchemaReviewCheck(ctx, payload.Statement, policy, advisor.SchemaReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
-		DbType:    payload.DbType,
+		DbType:    dbType,
 		Catalog:   catalog,
 	})
 	if err != nil {
@@ -85,19 +91,21 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		}
 
 		result = append(result, api.TaskCheckResult{
-			Status:  status,
-			Code:    api.ConvertToErrorCode(advice.Code),
-			Title:   advice.Title,
-			Content: advice.Content,
+			Status:    status,
+			Namespace: api.AdvisorNamespace,
+			Code:      advice.Code.Int(),
+			Title:     advice.Title,
+			Content:   advice.Content,
 		})
 	}
 
 	if len(result) == 0 {
 		result = append(result, api.TaskCheckResult{
-			Status:  api.TaskCheckStatusSuccess,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: "",
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   "",
 		})
 	}
 

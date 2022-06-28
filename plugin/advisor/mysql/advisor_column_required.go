@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -15,8 +14,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLColumnRequirement, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.

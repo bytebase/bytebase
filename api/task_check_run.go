@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -98,12 +99,23 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	PolicyID int `json:"policyID,omitempty"`
 }
 
+// Namespace is the namespace for task check result.
+type Namespace string
+
+const (
+	// AdvisorNamespace is task check result namespace for advisor.
+	AdvisorNamespace Namespace = "bb.advisor"
+	// BBNamespace is task check result namespace for bytebase.
+	BBNamespace Namespace = "bb.core"
+)
+
 // TaskCheckResult is the result of task checks.
 type TaskCheckResult struct {
-	Status  TaskCheckStatus `json:"status,omitempty"`
-	Code    common.Code     `json:"code,omitempty"`
-	Title   string          `json:"title,omitempty"`
-	Content string          `json:"content,omitempty"`
+	Namespace Namespace       `json:"namespace,omitempty"`
+	Code      int             `json:"code,omitempty"`
+	Status    TaskCheckStatus `json:"status,omitempty"`
+	Title     string          `json:"title,omitempty"`
+	Content   string          `json:"content,omitempty"`
 }
 
 // TaskCheckRunResultPayload is the result payload of a task check run.
@@ -192,63 +204,36 @@ type TaskCheckRunStatusPatch struct {
 	Result string
 }
 
-// ConvertToErrorCode will convert advisor code into common code
-func ConvertToErrorCode(code advisor.Code) common.Code {
-	switch code {
-	case advisor.Ok:
-		return common.Ok
-	case advisor.Internal:
-		return common.Internal
-	case advisor.DbStatementSyntaxError:
-		return common.DbStatementSyntaxError
-	case advisor.EmptySchemaReviewPolicy:
-		return common.TaskCheckEmptySchemaReviewPolicy
-	case advisor.CompatibilityDropDatabase:
-		return common.CompatibilityDropDatabase
-	case advisor.CompatibilityRenameTable:
-		return common.CompatibilityRenameTable
-	case advisor.CompatibilityDropTable:
-		return common.CompatibilityDropTable
-	case advisor.CompatibilityRenameColumn:
-		return common.CompatibilityRenameColumn
-	case advisor.CompatibilityDropColumn:
-		return common.CompatibilityDropColumn
-	case advisor.CompatibilityAddPrimaryKey:
-		return common.CompatibilityAddPrimaryKey
-	case advisor.CompatibilityAddUniqueKey:
-		return common.CompatibilityAddUniqueKey
-	case advisor.CompatibilityAddForeignKey:
-		return common.CompatibilityAddForeignKey
-	case advisor.CompatibilityAddCheck:
-		return common.CompatibilityAddCheck
-	case advisor.CompatibilityAlterCheck:
-		return common.CompatibilityAlterCheck
-	case advisor.CompatibilityAlterColumn:
-		return common.CompatibilityAlterColumn
-	case advisor.StatementNoWhere:
-		return common.StatementNoWhere
-	case advisor.StatementSelectAll:
-		return common.StatementSelectAll
-	case advisor.StatementLeadingWildcardLike:
-		return common.StatementLeadingWildcardLike
-	case advisor.NamingTableConventionMismatch:
-		return common.NamingTableConventionMismatch
-	case advisor.NamingColumnConventionMismatch:
-		return common.NamingColumnConventionMismatch
-	case advisor.NamingIndexConventionMismatch:
-		return common.NamingIndexConventionMismatch
-	case advisor.NamingUKConventionMismatch:
-		return common.NamingUKConventionMismatch
-	case advisor.NamingFKConventionMismatch:
-		return common.NamingFKConventionMismatch
-	case advisor.NoRequiredColumn:
-		return common.NoRequiredColumn
-	case advisor.ColumnCanNotNull:
-		return common.ColumnCanNotNull
-	case advisor.NotInnoDBEngine:
-		return common.NotInnoDBEngine
-	case advisor.TableNoPK:
-		return common.TableNoPK
+// ConvertToAdvisorDBType will convert db type into advisor db type
+func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
+	switch dbType {
+	case db.MySQL:
+		return advisor.MySQL, nil
+	case db.Postgres:
+		return advisor.Postgres, nil
+	case db.TiDB:
+		return advisor.TiDB, nil
 	}
-	return common.Internal
+
+	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
+}
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(dbType db.Type) bool {
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
+	}
+
+	return advisor.IsSyntaxCheckSupported(advisorDB)
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(dbType db.Type) bool {
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
+	}
+
+	return advisor.IsSchemaReviewSupported(advisorDB)
 }

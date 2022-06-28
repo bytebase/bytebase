@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -21,8 +20,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -13,8 +12,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.

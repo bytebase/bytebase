@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -159,13 +158,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[db.Type]map[Type]Advisor)
+	advisors  = make(map[DBType]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType db.Type, advType Type, f Advisor) {
+func Register(dbType DBType, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -185,7 +184,7 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice, error) {
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
@@ -202,16 +201,16 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(engine db.Type) bool {
-	if engine == db.MySQL || engine == db.TiDB {
+func IsSyntaxCheckSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB {
 		return true
 	}
 	return false
 }
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(engine db.Type) bool {
-	if engine == db.MySQL || engine == db.TiDB || engine == db.Postgres {
+func IsSchemaReviewSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
 		return true
 	}
 	return false
