@@ -305,6 +305,9 @@ func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.E
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}

@@ -18,10 +18,19 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
 )
+
+// catalogService is the catalog service for sql check api.
+type catalogService struct{}
+
+// We will not connect to the user's database in the early version of sql check api
+func (c *catalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
+	return nil, nil
+}
 
 func (s *Server) registerSQLRoutes(g *echo.Group) {
 	g.POST("/sql/ping", func(c echo.Context) error {
@@ -254,6 +263,101 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
 		}
+		return nil
+	})
+
+	g.GET("/sql/advise", func(c echo.Context) error {
+		envName := c.QueryParams().Get("env")
+		if envName == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
+		}
+
+		sql := c.QueryParams().Get("sql")
+		if sql == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
+		}
+
+		dbType := c.QueryParams().Get("type")
+		if dbType == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
+		}
+		advisorDBType, err := api.ConvertToAdvisorDBType(db.Type(strings.ToUpper(dbType)))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
+		}
+
+		charset := c.QueryParams().Get("charset")
+		if charset == "" {
+			charset = "utf8mb4"
+		}
+		collation := c.QueryParams().Get("collation")
+		if collation == "" {
+			collation = "utf8mb4_general_ci"
+		}
+
+		ctx := c.Request().Context()
+		envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
+			Name: &envName,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
+		}
+		if len(envList) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
+		}
+
+		envID := envList[0].ID
+		policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &envID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find schema review policy in env %s", envName)).SetInternal(err)
+		}
+
+		res, err := advisor.SchemaReviewCheck(ctx, sql, policy, advisor.SchemaReviewCheckContext{
+			Charset:   charset,
+			Collation: collation,
+			DbType:    advisorDBType,
+			Catalog:   &catalogService{},
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
+		}
+
+		adviceLevel := advisor.Success
+		var adviceList []advisor.Advice
+		for _, advice := range res {
+			switch advice.Status {
+			case advisor.Warn:
+				if adviceLevel != advisor.Error {
+					adviceLevel = advisor.Warn
+				}
+			case advisor.Error:
+				adviceLevel = advisor.Error
+			case advisor.Success:
+				continue
+			}
+
+			adviceList = append(adviceList, advice)
+		}
+
+		if len(adviceList) == 0 {
+			adviceList = append(adviceList, advisor.Advice{
+				Status:  advisor.Success,
+				Code:    advisor.Ok,
+				Title:   "OK",
+				Content: "",
+			})
+		}
+
+		SQLCheckResult := &api.SQLCheckResult{
+			Result:     adviceLevel.String(),
+			AdviceList: adviceList,
+		}
+
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, SQLCheckResult); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
+		}
+
 		return nil
 	})
 }

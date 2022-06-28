@@ -36,6 +36,9 @@ type EnvironmentCreate struct {
 type EnvironmentFind struct {
 	ID *int
 
+	// Domain specific fields
+	Name *string
+
 	// Standard fields
 	RowStatus *RowStatus
 }

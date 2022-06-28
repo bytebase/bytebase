@@ -146,6 +146,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					)
 					continue
 				}
+				if index == nil {
+					continue
+				}
 				if !index.Unique {
 					// Index naming convention should in advisor_naming_index_convention.go
 					continue

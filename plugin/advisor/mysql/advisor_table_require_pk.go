@@ -174,6 +174,9 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 		if pk == nil {
 			return
 		}
+		if pk == nil {
+			return
+		}
 		v.tables[table] = newColumnSet(pk.ColumnExpressions)
 	}
 
