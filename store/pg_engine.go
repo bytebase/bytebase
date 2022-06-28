@@ -348,6 +348,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 				CreateDatabase:        !strictDb,
+				Force:                 true,
 			},
 			stmt,
 		); err != nil {
@@ -409,6 +410,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 						Source:                dbdriver.LIBRARY,
 						Type:                  dbdriver.Migrate,
 						Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+						Force:                 true,
 					},
 					string(buf),
 				); err != nil {
@@ -499,6 +501,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+				Force:                 true,
 			},
 			m.statement,
 		); err != nil {
