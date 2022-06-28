@@ -1,4 +1,4 @@
-import * as monaco from "monaco-editor";
+import type * as monaco from "monaco-editor";
 import { DropdownOption } from "naive-ui";
 
 import {

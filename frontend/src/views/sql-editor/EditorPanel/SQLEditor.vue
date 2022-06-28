@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { debounce } from "lodash-es";
 import { computed, defineEmits, ref, watch, watchEffect } from "vue";
-import * as monaco from "monaco-editor";
+
 import {
   useInstanceStore,
   useTabStore,
@@ -103,7 +103,8 @@ const handleSaveSheet = () => {
   emit("save-sheet");
 };
 
-const handleEditorReady = () => {
+const handleEditorReady = async () => {
+  const monaco = await import("monaco-editor");
   editorRef.value?.editorInstance?.addAction({
     id: "RunQuery",
     label: "Run Query",
