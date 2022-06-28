@@ -79,6 +79,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	const (
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
+		timestampAllTable                   = true
 		hooksStatusIntervalSec              = 60
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
@@ -135,6 +136,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	}
 	migrationContext.ServeSocketFile = config.socketFilename
 	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
+	migrationContext.TimestampAllTable = timestampAllTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
 	migrationContext.SetChunkSize(chunkSize)
