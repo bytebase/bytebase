@@ -53,8 +53,6 @@ export const getElementBounding = (
     (relativeEl.tagName !== "BODY" && relativeElPosition === "relative") ||
     relativeElPosition === "sticky"
   ) {
-    // when the container of our target element is _not_ body and has either "relative" or "sticky" position, we should not
-    // consider the scroll position but we need to include the relative x/y of the container element
     return assign(bounding, {
       top: elementRect.top - relativeElRect.top,
       left: elementRect.left - relativeElRect.left,
