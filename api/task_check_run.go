@@ -220,16 +220,20 @@ func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType db.Type) bool {
-	if dbType == db.MySQL || dbType == db.TiDB || dbType == db.Postgres {
-		return true
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
 	}
-	return false
+
+	return advisor.IsSyntaxCheckSupported(advisorDB)
 }
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
 func IsSchemaReviewSupported(dbType db.Type) bool {
-	if dbType == db.MySQL || dbType == db.TiDB || dbType == db.Postgres {
-		return true
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
 	}
-	return false
+
+	return advisor.IsSchemaReviewSupported(advisorDB)
 }
