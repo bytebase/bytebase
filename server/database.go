@@ -941,6 +941,11 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
+			TLSConfig: db.TLSConfig{
+				SslCA:   dataSource.SslCa,
+				SslCert: dataSource.SslCert,
+				SslKey:  dataSource.SslKey,
+			},
 			ReadOnly: true,
 		},
 		db.ConnectionContext{
