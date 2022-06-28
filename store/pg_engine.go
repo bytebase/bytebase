@@ -205,12 +205,18 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return nil, nil
 	}
 
-	v, err := semver.Make(history[0].Version)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
+	for _, h := range history {
+		if h.Status != dbdriver.Done {
+			continue
+		}
+		v, err := semver.Make(h.Version)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version %q, error: %v", h.Version, err)
+		}
+		return &v, nil
 	}
 
-	return &v, nil
+	return nil, fmt.Errorf("failed to find a successful migration history")
 }
 
 // setupDemoData loads the setupDemoData data for testing
