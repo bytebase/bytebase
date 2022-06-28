@@ -7,6 +7,7 @@ export type FeatureType =
   | "bb.feature.multi-tenancy"
   | "bb.feature.dba-workflow"
   | "bb.feature.data-source"
+  | "bb.feature.online-migration"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
@@ -52,6 +53,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.multi-tenancy", [false, true, true]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.data-source", [false, false, false]],
+  ["bb.feature.online-migration", [false, true, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
