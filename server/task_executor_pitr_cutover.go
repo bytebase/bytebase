@@ -32,22 +32,18 @@ type PITRCutoverTaskExecutor struct {
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
+	issue, err := getNonNillIssueByPipelineID(ctx, server, task.PipelineID)
+
+	if err != nil {
+		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
+		return terminated, result, nil
+	}
+
 	// Currently api.TaskDatabasePITRCutoverPayload is empty, so we do not need to unmarshal from task.Payload.
 
-	terminated, result, err = exec.pitrCutover(ctx, task, server)
+	terminated, result, err = exec.pitrCutover(ctx, task, server, issue)
 	if err != nil {
 		return terminated, result, err
-	}
-
-	issue, err := server.store.GetIssueByPipelineID(ctx, task.PipelineID)
-	if err != nil {
-		log.Error("failed to fetch containing issue after doing pitr cutover task", zap.Error(err))
-		return terminated, result, nil
-	}
-
-	if issue == nil {
-		log.Error("cannot find an issue containing pitr curover task")
-		return terminated, result, nil
 	}
 
 	payload, err := json.Marshal(api.ActivityPipelineTaskStatusUpdatePayload{
@@ -80,17 +76,12 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return terminated, result, nil
 }
 
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-
-	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
-	if err != nil {
-		return true, nil, err
-	}
 
 	connCfg, err := getConnectionConfig(ctx, task.Instance, task.Database.Name)
 	if err != nil {
@@ -153,4 +144,17 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
+}
+
+func getNonNillIssueByPipelineID(ctx context.Context, server *Server, id int) (*api.Issue, error) {
+	issue, err := server.store.GetIssueByPipelineID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch containing issue after doing pitr cutover task, error: %w", err)
+	}
+
+	if issue == nil {
+		return nil, fmt.Errorf("cannot find an issue by pipeline id: %d", id)
+	}
+
+	return issue, nil
 }
