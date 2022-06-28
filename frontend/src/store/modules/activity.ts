@@ -146,6 +146,31 @@ export const useActivityStore = defineStore("activity", {
 
       return activityList;
     },
+    async fetchActivityListForDatabaseByProjectId({
+      projectId,
+      limit,
+    }: {
+      projectId: ProjectId;
+      limit?: number;
+    }) {
+      const queryList = [
+        "typePrefix=bb.database.",
+        `container=${projectId}`,
+        `order=DESC`,
+      ];
+      if (limit) {
+        queryList.push(`limit=${limit}`);
+      }
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
+
+      return activityList;
+    },
     async createActivity(newActivity: ActivityCreate) {
       const data = (
         await axios.post(`/api/activity`, {
