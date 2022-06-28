@@ -1,5 +1,5 @@
 <template>
-  <div ref="editorContainerRef"></div>
+  <div ref="editorContainerRef" v-bind="$attrs"></div>
   <BBSpin
     v-if="!isEditorLoaded"
     class="h-full w-full flex items-center justify-center"
