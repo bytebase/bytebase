@@ -19,7 +19,7 @@ const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
-	// identifyTraitForVersion is the trait key for bytebase version.
+	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
 )
 

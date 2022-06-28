@@ -72,7 +72,7 @@ ________________________________________________________________________________
 // -----------------------------------Command Line Config BEGIN------------------------------------
 var (
 	flags struct {
-		// Used for bytebase command line config
+		// Used for Bytebase command line config
 		host         string
 		port         int
 		frontendHost string
@@ -117,13 +117,13 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 80, "port where Bytebase backend is accessed from. This is also used by Bytebase to create the webhook callback endpoint for VCS integration")
 	rootCmd.PersistentFlags().StringVar(&flags.frontendHost, "frontend-host", "", "host where Bytebase frontend is accessed from, must start with http:// or https://. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --host")
 	rootCmd.PersistentFlags().IntVar(&flags.frontendPort, "frontend-port", 0, "port where Bytebase frontend is accessed from. This is used by Bytebase to compose the frontend link when posting the webhook event. Default is the same as --port")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where bytebase is under")
+	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "whether to run using demo data")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	// TODO(tianzhou): this needs more bake time. There are couple blocking issues:
-	// 1. Currently, we will create a separate bytebase database to store the migration_history table, we need to put it inside the specified database here.
-	// 2. We need to move the logic of creating bytebase metadata db logic outside. Because with --pg option, the db has already been created.
+	// 1. Currently, we will create a separate database "bytebase" to store the migration_history table, we need to put it inside the specified database here.
+	// 2. We need to move the logic of creating Bytebase metadata db logic outside. Because with --pg option, the db has already been created.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", "", "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 }
 

@@ -209,7 +209,7 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
 		if err := os.Chown(pgDataDir, int(uid), int(gid)); err != nil {
-			return fmt.Errorf("failed to change owner to bytebase of data directory %q, error: %w", pgDataDir, err)
+			return fmt.Errorf("failed to change owner of data directory %q to bytebase, error: %w", pgDataDir, err)
 		}
 	}
 
@@ -226,12 +226,12 @@ func shouldSwitchUser() (int, int, bool, error) {
 	if err != nil {
 		return 0, 0, true, fmt.Errorf("failed to get current user, error: %w", err)
 	}
-	// If user runs bytebase as root user, we will attempt to run as user `bytebase`.
+	// If user runs Bytebase as root user, we will attempt to run as user `bytebase`.
 	// https://www.postgresql.org/docs/14/app-initdb.html
 	if bytebaseUser.Username == "root" {
 		bytebaseUser, err = user.Lookup("bytebase")
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("Please run Bytebase as non-root user. You can use the following command to create a dedicated bytebase user to run the application: addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase")
+			return 0, 0, false, fmt.Errorf("please run Bytebase as non-root user. You can use the following command to create a dedicated \"bytebase\" user to run the application: addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase")
 		}
 		sameUser = false
 	}
