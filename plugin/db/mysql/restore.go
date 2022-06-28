@@ -40,12 +40,12 @@ type BinlogFile struct {
 	Seq int64
 }
 
-func newBinlogFile(binlogFileName string, size int64) (BinlogFile, error) {
-	seq, err := getBinlogNameSeq(binlogFileName)
+func newBinlogFile(name string, size int64) (BinlogFile, error) {
+	seq, err := getBinlogNameSeq(name)
 	if err != nil {
 		return BinlogFile{}, err
 	}
-	return BinlogFile{Name: binlogFileName, Size: size, Seq: seq}, nil
+	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
 }
 
 // ZapBinlogFiles is a helper to format zap.Array
