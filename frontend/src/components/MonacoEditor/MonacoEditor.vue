@@ -13,7 +13,7 @@ import {
   watch,
   shallowRef,
 } from "vue";
-import { editor as Editor } from "monaco-editor";
+import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect, Table } from "@/types";
 import { useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
@@ -110,15 +110,15 @@ const getEditorInstance = () => {
     emit("change-selection", selectedText);
   });
 
-  editorInstance.onDidChangeCursorPosition((e: any) => {
+  editorInstance.onDidChangeCursorPosition(async (e: any) => {
     const { defineLineDecorations, disposeLineDecorations } =
-      useLineDecorations(editorInstance, e.position);
+      await useLineDecorations(editorInstance, e.position);
     // clear the old decorations
     disposeLineDecorations();
 
     // define the new decorations
-    nextTick(() => {
-      defineLineDecorations();
+    nextTick(async () => {
+      await defineLineDecorations();
     });
   });
 
