@@ -113,6 +113,7 @@ import {
   PropType,
   computed,
   defineComponent,
+  onBeforeMount,
 } from "vue";
 import { NSpin } from "naive-ui";
 import ActivityTable from "../components/ActivityTable.vue";
@@ -164,16 +165,25 @@ export default defineComponent({
       xAxisLabel: "bb.environment",
       yAxisLabel: undefined,
     });
+    const activityStore = useActivityStore();
 
     const prepareActivityList = () => {
-      useActivityStore()
-        .fetchActivityListForProject({
+      const requests = [
+        activityStore.fetchActivityListForDatabaseByProjectId({
           projectId: props.project.id,
           limit: ACTIVITY_LIMIT,
-        })
-        .then((list) => {
-          state.activityList = list;
-        });
+        }),
+        activityStore.fetchActivityListForProject({
+          projectId: props.project.id,
+          limit: ACTIVITY_LIMIT,
+        }),
+      ];
+
+      Promise.all(requests).then((lists) => {
+        const flattenList = lists.flatMap((list) => list);
+        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
+        state.activityList = flattenList.slice(0, ACTIVITY_LIMIT);
+      });
     };
 
     const prepareIssueList = () => {
@@ -206,7 +216,7 @@ export default defineComponent({
       prepareIssueList();
     };
 
-    watchEffect(prepare);
+    onBeforeMount(prepare);
 
     const labelList = useLabelList();
 

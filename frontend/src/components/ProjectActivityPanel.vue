@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, reactive, watchEffect } from "vue";
+import { defineComponent, onBeforeMount, PropType, reactive } from "vue";
 import { Activity, Project } from "../types";
 import ActivityTable from "../components/ActivityTable.vue";
 import { useActivityStore } from "@/store";
@@ -32,18 +32,26 @@ export default defineComponent({
     const state = reactive<LocalState>({
       activityList: [],
     });
+    const activityStore = useActivityStore();
 
     const prepareActivityList = () => {
-      useActivityStore()
-        .fetchActivityListForProject({
+      const requests = [
+        activityStore.fetchActivityListForDatabaseByProjectId({
           projectId: props.project.id,
-        })
-        .then((list) => {
-          state.activityList = list;
-        });
+        }),
+        activityStore.fetchActivityListForProject({
+          projectId: props.project.id,
+        }),
+      ];
+
+      Promise.all(requests).then((lists) => {
+        const flattenList = lists.flatMap((list) => list);
+        flattenList.sort((a, b) => -(a.createdTs - b.createdTs)); // by createdTs DESC
+        state.activityList = flattenList;
+      });
     };
 
-    watchEffect(prepareActivityList);
+    onBeforeMount(prepareActivityList);
 
     return {
       state,
