@@ -100,12 +100,15 @@ export const useEnvironmentStore = defineStore("environment", {
       this.upsertEnvironmentList(environmentList);
 
       const policyStore = usePolicyStore();
-      for (const environment of environmentList) {
-        await policyStore.fetchPolicyByEnvironmentAndType({
-          environmentId: environment.id,
-          type: "bb.policy.pipeline-approval",
-        });
-      }
+
+      await Promise.all(
+        environmentList.map((environment) => {
+          return policyStore.fetchPolicyByEnvironmentAndType({
+            environmentId: environment.id,
+            type: "bb.policy.pipeline-approval",
+          });
+        })
+      );
 
       return environmentList;
     },
