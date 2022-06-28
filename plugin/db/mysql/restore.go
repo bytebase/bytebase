@@ -298,39 +298,35 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 }
 
 func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
-	var backupCoordinateList []binlogCoordinate
+	type backupBinlogCoordinate struct {
+		binlogCoordinate
+		backup *api.Backup
+	}
+	var backupCoordinateList []backupBinlogCoordinate
 	for _, b := range backupList {
 		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
 		if err != nil {
 			return nil, err
 		}
-		backupCoordinateList = append(backupCoordinateList, c)
+		backupCoordinateList = append(backupCoordinateList, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
 	}
 
-	var maxSeq int64
-	var maxPos int64
+	// Sort in order that latest binlog coordinate comes first.
+	sort.Slice(backupCoordinateList, func(i, j int) bool {
+		return backupCoordinateList[i].Seq > backupCoordinateList[j].Seq ||
+			(backupCoordinateList[i].Seq == backupCoordinateList[j].Seq && backupCoordinateList[i].Pos > backupCoordinateList[j].Pos)
+	})
+
 	var backup *api.Backup
-	for i, c := range backupCoordinateList {
-		if c.Seq < targetBinlogCoordinate.Seq || (c.Seq == targetBinlogCoordinate.Seq && c.Pos <= targetBinlogCoordinate.Pos) {
-			if c.Seq > maxSeq || (c.Seq == maxSeq && c.Pos > maxPos) {
-				maxSeq = c.Seq
-				maxPos = c.Pos
-				backup = backupList[i]
-			}
+	for _, bc := range backupCoordinateList {
+		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
+			backup = bc.backup
+			break
 		}
 	}
 
 	if backup == nil {
-		var minSeq int64 = math.MaxInt64
-		var minPos int64 = math.MaxInt64
-		var oldestBackupBinlogCoordinate binlogCoordinate
-		for _, c := range backupCoordinateList {
-			if c.Seq < minSeq || (c.Seq == minSeq && c.Pos < minPos) {
-				minSeq = c.Seq
-				minPos = c.Pos
-				oldestBackupBinlogCoordinate = c
-			}
-		}
+		oldestBackupBinlogCoordinate := backupCoordinateList[len(backupCoordinateList)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
 			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
