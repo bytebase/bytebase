@@ -63,8 +63,6 @@ import { bytesToString, databaseSlug } from "../utils";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
-const GHOST_LOGO = new URL("../assets/gh-ost-logo.png", import.meta.url).href;
-
 type LocalState = {
   showReservedTableList: boolean;
 };
@@ -136,7 +134,6 @@ export default defineComponent({
     };
 
     return {
-      GHOST_LOGO,
       COLUMN_LIST,
       state,
       bytesToString,
