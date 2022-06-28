@@ -30,10 +30,13 @@ export type ProjectActivityType =
   | "bb.project.member.delete"
   | "bb.project.member.role.update";
 
+export type DatabaseActivityType = "bb.database.recovery.pitr.done";
+
 export type ActivityType =
   | IssueActivityType
   | MemberActivityType
-  | ProjectActivityType;
+  | ProjectActivityType
+  | DatabaseActivityType;
 
 export function activityName(type: ActivityType): string {
   switch (type) {
@@ -71,6 +74,8 @@ export function activityName(type: ActivityType): string {
       return t("activity.type.project-member-delete");
     case "bb.project.member.role.update":
       return t("activity.type.project-member-role-update");
+    case "bb.database.recovery.pitr.done":
+      return t("activity.type.database-recovery-pitr-done");
   }
 }
 
