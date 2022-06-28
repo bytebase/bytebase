@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -58,6 +57,19 @@ func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
 	}
 	return nil
+}
+
+type binlogCoordinate struct {
+	Seq int64
+	Pos int64
+}
+
+func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
+	seq, err := getBinlogNameSeq(binlogFileName)
+	if err != nil {
+		return binlogCoordinate{}, err
+	}
+	return binlogCoordinate{Seq: seq, Pos: pos}, nil
 }
 
 // Restore implements recovery functions for MySQL.
@@ -261,64 +273,6 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 	return sorted
 }
 
-// Locate the binlog event at (filename, position), parse the event and return its timestamp.
-// The current mechanism is by invoking mysqlbinlog and parse the output string.
-// Maybe we should parse the raw binlog header to get better documented structure?
-func (r *Restore) parseLocalBinlogEventTimestamp(ctx context.Context, binlogInfo api.BinlogInfo) (int64, error) {
-	args := []string{
-		path.Join(r.binlogDir, binlogInfo.FileName),
-		"--start-position", fmt.Sprintf("%d", binlogInfo.Position),
-		// This will trick mysqlbinlog to output the binlog event header followed by a warning message telling that
-		// the --stop-position is in the middle of the binlog event.
-		// It's OK, since we are only parsing for the timestamp in the binlog event header.
-		"--stop-position", fmt.Sprintf("%d", binlogInfo.Position+1),
-	}
-	var buf bytes.Buffer
-	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = &buf
-
-	if err := cmd.Run(); err != nil {
-		log.Error("mysqlbinlog command fails", zap.String("cmd", cmd.String()), zap.Error(err))
-		return 0, fmt.Errorf("mysqlbinlog command %q fails, error: %w", cmd.String(), err)
-	}
-
-	timestamp, err := parseBinlogEventTimestampImpl(buf.String())
-	if err != nil {
-		return timestamp, fmt.Errorf("failed to parse binlog event timestamp, filename %q, position %d, error: %w", binlogInfo.FileName, binlogInfo.Position, err)
-	}
-
-	return timestamp, nil
-}
-
-func parseBinlogEventTimestampImpl(output string) (int64, error) {
-	lines := strings.Split(output, "\n")
-	// The mysqlbinlog output will contains a line starting with "#220421 14:49:26 server id 1",
-	// which has the timestamp we are looking for.
-	// The first occurrence is the target.
-	for _, line := range lines {
-		if strings.Contains(line, "server id") {
-			if strings.Contains(line, "end_log_pos 0") {
-				// https://github.com/mysql/mysql-server/blob/8.0/client/mysqlbinlog.cc#L1209-L1212
-				// Fake events with end_log_pos=0 could be generated and we need to ignore them.
-				continue
-			}
-			fields := strings.Fields(line)
-			// fields should starts with ["#220421", "14:49:26", "server", "id"]
-			if len(fields) < 4 ||
-				(len(fields[0]) != 7 && len(fields[1]) != 8 && fields[2] != "server" && fields[3] != "id") {
-				return 0, fmt.Errorf("invalid mysqlbinlog output line: %q", line)
-			}
-			date, err := time.ParseInLocation("060102 15:04:05", fmt.Sprintf("%s %s", fields[0][1:], fields[1]), time.Local)
-			if err != nil {
-				return 0, err
-			}
-			return date.Unix(), nil
-		}
-	}
-	return 0, fmt.Errorf("no timestamp found in mysqlbinlog output")
-}
-
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
 func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
@@ -326,7 +280,11 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 		return nil, fmt.Errorf("no valid backup")
 	}
 
-	var eventTsList []int64
+	targetBinlogCoordinate, err := r.getBinlogCoordinateByTs(ctx, targetTs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
+	}
+
 	var validBackupList []*api.Backup
 	for _, b := range backupList {
 		if b.Payload.BinlogInfo.IsEmpty() {
@@ -334,54 +292,47 @@ func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList
 			continue
 		}
 		validBackupList = append(validBackupList, b)
-		eventTs, err := r.parseLocalBinlogEventTimestamp(ctx, b.Payload.BinlogInfo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse binlog event timestamp, error: %w", err)
-		}
-		eventTsList = append(eventTsList, eventTs)
 	}
-	log.Debug("Binlog event ts list of backups", zap.Int64s("eventTsList", eventTsList))
 
-	backup, err := getLatestBackupBeforeOrEqualTsImpl(validBackupList, eventTsList, targetTs)
-	if err != nil {
-		return nil, err
-	}
-	return backup, nil
-
+	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
 }
 
-// The backupList must 1 to 1 maps to the eventTsList, and the sorting order is not required.
-func getLatestBackupBeforeOrEqualTsImpl(backupList []*api.Backup, eventTsList []int64, targetTs int64) (*api.Backup, error) {
-	var maxEventTsLETargetTs int64
-	var minEventTs int64 = math.MaxInt64
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
+	type backupBinlogCoordinate struct {
+		binlogCoordinate
+		backup *api.Backup
+	}
+	var backupCoordinateListSorted []backupBinlogCoordinate
+	for _, b := range backupList {
+		c, err := newBinlogCoordinate(b.Payload.BinlogInfo.FileName, b.Payload.BinlogInfo.Position)
+		if err != nil {
+			return nil, err
+		}
+		backupCoordinateListSorted = append(backupCoordinateListSorted, backupBinlogCoordinate{binlogCoordinate: c, backup: b})
+	}
+
+	// Sort in order that latest binlog coordinate comes first.
+	sort.Slice(backupCoordinateListSorted, func(i, j int) bool {
+		return backupCoordinateListSorted[i].Seq > backupCoordinateListSorted[j].Seq ||
+			(backupCoordinateListSorted[i].Seq == backupCoordinateListSorted[j].Seq && backupCoordinateListSorted[i].Pos > backupCoordinateListSorted[j].Pos)
+	})
+
 	var backup *api.Backup
-	for i, b := range backupList {
-		// Parse the binlog files and convert binlog positions into MySQL server timestamps.
-		if b.Payload.BinlogInfo.IsEmpty() {
-			continue
-		}
-		eventTs := eventTsList[i]
-		if eventTs <= targetTs && eventTs > maxEventTsLETargetTs {
-			maxEventTsLETargetTs = eventTs
-			backup = b
-		}
-		// This is only for composing the error message when no valid backup found.
-		if eventTs < minEventTs {
-			minEventTs = eventTs
+	for _, bc := range backupCoordinateListSorted {
+		if bc.Seq < targetBinlogCoordinate.Seq || (bc.Seq == targetBinlogCoordinate.Seq && bc.Pos <= targetBinlogCoordinate.Pos) {
+			backup = bc.backup
+			break
 		}
 	}
 
-	if maxEventTsLETargetTs == 0 {
-		targetDateTime := time.Unix(targetTs, 0).Format(time.RFC822)
-		minEventDateTime := time.Unix(minEventTs, 0).Format(time.RFC822)
-		log.Debug("the target restore time is earlier than the oldest backup time",
-			zap.String("targetDatetime", targetDateTime),
-			zap.Int64("targetTimestamp", targetTs),
-			zap.String("minEventDateTime", minEventDateTime),
-			zap.Int64("minEventTimestamp", minEventTs))
-
-		return nil, fmt.Errorf("the target restore time %s is earlier than the oldest backup time %s", targetDateTime, minEventDateTime)
+	if backup == nil {
+		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
+		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
+			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
+			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
+		return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 	}
+
 	return backup, nil
 }
 
@@ -680,8 +631,8 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 	return sortBinlogFiles(binlogFiles), nil
 }
 
-// GetBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*api.BinlogInfo, error) {
+// getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
+func (r *Restore) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
@@ -716,6 +667,10 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		isLastBinlogFile = true
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
+	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
+	}
 
 	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
 	if err != nil {
@@ -726,11 +681,11 @@ func (r *Restore) GetBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 			if isLastBinlogFile {
 				return nil, fmt.Errorf("the targetTs %d is after the last event ts of the latest binlog file %q", targetTs, binlogFileTarget.Name)
 			}
-			return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: math.MaxInt64}, nil
+			return &binlogCoordinate{Seq: targetSeq, Pos: math.MaxInt64}, nil
 		}
 		return nil, fmt.Errorf("failed to find the binlog event after targetTs %d, error: %w", targetTs, err)
 	}
-	return &api.BinlogInfo{FileName: binlogFileTarget.Name, Position: eventPos}, nil
+	return &binlogCoordinate{Seq: targetSeq, Pos: eventPos}, nil
 }
 
 func parseBinlogEventTsInLine(line string) (eventTs int64, found bool, err error) {
