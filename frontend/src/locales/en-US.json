@@ -1312,6 +1312,10 @@
       "bb-feature-online-migration": {
         "title": "Online migration",
         "desc": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds."
+      },
+      "bb-feature-disaster-recovery-pitr": {
+        "title": "Point-in-Time-Recovery (PITR)",
+        "desc": "Restore the database state to a point in time."
       }
     },
     "feature-sections": {
