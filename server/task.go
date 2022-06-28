@@ -503,24 +503,6 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		}
 	}
 
-	// We will create an PITR activity when cutover stage done.
-	if issue != nil && issue.Type == api.IssueDatabasePITR && taskPatched.Type == api.TaskDatabasePITRCutover && taskPatched.Status == api.TaskDone {
-		activityCreate = &api.ActivityCreate{
-			CreatorID:   taskStatusPatch.UpdaterID,
-			ContainerID: issue.ProjectID,
-			Type:        api.ActivityDatabaseRecoveryPITRDone,
-			Level:       level,
-			Payload:     string(payload),
-			Comment:     fmt.Sprintf("Restore database %s in instance %s successfully", task.Database.Name, task.Instance.Name),
-		}
-		activityMeta := ActivityMeta{}
-		activityMeta.issue = issue
-		_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &activityMeta)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return taskPatched, nil
 }
 
