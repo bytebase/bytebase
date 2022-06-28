@@ -1308,6 +1308,10 @@
       "bb-feature-branding": {
         "title": "Branding",
         "desc": "Customize the logo."
+      },
+      "bb-feature-online-migration": {
+        "title": "Online migration",
+        "desc": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds."
       }
     },
     "feature-sections": {

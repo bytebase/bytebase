@@ -30,10 +30,10 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive } from "vue";
+import { PropType, reactive } from "vue";
 import { Defer, defer } from "@/utils";
 
-defineProps({
+const props = defineProps({
   title: {
     type: String,
     required: true,
@@ -52,6 +52,14 @@ defineProps({
   },
   positiveText: {
     type: String,
+    default: undefined,
+  },
+  onBeforePositiveClick: {
+    type: Function as PropType<() => boolean>,
+    default: undefined,
+  },
+  onBeforeNegativeClick: {
+    type: Function as PropType<() => boolean>,
     default: undefined,
   },
 });
@@ -73,11 +81,23 @@ const open = () => {
 };
 
 const onPositiveClick = () => {
+  if (props.onBeforePositiveClick) {
+    if (!props.onBeforePositiveClick()) {
+      return;
+    }
+  }
+
   state.visible = false;
   state.defer?.resolve(true);
 };
 
 const onNegativeClick = () => {
+  if (props.onBeforeNegativeClick) {
+    if (!props.onBeforeNegativeClick()) {
+      return;
+    }
+  }
+
   state.visible = false;
   state.defer?.resolve(false);
 };
