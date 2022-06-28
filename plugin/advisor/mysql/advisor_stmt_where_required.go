@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -14,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.

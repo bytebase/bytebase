@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -14,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.

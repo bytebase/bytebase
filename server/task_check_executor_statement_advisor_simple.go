@@ -42,8 +42,13 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 		}
 	}
 
+	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	if err != nil {
+		return nil, err
+	}
+
 	adviceList, err := advisor.Check(
-		payload.DbType,
+		dbType,
 		advisorType,
 		advisor.Context{
 			Charset:   payload.Charset,
@@ -68,10 +73,11 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 		}
 
 		result = append(result, api.TaskCheckResult{
-			Status:  status,
-			Code:    api.ConvertToErrorCode(advice.Code),
-			Title:   advice.Title,
-			Content: advice.Content,
+			Status:    status,
+			Namespace: api.AdvisorNamespace,
+			Code:      advice.Code.Int(),
+			Title:     advice.Title,
+			Content:   advice.Content,
 		})
 	}
 
