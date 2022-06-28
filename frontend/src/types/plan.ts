@@ -122,7 +122,13 @@ export const FREE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-upto-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-basic-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {
@@ -172,7 +178,13 @@ export const TEAM_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-minimum-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {
@@ -228,7 +240,13 @@ export const ENTERPRISE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-customized",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {
