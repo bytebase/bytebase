@@ -1,10 +1,11 @@
-import { GuideState } from "./types";
-
 /**
  * Define storage data type for guide
  */
 interface StorageData {
-  guide: GuideState;
+  guide: {
+    name: string;
+    stepIndex: number;
+  };
 }
 
 type StorageKey = keyof StorageData;

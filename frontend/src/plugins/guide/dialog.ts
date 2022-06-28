@@ -1,6 +1,7 @@
+import { merge } from "lodash-es";
 import { getElementBounding } from "./utils";
 import * as storage from "./storage";
-import { merge } from "lodash-es";
+import { GuidePosition, StepData } from "./types";
 
 const getTargetElementBySelectors = (selectors: string[][]) => {
   let targetElement = document.body;
@@ -20,12 +21,16 @@ const getTargetElementBySelectors = (selectors: string[][]) => {
   return targetElement;
 };
 
-export const showGuideDialog = async (guideStep: any) => {
+export const showGuideDialog = async (guideStep: StepData) => {
   removeGuideDialog();
   const targetElement = await waitForTargetElement(guideStep.selectors);
   if (targetElement) {
+    // After got the targetElement, remove the guide dialog again
+    // to ensure that only one guide dialog is shown at a time.
+    removeGuideDialog();
     renderHighlightWrapper(targetElement);
     renderGuideDialog(targetElement, guideStep);
+    requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
   }
 };
 
@@ -40,13 +45,12 @@ const renderHighlightWrapper = (targetElement: HTMLElement) => {
   highlightWrapper.style.height = `${bounding.height}px`;
 };
 
-const renderGuideDialog = (targetElement: HTMLElement, guideStep: any) => {
+const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
   const { description, title, type } = guideStep;
   const guideDialogDiv = document.createElement("div");
   guideDialogDiv.className = "bb-guide-dialog";
-  const bounding = getElementBounding(targetElement);
-  guideDialogDiv.style.top = `${bounding.top + bounding.height}px`;
-  guideDialogDiv.style.left = `${bounding.left}px`;
+  adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
+
   const titleElement = document.createElement("p");
   titleElement.className = "bb-guide-title-text";
   titleElement.innerText = title;
@@ -75,7 +79,6 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: any) => {
       });
       storage.emitStorageChangedEvent();
     });
-
     nextButton.onclick = () => {
       targetElement.click();
     };
@@ -86,7 +89,7 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: any) => {
         targetElement.nodeValue ||
         (targetElement as HTMLInputElement).value ||
         "";
-      if (RegExp(guideStep.value).test(value)) {
+      if (guideStep.value && RegExp(guideStep.value).test(value)) {
         const { guide } = storage.get(["guide"]);
         storage.set({
           guide: merge(guide, {
@@ -101,6 +104,59 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: any) => {
   }
 
   document.body.appendChild(guideDialogDiv);
+};
+
+const adjustGuideDialogPosition = (
+  targetElement: HTMLElement,
+  guideDialogDiv: HTMLElement,
+  position: GuidePosition = "bottom"
+) => {
+  const bounding = getElementBounding(targetElement);
+  const guideDialogBounding = getElementBounding(guideDialogDiv);
+  if (position === "bottom") {
+    guideDialogDiv.style.top = `${bounding.top + bounding.height}px`;
+    guideDialogDiv.style.left = `${bounding.left - 4}px`;
+  } else if (position === "top") {
+    guideDialogDiv.style.top = `${
+      bounding.top - guideDialogBounding.height - 8
+    }px`;
+    guideDialogDiv.style.left = `${bounding.left - 4}px`;
+  } else if (position === "left") {
+    guideDialogDiv.style.top = `${bounding.top - 4}px`;
+    guideDialogDiv.style.left = `${
+      bounding.left - guideDialogBounding.width - 8
+    }px`;
+  } else if (position === "right") {
+    guideDialogDiv.style.top = `${bounding.top - 4}px`;
+    guideDialogDiv.style.left = `${bounding.left + bounding.width}px`;
+  }
+};
+
+const updateGuidePosition = (
+  targetElement: HTMLElement,
+  guideStep: StepData
+) => {
+  const highlightWrapper = document.body.querySelector(
+    ".bb-guide-highlight-wrapper"
+  ) as HTMLElement;
+  const guideDialogDiv = document.body.querySelector(
+    ".bb-guide-dialog"
+  ) as HTMLElement;
+
+  if (!targetElement || !highlightWrapper || !guideDialogDiv) {
+    return;
+  }
+
+  const bounding = getElementBounding(targetElement);
+
+  highlightWrapper.style.top = `${bounding.top}px`;
+  highlightWrapper.style.left = `${bounding.left}px`;
+  highlightWrapper.style.width = `${bounding.width}px`;
+  highlightWrapper.style.height = `${bounding.height}px`;
+
+  adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
+
+  requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
 };
 
 const waitForTargetElement = (selectors: string[][]): Promise<HTMLElement> => {
