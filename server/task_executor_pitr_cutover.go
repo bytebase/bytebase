@@ -32,7 +32,7 @@ type PITRCutoverTaskExecutor struct {
 func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
-	issue, err := getNonNillIssueByPipelineID(ctx, server, task.PipelineID)
+	issue, err := getNonNilIssueByPipelineID(ctx, server, task.PipelineID)
 
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
@@ -146,7 +146,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}, nil
 }
 
-func getNonNillIssueByPipelineID(ctx context.Context, server *Server, id int) (*api.Issue, error) {
+func getNonNilIssueByPipelineID(ctx context.Context, server *Server, id int) (*api.Issue, error) {
 	issue, err := server.store.GetIssueByPipelineID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch containing issue after doing pitr cutover task, error: %w", err)
