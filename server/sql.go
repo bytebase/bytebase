@@ -545,7 +545,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 				}
 				if matchedDb != nil {
-					// Case 1, appear in both the bytebase metadata and the synced db schema
+					// Case 1, appear in both the Bytebase metadata and the synced db schema
 					syncStatus := api.OK
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
@@ -647,7 +647,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				}
 			}
 
-			// Case 3, only appear in the bytebase metadata
+			// Case 3, only appear in the Bytebase metadata
 			for _, db := range dbList {
 				found := false
 				for _, schema := range schemaList {

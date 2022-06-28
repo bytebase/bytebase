@@ -57,12 +57,12 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		)
 
 		if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
-			log.Error("Failed to switch to bytebase database.",
+			log.Error("Failed to switch to database \"bytebase\".",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
 				zap.String("database", driver.connectionCtx.InstanceName),
 			)
-			return fmt.Errorf("failed to switch to bytebase database error: %v", err)
+			return fmt.Errorf("failed to switch to database \"bytebase\", error: %v", err)
 		}
 
 		if _, err := driver.db.ExecContext(ctx, migrationSchema); err != nil {

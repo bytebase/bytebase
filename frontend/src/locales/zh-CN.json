@@ -1226,7 +1226,7 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
-    "description": "您可以在这里上传您购买的 bytebase 证书来解锁团队版/企业版功能。",
+    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "current": "当前版本",
     "instance-count": "实例数",
     "expires-at": "过期时间",

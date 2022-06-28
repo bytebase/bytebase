@@ -105,7 +105,7 @@ Prerequisite:
 
     ![](./assets/gitlab-03.png)
 
-    Follow the tips on bytebase page to add application.
+    Follow the tips on Bytebase page to add application.
 
     ![](./assets/gitlab-04.png)
 
