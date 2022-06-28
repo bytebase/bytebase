@@ -49,6 +49,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	}
 
 	ticker := time.NewTicker(time.Second * 1)
+	defer ticker.Stop()
 
 	for range ticker.C {
 		if _, err := os.Stat(socketFilename); err != nil {

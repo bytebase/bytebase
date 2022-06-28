@@ -451,6 +451,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	go func() {
 		defer db.Close()
 		ticker := time.NewTicker(1 * time.Millisecond)
+		defer ticker.Stop()
 		i := 0
 		for {
 			select {

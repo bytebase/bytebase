@@ -166,6 +166,7 @@ func TestMigrationCompatibility(t *testing.T) {
 		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
+	defer d.Close(ctx)
 
 	err = d.SetupMigrationIfNeeded(ctx)
 	require.NoError(t, err)
