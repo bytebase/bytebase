@@ -349,19 +349,3 @@ func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine DBType) (Type, e
 	}
 	return Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
 }
-
-// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
-		return true
-	}
-	return false
-}
-
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
-		return true
-	}
-	return false
-}

@@ -199,3 +199,19 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 
 	return f.Check(ctx, statement)
 }
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+		return true
+	}
+	return false
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+		return true
+	}
+	return false
+}

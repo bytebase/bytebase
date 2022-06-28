@@ -330,14 +330,19 @@ const handleIncorrectProjectModalCancel = () => {
   state.warningDatabase = undefined;
 };
 
-const clickDatabase = (section: number, row: number) => {
+const clickDatabase = (section: number, row: number, e: MouseEvent) => {
   if (!props.rowClickable) return;
 
   const database = sortedDatabaseList.value[row];
   if (props.customClick) {
     emit("select-database", database);
   } else {
-    router.push(`/db/${databaseSlug(database)}`);
+    const url = `/db/${databaseSlug(database)}`;
+    if (e.ctrlKey || e.metaKey) {
+      window.open(url, "_blank");
+    } else {
+      router.push(url);
+    }
   }
 };
 </script>
