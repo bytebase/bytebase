@@ -12,7 +12,7 @@ import (
 )
 
 // Schema review policy consists of a list of schema review rules.
-// There is such a logical mapping in bytebase backend:
+// There is such a logical mapping in Bytebase backend:
 //   1. One schema review policy maps a TaskCheckRun.
 //   2. Each schema review rule type maps an advisor.Type.
 //   3. Each [db.Type][AdvisorType] maps an advisor.

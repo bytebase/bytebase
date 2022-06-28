@@ -181,7 +181,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := db.setupDemoData(); err != nil {
 		return fmt.Errorf("failed to setup demo data: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-			" directory under the same directory where the bytebase binary resides. and restart again to let"+
+			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 			err)
 	}
@@ -675,7 +675,7 @@ type Tx struct {
 	now time.Time
 }
 
-// FormatError returns err as a bytebase error, if possible.
+// FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
 	if err == nil {

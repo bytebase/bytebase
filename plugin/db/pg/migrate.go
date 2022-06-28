@@ -65,18 +65,18 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 		if !driver.strictUseDb() {
 			exist, err := driver.hasBytebaseDatabase(ctx)
 			if err != nil {
-				log.Error("Failed to find bytebase database.",
+				log.Error("Failed to find database \"bytebase\".",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
 				)
-				return fmt.Errorf("failed to find bytebase database error: %v", err)
+				return fmt.Errorf("failed to find database \"bytebase\", error: %v", err)
 			}
 
 			if !exist {
 				// Create `bytebase` database
 				if _, err := driver.db.ExecContext(ctx, createBytebaseDatabaseStmt); err != nil {
-					log.Error("Failed to create bytebase database.",
+					log.Error("Failed to create database \"bytebase\".",
 						zap.Error(err),
 						zap.String("environment", driver.connectionCtx.EnvironmentName),
 						zap.String("database", driver.connectionCtx.InstanceName),
@@ -86,12 +86,12 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			}
 
 			if err := driver.switchDatabase(db.BytebaseDatabase); err != nil {
-				log.Error("Failed to switch to bytebase database.",
+				log.Error("Failed to switch to database \"bytebase\".",
 					zap.Error(err),
 					zap.String("environment", driver.connectionCtx.EnvironmentName),
 					zap.String("database", driver.connectionCtx.InstanceName),
 				)
-				return fmt.Errorf("failed to switch to bytebase database error: %v", err)
+				return fmt.Errorf("failed to switch to database \"bytebase\", error: %v", err)
 			}
 		}
 

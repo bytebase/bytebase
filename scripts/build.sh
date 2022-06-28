@@ -29,7 +29,7 @@ fi
 echo "Start building Bytebase monolithic ${VERSION}..."
 
 echo ""
-echo "Step 1 - building bytebase frontend..."
+echo "Step 1 - building Bytebase frontend..."
 
 if command -v pnpm > /dev/null
 then
@@ -38,10 +38,10 @@ else
     npm --prefix ./frontend run release
 fi
 
-echo "Completed building bytebase frontend."
+echo "Completed building Bytebase frontend."
 
 echo ""
-echo "Step 2 - building bytebase backend..."
+echo "Step 2 - building Bytebase backend..."
 
 flags="-X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}'
 -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=$(go version)'
@@ -52,7 +52,7 @@ flags="-X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}'
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 go build --tags "release" -ldflags "-w -s $flags" -o ${OUTPUT_BINARY} ./bin/server/main.go
 
-echo "Completed building bytebase backend."
+echo "Completed building Bytebase backend."
 
 echo ""
 echo "Step 3 - printing version..."

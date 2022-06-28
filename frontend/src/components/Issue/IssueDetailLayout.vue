@@ -265,7 +265,7 @@ const instance = computed((): Instance => {
 
 const sqlHint = (): string | undefined => {
   if (!props.create && selectedMigrateType.value == "BASELINE") {
-    return `This is a baseline migration and bytebase won't apply the SQL to the database, it will only record a baseline history`;
+    return `This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history`;
   }
   if (instance.value.engine === "SNOWFLAKE") {
     return `Use <<schema>>.<<table>> to specify a Snowflake table`;
