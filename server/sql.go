@@ -168,9 +168,50 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
-			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
+			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
+			}
+
+			databaseFind := &api.DatabaseFind{
+				InstanceID: &instance.ID,
+				Name:       &exec.DatabaseName,
+			}
+			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+			}
+			if len(dbList) == 0 {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
+			}
+			if len(dbList) > 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
+			}
+			db := dbList[0]
+
+			adviceLevel, adviceList, err = s.sqlCheck(
+				ctx,
+				dbType,
+				db.CharacterSet,
+				db.Collation,
+				instance.EnvironmentID,
+				exec.Statement,
+				store.NewCatalog(&db.ID, s.store),
+			)
+			if err != nil {
+				if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+					adviceLevel = advisor.Warn
+					adviceList = []advisor.Advice{
+						{
+							Status:  advisor.Warn,
+							Code:    advisor.NotFound,
+							Title:   "Empty schema review policy or disabled",
+							Content: "",
+						},
+					}
+				} else {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
+				}
 			}
 
 			if adviceLevel == advisor.Error {
@@ -266,100 +307,89 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		return nil
 	})
 
-	g.GET("/sql/advise", func(c echo.Context) error {
-		envName := c.QueryParams().Get("env")
-		if envName == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
-		}
+	g.GET("/sql/advise", s.sqlCheckController)
+}
 
-		sql := c.QueryParams().Get("sql")
-		if sql == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
-		}
+// sqlCheckController godoc
+// @Summary  Check the SQL statement.
+// @Description  Parse and check the SQL statement by your schema review policy.
+// @Accept  */*
+// @Tags  Schema Review
+// @Produce  json
+// @Param  env        query  string  true   "The environment name"
+// @Param  statement  query  string  true   "The SQL statement"
+// @Param  type       query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  charset    query  string  false  "The database charset. Default 'utf8mb4'"  default(utf8mb4)
+// @Param  collation  query  string  false  "The database collation. Default 'utf8mb4_general_ci'"  default(utf8mb4_general_ci)
+// @Success  200  {object}  api.SQLCheckResult
+// @Failure  400  {object}  echo.HTTPError
+// @Failure  500  {object}  echo.HTTPError
+// @Router  /sql/advise [get]
+func (s *Server) sqlCheckController(c echo.Context) error {
+	envName := c.QueryParams().Get("env")
+	if envName == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
+	}
 
-		dbType := c.QueryParams().Get("type")
-		if dbType == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
-		}
-		advisorDBType, err := api.ConvertToAdvisorDBType(db.Type(strings.ToUpper(dbType)))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
-		}
+	statement := c.QueryParams().Get("statement")
+	if statement == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
+	}
 
-		charset := c.QueryParams().Get("charset")
-		if charset == "" {
-			charset = "utf8mb4"
-		}
-		collation := c.QueryParams().Get("collation")
-		if collation == "" {
-			collation = "utf8mb4_general_ci"
-		}
+	dbType := c.QueryParams().Get("type")
+	if dbType == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
+	}
+	advisorDBType, err := api.ConvertToAdvisorDBType(db.Type(strings.ToUpper(dbType)))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
+	}
 
-		ctx := c.Request().Context()
-		envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
-			Name: &envName,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
-		}
-		if len(envList) != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
-		}
+	charset := c.QueryParams().Get("charset")
+	if charset == "" {
+		charset = "utf8mb4"
+	}
+	collation := c.QueryParams().Get("collation")
+	if collation == "" {
+		collation = "utf8mb4_general_ci"
+	}
 
-		envID := envList[0].ID
-		policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &envID})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find schema review policy in env %s", envName)).SetInternal(err)
-		}
-
-		res, err := advisor.SchemaReviewCheck(ctx, sql, policy, advisor.SchemaReviewCheckContext{
-			Charset:   charset,
-			Collation: collation,
-			DbType:    advisorDBType,
-			Catalog:   &catalogService{},
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
-		}
-
-		adviceLevel := advisor.Success
-		var adviceList []advisor.Advice
-		for _, advice := range res {
-			switch advice.Status {
-			case advisor.Warn:
-				if adviceLevel != advisor.Error {
-					adviceLevel = advisor.Warn
-				}
-			case advisor.Error:
-				adviceLevel = advisor.Error
-			case advisor.Success:
-				continue
-			}
-
-			adviceList = append(adviceList, advice)
-		}
-
-		if len(adviceList) == 0 {
-			adviceList = append(adviceList, advisor.Advice{
-				Status:  advisor.Success,
-				Code:    advisor.Ok,
-				Title:   "OK",
-				Content: "",
-			})
-		}
-
-		SQLCheckResult := &api.SQLCheckResult{
-			Result:     adviceLevel.String(),
-			AdviceList: adviceList,
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, SQLCheckResult); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
-		}
-
-		return nil
+	ctx := c.Request().Context()
+	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
+		Name: &envName,
 	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
+	}
+	if len(envList) != 1 {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
+	}
+
+	adviceLevel, adviceList, err := s.sqlCheck(
+		ctx,
+		advisorDBType,
+		charset,
+		collation,
+		envList[0].ID,
+		statement,
+		&catalogService{},
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
+	}
+
+	SQLCheckResult := &api.SQLCheckResult{
+		Result:     adviceLevel.String(),
+		AdviceList: adviceList,
+	}
+
+	// TODO: the response type?
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	if err := jsonapi.MarshalPayload(c.Response().Writer, SQLCheckResult); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
+	}
+
+	return nil
 }
 
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {
@@ -865,77 +895,54 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 	return nil
 }
 
-func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api.SQLExecute) (advisor.Status, []advisor.Advice, error) {
+func (s *Server) sqlCheck(
+	ctx context.Context,
+	dbType advisor.DBType,
+	dbCharacterSet string,
+	dbCollation string,
+	environmentID int,
+	statement string,
+	catalog catalog.Catalog,
+) (advisor.Status, []advisor.Advice, error) {
+	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
+	if err != nil {
+		return advisor.Error, nil, err
+	}
+
+	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SchemaReviewCheckContext{
+		Charset:   dbCharacterSet,
+		Collation: dbCollation,
+		DbType:    dbType,
+		Catalog:   catalog,
+	})
+	if err != nil {
+		return advisor.Error, nil, err
+	}
+
 	adviceLevel := advisor.Success
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &instance.EnvironmentID})
-	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceLevel = advisor.Warn
-			adviceList = append(adviceList, advisor.Advice{
-				Status:  advisor.Warn,
-				Code:    advisor.NotFound,
-				Title:   "Empty schema review policy or disabled",
-				Content: "",
-			})
-		} else {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch schema review policy by environment ID: %d", instance.EnvironmentID)).SetInternal(err)
-		}
-	}
-	if adviceLevel == advisor.Success {
-		databaseFind := &api.DatabaseFind{
-			InstanceID: &instance.ID,
-			Name:       &exec.DatabaseName,
-		}
-		db, err := s.store.FindDatabase(ctx, databaseFind)
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
-		}
-		if len(db) == 0 {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
-		}
-		if len(db) > 1 {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
-		}
-
-		dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
-		}
-
-		res, err := advisor.SchemaReviewCheck(ctx, exec.Statement, policy, advisor.SchemaReviewCheckContext{
-			Charset:   db[0].CharacterSet,
-			Collation: db[0].Collation,
-			DbType:    dbType,
-			Catalog:   store.NewCatalog(&db[0].ID, s.store),
-		})
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
-		}
-
-		for _, advice := range res {
-			switch advice.Status {
-			case advisor.Warn:
-				if adviceLevel != advisor.Error {
-					adviceLevel = advisor.Warn
-				}
-			case advisor.Error:
-				adviceLevel = advisor.Error
-			case advisor.Success:
-				continue
+	for _, advice := range res {
+		switch advice.Status {
+		case advisor.Warn:
+			if adviceLevel != advisor.Error {
+				adviceLevel = advisor.Warn
 			}
-
-			adviceList = append(adviceList, advice)
+		case advisor.Error:
+			adviceLevel = advisor.Error
+		case advisor.Success:
+			continue
 		}
 
-		if len(adviceList) == 0 {
-			adviceList = append(adviceList, advisor.Advice{
-				Status:  advisor.Success,
-				Code:    advisor.Ok,
-				Title:   "OK",
-				Content: "",
-			})
-		}
+		adviceList = append(adviceList, advice)
+	}
+
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		})
 	}
 	return adviceLevel, adviceList, nil
 }

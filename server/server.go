@@ -21,10 +21,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
@@ -74,6 +76,25 @@ var casbinDBAPolicy string
 
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
+
+// Use following cmd to generate swagger doc
+// swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+
+// @title Bytebase OpenAPI
+// @version 1.0
+// @description The OpenAPI for bytebase.
+// @termsOfService https://www.bytebase.com/terms
+
+// @contact.name API Support
+// @contact.url https://github.com/bytebase/bytebase/
+// @contact.email support@bytebase.com
+
+// @license.name MIT
+// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
+
+// @host localhost:8080
+// @BasePath /api/
+// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
@@ -258,6 +279,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(recoverMiddleware)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
