@@ -1,6 +1,6 @@
 import { isEqual } from "lodash-es";
 import { fetchGuideDataWithName } from "./data";
-import { removeGuideDialog, showGuideDialog } from "./dialog";
+import { removeGuideDialog, showGuideDialog } from "./guide";
 import * as storage from "./storage";
 
 const refreshLocalStorageGuideData = async () => {
