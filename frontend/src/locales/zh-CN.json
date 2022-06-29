@@ -725,6 +725,7 @@
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
     "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
+    "current-schema-empty": "当前 schema 为空",
     "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
     "recording-info": "每当数据库 schema 变更时，我们便会记录下变更历史。",
