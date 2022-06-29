@@ -6,7 +6,7 @@ import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
-import "./plugins/guide";
+import "./plugins/demo";
 import { router } from "./router";
 import {
   pinia,
@@ -35,7 +35,7 @@ import dataSourceType from "./directives/data-source-type";
 import App from "./App.vue";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
-import "./plugins/guide/style.css";
+import "./plugins/demo/style.css";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
