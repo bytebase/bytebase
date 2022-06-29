@@ -317,10 +317,6 @@ export default defineComponent({
       }));
     });
 
-    const getFeature = (plan: Plan, feature: string) => {
-      return plan.features.find((f) => f.id === feature);
-    };
-
     const getButtonText = (plan: Plan): string => {
       if (plan.type === PlanType.FREE) return t("subscription.deploy");
       if (plan.type === PlanType.ENTERPRISE)
@@ -358,7 +354,6 @@ export default defineComponent({
       plans,
       canTrial,
       sections: FEATURE_SECTIONS,
-      getFeature,
       onButtonClick,
       minimumInstanceCount,
     };
