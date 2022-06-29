@@ -73,7 +73,7 @@
 <script lang="ts">
 import { computed, defineComponent, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import PricingTable from "../components/PricingTable.vue";
+import PricingTable from "../components/PricingTable/";
 import { PlanType } from "../types";
 import { pushNotification, useSubscriptionStore } from "@/store";
 import { storeToRefs } from "pinia";
