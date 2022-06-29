@@ -116,35 +116,12 @@
                 )
               }}
             </th>
-            <td
+            <FeatureItem
               v-for="plan in plans"
               :key="plan.type"
-              class="py-5 px-6 font-semibold tooltip-wrapper"
-              :class="plan.highlight ? 'text-indigo-600' : 'text-gray-600'"
-            >
-              <div class="flex justify-center">
-                <template v-if="getFeature(plan, feature)">
-                  <span
-                    v-if="getFeature(plan, feature)?.content"
-                    class="block text-sm"
-                    >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
-                  >
-                  <heroicons-solid:check v-else class="w-5 h-5" />
-                </template>
-                <template v-else>
-                  <heroicons-solid:minus class="w-5 h-5" />
-                </template>
-                <template v-if="getFeature(plan, feature)?.tooltip">
-                  <heroicons-solid:question-mark-circle class="w-5 h-5 ml-1" />
-                  <span
-                    v-if="getFeature(plan, feature)?.tooltip"
-                    class="tooltip whitespace-nowrap"
-                  >
-                    {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
-                  </span>
-                </template>
-              </div>
-            </td>
+              :plan="plan"
+              :feature="feature"
+            />
           </tr>
         </template>
       </tbody>
@@ -257,35 +234,7 @@
                   )
                 }}
               </th>
-              <td
-                class="py-5 px-6 font-semibold tooltip-wrapper w-3/4"
-                :class="plan.highlight ? 'text-indigo-600' : 'text-gray-600'"
-              >
-                <div class="flex justify-center">
-                  <template v-if="getFeature(plan, feature)">
-                    <span
-                      v-if="getFeature(plan, feature)?.content"
-                      class="block text-sm"
-                      >{{ $t(getFeature(plan, feature)?.content ?? "") }}</span
-                    >
-                    <heroicons-solid:check v-else class="w-5 h-5" />
-                  </template>
-                  <template v-else>
-                    <heroicons-solid:minus class="w-5 h-5" />
-                  </template>
-                  <template v-if="getFeature(plan, feature)?.tooltip">
-                    <heroicons-solid:question-mark-circle
-                      class="w-5 h-5 ml-1"
-                    />
-                    <span
-                      v-if="getFeature(plan, feature)?.tooltip"
-                      class="tooltip whitespace-nowrap"
-                    >
-                      {{ $t(getFeature(plan, feature)?.tooltip ?? "") }}
-                    </span>
-                  </template>
-                </div>
-              </td>
+              <FeatureItem :plan="plan" :feature="feature" class="w-3/4" />
             </tr>
           </template>
         </tbody>
@@ -309,6 +258,7 @@
 
 <script lang="ts">
 import { reactive, computed, watch, defineComponent } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   Plan,
   PlanType,
@@ -316,30 +266,21 @@ import {
   FREE_PLAN,
   TEAM_PLAN,
   ENTERPRISE_PLAN,
-} from "../types";
-import { useI18n } from "vue-i18n";
+} from "@/types";
 import { useSubscriptionStore } from "@/store";
+import { LocalPlan } from "./types";
+import FeatureItem from "./FeatureItem.vue";
 
 interface LocalState {
   isMonthly: boolean;
   instanceCount: number;
 }
 
-interface LocalPlan extends Plan {
-  label: string;
-  image: string;
-  buttonText: string;
-  highlight: boolean;
-  isFreePlan: boolean;
-  isAvailable: boolean;
-  pricePrefix: string;
-  priceUnit: string;
-}
-
 const minimumInstanceCount = 5;
 
 export default defineComponent({
   name: "PricingTable",
+  components: { FeatureItem },
   setup() {
     const { t } = useI18n();
     const subscriptionStore = useSubscriptionStore();
@@ -359,7 +300,7 @@ export default defineComponent({
       return [FREE_PLAN, TEAM_PLAN, ENTERPRISE_PLAN].map((plan) => ({
         ...plan,
         image: new URL(
-          `../assets/plan-${plan.title.toLowerCase()}.png`,
+          `../../assets/plan-${plan.title.toLowerCase()}.png`,
           import.meta.url
         ).href,
         buttonText: getButtonText(plan),
@@ -375,10 +316,6 @@ export default defineComponent({
             : t("subscription.per-month"),
       }));
     });
-
-    const getFeature = (plan: Plan, feature: string) => {
-      return plan.features.find((f) => f.id === feature);
-    };
 
     const getButtonText = (plan: Plan): string => {
       if (plan.type === PlanType.FREE) return t("subscription.deploy");
@@ -417,7 +354,6 @@ export default defineComponent({
       plans,
       canTrial,
       sections: FEATURE_SECTIONS,
-      getFeature,
       onButtonClick,
       minimumInstanceCount,
     };
