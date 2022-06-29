@@ -228,6 +228,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
 		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
 
+		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
+		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
+
 		timingExecutor := NewTaskCheckTimingExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
 
