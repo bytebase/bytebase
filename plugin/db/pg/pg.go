@@ -257,8 +257,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			_, err := driver.GetDbConnection(ctx, parts[1])
-			return err
+			if _, err = driver.GetDbConnection(ctx, parts[1]); err != nil {
+				return err
+			}
+			// Update current owner
+			if owner, err = driver.getCurrentDatabaseOwner(); err != nil {
+				return err
+			}
 		} else if isSuperuserStatement(stmt) {
 			// Use superuser privilege to run privileged statements.
 			remainingStmts = append(remainingStmts, "SET LOCAL ROLE NONE;")
