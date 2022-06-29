@@ -136,6 +136,23 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
+			case api.TaskDatabaseSchemaUpdateGhostSync:
+				payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
+				}
+				oldStatement = payload.Statement
+				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
 			}
 		}
 
@@ -145,7 +162,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// create an activity and trigger task check for statement update
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate {
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			if oldStatement != newStatement {
 				// create an activity
 				if issue == nil {
