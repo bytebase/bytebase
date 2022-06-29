@@ -71,3 +71,45 @@ export const getElementBounding = (
     left: elementRect.left + scrollLeft,
   });
 };
+
+const getTargetElementBySelectors = (selectors: string[][]) => {
+  let targetElement = document.body;
+  for (const selector of selectors) {
+    try {
+      targetElement = document.body.querySelector(
+        selector.join(" ")
+      ) as HTMLElement;
+    } catch (error) {
+      // do nth
+    }
+
+    if (targetElement) {
+      break;
+    }
+  }
+  return targetElement;
+};
+
+export const waitForTargetElement = (
+  selectors: string[][]
+): Promise<HTMLElement> => {
+  return new Promise((resolve) => {
+    let targetElement = getTargetElementBySelectors(selectors);
+    if (targetElement) {
+      return resolve(targetElement);
+    }
+
+    const observer = new MutationObserver(() => {
+      targetElement = getTargetElementBySelectors(selectors);
+      if (targetElement) {
+        observer.disconnect();
+        return resolve(targetElement);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+};
