@@ -725,6 +725,7 @@
     "show-diff": "Show diff",
     "left-vs-right": "Prev {prevLink} vs This version",
     "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
+    "current-schema-empty": "Current schema is empty",
     "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
     "no-history-in-project": "Do not find migration history from any database in this project.",
     "recording-info": "Migration history is recorded whenever the database schema is altered.",
