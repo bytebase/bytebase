@@ -6,7 +6,8 @@
       "title": "Click the Alter Schema button",
       "description": "Alter schema is a main feature of Bytebase",
       "selectors": [["[data-label='bb-alter-schema-button']"]],
-      "url": "http://localhost:3000"
+      "url": "http://localhost:3000",
+      "cover": true
     },
     {
       "title": "Select the database",

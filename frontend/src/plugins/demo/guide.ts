@@ -1,25 +1,7 @@
 import { merge } from "lodash-es";
-import { getElementBounding } from "./utils";
+import { getElementBounding, waitForTargetElement } from "./utils";
 import * as storage from "./storage";
 import { GuidePosition, StepData } from "./types";
-
-const getTargetElementBySelectors = (selectors: string[][]) => {
-  let targetElement = document.body;
-  for (const selector of selectors) {
-    try {
-      targetElement = document.body.querySelector(
-        selector.join(" ")
-      ) as HTMLElement;
-    } catch (error) {
-      // do nth
-    }
-
-    if (targetElement) {
-      break;
-    }
-  }
-  return targetElement;
-};
 
 export const showGuideDialog = async (guideStep: StepData) => {
   removeGuideDialog();
@@ -28,13 +10,23 @@ export const showGuideDialog = async (guideStep: StepData) => {
     // After got the targetElement, remove the guide dialog again
     // to ensure that only one guide dialog is shown at a time.
     removeGuideDialog();
-    renderHighlightWrapper(targetElement);
+    if (guideStep.cover) {
+      renderCover();
+      targetElement.classList.add("bb-guide-target-element");
+    }
+    renderHighlight(targetElement);
     renderGuideDialog(targetElement, guideStep);
     requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
   }
 };
 
-const renderHighlightWrapper = (targetElement: HTMLElement) => {
+const renderCover = () => {
+  const coverElement = document.createElement("div");
+  coverElement.className = "bb-guide-cover-wrapper";
+  document.body.appendChild(coverElement);
+};
+
+const renderHighlight = (targetElement: HTMLElement) => {
   const highlightWrapper = document.createElement("div");
   highlightWrapper.className = "bb-guide-highlight-wrapper";
   document.body.appendChild(highlightWrapper);
@@ -50,6 +42,12 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
   const guideDialogDiv = document.createElement("div");
   guideDialogDiv.className = "bb-guide-dialog";
   adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "bb-guide-close-button";
+  closeButton.innerHTML = "&times;";
+  closeButton.addEventListener("click", () => removeGuideDialog());
+  guideDialogDiv.appendChild(closeButton);
 
   const titleElement = document.createElement("p");
   titleElement.className = "bb-guide-title-text";
@@ -159,28 +157,6 @@ const updateGuidePosition = (
   requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
 };
 
-const waitForTargetElement = (selectors: string[][]): Promise<HTMLElement> => {
-  return new Promise((resolve) => {
-    let targetElement = getTargetElementBySelectors(selectors);
-    if (targetElement) {
-      return resolve(targetElement);
-    }
-
-    const observer = new MutationObserver(() => {
-      targetElement = getTargetElementBySelectors(selectors);
-      if (targetElement) {
-        observer.disconnect();
-        return resolve(targetElement);
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-  });
-};
-
 export const removeGuideDialog = () => {
   document.body.querySelectorAll(".bb-guide-dialog")?.forEach((element) => {
     element.remove();
@@ -189,5 +165,15 @@ export const removeGuideDialog = () => {
     .querySelectorAll(".bb-guide-highlight-wrapper")
     ?.forEach((element) => {
       element.remove();
+    });
+  document.body
+    .querySelectorAll(".bb-guide-cover-wrapper")
+    ?.forEach((element) => {
+      element.remove();
+    });
+  document.body
+    .querySelectorAll(".bb-guide-target-element")
+    ?.forEach((element) => {
+      element.classList.remove("bb-guide-target-element");
     });
 };
