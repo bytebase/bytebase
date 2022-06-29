@@ -175,11 +175,16 @@
           :new-string="migrationHistory.schema"
           output-format="side-by-side"
         />
-        <highlight-code-block
-          v-else
-          class="border mt-2 px-2 whitespace-pre-wrap w-full"
-          :code="migrationHistory.schema"
-        />
+        <template v-else>
+          <highlight-code-block
+            v-if="migrationHistory.schema"
+            class="border mt-2 px-2 whitespace-pre-wrap w-full"
+            :code="migrationHistory.schema"
+          />
+          <div v-else class="mt-2">
+            {{ $t("migration-history.current-schema-empty") }}
+          </div>
+        </template>
       </div>
     </main>
 
