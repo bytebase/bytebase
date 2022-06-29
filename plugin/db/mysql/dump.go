@@ -71,6 +71,11 @@ var (
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 )
 
+// DumpTx dumps the database using the provided transaction.
+func (driver *Driver) DumpTx(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
+	return dumpTxn(ctx, txn, database, out, false)
+}
+
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
@@ -88,12 +93,12 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
-		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+		if err := FlushTablesWithReadLock(ctx, conn, database); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 
-		binlog, err := getBinlogInfo(ctx, conn)
+		binlog, err := GetBinlogInfo(ctx, conn)
 		if err != nil {
 			return "", err
 		}
@@ -134,7 +139,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return string(payloadBytes), nil
 }
 
-func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+// FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
+func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -172,6 +178,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+	log.Debug("begin to dump database", zap.String("database", database))
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
@@ -286,7 +293,8 @@ func excludeSchemaAutoIncrementValue(s string) string {
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
+// GetBinlogInfo queries current binlog info from MySQL server.
+func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
 	if err != nil {
 		return api.BinlogInfo{}, err
