@@ -2,7 +2,7 @@
   <div v-if="!!schedule" class="bb-deployment-config divide-y">
     <DeploymentStage
       v-for="(deployment, i) in schedule.deployments"
-      :key="i"
+      :key="getKey(deployment)"
       :index="i"
       :max="schedule.deployments.length"
       :deployment="deployment"
@@ -52,6 +52,18 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const keyMap = new WeakMap<Deployment, number>();
+    // Map each Deployment object to an unique key to keep it being "moved"
+    // rather than "replaced" when re-ordering. (BYT-758)
+    const getKey = (dep: Deployment): number => {
+      let key = keyMap.get(dep);
+      if (!key) {
+        key = Math.random();
+        keyMap.set(dep, key);
+      }
+      return key;
+    };
+
     const removeStage = (deployment: Deployment) => {
       const array = props.schedule.deployments;
       const index = array.indexOf(deployment);
@@ -74,6 +86,7 @@ export default defineComponent({
     return {
       removeStage,
       reorder,
+      getKey,
     };
   },
 });
