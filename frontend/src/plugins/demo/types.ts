@@ -13,11 +13,11 @@ export interface StepData {
   value?: string;
   // position is the position of the guide dialog, default is bottom
   position?: GuidePosition;
+  // cover is the flag that should be shown for the guide dialog
+  cover?: boolean;
 }
 
 export interface GuideData {
   name: string;
   steps: StepData[];
-  // cover is the flag that should be shown for the guide dialog
-  cover?: boolean;
 }
