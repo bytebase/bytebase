@@ -43,6 +43,12 @@ const renderGuideDialog = (targetElement: HTMLElement, guideStep: StepData) => {
   guideDialogDiv.className = "bb-guide-dialog";
   adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
 
+  const closeButton = document.createElement("button");
+  closeButton.className = "bb-guide-close-button";
+  closeButton.innerHTML = "&times;";
+  closeButton.addEventListener("click", () => removeGuideDialog());
+  guideDialogDiv.appendChild(closeButton);
+
   const titleElement = document.createElement("p");
   titleElement.className = "bb-guide-title-text";
   titleElement.innerText = title;
