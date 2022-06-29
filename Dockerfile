@@ -63,6 +63,7 @@ LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
+# Our HEALTHCHECK instruction in dockerfile needs curl.
 RUN apt-get update && apt-get install -y locales curl
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
