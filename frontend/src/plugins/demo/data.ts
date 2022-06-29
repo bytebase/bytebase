@@ -2,15 +2,15 @@ import { merge } from "lodash-es";
 import { GuideData } from "./types";
 
 const fetchJSONData = async (path: string) => {
-  const res = await fetch("/static/guide" + path);
+  const res = await fetch("/static/demo" + path);
   const data = await res.json();
   return data;
 };
 
 export const fetchGuideDataWithName = async (guideName: string) => {
-  const recorderData = await fetchJSONData(`/recorder/${guideName}.json`);
-  const guideTempData = await fetchJSONData(`/${guideName}.json`);
-  const guideData = merge(recorderData, guideTempData) as GuideData;
+  const recorderData = await fetchJSONData(`/${guideName}/recorder.json`);
+  const guideRawData = await fetchJSONData(`/${guideName}/guide.json`);
+  const guideData = merge(recorderData, guideRawData) as GuideData;
   guideData.steps = guideData.steps.filter(
     (s) => s.type === "click" || s.type === "change"
   );
