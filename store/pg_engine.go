@@ -205,12 +205,18 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return nil, nil
 	}
 
-	v, err := semver.Make(history[0].Version)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
+	for _, h := range history {
+		if h.Status != dbdriver.Done {
+			continue
+		}
+		v, err := semver.Make(h.Version)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version %q, error: %v", h.Version, err)
+		}
+		return &v, nil
 	}
 
-	return &v, nil
+	return nil, fmt.Errorf("failed to find a successful migration history")
 }
 
 // setupDemoData loads the setupDemoData data for testing
@@ -342,6 +348,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 				CreateDatabase:        !strictDb,
+				Force:                 true,
 			},
 			stmt,
 		); err != nil {
@@ -403,6 +410,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 						Source:                dbdriver.LIBRARY,
 						Type:                  dbdriver.Migrate,
 						Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+						Force:                 true,
 					},
 					string(buf),
 				); err != nil {
@@ -493,6 +501,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+				Force:                 true,
 			},
 			m.statement,
 		); err != nil {
