@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
-	github.com/auxten/postgresql-parser v1.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/casbin/casbin/v2 v2.40.6
@@ -21,6 +20,7 @@ require (
 	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/mattn/go-sqlite3 v1.14.7
+	github.com/pganalyze/pg_query_go/v2 v2.1.2
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
 	github.com/pingcap/tidb/parser v0.0.0-20211209055157-9f744cdf8266
 	github.com/pkg/errors v0.9.1

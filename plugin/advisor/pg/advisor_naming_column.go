@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/auxten/postgresql-parser/pkg/sql/parser"
-	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
-	"github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 var (
@@ -43,14 +41,8 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 		format: format,
 	}
 
-	walker := &walk.AstWalker{
-		Fn: checker.check,
-	}
-
 	for _, stmt := range stmts {
-		if _, err := walker.Walk(parser.Statements{stmt}, nil); err != nil {
-			return nil, err
-		}
+		ast.Walk(checker, stmt)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -71,32 +63,28 @@ type namingColumnConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-func (checker *namingColumnConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
+// Visit implements the ast.Visitor interface.
+func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 	var columnList []string
 	var tableName string
 
 	switch n := node.(type) {
 	// CREATE TABLE
-	case *tree.CreateTable:
-		tableName = n.Table.Table()
-		for _, def := range n.Defs {
-			if column, ok := def.(*tree.ColumnTableDef); ok {
-				columnList = append(columnList, string(column.Name))
-			}
+	case *ast.CreateTableStmt:
+		tableName = n.Name.Name
+		for _, col := range n.ColumnList {
+			columnList = append(columnList, col.ColumnName)
 		}
-	// ALTER TABLE
-	case *tree.AlterTable:
-		tableName = string(n.Table.ToTableName().TableName)
-		for _, cmd := range n.Cmds {
-			switch c := cmd.(type) {
-			// ADD COLUMN
-			case *tree.AlterTableAddColumn:
-				columnList = append(columnList, string(c.ColumnDef.Name))
-			// RENAME COLUMN
-			case *tree.AlterTableRenameColumn:
-				columnList = append(columnList, string(c.NewName))
-			}
+	// ALTER TABLE ADD COLUMN
+	case *ast.AddColumnListStmt:
+		tableName = n.Table.Name
+		for _, col := range n.ColumnList {
+			columnList = append(columnList, col.ColumnName)
 		}
+	// ALTER TABLE RENAME COLUMN
+	case *ast.RenameColumnStmt:
+		tableName = n.Table.Name
+		columnList = append(columnList, n.NewName)
 	}
 
 	for _, column := range columnList {
@@ -110,5 +98,5 @@ func (checker *namingColumnConventionChecker) check(ctx interface{}, node interf
 		}
 	}
 
-	return false
+	return checker
 }
