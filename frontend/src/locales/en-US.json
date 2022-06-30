@@ -236,7 +236,8 @@
       "connection": "Connection",
       "migration-schema": "Migration schema",
       "sql-review": "SQL review",
-      "earliest-allowed-time": "Earliest allowed time"
+      "earliest-allowed-time": "Earliest allowed time",
+      "ghost-sync": "gh-ost sync"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
     "earliest-allowed-time-unset": "Unset",

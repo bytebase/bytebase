@@ -16,7 +16,7 @@ import (
 )
 
 // NewPITRCutoverTaskExecutor creates a PITR cutover task executor.
-func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
+func NewPITRCutoverTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
 	return &PITRCutoverTaskExecutor{
 		mysqlutil: instance,
 	}
@@ -24,7 +24,7 @@ func NewPITRCutoverTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
 
 // PITRCutoverTaskExecutor is the PITR cutover task executor.
 type PITRCutoverTaskExecutor struct {
-	mysqlutil *mysqlutil.Instance
+	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR cutover task executor once.
@@ -81,11 +81,6 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	connCfg, err := getConnectionConfig(ctx, task.Instance, task.Database.Name)
-	if err != nil {
-		return true, nil, err
-	}
-
 	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
 	if err := createBinlogDir(server.profile.DataDir, task.Instance.ID); err != nil {
 		return true, nil, err
@@ -96,14 +91,13 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		log.Error("failed to cast driver to mysql.Driver")
 		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-
-	mysqlRestore := mysql.NewRestore(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
+	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
 	log.Info("Start swapping the original and PITR database",
 		zap.String("instance", task.Instance.Name),
 		zap.String("original_database", task.Database.Name),
 	)
-	pitrDatabaseName, pitrOldDatabaseName, err := mysqlRestore.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
+	pitrDatabaseName, pitrOldDatabaseName, err := mysqlDriver.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
 	if err != nil {
 		log.Error("Failed to swap the original and PITR database",
 			zap.Int("issueID", issue.ID),
