@@ -21,7 +21,6 @@ require (
 	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/mattn/go-sqlite3 v1.14.7
-	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
 	github.com/pingcap/tidb/parser v0.0.0-20211209055157-9f744cdf8266
 	github.com/pkg/errors v0.9.1
@@ -44,4 +43,4 @@ require (
 // fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 
-replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220628072952-d497834632ba
+replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20220630053012-aac285eb72df

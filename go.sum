@@ -168,8 +168,8 @@ github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
-github.com/bytebase/gh-ost v1.1.3-0.20220628072952-d497834632ba h1:CmOUUIKJ+A7x2P1dNN4POgOeAhu9ko8wKYSrOhIRiVA=
-github.com/bytebase/gh-ost v1.1.3-0.20220628072952-d497834632ba/go.mod h1:KapUFjHOhrrWRyXCV7iZXfL3FGhTfe8Z6UQupU1MxoU=
+github.com/bytebase/gh-ost v1.1.3-0.20220630053012-aac285eb72df h1:dATyXNsy6bf2ReGpkX8BerHOzsQNWGfGnr0wq0m06ho=
+github.com/bytebase/gh-ost v1.1.3-0.20220630053012-aac285eb72df/go.mod h1:ejl5ywyKoObDIh0yWDIvU2JFS9I3c12jQPgdSm13sfM=
 github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5 h1:BjkPE3785EwPhhyuFkbINB+2a1xATwk8SNDWnJiD41g=
 github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5/go.mod h1:jtAfVaU/2cu1+wdSRPWE2c1N2qeAA3K4RH9pYgqwets=
 github.com/carlmjohnson/flagext v0.21.0/go.mod h1:Eenv0epIUAr4NuedNmkzI8WmBmjIxZC239XcKxYS2ac=
