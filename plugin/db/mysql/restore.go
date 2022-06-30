@@ -861,6 +861,7 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	var tablesNotInnoDB []string
 	for rows.Next() {
 		var tableName, engine string
@@ -887,6 +888,7 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 	if err != nil {
 		return "", err
 	}
+	defer rows.Close()
 	if ok := rows.Next(); !ok {
 		return "", fmt.Errorf("SHOW VARIABLES LIKE '%s' returns empty set", varName)
 	}
