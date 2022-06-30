@@ -166,7 +166,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		issue_id,
 		payload
 	)
-	VALUES (?, strftime('%s', 'now'), ?, strftime('%s', 'now'), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+	VALUES (?, strftime('%s', 'now'), ?, strftime('%s', 'now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`
 	res, err := tx.ExecContext(ctx, insertHistoryQuery,
 		m.Creator,
@@ -176,6 +176,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		sequence,
 		m.Source,
 		m.Type,
+		db.Pending,
 		storedVersion,
 		m.Description,
 		statement,
@@ -201,12 +202,12 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 	UPDATE
 		bytebase_migration_history
 	SET
-		status = 'DONE',
+		status = ?,
 		execution_duration_ns = ?,
 		schema = ?
 	WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -216,11 +217,11 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 	UPDATE
 		bytebase_migration_history
 	SET
-		status = 'FAILED',
+		status = ?,
 		execution_duration_ns = ?
 	WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
