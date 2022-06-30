@@ -200,19 +200,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				store.NewCatalog(&db.ID, s.store),
 			)
 			if err != nil {
-				if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-					adviceLevel = advisor.Warn
-					adviceList = []advisor.Advice{
-						{
-							Status:  advisor.Warn,
-							Code:    advisor.NotFound,
-							Title:   "Empty schema review policy or disabled",
-							Content: "",
-						},
-					}
-				} else {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
-				}
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
 			}
 
 			if adviceLevel == advisor.Error {
@@ -317,7 +305,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 // @Accept  */*
 // @Tags  Schema Review
 // @Produce  json
-// @Param  environment   query  string  true   "The environment name"
+// @Param  environment   query  string  true   "The environment name. Case sensitive"
 // @Param  statement     query  string  true   "The SQL statement"
 // @Param  databaseType  query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
 // @Success  200  {array}   advisor.Advice
@@ -374,11 +362,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		&catalogService{},
 	)
 	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find schema review policy in environment %s", envName)).SetInternal(err)
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
-		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, adviceList)
@@ -896,8 +880,20 @@ func (s *Server) sqlCheck(
 	statement string,
 	catalog catalog.Catalog,
 ) (advisor.Status, []advisor.Advice, error) {
+	var adviceList []advisor.Advice
 	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			adviceList = []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.NotFound,
+					Title:   "Empty schema review policy or disabled",
+					Content: "",
+				},
+			}
+			return advisor.Warn, adviceList, nil
+		}
 		return advisor.Error, nil, err
 	}
 
@@ -912,7 +908,6 @@ func (s *Server) sqlCheck(
 	}
 
 	adviceLevel := advisor.Success
-	var adviceList []advisor.Advice
 	for _, advice := range res {
 		switch advice.Status {
 		case advisor.Warn:

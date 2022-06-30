@@ -38,7 +38,7 @@ paths:
       description: Parse and check the SQL statement according to the schema review
         policy.
       parameters:
-      - description: The environment name
+      - description: The environment name. Case sensitive
         in: query
         name: environment
         required: true

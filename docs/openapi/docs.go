@@ -41,7 +41,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "The environment name",
+                        "description": "The environment name. Case sensitive",
                         "name": "environment",
                         "in": "query",
                         "required": true
