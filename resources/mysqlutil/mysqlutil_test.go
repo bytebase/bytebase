@@ -1,7 +1,9 @@
 package mysqlutil
 
 import (
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -49,12 +51,27 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 		a.NoError(err)
 	})
 
-	err = os.Remove(filepath.Join(ins.libraryPath, "libncurses.so.5"))
+	err = os.Remove(filepath.Join(ins.libraryDir, "libncurses.so.5"))
 	a.NoError(err)
 
 	t.Run("run mysql client after drop libncurses.so.5", func(t *testing.T) {
-		_, err := ins.Version(MySQL)
-		a.Error(err)
+		// We don't need to start mysqld, just test whether the mysql client can start normally
+		cmd := exec.Command(ins.GetPath(MySQL), []string{
+			"-U",
+			"root",
+		}...)
+
+		stderr, err := cmd.StderrPipe()
+		a.NoError(err)
+		defer stderr.Close()
+
+		err = cmd.Run()
+		a.NoError(err)
+
+		errBytes, err := ioutil.ReadAll(stderr)
+		a.NoError(err)
+
+		a.NotZero(len(errBytes))
 	})
 
 	ins, err = Install(tmpDir)
