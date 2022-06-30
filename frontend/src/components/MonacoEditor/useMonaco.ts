@@ -33,108 +33,109 @@ export const useMonaco = async (lang: string) => {
     allowJs: true,
   });
 
-  monaco.languages.registerCompletionItemProvider(lang, {
-    triggerCharacters: [" ", "."],
-    provideCompletionItems: async (model, position) => {
-      let suggestions: CompletionItems = [];
+  const completionItemProvider =
+    monaco.languages.registerCompletionItemProvider(lang, {
+      triggerCharacters: [" ", "."],
+      provideCompletionItems: async (model, position) => {
+        let suggestions: CompletionItems = [];
 
-      const { lineNumber, column } = position;
-      // The text before the cursor pointer
-      const textBeforePointer = model.getValueInRange({
-        startLineNumber: lineNumber,
-        startColumn: 0,
-        endLineNumber: lineNumber,
-        endColumn: column,
-      });
-      // The multi-text before the cursor pointer
-      const textBeforePointerMulti = model.getValueInRange({
-        startLineNumber: 1,
-        startColumn: 0,
-        endLineNumber: lineNumber,
-        endColumn: column,
-      });
-      // The text after the cursor pointer
-      const textAfterPointerMulti = model.getValueInRange({
-        startLineNumber: lineNumber,
-        startColumn: column,
-        endLineNumber: model.getLineCount(),
-        endColumn: model.getLineMaxColumn(model.getLineCount()),
-      });
-      const tokens = textBeforePointer.trim().split(/\s+/);
-      const lastToken = tokens[tokens.length - 1].toLowerCase();
+        const { lineNumber, column } = position;
+        // The text before the cursor pointer
+        const textBeforePointer = model.getValueInRange({
+          startLineNumber: lineNumber,
+          startColumn: 0,
+          endLineNumber: lineNumber,
+          endColumn: column,
+        });
+        // The multi-text before the cursor pointer
+        const textBeforePointerMulti = model.getValueInRange({
+          startLineNumber: 1,
+          startColumn: 0,
+          endLineNumber: lineNumber,
+          endColumn: column,
+        });
+        // The text after the cursor pointer
+        const textAfterPointerMulti = model.getValueInRange({
+          startLineNumber: lineNumber,
+          startColumn: column,
+          endLineNumber: model.getLineCount(),
+          endColumn: model.getLineMaxColumn(model.getLineCount()),
+        });
+        const tokens = textBeforePointer.trim().split(/\s+/);
+        const lastToken = tokens[tokens.length - 1].toLowerCase();
 
-      const autoCompletion = new AutoCompletion(
-        model,
-        position,
-        databaseList.value,
-        tableList.value
-      );
-
-      // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
-      const suggestionsForDatabase =
-        lang === "mysql"
-          ? await autoCompletion.getCompletionItemsForDatabaseList()
-          : [];
-      const suggestionsForTable =
-        await autoCompletion.getCompletionItemsForTableList();
-      const suggestionsForKeyword =
-        await autoCompletion.getCompletionItemsForKeywords();
-
-      // if enter a dot
-      if (lastToken.endsWith(".")) {
-        /**
-         * tokenLevel = 1 stands for the database.table or table.column
-         * tokenLevel = 2 stands for the database.table.column
-         */
-        const tokenLevel = lastToken.split(".").length - 1;
-        const lastTokenBeforeDot = lastToken.slice(0, -1);
-        let [databaseName, tableName] = ["", ""];
-        if (tokenLevel === 1) {
-          databaseName = lastTokenBeforeDot;
-          tableName = lastTokenBeforeDot;
-        }
-        if (tokenLevel === 2) {
-          databaseName = lastTokenBeforeDot.split(".").shift() as string;
-          tableName = lastTokenBeforeDot.split(".").pop() as string;
-        }
-        const dbIdx = databaseList.value.findIndex(
-          (item: Database) => item.name === databaseName
-        );
-        const tableIdx = tableList.value.findIndex(
-          (item: Table) => item.name === tableName
+        const autoCompletion = new AutoCompletion(
+          model,
+          position,
+          databaseList.value,
+          tableList.value
         );
 
-        // if the last token is a database name
-        if (lang === "mysql" && dbIdx !== -1 && tokenLevel === 1) {
-          suggestions = await autoCompletion.getCompletionItemsForTableList(
-            databaseList.value[dbIdx],
-            true
-          );
-        }
-        // if the last token is a table name
-        if (tableIdx !== -1 || tokenLevel === 2) {
-          const table = tableList.value[tableIdx];
-          if (table.columnList && table.columnList.length > 0) {
-            suggestions =
-              await autoCompletion.getCompletionItemsForTableColumnList(
-                tableList.value[tableIdx],
-                false
-              );
+        // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
+        const suggestionsForDatabase =
+          lang === "mysql"
+            ? await autoCompletion.getCompletionItemsForDatabaseList()
+            : [];
+        const suggestionsForTable =
+          await autoCompletion.getCompletionItemsForTableList();
+        const suggestionsForKeyword =
+          await autoCompletion.getCompletionItemsForKeywords();
+
+        // if enter a dot
+        if (lastToken.endsWith(".")) {
+          /**
+           * tokenLevel = 1 stands for the database.table or table.column
+           * tokenLevel = 2 stands for the database.table.column
+           */
+          const tokenLevel = lastToken.split(".").length - 1;
+          const lastTokenBeforeDot = lastToken.slice(0, -1);
+          let [databaseName, tableName] = ["", ""];
+          if (tokenLevel === 1) {
+            databaseName = lastTokenBeforeDot;
+            tableName = lastTokenBeforeDot;
           }
-        }
-      } else {
-        suggestions = [
-          ...suggestionsForKeyword,
-          ...suggestionsForTable,
-          ...suggestionsForDatabase,
-        ];
-      }
+          if (tokenLevel === 2) {
+            databaseName = lastTokenBeforeDot.split(".").shift() as string;
+            tableName = lastTokenBeforeDot.split(".").pop() as string;
+          }
+          const dbIdx = databaseList.value.findIndex(
+            (item: Database) => item.name === databaseName
+          );
+          const tableIdx = tableList.value.findIndex(
+            (item: Table) => item.name === tableName
+          );
 
-      return {
-        suggestions: uniqBy(suggestions, "label"),
-      };
-    },
-  });
+          // if the last token is a database name
+          if (lang === "mysql" && dbIdx !== -1 && tokenLevel === 1) {
+            suggestions = await autoCompletion.getCompletionItemsForTableList(
+              databaseList.value[dbIdx],
+              true
+            );
+          }
+          // if the last token is a table name
+          if (tableIdx !== -1 || tokenLevel === 2) {
+            const table = tableList.value[tableIdx];
+            if (table.columnList && table.columnList.length > 0) {
+              suggestions =
+                await autoCompletion.getCompletionItemsForTableColumnList(
+                  tableList.value[tableIdx],
+                  false
+                );
+            }
+          }
+        } else {
+          suggestions = [
+            ...suggestionsForKeyword,
+            ...suggestionsForTable,
+            ...suggestionsForDatabase,
+          ];
+        }
+
+        return {
+          suggestions: uniqBy(suggestions, "label"),
+        };
+      },
+    });
 
   await Promise.all([
     // load workers
@@ -152,6 +153,10 @@ export const useMonaco = async (lang: string) => {
       };
     })(),
   ]);
+
+  const dispose = () => {
+    completionItemProvider.dispose();
+  };
 
   /**
    * set new content in monaco editor
@@ -213,6 +218,7 @@ export const useMonaco = async (lang: string) => {
   };
 
   return {
+    dispose,
     monaco,
     setContent,
     formatContent,

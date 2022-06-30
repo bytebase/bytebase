@@ -139,6 +139,7 @@ const getEditorInstance = () => {
 onMounted(async () => {
   const {
     monaco,
+    dispose,
     formatContent,
     setContent,
     setAutoCompletionContext,
@@ -147,6 +148,7 @@ onMounted(async () => {
 
   monacoInstanceRef.value = {
     monaco,
+    dispose,
     formatContent,
     setContent,
     setAutoCompletionContext,
@@ -171,6 +173,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   editorInstanceRef.value?.dispose();
+  monacoInstanceRef.value?.dispose();
 });
 
 watch(
