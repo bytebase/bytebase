@@ -12,7 +12,7 @@ import (
 
 // NewTaskCheckGhostSyncExecutor creates a task check gh-ost sync executor.
 func NewTaskCheckGhostSyncExecutor() TaskCheckExecutor {
-	return &TaskCheckDatabaseConnectExecutor{}
+	return &TaskCheckGhostSyncExecutor{}
 }
 
 // TaskCheckGhostSyncExecutor is the task check gh-ost sync executor.
