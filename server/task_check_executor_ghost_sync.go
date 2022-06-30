@@ -83,14 +83,13 @@ func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server,
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{
-		host:           instance.Host,
-		port:           instance.Port,
-		user:           adminDataSource.Username,
-		password:       adminDataSource.Password,
-		database:       databaseName,
-		table:          tableName,
-		alterStatement: payload.Statement,
-		// TODO(xz): maybe use random string here
+		host:                 instance.Host,
+		port:                 instance.Port,
+		user:                 adminDataSource.Username,
+		password:             adminDataSource.Password,
+		database:             databaseName,
+		table:                tableName,
+		alterStatement:       payload.Statement,
 		socketFilename:       getSocketFilename(taskCheckRun.ID, task.Database.ID, databaseName, tableName),
 		postponeFlagFilename: getPostponeFlagFilename(taskCheckRun.ID, task.Database.ID, databaseName, tableName),
 		noop:                 true,
