@@ -281,7 +281,7 @@ func equalColumnList(expected []*ast.ColumnDef, actual []*ast.ColumnDef) bool {
 	}
 
 	for i := range expected {
-		if equalColumnDef(expected[i], actual[i]) {
+		if !equalColumnDef(expected[i], actual[i]) {
 			return false
 		}
 	}
