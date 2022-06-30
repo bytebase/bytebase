@@ -89,6 +89,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
+            @wheel="$event.target.blur()"
             @input="handleInstancePortInput"
           />
         </div>
