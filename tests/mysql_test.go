@@ -48,12 +48,9 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), database)
-
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
-		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
+		err = mysqlDriver.CheckEngineInnoDB(ctx, database)
 		a.NoError(err)
 	})
 
@@ -82,13 +79,10 @@ func TestCheckEngineInnoDB(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), database)
-
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 
-		err = mysqlRestore.CheckEngineInnoDB(ctx, database)
+		err = mysqlDriver.CheckEngineInnoDB(ctx, database)
 		a.Error(err)
 	})
 }
@@ -110,21 +104,19 @@ func TestCheckServerVersionAndBinlogForPITR(t *testing.T) {
 	a.NoError(err)
 	defer driver.Close(ctx)
 
-	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	a.Equal(true, ok)
-	mysqlRestore := pluginmysql.NewRestore(mysqlDriver, nil, connCfg, "" /*binlog directory*/)
 
 	// the test MySQL instance is 8.0.
-	err = mysqlRestore.CheckServerVersionForPITR(ctx)
+	err = mysqlDriver.CheckServerVersionForPITR(ctx)
 	a.NoError(err)
 
 	// binlog is default to ON in MySQL 8.0.
-	err = mysqlRestore.CheckBinlogEnabled(ctx)
+	err = mysqlDriver.CheckBinlogEnabled(ctx)
 	a.NoError(err)
 
 	// binlog format is default to ROW in MySQL 8.0.
-	err = mysqlRestore.CheckBinlogRowFormat(ctx)
+	err = mysqlDriver.CheckBinlogRowFormat(ctx)
 	a.NoError(err)
 }
 
@@ -146,14 +138,13 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 	defer driver.Close(ctx)
 
-	connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
 	mysqlDriver, ok := driver.(*pluginmysql.Driver)
 	a.Equal(true, ok)
 	utilDir := t.TempDir()
 	utilInstance, err := mysqlutil.Install(utilDir)
-	a.NoError(err)
 	binlogDir := t.TempDir()
-	mysqlRestore := pluginmysql.NewRestore(mysqlDriver, utilInstance, connCfg, binlogDir)
+	mysqlDriver.SetUpForPITR(*utilInstance, binlogDir)
+	a.NoError(err)
 
 	// init schema
 	_, err = db.ExecContext(ctx, `
@@ -183,7 +174,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	}
 	t.Logf("startTsList: %v\n", startTsList)
 
-	binlogFilesOnServerSorted, err := mysqlRestore.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := mysqlDriver.GetSortedBinlogFilesMetaOnServer(ctx)
 	a.NoError(err)
 
 	t.Log("Download binlog files in empty dir")
@@ -194,7 +185,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		err = os.Remove(path)
 		a.NoError(err)
 	}
-	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	err = mysqlDriver.FetchAllBinlogFiles(ctx)
 	a.NoError(err)
 	binlogFilesDownloaded, err := pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
 	a.NoError(err)
@@ -215,7 +206,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 		a.NoError(err)
 	}
 	t.Log("Fetch binlog files")
-	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	err = mysqlDriver.FetchAllBinlogFiles(ctx)
 	a.NoError(err)
 	binlogFilesDownloaded, err = pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
 	a.NoError(err)
@@ -232,7 +223,7 @@ func TestFetchBinlogFiles(t *testing.T) {
 	a.NoError(err)
 	// Re-download and check.
 	t.Log("Re-downloading binlog files")
-	err = mysqlRestore.FetchAllBinlogFiles(ctx)
+	err = mysqlDriver.FetchAllBinlogFiles(ctx)
 	a.NoError(err)
 	binlogFilesDownloadedAgain, err := pluginmysql.GetSortedLocalBinlogFiles(binlogDir)
 	a.NoError(err)
