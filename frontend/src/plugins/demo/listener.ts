@@ -27,10 +27,7 @@ const tryToShowGuideDialog = async () => {
 
   if (guide) {
     const guideData = await fetchGuideDataWithName(guide.name);
-    const stepData = guideData.steps[guide.stepIndex];
-    if (stepData) {
-      showGuideDialog(stepData);
-    }
+    showGuideDialog(guideData, guide.stepIndex);
   } else {
     removeGuideDialog();
   }
