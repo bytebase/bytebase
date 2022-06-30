@@ -3,9 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -14,8 +12,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
@@ -45,7 +43,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -107,7 +105,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columns {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    common.ColumnCanNotNull,
+			Code:    advisor.ColumnCanNotNull,
 			Title:   v.title,
 			Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
 		})

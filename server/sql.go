@@ -158,7 +158,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(instance.Engine) {
+		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
 			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
 			if err != nil {
 				return err
@@ -545,7 +545,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 					}
 				}
 				if matchedDb != nil {
-					// Case 1, appear in both the bytebase metadata and the synced db schema
+					// Case 1, appear in both the Bytebase metadata and the synced db schema
 					syncStatus := api.OK
 					ts := time.Now().Unix()
 					databasePatch := &api.DatabasePatch{
@@ -647,7 +647,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 				}
 			}
 
-			// Case 3, only appear in the bytebase metadata
+			// Case 3, only appear in the Bytebase metadata
 			for _, db := range dbList {
 				found := false
 				for _, schema := range schemaList {
@@ -770,7 +770,7 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			adviceLevel = advisor.Warn
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Warn,
-				Code:    common.TaskCheckEmptySchemaReviewPolicy,
+				Code:    advisor.NotFound,
 				Title:   "Empty schema review policy or disabled",
 				Content: "",
 			})
@@ -794,10 +794,15 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
 		}
 
+		dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
+		if err != nil {
+			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
+		}
+
 		res, err := advisor.SchemaReviewCheck(ctx, exec.Statement, policy, advisor.SchemaReviewCheckContext{
 			Charset:   db[0].CharacterSet,
 			Collation: db[0].Collation,
-			DbType:    instance.Engine,
+			DbType:    dbType,
 			Catalog:   store.NewCatalog(&db[0].ID, s.store),
 		})
 		if err != nil {
@@ -822,7 +827,7 @@ func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api
 		if len(adviceList) == 0 {
 			adviceList = append(adviceList, advisor.Advice{
 				Status:  advisor.Success,
-				Code:    common.Ok,
+				Code:    advisor.Ok,
 				Title:   "OK",
 				Content: "",
 			})

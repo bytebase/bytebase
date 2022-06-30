@@ -1,9 +1,7 @@
 package pg
 
 import (
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -11,7 +9,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.Postgres, advisor.PostgreSQLSyntax, &SyntaxAdvisor{})
+	advisor.Register(advisor.Postgres, advisor.PostgreSQLSyntax, &SyntaxAdvisor{})
 }
 
 // SyntaxAdvisor is the advisor for checking syntax.
@@ -27,7 +25,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 	return []advisor.Advice{
 		{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "Syntax OK",
 			Content: "OK",
 		},

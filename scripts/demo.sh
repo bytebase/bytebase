@@ -33,7 +33,7 @@ function seedDemoData(){
         echo "waiting..."
         sleep 1
     done
-    echo 'Sleep 120 seconds for bytebase to finish migration...'
+    echo 'Sleep 120 seconds for Bytebase to finish migration...'
     sleep 120
 
     echo 'Killing seeding program'

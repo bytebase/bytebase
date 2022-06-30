@@ -8,7 +8,7 @@
     :right-bordered="true"
   >
     <template #body="{ rowData: activity }">
-      <BBTableCell :left-padding="4" class="w-8">
+      <BBTableCell :left-padding="4" class="w-[20%]">
         <div class="flex flew-row space-x-1">
           <span
             v-if="activity.level != `INFO`"
@@ -25,16 +25,16 @@
           <ActivityTypeLink :activity="activity" />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-96">
+      <BBTableCell>
         <div class="flex flex-row space-x-1">
           <span>{{ activity.comment }}</span>
           <ActivityCommentLink :activity="activity" />
         </div>
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[12%]">
         {{ humanizeTs(activity.createdTs) }}
       </BBTableCell>
-      <BBTableCell class="w-8">
+      <BBTableCell class="w-[12%]">
         <div class="flex flex-row items-center">
           <BBAvatar :size="'SMALL'" :username="activity.creator.name" />
           <span class="ml-2">{{ activity.creator.name }}</span>

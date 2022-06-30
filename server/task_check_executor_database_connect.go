@@ -26,10 +26,11 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	if task == nil {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.Internal,
-				Title:   fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
-				Content: err.Error(),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     fmt.Sprintf("Failed to find task %v", taskCheckRun.TaskID),
+				Content:   err.Error(),
 			},
 		}, nil
 	}
@@ -46,10 +47,11 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 	if err != nil {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.DbConnectionFailure,
-				Title:   fmt.Sprintf("Failed to connect %q", database.Name),
-				Content: err.Error(),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.DbConnectionFailure.Int(),
+				Title:     fmt.Sprintf("Failed to connect %q", database.Name),
+				Content:   err.Error(),
 			},
 		}, nil
 	}
@@ -57,10 +59,11 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 
 	return []api.TaskCheckResult{
 		{
-			Status:  api.TaskCheckStatusSuccess,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: fmt.Sprintf("Successfully connected %q", database.Name),
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   fmt.Sprintf("Successfully connected %q", database.Name),
 		},
 	}, nil
 }

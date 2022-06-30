@@ -3,6 +3,8 @@
     ref="dialog"
     :title="$t('issue.migration-mode.title')"
     :positive-text="$t('common.next')"
+    :on-before-positive-click="checkFeature"
+    data-label="bb-migration-mode-dialog"
   >
     <div class="w-[28rem] space-y-4 pl-8 pr-2 pb-4">
       <div class="flex items-start space-x-2">
@@ -31,15 +33,19 @@
           value="online"
         />
         <div @click="state.mode = 'online'">
-          <div class="textlabel space-x-2">
+          <div class="textlabel flex items-center space-x-2">
             <span>{{ $t("issue.migration-mode.online.title") }}</span>
+            <FeatureBadge
+              feature="bb.feature.online-migration"
+              class="text-accent"
+            />
             <BBBetaBadge />
           </div>
           <div class="textinfolabel mt-1">
             <i18n-t tag="p" keypath="issue.migration-mode.online.description">
               <template #link>
                 <LearnMoreLink
-                  url="https://github.com/bytebase/bytebase/blob/main/docs/design/gh-ost-integration.md"
+                  url="https://www.bytebase.com/docs/features/online-schema-change"
                 />
               </template>
             </i18n-t>
@@ -48,24 +54,48 @@
       </div>
     </div>
   </BBDialog>
+
+  <FeatureModal
+    v-if="state.showFeatureModal"
+    feature="bb.feature.online-migration"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { BBDialog } from "@/bbkit";
 import LearnMoreLink from "../LearnMoreLink.vue";
+import { featureToRef } from "@/store";
 
 type Mode = "normal" | "online";
 
 type LocalState = {
   mode: Mode;
+  showFeatureModal: boolean;
 };
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 
 const state = reactive<LocalState>({
   mode: "normal",
+  showFeatureModal: false,
 });
+
+const hasGhostFeature = featureToRef("bb.feature.online-migration");
+
+const checkFeature = (): boolean => {
+  if (state.mode === "normal") {
+    // Don't block anything when selecting normal migration
+    return true;
+  }
+
+  if (!hasGhostFeature.value) {
+    state.showFeatureModal = true;
+    return false;
+  }
+  return true;
+};
 
 const open = (): Promise<{ result: boolean; mode: Mode }> => {
   state.mode = "normal"; // reset state

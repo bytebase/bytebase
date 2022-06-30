@@ -79,8 +79,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	const (
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
+		timestampAllTable                   = true
 		hooksStatusIntervalSec              = 60
-		replicaServerID                     = 99999
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
 		chunkSize                           = 1000
@@ -114,7 +114,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
@@ -137,6 +136,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	}
 	migrationContext.ServeSocketFile = config.socketFilename
 	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
+	migrationContext.TimestampAllTable = timestampAllTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
 	migrationContext.SetChunkSize(chunkSize)
@@ -273,6 +273,7 @@ func executeGhost(task *api.Task, startedNs int64, statement string, syncDone ch
 
 	go func(ctx context.Context, migrationContext *base.MigrationContext) {
 		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:

@@ -181,7 +181,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := db.setupDemoData(); err != nil {
 		return fmt.Errorf("failed to setup demo data: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-			" directory under the same directory where the bytebase binary resides. and restart again to let"+
+			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 			err)
 	}
@@ -205,12 +205,18 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return nil, nil
 	}
 
-	v, err := semver.Make(history[0].Version)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
+	for _, h := range history {
+		if h.Status != dbdriver.Done {
+			continue
+		}
+		v, err := semver.Make(h.Version)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version %q, error: %v", h.Version, err)
+		}
+		return &v, nil
 	}
 
-	return &v, nil
+	return nil, fmt.Errorf("failed to find a successful migration history")
 }
 
 // setupDemoData loads the setupDemoData data for testing
@@ -342,6 +348,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 				CreateDatabase:        !strictDb,
+				Force:                 true,
 			},
 			stmt,
 		); err != nil {
@@ -403,6 +410,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 						Source:                dbdriver.LIBRARY,
 						Type:                  dbdriver.Migrate,
 						Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+						Force:                 true,
 					},
 					string(buf),
 				); err != nil {
@@ -493,6 +501,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+				Force:                 true,
 			},
 			m.statement,
 		); err != nil {
@@ -675,7 +684,7 @@ type Tx struct {
 	now time.Time
 }
 
-// FormatError returns err as a bytebase error, if possible.
+// FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
 	if err == nil {

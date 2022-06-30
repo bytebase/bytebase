@@ -1,4 +1,4 @@
-name: build release binaries and create release notes.
+name: Build release artifacts and draft release
 
 on:
   push:

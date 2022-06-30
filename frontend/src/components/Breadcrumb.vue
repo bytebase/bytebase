@@ -108,12 +108,12 @@ export default defineComponent({
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
         list.push({
-          name: t("common.environment"),
+          name: t("common.environments"),
           path: "/environment",
         });
       } else if (projectSlug) {
         list.push({
-          name: t("common.project"),
+          name: t("common.projects"),
           path: "/project",
         });
 
@@ -126,12 +126,12 @@ export default defineComponent({
         }
       } else if (instanceSlug) {
         list.push({
-          name: t("common.instance"),
+          name: t("common.instances"),
           path: "/instance",
         });
       } else if (databaseSlug) {
         list.push({
-          name: t("common.database"),
+          name: t("common.databases"),
           path: "/db",
         });
 

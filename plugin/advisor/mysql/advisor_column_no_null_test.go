@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
@@ -14,13 +13,13 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`id` can not have NULL value",
 				},
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`name` can not have NULL value",
 				},
@@ -31,7 +30,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`name` can not have NULL value",
 				},
@@ -42,7 +41,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`name` can not have NULL value",
 				},
@@ -53,7 +52,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -64,7 +63,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`id` can not have NULL value",
 				},
@@ -75,7 +74,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -86,7 +85,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
-					Code:    common.ColumnCanNotNull,
+					Code:    advisor.ColumnCanNotNull,
 					Title:   "column.no-null",
 					Content: "`book`.`name` can not have NULL value",
 				},
@@ -97,7 +96,7 @@ func TestColumnNoNull(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},

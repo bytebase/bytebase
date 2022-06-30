@@ -1,10 +1,11 @@
-import { GuideState } from "./types";
-
 /**
  * Define storage data type for guide
  */
 interface StorageData {
-  guide: GuideState;
+  guide: {
+    name: string;
+    stepIndex: number;
+  };
 }
 
 type StorageKey = keyof StorageData;
@@ -48,4 +49,13 @@ export function remove(keys: StorageKey[]) {
       console.error("Remove storage failed in ", key, error);
     }
   }
+}
+
+export function emitStorageChangedEvent() {
+  const iframeEl = document.createElement("iframe");
+  iframeEl.style.display = "none";
+  document.body.appendChild(iframeEl);
+
+  iframeEl.contentWindow?.localStorage.setItem("t", Date.now().toString());
+  iframeEl.remove();
 }

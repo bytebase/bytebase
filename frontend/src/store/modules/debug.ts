@@ -16,8 +16,8 @@ export const useDebugStore = defineStore("debug", {
       this.isDebug = debug.isDebug;
     },
     async fetchDebug() {
-      const data = (await axios.get("/api/debug")).data;
-      const debug = convert(data);
+      const res = (await axios.get("/api/debug")).data;
+      const debug = convert(res.data);
       this.setDebug(debug);
       return debug;
     },

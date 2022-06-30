@@ -74,7 +74,7 @@ COPY --from=backend /backend-build/bytebase /usr/local/bin/
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
 
-# Create bytebase user for running Postgres database and server.
+# Create user "bytebase" for running Postgres database and server.
 RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
 
 # Directory to store the data, which can be referenced as the mounting point.

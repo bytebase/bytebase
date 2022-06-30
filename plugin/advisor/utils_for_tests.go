@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/bmizerany/assert"
-	"github.com/bytebase/bytebase/plugin/catalog"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/stretchr/testify/require"
 )
 

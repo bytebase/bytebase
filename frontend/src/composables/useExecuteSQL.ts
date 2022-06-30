@@ -44,6 +44,7 @@ const useExecuteSQL = () => {
   };
 
   const execute = async (
+    query: string,
     config: ExecuteConfig,
     option?: Partial<ExecuteOption>
   ) => {
@@ -51,23 +52,18 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const currentTab = tabStore.currentTab;
     const isDisconnected = sqlEditorStore.isDisconnected;
-    const statement = currentTab.statement;
-    const selectedStatement = currentTab.selectedStatement;
-    const sqlStatement = selectedStatement || statement;
-
     if (isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return;
     }
 
-    const { data } = parseSQL(sqlStatement);
-
-    if (isEmpty(sqlStatement)) {
+    if (isEmpty(query)) {
       notify("CRITICAL", t("sql-editor.notify-empty-statement"));
       return;
     }
+
+    const { data } = parseSQL(query);
 
     if (data === undefined) {
       notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
@@ -101,7 +97,7 @@ const useExecuteSQL = () => {
     }
 
     let selectStatement =
-      data !== null ? transformSQL(data, config.databaseType) : sqlStatement;
+      data !== null ? transformSQL(data, config.databaseType) : query;
     if (option?.explain) {
       selectStatement = `EXPLAIN ${selectStatement}`;
     }

@@ -1,5 +1,9 @@
 <template>
-  <div ref="editorContainerRef" style="width: 100%; height: 100%"></div>
+  <div ref="editorContainerRef" v-bind="$attrs"></div>
+  <BBSpin
+    v-if="!isEditorLoaded"
+    class="h-full w-full flex items-center justify-center"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -13,7 +17,7 @@ import {
   watch,
   shallowRef,
 } from "vue";
-import { editor as Editor } from "monaco-editor";
+import type { editor as Editor } from "monaco-editor";
 import { Database, SQLDialect, Table } from "@/types";
 import { useMonaco } from "./useMonaco";
 import { useLineDecorations } from "./lineDecorations";
@@ -34,16 +38,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update:value", content: string): void;
   (e: "change", content: string): void;
   (e: "change-selection", content: string): void;
-  (
-    e: "run-query",
-    content: {
-      explain: boolean;
-      query: string;
-    }
-  ): void;
   (e: "save", content: string): void;
   (e: "ready"): void;
 }>();
@@ -52,9 +48,11 @@ const sqlCode = toRef(props, "value");
 const language = toRef(props, "language");
 const readOnly = toRef(props, "readonly");
 const monacoInstanceRef = ref();
-const editorContainerRef = ref();
+const editorContainerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorInstanceRef = shallowRef<Editor.IStandaloneCodeEditor>();
+
+const isEditorLoaded = ref(false);
 
 const getEditorInstance = () => {
   const { monaco, formatContent, setPositionAtEndOfLine } =
@@ -86,44 +84,9 @@ const getEditorInstance = () => {
     codeLens: false,
   });
 
-  // add the run query action in context menu
+  // add `Format SQL` action into context menu
   editorInstance.addAction({
-    id: "RunQuery",
-    label: "Run Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
-    run: async () => {
-      const typedValue = editorInstance.getValue();
-      const selectedValue = editorInstance
-        .getModel()
-        ?.getValueInRange(editorInstance.getSelection()!) as string;
-      const query = selectedValue || typedValue;
-      emit("run-query", { explain: false, query });
-    },
-  });
-
-  // add the run query action in context menu
-  editorInstance.addAction({
-    id: "ExplainQuery",
-    label: "Explain Query",
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
-    contextMenuGroupId: "operation",
-    contextMenuOrder: 0,
-    run: async () => {
-      const typedValue = editorInstance.getValue();
-      const selectedValue = editorInstance
-        .getModel()
-        ?.getValueInRange(editorInstance.getSelection()!) as string;
-
-      const query = selectedValue || typedValue;
-      emit("run-query", { explain: true, query });
-    },
-  });
-
-  // add format sql action in context menu
-  editorInstance.addAction({
-    id: "FormatSQL",
+    id: "format-sql",
     label: "Format SQL",
     keybindings: [
       monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
@@ -153,15 +116,15 @@ const getEditorInstance = () => {
     emit("change-selection", selectedText);
   });
 
-  editorInstance.onDidChangeCursorPosition((e: any) => {
+  editorInstance.onDidChangeCursorPosition(async (e: any) => {
     const { defineLineDecorations, disposeLineDecorations } =
-      useLineDecorations(editorInstance, e.position);
+      await useLineDecorations(editorInstance, e.position);
     // clear the old decorations
     disposeLineDecorations();
 
     // define the new decorations
-    nextTick(() => {
-      defineLineDecorations();
+    nextTick(async () => {
+      await defineLineDecorations();
     });
   });
 
@@ -176,6 +139,7 @@ const getEditorInstance = () => {
 onMounted(async () => {
   const {
     monaco,
+    dispose,
     formatContent,
     setContent,
     setAutoCompletionContext,
@@ -184,6 +148,7 @@ onMounted(async () => {
 
   monacoInstanceRef.value = {
     monaco,
+    dispose,
     formatContent,
     setContent,
     setAutoCompletionContext,
@@ -199,6 +164,8 @@ onMounted(async () => {
     nextTick(() => setPositionAtEndOfLine(editorInstance));
   }
 
+  isEditorLoaded.value = true;
+
   nextTick(() => {
     emit("ready");
   });
@@ -206,6 +173,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   editorInstanceRef.value?.dispose();
+  monacoInstanceRef.value?.dispose();
 });
 
 watch(
@@ -233,7 +201,16 @@ const getEditorContentHeight = () => {
   return editorInstanceRef.value?.getContentHeight();
 };
 
+const setEditorContentHeight = (height: number) => {
+  editorContainerRef.value!.style.height = `${
+    height ?? getEditorContentHeight()
+  }px`;
+};
+
 const formatEditorContent = () => {
+  if (readOnly.value) {
+    return;
+  }
   monacoInstanceRef.value?.formatContent(
     editorInstanceRef.value!,
     language.value as SQLDialect
@@ -252,10 +229,12 @@ const setEditorAutoCompletionContext = (
 };
 
 defineExpose({
+  editorInstance: editorInstanceRef,
   formatEditorContent,
   getEditorContent,
   setEditorContent,
   getEditorContentHeight,
+  setEditorContentHeight,
   setEditorAutoCompletionContext,
 });
 </script>

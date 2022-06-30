@@ -46,6 +46,7 @@
     "instances": "Instances",
     "environment": "Environment",
     "environments": "Environments",
+    "environment-name": "Environment Name",
     "bookmark": "Bookmark",
     "bookmarks": "Bookmarks",
     "quick-action": "Quick Action",
@@ -388,7 +389,8 @@
       "project-member-create": "add project member",
       "project-member-delete": "delete project member",
       "project-member-role-update": "change project member role",
-      "pipeline-task-earliest-allowed-time-update": "update earliest allowed time"
+      "pipeline-task-earliest-allowed-time-update": "update earliest allowed time",
+      "database-recovery-pitr-done": "restore database to point in time"
     },
     "sentence": {
       "created-issue": "created issue",
@@ -473,11 +475,11 @@
       "title": "Migration mode",
       "normal": {
         "title": "Normal migration (for normal-sized table)",
-        "description": "Perform schema change directly on the target table."
+        "description": "Perform schema change directly on the target table. A lock will be held during the entire migration."
       },
       "online": {
         "title": "Online migration (for large-sized table)",
-        "description": "Perform schema change on a duplicated empty table. Sync the data and swap the table name after sync finishes. Applying migration on a large table directly would cause long-time unavailability {link}."
+        "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
       }
     },
     "new-issue": "@:common.new @:common.issue",
@@ -723,6 +725,7 @@
     "show-diff": "Show diff",
     "left-vs-right": "Prev {prevLink} vs This version",
     "schema-snapshot-after-migration": "The schema snapshot recorded after applying this migration",
+    "current-schema-empty": "Current schema is empty",
     "list-limit": "For database having migration history, we list up to 5 most recent histories below. You can click the database name to view all histories.",
     "no-history-in-project": "Do not find migration history from any database in this project.",
     "recording-info": "Migration history is recorded whenever the database schema is altered.",
@@ -815,7 +818,9 @@
       "restore-to-point-in-time": "Restore to point in time",
       "no-earlier-than": "Restore point-in-time cannot be earlier than [{earliest}] (the earliest available backup).",
       "no-later-than-now": "Restore point-in-time cannot be later than now."
-    }
+    },
+    "show-reserved-tables": "Show Bytebase reserved tables",
+    "show-reserved-databases": "Show Bytebase reserved databases"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
@@ -1223,7 +1228,7 @@
     "unknown-event": "Unexpeted event type, OAuth failed."
   },
   "subscription": {
-    "description": "You can upload your bytebase license to unlock team/enterprise features.",
+    "description": "You can upload your Bytebase license to unlock team/enterprise features.",
     "current": "Current plan",
     "instance-count": "Instance count",
     "expires-at": "Expires at",
@@ -1305,6 +1310,14 @@
       "bb-feature-branding": {
         "title": "Branding",
         "desc": "Customize the logo."
+      },
+      "bb-feature-online-migration": {
+        "title": "Online migration",
+        "desc": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds."
+      },
+      "bb-feature-disaster-recovery-pitr": {
+        "title": "Point-in-Time-Recovery (PITR)",
+        "desc": "Restore the database state to a point in time."
       }
     },
     "feature-sections": {
@@ -1316,6 +1329,10 @@
           "instance-customized": "Customized",
           "instance-minimum-5": "5 ~ unlimited",
           "schema-change": "Schema and data change",
+          "schema-change-basic": "Basic",
+          "schema-change-basic-tooltip": "Normal migration",
+          "schema-change-advanced": "Advanced",
+          "schema-change-advanced-tooltip": "Normal migration + Online migration (gh-ost)",
           "migration-history": "Migration history",
           "sql-editor": "SQL Editor",
           "disaster-recovery": "Disaster recovery",

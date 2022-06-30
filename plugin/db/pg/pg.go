@@ -215,6 +215,11 @@ func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	owner, err := driver.getCurrentDatabaseOwner()
+	if err != nil {
+		return err
+	}
+
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
@@ -252,8 +257,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			_, err := driver.GetDbConnection(ctx, parts[1])
-			return err
+			if _, err = driver.GetDbConnection(ctx, parts[1]); err != nil {
+				return err
+			}
+			// Update current owner
+			if owner, err = driver.getCurrentDatabaseOwner(); err != nil {
+				return err
+			}
+		} else if isSuperuserStatement(stmt) {
+			// Use superuser privilege to run privileged statements.
+			remainingStmts = append(remainingStmts, "SET LOCAL ROLE NONE;")
+			remainingStmts = append(remainingStmts, stmt)
+			remainingStmts = append(remainingStmts, fmt.Sprintf("SET LOCAL ROLE %s;", owner))
 		} else {
 			remainingStmts = append(remainingStmts, stmt)
 		}
@@ -274,10 +289,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	owner, err := driver.getCurrentDatabaseOwner(tx)
-	if err != nil {
-		return err
-	}
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
 		return err
@@ -293,6 +304,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return nil
 }
 
+func isSuperuserStatement(stmt string) bool {
+	upperCaseStmt := strings.ToUpper(stmt)
+	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
+		return true
+	}
+	return false
+}
+
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
 	raw := strings.TrimRight(createDatabaseStatement, ";")
 	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
@@ -305,7 +324,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
-func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
+func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -314,7 +333,7 @@ func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
 		WHERE
 			d.datname = current_database();
 		`
-	rows, err := txn.Query(query)
+	rows, err := driver.db.Query(query)
 	if err != nil {
 		return "", err
 	}

@@ -15,6 +15,7 @@ import {
   useSQLEditorStore,
   useTabStore,
   useSheetStore,
+  useDebugStore,
 } from "@/store";
 import {
   Instance,
@@ -114,15 +115,21 @@ const prepareSQLEditorContext = async () => {
       mapConnectionAtom("database", instance.id)
     );
 
-    for (const db of filteredDatabaseList) {
-      const tableList = await tableStore.fetchTableListByDatabaseId(db.id);
+    await Promise.all(
+      filteredDatabaseList.map(async (db) => {
+        const tableList = await tableStore.fetchTableListByDatabaseId(db.id);
 
-      const databaseItem = instanceItem.children!.find(
-        (item: ConnectionAtom) => item.id === db.id
-      )!;
+        const databaseItem = instanceItem.children!.find(
+          (item: ConnectionAtom) => item.id === db.id
+        )!;
 
-      databaseItem.children = tableList.map(mapConnectionAtom("table", db.id));
-    }
+        databaseItem.children = tableList.map(
+          mapConnectionAtom("table", db.id)
+        );
+
+        return Promise.resolve(null);
+      })
+    );
   }
 
   sqlEditorStore.setConnectionTree(connectionTree);
@@ -153,5 +160,6 @@ onMounted(async () => {
   await prepareAccessibleConnectionByProject();
   await prepareSQLEditorContext();
   await prepareSheetFromQuery();
+  await useDebugStore().fetchDebug();
 });
 </script>

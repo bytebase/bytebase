@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
 var (
@@ -137,6 +136,23 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
+			case api.TaskDatabaseSchemaUpdateGhostSync:
+				payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
+				}
+				oldStatement = payload.Statement
+				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
 			}
 		}
 
@@ -146,7 +162,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// create an activity and trigger task check for statement update
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate {
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			if oldStatement != newStatement {
 				// create an activity
 				if issue == nil {
@@ -178,10 +194,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
 
-				if advisor.IsSyntaxCheckSupported(taskPatched.Database.Instance.Engine) {
+				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
-						DbType:    taskPatched.Database.Instance.Engine,
+						DbType:    task.Database.Instance.Engine,
 						Charset:   taskPatched.Database.CharacterSet,
 						Collation: taskPatched.Database.Collation,
 					})
@@ -205,7 +221,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if s.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(taskPatched.Database.Instance.Engine) {
+				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine) {
 					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}
@@ -460,9 +476,8 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, err
 	}
 
-	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
-		taskPatched.Status == api.TaskDone {
+	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
+	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)

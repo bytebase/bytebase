@@ -1,9 +1,7 @@
 package fake
 
 import (
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -11,9 +9,9 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.Fake, &Advisor{})
-	advisor.Register(db.Postgres, advisor.Fake, &Advisor{})
-	advisor.Register(db.TiDB, advisor.Fake, &Advisor{})
+	advisor.Register(advisor.MySQL, advisor.Fake, &Advisor{})
+	advisor.Register(advisor.Postgres, advisor.Fake, &Advisor{})
+	advisor.Register(advisor.TiDB, advisor.Fake, &Advisor{})
 }
 
 // Advisor is the fake sql advisor.
@@ -25,19 +23,19 @@ func (adv *Advisor) Check(ctx advisor.Context, statement string) ([]advisor.Advi
 	return []advisor.Advice{
 		{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "INFO check",
 			Content: statement,
 		},
 		{
 			Status:  advisor.Warn,
-			Code:    common.Internal,
+			Code:    advisor.Internal,
 			Title:   "WARN check",
 			Content: statement,
 		},
 		{
 			Status:  advisor.Error,
-			Code:    common.Internal,
+			Code:    advisor.Internal,
 			Title:   "ERROR check",
 			Content: statement,
 		},

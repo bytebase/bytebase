@@ -317,7 +317,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		}
 	}
 
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -347,17 +347,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		(
-			SELECT
-					pg_catalog.col_description(c.oid, cols.ordinal_position::int)
-			FROM pg_catalog.pg_class c
-			WHERE
-					c.oid     = (SELECT cols.table_name::regclass::oid) AND
-					cols.table_schema=c.relnamespace::regnamespace::text AND
-					cols.table_name = c.relname
-		) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols
-	WHERE table_schema=$1 AND table_name=$2;`
+		pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols, pg_catalog.pg_class c
+	WHERE table_schema=$1 AND table_name=$2 AND cols.table_schema=c.relnamespace::regnamespace::text AND cols.table_name=c.relname;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
@@ -463,7 +455,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -544,7 +536,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err

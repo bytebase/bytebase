@@ -1,4 +1,4 @@
-import * as monaco from "monaco-editor";
+import type * as monaco from "monaco-editor";
 import { ref } from "vue";
 
 const DELIMITER = ";";
@@ -15,9 +15,10 @@ type FragmentRange = {
  * @param editor monaco.editor.IStandaloneCodeEditor
  * @returns fragmentRangeList FragmentRange[]
  */
-const getSQLFragmentRangeList = (
+const getSQLFragmentRangeList = async (
   editor: monaco.editor.IStandaloneCodeEditor
-): FragmentRange[] => {
+): Promise<FragmentRange[]> => {
+  const monaco = await import("monaco-editor");
   const model = editor.getModel() as monaco.editor.ITextModel;
   const linesContent = model.getLinesContent();
   const sqlFragmentRangeList: FragmentRange[] = [];
@@ -71,14 +72,15 @@ const getSQLFragmentRangeList = (
 
 const lineDecorations = ref<string[]>([]);
 
-const useLineDecorations = (
+const useLineDecorations = async (
   editor: monaco.editor.IStandaloneCodeEditor,
   position: monaco.Position
 ) => {
-  const defineLineDecorations = () => {
+  const monaco = await import("monaco-editor");
+  const defineLineDecorations = async () => {
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
-    const sqlFragmentRangeList = getSQLFragmentRangeList(editor);
+    const sqlFragmentRangeList = await getSQLFragmentRangeList(editor);
 
     sqlFragmentRangeList.forEach((range) => {
       // if the current position in the range, then highlight the range
