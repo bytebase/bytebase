@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # For now, we use this script to start our demo on render
 # by changing the ENTRYPOINT and CMD at the dockerfile to this.
