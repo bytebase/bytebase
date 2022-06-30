@@ -1,5 +1,12 @@
 package mysql
 
+// This file implements recovery functions for MySQL.
+// For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
+// Bytebase will do the following:
+// 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
+// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
+// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
+
 import (
 	"bufio"
 	"context"
@@ -18,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -72,32 +78,15 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 	return binlogCoordinate{Seq: seq, Pos: pos}, nil
 }
 
-// Restore implements recovery functions for MySQL.
-// For example, the original database is `dbfoo`. The suffixTs, derived from the PITR issue's CreateTs, is 1653018005.
-// Bytebase will do the following:
-// 1. Create a database called `dbfoo_pitr_1653018005`, and do PITR restore to it.
-// 2. Create a database called `dbfoo_pitr_1653018005_old`, and move tables
-// 	  from `dbfoo` to `dbfoo_pitr_1653018005_old`, and tables from `dbfoo_pitr_1653018005` to `dbfoo`.
-type Restore struct {
-	driver    *Driver
-	mysqlutil *mysqlutil.Instance
-	connCfg   db.ConnectionConfig
-	binlogDir string
-}
-
-// NewRestore creates a new instance of Restore
-func NewRestore(driver *Driver, instance *mysqlutil.Instance, connCfg db.ConnectionConfig, binlogDir string) *Restore {
-	return &Restore{
-		driver:    driver,
-		mysqlutil: instance,
-		connCfg:   connCfg,
-		binlogDir: binlogDir,
-	}
+// SetUpForPITR sets necessary fields for MySQL PITR recovery.
+func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string) {
+	driver.mysqlutil = mysqlutilInstance
+	driver.binlogDir = binlogDir
 }
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
-func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
-	replayBinlogPaths, err := getBinlogReplayList(startBinlogInfo, r.binlogDir)
+func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDatabase string, startBinlogInfo api.BinlogInfo, targetTs int64) error {
+	replayBinlogPaths, err := getBinlogReplayList(startBinlogInfo, driver.binlogDir)
 	if err != nil {
 		return err
 	}
@@ -119,20 +108,20 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 	mysqlbinlogArgs = append(mysqlbinlogArgs, replayBinlogPaths...)
 
 	mysqlArgs := []string{
-		"--host", r.connCfg.Host,
-		"--user", r.connCfg.Username,
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
 	}
-	if r.connCfg.Port != "" {
-		mysqlArgs = append(mysqlArgs, "--port", r.connCfg.Port)
+	if driver.connCfg.Port != "" {
+		mysqlArgs = append(mysqlArgs, "--port", driver.connCfg.Port)
 	}
-	if r.connCfg.Password != "" {
+	if driver.connCfg.Password != "" {
 		// The --password parameter of mysql/mysqlbinlog does not support the "--password PASSWORD" format (split by space).
 		// If provided like that, the program will hang.
-		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", r.connCfg.Password))
+		mysqlArgs = append(mysqlArgs, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	mysqlbinlogCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
-	mysqlCmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
+	mysqlbinlogCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), mysqlbinlogArgs...)
+	mysqlCmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQL), mysqlArgs...)
 	log.Debug("Start replay binlog commands",
 		zap.String("mysqlbinlog", mysqlbinlogCmd.String()),
 		zap.String("mysql", mysqlCmd.String()))
@@ -164,7 +153,7 @@ func (r *Restore) replayBinlog(ctx context.Context, originalDatabase, pitrDataba
 // RestorePITR is a wrapper to perform PITR. It restores a full backup followed by replaying the binlog.
 // It performs the step 1 of the restore process.
 // TODO(dragonly): Refactor so that the first part is in driver.Restore, and remove this wrapper.
-func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
+func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, startBinlogInfo api.BinlogInfo, database string, suffixTs, targetTs int64) error {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	query := fmt.Sprintf(""+
 		// Create the pitr database.
@@ -177,7 +166,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, st
 		"SET foreign_key_checks=OFF",
 		pitrDatabaseName, pitrDatabaseName)
 
-	db, err := r.driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -192,7 +181,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, st
 		return err
 	}
 
-	if err := r.driver.RestoreTx(ctx, tx, fullBackup); err != nil {
+	if err := driver.RestoreTx(ctx, tx, fullBackup); err != nil {
 		return err
 	}
 
@@ -205,7 +194,7 @@ func (r *Restore) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner, st
 		return err
 	}
 
-	if err := r.replayBinlog(ctx, database, pitrDatabaseName, startBinlogInfo, targetTs); err != nil {
+	if err := driver.replayBinlog(ctx, database, pitrDatabaseName, startBinlogInfo, targetTs); err != nil {
 		return fmt.Errorf("failed to replay binlog, error: %w", err)
 	}
 
@@ -275,12 +264,12 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (r *Restore) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
 	if len(backupList) == 0 {
 		return nil, fmt.Errorf("no valid backup")
 	}
 
-	targetBinlogCoordinate, err := r.getBinlogCoordinateByTs(ctx, targetTs)
+	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
 	}
@@ -339,18 +328,18 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 // It returns the pitr and old database names after swap.
 // It performs the step 2 of the restore process.
-func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) (string, string, error) {
+func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) (string, string, error) {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
 
-	db, err := r.driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
 	}
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Check database exists", zap.String("database", database))
-	dbExists, err := r.databaseExists(ctx, database)
+	dbExists, err := driver.databaseExists(ctx, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to check whether database %q exists, error: %w", database, err)
 	}
@@ -415,8 +404,8 @@ func (r *Restore) SwapPITRDatabase(ctx context.Context, database string, suffixT
 	return pitrDatabaseName, pitrOldDatabase, nil
 }
 
-func (r *Restore) databaseExists(ctx context.Context, database string) (bool, error) {
-	db, err := r.driver.GetDbConnection(ctx, "")
+func (driver *Driver) databaseExists(ctx context.Context, database string) (bool, error) {
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return false, err
 	}
@@ -472,7 +461,7 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 }
 
 // Download binlog files on server.
-func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
+func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		log.Debug("No binlog file found on server to download")
 		return nil
@@ -485,9 +474,9 @@ func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLo
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
-		path := filepath.Join(r.binlogDir, fileOnServer.Name)
+		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !existLocal {
-			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to download binlog file %q, error: %w", path, err)
 			}
@@ -500,7 +489,7 @@ func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLo
 				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to remove inconsistent local binlog file %q, error: %w", path, err)
 			}
-			if err := r.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
+			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
 				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
 				return fmt.Errorf("failed to re-download inconsistent local binlog file %q, error: %w", path, err)
 			}
@@ -510,9 +499,9 @@ func (r *Restore) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLo
 }
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
-func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 	// Read binlog files list on server.
-	binlogFilesOnServerSorted, err := r.GetSortedBinlogFilesMetaOnServer(ctx)
+	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
 		return err
 	}
@@ -523,38 +512,38 @@ func (r *Restore) FetchAllBinlogFiles(ctx context.Context) error {
 	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
 	if err != nil {
 		return fmt.Errorf("failed to read local binlog files, error: %w", err)
 	}
 
-	return r.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
+	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
 // If isLast is true, it means that this is the last binlog file containing the targetTs event.
 // It may keep growing as there are ongoing writes to the database. So we just need to check that
 // the file size is larger or equal to the binlog file size we queried from the MySQL server earlier.
-func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
+func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownload BinlogFile, isLast bool) error {
 	// for mysqlbinlog binary, --result-file must end with '/'
-	resultFileDir := strings.TrimRight(r.binlogDir, "/") + "/"
+	resultFileDir := strings.TrimRight(driver.binlogDir, "/") + "/"
 	// TODO(zp): support ssl?
 	args := []string{
 		binlogFileToDownload.Name,
 		"--read-from-remote-server",
 		"--raw",
-		"--host", r.connCfg.Host,
-		"--user", r.connCfg.Username,
+		"--host", driver.connCfg.Host,
+		"--user", driver.connCfg.Username,
 		"--result-file", resultFileDir,
 	}
-	if r.connCfg.Port != "" {
-		args = append(args, "--port", r.connCfg.Port)
+	if driver.connCfg.Port != "" {
+		args = append(args, "--port", driver.connCfg.Port)
 	}
-	if r.connCfg.Password != "" {
-		args = append(args, fmt.Sprintf("--password=%s", r.connCfg.Password))
+	if driver.connCfg.Password != "" {
+		args = append(args, fmt.Sprintf("--password=%s", driver.connCfg.Password))
 	}
 
-	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
@@ -601,8 +590,8 @@ func (r *Restore) downloadBinlogFile(ctx context.Context, binlogFileToDownload B
 }
 
 // GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
-func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
-	db, err := r.driver.GetDbConnection(ctx, "")
+func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -632,8 +621,8 @@ func (r *Restore) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]Binlo
 }
 
 // getBinlogCoordinateByTs converts a timestamp to binlog coordinate using local binlog files.
-func (r *Restore) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
-	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(r.binlogDir)
+func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (*binlogCoordinate, error) {
+	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sorted local binlog files, error: %w", err)
 	}
@@ -646,7 +635,7 @@ func (r *Restore) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 
 	var binlogFileTarget *BinlogFile
 	for i, file := range binlogFilesLocalSorted {
-		eventTs, err := r.parseLocalBinlogFirstEventTs(ctx, file.Name)
+		eventTs, err := driver.parseLocalBinlogFirstEventTs(ctx, file.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
@@ -672,7 +661,7 @@ func (r *Restore) getBinlogCoordinateByTs(ctx context.Context, targetTs int64) (
 		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
 	}
 
-	eventPos, err := r.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
+	eventPos, err := driver.getBinlogEventPositionAtOrAfterTs(ctx, *binlogFileTarget, targetTs)
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
 			// All the binlog events in this binlog file have ts < targetTs.
@@ -729,14 +718,14 @@ func parseBinlogEventPosInLine(line string) (pos int64, found bool, err error) {
 }
 
 // Parse the first binlog eventTs of a local binlog file.
-func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName string) (int64, error) {
+func (driver *Driver) parseLocalBinlogFirstEventTs(ctx context.Context, fileName string) (int64, error) {
 	args := []string{
 		// Local binlog file path.
-		path.Join(r.binlogDir, fileName),
+		path.Join(driver.binlogDir, fileName),
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 	}
-	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -770,16 +759,16 @@ func (r *Restore) parseLocalBinlogFirstEventTs(ctx context.Context, fileName str
 
 // Use command like mysqlbinlog --start-datetime=targetTs binlog.000001 to parse the first binlog event position with timestamp equal or after targetTs.
 // TODO(dragonly): Add integration test.
-func (r *Restore) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (int64, error) {
+func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, binlogFile BinlogFile, targetTs int64) (int64, error) {
 	args := []string{
 		// Local binlog file path.
-		path.Join(r.binlogDir, binlogFile.Name),
+		path.Join(driver.binlogDir, binlogFile.Name),
 		// Tell mysqlbinlog to suppress the BINLOG statements for row events, which reduces the unneeded output.
 		"--base64-output=DECODE-ROWS",
 		// Instruct mysqlbinlog to start output only after encountering the first binlog event with timestamp equal or after targetTs.
 		"--start-datetime", formatDateTime(targetTs),
 	}
-	cmd := exec.CommandContext(ctx, r.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+	cmd := exec.CommandContext(ctx, driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
 	cmd.Stderr = os.Stderr
 	pr, err := cmd.StdoutPipe()
 	if err != nil {
@@ -852,8 +841,8 @@ func checkVersionForPITR(version string) error {
 }
 
 // CheckServerVersionForPITR checks that the MySQL server version meets the requirements of PITR.
-func (r *Restore) CheckServerVersionForPITR(ctx context.Context) error {
-	value, err := r.getServerVariable(ctx, "version")
+func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
+	value, err := driver.getServerVariable(ctx, "version")
 	if err != nil {
 		return err
 	}
@@ -864,8 +853,8 @@ func (r *Restore) CheckServerVersionForPITR(ctx context.Context) error {
 }
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
-func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db, err := r.driver.GetDbConnection(ctx, "")
+func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -892,8 +881,8 @@ func (r *Restore) CheckEngineInnoDB(ctx context.Context, database string) error 
 	return nil
 }
 
-func (r *Restore) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db, err := r.driver.GetDbConnection(ctx, "")
+func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return "", err
 	}
@@ -916,8 +905,8 @@ func (r *Restore) getServerVariable(ctx context.Context, varName string) (string
 }
 
 // CheckBinlogEnabled checks whether binlog is enabled for the current instance.
-func (r *Restore) CheckBinlogEnabled(ctx context.Context) error {
-	value, err := r.getServerVariable(ctx, "log_bin")
+func (driver *Driver) CheckBinlogEnabled(ctx context.Context) error {
+	value, err := driver.getServerVariable(ctx, "log_bin")
 	if err != nil {
 		return err
 	}
@@ -928,8 +917,8 @@ func (r *Restore) CheckBinlogEnabled(ctx context.Context) error {
 }
 
 // CheckBinlogRowFormat checks whether the binlog format is ROW.
-func (r *Restore) CheckBinlogRowFormat(ctx context.Context) error {
-	value, err := r.getServerVariable(ctx, "binlog_format")
+func (driver *Driver) CheckBinlogRowFormat(ctx context.Context) error {
+	value, err := driver.getServerVariable(ctx, "binlog_format")
 	if err != nil {
 		return err
 	}
