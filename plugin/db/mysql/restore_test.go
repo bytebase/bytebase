@@ -39,12 +39,6 @@ func TestGetSafeName(t *testing.T) {
 		a.Equal(test.expected, safeName)
 	}
 }
-func TestXxx(t *testing.T) {
-	a := require.New(t)
-	t1, err := time.ParseInLocation("060102 15:04:05", "220421 9:09:09", time.Local)
-	a.NoError(err)
-	t.Log(t1)
-}
 
 func TestGetPITRDatabaseName(t *testing.T) {
 	a := require.New(t)
