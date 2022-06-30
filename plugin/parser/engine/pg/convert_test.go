@@ -65,7 +65,7 @@ func TestPGAddColumnStmt(t *testing.T) {
 					Table: &ast.TableDef{
 						Name: "techbook",
 					},
-					AlterAction: []ast.Node{
+					AlterItemList: []ast.Node{
 						&ast.AddColumnListStmt{
 							Table: &ast.TableDef{
 								Name: "techbook",
@@ -207,7 +207,7 @@ func equalAlterTableStmt(expected []ast.Node, actual []ast.Node) bool {
 		}
 
 		equalTableDef := equalTableDef(exp.Table, act.Table)
-		equalAlterAction := equalAlterAction(exp.AlterAction, act.AlterAction)
+		equalAlterAction := equalAlterAction(exp.AlterItemList, act.AlterItemList)
 
 		if !equalTableDef || !equalAlterAction {
 			return false

@@ -37,7 +37,7 @@ func Walk(v Visitor, node Node) {
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
-		for _, cmd := range n.AlterAction {
+		for _, cmd := range n.AlterItemList {
 			Walk(v, cmd)
 		}
 	case *ColumnDef:

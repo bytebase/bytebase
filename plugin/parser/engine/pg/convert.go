@@ -12,8 +12,8 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 	switch in := node.Node.(type) {
 	case *pgquery.Node_AlterTableStmt:
 		alterTable := &ast.AlterTableStmt{
-			Table:       convertRangeVarToTableName(in.AlterTableStmt.Relation),
-			AlterAction: []ast.Node{},
+			Table:         convertRangeVarToTableName(in.AlterTableStmt.Relation),
+			AlterItemList: []ast.Node{},
 		}
 		for _, cmd := range in.AlterTableStmt.Cmds {
 			if cmdNode, ok := cmd.Node.(*pgquery.Node_AlterTableCmd); ok {
@@ -35,7 +35,7 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 						},
 					}
 
-					alterTable.AlterAction = append(alterTable.AlterAction, addColumn)
+					alterTable.AlterItemList = append(alterTable.AlterItemList, addColumn)
 				case pgquery.AlterTableType_AT_AddIndex:
 					// TODO.
 					// Trick linter to use switch...case...
