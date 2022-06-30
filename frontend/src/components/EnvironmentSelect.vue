@@ -70,15 +70,12 @@ export default defineComponent({
       if (list.length > 0) {
         if (
           !props.selectedId ||
-          !environmentList.value.find(
-            (item: Environment) => item.id == props.selectedId
-          )
+          !list.find((item: Environment) => item.id == props.selectedId)
         ) {
           // auto select the first NORMAL environment
           const defaultEnvironment = list.find(
             (env) => env.rowStatus === "NORMAL"
           );
-          console.log("auto select", defaultEnvironment);
           state.selectedEnvironment = defaultEnvironment;
           emit("select-environment-id", defaultEnvironment?.id);
         }
