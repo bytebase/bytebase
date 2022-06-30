@@ -26,7 +26,6 @@ const (
 type Instance struct {
 	mysqlBinPath       string
 	mysqlbinlogBinPath string
-	libraryDir         string
 }
 
 // GetPath returns the binary path specified by `binName`.
@@ -109,7 +108,6 @@ func Install(resourceDir string) (*Instance, error) {
 	return &Instance{
 		mysqlBinPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
 		mysqlbinlogBinPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
-		libraryDir:         filepath.Join(mysqlutilDir, "lib", "private"),
 	}, nil
 }
 
