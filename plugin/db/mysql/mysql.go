@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
 )
@@ -28,9 +29,11 @@ func init() {
 // Driver is the MySQL driver.
 type Driver struct {
 	connectionCtx db.ConnectionContext
+	connCfg       db.ConnectionConfig
 	dbType        db.Type
-
-	db *sql.DB
+	mysqlutil     mysqlutil.Instance
+	binlogDir     string
+	db            *sql.DB
 }
 
 func newDriver(config db.DriverConfig) db.Driver {
@@ -38,15 +41,15 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
-	if strings.HasPrefix(config.Host, "/") {
+	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
 	}
 
 	params := []string{"multiStatements=true"}
 
-	port := config.Port
+	port := connCfg.Port
 	if port == "" {
 		port = "3306"
 		if dbType == db.TiDB {
@@ -54,16 +57,16 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 		}
 	}
 
-	tlsConfig, err := config.TLSConfig.GetSslConfig()
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
 
 	if err != nil {
 		return nil, fmt.Errorf("sql: tls config error: %v", err)
 	}
 
-	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", config.Username, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
-	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", config.Username, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
-	if config.Password != "" {
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", config.Username, config.Password, protocol, config.Host, port, config.Database, strings.Join(params, "&"))
+	loggedDSN := fmt.Sprintf("%s:<<redacted password>>@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	dsn := fmt.Sprintf("%s@%s(%s:%s)/%s?%s", connCfg.Username, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
+	if connCfg.Password != "" {
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.Username, connCfg.Password, protocol, connCfg.Host, port, connCfg.Database, strings.Join(params, "&"))
 	}
 	tlsKey := "db.mysql.tls"
 	if tlsConfig != nil {
@@ -86,6 +89,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	driver.dbType = dbType
 	driver.db = db
 	driver.connectionCtx = connCtx
+	driver.connCfg = connCfg
 
 	return driver, nil
 }
