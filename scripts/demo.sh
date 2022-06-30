@@ -23,7 +23,7 @@ if [ $1 ]; then
     fi
 fi
 
-function seedDemoData() {
+seedDemoData() {
     echo 'Seeding data for online demo'
 
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
@@ -42,7 +42,7 @@ function seedDemoData() {
     sleep 20
 }
 
-function startReadonly() {
+startReadonly() {
     echo "Starting Bytebase in readonly and demo mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
 
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --readonly --demo --data /var/opt/bytebase
