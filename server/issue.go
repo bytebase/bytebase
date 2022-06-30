@@ -799,6 +799,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		return create, nil
 
 	case api.IssueDatabaseSchemaUpdateGhost:
+		if !s.feature(api.FeatureGhost) {
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureGhost.AccessErrorMessage())
+		}
 		c := api.UpdateSchemaGhostContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 			return nil, err
