@@ -273,7 +273,6 @@
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
   },
   "intro": {
-    "content": "Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流 (pipeline)，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发工作流。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。",
     "doc": "文档",
     "issue": "工单",
     "quickstart": "快速入门"
