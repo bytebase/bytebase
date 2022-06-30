@@ -52,7 +52,7 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     *mysqlutil.Instance
+	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -110,7 +110,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = mysqlutilIns
+	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
 	pgDataDir := common.GetPostgresDataDir(prof.DataDir)

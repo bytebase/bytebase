@@ -167,11 +167,10 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -179,7 +178,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		_, _, err = mysqlDriver.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
@@ -211,8 +210,6 @@ func TestPITR(t *testing.T) {
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
 		defer driver.Close(ctx)
-
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
 
 		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -247,14 +244,14 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		_, _, err = mysqlDriver.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 	})
 
@@ -277,7 +274,6 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
 		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s\n", buf.String())
@@ -300,10 +296,10 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := pluginmysql.NewRestore(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -311,7 +307,7 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		_, _, err = mysqlDriver.SwapPITRDatabase(ctx, database, suffixTs)
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
