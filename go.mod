@@ -10,8 +10,6 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/github/gh-ost v1.1.4
-	github.com/go-openapi/spec v0.20.6 // indirect
-	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/google/go-cmp v0.5.6
@@ -22,7 +20,6 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.7.2
-	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/pingcap/tidb v1.1.0-beta.0.20211209055157-9f744cdf8266
@@ -35,15 +32,14 @@ require (
 	github.com/spf13/cobra v1.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.3.3
-	github.com/swaggo/swag v1.8.3
+	github.com/swaggo/swag v1.8.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.9.1
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
-	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
-	golang.org/x/tools v0.1.11 // indirect
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 )
 
 // copied from pingcap/tidb
