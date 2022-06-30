@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/auxten/postgresql-parser/pkg/sql/parser"
-	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
-	"github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
 var (
@@ -43,14 +41,8 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 		format: format,
 	}
 
-	walker := &walk.AstWalker{
-		Fn: checker.check,
-	}
-
 	for _, stmt := range stmts {
-		if _, err := walker.Walk(parser.Statements{stmt}, nil); err != nil {
-			return nil, err
-		}
+		ast.Walk(checker, stmt)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -71,25 +63,17 @@ type namingTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-func (checker *namingTableConventionChecker) check(ctx interface{}, node interface{}) (stop bool) {
+// Visit implements the ast.Visitor interface.
+func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 	var tableNames []string
 
 	switch n := node.(type) {
 	// CREATE TABLE
-	case *tree.CreateTable:
-		tableNames = append(tableNames, n.Table.Table())
-	// ALTER TABLE
-	case *tree.AlterTable:
-		for _, cmd := range n.Cmds {
-			if c, ok := cmd.(*tree.AlterTableRenameTable); ok {
-				tableNames = append(tableNames, c.NewName.Table())
-			}
-		}
-	// RENAME TABLE
-	case *tree.RenameTable:
-		if !n.IsSequence && !n.IsView {
-			tableNames = append(tableNames, string(n.NewName.ToTableName().TableName))
-		}
+	case *ast.CreateTableStmt:
+		tableNames = append(tableNames, n.Name.Name)
+	// ALTER TABLE RENAME TABLE
+	case *ast.RenameTableStmt:
+		tableNames = append(tableNames, n.NewName)
 	}
 
 	for _, tableName := range tableNames {
@@ -103,5 +87,5 @@ func (checker *namingTableConventionChecker) check(ctx interface{}, node interfa
 		}
 	}
 
-	return false
+	return checker
 }

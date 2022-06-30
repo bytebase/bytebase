@@ -35,6 +35,9 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/advisor/mysql"
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
+
+	// Register postgres parser driver
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 // -----------------------------------Global constant BEGIN----------------------------------------
