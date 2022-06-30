@@ -205,8 +205,7 @@ export type TaskCheckType =
   | "bb.task-check.database.connect"
   | "bb.task-check.instance.migration-schema"
   | "bb.task-check.general.earliest-allowed-time"
-  | "bb.task-check.database.schema.update.ghost"
-  | "bb.task-check.database.schema.update.ghost.cutover";
+  | "bb.task-check.database.ghost.sync";
 
 export type TaskCheckDatabaseStatementAdvisePayload = {
   statement: string;

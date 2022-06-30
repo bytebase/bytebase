@@ -142,7 +142,8 @@ export default defineComponent({
       if (!props.allowRunTask) return false;
       return (
         (props.task.type == "bb.task.database.schema.update" ||
-          props.task.type == "bb.task.database.data.update") &&
+          props.task.type == "bb.task.database.data.update" ||
+          props.task.type === "bb.task.database.schema.update.ghost.sync") &&
         (props.task.status == "PENDING" ||
           props.task.status == "PENDING_APPROVAL" ||
           props.task.status == "RUNNING" ||
