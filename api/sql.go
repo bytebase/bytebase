@@ -50,14 +50,6 @@ type SQLResultSet struct {
 	AdviceList []advisor.Advice `jsonapi:"attr,adviceList"`
 }
 
-// SQLCheckResult is the API message for SQL check.
-type SQLCheckResult struct {
-	// Result is the SQL check result.
-	Result string `jsonapi:"attr,result"`
-	// A list of SQL check advice.
-	AdviceList []advisor.Advice `jsonapi:"attr,adviceList"`
-}
-
 // SQLService is the service for SQL.
 type SQLService interface {
 	Ping(ctx context.Context, config *ConnectionInfo) (*SQLResultSet, error)
