@@ -135,8 +135,6 @@ func getTestPort(testName string) int {
 		"TestFetchBinlogFiles",
 
 		"TestSchemaSystem",
-
-		"TestReinstallOnLinuxAmd64",
 	}
 	port := 1234
 	for _, name := range tests {
