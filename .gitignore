@@ -35,3 +35,4 @@ bytebase-build
 .DS_Store
 
 dist/
+docs/openapi/swagger.json
