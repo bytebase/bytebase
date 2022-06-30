@@ -197,7 +197,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		issue_id,
 		payload
 	)
-	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, 'PENDING', $8, $9, $10, $11, $12, 0, $13, $14)
+	VALUES ($1, EXTRACT(epoch from NOW()), $2, EXTRACT(epoch from NOW()), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, $14, $15)
 	RETURNING id
 	`
 	var insertedID int64
@@ -209,6 +209,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		sequence,
 		m.Source,
 		m.Type,
+		db.Pending,
 		storedVersion,
 		m.Description,
 		statement,
@@ -228,12 +229,12 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 	UPDATE
 		migration_history
 	SET
-		status = 'DONE',
-		execution_duration_ns = $1,
-		"schema" = $2
-	WHERE id = $3
+		status = $1,
+		execution_duration_ns = $2,
+		"schema" = $3
+	WHERE id = $4
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -243,11 +244,11 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 	UPDATE
 		migration_history
 	SET
-		status = 'FAILED',
-		execution_duration_ns = $1
-	WHERE id = $2
+		status = $1,
+		execution_duration_ns = $2
+	WHERE id = $3
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
