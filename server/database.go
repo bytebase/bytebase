@@ -357,7 +357,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			columnList, err := s.store.FindColumn(ctx, columnFind)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
 			table.ColumnList = columnList
 
@@ -414,7 +414,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		columnList, err := s.store.FindColumn(ctx, columnFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
 		table.ColumnList = columnList
 

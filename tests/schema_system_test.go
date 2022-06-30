@@ -353,7 +353,7 @@ func TestSchemaSystem(t *testing.T) {
 	a.Equal(noSchemaReviewPolicy, result)
 
 	// delete the schema review policy
-	err = ctl.deletePoliy(api.PolicyDelete{
+	err = ctl.deletePolicy(api.PolicyDelete{
 		EnvironmentID: prodEnvironment.ID,
 		Type:          api.PolicyTypeSchemaReview,
 	})
