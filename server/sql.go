@@ -27,6 +27,7 @@ import (
 // catalogService is the catalog service for sql check api.
 type catalogService struct{}
 
+// FindIndex is the API message for find index in catalog.
 // We will not connect to the user's database in the early version of sql check api
 func (c *catalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
 	return nil, nil
