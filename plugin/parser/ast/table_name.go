@@ -4,7 +4,7 @@ package ast
 type TableDef struct {
 	node
 
-	// Database is them name of database.
+	// Database is the name of database.
 	// It's also called "catalog" in PostgreSQL.
 	Database string
 	// Schema is a PostgreSQL specific field.
