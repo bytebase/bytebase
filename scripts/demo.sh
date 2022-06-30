@@ -12,9 +12,9 @@
 ONLINE_DEMO_HOST='https://demo.bytebase.com'
 ONLINE_DEMO_PORT='443'
 if [ $1 ]; then
-    PROTOCAL=`echo $1 | awk -F ':' '{ print $1 }'`
-    URI=`echo $1 | awk -F '[/:]' '{ print $4; }'`
-    PORT=`echo $1 | awk -F '[/:]' '{ print $5; }'`
+    PROTOCAL=$(echo $1 | awk -F ':' '{ print $1 }')
+    URI=$(echo $1 | awk -F '[/:]' '{ print $4; }')
+    PORT=$(echo $1 | awk -F '[/:]' '{ print $5; }')
 
     ONLINE_DEMO_HOST=$PROTOCAL://$URI
 
@@ -23,13 +23,12 @@ if [ $1 ]; then
     fi
 fi
 
-function seedDemoData(){
+function seedDemoData() {
     echo 'Seeding data for online demo'
 
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
 
-    until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]
-    do
+    until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]; do
         echo "waiting..."
         sleep 1
     done
@@ -43,10 +42,11 @@ function seedDemoData(){
     sleep 20
 }
 
-function startReadonly(){
+function startReadonly() {
     echo "Starting Bytebase in readonly and demo mode at ${ONLINE_DEMO_HOST}:${ONLINE_DEMO_PORT}..."
 
     bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --readonly --demo --data /var/opt/bytebase
 }
 
-seedDemoData; startReadonly
+seedDemoData
+startReadonly
