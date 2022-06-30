@@ -81,27 +81,56 @@ func Install(resourceDir string) (*Instance, error) {
 			return nil, fmt.Errorf("failed to check binary directory path %q, error: %w", mysqlutilDir, err)
 		}
 		// Install if not exist yet
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-		if err := os.RemoveAll(tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
-		}
-
-		f, err := resources.Open(tarName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
-		}
-		defer f.Close()
-
-		if err := utils.ExtractTarGz(f, tmpDir); err != nil {
-			return nil, fmt.Errorf("failed to extract tar.gz file, error: %w", err)
-		}
-
-		if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
-			return nil, fmt.Errorf("failed to rename mysqlutil binaries directory from %q to %q, error: %w", tmpDir, mysqlutilDir, err)
+		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+			return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
 		}
 	}
+
+	// TODO(zp): remove this block in the next few months
+	// We change Dockerfile's base image from alpine to debian slim in v1.2.1,
+	// and add libncurses.so.5 and libtinfo.so.5 to make mysqlbinlog run successfully.
+	// So we need to reinstall mysqlutil if the users upgrade from an older version that missing these shared libraries.
+	libncursesPath := path.Join(mysqlutilDir, "lib", "private", "libncurses.so.5")
+	if _, err := os.Stat(libncursesPath); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to check libncurses library path %q, error: %w", libncursesPath, err)
+		}
+		// Remove mysqlutil of old version and reinstall it
+		if err := os.RemoveAll(mysqlutilDir); err != nil {
+			return nil, fmt.Errorf("failed to remove the old version mysqlutil binary directory %q, error: %w", mysqlutilDir, err)
+		}
+		// Install the current version
+		if err := install(resourceDir, mysqlutilDir, tarName, version); err != nil {
+			return nil, fmt.Errorf("cannot install mysqlutil, error: %w", err)
+		}
+	}
+
 	return &Instance{
 		mysqlBinPath:       filepath.Join(mysqlutilDir, "bin", "mysql"),
 		mysqlbinlogBinPath: filepath.Join(mysqlutilDir, "bin", "mysqlbinlog"),
 	}, nil
+}
+
+// install installs mysqlutil in resourceDir
+func install(resourceDir, mysqlutilDir, tarName, version string) error {
+	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
+	if err := os.RemoveAll(tmpDir); err != nil {
+		return fmt.Errorf("failed to remove mysqlutil binaries temp directory %q, error: %w", tmpDir, err)
+	}
+
+	f, err := resources.Open(tarName)
+	if err != nil {
+		return fmt.Errorf("failed to find %q in embedded resources, error: %v", tarName, err)
+	}
+	defer f.Close()
+
+	if err := utils.ExtractTarGz(f, tmpDir); err != nil {
+		return fmt.Errorf("failed to extract tar.gz file, error: %w", err)
+	}
+
+	if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
+		return fmt.Errorf("failed to rename mysqlutil binaries directory from %q to %q, error: %w", tmpDir, mysqlutilDir, err)
+	}
+
+	return nil
 }
