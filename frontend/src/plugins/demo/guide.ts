@@ -8,6 +8,24 @@ import {
 import * as storage from "./storage";
 import { GuideData, GuidePosition, StepData } from "./types";
 
+// validateStepData will check if the step data is valid
+export const validateStepData = (stepData: StepData) => {
+  // type is required and must be one of ["click", "change"]
+  if (stepData.type !== "click" && stepData.type !== "change") {
+    return false;
+  }
+  // title is required
+  if (typeof stepData.title !== "string") {
+    return false;
+  }
+  // description is required
+  if (typeof stepData.description !== "string") {
+    return false;
+  }
+
+  return true;
+};
+
 export const showGuideDialog = async (
   guideData: GuideData,
   stepIndex: number
