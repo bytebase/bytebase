@@ -3,7 +3,7 @@ package pg
 import (
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	pg_query "github.com/pganalyze/pg_query_go/v2"
+	pgquery "github.com/pganalyze/pg_query_go/v2"
 )
 
 var (
@@ -20,7 +20,7 @@ type PostgreSQLParser struct {
 
 // Parse implements the parser.Parser interface.
 func (p *PostgreSQLParser) Parse(ctx parser.Context, statement string) ([]ast.Node, error) {
-	res, err := pg_query.Parse(statement)
+	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (p *PostgreSQLParser) Parse(ctx parser.Context, statement string) ([]ast.No
 	var nodeList []ast.Node
 
 	for _, stmt := range res.Stmts {
-		node, err := translate(stmt.Stmt)
+		node, err := convert(stmt.Stmt)
 		if err != nil {
 			return nil, err
 		}

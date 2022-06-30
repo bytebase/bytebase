@@ -8,7 +8,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/casbin/casbin/v2 v2.40.6
-	github.com/cockroachdb/apd v1.1.1-0.20181017181144-bced77f817b4 // indirect
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0

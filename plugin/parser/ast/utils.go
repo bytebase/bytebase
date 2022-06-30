@@ -12,11 +12,11 @@ func Walk(v Visitor, node Node) {
 	}
 
 	switch n := node.(type) {
-	case *AddColumnsStmt:
+	case *AddColumnListStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
-		for _, col := range n.Columns {
+		for _, col := range n.ColumnList {
 			Walk(v, col)
 		}
 	case *ChangeColumnStmt:
@@ -37,7 +37,7 @@ func Walk(v Visitor, node Node) {
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
-		for _, cmd := range n.Cmds {
+		for _, cmd := range n.AlterAction {
 			Walk(v, cmd)
 		}
 	case *ColumnDef:
@@ -45,7 +45,7 @@ func Walk(v Visitor, node Node) {
 		if n.Name != nil {
 			Walk(v, n.Name)
 		}
-		for _, col := range n.Cols {
+		for _, col := range n.ColumnList {
 			Walk(v, col)
 		}
 	case *RenameTableStmt:

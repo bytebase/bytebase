@@ -72,13 +72,13 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		tableName = n.Name.Name
-		for _, col := range n.Cols {
+		for _, col := range n.ColumnList {
 			columnList = append(columnList, col.ColumnName)
 		}
 	// ALTER TABLE ADD COLUMN
-	case *ast.AddColumnsStmt:
+	case *ast.AddColumnListStmt:
 		tableName = n.Table.Name
-		for _, col := range n.Columns {
+		for _, col := range n.ColumnList {
 			columnList = append(columnList, col.ColumnName)
 		}
 	// ALTER TABLE RENAME COLUMN

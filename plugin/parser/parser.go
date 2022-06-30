@@ -37,11 +37,11 @@ var (
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
 func Register(engineType EngineType, p Parser) {
-	parserMu.Lock()
-	defer parserMu.Unlock()
 	if p == nil {
 		panic("parser: Register parser is nil")
 	}
+	parserMu.Lock()
+	defer parserMu.Unlock()
 	if _, dup := parsers[engineType]; dup {
 		panic("parser: Register called twice for parser " + engineType)
 	}

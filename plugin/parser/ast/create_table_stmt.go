@@ -6,5 +6,5 @@ type CreateTableStmt struct {
 
 	IfNotExists bool
 	Name        *TableName
-	Cols        []*ColumnDef
+	ColumnList  []*ColumnDef
 }
