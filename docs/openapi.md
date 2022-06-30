@@ -16,6 +16,8 @@ Bytebase OpenAPI implements the OpenAPI specification with Swagger.
 
 > Note: you need to comment for a specific controller function, otherwise the swagger cannot extract the comment as docs. For example:
 
+* ❌ Incorrect
+
 ```go
 // Swagger doc (cannot work)
 // @Summary  Health check for service
@@ -25,7 +27,11 @@ Bytebase OpenAPI implements the OpenAPI specification with Swagger.
 e.GET("/healthz", func(c echo.Context) error {
     return c.String(http.StatusOK, "OK!\n")
 })
+```
 
+* ✅ Correct
+
+```go
 // Swagger doc (this can work)
 // @Summary  Health check for service
 // @Accept  */*
@@ -49,19 +55,4 @@ swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
 ```
 
 This should generate new docs under `./docs/openapi` folder based on your comments.
-
-### Initial the Swagger
-
-Update code in `./server/server.go`:
-
-```go
-import (
-    echoSwagger "github.com/swaggo/echo-swagger" // The Swagger middleware for echo
-    _ "github.com/bytebase/bytebase/docs/openapi" // Generate by Swagger
-)
-
-// Add Swagger Router
-e.GET("/swagger/*", echoSwagger.WrapHandler)
-```
-
 Then start the service, you can visit the Swagger dashboard on `/swagger/index.html`

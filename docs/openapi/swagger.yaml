@@ -3,23 +3,14 @@ definitions:
   advisor.Advice:
     properties:
       code:
+        description: Code is the SQL check error code.
         type: integer
       content:
         type: string
       status:
+        description: Status is the SQL check result. Could be "SUCCESS", "WARN", "ERROR"
         type: string
       title:
-        type: string
-    type: object
-  api.SQLCheckResult:
-    properties:
-      adviceList:
-        description: A list of SQL check advice.
-        items:
-          $ref: '#/definitions/advisor.Advice'
-        type: array
-      result:
-        description: Result is the SQL check result.
         type: string
     type: object
   echo.HTTPError:
@@ -44,11 +35,12 @@ paths:
     get:
       consumes:
       - '*/*'
-      description: Parse and check the SQL statement by your schema review policy.
+      description: Parse and check the SQL statement according to the schema review
+        policy.
       parameters:
       - description: The environment name
         in: query
-        name: env
+        name: environment
         required: true
         type: string
       - description: The SQL statement
@@ -62,18 +54,8 @@ paths:
         - PostgreSQL
         - TiDB
         in: query
-        name: database
+        name: databaseType
         required: true
-        type: string
-      - default: utf8mb4
-        description: The database charset. Default 'utf8mb4'
-        in: query
-        name: charset
-        type: string
-      - default: utf8mb4_general_ci
-        description: The database collation. Default 'utf8mb4_general_ci'
-        in: query
-        name: collation
         type: string
       produces:
       - application/json
@@ -81,7 +63,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.SQLCheckResult'
+            items:
+              $ref: '#/definitions/advisor.Advice'
+            type: array
         "400":
           description: Bad Request
           schema:

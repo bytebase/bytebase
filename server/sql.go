@@ -313,21 +313,19 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 
 // sqlCheckController godoc
 // @Summary  Check the SQL statement.
-// @Description  Parse and check the SQL statement by your schema review policy.
+// @Description  Parse and check the SQL statement according to the schema review policy.
 // @Accept  */*
 // @Tags  Schema Review
 // @Produce  json
-// @Param  env        query  string  true   "The environment name"
-// @Param  statement  query  string  true   "The SQL statement"
-// @Param  database   query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
-// @Param  charset    query  string  false  "The database charset. Default 'utf8mb4'"  default(utf8mb4)
-// @Param  collation  query  string  false  "The database collation. Default 'utf8mb4_general_ci'"  default(utf8mb4_general_ci)
-// @Success  200  {object} api.SQLCheckResult
+// @Param  environment   query  string  true   "The environment name"
+// @Param  statement     query  string  true   "The SQL statement"
+// @Param  databaseType  query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
+// @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
-// @Router  /sql/advise [get]
+// @Router  /sql/advise  [get]
 func (s *Server) sqlCheckController(c echo.Context) error {
-	envName := c.QueryParams().Get("env")
+	envName := c.QueryParams().Get("environment")
 	if envName == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
 	}
@@ -337,7 +335,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
 	}
 
-	dbType := c.QueryParams().Get("database")
+	dbType := c.QueryParams().Get("databaseType")
 	if dbType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 	}
@@ -363,10 +361,10 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
 	}
 	if len(envList) != 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid environment %s", envName))
 	}
 
-	adviceLevel, adviceList, err := s.sqlCheck(
+	_, adviceList, err := s.sqlCheck(
 		ctx,
 		advisorDBType,
 		charset,
@@ -376,15 +374,14 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		&catalogService{},
 	)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find schema review policy in environment %s", envName)).SetInternal(err)
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+		}
 	}
 
-	SQLCheckResult := &api.SQLCheckResult{
-		Result:     adviceLevel.String(),
-		AdviceList: adviceList,
-	}
-
-	return c.JSON(http.StatusOK, SQLCheckResult)
+	return c.JSON(http.StatusOK, adviceList)
 }
 
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {

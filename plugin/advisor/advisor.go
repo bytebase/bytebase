@@ -113,7 +113,9 @@ const (
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status `json:"status"`
+	// Status is the SQL check result. Could be "SUCCESS", "WARN", "ERROR"
+	Status Status `json:"status"`
+	// Code is the SQL check error code.
 	Code    Code   `json:"code"`
 	Title   string `json:"title"`
 	Content string `json:"content"`

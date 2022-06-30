@@ -27,7 +27,7 @@ const docTemplate = `{
     "paths": {
         "/sql/advise": {
             "get": {
-                "description": "Parse and check the SQL statement by your schema review policy.",
+                "description": "Parse and check the SQL statement according to the schema review policy.",
                 "consumes": [
                     "*/*"
                 ],
@@ -42,7 +42,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "The environment name",
-                        "name": "env",
+                        "name": "environment",
                         "in": "query",
                         "required": true
                     },
@@ -61,30 +61,19 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "description": "The database type",
-                        "name": "database",
+                        "name": "databaseType",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "utf8mb4",
-                        "description": "The database charset. Default 'utf8mb4'",
-                        "name": "charset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "default": "utf8mb4_general_ci",
-                        "description": "The database collation. Default 'utf8mb4_general_ci'",
-                        "name": "collation",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.SQLCheckResult"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/advisor.Advice"
+                            }
                         }
                     },
                     "400": {
@@ -108,31 +97,17 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
+                    "description": "Code is the SQL check error code.",
                     "type": "integer"
                 },
                 "content": {
                     "type": "string"
                 },
                 "status": {
+                    "description": "Status is the SQL check result. Could be \"SUCCESS\", \"WARN\", \"ERROR\"",
                     "type": "string"
                 },
                 "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.SQLCheckResult": {
-            "type": "object",
-            "properties": {
-                "adviceList": {
-                    "description": "A list of SQL check advice.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/advisor.Advice"
-                    }
-                },
-                "result": {
-                    "description": "Result is the SQL check result.",
                     "type": "string"
                 }
             }
