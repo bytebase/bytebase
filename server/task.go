@@ -194,6 +194,23 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
 
+				if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+					_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+						CreatorID:               taskPatched.CreatorID,
+						TaskID:                  task.ID,
+						Type:                    api.TaskCheckGhostSync,
+						SkipIfAlreadyTerminated: false,
+					})
+					if err != nil {
+						// It's OK if we failed to trigger a check, just emit an error log
+						log.Error("Failed to trigger gh-ost dry run after changing the task statement",
+							zap.Int("task_id", task.ID),
+							zap.String("task_name", task.Name),
+							zap.Error(err),
+						)
+					}
+				}
+
 				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
@@ -213,7 +230,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					})
 					if err != nil {
 						// It's OK if we failed to trigger a check, just emit an error log
-						log.Error("Failed to trigger syntax check after changing task statement",
+						log.Error("Failed to trigger syntax check after changing the task statement",
 							zap.Int("task_id", task.ID),
 							zap.String("task_name", task.Name),
 							zap.Error(err),
