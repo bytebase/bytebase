@@ -1336,7 +1336,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 }
 
 // deletePolicy deletes the archived policy.
-func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
