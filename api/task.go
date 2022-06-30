@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-// These are special onboarding tasks for demo purpose when bootstraping the workspace.
+// These are special onboarding tasks for demo purpose when bootstrapping the workspace.
 
 // OnboardingTaskID1 is the ID for onboarding task1.
 const OnboardingTaskID1 = 101
