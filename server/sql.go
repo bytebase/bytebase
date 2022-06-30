@@ -318,10 +318,10 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  env        query  string  true   "The environment name"
 // @Param  statement  query  string  true   "The SQL statement"
-// @Param  type       query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  database   query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  charset    query  string  false  "The database charset. Default 'utf8mb4'"  default(utf8mb4)
 // @Param  collation  query  string  false  "The database collation. Default 'utf8mb4_general_ci'"  default(utf8mb4_general_ci)
-// @Success  200  {object}  api.SQLCheckResult
+// @Success  200  {object} api.SQLCheckResult
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/advise [get]
@@ -336,7 +336,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
 	}
 
-	dbType := c.QueryParams().Get("type")
+	dbType := c.QueryParams().Get("database")
 	if dbType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
 	}
@@ -383,13 +383,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		AdviceList: adviceList,
 	}
 
-	// TODO: the response type?
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-	if err := jsonapi.MarshalPayload(c.Response().Writer, SQLCheckResult); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
-	}
-
-	return nil
+	return c.JSON(http.StatusOK, SQLCheckResult)
 }
 
 func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) (rs *api.SQLResultSet) {

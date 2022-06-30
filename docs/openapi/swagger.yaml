@@ -62,7 +62,7 @@ paths:
         - PostgreSQL
         - TiDB
         in: query
-        name: type
+        name: database
         required: true
         type: string
       - default: utf8mb4

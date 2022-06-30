@@ -61,7 +61,7 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "description": "The database type",
-                        "name": "type",
+                        "name": "database",
                         "in": "query",
                         "required": true
                     },
