@@ -226,6 +226,7 @@ export default defineComponent({
 
 // Defines the order of TaskCheckType
 const TaskCheckTypeOrderList: TaskCheckType[] = [
+  "bb.task-check.database.ghost.sync",
   "bb.task-check.general.earliest-allowed-time",
   "bb.task-check.database.statement.compatibility",
   "bb.task-check.database.statement.syntax",
@@ -260,5 +261,6 @@ const TaskCheckTypeNameDict = new Map<TaskCheckType, string>([
     "bb.task-check.general.earliest-allowed-time",
     "task.check-type.earliest-allowed-time",
   ],
+  ["bb.task-check.database.ghost.sync", "task.check-type.ghost-sync"],
 ]);
 </script>
