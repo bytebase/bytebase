@@ -8,7 +8,7 @@ type TableDef struct {
 	// It's also called "catalog" in PostgreSQL.
 	Database string
 	// Schema is the PostgreSQL special field.
-	// See https://www.postgresql.org/docs/14/ddl-schemas.html.
+	// See https://www.postgresql.org/docs/current/ddl-schemas.html.
 	Schema string
 	// Name is the name of the table.
 	Name string
