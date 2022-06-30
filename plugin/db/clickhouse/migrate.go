@@ -180,7 +180,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		sequence,
 		m.Source,
 		m.Type,
-		"PENDING",
+		db.Pending,
 		storedVersion,
 		m.Description,
 		statement,
@@ -203,12 +203,12 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 		ALTER TABLE
 			bytebase.migration_history
 		UPDATE
-			status = 'DONE',
-			execution_duration_ns = $1,
-		` + "`schema` = $2" + `
-		WHERE id = $3
+			status = $1,
+			execution_duration_ns = $2,
+		` + "`schema` = $3" + `
+		WHERE id = $4
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -218,11 +218,11 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 		ALTER TABLE
 			bytebase.migration_history
 		UPDATE
-			status = 'FAILED',
-			execution_duration_ns = $1
-		WHERE id = $2
+			status = $1,
+			execution_duration_ns = $2
+		WHERE id = $3
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 

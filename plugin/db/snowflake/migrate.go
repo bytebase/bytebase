@@ -155,7 +155,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 			issue_id,
 			payload
 		)
-		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`
 	var insertedID int64
 	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
@@ -189,6 +189,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		sequence,
 		m.Source,
 		m.Type,
+		db.Pending,
 		storedVersion,
 		m.Description,
 		statement,
@@ -209,12 +210,12 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 		UPDATE
 			bytebase.public.migration_history
 		SET
-			status = 'DONE',
+			status = ?,
 			execution_duration_ns = ?,
 			schema = ?
 		WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -224,11 +225,11 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 		UPDATE
 			bytebase.public.migration_history
 		SET
-			status = 'FAILED',
+			status = ?,
 			execution_duration_ns = ?
 		WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
