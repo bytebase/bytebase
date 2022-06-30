@@ -46,16 +46,7 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 	ins, err := Install(tmpDir)
 	a.NoError(err)
 
-	t.Run("run mysql client", func(t *testing.T) {
-		_, err := ins.Version(MySQL)
-		a.NoError(err)
-	})
-
-	err = os.Remove(filepath.Join(ins.libraryDir, "libncurses.so.5"))
-	a.NoError(err)
-
-	t.Run("run mysql client after drop libncurses.so.5", func(t *testing.T) {
-		// We don't need to start mysqld, just test whether the mysql client can start normally
+	tryRunMySQLClient := func(a *require.Assertions, expectedRunErr bool) {
 		cmd := exec.Command(ins.GetPath(MySQL), []string{
 			"-U",
 			"root",
@@ -71,14 +62,48 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 		errBytes, err := ioutil.ReadAll(stderr)
 		a.NoError(err)
 
-		a.NotZero(len(errBytes))
+		if expectedRunErr {
+			a.NotZero(len(errBytes))
+		} else {
+			a.Zero(len(errBytes))
+		}
+	}
+
+	t.Run("run mysql client", func(t *testing.T) {
+		a := require.New(t)
+		tryRunMySQLClient(a, false)
+	})
+
+	err = os.Remove(filepath.Join(ins.libraryDir, "libncurses.so.5"))
+	a.NoError(err)
+
+	t.Run("run mysql client after drop libncurses.so.5", func(t *testing.T) {
+		// We don't need to start mysqld, just test whether the mysql client can start normally
+		// cmd := exec.Command(ins.GetPath(MySQL), []string{
+		// 	"-U",
+		// 	"root",
+		// }...)
+
+		// stderr, err := cmd.StderrPipe()
+		// a.NoError(err)
+		// defer stderr.Close()
+
+		// err = cmd.Run()
+		// a.NoError(err)
+
+		// errBytes, err := ioutil.ReadAll(stderr)
+		// a.NoError(err)
+
+		// a.NotZero(len(errBytes))
+		a := require.New(t)
+		tryRunMySQLClient(a, true)
 	})
 
 	ins, err = Install(tmpDir)
 	a.NoError(err)
 
 	t.Run("run mysql client after resinstall", func(t *testing.T) {
-		_, err := ins.Version(MySQL)
-		a.NoError(err)
+		a := require.New(t)
+		tryRunMySQLClient(a, false)
 	})
 }
