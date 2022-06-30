@@ -273,8 +273,6 @@
     "debug": "Debug mode is active, you can disable Debug mode via the top-right profile dropdown."
   },
   "intro": {
-    "content": "Bytebase is for DBAs and Developers to collaborate on database schemas changes. One can construct a single pipeline to propagate the schema change across multiple environments. One can also store the schemas in VCS and trigger a new pipeline upon commit push. Follow the {quickstart} on the bottom left to get familiar with the product. If you encounter problems, visit {doc} or report {issue} on GitHub.",
-    "quickstart": "Quickstart",
     "doc": "doc",
     "issue": "issue"
   },
