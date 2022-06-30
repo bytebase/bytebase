@@ -21,6 +21,25 @@ type TaskCheckGhostSyncExecutor struct {
 
 // Run will run the task check database connector executor once.
 func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+	// gh-ost dry run might panic
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = fmt.Errorf("%v", r)
+			}
+			result = []api.TaskCheckResult{
+				{
+					Status:    api.TaskCheckStatusError,
+					Namespace: api.BBNamespace,
+					Code:      common.Internal.Int(),
+					Title:     "gh-ost dry run failed",
+					Content:   panicErr.Error(),
+				},
+			}
+			err = nil
+		}
+	}()
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
