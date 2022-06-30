@@ -32,7 +32,7 @@
         <div
           v-if="state.showMenu"
           ref="popup"
-          class="z-50 rounded-md bg-white shadow-lg"
+          class="z-50 rounded-md bg-white shadow-lg mt-0.5"
           :style="{ width: `${width}px` }"
         >
           <ul
