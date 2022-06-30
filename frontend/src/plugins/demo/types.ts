@@ -11,10 +11,12 @@ export interface StepData {
   url?: string;
   // value is the regex-like string using for check the target content value
   value?: string;
-  // position is the position of the guide dialog, default is bottom
+  // position is the position of the guide dialog (default is bottom)
   position?: GuidePosition;
-  // cover is the flag that should be shown for the guide dialog
+  // cover is the flag that cover should be shown
   cover?: boolean;
+  // hideNextButton is the flag that next button should be hidden
+  hideNextButton?: boolean;
 }
 
 export interface GuideData {
