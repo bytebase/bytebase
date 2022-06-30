@@ -5,6 +5,6 @@ package ast
 type RenameTableStmt struct {
 	node
 
-	Table   *TableName
+	Table   *TableDef
 	NewName string
 }

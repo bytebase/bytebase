@@ -1,7 +1,7 @@
 package ast
 
-// TableName is the strcut for table name.
-type TableName struct {
+// TableDef is the strcut for table.
+type TableDef struct {
 	node
 
 	Catalog string

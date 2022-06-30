@@ -5,7 +5,7 @@ package ast
 type RenameColumnStmt struct {
 	node
 
-	Table   *TableName
+	Table   *TableDef
 	Column  *ColumnDef
 	NewName string
 }

@@ -5,6 +5,6 @@ type CreateTableStmt struct {
 	node
 
 	IfNotExists bool
-	Name        *TableName
+	Name        *TableDef
 	ColumnList  []*ColumnDef
 }

@@ -5,6 +5,6 @@ package ast
 type AddColumnListStmt struct {
 	node
 
-	Table      *TableName
+	Table      *TableDef
 	ColumnList []*ColumnDef
 }

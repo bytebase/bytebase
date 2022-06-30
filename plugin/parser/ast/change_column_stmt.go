@@ -4,7 +4,7 @@ package ast
 type ChangeColumnStmt struct {
 	node
 
-	Table         *TableName
+	Table         *TableDef
 	OldColumnName string
 	Column        *ColumnDef
 }

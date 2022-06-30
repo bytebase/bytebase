@@ -76,8 +76,8 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 	return nil, nil
 }
 
-func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableName {
-	return &ast.TableName{
+func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableDef {
+	return &ast.TableDef{
 		Catalog: in.Catalogname,
 		Schema:  in.Schemaname,
 		Name:    in.Relname,

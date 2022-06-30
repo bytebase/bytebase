@@ -4,6 +4,6 @@ package ast
 type AlterTableStmt struct {
 	node
 
-	Table       *TableName
+	Table       *TableDef
 	AlterAction []Node
 }
