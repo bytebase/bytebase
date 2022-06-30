@@ -6,6 +6,8 @@ import (
 	"github.com/bmizerany/assert"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 func TestPostgreSQLSyntax(t *testing.T) {
@@ -28,7 +30,7 @@ func TestPostgreSQLSyntax(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.StatementSyntaxError,
 					Title:   "Syntax error",
-					Content: "at or near \"engine\": syntax error",
+					Content: "syntax error at or near \"ENGINE\"",
 				},
 			},
 		},

@@ -77,6 +77,24 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: `CREATE TABLE _techBook(id int, name varchar(255));
+						ALTER TABLE tech_book RENAME TO "TechBook";`,
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingTableConventionMismatch,
+					Title:   "naming.table",
+					Content: "\"_techbook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+				},
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingTableConventionMismatch,
+					Title:   "naming.table",
+					Content: "\"TechBook\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+				},
+			},
+		},
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format: "^[a-z]+(_[a-z]+)*$",
