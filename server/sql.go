@@ -808,7 +808,7 @@ func (s *Server) sqlCheck(
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NotFound,
-					Title:   "Empty schema review policy or disabled",
+					Title:   "Schema review policy is not configured or disabled",
 					Content: "",
 				},
 			}

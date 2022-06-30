@@ -58,15 +58,6 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
 	}
 
-	charset := c.QueryParams().Get("charset")
-	if charset == "" {
-		charset = "utf8mb4"
-	}
-	collation := c.QueryParams().Get("collation")
-	if collation == "" {
-		collation = "utf8mb4_general_ci"
-	}
-
 	ctx := c.Request().Context()
 	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
 		Name: &envName,
@@ -81,8 +72,8 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	_, adviceList, err := s.sqlCheck(
 		ctx,
 		advisorDBType,
-		charset,
-		collation,
+		"utf8mb4",
+		"utf8mb4_general_ci",
 		envList[0].ID,
 		statement,
 		&catalogService{},
