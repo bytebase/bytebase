@@ -1,5 +1,6 @@
-import { assign } from "lodash-es";
+import { assign, isNumber, isNaN } from "lodash-es";
 
+// getStylePropertyValue returns the value of the given style property of the given element.
 export const getStylePropertyValue = (
   element: HTMLElement,
   propertyName: string
@@ -11,6 +12,7 @@ export const getStylePropertyValue = (
   return propertyValue;
 };
 
+// isElementFixed returns true if the element is fixed.
 export const isElementFixed = (element: HTMLElement): boolean => {
   const parentNode = element.parentNode;
 
@@ -25,6 +27,7 @@ export const isElementFixed = (element: HTMLElement): boolean => {
   return isElementFixed(parentNode as HTMLElement);
 };
 
+// getElementBounding returns the bounding rectangle and position of the element.
 export const getElementBounding = (
   element: HTMLElement,
   relativeEl?: HTMLElement
@@ -72,6 +75,20 @@ export const getElementBounding = (
   });
 };
 
+// getElementMaxZIndex returns the max z-index of the element and its parents.
+export const getElementMaxZIndex = (element: HTMLElement): number => {
+  const zIndex = Number(getStylePropertyValue(element, "z-index"));
+
+  if (element.parentElement && element.parentElement !== document.body) {
+    if (isNumber(zIndex) && !isNaN(zIndex)) {
+      return Math.max(zIndex, getElementMaxZIndex(element.parentElement));
+    }
+    return getElementMaxZIndex(element.parentElement);
+  }
+
+  return 0;
+};
+
 const getTargetElementBySelectors = (selectors: string[][]) => {
   let targetElement = document.body;
   for (const selector of selectors) {
@@ -90,6 +107,7 @@ const getTargetElementBySelectors = (selectors: string[][]) => {
   return targetElement;
 };
 
+// waitForTargetElement will wait for the target element to be available in the DOM.
 export const waitForTargetElement = (
   selectors: string[][]
 ): Promise<HTMLElement> => {
@@ -112,4 +130,10 @@ export const waitForTargetElement = (
       subtree: true,
     });
   });
+};
+
+// checkUrlMatched is used to check if the given url's pathname is matched with the location pathname.
+export const checkUrlPathnameMatched = (url: string) => {
+  const urlObject = new URL(url);
+  return urlObject.pathname === window.location.pathname;
 };
