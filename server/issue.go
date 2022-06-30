@@ -608,6 +608,9 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 		}, nil
 
 	case api.IssueDatabasePITR:
+		if !s.feature(api.FeaturePITR) {
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
+		}
 		c := api.PITRContext{}
 		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
 			return nil, err
