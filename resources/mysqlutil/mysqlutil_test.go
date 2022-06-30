@@ -49,7 +49,8 @@ func TestReinstallOnLinuxAmd64(t *testing.T) {
 		a.NoError(err)
 	})
 
-	os.Remove(filepath.Join(ins.libraryPath, "libncurses.so.5"))
+	err = os.Remove(filepath.Join(ins.libraryPath, "libncurses.so.5"))
+	a.NoError(err)
 
 	t.Run("run mysql client after drop libncurses.so.5", func(t *testing.T) {
 		_, err := ins.Version(MySQL)
