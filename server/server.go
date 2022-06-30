@@ -36,6 +36,9 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
+// openAPIPrefix is the API prefix for Bytebase OpenAPI
+const openAPIPrefix = "/v1"
+
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
@@ -93,7 +96,7 @@ var casbinDeveloperPolicy string
 // @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
 
 // @host localhost:8080
-// @BasePath /api/
+// @BasePath /v1/
 // @schemes http
 
 // NewServer creates a server.
@@ -285,6 +288,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group("/api")
+	openAPIGroup := e.Group(openAPIPrefix)
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
@@ -329,6 +333,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
+	s.registerOpenAPIRoutes(openAPIGroup)
+
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")

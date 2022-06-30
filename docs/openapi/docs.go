@@ -125,7 +125,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api/",
+	BasePath:         "/v1/",
 	Schemes:          []string{"http"},
 	Title:            "Bytebase OpenAPI",
 	Description:      "The OpenAPI for bytebase.",

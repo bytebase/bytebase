@@ -176,8 +176,8 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
 			return next(c)
 		}
-		// Skip GET /api/sql/advise request
-		if common.HasPrefixes(c.Path(), "/api/sql/advise") && method == "GET" {
+		// Skip OpenAPI request
+		if common.HasPrefixes(c.Path(), openAPIPrefix) {
 			return next(c)
 		}
 

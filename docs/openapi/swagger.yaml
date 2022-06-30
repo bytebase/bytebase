@@ -1,4 +1,4 @@
-basePath: /api/
+basePath: /v1/
 definitions:
   advisor.Advice:
     properties:
