@@ -99,10 +99,12 @@ export default defineComponent({
     };
 
     watch(
-      [() => props.selectedId, environmentList],
-      ([selectedId, list]) => {
+      () => props.selectedId,
+      (selectedId) => {
         invalidateSelectionIfNeeded();
-        state.selectedEnvironment = list.find((env) => env.id === selectedId);
+        state.selectedEnvironment = environmentList.value.find(
+          (env) => env.id === selectedId
+        );
       },
       { immediate: true }
     );
