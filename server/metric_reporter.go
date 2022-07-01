@@ -30,6 +30,7 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
+	enabled      bool
 	// Version is the bytebase's version
 	version     string
 	workspaceID string
@@ -38,11 +39,12 @@ type MetricReporter struct {
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
+func NewMetricReporter(server *Server, workspaceID string, enabled bool) *MetricReporter {
 	r := segment.NewReporter(server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
 		subscription: &server.subscription,
+		enabled:      enabled,
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
@@ -52,6 +54,10 @@ func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
 
 // Run will run the metric reporter.
 func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
+	if !m.enabled {
+		return
+	}
+
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
@@ -90,13 +96,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						if err := m.reporter.Report(metric); err != nil {
-							log.Error(
-								"Failed to report metric",
-								zap.String("metric", string(metric.Name)),
-								zap.Error(err),
-							)
-						}
+						m.report(metric)
 					}
 				}
 			}()
@@ -134,5 +134,15 @@ func (m *MetricReporter) identify() {
 		},
 	}); err != nil {
 		log.Debug("reporter identify failed", zap.Error(err))
+	}
+}
+
+func (m *MetricReporter) report(metric *metric.Metric) {
+	if err := m.reporter.Report(metric); err != nil {
+		log.Error(
+			"Failed to report metric",
+			zap.String("metric", string(metric.Name)),
+			zap.Error(err),
+		)
 	}
 }
