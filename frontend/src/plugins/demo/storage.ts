@@ -6,6 +6,11 @@ interface StorageData {
     name: string;
     stepIndex: number;
   };
+  bytebase_options: {
+    appearance: {
+      language: string;
+    };
+  };
 }
 
 type StorageKey = keyof StorageData;

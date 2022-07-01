@@ -2,10 +2,14 @@ type StepType = "click" | "change";
 
 export type GuidePosition = "bottom" | "top" | "left" | "right";
 
+export type I18NText = {
+  [key: string]: string;
+};
+
 export interface StepData {
   type: StepType;
-  title: string;
-  description: string;
+  title: string | I18NText;
+  description: string | I18NText;
   selectors: string[][];
   // url is using for validate url in change step
   url?: string;
