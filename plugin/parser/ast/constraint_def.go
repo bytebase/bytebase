@@ -24,9 +24,9 @@ const (
 //     KeyList: It's the name list of the columns in UK.
 //
 // For Foreign
-//     Name:      It's the FK constraint name.
-//     KeyList:   It's the name list of the columns in FK.
-//     Reference: It's the reference content for this FK.
+//     Name:    It's the FK constraint name.
+//     KeyList: It's the name list of the columns in FK.
+//     Foreign: It's the reference content for this FK.
 type ConstraintDef struct {
 	node
 
@@ -36,6 +36,6 @@ type ConstraintDef struct {
 	// Whether it is a column constraint or a table constraint,
 	// there is a corresponding key list.
 	KeyList []string
-	// Reference is a FOREIGN type specific field.
-	Reference *ReferenceDef
+	// Foreign is a FOREIGN type specific field.
+	Foreign *ForeignDef
 }

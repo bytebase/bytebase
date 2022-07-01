@@ -121,7 +121,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 	}
 
 	if cons.Type == ast.ConstraintTypeForeign {
-		cons.Reference = &ast.ReferenceDef{
+		cons.Foreign = &ast.ForeignDef{
 			Table: convertRangeVarToTableName(in.Constraint.Pktable),
 		}
 
@@ -130,7 +130,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 			if !ok {
 				return nil, fmt.Errorf("expected String but found %t", item.Node)
 			}
-			cons.Reference.ColumnList = append(cons.Reference.ColumnList, name.String_.Str)
+			cons.Foreign.ColumnList = append(cons.Foreign.ColumnList, name.String_.Str)
 		}
 
 		for _, item := range in.Constraint.FkAttrs {

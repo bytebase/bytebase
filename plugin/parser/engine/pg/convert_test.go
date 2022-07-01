@@ -114,7 +114,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 									Name:    "fk_a",
 									Type:    ast.ConstraintTypeForeign,
 									KeyList: []string{"a"},
-									Reference: &ast.ReferenceDef{
+									Foreign: &ast.ForeignDef{
 										Table:      &ast.TableDef{Name: "people"},
 										ColumnList: []string{"id"},
 									},
@@ -127,7 +127,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 							Name:    "fk_a_people_b",
 							Type:    ast.ConstraintTypeForeign,
 							KeyList: []string{"a"},
-							Reference: &ast.ReferenceDef{
+							Foreign: &ast.ForeignDef{
 								Table:      &ast.TableDef{Name: "people"},
 								ColumnList: []string{"b"},
 							},
@@ -395,7 +395,7 @@ func equalStringList(expected []string, actual []string) bool {
 	return true
 }
 
-func equalReference(expected *ast.ReferenceDef, actual *ast.ReferenceDef) bool {
+func equalForeign(expected *ast.ForeignDef, actual *ast.ForeignDef) bool {
 	if expected == nil && actual == nil {
 		return true
 	}
@@ -414,9 +414,9 @@ func equalConstraint(expected *ast.ConstraintDef, actual *ast.ConstraintDef) boo
 	equalType := (expected.Type == actual.Type)
 	equalName := (expected.Name == actual.Name)
 	equalKey := equalStringList(expected.KeyList, actual.KeyList)
-	equalReference := equalReference(expected.Reference, actual.Reference)
+	equalForeign := equalForeign(expected.Foreign, actual.Foreign)
 
-	return equalType && equalName && equalKey && equalReference
+	return equalType && equalName && equalKey && equalForeign
 }
 
 func equalConstraintList(expected []*ast.ConstraintDef, actual []*ast.ConstraintDef) bool {

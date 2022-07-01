@@ -42,8 +42,8 @@ func Walk(v Visitor, node Node) {
 		}
 	case *ColumnDef:
 	case *ConstraintDef:
-		if n.Reference != nil {
-			Walk(v, n.Reference)
+		if n.Foreign != nil {
+			Walk(v, n.Foreign)
 		}
 	case *CreateTableStmt:
 		if n.Name != nil {
@@ -55,7 +55,7 @@ func Walk(v Visitor, node Node) {
 		for _, cons := range n.ConstraintList {
 			Walk(v, cons)
 		}
-	case *ReferenceDef:
+	case *ForeignDef:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
