@@ -137,3 +137,7 @@ export const checkUrlPathnameMatched = (url: string) => {
   const urlObject = new URL(url);
   return urlObject.pathname === window.location.pathname;
 };
+
+export const isNullOrUndefined = (value: any) => {
+  return value === null || value === undefined;
+};

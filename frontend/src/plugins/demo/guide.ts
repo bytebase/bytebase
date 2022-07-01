@@ -3,10 +3,12 @@ import {
   checkUrlPathnameMatched,
   getElementBounding,
   getElementMaxZIndex,
+  isNullOrUndefined,
   waitForTargetElement,
 } from "./utils";
 import * as storage from "./storage";
 import { GuideData, GuidePosition, StepData } from "./types";
+import { getStringFromI18NText, nextI18NText } from "./i18n";
 
 // validateStepData will check if the step data is valid
 export const validateStepData = (stepData: StepData) => {
@@ -15,11 +17,11 @@ export const validateStepData = (stepData: StepData) => {
     return false;
   }
   // title is required
-  if (typeof stepData.title !== "string") {
+  if (isNullOrUndefined(stepData.title)) {
     return false;
   }
   // description is required
-  if (typeof stepData.description !== "string") {
+  if (isNullOrUndefined(stepData.description)) {
     return false;
   }
 
@@ -91,11 +93,11 @@ const renderGuideDialog = (
 
   const titleElement = document.createElement("p");
   titleElement.className = "bb-guide-title-text";
-  titleElement.innerText = title;
+  titleElement.innerText = getStringFromI18NText(title);
   guideDialogDiv.appendChild(titleElement);
   const descriptionElement = document.createElement("p");
   descriptionElement.className = "bb-guide-description-text";
-  descriptionElement.innerText = description;
+  descriptionElement.innerText = getStringFromI18NText(description);
   guideDialogDiv.appendChild(descriptionElement);
 
   if (!guideStep.hideNextButton) {
@@ -106,7 +108,7 @@ const renderGuideDialog = (
     if (stepIndex === guideData.steps.length - 1) {
       nextButton.innerText = "Done";
     } else {
-      nextButton.innerText = "Next";
+      nextButton.innerText = getStringFromI18NText(nextI18NText);
     }
     buttonsContainer.appendChild(nextButton);
     guideDialogDiv.appendChild(buttonsContainer);
