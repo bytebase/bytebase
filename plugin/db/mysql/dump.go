@@ -97,13 +97,9 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 		if err != nil {
 			return "", err
 		}
-		log.Debug("binlog config at dump time",
-			zap.String("filename", binlog.FileName),
+		log.Debug("binlog coordinate at dump time",
+			zap.String("fileName", binlog.FileName),
 			zap.Int64("position", binlog.Position))
-
-		if err != nil {
-			return "", err
-		}
 
 		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
@@ -150,7 +146,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := GetTablesTx(txn, database)
+	tables, err := getTablesTx(txn, database)
 	if err != nil {
 		return err
 	}
@@ -227,7 +223,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := GetTablesTx(txn, dbName)
+		tables, err := getTablesTx(txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q, error: %w", dbName, err)
 		}
@@ -352,14 +348,14 @@ type triggerSchema struct {
 	statement string
 }
 
-// GetTablesTx gets all tables of a database using the provided transaction.
-func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+// getTablesTx gets all tables of a database using the provided transaction.
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	return getTablesImpl(txn, dbName)
 }
 
-// GetTables gets all tables of a database.
-func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
-	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+// getTables gets all tables of a database.
+func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
