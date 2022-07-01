@@ -12,12 +12,14 @@ export const getStringFromI18NText = (text: string | I18NText) => {
     return text;
   }
 
+  const values = Object.values(text);
+  const firstValue = head(values) || "";
   const { bytebase_options: BBOptions } = storage.get(["bytebase_options"]);
+
   if (BBOptions && BBOptions.appearance) {
-    const values = Object.values(text);
     const language = BBOptions.appearance.language;
-    return text[language] || head(values) || "";
+    return text[language] || firstValue;
   }
 
-  return "";
+  return firstValue;
 };
