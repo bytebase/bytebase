@@ -110,14 +110,6 @@
             {{ $t("common.role.developer") }}
           </div>
         </div>
-        <router-link to="/sql-editor">
-          <NTooltip>
-            <template #trigger>
-              <heroicons-outline:terminal class="w-6 h-6" />
-            </template>
-            {{ $t("sql-editor.self") }}
-          </NTooltip>
-        </router-link>
         <router-link to="/inbox" exact-active-class>
           <span
             v-if="inboxSummary.hasUnread"
