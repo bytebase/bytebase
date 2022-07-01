@@ -113,7 +113,9 @@ const (
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status `json:"status"`
+	// Status is the SQL check result. Could be "SUCCESS", "WARN", "ERROR"
+	Status Status `json:"status"`
+	// Code is the SQL check error code.
 	Code    Code   `json:"code"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -202,7 +204,7 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
 		return true
 	}
 	return false
