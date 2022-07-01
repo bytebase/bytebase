@@ -164,7 +164,12 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
-			syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err)
+			// we could reach here after syncDone and nobody is listening on syncError
+			// so we use select with a default branch here to make this unblocking
+			select {
+			case syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err):
+			default:
+			}
 			return
 		}
 		_, _, err = postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
