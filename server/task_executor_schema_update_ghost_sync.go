@@ -164,8 +164,8 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
-			// we could reach here after syncDone and nobody is listening on syncError
-			// so we use select with a default branch here to make this unblocking
+			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
+			// Then there's no consumer of syncError, so we must make sending to syncError non-blocking.
 			select {
 			case syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err):
 			default:
