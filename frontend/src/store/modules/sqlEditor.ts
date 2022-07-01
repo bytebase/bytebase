@@ -168,7 +168,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", {
       const queryResult = await useSQLStore().query({
         instanceId: this.connectionContext.instanceId,
         databaseName: this.connectionContext.databaseName,
-        statement,
+        statement: statement,
+        // set the limit to 10000 temporarily to avoid the query timeout and page crash
+        limit: 10000,
       });
 
       return queryResult;
