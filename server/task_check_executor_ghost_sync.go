@@ -93,7 +93,7 @@ func (exec *TaskCheckGhostSyncExecutor) Run(ctx context.Context, server *Server,
 		table:                tableName,
 		alterStatement:       payload.Statement,
 		socketFilename:       getSocketFilename(taskCheckRun.ID, task.Database.ID, databaseName, tableName),
-		postponeFlagFilename: getPostponeFlagFilename(taskCheckRun.ID, task.Database.ID, databaseName, tableName),
+		postponeFlagFilename: "",
 		noop:                 true,
 		// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
 		// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
