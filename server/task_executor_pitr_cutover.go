@@ -84,7 +84,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 // 4. dump backup with type AUTOMATIC_PITR_CUTOVER.
 // 5. Unlock tables in the current database.
 // The step 4 is done asynchronously to prevent performance issues by waiting for the backup process for too long.
-// And we must check the possible failed AUTOMATIC_PITR_CUTOVER backup in the recovery process.
+// And we must check the possible failed/ongoing AUTOMATIC_PITR_CUTOVER backup in the recovery process.
 func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
