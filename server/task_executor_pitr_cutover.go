@@ -92,7 +92,6 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	log.Debug("Swapping the original and PITR database", zap.String("instance", task.Instance.Name), zap.String("originalDatabase", task.Database.Name))
 	driverDB, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
 		return true, nil, err
@@ -103,12 +102,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	txn, backupPayload, err := swapDatabasesAndPrepareForBackup(ctx, conn, task.Database, issue.CreatedTs)
 	if err != nil {
-		log.Error("Failed to swap databases and backup the original database", zap.Error(err))
-		return true, nil, fmt.Errorf("failed to swap databases and backup the original database, error: %w", err)
+		log.Error("Failed to swap the original and PITR database", zap.Error(err))
+		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
 
 	if err := exec.backupDatabaseAfterPITR(ctx, conn, txn, backupPayload, driver, server.store, task.Database, server.profile.DataDir, issue.CreatedTs); err != nil {
-		return true, nil, fmt.Errorf("failed to create backup metadata, error: %w", err)
+		return true, nil, fmt.Errorf("failed to backup database %q after PITR, error: %w", task.Database.Name, err)
 	}
 
 	log.Debug("Appending new migration history record")
@@ -140,15 +139,17 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 }
 
 func swapDatabasesAndPrepareForBackup(ctx context.Context, conn *sql.Conn, database *api.Database, suffixTs int64) (*sql.Tx, string, error) {
+	log.Debug("Acquiring table locks in database", zap.String("database", database.Name))
 	if err := mysql.FlushTablesWithReadLock(ctx, conn, database.Name); err != nil {
 		return nil, "", err
 	}
+	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", database.Name))
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, database.Name, suffixTs)
 	if err != nil {
 		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
 		return nil, "", fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
-	log.Debug("Finish swapping the original and PITR database", zap.String("originalDatabase", database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 
 	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
 	if err != nil {
@@ -160,6 +161,7 @@ func swapDatabasesAndPrepareForBackup(ctx context.Context, conn *sql.Conn, datab
 		return nil, "", err
 	}
 
+	log.Debug("Starting new transaction and unlock tables")
 	options := sql.TxOptions{ReadOnly: true}
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
