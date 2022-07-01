@@ -11,11 +11,14 @@ dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 export function isDev(): boolean {
-  return import.meta.env.DEV;
+  // When building a package vite provides us env.DEV=undefined.
+  // But we want to provide canary developing features.
+  // So isDev() is true if FE_MODE === 'dev'
+  return FE_MODE === "dev" || import.meta.env.DEV;
 }
 
 export function isRelease(): boolean {
-  return import.meta.env.PROD;
+  return FE_MODE !== "dev" && import.meta.env.PROD;
 }
 
 export function humanizeTs(ts: number): string {

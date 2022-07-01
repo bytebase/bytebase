@@ -9,6 +9,8 @@ import Components from "unplugin-vue-components/vite";
 const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
 const HTTPS_PORT = 443;
 
+const FE_MODE = process.env.FE_MODE === "dev" ? "dev" : "release"; // default to 'release'
+
 export default defineConfig(() => {
   // NOTE: the following lines is to solve https://github.com/gitpod-io/gitpod/issues/6719
   // tl;dr : the HMR(hot module replacement) will behave differently when VPN is on, and by manually set its port to 443 should prevent this issue.
@@ -33,6 +35,9 @@ export default defineConfig(() => {
       }),
       Icons(),
     ],
+    define: {
+      FE_MODE: JSON.stringify(FE_MODE),
+    },
     server: {
       port: SERVER_PORT,
       proxy: {
