@@ -3,8 +3,14 @@
     {},
     {},
     {
-      "title": "Click the Alter Schema button",
-      "description": "Alter schema is a main feature of Bytebase",
+      "title": {
+        "en-US": "Click the Alter Schema button",
+        "zh-CN": "点击修改模式按钮"
+      },
+      "description": {
+        "en-US": "Alter schema is a main feature of Bytebase",
+        "zh-CN": "修改数据库 Schema 是 Bytebase 的核心功能之一"
+      },
       "selectors": [["[data-label='bb-alter-schema-button']"]],
       "url": "http://localhost:3000"
     },
