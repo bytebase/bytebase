@@ -19,6 +19,8 @@ const (
 	metricSchedulerInterval = time.Duration(1) * time.Hour
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
+	// identifyTraitForOrgID is the trait key for organization id.
+	identifyTraitForOrgID = "org_id"
 	// identifyTraitForVersion is the trait key for Bytebase version.
 	identifyTraitForVersion = "version"
 )
@@ -117,14 +119,18 @@ func (m *MetricReporter) Register(metricName metric.Name, collector metric.Colle
 // Identify will identify the workspace and update the subscription plan.
 func (m *MetricReporter) identify() {
 	plan := api.FREE.String()
+	orgID := ""
+
 	if m.subscription != nil {
 		plan = m.subscription.Plan.String()
+		orgID = m.subscription.OrgID
 	}
 	if err := m.reporter.Identify(&metric.Identifier{
 		ID: m.workspaceID,
 		Labels: map[string]string{
 			identifyTraitForPlan:    plan,
 			identifyTraitForVersion: m.version,
+			identifyTraitForOrgID:   orgID,
 		},
 	}); err != nil {
 		log.Debug("reporter identify failed", zap.Error(err))

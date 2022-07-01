@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -48,6 +49,11 @@ func (l *License) validPlanType() error {
 		api.TEAM.String(),
 		api.ENTERPRISE.String(),
 	)
+}
+
+// OrgID extract the organization id from license subject.
+func (l *License) OrgID() string {
+	return strings.Split(l.Subject, ".")[0]
 }
 
 // LicenseService is the service for enterprise license.
