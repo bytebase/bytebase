@@ -103,7 +103,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
-	log.Debug("Swapping the original and PITR database...", zap.String("instance", task.Instance.Name), zap.String("originalDatabase", task.Database.Name))
+	log.Debug("Swapping the original and PITR database.", zap.String("instance", task.Instance.Name), zap.String("originalDatabase", task.Database.Name))
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
 		log.Error("Failed to swap databases and backup the original database", zap.Error(err))
