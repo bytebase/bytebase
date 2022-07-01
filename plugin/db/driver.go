@@ -254,7 +254,7 @@ type MigrationInfo struct {
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
 	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
-	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retriable.
+	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
 	// We don't use force option for DATA type of migrations yet till there's customer needs.
 	Force bool
 }
@@ -437,7 +437,7 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
-	// RestoreTx resotres the database from sc in the given transaction.
+	// RestoreTx restores the database from sc in the given transaction.
 	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
 }
 

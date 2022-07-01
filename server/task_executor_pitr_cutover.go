@@ -86,6 +86,16 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		return true, nil, err
 	}
 
+	driverDB, err := driver.GetDbConnection(ctx, "")
+	if err != nil {
+		return true, nil, err
+	}
+	conn, err := driverDB.Conn(ctx)
+	if err != nil {
+		return true, nil, err
+	}
+	defer conn.Close()
+
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("failed to cast driver to mysql.Driver")
@@ -93,25 +103,15 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
-	log.Info("Start swapping the original and PITR database",
-		zap.String("instance", task.Instance.Name),
-		zap.String("original_database", task.Database.Name),
-	)
-	pitrDatabaseName, pitrOldDatabaseName, err := mysqlDriver.SwapPITRDatabase(ctx, task.Database.Name, issue.CreatedTs)
+	log.Debug("Swapping the original and PITR database.", zap.String("instance", task.Instance.Name), zap.String("originalDatabase", task.Database.Name))
+	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("Failed to swap the original and PITR database",
-			zap.Int("issueID", issue.ID),
-			zap.String("database", task.Database.Name),
-			zap.Error(err))
+		log.Error("Failed to swap databases and backup the original database", zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
+	log.Debug("Finish swapping the original and PITR database", zap.String("original_database", task.Database.Name), zap.String("pitr_database", pitrDatabaseName), zap.String("old_database", pitrOldDatabaseName))
 
-	log.Info("Finish swapping the original and PITR database",
-		zap.String("original_database", task.Database.Name),
-		zap.String("pitr_database", pitrDatabaseName),
-		zap.String("old_database", pitrOldDatabaseName))
-
-	log.Info("Appending new migration history record...")
+	log.Debug("Appending new migration history record...")
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
@@ -120,6 +120,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 		Environment:    task.Database.Instance.Environment.Name,
 		Source:         db.MigrationSource(task.Database.Project.WorkflowType),
 		Type:           db.Baseline,
+		Status:         db.Done,
 		Description:    fmt.Sprintf("PITR: restoring database %s", task.Database.Name),
 		Creator:        task.Creator.Name,
 		IssueID:        strconv.Itoa(issue.ID),
