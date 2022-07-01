@@ -334,12 +334,13 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
 
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
-	log.Debug("Check database exists", zap.String("database", database))
+	log.Debug("Checking database exists.", zap.String("database", database))
 	dbExists, err := databaseExists(ctx, conn, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to check whether database %q exists, error: %w", database, err)
 	}
 
+	log.Debug("Turning binlog OFF.")
 	// Set OFF the session variable sql_log_bin so that the writes in the following SQL statements will not be recorded in the binlog.
 	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
 		return pitrDatabaseName, pitrOldDatabase, err
@@ -352,6 +353,7 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 		}
 	}
 
+	log.Debug("Getting tables in the original and PITR databases.")
 	tables, err := getTables(ctx, conn, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error: %w", database, err)
