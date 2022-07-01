@@ -193,7 +193,7 @@ func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	rows, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO task_check_run (
 			creator_id,
 			updater_id,
@@ -205,7 +205,8 @@ func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *
 		)
 		VALUES ($1, $2, $3, 'RUNNING', $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, status, type, code, comment, result, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.TaskID,
@@ -216,12 +217,12 @@ func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer rows.Close()
+	defer row.Close()
 
 	var tRaw *taskCheckRunRaw
-	for rows.Next() {
+	if row.Next() {
 		var taskCheckRunRaw taskCheckRunRaw
-		if err := rows.Scan(
+		if err := row.Scan(
 			&taskCheckRunRaw.ID,
 			&taskCheckRunRaw.CreatorID,
 			&taskCheckRunRaw.CreatedTs,
@@ -238,11 +239,12 @@ func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *
 			return nil, FormatError(err)
 		}
 		tRaw = &taskCheckRunRaw
-	}
-	if tRaw != nil {
 		return tRaw, nil
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run cannot be created for task ID %v", create.TaskID)}
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // findTaskCheckRunRaw retrieves a list of taskCheckRuns based on find.
@@ -308,7 +310,7 @@ func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, pat
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.QueryContext(ctx, `
+	row, err := tx.QueryContext(ctx, `
 		UPDATE task_check_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
@@ -319,12 +321,11 @@ func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, pat
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer rows.Close()
+	defer row.Close()
 
-	var tRaw *taskCheckRunRaw
-	for rows.Next() {
+	if row.Next() {
 		var taskCheckRunRaw taskCheckRunRaw
-		if err := rows.Scan(
+		if err := row.Scan(
 			&taskCheckRunRaw.ID,
 			&taskCheckRunRaw.CreatorID,
 			&taskCheckRunRaw.CreatedTs,
@@ -340,10 +341,10 @@ func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, pat
 		); err != nil {
 			return nil, FormatError(err)
 		}
-		tRaw = &taskCheckRunRaw
+		return &taskCheckRunRaw, nil
 	}
-	if tRaw != nil {
-		return tRaw, nil
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task check run ID not found: %d", *patch.ID)}
 }

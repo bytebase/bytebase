@@ -55,17 +55,17 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
-	query := `
+	grantQuery := `
 		SELECT
 			GRANTEE_NAME,
 			ROLE
 		FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_USERS
-`
+	`
 	grants := make(map[string][]string)
 
-	grantRows, err := driver.db.QueryContext(ctx, query)
+	grantRows, err := driver.db.QueryContext(ctx, grantQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, grantQuery)
 	}
 	defer grantRows.Close()
 
@@ -79,18 +79,21 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		}
 		grants[name] = append(grants[name], role)
 	}
+	if err := grantRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, grantQuery)
+	}
 
 	// Query user info
-	query = `
+	userQuery := `
 	  SELECT
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
 	`
 	var userList []*db.User
-	userRows, err := driver.db.QueryContext(ctx, query)
+	userRows, err := driver.db.QueryContext(ctx, userQuery)
 
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}
 	defer userRows.Close()
 
@@ -107,6 +110,9 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			Grant: strings.Join(grants[name], ", "),
 		})
 	}
+	if err := userRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, userQuery)
+	}
 	return userList, nil
 }
 
@@ -121,7 +127,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
 
 	// Query column info
-	query := fmt.Sprintf(`
+	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA,
 			TABLE_NAME,
@@ -135,9 +141,9 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			IFNULL(COMMENT, '')
 		FROM %s.INFORMATION_SCHEMA.COLUMNS
 		WHERE %s`, database, excludeWhere)
-	columnRows, err := driver.db.QueryContext(ctx, query)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 
@@ -171,8 +177,11 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		key := fmt.Sprintf("%s.%s", schemaName, tableName)
 		columnMap[key] = append(columnMap[key], column)
 	}
+	if err := columnRows.Err(); err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, columnQuery)
+	}
 
-	query = fmt.Sprintf(`
+	tableQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA,
 			TABLE_NAME,
@@ -184,9 +193,9 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 			IFNULL(COMMENT, '')
 		FROM %s.INFORMATION_SCHEMA.TABLES
 		WHERE TABLE_TYPE = 'BASE TABLE' AND %s`, database, excludeWhere)
-	tableRows, err := driver.db.QueryContext(ctx, query)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 
@@ -212,10 +221,10 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		tables = append(tables, table)
 	}
 	if err := tableRows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	query = fmt.Sprintf(`
+	viewQuery := fmt.Sprintf(`
 	SELECT
 		TABLE_SCHEMA,
 		TABLE_NAME,
@@ -225,9 +234,9 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		IFNULL(COMMENT, '')
 	FROM %s.INFORMATION_SCHEMA.VIEWS
 	WHERE %s`, database, excludeWhere)
-	viewRows, err := driver.db.QueryContext(ctx, query)
+	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 	defer viewRows.Close()
 
@@ -256,7 +265,7 @@ func (driver *Driver) syncTableSchema(ctx context.Context, database string) ([]d
 		views = append(views, view)
 	}
 	if err := viewRows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 
 	return tables, views, nil

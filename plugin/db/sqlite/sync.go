@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
 var (
@@ -98,6 +99,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 		}
 		tableNames = append(tableNames, name)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 	for _, name := range tableNames {
 		var tbl db.Table
 		tbl.Name = name
@@ -131,6 +135,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 
 			tbl.ColumnList = append(tbl.ColumnList, col)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 		for _, idx := range indicesMap[tbl.Name] {
 			query := fmt.Sprintf("pragma index_info(%s);", idx.name)
 			rows, err := txn.Query(query)
@@ -147,6 +154,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 					return nil, err
 				}
 				tbl.IndexList = append(tbl.IndexList, dbIdx)
+			}
+			if err := rows.Err(); err != nil {
+				return nil, util.FormatErrorWithQuery(err, query)
 			}
 		}
 
@@ -173,6 +183,9 @@ func getIndices(txn *sql.Tx) ([]indexSchema, error) {
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
 		indices = append(indices, idx)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 	return indices, nil
 }
 
@@ -191,6 +204,9 @@ func getViews(txn *sql.Tx) ([]db.View, error) {
 			return nil, err
 		}
 		views = append(views, view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	return views, nil
 }

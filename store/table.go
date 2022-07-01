@@ -220,7 +220,7 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 // createTableImpl creates a new table.
 func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*tableRaw, error) {
 	// Insert row into table.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO tbl (
 			creator_id,
 			created_ts,
@@ -240,7 +240,8 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, "collation", row_count, data_size, index_size, data_free, create_options, comment
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -263,30 +264,34 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 	}
 	defer row.Close()
 
-	row.Next()
-	var tableRaw tableRaw
-	if err := row.Scan(
-		&tableRaw.ID,
-		&tableRaw.CreatorID,
-		&tableRaw.CreatedTs,
-		&tableRaw.UpdaterID,
-		&tableRaw.UpdatedTs,
-		&tableRaw.DatabaseID,
-		&tableRaw.Name,
-		&tableRaw.Type,
-		&tableRaw.Engine,
-		&tableRaw.Collation,
-		&tableRaw.RowCount,
-		&tableRaw.DataSize,
-		&tableRaw.IndexSize,
-		&tableRaw.DataFree,
-		&tableRaw.CreateOptions,
-		&tableRaw.Comment,
-	); err != nil {
+	if row.Next() {
+		var tableRaw tableRaw
+		if err := row.Scan(
+			&tableRaw.ID,
+			&tableRaw.CreatorID,
+			&tableRaw.CreatedTs,
+			&tableRaw.UpdaterID,
+			&tableRaw.UpdatedTs,
+			&tableRaw.DatabaseID,
+			&tableRaw.Name,
+			&tableRaw.Type,
+			&tableRaw.Engine,
+			&tableRaw.Collation,
+			&tableRaw.RowCount,
+			&tableRaw.DataSize,
+			&tableRaw.IndexSize,
+			&tableRaw.DataFree,
+			&tableRaw.CreateOptions,
+			&tableRaw.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &tableRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &tableRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*tableRaw, error) {
