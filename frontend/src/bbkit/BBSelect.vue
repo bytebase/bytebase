@@ -7,7 +7,7 @@
         aria-haspopup="listbox"
         aria-expanded="true"
         aria-labelledby="listbox-label"
-        class="btn-select relative w-full pl-3 pr-10 py-1.5"
+        class="btn-select relative w-full pl-3 pr-10 py-2"
         :disabled="disabled"
         v-bind="$attrs"
         @click="toggle"
@@ -32,7 +32,7 @@
         <div
           v-if="state.showMenu"
           ref="popup"
-          class="z-50 rounded-md bg-white shadow-lg"
+          class="z-50 rounded-md bg-white shadow-lg mt-0.5"
           :style="{ width: `${width}px` }"
         >
           <ul
@@ -46,6 +46,13 @@
               Select option, manage highlight styles based on mouseenter/mouseleave and keyboard navigation.
               Highlighted: "text-white bg-indigo-600", Not Highlighted: "text-gray-900"
             -->
+            <slot v-if="showPrefixItem" name="prefixItem">
+              <li
+                class="cursor-default select-none py-2 px-3 text-control-light"
+              >
+                {{ placeholder }}
+              </li>
+            </slot>
             <li
               v-for="(item, index) in itemList"
               :key="index"
@@ -110,6 +117,10 @@ export default defineComponent({
       type: String,
     },
     disabled: {
+      default: false,
+      type: Boolean,
+    },
+    showPrefixItem: {
       default: false,
       type: Boolean,
     },

@@ -44,7 +44,7 @@
         <div
           v-if="state.open"
           ref="popup"
-          class="z-50 rounded-md bg-white shadow-lg"
+          class="z-50 rounded-md bg-white shadow-lg mt-0.5"
           v-bind="dataLabelAttrs"
           :style="{ width: `${width}px` }"
         >
