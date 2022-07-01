@@ -10,6 +10,7 @@ package mysql
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -328,28 +329,16 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 // SwapPITRDatabase renames the pitr database to the target, and the original to the old database
 // It returns the pitr and old database names after swap.
 // It performs the step 2 of the restore process.
-func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, suffixTs int64) (string, string, error) {
+func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suffixTs int64) (string, string, error) {
 	pitrDatabaseName := getPITRDatabaseName(database, suffixTs)
 	pitrOldDatabase := getPITROldDatabaseName(database, suffixTs)
 
-	db, err := driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return pitrDatabaseName, pitrOldDatabase, err
-	}
-
 	// Handle the case that the original database does not exist, because user could drop a database and want to restore it.
 	log.Debug("Check database exists", zap.String("database", database))
-	dbExists, err := driver.databaseExists(ctx, database)
+	dbExists, err := databaseExists(ctx, conn, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to check whether database %q exists, error: %w", database, err)
 	}
-
-	// We use a connection to ensure that the following database write operations are in the same MySQL session.
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return pitrDatabaseName, pitrDatabaseName, err
-	}
-	defer conn.Close()
 
 	// Set OFF the session variable sql_log_bin so that the writes in the following SQL statements will not be recorded in the binlog.
 	if _, err := conn.ExecContext(ctx, "SET sql_log_bin=OFF"); err != nil {
@@ -363,11 +352,11 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, suf
 		}
 	}
 
-	tables, err := GetTables(ctx, db, database)
+	tables, err := getTables(ctx, conn, database)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error: %w", database, err)
 	}
-	tablesPITR, err := GetTables(ctx, db, pitrDatabaseName)
+	tablesPITR, err := getTables(ctx, conn, pitrDatabaseName)
 	if err != nil {
 		return pitrDatabaseName, pitrOldDatabase, fmt.Errorf("failed to get tables of database %q, error: %w", pitrDatabaseName, err)
 	}
@@ -404,16 +393,13 @@ func (driver *Driver) SwapPITRDatabase(ctx context.Context, database string, suf
 	return pitrDatabaseName, pitrOldDatabase, nil
 }
 
-func (driver *Driver) databaseExists(ctx context.Context, database string) (bool, error) {
-	db, err := driver.GetDbConnection(ctx, "")
-	if err != nil {
-		return false, err
-	}
+func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool, error) {
 	stmt := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
-	rows, err := db.QueryContext(ctx, stmt)
+	rows, err := conn.QueryContext(ctx, stmt)
 	if err != nil {
 		return false, err
 	}
+	defer rows.Close()
 	if exist := rows.Next(); exist {
 		return true, nil
 	}
