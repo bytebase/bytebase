@@ -42,21 +42,18 @@ func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Ser
 	)
 
 	backupPayload, backupErr := exec.backupDatabase(ctx, task.Instance, task.Database.Name, backup, server.profile.DataDir, server.pgInstanceDir)
-	// Update the status of the backup.
-	newBackupStatus := string(api.BackupStatusDone)
-	comment := ""
-	if backupErr != nil {
-		newBackupStatus = string(api.BackupStatusFailed)
-		comment = backupErr.Error()
-		backupPayload = "{}"
-	}
-	if _, err := server.store.PatchBackup(ctx, &api.BackupPatch{
+	backupPatch := api.BackupPatch{
 		ID:        backup.ID,
-		Status:    newBackupStatus,
+		Status:    string(api.BackupStatusDone),
 		UpdaterID: api.SystemBotID,
-		Comment:   comment,
+		Comment:   "",
 		Payload:   backupPayload,
-	}); err != nil {
+	}
+	if backupErr != nil {
+		backupPatch.Status = string(api.BackupStatusFailed)
+		backupPatch.Comment = backupErr.Error()
+	}
+	if _, err := server.store.PatchBackup(ctx, &backupPatch); err != nil {
 		return true, nil, fmt.Errorf("failed to patch backup: %w", err)
 	}
 
