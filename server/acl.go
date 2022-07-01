@@ -35,6 +35,10 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
 			return next(c)
 		}
+		// Skip OpenAPI request
+		if common.HasPrefixes(c.Path(), openAPIPrefix) {
+			return next(c)
+		}
 
 		if readonly && method != "GET" {
 			return echo.NewHTTPError(http.StatusMethodNotAllowed, "Server is in readonly mode")
