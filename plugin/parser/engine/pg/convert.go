@@ -1,8 +1,7 @@
 package pg
 
 import (
-	"fmt"
-
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 )
@@ -23,7 +22,7 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 				case pgquery.AlterTableType_AT_AddColumn:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_ColumnDef)
 					if !ok {
-						return nil, fmt.Errorf("expected ColumnDef but found %t", alterCmd.Def.Node)
+						return nil, parser.NewConvertErrorf("expected ColumnDef but found %t", alterCmd.Def.Node)
 					}
 
 					addColumn := &ast.AddColumnListStmt{

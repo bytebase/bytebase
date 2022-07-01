@@ -9,6 +9,10 @@ import (
 func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 	nodes, err := parser.Parse(parser.Postgres, parser.Context{}, statement)
 	if err != nil {
+		// Skip the ConvertError.
+		if _, ok := err.(*parser.ConvertError); ok {
+			return nil, nil
+		}
 		return nil, []advisor.Advice{
 			{
 				Status:  advisor.Error,
