@@ -45,6 +45,97 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "t_pk_a",
+									Type:    ast.ConstraintTypePrimary,
+									KeyList: []string{"a"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+						},
+						{
+							ColumnName: "b",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "uk_b",
+									Type:    ast.ConstraintTypeUnique,
+									KeyList: []string{"b"},
+								},
+							},
+						},
+					},
+					ConstraintList: []*ast.ConstraintDef{
+						{
+							Name:    "t_pk_a",
+							Type:    ast.ConstraintTypePrimary,
+							KeyList: []string{"a"},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "fk_a",
+									Type:    ast.ConstraintTypeForeign,
+									KeyList: []string{"a"},
+									Reference: &ast.ReferenceDef{
+										Table:      &ast.TableDef{Name: "people"},
+										ColumnList: []string{"id"},
+									},
+								},
+							},
+						},
+					},
+					ConstraintList: []*ast.ConstraintDef{
+						{
+							Name:    "fk_a_people_b",
+							Type:    ast.ConstraintTypeForeign,
+							KeyList: []string{"a"},
+							Reference: &ast.ReferenceDef{
+								Table:      &ast.TableDef{Name: "people"},
+								ColumnList: []string{"b"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	p := &PostgreSQLParser{}
@@ -261,7 +352,8 @@ func equalCreateTableStmt(expected []ast.Node, actual []ast.Node) bool {
 		equalFlag := (exp.IfNotExists == act.IfNotExists)
 		equalTableDef := equalTableDef(exp.Name, act.Name)
 		equalColumnList := equalColumnList(exp.ColumnList, act.ColumnList)
-		if !equalFlag || !equalTableDef || !equalColumnList {
+		equalConstraintList := equalConstraintList(exp.ConstraintList, act.ConstraintList)
+		if !equalFlag || !equalTableDef || !equalColumnList || !equalConstraintList {
 			return false
 		}
 	}
@@ -289,6 +381,61 @@ func equalColumnList(expected []*ast.ColumnDef, actual []*ast.ColumnDef) bool {
 	return true
 }
 
+func equalStringList(expected []string, actual []string) bool {
+	if len(expected) != len(actual) {
+		return false
+	}
+
+	for i := range expected {
+		if expected[i] != actual[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func equalReference(expected *ast.ReferenceDef, actual *ast.ReferenceDef) bool {
+	if expected == nil && actual == nil {
+		return true
+	}
+
+	if expected == nil || actual == nil {
+		return false
+	}
+
+	equalTable := equalTableDef(expected.Table, actual.Table)
+	equalColumnList := equalStringList(expected.ColumnList, actual.ColumnList)
+
+	return equalTable && equalColumnList
+}
+
+func equalConstraint(expected *ast.ConstraintDef, actual *ast.ConstraintDef) bool {
+	equalType := (expected.Type == actual.Type)
+	equalName := (expected.Name == actual.Name)
+	equalKey := equalStringList(expected.KeyList, actual.KeyList)
+	equalReference := equalReference(expected.Reference, actual.Reference)
+
+	return equalType && equalName && equalKey && equalReference
+}
+
+func equalConstraintList(expected []*ast.ConstraintDef, actual []*ast.ConstraintDef) bool {
+	if len(expected) != len(actual) {
+		return false
+	}
+
+	for i := range expected {
+		if !equalConstraint(expected[i], actual[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func equalColumnDef(expected *ast.ColumnDef, actual *ast.ColumnDef) bool {
-	return (expected.ColumnName == actual.ColumnName)
+	equalName := (expected.ColumnName == actual.ColumnName)
+	equalConstraintList := equalConstraintList(expected.ConstraintList, actual.ConstraintList)
+
+	return equalName && equalConstraintList
 }
