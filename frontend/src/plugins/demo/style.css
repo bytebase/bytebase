@@ -25,20 +25,20 @@
 }
 
 .bb-guide-close-button {
-  @apply absolute top-0 right-1 px-1 rounded cursor-pointer opacity-60 hover:opacity-50;
+  @apply absolute top-0 right-0.5 px-1 font-thin rounded cursor-pointer opacity-60 hover:opacity-50;
   font-size: 24px;
 }
 
 .bb-guide-title-text {
-  @apply text-lg text-black leading-6 py-1 my-1 pr-3;
+  @apply text-lg text-black leading-6 py-1 my-1 pr-3 break-words;
 }
 
 .bb-guide-description-text {
-  @apply text-base text-gray-700;
+  @apply text-base text-gray-700 break-words;
 }
 
 .bb-guide-btns-container {
-  @apply mt-3 w-full flex flex-row justify-between items-center;
+  @apply mt-1 w-full flex flex-row justify-end items-center;
 }
 
 .bb-guide-btns-container > button {
