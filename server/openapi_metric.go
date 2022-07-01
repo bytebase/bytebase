@@ -22,7 +22,7 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			if s.MetricReporter.enabled {
 				s.MetricReporter.report(&metric.Metric{
 					Name:  metricAPI.OpenAPIMetricName,
-					Value: int(duration.Seconds()),
+					Value: int(duration.Milliseconds()),
 					Labels: map[string]string{
 						"request_method": requestMethod,
 						"request_path":   requestPath,
