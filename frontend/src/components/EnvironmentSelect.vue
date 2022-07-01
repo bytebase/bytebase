@@ -1,43 +1,25 @@
 <template>
-  <select
-    class="btn-select disabled:cursor-not-allowed"
+  <BBSelect
+    :selected-item="state.selectedEnvironment"
+    :item-list="environmentList"
     :disabled="disabled"
-    @change="
-      (e: any) => {
-        $emit('select-environment-id', parseInt(e.target.value));
-      }
-    "
+    :placeholder="$t('environment.select')"
+    :show-prefix-item="true"
+    @select-item="(env) => $emit('select-environment-id', env.id)"
   >
-    <option disabled :selected="undefined === state.selectedId">
-      {{ $t("environment.select") }}
-    </option>
-    <template v-for="(environment, index) in environmentList" :key="index">
-      <option
-        v-if="environment.rowStatus == 'NORMAL'"
-        :value="environment.id"
-        :selected="environment.id == state.selectedId"
-      >
-        {{ environmentName(environment) }}
-      </option>
-      <option
-        v-else-if="environment.id == state.selectedId"
-        :value="environment.id"
-        :selected="true"
-      >
-        {{ environmentName(environment) }}
-      </option>
+    <template #menuItem="{ item: environment }">
+      {{ environmentName(environment) }}
     </template>
-  </select>
+  </BBSelect>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, watch } from "vue";
-import { cloneDeep } from "lodash-es";
+import { computed, defineComponent, onMounted, reactive, watch } from "vue";
 import { Environment } from "../types";
 import { useEnvironmentList } from "@/store";
 
 interface LocalState {
-  selectedId?: number;
+  selectedEnvironment?: Environment;
 }
 
 export default defineComponent({
@@ -59,57 +41,72 @@ export default defineComponent({
   emits: ["select-environment-id"],
   setup(props, { emit }) {
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedEnvironment: undefined,
     });
 
     const rawEnvironmentList = useEnvironmentList(["NORMAL", "ARCHIVED"]);
-    const environmentList = computed(() =>
-      cloneDeep(rawEnvironmentList.value).reverse()
-    );
+    const environmentList = computed(() => {
+      const list = [...rawEnvironmentList.value].reverse();
 
-    if (environmentList.value && environmentList.value.length > 0) {
-      if (
-        !props.selectedId ||
-        !environmentList.value.find(
-          (item: Environment) => item.id == props.selectedId
-        )
-      ) {
-        if (props.selectDefault) {
-          for (const environment of environmentList.value) {
-            if (environment.rowStatus == "NORMAL") {
-              state.selectedId = environment.id;
-              emit("select-environment-id", state.selectedId);
-              break;
-            }
-          }
+      return list.filter((env) => {
+        if (env.rowStatus === "NORMAL") {
+          return true;
+        }
+
+        // env.rowStatus === "ARCHIVED"
+        if (env.id === state.selectedEnvironment?.id) {
+          return true;
+        }
+        return false;
+      });
+    });
+
+    const autoSelectDefaultIfNeeded = () => {
+      if (!props.selectDefault) {
+        return;
+      }
+
+      const list = environmentList.value;
+      if (list.length > 0) {
+        if (
+          !props.selectedId ||
+          !list.find((item: Environment) => item.id == props.selectedId)
+        ) {
+          // auto select the first NORMAL environment
+          const defaultEnvironment = list.find(
+            (env) => env.rowStatus === "NORMAL"
+          );
+          state.selectedEnvironment = defaultEnvironment;
+          emit("select-environment-id", defaultEnvironment?.id);
         }
       }
-    }
+    };
+
+    onMounted(() => {
+      autoSelectDefaultIfNeeded();
+    });
 
     const invalidateSelectionIfNeeded = () => {
       if (
-        state.selectedId &&
+        state.selectedEnvironment &&
         !environmentList.value.find(
-          (item: Environment) => item.id == state.selectedId
+          (item: Environment) => item.id == state.selectedEnvironment?.id
         )
       ) {
-        state.selectedId = undefined;
-        emit("select-environment-id", state.selectedId);
+        state.selectedEnvironment = undefined;
+        emit("select-environment-id", undefined);
       }
     };
 
     watch(
-      () => environmentList.value,
-      () => {
-        invalidateSelectionIfNeeded();
-      }
-    );
-
-    watch(
       () => props.selectedId,
-      (cur) => {
-        state.selectedId = cur;
-      }
+      (selectedId) => {
+        invalidateSelectionIfNeeded();
+        state.selectedEnvironment = environmentList.value.find(
+          (env) => env.id === selectedId
+        );
+      },
+      { immediate: true }
     );
 
     return {
