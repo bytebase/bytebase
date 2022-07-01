@@ -153,6 +153,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					)
 					continue
 				}
+				if index == nil {
+					continue
+				}
 				if index.Unique {
 					// Unique index naming convention should in advisor_naming_unique_key_convention.go
 					continue

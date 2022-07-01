@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/store"
@@ -159,9 +160,38 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceList := []advisor.Advice{}
 
 		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
-			adviceLevel, adviceList, err = s.sqlCheck(ctx, instance, exec)
+			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
 			if err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
+			}
+
+			databaseFind := &api.DatabaseFind{
+				InstanceID: &instance.ID,
+				Name:       &exec.DatabaseName,
+			}
+			dbList, err := s.store.FindDatabase(ctx, databaseFind)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
+			}
+			if len(dbList) == 0 {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
+			}
+			if len(dbList) > 1 {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
+			}
+			db := dbList[0]
+
+			adviceLevel, adviceList, err = s.sqlCheck(
+				ctx,
+				dbType,
+				db.CharacterSet,
+				db.Collation,
+				instance.EnvironmentID,
+				exec.Statement,
+				store.NewCatalog(&db.ID, s.store),
+			)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
 			}
 
 			if adviceLevel == advisor.Error {
@@ -761,77 +791,65 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 	return nil
 }
 
-func (s *Server) sqlCheck(ctx context.Context, instance *api.Instance, exec *api.SQLExecute) (advisor.Status, []advisor.Advice, error) {
-	adviceLevel := advisor.Success
+func (s *Server) sqlCheck(
+	ctx context.Context,
+	dbType advisor.DBType,
+	dbCharacterSet string,
+	dbCollation string,
+	environmentID int,
+	statement string,
+	catalog catalog.Catalog,
+) (advisor.Status, []advisor.Advice, error) {
 	var adviceList []advisor.Advice
-	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &instance.EnvironmentID})
+	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceLevel = advisor.Warn
-			adviceList = append(adviceList, advisor.Advice{
-				Status:  advisor.Warn,
-				Code:    advisor.NotFound,
-				Title:   "Empty schema review policy or disabled",
-				Content: "",
-			})
-		} else {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch schema review policy by environment ID: %d", instance.EnvironmentID)).SetInternal(err)
-		}
-	}
-	if adviceLevel == advisor.Success {
-		databaseFind := &api.DatabaseFind{
-			InstanceID: &instance.ID,
-			Name:       &exec.DatabaseName,
-		}
-		db, err := s.store.FindDatabase(ctx, databaseFind)
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database `%s` for instance ID: %d", exec.DatabaseName, instance.ID)).SetInternal(err)
-		}
-		if len(db) == 0 {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database `%s` for instance ID: %d not found", exec.DatabaseName, instance.ID))
-		}
-		if len(db) > 1 {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("There are multiple database `%s` for instance ID: %d", exec.DatabaseName, instance.ID))
-		}
-
-		dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
-		}
-
-		res, err := advisor.SchemaReviewCheck(ctx, exec.Statement, policy, advisor.SchemaReviewCheckContext{
-			Charset:   db[0].CharacterSet,
-			Collation: db[0].Collation,
-			DbType:    dbType,
-			Catalog:   store.NewCatalog(&db[0].ID, s.store),
-		})
-		if err != nil {
-			return advisor.Error, nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to run schema review check").SetInternal(err)
-		}
-
-		for _, advice := range res {
-			switch advice.Status {
-			case advisor.Warn:
-				if adviceLevel != advisor.Error {
-					adviceLevel = advisor.Warn
-				}
-			case advisor.Error:
-				adviceLevel = advisor.Error
-			case advisor.Success:
-				continue
+			adviceList = []advisor.Advice{
+				{
+					Status:  advisor.Warn,
+					Code:    advisor.NotFound,
+					Title:   "Schema review policy is not configured or disabled",
+					Content: "",
+				},
 			}
+			return advisor.Warn, adviceList, nil
+		}
+		return advisor.Error, nil, err
+	}
 
-			adviceList = append(adviceList, advice)
+	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SchemaReviewCheckContext{
+		Charset:   dbCharacterSet,
+		Collation: dbCollation,
+		DbType:    dbType,
+		Catalog:   catalog,
+	})
+	if err != nil {
+		return advisor.Error, nil, err
+	}
+
+	adviceLevel := advisor.Success
+	for _, advice := range res {
+		switch advice.Status {
+		case advisor.Warn:
+			if adviceLevel != advisor.Error {
+				adviceLevel = advisor.Warn
+			}
+		case advisor.Error:
+			adviceLevel = advisor.Error
+		case advisor.Success:
+			continue
 		}
 
-		if len(adviceList) == 0 {
-			adviceList = append(adviceList, advisor.Advice{
-				Status:  advisor.Success,
-				Code:    advisor.Ok,
-				Title:   "OK",
-				Content: "",
-			})
-		}
+		adviceList = append(adviceList, advice)
+	}
+
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, advisor.Advice{
+			Status:  advisor.Success,
+			Code:    advisor.Ok,
+			Title:   "OK",
+			Content: "",
+		})
 	}
 	return adviceLevel, adviceList, nil
 }
