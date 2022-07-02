@@ -23,6 +23,10 @@ const (
 	SheetCountMetricName metric.Name = "bb.sheet.count"
 	// MemberCountMetricName is the metric name for member count
 	MemberCountMetricName metric.Name = "bb.member.count"
+	// OpenAPIMetricName is the metric name for OpenAPI
+	OpenAPIMetricName metric.Name = "bb.api.call"
+	// SQLAdviseAPIMetricName is the metric name for SQL check API
+	SQLAdviseAPIMetricName metric.Name = "bb.api.sql.advise"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count

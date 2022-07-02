@@ -90,13 +90,7 @@ func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					for _, metric := range metricList {
-						if err := m.reporter.Report(metric); err != nil {
-							log.Error(
-								"Failed to report metric",
-								zap.String("metric", string(metric.Name)),
-								zap.Error(err),
-							)
-						}
+						m.report(metric)
 					}
 				}
 			}()
@@ -134,5 +128,15 @@ func (m *MetricReporter) identify() {
 		},
 	}); err != nil {
 		log.Debug("reporter identify failed", zap.Error(err))
+	}
+}
+
+func (m *MetricReporter) report(metric *metric.Metric) {
+	if err := m.reporter.Report(metric); err != nil {
+		log.Error(
+			"Failed to report metric",
+			zap.String("metric", string(metric.Name)),
+			zap.Error(err),
+		)
 	}
 }
