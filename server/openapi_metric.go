@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -24,7 +25,7 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 					Name:  metricAPI.OpenAPIMetricName,
 					Value: 1,
 					Labels: map[string]string{
-						"duration":       strconv.FormatFloat(duration.Seconds(), 'E', -1, 64),
+						"duration":       fmt.Sprintf("%f", duration.Seconds()),
 						"request_method": requestMethod,
 						"request_path":   requestPath,
 						"response_code":  strconv.Itoa(responseCode),
