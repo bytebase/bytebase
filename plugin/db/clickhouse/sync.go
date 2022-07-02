@@ -10,8 +10,57 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	excludedDatabaseList := []string{
+		// Skip our internal "bytebase" database
+		"'bytebase'",
+	}
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+	}
+
+	var databaseList []db.DatabaseMeta
+	// Query db info
+	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query := `
+		SELECT
+			name
+		FROM system.databases
+		WHERE ` + where
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var databaseMeta db.DatabaseMeta
+		if err := rows.Scan(
+			&databaseMeta.Name,
+		); err != nil {
+			return nil, err
+		}
+		databaseList = append(databaseList, databaseMeta)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 	excludedDatabaseList := []string{
 		// Skip our internal "bytebase" database
 		"'bytebase'",
@@ -20,12 +69,6 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 	// Skip all system databases
 	for k := range systemDatabases {
 		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
-	}
-
-	// Query user info
-	userList, err := driver.getUserList(ctx)
-	if err != nil {
-		return nil, nil, err
 	}
 
 	// Query column info
@@ -43,7 +86,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer columnRows.Close()
 
@@ -62,7 +105,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&column.Type,
 			&column.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
@@ -89,7 +132,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer tableRows.Close()
 
@@ -112,7 +155,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&definition,
 			&comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if engine == "View" {
@@ -147,7 +190,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -155,7 +198,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		if err := rows.Scan(
 			&schema.Name,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.TableList = tableMap[schema.Name]
 		schema.ViewList = viewMap[schema.Name]
@@ -163,13 +206,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		schemaList = append(schemaList, &schema)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return userList, schemaList, nil
+	return schemaList, nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	// host_ip isn't used for user identifier.
 	query := `
@@ -184,7 +227,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 	}
 	defer userRows.Close()
 
-	var userList []*db.User
+	var userList []db.User
 	for userRows.Next() {
 		var user string
 		if err := userRows.Scan(
@@ -214,7 +257,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			grantList = append(grantList, grant)
 		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  user,
 			Grant: strings.Join(grantList, "\n"),
 		})
