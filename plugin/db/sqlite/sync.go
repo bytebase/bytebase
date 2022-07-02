@@ -24,11 +24,38 @@ type indexSchema struct {
 	unique    bool
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+
+	var databaseList []db.DatabaseMeta
+	for _, dbName := range databases {
+		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+
+		databaseList = append(
+			databaseList,
+			db.DatabaseMeta{
+				Name: dbName,
+			},
+		)
+	}
+
+	return &db.InstanceMeta{
+		UserList:     nil,
+		DatabaseList: databaseList,
+	}, nil
+}
+
+// SyncSchema syncs the schema.
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return nil, err
 	}
 
 	var schemaList []*db.Schema
@@ -42,18 +69,18 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		sqldb, err := driver.GetDbConnection(ctx, dbName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
 		}
 		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		defer txn.Rollback()
 		// Index statements.
 		indicesMap := make(map[string][]indexSchema)
 		indices, err := getIndices(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 		}
 		for _, idx := range indices {
 			indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
@@ -61,23 +88,23 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		tbls, err := getTables(txn, indicesMap)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.TableList = tbls
 
 		views, err := getViews(txn)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.ViewList = views
 
 		if err := txn.Commit(); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		schemaList = append(schemaList, &schema)
 	}
-	return nil, schemaList, nil
+	return schemaList, nil
 }
 
 // getTables gets all tables of a database.
