@@ -1000,7 +1000,8 @@
       "standard": "Standard",
       "tenant": "Tenant"
     },
-    "db-name-template": "@:common.database @:common.name @:common.template"
+    "db-name-template": "@:common.database @:common.name @:common.template",
+    "select": "Select project"
   },
   "inbox": {
     "mark-all-as-read": "Mark all as read",

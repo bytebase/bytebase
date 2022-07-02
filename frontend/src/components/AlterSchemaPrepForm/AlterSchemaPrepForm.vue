@@ -105,7 +105,7 @@ import {
   Repository,
   UNKNOWN_ID,
 } from "@/types";
-import { allowGhostMigration, sortDatabaseList } from "@/utils";
+import { allowGhostMigration, isDev, sortDatabaseList } from "@/utils";
 import VCSTipsInfo from "./VCSTipsInfo.vue";
 import ProjectStandardView, {
   State as ProjectStandardState,
@@ -230,6 +230,10 @@ export default defineComponent({
     // 'online' -> online migration
     // false -> user clicked cancel button
     const isUsingGhostMigration = async (databaseList: Database[]) => {
+      if (!isDev()) {
+        return "normal";
+      }
+
       // never available for "bb.issue.database.data.update"
       if (props.type === "bb.issue.database.data.update") {
         return "normal";

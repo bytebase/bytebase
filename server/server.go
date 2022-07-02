@@ -292,6 +292,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	apiGroup := e.Group("/api")
 	openAPIGroup := e.Group(openAPIPrefix)
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return openAPIMetricMiddleware(s, next)
+	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
