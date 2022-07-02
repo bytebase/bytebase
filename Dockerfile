@@ -7,6 +7,8 @@
 
 FROM node:14 as frontend
 
+ARG RELEASE="release"
+
 RUN npm i -g pnpm
 
 WORKDIR /frontend-build
@@ -18,7 +20,7 @@ RUN pnpm install --frozen-lockfile
 COPY ./frontend/ .
 
 # Build frontend
-RUN pnpm release-docker
+RUN pnpm "${RELEASE}-docker"
 
 FROM golang:1.16.5 as backend
 
@@ -28,7 +30,6 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
-# Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
