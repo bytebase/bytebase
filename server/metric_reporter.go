@@ -30,7 +30,6 @@ type MetricReporter struct {
 	// subscription is the pointer to the server.subscription.
 	// the subscription can be updated by users so we need the pointer to get the latest value.
 	subscription *enterpriseAPI.Subscription
-	enabled      bool
 	// Version is the bytebase's version
 	version     string
 	workspaceID string
@@ -39,12 +38,11 @@ type MetricReporter struct {
 }
 
 // NewMetricReporter creates a new metric scheduler.
-func NewMetricReporter(server *Server, workspaceID string, enabled bool) *MetricReporter {
+func NewMetricReporter(server *Server, workspaceID string) *MetricReporter {
 	r := segment.NewReporter(server.profile.MetricConnectionKey, workspaceID)
 
 	return &MetricReporter{
 		subscription: &server.subscription,
-		enabled:      enabled,
 		version:      server.profile.Version,
 		workspaceID:  workspaceID,
 		reporter:     r,
@@ -54,10 +52,6 @@ func NewMetricReporter(server *Server, workspaceID string, enabled bool) *Metric
 
 // Run will run the metric reporter.
 func (m *MetricReporter) Run(ctx context.Context, wg *sync.WaitGroup) {
-	if !m.enabled {
-		return
-	}
-
 	ticker := time.NewTicker(metricSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()

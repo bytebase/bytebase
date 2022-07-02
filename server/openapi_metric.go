@@ -19,11 +19,12 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			requestPath := c.Path()
 			responseCode := c.Response().Status
 
-			if s.MetricReporter.enabled {
+			if s.MetricReporter != nil {
 				s.MetricReporter.report(&metric.Metric{
 					Name:  metricAPI.OpenAPIMetricName,
-					Value: int(duration.Milliseconds()),
+					Value: 1,
 					Labels: map[string]string{
+						"duration":       strconv.FormatFloat(duration.Seconds(), 'E', -1, 64),
 						"request_method": requestMethod,
 						"request_path":   requestPath,
 						"response_code":  strconv.Itoa(responseCode),

@@ -84,9 +84,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
 
-	if s.MetricReporter.enabled {
+	if s.MetricReporter != nil {
 		s.MetricReporter.report(&metric.Metric{
-			Name:  metricAPI.SQLCheckAPIMetricName,
+			Name:  metricAPI.SQLAdviseAPIMetricName,
 			Value: 1,
 			Labels: map[string]string{
 				"database_type": dbType,

@@ -377,16 +377,18 @@ func (s *Server) initSubscription() {
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter(workspaceID string) {
 	enabled := s.profile.Mode == common.ReleaseModeProd && !s.profile.Demo
-	metricReporter := NewMetricReporter(s, workspaceID, enabled)
-	metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
-	metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
-	metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
-	metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
-	metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
-	metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
-	metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
-	metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
-	s.MetricReporter = metricReporter
+	if enabled {
+		metricReporter := NewMetricReporter(s, workspaceID)
+		metricReporter.Register(metric.InstanceCountMetricName, metricCollector.NewInstanceCountCollector(s.store))
+		metricReporter.Register(metric.IssueCountMetricName, metricCollector.NewIssueCountCollector(s.store))
+		metricReporter.Register(metric.ProjectCountMetricName, metricCollector.NewProjectCountCollector(s.store))
+		metricReporter.Register(metric.PolicyCountMetricName, metricCollector.NewPolicyCountCollector(s.store))
+		metricReporter.Register(metric.TaskCountMetricName, metricCollector.NewTaskCountCollector(s.store))
+		metricReporter.Register(metric.DatabaseCountMetricName, metricCollector.NewDatabaseCountCollector(s.store))
+		metricReporter.Register(metric.SheetCountMetricName, metricCollector.NewSheetCountCollector(s.store))
+		metricReporter.Register(metric.MemberCountMetricName, metricCollector.NewMemberCountCollector(s.store))
+		s.MetricReporter = metricReporter
+	}
 }
 
 func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
@@ -457,7 +459,7 @@ func (s *Server) Run(ctx context.Context) error {
 		go s.AnomalyScanner.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 
-		if s.MetricReporter.enabled {
+		if s.MetricReporter != nil {
 			go s.MetricReporter.Run(ctx, &s.runnerWG)
 			s.runnerWG.Add(1)
 		}
