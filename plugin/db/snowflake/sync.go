@@ -16,22 +16,55 @@ var (
 	}
 )
 
-// SyncSchema synces the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	userList, err := driver.getUserList(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Query db info
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+
+	var databaseList []db.DatabaseMeta
+	for _, database := range databases {
+		if database == bytebaseDatabase {
+			continue
+		}
+
+		databaseList = append(
+			databaseList,
+			db.DatabaseMeta{
+				Name: database,
+			},
+		)
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
+// SyncSchema synces the schema.
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
+	// Query user info
+	if err := driver.useRole(ctx, accountAdminRole); err != nil {
+		return nil, err
+	}
+
+	// Query db info
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var schemaList []*db.Schema
@@ -44,17 +77,17 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		schema.Name = database
 		tableList, viewList, err := driver.syncTableSchema(ctx, database)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.TableList, schema.ViewList = tableList, viewList
 
 		schemaList = append(schemaList, &schema)
 	}
 
-	return userList, schemaList, nil
+	return schemaList, nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	query := `
 		SELECT
 			GRANTEE_NAME,
@@ -86,7 +119,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			name
 		FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
 	`
-	var userList []*db.User
+	var userList []db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -102,7 +135,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			return nil, err
 		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  name,
 			Grant: strings.Join(grants[name], ", "),
 		})
