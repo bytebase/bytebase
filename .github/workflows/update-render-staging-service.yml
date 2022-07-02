@@ -1,0 +1,34 @@
+name: Update render staging service
+
+on:
+  create:
+    branches:
+      - "release/*.*.*"
+
+jobs:
+  update-render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Extract version
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
+      - name: Update render web service
+        run: |
+          export RENDER_API_STATUS_CODE=$(curl --request PATCH \
+                -w %{http_code} \
+                -o /dev/null \
+                --url https://api.render.com/v1/services/srv-c760lk4objdcv67lc6ug \
+                --header 'Accept: application/json' \
+                --header 'Authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
+                --header 'Content-Type: application/json' \
+                --data '
+                {
+                  "autoDeploy": "yes",
+                  "branch": "release/${{ env.RELEASE_VERSION }}"
+                }
+                '
+              )
+          if [ "${RENDER_API_STATUS_CODE-}" != "200" ]; then
+            exit 1
+          fi
