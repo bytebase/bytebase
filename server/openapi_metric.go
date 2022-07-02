@@ -24,7 +24,7 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 					Name:  metricAPI.OpenAPIMetricName,
 					Value: 1,
 					Labels: map[string]string{
-						"latency_ms":     strconv.FormatInt(duration.Milliseconds(), 10),
+						"latency_ns":     strconv.FormatInt(duration.Nanoseconds(), 10),
 						"request_method": requestMethod,
 						"request_path":   requestPath,
 						"response_code":  strconv.Itoa(responseCode),
