@@ -21,12 +21,66 @@ var (
 	}
 )
 
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	excludedDatabaseList := []string{
+		// Skip our internal "bytebase" database
+		"'bytebase'",
+	}
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+	}
+
+	// Query db info
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query := `
+		SELECT
+			SCHEMA_NAME,
+			DEFAULT_CHARACTER_SET_NAME,
+			DEFAULT_COLLATION_NAME
+		FROM information_schema.SCHEMATA
+		WHERE ` + where
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var databaseList []db.DatabaseMeta
+	for rows.Next() {
+		var databaseMeta db.DatabaseMeta
+		if err := rows.Scan(
+			&databaseMeta.Name,
+			&databaseMeta.CharacterSet,
+			&databaseMeta.Collation,
+		); err != nil {
+			return nil, err
+		}
+		databaseList = append(databaseList, databaseMeta)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 	// Query MySQL version
 	version, err := driver.GetVersion(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	isMySQL8 := strings.HasPrefix(version, "8.0")
 
@@ -38,12 +92,6 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 	// Skip all system databases
 	for k := range systemDatabases {
 		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
-	}
-
-	// Query user info
-	userList, err := driver.getUserList(ctx)
-	if err != nil {
-		return nil, nil, err
 	}
 
 	// Query index info
@@ -80,7 +128,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 	}
 	indexRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer indexRows.Close()
 
@@ -104,7 +152,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&index.Visible,
 			&index.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if columnName.Valid {
@@ -139,7 +187,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			WHERE ` + columnWhere
 	columnRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer columnRows.Close()
 
@@ -163,7 +211,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&column.Collation,
 			&column.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if defaultStr.Valid {
@@ -199,7 +247,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			WHERE ` + tableWhere
 	tableRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer tableRows.Close()
 
@@ -232,7 +280,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&table.CreateOptions,
 			&table.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		switch table.Type {
@@ -270,7 +318,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			WHERE ` + viewWhere
 	viewRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer viewRows.Close()
 
@@ -284,7 +332,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&view.Name,
 			&view.Definition,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		info := viewInfoMap[fmt.Sprintf("%s/%s", dbName, view.Name)]
@@ -310,7 +358,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -322,7 +370,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&schema.CharacterSet,
 			&schema.Collation,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		schema.TableList = tableMap[schema.Name]
@@ -331,13 +379,13 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		schemaList = append(schemaList, &schema)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return userList, schemaList, err
+	return schemaList, err
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	query := `
 	  SELECT
@@ -346,7 +394,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM mysql.user
 		WHERE user NOT LIKE 'mysql.%'
 	`
-	var userList []*db.User
+	var userList []db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -386,7 +434,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			grantList = append(grantList, grant)
 		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  name,
 			Grant: strings.Join(grantList, "\n"),
 		})
