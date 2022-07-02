@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/labstack/echo/v4"
 )
 
@@ -66,7 +68,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
 	}
 	if len(envList) != 1 {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Invalid environment %s", envName))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
 	}
 
 	_, adviceList, err := s.sqlCheck(
@@ -80,6 +82,17 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+	}
+
+	if s.MetricReporter != nil {
+		s.MetricReporter.report(&metric.Metric{
+			Name:  metricAPI.SQLAdviseAPIMetricName,
+			Value: 1,
+			Labels: map[string]string{
+				"database_type": dbType,
+				"environment":   envName,
+			},
+		})
 	}
 
 	return c.JSON(http.StatusOK, adviceList)
