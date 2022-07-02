@@ -87,23 +87,57 @@ type indexSchema struct {
 	comment           string
 }
 
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList[k] = true
+	}
+	// Query db info
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get databases: %s", err)
+	}
+	var databaseList []db.DatabaseMeta
+	for _, database := range databases {
+		dbName := database.name
+		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+
+		databaseList = append(
+			databaseList,
+			db.DatabaseMeta{
+				Name:         dbName,
+				CharacterSet: database.encoding,
+				Collation:    database.collate,
+			},
+		)
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 	// Skip all system databases
 	for k := range systemDatabases {
 		excludedDatabaseList[k] = true
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// Query db info
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	var schemaList []*db.Schema
@@ -120,11 +154,11 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		sqldb, err := driver.GetDbConnection(ctx, dbName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
 		}
 		txn, err := sqldb.BeginTx(ctx, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		defer txn.Rollback()
 
@@ -132,7 +166,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		indicesMap := make(map[string][]*indexSchema)
 		indices, err := getIndices(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 		}
 		for _, idx := range indices {
 			key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
@@ -142,7 +176,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// Table statements.
 		tables, err := getPgTables(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
 		}
 		for _, tbl := range tables {
 			var dbTable db.Table
@@ -182,7 +216,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// View statements.
 		views, err := getViews(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
 		}
 		for _, view := range views {
 			var dbView db.View
@@ -197,21 +231,21 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// Extensions.
 		extensions, err := getExtensions(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
 		}
 		schema.ExtensionList = extensions
 
 		if err := txn.Commit(); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		schemaList = append(schemaList, &schema)
 	}
 
-	return userList, schemaList, err
+	return schemaList, err
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	query := `
 		SELECT usename AS role_name,
@@ -228,7 +262,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM pg_catalog.pg_user
 		ORDER BY role_name
 			`
-	var userList []*db.User
+	var userList []db.User
 	userRows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -245,7 +279,7 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			return nil, err
 		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  role,
 			Grant: attr,
 		})
