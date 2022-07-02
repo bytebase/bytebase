@@ -17,7 +17,7 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	var databaseList []db.DatabaseMetadata
+	var databaseList []db.DatabaseMeta
 	for _, database := range databases {
 		if database == bytebaseDatabase {
 			continue
@@ -42,13 +42,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 		databaseList = append(
 			databaseList,
-			db.DatabaseMetadata{
+			db.DatabaseMeta{
 				Name: database,
 			},
 		)
 	}
 
-	return &db.InstanceMetadata{
+	return &db.InstanceMeta{
 		UserList:     userList,
 		DatabaseList: databaseList,
 	}, nil

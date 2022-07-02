@@ -317,7 +317,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		}
 
 		// Sync instance metadata.
-		instanceMetadata, err := driver.SyncInstance(ctx)
+		instanceMeta, err := driver.SyncInstance(ctx)
 		if err != nil {
 			resultSet.Error = err.Error()
 			return nil
@@ -515,7 +515,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		}
 
 		// Upsert user found in the instance
-		for _, user := range instanceMetadata.UserList {
+		for _, user := range instanceMeta.UserList {
 			userUpsert := &api.InstanceUserUpsert{
 				CreatorID:  api.SystemBotID,
 				InstanceID: instance.ID,
@@ -531,7 +531,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		// Delete user no longer found in the instance
 		for _, user := range instanceUserList {
 			found := false
-			for _, dbUser := range instanceMetadata.UserList {
+			for _, dbUser := range instanceMeta.UserList {
 				if user.Name == dbUser.Name {
 					found = true
 					break

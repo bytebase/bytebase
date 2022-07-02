@@ -25,13 +25,13 @@ type indexSchema struct {
 }
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
 	}
 
-	var databaseList []db.DatabaseMetadata
+	var databaseList []db.DatabaseMeta
 	for _, dbName := range databases {
 		if _, ok := excludedDatabaseList[dbName]; ok {
 			continue
@@ -39,13 +39,13 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 		databaseList = append(
 			databaseList,
-			db.DatabaseMetadata{
+			db.DatabaseMeta{
 				Name: dbName,
 			},
 		)
 	}
 
-	return &db.InstanceMetadata{
+	return &db.InstanceMeta{
 		UserList:     nil,
 		DatabaseList: databaseList,
 	}, nil

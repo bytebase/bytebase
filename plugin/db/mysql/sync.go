@@ -22,7 +22,7 @@ var (
 )
 
 // SyncInstance syncs the instance.
-func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	// Query user info
 	userList, err := driver.getUserList(ctx)
 	if err != nil {
@@ -53,23 +53,23 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 	defer rows.Close()
 
-	var databaseList []db.DatabaseMetadata
+	var databaseList []db.DatabaseMeta
 	for rows.Next() {
-		var databaseMetadata db.DatabaseMetadata
+		var databaseMeta db.DatabaseMeta
 		if err := rows.Scan(
-			&databaseMetadata.Name,
-			&databaseMetadata.CharacterSet,
-			&databaseMetadata.Collation,
+			&databaseMeta.Name,
+			&databaseMeta.CharacterSet,
+			&databaseMeta.Collation,
 		); err != nil {
 			return nil, err
 		}
-		databaseList = append(databaseList, databaseMetadata)
+		databaseList = append(databaseList, databaseMeta)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &db.InstanceMetadata{
+	return &db.InstanceMeta{
 		UserList:     userList,
 		DatabaseList: databaseList,
 	}, nil

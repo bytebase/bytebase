@@ -117,14 +117,14 @@ type Table struct {
 	IndexList []Index
 }
 
-// InstanceMetadata is the metadata for an instance.
-type InstanceMetadata struct {
+// InstanceMeta is the metadata for an instance.
+type InstanceMeta struct {
 	UserList     []User
-	DatabaseList []DatabaseMetadata
+	DatabaseList []DatabaseMeta
 }
 
-// DatabaseMetadata is the metadata for a database.
-type DatabaseMetadata struct {
+// DatabaseMeta is the metadata for a database.
+type DatabaseMeta struct {
 	Name string
 	// CharacterSet isn't supported for ClickHouse, Snowflake.
 	CharacterSet string
@@ -425,7 +425,7 @@ type Driver interface {
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
 	SyncSchema(ctx context.Context) ([]*Schema, error)
-	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
+	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string) error
