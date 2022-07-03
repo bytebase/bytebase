@@ -424,7 +424,8 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
-	SyncSchema(ctx context.Context) ([]*Schema, error)
+	// SyncSchema syncs the database schema. If databaseList is empty, we will sync all databases for the instance.
+	SyncSchema(ctx context.Context, databaseList ...string) ([]*Schema, error)
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.

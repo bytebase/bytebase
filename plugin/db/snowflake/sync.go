@@ -55,7 +55,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncSchema synces the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, err
@@ -70,6 +70,16 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 	var schemaList []*db.Schema
 	for _, database := range databases {
 		if database == bytebaseDatabase {
+			continue
+		}
+		exists := false
+		for _, k := range databaseList {
+			if database == k {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			continue
 		}
 
