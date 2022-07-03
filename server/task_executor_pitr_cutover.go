@@ -133,7 +133,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 
 	// Sync database schema after restore is completed.
 	if err := server.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
-		log.Error(fmt.Sprintf("failed to sync database schema, error %v", err),
+		log.Error("failed to sync database schema",
 			zap.String("instance", task.Database.Instance.Name),
 			zap.String("databaseName", task.Database.Name),
 		)

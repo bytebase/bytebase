@@ -500,7 +500,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}
 		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
-			log.Error(fmt.Sprintf("failed to sync database schema, error %v", err),
+			log.Error("failed to sync database schema",
 				zap.String("instance", instance.Name),
 				zap.String("databaseName", taskPatched.Database.Name),
 			)
