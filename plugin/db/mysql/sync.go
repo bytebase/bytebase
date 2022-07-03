@@ -76,7 +76,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
 	// Query MySQL version
 	version, err := driver.GetVersion(ctx)
 	if err != nil {
@@ -88,14 +88,20 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 		// Skip our internal "bytebase" database
 		"'bytebase'",
 	}
-
+	var includeDatabaseList []string
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
+	}
+	for _, k := range databaseList {
+		includeDatabaseList = append(includeDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
 	}
 
 	// Query index info
 	indexWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		indexWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", indexWhere, strings.Join(includeDatabaseList, ", "))
+	}
 	query := `
 			SELECT
 				TABLE_SCHEMA,
@@ -171,6 +177,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 
 	// Query column info
 	columnWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		columnWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", columnWhere, strings.Join(includeDatabaseList, ", "))
+	}
 	query = `
 			SELECT
 				TABLE_SCHEMA,
@@ -228,6 +237,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 
 	// Query table info
 	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		tableWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", tableWhere, strings.Join(includeDatabaseList, ", "))
+	}
 	query = `
 			SELECT
 				TABLE_SCHEMA,
@@ -309,6 +321,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 
 	// Query view info
 	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		viewWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", viewWhere, strings.Join(includeDatabaseList, ", "))
+	}
 	query = `
 			SELECT
 				TABLE_SCHEMA,
@@ -349,6 +364,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		where = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", where, strings.Join(includeDatabaseList, ", "))
+	}
 	query = `
 			SELECT
 		    SCHEMA_NAME,
