@@ -91,10 +91,10 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	var includeDatabaseList []string
 	// Skip all system databases
 	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
 	}
 	for _, k := range databaseList {
-		includeDatabaseList = append(includeDatabaseList, fmt.Sprintf("'%s'", k))
+		includeDatabaseList = append(includeDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
 	}
 
 	// Query index info
