@@ -52,7 +52,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
@@ -61,6 +61,16 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.Schema, error) {
 	var schemaList []*db.Schema
 	for _, dbName := range databases {
 		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+		exists := false
+		for _, k := range databaseList {
+			if dbName == k {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			continue
 		}
 
