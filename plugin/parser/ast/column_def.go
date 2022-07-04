@@ -4,5 +4,6 @@ package ast
 type ColumnDef struct {
 	node
 
-	ColumnName string
+	ColumnName     string
+	ConstraintList []*ConstraintDef
 }
