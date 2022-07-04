@@ -1,9 +1,6 @@
 name: Update render staging service
 
 on:
-  create:
-    branches:
-      - "release/*.*.*"
   push:
     branches:
       - "release/*.*.*"
