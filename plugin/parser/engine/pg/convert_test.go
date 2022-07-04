@@ -14,6 +14,16 @@ type testData struct {
 	want []ast.Node
 }
 
+func runTests(t *testing.T, tests []testData) {
+	p := &PostgreSQLParser{}
+
+	for _, test := range tests {
+		res, err := p.Parse(parser.Context{}, test.stmt)
+		require.NoError(t, err)
+		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
+	}
+}
+
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
@@ -139,13 +149,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 		},
 	}
 
-	p := &PostgreSQLParser{}
-
-	for _, test := range tests {
-		res, err := p.Parse(parser.Context{}, test.stmt)
-		require.NoError(t, err)
-		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
-	}
+	runTests(t, tests)
 }
 
 func TestPGAddColumnStmt(t *testing.T) {
@@ -170,15 +174,38 @@ func TestPGAddColumnStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddColumnListStmt{
+							Table: &ast.TableDef{
+								Name: "techbook",
+							},
+							ColumnList: []*ast.ColumnDef{
+								{
+									ColumnName: "a",
+									ConstraintList: []*ast.ConstraintDef{
+										{
+											Type:    ast.ConstraintTypeUnique,
+											Name:    "uk_techbook_a",
+											KeyList: []string{"a"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
-	p := &PostgreSQLParser{}
-
-	for _, test := range tests {
-		res, err := p.Parse(parser.Context{}, test.stmt)
-		require.NoError(t, err)
-		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
-	}
+	runTests(t, tests)
 }
 
 func TestPGRenameTableStmt(t *testing.T) {
@@ -196,13 +223,7 @@ func TestPGRenameTableStmt(t *testing.T) {
 		},
 	}
 
-	p := &PostgreSQLParser{}
-
-	for _, test := range tests {
-		res, err := p.Parse(parser.Context{}, test.stmt)
-		require.NoError(t, err)
-		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
-	}
+	runTests(t, tests)
 }
 
 func TestPGRenameColumnStmt(t *testing.T) {
@@ -221,6 +242,23 @@ func TestPGRenameColumnStmt(t *testing.T) {
 		},
 	}
 
+	runTests(t, tests)
+}
+
+func TestPGRenameConstraintStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
+			want: []ast.Node{
+				&ast.RenameConstraintStmt{
+					Table:          &ast.TableDef{Name: "tech_book"},
+					ConstraintName: "uk_tech_a",
+					NewName:        "UK_TECH_A",
+				},
+			},
+		},
+	}
+
 	p := &PostgreSQLParser{}
 
 	for _, test := range tests {
@@ -228,4 +266,126 @@ func TestPGRenameColumnStmt(t *testing.T) {
 		require.NoError(t, err)
 		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
 	}
+}
+
+func TestPGDropConstraintStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.DropConstraintStmt{
+							Table:          &ast.TableDef{Name: "tech_book"},
+							ConstraintName: "uk_tech_a",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGAddConstraintStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeUnique,
+								Name:    "uk_tech_book_id",
+								KeyList: []string{"id"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypePrimary,
+								Name:    "pk_tech_book_id",
+								KeyList: []string{"id"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:    ast.ConstraintTypeForeign,
+								Name:    "fk_tech_book_id",
+								KeyList: []string{"id"},
+								Foreign: &ast.ForeignDef{
+									Table:      &ast.TableDef{Name: "people"},
+									ColumnList: []string{"id"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:      ast.ConstraintTypeUniqueUsingIndex,
+								Name:      "uk_tech_book_id",
+								IndexName: "uk_id",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.AddConstraintStmt{
+							Table: &ast.TableDef{Name: "tech_book"},
+							Constraint: &ast.ConstraintDef{
+								Type:      ast.ConstraintTypePrimaryUsingIndex,
+								Name:      "pk_tech_book_id",
+								IndexName: "pk_id",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
 }
