@@ -517,6 +517,7 @@
   "create-db": {
     "new-database-name": "新数据库名称",
     "database-owner-name": "数据库所有者",
+    "cluster": "集群",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
