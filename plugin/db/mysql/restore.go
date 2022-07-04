@@ -409,7 +409,8 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 	if err := row.Err(); err != nil {
 		return false, util.FormatErrorWithQuery(err, query)
 	}
-	return false, common.FormatDBErrorEmptyRowWithQuery(query)
+	// The query returns empty row, which means there's no such database.
+	return false, nil
 }
 
 // Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
