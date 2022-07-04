@@ -37,8 +37,8 @@ type BackupType string
 const (
 	// BackupTypeAutomatic is the type for automatic backup.
 	BackupTypeAutomatic BackupType = "AUTOMATIC"
-	// BackupTypeAutomaticPITRCutover is the type of backup taken at PITR cutover stage.
-	BackupTypeAutomaticPITRCutover BackupType = "AUTOMATIC_PITR_CUTOVER"
+	// BackupTypePITR is the type of backup taken at PITR cutover stage.
+	BackupTypePITR BackupType = "PITR"
 	// BackupTypeManual is the type for manual backup.
 	BackupTypeManual BackupType = "MANUAL"
 )
@@ -47,8 +47,8 @@ func (e BackupType) String() string {
 	switch e {
 	case BackupTypeAutomatic:
 		return "AUTOMATIC"
-	case BackupTypeAutomaticPITRCutover:
-		return "AUTOMATIC_PITR_CUTOVER"
+	case BackupTypePITR:
+		return "PITR"
 	case BackupTypeManual:
 		return "MANUAL"
 	default:

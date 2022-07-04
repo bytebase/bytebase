@@ -1,53 +1,16 @@
 <template>
-  <select
-    class="btn-select w-full disabled:cursor-not-allowed"
+  <BBSelect
+    :selected-item="state.selectedProject"
+    :item-list="projectList"
     :disabled="disabled"
-    @change="
-      (e: any) => {
-        $emit('select-project-id', parseInt(e.target.value, 10));
-      }
-    "
+    :placeholder="$t('project.select')"
+    :show-prefix-item="true"
+    @select-item="(project) => $emit('select-project-id', project.id)"
   >
-    <option disabled :selected="UNKNOWN_ID == state.selectedId">
-      Select project
-    </option>
-    <!-- If includeDefaultProject is false but the selected project is the default
-         project, we will show it. If includeDefaultProject is true, then it's
-    already in the list, so no need to show it twice-->
-    <option
-      v-if="!includeDefaultProject && state.selectedId == DEFAULT_PROJECT_ID"
-      :selected="true"
-    >
-      Default
-    </option>
-    <!-- It may happen the selected id might not be in the project list.
-         e.g. the selected project is deleted after the selection and we
-         are unable to cleanup properly. In such case, the seleted project id
-    is orphaned and we just display the id.-->
-    <option
-      v-else-if="selectedIdNotInList"
-      :value="state.selectedId"
-      :selected="true"
-    >
-      {{ state.selectedId }}
-    </option>
-    <template v-for="(project, index) in projectList" :key="index">
-      <option
-        v-if="project.rowStatus == 'NORMAL'"
-        :value="project.id"
-        :selected="project.id == state.selectedId"
-      >
-        {{ projectName(project) }}
-      </option>
-      <option
-        v-else-if="project.id == state.selectedId"
-        :value="project.id"
-        :selected="true"
-      >
-        {{ projectName(project) }}
-      </option>
+    <template #menuItem="{ item: project }">
+      {{ projectName(project) }}
     </template>
-  </select>
+  </BBSelect>
 </template>
 
 <script lang="ts">
@@ -64,12 +27,13 @@ import {
   UNKNOWN_ID,
   DEFAULT_PROJECT_ID,
   ProjectRoleType,
+  unknown,
 } from "../types";
 import { isDBAOrOwner } from "../utils";
 import { featureToRef, useCurrentUser, useProjectStore } from "@/store";
 
 interface LocalState {
-  selectedId: number;
+  selectedProject?: Project;
 }
 
 export enum Mode {
@@ -104,7 +68,7 @@ export default defineComponent({
   emits: ["select-project-id"],
   setup(props) {
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedProject: undefined,
     });
 
     const currentUser = useCurrentUser();
@@ -121,15 +85,11 @@ export default defineComponent({
 
     const hasRBACFeature = featureToRef("bb.feature.rbac");
 
-    const projectList = computed((): Project[] => {
+    const rawProjectList = computed((): Project[] => {
       let list = projectStore.getProjectListByUser(currentUser.value.id, [
         "NORMAL",
         "ARCHIVED",
       ]) as Project[];
-
-      if (props.includeDefaultProject) {
-        list.unshift(useProjectStore().getProjectById(DEFAULT_PROJECT_ID));
-      }
 
       list = list.filter((project) => {
         if (project.tenantMode === "DISABLED" && props.mode & Mode.Standard) {
@@ -168,17 +128,59 @@ export default defineComponent({
       }
 
       return (
-        projectList.value.find((item) => {
+        rawProjectList.value.find((item) => {
           return item.id == props.selectedId;
         }) == null
       );
     });
 
-    watch(
-      () => props.selectedId,
-      (cur) => {
-        state.selectedId = cur;
+    const projectList = computed((): Project[] => {
+      const list = rawProjectList.value.filter((project) => {
+        if (project.rowStatus === "NORMAL") {
+          return true;
+        }
+        // project.rowStatus === "ARCHIVED"
+        if (project.id === props.selectedId) {
+          return true;
+        }
+        return false;
+      });
+
+      const defaultProject = projectStore.getProjectById(DEFAULT_PROJECT_ID);
+      if (
+        props.includeDefaultProject ||
+        props.selectedId === DEFAULT_PROJECT_ID
+      ) {
+        // If includeDefaultProject is false but the selected project is the default
+        // project, we will show it. If includeDefaultProject is true, then it's
+        // already in the list, so no need to show it twice
+        list.unshift(defaultProject);
       }
+
+      if (
+        props.selectedId !== DEFAULT_PROJECT_ID &&
+        selectedIdNotInList.value
+      ) {
+        // It may happen the selected id might not be in the project list.
+        // e.g. the selected project is deleted after the selection and we
+        // are unable to cleanup properly. In such case, the selected project id
+        // is orphaned and we just display the id
+        const dummyProject = reactive(unknown("PROJECT"));
+        dummyProject.id = props.selectedId;
+        dummyProject.name = props.selectedId.toString();
+        list.unshift(dummyProject);
+      }
+
+      return list;
+    });
+    watch(
+      [() => props.selectedId, projectList],
+      ([selectedId, list]) => {
+        state.selectedProject = list.find(
+          (project) => project.id === selectedId
+        );
+      },
+      { immediate: true }
     );
 
     return {

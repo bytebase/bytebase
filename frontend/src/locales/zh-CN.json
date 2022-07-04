@@ -1001,7 +1001,8 @@
       "standard": "标准",
       "tenant": "多租户"
     },
-    "db-name-template": "数据库名称模板"
+    "db-name-template": "数据库名称模板",
+    "select": "选择项目"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",

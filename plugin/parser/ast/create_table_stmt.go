@@ -4,7 +4,8 @@ package ast
 type CreateTableStmt struct {
 	node
 
-	IfNotExists bool
-	Name        *TableDef
-	ColumnList  []*ColumnDef
+	IfNotExists    bool
+	Name           *TableDef
+	ColumnList     []*ColumnDef
+	ConstraintList []*ConstraintDef
 }

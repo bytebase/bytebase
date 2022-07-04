@@ -314,10 +314,10 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 				backup = bc.backup
 				break
 			}
-			if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypeAutomaticPITRCutover {
+			if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypePITR {
 				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
 			}
-			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypeAutomaticPITRCutover {
+			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypePITR {
 				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
 			}
 		}

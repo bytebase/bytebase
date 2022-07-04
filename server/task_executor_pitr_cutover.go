@@ -187,7 +187,7 @@ func (exec *PITRCutoverTaskExecutor) backupDatabaseAfterPITR(ctx context.Context
 		CreatorID:               api.SystemBotID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
-		Type:                    api.BackupTypeAutomaticPITRCutover,
+		Type:                    api.BackupTypePITR,
 		MigrationHistoryVersion: migrationHistoryVersion,
 		StorageBackend:          api.BackupStorageBackendLocal,
 		Path:                    path,
