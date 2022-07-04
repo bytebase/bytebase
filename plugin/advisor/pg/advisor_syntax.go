@@ -21,6 +21,10 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 	var res []advisor.Advice
 	if _, errAdvice := parseStatement(statement); errAdvice != nil {
 		for _, advice := range errAdvice {
+			// Here is to filter parser.ConvertError.
+			// The reason for this is to remove potential conversion errors from the syntax check.
+			// Syntax check doesn't actually require the transformed AST either.
+			// TODO(rebelice): remove it when conversion function is complete.
 			if advice.Code == advisor.StatementSyntaxError {
 				res = append(res, advice)
 			}
