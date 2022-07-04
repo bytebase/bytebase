@@ -235,7 +235,7 @@ func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePat
 // createDataSourceImpl creates a new dataSource.
 func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.DataSourceCreate) (*dataSourceRaw, error) {
 	// Insert row into dataSource.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO data_source (
 			creator_id,
 			updater_id,
@@ -251,7 +251,8 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, name, type, username, password, ssl_key, ssl_cert, ssl_ca
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
@@ -270,28 +271,32 @@ func (s *Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *ap
 	}
 	defer row.Close()
 
-	row.Next()
-	var dataSourceRaw dataSourceRaw
-	if err := row.Scan(
-		&dataSourceRaw.ID,
-		&dataSourceRaw.CreatorID,
-		&dataSourceRaw.CreatedTs,
-		&dataSourceRaw.UpdaterID,
-		&dataSourceRaw.UpdatedTs,
-		&dataSourceRaw.InstanceID,
-		&dataSourceRaw.DatabaseID,
-		&dataSourceRaw.Name,
-		&dataSourceRaw.Type,
-		&dataSourceRaw.Username,
-		&dataSourceRaw.Password,
-		&dataSourceRaw.SslKey,
-		&dataSourceRaw.SslCert,
-		&dataSourceRaw.SslCa,
-	); err != nil {
+	if row.Next() {
+		var dataSourceRaw dataSourceRaw
+		if err := row.Scan(
+			&dataSourceRaw.ID,
+			&dataSourceRaw.CreatorID,
+			&dataSourceRaw.CreatedTs,
+			&dataSourceRaw.UpdaterID,
+			&dataSourceRaw.UpdatedTs,
+			&dataSourceRaw.InstanceID,
+			&dataSourceRaw.DatabaseID,
+			&dataSourceRaw.Name,
+			&dataSourceRaw.Type,
+			&dataSourceRaw.Username,
+			&dataSourceRaw.Password,
+			&dataSourceRaw.SslKey,
+			&dataSourceRaw.SslCert,
+			&dataSourceRaw.SslCa,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &dataSourceRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &dataSourceRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
@@ -424,6 +429,8 @@ func (s *Store) patchDataSourceImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		}
 		return &dataSourceRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("DataSource not found with ID %d", patch.ID)}
 }

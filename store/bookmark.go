@@ -194,7 +194,7 @@ func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) 
 // createBookmarkImpl creates a new bookmark.
 func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO bookmark (
 			creator_id,
 			updater_id,
@@ -203,7 +203,8 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 		)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -215,21 +216,25 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 	}
 	defer row.Close()
 
-	row.Next()
-	var bookmarkRaw bookmarkRaw
-	if err := row.Scan(
-		&bookmarkRaw.ID,
-		&bookmarkRaw.CreatorID,
-		&bookmarkRaw.CreatedTs,
-		&bookmarkRaw.UpdaterID,
-		&bookmarkRaw.UpdatedTs,
-		&bookmarkRaw.Name,
-		&bookmarkRaw.Link,
-	); err != nil {
+	if row.Next() {
+		var bookmarkRaw bookmarkRaw
+		if err := row.Scan(
+			&bookmarkRaw.ID,
+			&bookmarkRaw.CreatorID,
+			&bookmarkRaw.CreatedTs,
+			&bookmarkRaw.UpdaterID,
+			&bookmarkRaw.UpdatedTs,
+			&bookmarkRaw.Name,
+			&bookmarkRaw.Link,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &bookmarkRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &bookmarkRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {

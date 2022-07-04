@@ -79,7 +79,7 @@ func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizer
 }
 
 func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.SheetOrganizerUpsert) (*sheetOrganizerRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 	  INSERT INTO sheet_organizer (
 			sheet_id,
 			principal_id,
@@ -91,7 +91,8 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.Sheet
 			starred = EXCLUDED.starred,
 			pinned = EXCLUDED.pinned
 		RETURNING id, sheet_id, principal_id, starred, pinned
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		upsert.SheetID,
 		upsert.PrincipalID,
 		upsert.Starred,
@@ -102,19 +103,23 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.Sheet
 	}
 	defer row.Close()
 
-	row.Next()
-	var sheetOrganizerRaw sheetOrganizerRaw
-	if err := row.Scan(
-		&sheetOrganizerRaw.ID,
-		&sheetOrganizerRaw.SheetID,
-		&sheetOrganizerRaw.PrincipalID,
-		&sheetOrganizerRaw.Starred,
-		&sheetOrganizerRaw.Pinned,
-	); err != nil {
+	if row.Next() {
+		var sheetOrganizerRaw sheetOrganizerRaw
+		if err := row.Scan(
+			&sheetOrganizerRaw.ID,
+			&sheetOrganizerRaw.SheetID,
+			&sheetOrganizerRaw.PrincipalID,
+			&sheetOrganizerRaw.Starred,
+			&sheetOrganizerRaw.Pinned,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &sheetOrganizerRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &sheetOrganizerRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findSheetOrganizerListImpl(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {

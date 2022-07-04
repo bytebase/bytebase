@@ -132,25 +132,24 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 
 	where, args := findInstanceQuery(find)
 
-	row, err := tx.PTx.QueryContext(ctx, `
-		SELECT COUNT(*)
-		FROM instance
-		WHERE `+where,
-		args...,
-	)
+	query := `SELECT COUNT(*) FROM instance WHERE ` + where
+	row, err := tx.PTx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, FormatError(err)
 	}
 	defer row.Close()
 
-	count := 0
 	if row.Next() {
+		count := 0
 		if err := row.Scan(&count); err != nil {
 			return 0, FormatError(err)
 		}
+		return count, nil
 	}
-
-	return count, nil
+	if err := row.Err(); err != nil {
+		return 0, FormatError(err)
+	}
+	return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
@@ -181,6 +180,9 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return res, nil
@@ -415,7 +417,7 @@ func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) 
 // createInstanceImpl creates a new instance.
 func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCreate) (*instanceRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO instance (
 			creator_id,
 			updater_id,
@@ -428,7 +430,8 @@ func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCre
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.EnvironmentID,
@@ -444,27 +447,31 @@ func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCre
 	}
 	defer row.Close()
 
-	row.Next()
-	var instanceRaw instanceRaw
-	if err := row.Scan(
-		&instanceRaw.ID,
-		&instanceRaw.RowStatus,
-		&instanceRaw.CreatorID,
-		&instanceRaw.CreatedTs,
-		&instanceRaw.UpdaterID,
-		&instanceRaw.UpdatedTs,
-		&instanceRaw.EnvironmentID,
-		&instanceRaw.Name,
-		&instanceRaw.Engine,
-		&instanceRaw.EngineVersion,
-		&instanceRaw.ExternalLink,
-		&instanceRaw.Host,
-		&instanceRaw.Port,
-	); err != nil {
+	if row.Next() {
+		var instanceRaw instanceRaw
+		if err := row.Scan(
+			&instanceRaw.ID,
+			&instanceRaw.RowStatus,
+			&instanceRaw.CreatorID,
+			&instanceRaw.CreatedTs,
+			&instanceRaw.UpdaterID,
+			&instanceRaw.UpdatedTs,
+			&instanceRaw.EnvironmentID,
+			&instanceRaw.Name,
+			&instanceRaw.Engine,
+			&instanceRaw.EngineVersion,
+			&instanceRaw.ExternalLink,
+			&instanceRaw.Host,
+			&instanceRaw.Port,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &instanceRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &instanceRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
@@ -515,7 +522,6 @@ func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) (
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		instanceRawList = append(instanceRawList, &instanceRaw)
 	}
 	if err := rows.Err(); err != nil {
@@ -583,10 +589,11 @@ func patchInstanceImpl(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &instanceRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
 }
 
