@@ -524,7 +524,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 			Labels:        c.Labels,
 			SchemaVersion: schemaVersion,
 		}
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c.DatabaseName, c.CharacterSet, c.Collation, c.Owner, schema)
+		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
 		bytes, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
@@ -1001,7 +1001,8 @@ func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, de
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, collation, owner, schema string) (string, string) {
+func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.CreateDatabaseContext, schema string) (string, string) {
+	databaseName := createDatabaseContext.DatabaseName
 	// Snowflake needs to use upper case of DatabaseName.
 	if dbType == db.Snowflake {
 		databaseName = strings.ToUpper(databaseName)
@@ -1010,15 +1011,15 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 	var stmt string
 	switch dbType {
 	case db.MySQL, db.TiDB:
-		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, characterSet, collation)
+		stmt = fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
 	case db.Postgres:
-		if collation == "" {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, characterSet)
+		if createDatabaseContext.Collation == "" {
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q;", databaseName, createDatabaseContext.CharacterSet)
 		} else {
-			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, characterSet, collation)
+			stmt = fmt.Sprintf("CREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", databaseName, createDatabaseContext.CharacterSet, createDatabaseContext.Collation)
 		}
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
@@ -1028,7 +1029,7 @@ func getDatabaseNameAndStatement(dbType db.Type, databaseName, characterSet, col
 		// ERROR:  must be member of role "hello"
 		//
 		// For tenant project, the schema for the newly created database will belong to the same owner.
-		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, owner)
+		stmt = fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO %s;\n", stmt, databaseName, createDatabaseContext.Owner)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}
