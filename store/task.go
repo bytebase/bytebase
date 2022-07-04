@@ -360,7 +360,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
 	// we do a read and write on task, without guaranteed consistency on task runs.
 	// Once we have multiple task runs, the task will get to unrecoverable state because find task run will fail with two active runs.
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -734,6 +734,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 
 	var taskPatchedRaw *taskRaw
 	var found bool
+	// TODO(dragonly): change all row.Next() to use QueryRow/QueryRowContext().
 	if row.Next() {
 		var taskRaw taskRaw
 		if err := row.Scan(
@@ -762,6 +763,10 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	}
 	if !found {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
+	}
+	// Explicitly close row for the next transaction.
+	if err := row.Close(); err != nil {
+		return nil, err
 	}
 
 	if taskPatchedRaw == nil {
