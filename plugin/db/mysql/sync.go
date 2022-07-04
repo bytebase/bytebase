@@ -365,11 +365,11 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	if len(databaseList) > 0 {
-		where = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", where, strings.Join(includeDatabaseList, ", "))
+		where = fmt.Sprintf("%s AND LOWER(SCHEMA_NAME) IN (%s)", where, strings.Join(includeDatabaseList, ", "))
 	}
 	query = `
-			SELECT
-		    SCHEMA_NAME,
+		SELECT
+			SCHEMA_NAME,
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
