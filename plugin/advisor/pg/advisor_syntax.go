@@ -18,16 +18,27 @@ type SyntaxAdvisor struct {
 
 // Check parses the given statement and checks for errors.
 func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+	var res []advisor.Advice
 	if _, errAdvice := parseStatement(statement); errAdvice != nil {
-		return errAdvice, nil
+		for _, advice := range errAdvice {
+			// Here is to filter parser.ConvertError.
+			// The reason for this is to remove potential conversion errors from the syntax check.
+			// Syntax check doesn't actually require the transformed AST either.
+			// TODO(rebelice): remove it when conversion function is complete.
+			if advice.Code == advisor.StatementSyntaxError {
+				res = append(res, advice)
+			}
+		}
 	}
 
-	return []advisor.Advice{
-		{
+	if len(res) == 0 {
+		res = append(res, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "Syntax OK",
 			Content: "OK",
-		},
-	}, nil
+		})
+	}
+
+	return res, nil
 }
