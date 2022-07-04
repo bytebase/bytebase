@@ -95,7 +95,12 @@ func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Se
 	}
 
 	// Sync database schema after restore is completed.
-	server.syncEngineVersionAndSchema(ctx, targetDatabase.Instance)
+	if err := server.syncDatabaseSchema(ctx, targetDatabase.Instance, targetDatabase.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instance", targetDatabase.Instance.Name),
+			zap.String("databaseName", targetDatabase.Name),
+		)
+	}
 
 	return true, &api.TaskRunResultPayload{
 		Detail:      fmt.Sprintf("Restored database %q from backup %q", targetDatabase.Name, backup.Name),
