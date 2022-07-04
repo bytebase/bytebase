@@ -208,13 +208,6 @@ func (exec *PITRCutoverTaskExecutor) backupDatabaseAfterPITR(ctx context.Context
 		return fmt.Errorf("failed to create backup %q, error: %w", backupName, err)
 	}
 
-	backupPatch := api.BackupPatch{
-		ID:        backup.ID,
-		Status:    string(api.BackupStatusDone),
-		UpdaterID: api.SystemBotID,
-		Comment:   "",
-		Payload:   backupPayload,
-	}
 	backupFile, err := os.Create(filepath.Join(dataDir, path))
 	if err != nil {
 		return fmt.Errorf("failed to create backup path %q", path)
@@ -236,6 +229,13 @@ func (exec *PITRCutoverTaskExecutor) backupDatabaseAfterPITR(ctx context.Context
 		defer conn.Close()
 		defer txn.Rollback()
 		defer backupFile.Close()
+		backupPatch := api.BackupPatch{
+			ID:        backup.ID,
+			Status:    string(api.BackupStatusDone),
+			UpdaterID: api.SystemBotID,
+			Comment:   "",
+			Payload:   backupPayload,
+		}
 		backupErr := func() error {
 			if err := mysqlDriver.DumpTx(ctx, txn, database.Name, backupFile); err != nil {
 				return err
