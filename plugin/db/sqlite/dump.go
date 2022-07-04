@@ -144,6 +144,9 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, "\n"); err != nil {
 		return err
 	}
