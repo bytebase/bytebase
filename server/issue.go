@@ -1036,7 +1036,7 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 	case db.ClickHouse:
 		clusterPart := ""
 		if createDatabaseContext.Cluster != "" {
-			clusterPart = fmt.Sprintf(" ON CLUSTER %s", createDatabaseContext.Cluster)
+			clusterPart = fmt.Sprintf(" ON CLUSTER `%s`", createDatabaseContext.Cluster)
 		}
 		stmt = fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart)
 		if schema != "" {
