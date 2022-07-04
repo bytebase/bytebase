@@ -15,9 +15,8 @@ jobs:
           echo "RELEASE_VERSION=${GITHUB_REF_NAME#release/}" >> $GITHUB_ENV
       - name: Update render web service
         run: |
-          export RENDER_API_STATUS_CODE=$(curl --request PATCH \
+          RENDER_RESPONSE=$(curl --request PATCH \
                 -w %{http_code} \
-                -o /dev/null \
                 --url https://api.render.com/v1/services/srv-c760lk4objdcv67lc6ug \
                 --header 'Accept: application/json' \
                 --header 'Authorization: Bearer ${{ secrets.RENDER_API_KEY }}' \
@@ -29,6 +28,7 @@ jobs:
                 }
                 '
               )
-          if [ "${RENDER_API_STATUS_CODE-}" != "200" ]; then
+          echo ${RENDER_RESPONSE}
+          if [ "echo ${RENDER_RESPONSE} | tail -n 1" != "200" ]; then
             exit 1
           fi
