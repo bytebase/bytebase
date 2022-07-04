@@ -32,7 +32,6 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	log.Info("Run PITR cutover task", zap.String("task", task.Name))
 
 	issue, err := getIssueByPipelineID(ctx, server.store, task.PipelineID)
-
 	if err != nil {
 		log.Error("failed to fetch containing issue doing pitr cutover task", zap.Error(err))
 		return true, nil, err
@@ -111,7 +110,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	log.Debug("Finish swapping the original and PITR database", zap.String("original_database", task.Database.Name), zap.String("pitr_database", pitrDatabaseName), zap.String("old_database", pitrOldDatabaseName))
 
-	log.Debug("Appending new migration history record...")
+	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
 		ReleaseVersion: server.profile.Version,
 		Version:        common.DefaultMigrationVersion(),
