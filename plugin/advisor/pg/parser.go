@@ -12,7 +12,7 @@ func parseStatement(statement string) ([]ast.Node, []advisor.Advice) {
 		if _, ok := err.(*parser.ConvertError); ok {
 			return nil, []advisor.Advice{
 				{
-					Status:  advisor.Warn,
+					Status:  advisor.Error,
 					Code:    advisor.Internal,
 					Title:   "Parser conversion error",
 					Content: err.Error(),

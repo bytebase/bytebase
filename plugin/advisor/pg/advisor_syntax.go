@@ -18,16 +18,23 @@ type SyntaxAdvisor struct {
 
 // Check parses the given statement and checks for errors.
 func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+	var res []advisor.Advice
 	if _, errAdvice := parseStatement(statement); errAdvice != nil {
-		return errAdvice, nil
+		for _, advice := range errAdvice {
+			if advice.Code == advisor.StatementSyntaxError {
+				res = append(res, advice)
+			}
+		}
 	}
 
-	return []advisor.Advice{
-		{
+	if len(res) == 0 {
+		res = append(res, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "Syntax OK",
 			Content: "OK",
-		},
-	}, nil
+		})
+	}
+
+	return res, nil
 }
