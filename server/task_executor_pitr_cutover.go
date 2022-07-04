@@ -131,7 +131,12 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 
 	// Sync database schema after restore is completed.
-	server.syncEngineVersionAndSchema(ctx, task.Database.Instance)
+	if err := server.syncDatabaseSchema(ctx, task.Database.Instance, task.Database.Name); err != nil {
+		log.Error("failed to sync database schema",
+			zap.String("instance", task.Database.Instance.Name),
+			zap.String("databaseName", task.Database.Name),
+		)
+	}
 
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
