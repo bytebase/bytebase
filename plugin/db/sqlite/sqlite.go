@@ -138,7 +138,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 				return err
 			}
 			// We need to query to persist the database file.
-			if _, err := db.Query("SELECT 1;"); err != nil {
+			if _, err := db.Exec("SELECT 1;"); err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(stmt, "USE ") {
