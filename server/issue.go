@@ -1034,7 +1034,11 @@ func getDatabaseNameAndStatement(dbType db.Type, createDatabaseContext api.Creat
 			stmt = fmt.Sprintf("%s\n\\connect \"%s\";\n%s", stmt, databaseName, schema)
 		}
 	case db.ClickHouse:
-		stmt = fmt.Sprintf("CREATE DATABASE `%s`;", databaseName)
+		clusterPart := ""
+		if createDatabaseContext.Cluster != "" {
+			clusterPart = fmt.Sprintf(" ON CLUSTER `%s`", createDatabaseContext.Cluster)
+		}
+		stmt = fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart)
 		if schema != "" {
 			stmt = fmt.Sprintf("%s\nUSE `%s`;\n%s", stmt, databaseName, schema)
 		}
