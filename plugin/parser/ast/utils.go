@@ -30,9 +30,6 @@ func Walk(v Visitor, node Node) {
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
-		if n.Column != nil {
-			Walk(v, n.Column)
-		}
 	case *AlterTableStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)

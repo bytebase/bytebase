@@ -82,9 +82,9 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 		switch in.RenameStmt.RenameType {
 		case pgquery.ObjectType_OBJECT_COLUMN:
 			return &ast.RenameColumnStmt{
-				Table:   convertRangeVarToTableName(in.RenameStmt.Relation),
-				Column:  &ast.ColumnDef{ColumnName: in.RenameStmt.Subname},
-				NewName: in.RenameStmt.Newname,
+				Table:      convertRangeVarToTableName(in.RenameStmt.Relation),
+				ColumnName: in.RenameStmt.Subname,
+				NewName:    in.RenameStmt.Newname,
 			}, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
 			return &ast.RenameTableStmt{
