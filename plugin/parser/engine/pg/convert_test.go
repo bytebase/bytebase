@@ -214,10 +214,8 @@ func TestPGRenameColumnStmt(t *testing.T) {
 					Table: &ast.TableDef{
 						Name: "techbook",
 					},
-					Column: &ast.ColumnDef{
-						ColumnName: "abc",
-					},
-					NewName: "ABC",
+					ColumnName: "abc",
+					NewName:    "ABC",
 				},
 			},
 		},
