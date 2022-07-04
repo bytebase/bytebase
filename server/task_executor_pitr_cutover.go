@@ -100,6 +100,14 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	if err != nil {
 		return true, nil, err
 	}
+	defer func() {
+		if err != nil {
+			// The conn is used in an asynchronous goroutine in backupDatabaseAfterPITR(), so we should not close it in a normal deferred function here.
+			// But if error happens elsewhere, we should close the connection to return it to the database connection pool.
+			// In this case, the backup process failure is expected.
+			conn.Close()
+		}
+	}()
 	txn, backupPayload, err := swapDatabasesAndPrepareForBackup(ctx, conn, task.Database, issue.CreatedTs)
 	if err != nil {
 		log.Error("Failed to swap the original and PITR database", zap.Error(err))
