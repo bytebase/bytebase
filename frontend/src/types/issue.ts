@@ -37,6 +37,7 @@ export type CreateDatabaseContext = {
   owner: string;
   characterSet: string;
   collation: string;
+  cluster: string;
   backupId: BackupId;
   backupName: string;
   labels?: string; // JSON encoded
