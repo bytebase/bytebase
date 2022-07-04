@@ -4,6 +4,11 @@ on:
   create:
     branches:
       - "release/*.*.*"
+  push:
+    branches:
+      - "release/*.*.*"
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   update-render:
