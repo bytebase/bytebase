@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
+	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,6 +46,97 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "t_pk_a",
+									Type:    ast.ConstraintTypePrimary,
+									KeyList: []string{"a"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+						},
+						{
+							ColumnName: "b",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "uk_b",
+									Type:    ast.ConstraintTypeUnique,
+									KeyList: []string{"b"},
+								},
+							},
+						},
+					},
+					ConstraintList: []*ast.ConstraintDef{
+						{
+							Name:    "t_pk_a",
+							Type:    ast.ConstraintTypePrimary,
+							KeyList: []string{"a"},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+			want: []ast.Node{
+				&ast.CreateTableStmt{
+					Name: &ast.TableDef{
+						Name: "tech_book",
+					},
+					ColumnList: []*ast.ColumnDef{
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Name:    "fk_a",
+									Type:    ast.ConstraintTypeForeign,
+									KeyList: []string{"a"},
+									Foreign: &ast.ForeignDef{
+										Table:      &ast.TableDef{Name: "people"},
+										ColumnList: []string{"id"},
+									},
+								},
+							},
+						},
+					},
+					ConstraintList: []*ast.ConstraintDef{
+						{
+							Name:    "fk_a_people_b",
+							Type:    ast.ConstraintTypeForeign,
+							KeyList: []string{"a"},
+							Foreign: &ast.ForeignDef{
+								Table:      &ast.TableDef{Name: "people"},
+								ColumnList: []string{"b"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	p := &PostgreSQLParser{}
@@ -52,7 +144,7 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
-		require.True(t, equalCreateTableStmt(test.want, res))
+		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
 	}
 }
 
@@ -85,7 +177,7 @@ func TestPGAddColumnStmt(t *testing.T) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
-		require.True(t, equalAlterTableStmt(test.want, res))
+		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
 	}
 }
 
@@ -109,7 +201,7 @@ func TestPGRenameTableStmt(t *testing.T) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
-		require.True(t, equalRenameTableStmt(test.want, res))
+		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
 	}
 }
 
@@ -136,159 +228,6 @@ func TestPGRenameColumnStmt(t *testing.T) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
-		require.True(t, equalRenameColumnStmt(test.want, res))
+		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
 	}
-}
-
-func equalRenameColumnStmt(expected []ast.Node, actual []ast.Node) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		exp, ok := expected[i].(*ast.RenameColumnStmt)
-		if !ok {
-			return false
-		}
-		act, ok := actual[i].(*ast.RenameColumnStmt)
-		if !ok {
-			return false
-		}
-
-		equalTableDef := equalTableDef(exp.Table, act.Table)
-		equalColumnDef := equalColumnDef(exp.Column, act.Column)
-		equalNewName := (exp.NewName == act.NewName)
-		if !equalTableDef || !equalColumnDef || !equalNewName {
-			return false
-		}
-	}
-
-	return true
-}
-
-func equalRenameTableStmt(expected []ast.Node, actual []ast.Node) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		exp, ok := expected[i].(*ast.RenameTableStmt)
-		if !ok {
-			return false
-		}
-		act, ok := actual[i].(*ast.RenameTableStmt)
-		if !ok {
-			return false
-		}
-
-		equalTableDef := equalTableDef(exp.Table, act.Table)
-		equalNewName := (exp.NewName == act.NewName)
-		if !equalTableDef || !equalNewName {
-			return false
-		}
-	}
-
-	return true
-}
-
-func equalAlterTableStmt(expected []ast.Node, actual []ast.Node) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		exp, ok := expected[i].(*ast.AlterTableStmt)
-		if !ok {
-			return false
-		}
-		act, ok := actual[i].(*ast.AlterTableStmt)
-		if !ok {
-			return false
-		}
-
-		equalTableDef := equalTableDef(exp.Table, act.Table)
-		equalAlterAction := equalAlterAction(exp.AlterItemList, act.AlterItemList)
-
-		if !equalTableDef || !equalAlterAction {
-			return false
-		}
-	}
-
-	return true
-}
-
-func equalAlterAction(expected []ast.Node, actual []ast.Node) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		if exp, ok := expected[i].(*ast.AddColumnListStmt); ok {
-			act, ok := actual[i].(*ast.AddColumnListStmt)
-			if !ok {
-				return false
-			}
-			if !equalAddColumnStmt(exp, act) {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-func equalAddColumnStmt(expected *ast.AddColumnListStmt, actual *ast.AddColumnListStmt) bool {
-	equalTableDef := equalTableDef(expected.Table, actual.Table)
-	equalColumnList := equalColumnList(expected.ColumnList, actual.ColumnList)
-	return equalTableDef && equalColumnList
-}
-
-func equalCreateTableStmt(expected []ast.Node, actual []ast.Node) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		exp, ok := expected[i].(*ast.CreateTableStmt)
-		if !ok {
-			return false
-		}
-		act, ok := actual[i].(*ast.CreateTableStmt)
-		if !ok {
-			return false
-		}
-
-		equalFlag := (exp.IfNotExists == act.IfNotExists)
-		equalTableDef := equalTableDef(exp.Name, act.Name)
-		equalColumnList := equalColumnList(exp.ColumnList, act.ColumnList)
-		if !equalFlag || !equalTableDef || !equalColumnList {
-			return false
-		}
-	}
-	return true
-}
-
-func equalTableDef(expected *ast.TableDef, actual *ast.TableDef) bool {
-	equalDatabase := (expected.Database == actual.Database)
-	equalSchema := (expected.Schema == actual.Schema)
-	equalName := (expected.Name == actual.Name)
-	return equalDatabase && equalSchema && equalName
-}
-
-func equalColumnList(expected []*ast.ColumnDef, actual []*ast.ColumnDef) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for i := range expected {
-		if !equalColumnDef(expected[i], actual[i]) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func equalColumnDef(expected *ast.ColumnDef, actual *ast.ColumnDef) bool {
-	return (expected.ColumnName == actual.ColumnName)
 }
