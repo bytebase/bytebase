@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Code is the error code.
@@ -90,4 +91,9 @@ func Errorf(code Code, err error) *Error {
 		Code: code,
 		Err:  err,
 	}
+}
+
+// FormatDBErrorEmptyRowWithQuery formats database error that query returns empty row.
+func FormatDBErrorEmptyRowWithQuery(query string) error {
+	return Errorf(DbExecutionError, fmt.Errorf("query %q returned empty row", query))
 }

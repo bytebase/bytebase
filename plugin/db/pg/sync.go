@@ -273,16 +273,16 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 		ORDER BY role_name
 			`
 	var userList []db.User
-	userRows, err := driver.db.QueryContext(ctx, query)
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
-	defer userRows.Close()
+	defer rows.Close()
 
-	for userRows.Next() {
+	for rows.Next() {
 		var role string
 		var attr string
-		if err := userRows.Scan(
+		if err := rows.Scan(
 			&role,
 			&attr,
 		); err != nil {
@@ -293,6 +293,9 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 			Name:  role,
 			Grant: attr,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return userList, nil
 }
@@ -330,6 +333,9 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 		tables = append(tables, &tbl)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, tbl := range tables {
 		if err := getTable(txn, tbl); err != nil {
@@ -360,6 +366,9 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 
 	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
@@ -374,6 +383,9 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 			return err
 		}
 		tbl.comment = comment.String
+	}
+	if err := crows.Err(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -430,6 +442,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		}
 		columns = append(columns, &c)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return columns, nil
 }
 
@@ -458,6 +473,9 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		ret[key] = append(ret[key], &constraint)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return ret, nil
 }
@@ -488,6 +506,9 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
 		views = append(views, &view)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, view := range views {
 		if err = getView(txn, view); err != nil {
@@ -513,6 +534,9 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 		}
 		view.comment = comment.String
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -537,6 +561,9 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 			return nil, err
 		}
 		extensions = append(extensions, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return extensions, nil
@@ -569,6 +596,9 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		}
 		indices = append(indices, &idx)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, idx := range indices {
 		if err = getIndex(txn, idx); err != nil {
@@ -581,18 +611,21 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
 	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
-	crows, err := txn.Query(commentQuery)
+	rows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
 	}
-	defer crows.Close()
+	defer rows.Close()
 
-	for crows.Next() {
+	for rows.Next() {
 		var comment sql.NullString
-		if err := crows.Scan(&comment); err != nil {
+		if err := rows.Scan(&comment); err != nil {
 			return err
 		}
 		idx.comment = comment.String
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	return nil
 }
