@@ -170,6 +170,9 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 		}
 		res = append(res, &metric)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 
 	return res, nil
 }
@@ -470,7 +473,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
@@ -485,7 +488,8 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -502,27 +506,31 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	}
 	defer row.Close()
 
-	row.Next()
-	var issueRaw issueRaw
-	if err := row.Scan(
-		&issueRaw.ID,
-		&issueRaw.CreatorID,
-		&issueRaw.CreatedTs,
-		&issueRaw.UpdaterID,
-		&issueRaw.UpdatedTs,
-		&issueRaw.ProjectID,
-		&issueRaw.PipelineID,
-		&issueRaw.Name,
-		&issueRaw.Status,
-		&issueRaw.Type,
-		&issueRaw.Description,
-		&issueRaw.AssigneeID,
-		&issueRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var issueRaw issueRaw
+		if err := row.Scan(
+			&issueRaw.ID,
+			&issueRaw.CreatorID,
+			&issueRaw.CreatedTs,
+			&issueRaw.UpdaterID,
+			&issueRaw.UpdatedTs,
+			&issueRaw.ProjectID,
+			&issueRaw.PipelineID,
+			&issueRaw.Name,
+			&issueRaw.Status,
+			&issueRaw.Type,
+			&issueRaw.Description,
+			&issueRaw.AssigneeID,
+			&issueRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &issueRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &issueRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
@@ -669,8 +677,10 @@ func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.Issue
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &issueRaw, nil
+	}
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}

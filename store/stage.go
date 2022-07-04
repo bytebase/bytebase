@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // stageRaw is the store model for an Stage.
@@ -180,7 +181,7 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 
 // createStageImpl creates a new stage.
 func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO stage (
 			creator_id,
 			updater_id,
@@ -189,8 +190,9 @@ func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.Sta
 			name
 		)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name`+`
-	`,
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name` + `
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.PipelineID,
@@ -203,22 +205,26 @@ func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.Sta
 	}
 	defer row.Close()
 
-	row.Next()
-	var stageRaw stageRaw
-	if err := row.Scan(
-		&stageRaw.ID,
-		&stageRaw.CreatorID,
-		&stageRaw.CreatedTs,
-		&stageRaw.UpdaterID,
-		&stageRaw.UpdatedTs,
-		&stageRaw.PipelineID,
-		&stageRaw.EnvironmentID,
-		&stageRaw.Name,
-	); err != nil {
+	if row.Next() {
+		var stageRaw stageRaw
+		if err := row.Scan(
+			&stageRaw.ID,
+			&stageRaw.CreatorID,
+			&stageRaw.CreatedTs,
+			&stageRaw.UpdaterID,
+			&stageRaw.UpdatedTs,
+			&stageRaw.PipelineID,
+			&stageRaw.EnvironmentID,
+			&stageRaw.Name,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &stageRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &stageRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {

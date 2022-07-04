@@ -146,7 +146,6 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	defer rows.Close()
 
 	var res []*metric.MemberCountMetric
-
 	for rows.Next() {
 		var metric metric.MemberCountMetric
 		if err := rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
@@ -154,7 +153,9 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 		}
 		res = append(res, &metric)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -297,7 +298,7 @@ func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member,
 // createMemberImpl creates a new member.
 func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*memberRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
@@ -307,7 +308,8 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Status,
@@ -320,23 +322,27 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	}
 	defer row.Close()
 
-	row.Next()
-	var memberRaw memberRaw
-	if err := row.Scan(
-		&memberRaw.ID,
-		&memberRaw.RowStatus,
-		&memberRaw.CreatorID,
-		&memberRaw.CreatedTs,
-		&memberRaw.UpdaterID,
-		&memberRaw.UpdatedTs,
-		&memberRaw.Status,
-		&memberRaw.Role,
-		&memberRaw.PrincipalID,
-	); err != nil {
+	if row.Next() {
+		var memberRaw memberRaw
+		if err := row.Scan(
+			&memberRaw.ID,
+			&memberRaw.RowStatus,
+			&memberRaw.CreatorID,
+			&memberRaw.CreatedTs,
+			&memberRaw.UpdaterID,
+			&memberRaw.UpdatedTs,
+			&memberRaw.Status,
+			&memberRaw.Role,
+			&memberRaw.PrincipalID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &memberRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &memberRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
@@ -441,9 +447,10 @@ func patchMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &memberRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
 }
