@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bmizerany/assert"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,6 +74,6 @@ func RunSchemaReviewRuleTests(
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.Statement)
 		require.NoError(t, err)
-		assert.Equal(t, tc.Want, adviceList)
+		assert.Equal(t, tc.Want, adviceList, tc.Statement)
 	}
 }
