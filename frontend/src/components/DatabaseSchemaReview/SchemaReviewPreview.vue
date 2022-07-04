@@ -57,7 +57,11 @@
               class="leading-8"
             >
               {{
-                $t(`schema-review-policy.payload-config.${component.title}`)
+                $t(
+                  `schema-review-policy.rule.${getRuleLocalizationKey(
+                    rule.type
+                  )}.component.${component.key}.title`
+                )
               }}:
               <span
                 v-if="
@@ -94,6 +98,7 @@ import { computed } from "vue";
 import {
   RuleTemplate,
   getRuleLocalization,
+  getRuleLocalizationKey,
   convertToCategoryList,
   Environment,
 } from "@/types";
