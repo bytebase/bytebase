@@ -12,6 +12,7 @@ import (
 	// init() in pgx/v4/stdlib will register it's pgx driver
 	_ "github.com/jackc/pgx/v4/stdlib"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -193,24 +194,32 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 		}
 		dbs = append(dbs, &d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return dbs, nil
 }
 
 // GetVersion gets the version of Postgres server.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
-	versionRow, err := driver.db.QueryContext(ctx, query)
+	row, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	defer versionRow.Close()
+	defer row.Close()
 
 	var version string
-	versionRow.Next()
-	if err := versionRow.Scan(&version); err != nil {
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return "", err
+		}
+		return version, nil
+	}
+	if err := row.Err(); err != nil {
 		return "", err
 	}
-	return version, nil
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // Execute executes a SQL statement.
@@ -347,8 +356,11 @@ func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
 		}
 		owner = o
 	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 	if owner == "" {
-		return "", fmt.Errorf("Owner not found for the current database")
+		return "", fmt.Errorf("owner not found for the current database")
 	}
 	return owner, nil
 }

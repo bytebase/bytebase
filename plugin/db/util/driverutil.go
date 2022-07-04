@@ -19,7 +19,7 @@ import (
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
+	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute query %q, error: %w", query, err))
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
@@ -103,6 +103,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 
 	if rows.Next() {
 		return false, nil
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
 	}
 
 	return true, nil
@@ -386,6 +389,9 @@ func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]i
 		if rowCount == limit {
 			break
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return []interface{}{columnNames, columnTypeNames, data}, nil

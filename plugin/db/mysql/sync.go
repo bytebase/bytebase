@@ -102,7 +102,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	if len(databaseList) > 0 {
 		indexWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", indexWhere, strings.Join(includeDatabaseList, ", "))
 	}
-	query := `
+	indexQuery := `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -117,7 +117,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			FROM information_schema.STATISTICS
 			WHERE ` + indexWhere
 	if isMySQL8 {
-		query = `
+		indexQuery = `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -132,9 +132,9 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			FROM information_schema.STATISTICS
 			WHERE ` + indexWhere
 	}
-	indexRows, err := driver.db.QueryContext(ctx, query)
+	indexRows, err := driver.db.QueryContext(ctx, indexQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 	defer indexRows.Close()
 
@@ -174,13 +174,16 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			indexMap[key] = []db.Index{index}
 		}
 	}
+	if err := indexRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexQuery)
+	}
 
 	// Query column info
 	columnWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	if len(databaseList) > 0 {
 		columnWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", columnWhere, strings.Join(includeDatabaseList, ", "))
 	}
-	query = `
+	columnQuery := `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -194,9 +197,9 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 				COLUMN_COMMENT
 			FROM information_schema.COLUMNS
 			WHERE ` + columnWhere
-	columnRows, err := driver.db.QueryContext(ctx, query)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 
@@ -234,13 +237,16 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			columnMap[key] = []db.Column{column}
 		}
 	}
+	if err := columnRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
+	}
 
 	// Query table info
 	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	if len(databaseList) > 0 {
 		tableWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", tableWhere, strings.Join(includeDatabaseList, ", "))
 	}
-	query = `
+	tableQuery := `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
@@ -257,9 +263,9 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 				IFNULL(TABLE_COMMENT, '')
 			FROM information_schema.TABLES
 			WHERE ` + tableWhere
-	tableRows, err := driver.db.QueryContext(ctx, query)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 
@@ -318,22 +324,25 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			}
 		}
 	}
+	if err := tableRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
+	}
 
 	// Query view info
 	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	if len(databaseList) > 0 {
 		viewWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", viewWhere, strings.Join(includeDatabaseList, ", "))
 	}
-	query = `
+	viewQuery := `
 			SELECT
 				TABLE_SCHEMA,
 				TABLE_NAME,
 				VIEW_DEFINITION
 			FROM information_schema.VIEWS
 			WHERE ` + viewWhere
-	viewRows, err := driver.db.QueryContext(ctx, query)
+	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
 	defer viewRows.Close()
 
@@ -361,29 +370,32 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			viewMap[dbName] = []db.View{view}
 		}
 	}
+	if err := viewRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, viewQuery)
+	}
 
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	databaseWhere := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
 	if len(databaseList) > 0 {
-		where = fmt.Sprintf("%s AND LOWER(SCHEMA_NAME) IN (%s)", where, strings.Join(includeDatabaseList, ", "))
+		databaseWhere = fmt.Sprintf("%s AND LOWER(SCHEMA_NAME) IN (%s)", databaseWhere, strings.Join(includeDatabaseList, ", "))
 	}
-	query = `
+	databaseQuery := `
 		SELECT
 			SCHEMA_NAME,
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
-		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+		WHERE ` + databaseWhere
+	databaseRows, err := driver.db.QueryContext(ctx, databaseQuery)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, databaseQuery)
 	}
-	defer rows.Close()
+	defer databaseRows.Close()
 
 	var schemaList []*db.Schema
-	for rows.Next() {
+	for databaseRows.Next() {
 		var schema db.Schema
-		if err := rows.Scan(
+		if err := databaseRows.Scan(
 			&schema.Name,
 			&schema.CharacterSet,
 			&schema.Collation,
@@ -396,8 +408,11 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 
 		schemaList = append(schemaList, &schema)
 	}
-	if err := rows.Err(); err != nil {
+	if err := databaseRows.Err(); err != nil {
 		return nil, err
+	}
+	if err := databaseRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, databaseQuery)
 	}
 
 	return schemaList, err
@@ -405,7 +420,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
-	query := `
+	userQuery := `
 	  SELECT
 			user,
 			host
@@ -413,10 +428,10 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 		WHERE user NOT LIKE 'mysql.%'
 	`
 	var userList []db.User
-	userRows, err := driver.db.QueryContext(ctx, query)
+	userRows, err := driver.db.QueryContext(ctx, userQuery)
 
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}
 	defer userRows.Close()
 
@@ -434,12 +449,12 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 		// instead of table (which should use backtick instead). MySQL actually works
 		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
 		name := fmt.Sprintf("'%s'@'%s'", user, host)
-		query = fmt.Sprintf("SHOW GRANTS FOR %s", name)
+		grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", name)
 		grantRows, err := driver.db.QueryContext(ctx,
-			query,
+			grantQuery,
 		)
 		if err != nil {
-			return nil, util.FormatErrorWithQuery(err, query)
+			return nil, util.FormatErrorWithQuery(err, grantQuery)
 		}
 		defer grantRows.Close()
 
@@ -451,11 +466,17 @@ func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 			}
 			grantList = append(grantList, grant)
 		}
+		if err := grantRows.Err(); err != nil {
+			return nil, util.FormatErrorWithQuery(err, grantQuery)
+		}
 
 		userList = append(userList, db.User{
 			Name:  name,
 			Grant: strings.Join(grantList, "\n"),
 		})
+	}
+	if err := userRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}
 	return userList, nil
 }
