@@ -29,6 +29,6 @@ jobs:
                 '
               )
           echo ${RENDER_RESPONSE}
-          if [ "$(echo ${RENDER_RESPONSE} | tail -n 1)" != "200" ]; then
+          if [[ "$(echo ${RENDER_RESPONSE} | tail -n 1)" != "200" ]]; then
             exit 1
           fi
