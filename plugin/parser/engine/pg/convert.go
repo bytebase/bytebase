@@ -1,8 +1,7 @@
 package pg
 
 import (
-	"fmt"
-
+	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
 )
@@ -23,7 +22,7 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 				case pgquery.AlterTableType_AT_AddColumn:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_ColumnDef)
 					if !ok {
-						return nil, fmt.Errorf("expected ColumnDef but found %t", alterCmd.Def.Node)
+						return nil, parser.NewConvertErrorf("expected ColumnDef but found %t", alterCmd.Def.Node)
 					}
 
 					addColumn := &ast.AddColumnListStmt{
@@ -59,7 +58,7 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 				for _, cons := range item.ColumnDef.Constraints {
 					constraint, ok := cons.Node.(*pgquery.Node_Constraint)
 					if !ok {
-						return nil, fmt.Errorf("expected Constraint but found %t", cons.Node)
+						return nil, parser.NewConvertErrorf("expected Constraint but found %t", cons.Node)
 					}
 					columnCons, err := convertConstraint(constraint)
 					if err != nil {
@@ -115,7 +114,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 	for _, key := range in.Constraint.Keys {
 		name, ok := key.Node.(*pgquery.Node_String_)
 		if !ok {
-			return nil, fmt.Errorf("expected String but found %t", key.Node)
+			return nil, parser.NewConvertErrorf("expected String but found %t", key.Node)
 		}
 		cons.KeyList = append(cons.KeyList, name.String_.Str)
 	}
@@ -128,7 +127,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		for _, item := range in.Constraint.PkAttrs {
 			name, ok := item.Node.(*pgquery.Node_String_)
 			if !ok {
-				return nil, fmt.Errorf("expected String but found %t", item.Node)
+				return nil, parser.NewConvertErrorf("expected String but found %t", item.Node)
 			}
 			cons.Foreign.ColumnList = append(cons.Foreign.ColumnList, name.String_.Str)
 		}
@@ -136,7 +135,7 @@ func convertConstraint(in *pgquery.Node_Constraint) (*ast.ConstraintDef, error) 
 		for _, item := range in.Constraint.FkAttrs {
 			name, ok := item.Node.(*pgquery.Node_String_)
 			if !ok {
-				return nil, fmt.Errorf("expected String but found %t", item.Node)
+				return nil, parser.NewConvertErrorf("expected String but found %t", item.Node)
 			}
 			cons.KeyList = append(cons.KeyList, name.String_.Str)
 		}
