@@ -7,7 +7,7 @@ import {
   waitForTargetElement,
 } from "./utils";
 import * as storage from "./storage";
-import { GuideData, GuidePosition, StepData } from "./types";
+import { DialogPosition, GuideData, StepData } from "./types";
 import { getStringFromI18NText, nextI18NText } from "./i18n";
 
 // validateStepData will check if the step data is valid
@@ -49,7 +49,7 @@ export const showGuideDialog = async (
     removeGuideDialog();
     renderHighlight(targetElement, guideStep);
     renderGuideDialog(targetElement, guideData, stepIndex);
-    requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
+    requestAnimationFrame(() => updateDialogPosition(targetElement, guideStep));
   }
 };
 
@@ -162,7 +162,7 @@ const renderGuideDialog = (
 const adjustGuideDialogPosition = (
   targetElement: HTMLElement,
   guideDialogDiv: HTMLElement,
-  position: GuidePosition = "bottom"
+  position: DialogPosition = "bottom"
 ) => {
   const bounding = getElementBounding(targetElement);
   const guideDialogBounding = getElementBounding(guideDialogDiv);
@@ -186,7 +186,7 @@ const adjustGuideDialogPosition = (
   }
 };
 
-const updateGuidePosition = (
+const updateDialogPosition = (
   targetElement: HTMLElement,
   guideStep: StepData
 ) => {
@@ -210,7 +210,7 @@ const updateGuidePosition = (
 
   adjustGuideDialogPosition(targetElement, guideDialogDiv, guideStep.position);
 
-  requestAnimationFrame(() => updateGuidePosition(targetElement, guideStep));
+  requestAnimationFrame(() => updateDialogPosition(targetElement, guideStep));
 };
 
 export const removeGuideDialog = () => {
