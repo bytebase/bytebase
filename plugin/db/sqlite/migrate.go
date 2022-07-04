@@ -8,6 +8,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -101,16 +102,19 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 	defer row.Close()
 
 	var version sql.NullString
-	row.Next()
-	if err := row.Scan(&version); err != nil {
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return nil, err
+		}
+		if version.Valid {
+			return &version.String, nil
+		}
+		return nil, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, err
 	}
-
-	if version.Valid {
-		return &version.String, nil
-	}
-
-	return nil, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
 }
 
 // FindLargestSequence will return the largest sequence number.
@@ -130,8 +134,12 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	defer row.Close()
 
 	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
+	if row.Next() {
+		if err := row.Scan(&sequence); err != nil {
+			return -1, err
+		}
+	}
+	if err := row.Err(); err != nil {
 		return -1, err
 	}
 

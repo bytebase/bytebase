@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -108,18 +109,23 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"
-	versionRow, err := driver.db.QueryContext(ctx, query)
+	row, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	defer versionRow.Close()
+	defer row.Close()
 
 	var version string
-	versionRow.Next()
-	if err := versionRow.Scan(&version); err != nil {
-		return "", err
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return "", err
+		}
+		return version, nil
 	}
-	return version, nil
+	if err := row.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (driver *Driver) useRole(ctx context.Context, role string) error {
@@ -156,7 +162,8 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 	// Filter inbound shared databases because they are immutable and we cannot get their DDLs.
 	inboundDatabases := make(map[string]bool)
-	shareRows, err := tx.Query("SHOW SHARES;")
+	shareQuery := "SHOW SHARES"
+	shareRows, err := tx.Query(shareQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +191,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		}
 	}
 	if err := shareRows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, shareQuery)
 	}
 
 	query := `
@@ -211,7 +218,7 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	return databases, nil
 }
