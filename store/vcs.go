@@ -249,7 +249,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 // createVCSImpl creates a new vcs.
 func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcsRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vcs (
 			creator_id,
 			updater_id,
@@ -262,7 +262,8 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -278,25 +279,29 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 	}
 	defer row.Close()
 
-	row.Next()
-	var vcs vcsRaw
-	if err := row.Scan(
-		&vcs.ID,
-		&vcs.CreatorID,
-		&vcs.CreatedTs,
-		&vcs.UpdaterID,
-		&vcs.UpdatedTs,
-		&vcs.Name,
-		&vcs.Type,
-		&vcs.InstanceURL,
-		&vcs.APIURL,
-		&vcs.ApplicationID,
-		&vcs.Secret,
-	); err != nil {
+	if row.Next() {
+		var vcs vcsRaw
+		if err := row.Scan(
+			&vcs.ID,
+			&vcs.CreatorID,
+			&vcs.CreatedTs,
+			&vcs.UpdaterID,
+			&vcs.UpdatedTs,
+			&vcs.Name,
+			&vcs.Type,
+			&vcs.InstanceURL,
+			&vcs.APIURL,
+			&vcs.ApplicationID,
+			&vcs.Secret,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &vcs, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &vcs, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
@@ -403,10 +408,11 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &vcs, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 }
 

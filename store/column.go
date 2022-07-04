@@ -100,7 +100,7 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 	}
 
 	// Insert row into column.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO col (
 			creator_id,
 			updater_id,
@@ -117,7 +117,8 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, "default", nullable, type, character_set, "collation", comment
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
@@ -137,33 +138,36 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 	}
 	defer row.Close()
 
-	row.Next()
-	var column api.Column
-	if err := row.Scan(
-		&column.ID,
-		&column.CreatorID,
-		&column.CreatedTs,
-		&column.UpdaterID,
-		&column.UpdatedTs,
-		&column.DatabaseID,
-		&column.TableID,
-		&column.Name,
-		&column.Position,
-		&defaultStr,
-		&column.Nullable,
-		&column.Type,
-		&column.CharacterSet,
-		&column.Collation,
-		&column.Comment,
-	); err != nil {
+	if row.Next() {
+		var column api.Column
+		if err := row.Scan(
+			&column.ID,
+			&column.CreatorID,
+			&column.CreatedTs,
+			&column.UpdaterID,
+			&column.UpdatedTs,
+			&column.DatabaseID,
+			&column.TableID,
+			&column.Name,
+			&column.Position,
+			&defaultStr,
+			&column.Nullable,
+			&column.Type,
+			&column.CharacterSet,
+			&column.Collation,
+			&column.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if defaultStr.Valid {
+			column.Default = &defaultStr.String
+		}
+		return &column, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	if defaultStr.Valid {
-		column.Default = &defaultStr.String
-	}
-
-	return &column, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
@@ -296,6 +300,9 @@ func (s *Store) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPa
 		}
 
 		return &column, nil
+	}
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("column ID not found: %d", patch.ID)}

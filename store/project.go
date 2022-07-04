@@ -143,7 +143,9 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 		}
 		res = append(res, &metric)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -306,7 +308,7 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO project (
 			creator_id,
 			updater_id,
@@ -320,7 +322,8 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		)
 		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -335,27 +338,31 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 	}
 	defer row.Close()
 
-	row.Next()
-	var project projectRaw
-	if err := row.Scan(
-		&project.ID,
-		&project.RowStatus,
-		&project.CreatorID,
-		&project.CreatedTs,
-		&project.UpdaterID,
-		&project.UpdatedTs,
-		&project.Name,
-		&project.Key,
-		&project.WorkflowType,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.DBNameTemplate,
-		&project.RoleProvider,
-	); err != nil {
+	if row.Next() {
+		var project projectRaw
+		if err := row.Scan(
+			&project.ID,
+			&project.RowStatus,
+			&project.CreatorID,
+			&project.CreatedTs,
+			&project.UpdaterID,
+			&project.UpdatedTs,
+			&project.Name,
+			&project.Key,
+			&project.WorkflowType,
+			&project.Visibility,
+			&project.TenantMode,
+			&project.DBNameTemplate,
+			&project.RoleProvider,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &project, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &project, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]*projectRaw, error) {
@@ -484,6 +491,8 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 
 		return &project, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
 }

@@ -180,7 +180,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 		}
 		res = append(res, &sheetCount)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -317,7 +319,7 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		create.Payload = "{}"
 	}
 
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -332,7 +334,8 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -350,34 +353,37 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 	}
 	defer row.Close()
 
-	row.Next()
-	var sheetRaw sheetRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&sheetRaw.ID,
-		&sheetRaw.RowStatus,
-		&sheetRaw.CreatorID,
-		&sheetRaw.CreatedTs,
-		&sheetRaw.UpdaterID,
-		&sheetRaw.UpdatedTs,
-		&sheetRaw.ProjectID,
-		&databaseID,
-		&sheetRaw.Name,
-		&sheetRaw.Statement,
-		&sheetRaw.Visibility,
-		&sheetRaw.Source,
-		&sheetRaw.Type,
-		&sheetRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var sheetRaw sheetRaw
+		databaseID := sql.NullInt32{}
+		if err := row.Scan(
+			&sheetRaw.ID,
+			&sheetRaw.RowStatus,
+			&sheetRaw.CreatorID,
+			&sheetRaw.CreatedTs,
+			&sheetRaw.UpdaterID,
+			&sheetRaw.UpdatedTs,
+			&sheetRaw.ProjectID,
+			&databaseID,
+			&sheetRaw.Name,
+			&sheetRaw.Statement,
+			&sheetRaw.Visibility,
+			&sheetRaw.Source,
+			&sheetRaw.Type,
+			&sheetRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if databaseID.Valid {
+			value := int(databaseID.Int32)
+			sheetRaw.DatabaseID = &value
+		}
+		return &sheetRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheetRaw.DatabaseID = &value
-	}
-
-	return &sheetRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // patchSheetImpl updates a sheet's name/statement/visibility.
@@ -447,9 +453,10 @@ func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sh
 
 		return &sheetRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
-
 }
 
 func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*sheetRaw, error) {
