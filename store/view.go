@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // viewRaw is the store model for an View.
@@ -167,7 +168,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 // createViewImpl creates a new view.
 func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
 	// Insert row into view.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vw (
 			creator_id,
 			created_ts,
@@ -178,9 +179,10 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 			definition,
 			comment
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment"+`
-	`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)` +
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment" + `
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -196,23 +198,27 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 	}
 	defer row.Close()
 
-	row.Next()
-	var viewRaw viewRaw
-	if err := row.Scan(
-		&viewRaw.ID,
-		&viewRaw.CreatorID,
-		&viewRaw.CreatedTs,
-		&viewRaw.UpdaterID,
-		&viewRaw.UpdatedTs,
-		&viewRaw.DatabaseID,
-		&viewRaw.Name,
-		&viewRaw.Definition,
-		&viewRaw.Comment,
-	); err != nil {
+	if row.Next() {
+		var viewRaw viewRaw
+		if err := row.Scan(
+			&viewRaw.ID,
+			&viewRaw.CreatorID,
+			&viewRaw.CreatedTs,
+			&viewRaw.UpdaterID,
+			&viewRaw.UpdatedTs,
+			&viewRaw.DatabaseID,
+			&viewRaw.Name,
+			&viewRaw.Definition,
+			&viewRaw.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &viewRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &viewRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {

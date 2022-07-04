@@ -100,7 +100,7 @@ func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) (
 }
 
 func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO task_dag (
 			from_task_id,
 			to_task_id,
@@ -108,7 +108,8 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 		)
 		VALUES ($1, $2, $3)
 		RETURNING id, created_ts, updated_ts, from_task_id, to_task_id, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.FromTaskID,
 		create.ToTaskID,
 		create.Payload,
@@ -118,20 +119,24 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 	}
 	defer row.Close()
 
-	row.Next()
-	var taskDAGRaw taskDAGRaw
-	if err := row.Scan(
-		&taskDAGRaw.ID,
-		&taskDAGRaw.CreatedTs,
-		&taskDAGRaw.UpdatedTs,
-		&taskDAGRaw.FromTaskID,
-		&taskDAGRaw.ToTaskID,
-		&taskDAGRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var taskDAGRaw taskDAGRaw
+		if err := row.Scan(
+			&taskDAGRaw.ID,
+			&taskDAGRaw.CreatedTs,
+			&taskDAGRaw.UpdatedTs,
+			&taskDAGRaw.FromTaskID,
+			&taskDAGRaw.ToTaskID,
+			&taskDAGRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &taskDAGRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &taskDAGRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findTaskDAGRawListImpl(ctx context.Context, tx *sql.Tx, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {

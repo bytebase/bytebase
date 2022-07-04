@@ -239,7 +239,7 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO activity (
 			creator_id,
 			updater_id,
@@ -251,7 +251,8 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ContainerID,
@@ -266,24 +267,28 @@ func createActivityImpl(ctx context.Context, tx *sql.Tx, create *api.ActivityCre
 	}
 	defer row.Close()
 
-	row.Next()
-	var activityRaw activityRaw
-	if err := row.Scan(
-		&activityRaw.ID,
-		&activityRaw.CreatorID,
-		&activityRaw.CreatedTs,
-		&activityRaw.UpdaterID,
-		&activityRaw.UpdatedTs,
-		&activityRaw.ContainerID,
-		&activityRaw.Type,
-		&activityRaw.Level,
-		&activityRaw.Comment,
-		&activityRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var activityRaw activityRaw
+		if err := row.Scan(
+			&activityRaw.ID,
+			&activityRaw.CreatorID,
+			&activityRaw.CreatedTs,
+			&activityRaw.UpdaterID,
+			&activityRaw.UpdatedTs,
+			&activityRaw.ContainerID,
+			&activityRaw.Type,
+			&activityRaw.Level,
+			&activityRaw.Comment,
+			&activityRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &activityRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &activityRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findActivityImpl(ctx context.Context, tx *sql.Tx, find *api.ActivityFind) ([]*activityRaw, error) {
@@ -404,6 +409,9 @@ func patchActivityImpl(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch
 		}
 
 		return &activityRaw, nil
+	}
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}

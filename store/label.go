@@ -287,6 +287,7 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 	if err != nil {
 		return nil, FormatError(err)
 	}
+	defer rows.Close()
 	// Iterate over result set and deserialize rows into list.
 	var labelKeyRawList []*labelKeyRaw
 	keymap := make(map[string]*labelKeyRaw)
@@ -307,9 +308,6 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 		keymap[labelKeyRaw.Key] = &labelKeyRaw
 	}
 	if err := rows.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	if err := rows.Close(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -526,7 +524,7 @@ func (s *Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *ap
 
 func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*databaseLabelRaw, error) {
 	// Upsert row into db_label
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db_label (
 			row_status,
 			creator_id,
@@ -542,7 +540,8 @@ func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert 
 			updater_id = excluded.updater_id,
 			value = excluded.value
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
-		`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		upsert.RowStatus,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
@@ -556,21 +555,25 @@ func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert 
 	}
 	defer row.Close()
 
-	row.Next()
-	var dbLabelRaw databaseLabelRaw
-	if err := row.Scan(
-		&dbLabelRaw.ID,
-		&dbLabelRaw.RowStatus,
-		&dbLabelRaw.CreatorID,
-		&dbLabelRaw.CreatedTs,
-		&dbLabelRaw.UpdaterID,
-		&dbLabelRaw.UpdatedTs,
-		&dbLabelRaw.DatabaseID,
-		&dbLabelRaw.Key,
-		&dbLabelRaw.Value,
-	); err != nil {
+	if row.Next() {
+		var dbLabelRaw databaseLabelRaw
+		if err := row.Scan(
+			&dbLabelRaw.ID,
+			&dbLabelRaw.RowStatus,
+			&dbLabelRaw.CreatorID,
+			&dbLabelRaw.CreatedTs,
+			&dbLabelRaw.UpdaterID,
+			&dbLabelRaw.UpdatedTs,
+			&dbLabelRaw.DatabaseID,
+			&dbLabelRaw.Key,
+			&dbLabelRaw.Value,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &dbLabelRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &dbLabelRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }

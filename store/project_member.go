@@ -391,7 +391,7 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO project_member (
 			creator_id,
 			updater_id,
@@ -403,7 +403,8 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -418,24 +419,28 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 	}
 	defer row.Close()
 
-	row.Next()
-	var projectMemberRaw projectMemberRaw
-	if err := row.Scan(
-		&projectMemberRaw.ID,
-		&projectMemberRaw.CreatorID,
-		&projectMemberRaw.CreatedTs,
-		&projectMemberRaw.UpdaterID,
-		&projectMemberRaw.UpdatedTs,
-		&projectMemberRaw.ProjectID,
-		&projectMemberRaw.Role,
-		&projectMemberRaw.PrincipalID,
-		&projectMemberRaw.RoleProvider,
-		&projectMemberRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var projectMemberRaw projectMemberRaw
+		if err := row.Scan(
+			&projectMemberRaw.ID,
+			&projectMemberRaw.CreatorID,
+			&projectMemberRaw.CreatedTs,
+			&projectMemberRaw.UpdaterID,
+			&projectMemberRaw.UpdatedTs,
+			&projectMemberRaw.ProjectID,
+			&projectMemberRaw.Role,
+			&projectMemberRaw.PrincipalID,
+			&projectMemberRaw.RoleProvider,
+			&projectMemberRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &projectMemberRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &projectMemberRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
@@ -550,10 +555,11 @@ func patchProjectMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectM
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &projectMemberRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
 }
 
