@@ -2,7 +2,6 @@ package pg
 
 import (
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -25,17 +24,12 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	_, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	checker := &tableRequirePKChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
-		// tables:  make(tablePK),
-		catalog: ctx.Catalog,
-	}
+	checker := &tableRequirePKChecker{}
 
 	for _, stmt := range stmts {
 		ast.Walk(checker, stmt)
@@ -44,12 +38,13 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 	return []advisor.Advice{}, nil
 }
 
+// TODO(rebelice): fill the implementation to check table PK.
 type tableRequirePKChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	// tables     tablePK
-	catalog catalog.Catalog
+	// adviceList []advisor.Advice
+	// level      advisor.Status
+	// title      string
+	// tables:  make(tablePK),
+	// catalog catalog.Catalog
 }
 
 // Visit implements the ast.Visitor interface.
