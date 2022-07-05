@@ -89,22 +89,26 @@ export const getElementMaxZIndex = (element: HTMLElement): number => {
   return 0;
 };
 
-const getTargetElementBySelectors = (selectors: string[][]) => {
-  let targetElement = document.body;
-  for (const selector of selectors) {
-    try {
-      targetElement = document.body.querySelector(
-        selector.join(" ")
-      ) as HTMLElement;
-    } catch (error) {
-      // do nth
-    }
-
-    if (targetElement) {
-      break;
-    }
+const getTargetElementWithSelector = (selector: string) => {
+  let targetElement = null;
+  try {
+    targetElement = document.body.querySelector(selector) as HTMLElement;
+  } catch (error) {
+    // do nth
   }
   return targetElement;
+};
+
+const getTargetElementBySelectors = (selectorsList: string[][]) => {
+  for (const selectors of selectorsList) {
+    for (const selector of selectors) {
+      const targetElement = getTargetElementWithSelector(selector);
+      if (targetElement) {
+        return targetElement;
+      }
+    }
+  }
+  return null;
 };
 
 // waitForTargetElement will wait for the target element to be available in the DOM.
