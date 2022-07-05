@@ -12,14 +12,20 @@
         v-bind="$attrs"
         @click="toggle"
       >
-        <template v-if="state.selectedItem">
-          <slot name="menuItem" :item="state.selectedItem" />
-        </template>
-        <template v-else>
-          <slot name="placeholder" :placeholder="placeholder">
-            {{ placeholder }}
-          </slot>
-        </template>
+        <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
+          <template v-if="state.selectedItem">
+            <slot
+              name="menuItem"
+              :item="state.selectedItem"
+              :index="itemList.indexOf(state.selectedItem)"
+            />
+          </template>
+          <template v-else>
+            <slot name="placeholder" :placeholder="placeholder">
+              {{ placeholder }}
+            </slot>
+          </template>
+        </div>
         <span
           class="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none"
         >
@@ -33,7 +39,7 @@
           v-if="state.showMenu"
           ref="popup"
           class="z-50 rounded-md bg-white shadow-lg mt-0.5"
-          :style="{ width: `${width}px` }"
+          :style="popupStyle"
         >
           <ul
             tabindex="-1"
@@ -67,7 +73,9 @@
                 close();
               "
             >
-              <slot name="menuItem" :item="item" />
+              <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
+                <slot name="menuItem" :item="item" :index="index" />
+              </div>
               <span
                 v-if="item === state.selectedItem"
                 class="absolute inset-y-0 right-0 flex items-center pr-4"
@@ -84,7 +92,15 @@
 </template>
 
 <script lang="ts">
-import { reactive, PropType, watch, defineComponent, ref } from "vue";
+import {
+  reactive,
+  PropType,
+  watch,
+  defineComponent,
+  ref,
+  CSSProperties,
+  computed,
+} from "vue";
 import { VBinder, VTarget, VFollower } from "vueuc";
 import { onClickOutside, useElementBounding } from "@vueuse/core";
 
@@ -94,6 +110,8 @@ interface LocalState {
 }
 
 type ItemType = number | string | any;
+
+type FitWidthMode = "fit" | "min";
 
 export default defineComponent({
   name: "BBSelect",
@@ -124,6 +142,10 @@ export default defineComponent({
       default: false,
       type: Boolean,
     },
+    fitWidth: {
+      type: String as PropType<FitWidthMode>,
+      default: "fit",
+    },
   },
   emits: ["select-item"],
   setup(props) {
@@ -136,6 +158,15 @@ export default defineComponent({
     const popup = ref<HTMLElement | null>(null);
 
     const { width } = useElementBounding(button);
+
+    const popupStyle = computed(() => {
+      const style = {} as CSSProperties;
+
+      const key = props.fitWidth === "fit" ? "width" : "min-width";
+      style[key] = `${width.value}px`;
+
+      return style;
+    });
 
     watch(
       () => props.selectedItem,
@@ -160,7 +191,7 @@ export default defineComponent({
       close,
       button,
       popup,
-      width,
+      popupStyle,
     };
   },
 });
