@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
@@ -141,17 +142,12 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	}
 	backupCreate.MigrationHistoryVersion = migrationHistoryVersion
 
-	// Return early if the backupOld already exists.
-	backupOld, err := s.store.FindBackup(ctx, &api.BackupFind{Name: &backupName})
-	if err != nil {
-		return nil, fmt.Errorf("failed to find backup %q, error: %w", backupName, err)
-	}
-	if backupOld != nil {
-		return nil, nil
-	}
-
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			// Backup already exists for the database.
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to create backup %q, error: %w", backupName, err)
 	}
 
