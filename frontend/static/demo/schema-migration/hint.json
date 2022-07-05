@@ -1,0 +1,14 @@
+[
+  {
+    "selector": "[data-label='bb-alter-schema-button']",
+    "title": "",
+    "description": {
+      "en-US": "Alter schema is a main feature of Bytebase",
+      "zh-CN": "修改数据库 Schema 是 Bytebase 的核心功能之一"
+    },
+    "url": "http://localhost:3000",
+    "additionStyle": {
+      "z-index": "10"
+    }
+  }
+]
