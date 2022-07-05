@@ -590,7 +590,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	// page to avoid introducing a new dependency, see
 	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
 	// discussion.
-	return members, len(members) <= 100, nil
+	return members, len(members) >= 100, nil
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
