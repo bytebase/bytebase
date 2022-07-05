@@ -128,6 +128,9 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		return nil, fmt.Errorf("failed to get migration history for database %q, error: %w", database.Name, err)
 	}
 	path := getBackupRelativeFilePath(database.ID, backupName)
+	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
+		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
+	}
 	backupCreate := &api.BackupCreate{
 		CreatorID:               creatorID,
 		DatabaseID:              database.ID,
@@ -136,9 +139,6 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		Type:                    backupType,
 		Path:                    path,
 		MigrationHistoryVersion: migrationHistoryVersion,
-	}
-	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
-		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
 	}
 
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
