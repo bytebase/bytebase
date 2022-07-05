@@ -126,12 +126,20 @@ export interface RuleTemplate {
 
 // SchemaReviewPolicyTemplate is the rule template set
 export interface SchemaReviewPolicyTemplate {
-  title: string;
-  imagePath: string;
+  id: string;
   ruleList: RuleTemplate[];
 }
 
-export const ruleTemplateList = schemaSystemConfig.rule_list as RuleTemplate[];
+export const TEMPLATE_LIST =
+  schemaSystemConfig.template_list as SchemaReviewPolicyTemplate[];
+
+export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
+  TEMPLATE_LIST.reduce((map, template) => {
+    for (const rule of template.ruleList) {
+      map.set(rule.type, rule);
+    }
+    return map;
+  }, new Map<RuleType, RuleTemplate>());
 
 interface RuleCategory {
   id: CategoryType;

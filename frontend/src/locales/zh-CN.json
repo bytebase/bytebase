@@ -1446,12 +1446,8 @@
       "schema": "Schema"
     },
     "template": {
-      "policy-for-prod": {
-        "title": "针对生产环境的审核策略模板"
-      },
-      "policy-for-dev": {
-        "title": "针对开发环境的审核策略模板"
-      }
+      "mysql-prod": "针对生产环境的审核策略模板",
+      "mysql-dev": "针对开发环境的审核策略模板"
     },
     "input-then-press-enter": "输入后按下回车来添加",
     "rule": {

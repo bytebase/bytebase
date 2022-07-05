@@ -1445,12 +1445,8 @@
       "schema": "Schema"
     },
     "template": {
-      "policy-for-prod": {
-        "title": "Production Environment Template"
-      },
-      "policy-for-dev": {
-        "title": "Development Environment Template"
-      }
+      "mysql-prod": "针对生产环境的审核策略模板",
+      "mysql-dev": "针对开发环境的审核策略模板"
     },
     "input-then-press-enter": "Input the value then press enter to add",
     "rule": {

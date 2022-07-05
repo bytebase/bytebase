@@ -18,8 +18,16 @@
         "
         @click="$emit('select', index)"
       >
-        <img class="h-24" :src="template.imagePath" alt="" />
-        <span class="text-sm lg:text-base mt-4">{{ template.title }}</span>
+        <img class="h-24" :src="getTemplateImage(template.id)" alt="" />
+        <span class="text-sm lg:text-base mt-4">
+          {{
+            $t(
+              `schema-review-policy.template.${template.id
+                .split(".")
+                .join("-")}`
+            )
+          }}
+        </span>
         <heroicons-solid:check-circle
           v-if="index == selectedTemplateIndex"
           class="w-7 h-7 text-gray-500 absolute top-3 left-3"
@@ -55,4 +63,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["select"]);
+
+const getTemplateImage = (id: string) =>
+  new URL(`../../../assets/${id}.png`, import.meta.url).href;
 </script>
