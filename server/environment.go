@@ -75,10 +75,10 @@ func (s *Server) registerEnvironmentRoutes(g *echo.Group) {
 
 		// Ensure the environment has no instance before it's archived.
 		if v := envPatch.RowStatus; v != nil && *v == string(api.Archived) {
-			archivedStatus := api.Archived
+			normalStatus := api.Normal
 			instances, err := s.store.FindInstance(ctx, &api.InstanceFind{
 				EnvironmentID: &id,
-				RowStatus:     &archivedStatus,
+				RowStatus:     &normalStatus,
 			})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find instances in the environment %d", id)).SetInternal(err)
