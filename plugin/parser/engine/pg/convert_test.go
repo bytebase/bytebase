@@ -5,7 +5,6 @@ import (
 
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +19,7 @@ func runTests(t *testing.T, tests []testData) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
-		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
+		require.Equal(t, test.want, res, test.stmt)
 	}
 }
 
@@ -259,13 +258,7 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 		},
 	}
 
-	p := &PostgreSQLParser{}
-
-	for _, test := range tests {
-		res, err := p.Parse(parser.Context{}, test.stmt)
-		require.NoError(t, err)
-		require.Nilf(t, pretty.Diff(test.want, res), "stmt: %s", test.stmt)
-	}
+	runTests(t, tests)
 }
 
 func TestPGDropConstraintStmt(t *testing.T) {
