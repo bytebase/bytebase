@@ -72,15 +72,17 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 		if database == bytebaseDatabase {
 			continue
 		}
-		exists := false
-		for _, k := range databaseList {
-			if database == k {
-				exists = true
-				break
+		if len(databaseList) != 0 {
+			exists := false
+			for _, k := range databaseList {
+				if database == k {
+					exists = true
+					break
+				}
 			}
-		}
-		if !exists {
-			continue
+			if !exists {
+				continue
+			}
 		}
 
 		var schema db.Schema
