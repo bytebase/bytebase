@@ -89,7 +89,7 @@ var (
 		// demo is a flag to seed the database with demo data.
 		demo bool
 		// demoName is the name of the demo. It is only used when --demo is set,
-		// and should be one of the demo names in the ./storedemo/ directory.
+		// and should be one of the subpath name in the ./store/demo/ directory.
 		demoName string
 		debug    bool
 		// pgURL must follow PostgreSQL connection URIs pattern.
