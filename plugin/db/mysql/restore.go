@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -404,15 +405,19 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 }
 
 func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool, error) {
-	stmt := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
-	rows, err := conn.QueryContext(ctx, stmt)
+	query := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
+	row, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return false, err
 	}
-	defer rows.Close()
-	if exist := rows.Next(); exist {
+	defer row.Close()
+	if row.Next() {
 		return true, nil
 	}
+	if err := row.Err(); err != nil {
+		return false, util.FormatErrorWithQuery(err, query)
+	}
+	// The query returns empty row, which means there's no such database.
 	return false, nil
 }
 
@@ -592,7 +597,8 @@ func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]B
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, `SHOW BINARY LOGS;`)
+	query := "SHOW BINARY LOGS"
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -611,6 +617,9 @@ func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]B
 			return nil, err
 		}
 		binlogFiles = append(binlogFiles, binlogFile)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	return sortBinlogFiles(binlogFiles), nil
@@ -856,8 +865,8 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 	}
 
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/information-schema-tables-table.html
-	stmt := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
-	rows, err := db.QueryContext(ctx, stmt)
+	query := fmt.Sprintf("SELECT table_name, engine FROM information_schema.tables WHERE table_schema='%s';", database)
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -872,6 +881,9 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 			tablesNotInnoDB = append(tablesNotInnoDB, tableName)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, query)
+	}
 	if len(tablesNotInnoDB) != 0 {
 		return fmt.Errorf("tables %v of database %s do not use the InnoDB engine, which is required for PITR", tablesNotInnoDB, database)
 	}
@@ -884,14 +896,23 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 		return "", err
 	}
 
-	rows, err := db.QueryContext(ctx, fmt.Sprintf("SHOW VARIABLES LIKE '%s';", varName))
+	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return "", err
 	}
 	defer rows.Close()
-	if ok := rows.Next(); !ok {
-		return "", fmt.Errorf("SHOW VARIABLES LIKE '%s' returns empty set", varName)
+	var found bool
+	if rows.Next() {
+		found = true
 	}
+	if err := rows.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	if !found {
+		return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	}
+
 	var varNameFound, value string
 	if err := rows.Scan(&varNameFound, &value); err != nil {
 		return "", err

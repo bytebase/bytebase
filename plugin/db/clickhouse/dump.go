@@ -66,6 +66,9 @@ func getDatabases(txn *sql.Tx) ([]string, error) {
 		}
 		dbNames = append(dbNames, name)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return dbNames, nil
 }
 
@@ -152,7 +155,10 @@ func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 		}
 		return fmt.Sprintf("%s;\n", stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned empty row", query)
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // tableSchema describes the schema of a table or view.
@@ -178,6 +184,9 @@ func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 			return nil, err
 		}
 		tables = append(tables, &tbl)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	for _, tbl := range tables {

@@ -247,20 +247,27 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	if err1 != nil {
 		return nil, FormatError(err1)
 	}
+	defer row1.Close()
 
-	row1.Next()
 	var order int
-	if err1 := row1.Scan(
-		&order,
-	); err1 != nil {
-		return nil, FormatError(err1)
+	var found bool
+	if row1.Next() {
+		if err1 := row1.Scan(
+			&order,
+		); err1 != nil {
+			return nil, FormatError(err1)
+		}
+		found = true
 	}
-	if err := row1.Close(); err != nil {
+	if err := row1.Err(); err != nil {
 		return nil, FormatError(err)
+	}
+	if !found {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
 	}
 
 	// Insert row into database.
-	row2, err2 := tx.QueryContext(ctx, `
+	query2 := `
 		INSERT INTO environment (
 			creator_id,
 			updater_id,
@@ -269,7 +276,8 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
-	`,
+	`
+	row2, err2 := tx.QueryContext(ctx, query2,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -281,22 +289,26 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	}
 	defer row2.Close()
 
-	row2.Next()
-	var envRaw environmentRaw
-	if err := row2.Scan(
-		&envRaw.ID,
-		&envRaw.RowStatus,
-		&envRaw.CreatorID,
-		&envRaw.CreatedTs,
-		&envRaw.UpdaterID,
-		&envRaw.UpdatedTs,
-		&envRaw.Name,
-		&envRaw.Order,
-	); err != nil {
+	if row2.Next() {
+		var envRaw environmentRaw
+		if err := row2.Scan(
+			&envRaw.ID,
+			&envRaw.RowStatus,
+			&envRaw.CreatorID,
+			&envRaw.CreatedTs,
+			&envRaw.UpdaterID,
+			&envRaw.UpdatedTs,
+			&envRaw.Name,
+			&envRaw.Order,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &envRaw, nil
+	}
+	if err := row2.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &envRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 }
 
 func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*environmentRaw, error) {
@@ -403,6 +415,8 @@ func (s *Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api
 		}
 		return &environment, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
 }

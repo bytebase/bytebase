@@ -81,6 +81,24 @@
         />
       </div>
 
+      <div
+        v-if="selectedInstance.engine == 'CLICKHOUSE'"
+        class="col-span-2 col-start-2 w-64"
+      >
+        <label for="name" class="textlabel">
+          {{ $t("create-db.cluster") }}
+          <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="name"
+          v-model="state.cluster"
+          required
+          name="cluster"
+          type="text"
+          class="textfield mt-1 w-full"
+        />
+      </div>
+
       <!-- Providing more dropdowns for required labels as if they are normal required props of DB -->
       <DatabaseLabelForm
         v-if="isTenantProject"
@@ -277,6 +295,7 @@ interface LocalState {
   databaseOwnerName: string;
   characterSet: string;
   collation: string;
+  cluster: string;
   assigneeId?: PrincipalId;
   showFeatureModal: boolean;
 }
@@ -345,6 +364,7 @@ export default defineComponent({
       labelList: [],
       characterSet: "",
       collation: "",
+      cluster: "",
       assigneeId: showAssigneeSelect.value ? undefined : SYSTEM_BOT_ID,
       showFeatureModal: false,
     });
@@ -494,6 +514,7 @@ export default defineComponent({
             collation:
               state.collation ||
               defaultCollation(selectedInstance.value.engine),
+            cluster: state.cluster,
             backupId: props.backup.id,
             backupName: props.backup.name,
           },
@@ -520,6 +541,7 @@ export default defineComponent({
             collation:
               state.collation ||
               defaultCollation(selectedInstance.value.engine),
+            cluster: state.cluster,
           },
           payload: {},
         };

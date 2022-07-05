@@ -194,6 +194,9 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 			Count:                    count,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 
 	return databaseCountMetricList, nil
 }
@@ -430,7 +433,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 // createDatabaseImpl creates a new database.
 func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db (
 			creator_id,
 			updater_id,
@@ -458,7 +461,8 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
@@ -473,27 +477,31 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 	}
 	defer row.Close()
 
-	row.Next()
-	var databaseRaw databaseRaw
-	if err := row.Scan(
-		&databaseRaw.ID,
-		&databaseRaw.CreatorID,
-		&databaseRaw.CreatedTs,
-		&databaseRaw.UpdaterID,
-		&databaseRaw.UpdatedTs,
-		&databaseRaw.InstanceID,
-		&databaseRaw.ProjectID,
-		&databaseRaw.Name,
-		&databaseRaw.CharacterSet,
-		&databaseRaw.Collation,
-		&databaseRaw.SyncStatus,
-		&databaseRaw.LastSuccessfulSyncTs,
-		&databaseRaw.SchemaVersion,
-	); err != nil {
+	if row.Next() {
+		var databaseRaw databaseRaw
+		if err := row.Scan(
+			&databaseRaw.ID,
+			&databaseRaw.CreatorID,
+			&databaseRaw.CreatedTs,
+			&databaseRaw.UpdaterID,
+			&databaseRaw.UpdatedTs,
+			&databaseRaw.InstanceID,
+			&databaseRaw.ProjectID,
+			&databaseRaw.Name,
+			&databaseRaw.CharacterSet,
+			&databaseRaw.Collation,
+			&databaseRaw.SyncStatus,
+			&databaseRaw.LastSuccessfulSyncTs,
+			&databaseRaw.SchemaVersion,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &databaseRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &databaseRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
@@ -655,6 +663,8 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 		}
 		return &databaseRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
 }

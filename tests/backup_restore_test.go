@@ -242,6 +242,7 @@ func TestPITR(t *testing.T) {
 			a.NoError(err)
 			a.FailNow("Database still exists after dropped")
 		}
+		a.NoError(rows.Err())
 
 		// 6. restore
 		t.Log("restore to pitr database")

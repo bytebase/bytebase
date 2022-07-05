@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // UpsertInstanceUser would update the existing user if name matches.
@@ -70,7 +71,7 @@ func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUser
 // upsertInstanceUserImpl upserts a new instanceUser.
 func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
 	// Upsert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO instance_user (
 			creator_id,
 			updater_id,
@@ -83,7 +84,8 @@ func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.Instanc
 			updater_id = excluded.updater_id,
 			"grant" = excluded.grant
 		RETURNING id, instance_id, name, "grant"
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		upsert.CreatorID,
 		upsert.CreatorID,
 		upsert.InstanceID,
@@ -96,18 +98,22 @@ func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.Instanc
 	}
 	defer row.Close()
 
-	row.Next()
-	var instanceUser api.InstanceUser
-	if err := row.Scan(
-		&instanceUser.ID,
-		&instanceUser.InstanceID,
-		&instanceUser.Name,
-		&instanceUser.Grant,
-	); err != nil {
+	if row.Next() {
+		var instanceUser api.InstanceUser
+		if err := row.Scan(
+			&instanceUser.ID,
+			&instanceUser.InstanceID,
+			&instanceUser.Name,
+			&instanceUser.Grant,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &instanceUser, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return nil, err
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {

@@ -397,7 +397,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		upsert.RowStatus = &rowStatus
 	}
 
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		INSERT INTO policy (
 			creator_id,
 			updater_id,
@@ -410,7 +410,8 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		ON CONFLICT(environment_id, type) DO UPDATE SET
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
-		`, strings.Join(set, ",")),
+	`, strings.Join(set, ","))
+	row, err := tx.QueryContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
@@ -424,23 +425,27 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 	}
 	defer row.Close()
 
-	row.Next()
-	var policyRaw policyRaw
-	if err := row.Scan(
-		&policyRaw.ID,
-		&policyRaw.CreatorID,
-		&policyRaw.CreatedTs,
-		&policyRaw.UpdaterID,
-		&policyRaw.UpdatedTs,
-		&policyRaw.RowStatus,
-		&policyRaw.EnvironmentID,
-		&policyRaw.Type,
-		&policyRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var policyRaw policyRaw
+		if err := row.Scan(
+			&policyRaw.ID,
+			&policyRaw.CreatorID,
+			&policyRaw.CreatedTs,
+			&policyRaw.UpdaterID,
+			&policyRaw.UpdatedTs,
+			&policyRaw.RowStatus,
+			&policyRaw.EnvironmentID,
+			&policyRaw.Type,
+			&policyRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &policyRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &policyRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.

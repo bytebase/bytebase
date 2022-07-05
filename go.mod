@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
@@ -17,7 +17,6 @@ require (
 	github.com/gosimple/slug v1.10.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/jackc/pgx/v4 v4.15.0
-	github.com/kr/pretty v0.2.1
 	github.com/labstack/echo-contrib v0.12.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/mattn/go-sqlite3 v1.14.7

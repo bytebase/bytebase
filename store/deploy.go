@@ -205,22 +205,23 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
-	INSERT INTO deployment_config (
-		creator_id,
-		updater_id,
-		project_id,
-		name,
-		config
-	)
-	VALUES ($1, $2, $3, $4, $5)
-	ON CONFLICT(project_id) DO UPDATE SET
-		creator_id = excluded.creator_id,
-		updater_id = excluded.updater_id,
-		name = excluded.name,
-		config = excluded.config
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
-	`,
+	query := `
+		INSERT INTO deployment_config (
+			creator_id,
+			updater_id,
+			project_id,
+			name,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(project_id) DO UPDATE SET
+			creator_id = excluded.creator_id,
+			updater_id = excluded.updater_id,
+			name = excluded.name,
+			config = excluded.config
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
+	`
+	row, err := tx.QueryContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.ProjectID,
@@ -233,19 +234,24 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 	}
 	defer row.Close()
 
-	row.Next()
-	var cfg deploymentConfigRaw
-	if err := row.Scan(
-		&cfg.ID,
-		&cfg.CreatorID,
-		&cfg.CreatedTs,
-		&cfg.UpdaterID,
-		&cfg.UpdatedTs,
-		&cfg.ProjectID,
-		&cfg.Name,
-		&cfg.Payload,
-	); err != nil {
-		return nil, err
+	if row.Next() {
+		var cfg deploymentConfigRaw
+		if err := row.Scan(
+			&cfg.ID,
+			&cfg.CreatorID,
+			&cfg.CreatedTs,
+			&cfg.UpdaterID,
+			&cfg.UpdatedTs,
+			&cfg.ProjectID,
+			&cfg.Name,
+			&cfg.Payload,
+		); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
-	return &cfg, nil
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
