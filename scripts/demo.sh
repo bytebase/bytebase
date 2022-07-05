@@ -7,6 +7,8 @@
 # ./demo.sh
 # ./demo.sh https://example.com
 # ./demo.sh https://example.com:8080
+# ./demo.sh https://example.com:8080 schema-migration
+# ./demo.sh https://schema-migration.demo.bytebase.com schema-migration
 
 # If no parameter is passed, use https://demo.bytebase.com as host and 443 as port by default
 ONLINE_DEMO_HOST='https://demo.bytebase.com'
@@ -23,10 +25,15 @@ if [ $1 ]; then
     fi
 fi
 
+DEMO_NAME=''
+if [ $2 ]; then
+    DEMO_NAME=$2
+fi
+
 seedDemoData() {
     echo 'Seeding data for online demo'
 
-    bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --data /var/opt/bytebase &
+    bytebase --host ${ONLINE_DEMO_HOST} --port ${ONLINE_DEMO_PORT} --demo --demo-name ${DEMO_NAME} --data /var/opt/bytebase &
 
     until [ -f /var/opt/bytebase/pgdata/PG_VERSION ]; do
         echo "waiting..."
