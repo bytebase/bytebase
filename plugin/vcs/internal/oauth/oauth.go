@@ -35,8 +35,7 @@ func requester(ctx context.Context, client *http.Client, method, url string, tok
 // Post makes a HTTP POST request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Post(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	code, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPost, url, token, body))
-	return code, respBody, err
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPost, url, token, body))
 }
 
 // Get makes a HTTP GET request to the given URL using the token. It refreshes
@@ -48,15 +47,13 @@ func Get(ctx context.Context, client *http.Client, url string, token *string, to
 // Put makes a HTTP PUT request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Put(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	code, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
-	return code, respBody, err
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
-	code, respBody, err = retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
-	return code, respBody, err
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodDelete, url, token, nil))
 }
 
 const maxRetries = 3
