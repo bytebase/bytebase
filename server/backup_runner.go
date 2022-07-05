@@ -116,19 +116,6 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, storageBackend api.BackupStorageBackend, creatorID int) (*api.Backup, error) {
-	backupCreate := &api.BackupCreate{
-		CreatorID:      creatorID,
-		DatabaseID:     database.ID,
-		Name:           backupName,
-		StorageBackend: storageBackend,
-		Type:           backupType,
-	}
-	path := getBackupRelativeFilePath(database.ID, backupName)
-	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
-		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
-	}
-	backupCreate.Path = path
-
 	// Store the migration history version if exists.
 	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 	if err != nil {
@@ -140,7 +127,19 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get migration history for database %q, error: %w", database.Name, err)
 	}
-	backupCreate.MigrationHistoryVersion = migrationHistoryVersion
+	path := getBackupRelativeFilePath(database.ID, backupName)
+	backupCreate := &api.BackupCreate{
+		CreatorID:               creatorID,
+		DatabaseID:              database.ID,
+		Name:                    backupName,
+		StorageBackend:          storageBackend,
+		Type:                    backupType,
+		Path:                    path,
+		MigrationHistoryVersion: migrationHistoryVersion,
+	}
+	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
+		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
+	}
 
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
@@ -161,7 +160,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 
 	createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
 		Name:      fmt.Sprintf("backup-%s", backupName),
-		CreatorID: backupCreate.CreatorID,
+		CreatorID: creatorID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pipeline for backup %q, error: %w", backupName, err)
@@ -171,7 +170,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		Name:          fmt.Sprintf("backup-%s", backupName),
 		EnvironmentID: database.Instance.EnvironmentID,
 		PipelineID:    createdPipeline.ID,
-		CreatorID:     backupCreate.CreatorID,
+		CreatorID:     creatorID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stage for backup %q, error: %w", backupName, err)
@@ -186,7 +185,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 		Status:     api.TaskPending,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
-		CreatorID:  backupCreate.CreatorID,
+		CreatorID:  creatorID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task for backup %q, error: %w", backupName, err)
