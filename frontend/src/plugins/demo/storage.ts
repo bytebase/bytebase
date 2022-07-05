@@ -6,6 +6,9 @@ interface StorageData {
     name: string;
     stepIndex: number;
   };
+  hint: {
+    name: string;
+  };
   bytebase_options: {
     appearance: {
       language: string;
