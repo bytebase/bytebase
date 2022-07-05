@@ -132,8 +132,12 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 	defer row.Close()
 
 	var version sql.NullString
-	row.Next()
-	if err := row.Scan(&version); err != nil {
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return nil, err
+		}
+	}
+	if err := row.Err(); err != nil {
 		return nil, err
 	}
 
@@ -161,8 +165,12 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	defer row.Close()
 
 	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
+	if row.Next() {
+		if err := row.Scan(&sequence); err != nil {
+			return -1, err
+		}
+	}
+	if err := row.Err(); err != nil {
 		return -1, err
 	}
 
@@ -344,6 +352,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	type ver struct {
 		id      int
 		version string
@@ -356,7 +365,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 		}
 		vers = append(vers, v)
 	}
-	if err := rows.Close(); err != nil {
+	if err := rows.Err(); err != nil {
 		return err
 	}
 

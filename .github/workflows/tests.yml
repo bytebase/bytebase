@@ -57,7 +57,7 @@ jobs:
             ./resources/mysql/*.tar.gz
             ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
-      # Release mode needs to embed fronetend dist
+      # Release mode needs to embed frontend dist
       - name: Touch garbage dist/index.html
         if: ${{ matrix.release-tags }}
         run: |

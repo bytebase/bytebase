@@ -270,7 +270,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 // createPrincipalImpl creates a new principal.
 func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*principalRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO principal (
 			creator_id,
 			updater_id,
@@ -281,7 +281,8 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Type,
@@ -295,23 +296,27 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 	}
 	defer row.Close()
 
-	row.Next()
-	var principalRaw principalRaw
-	if err := row.Scan(
-		&principalRaw.ID,
-		&principalRaw.CreatorID,
-		&principalRaw.CreatedTs,
-		&principalRaw.UpdaterID,
-		&principalRaw.UpdatedTs,
-		&principalRaw.Type,
-		&principalRaw.Name,
-		&principalRaw.Email,
-		&principalRaw.PasswordHash,
-	); err != nil {
+	if row.Next() {
+		var principalRaw principalRaw
+		if err := row.Scan(
+			&principalRaw.ID,
+			&principalRaw.CreatorID,
+			&principalRaw.CreatedTs,
+			&principalRaw.UpdaterID,
+			&principalRaw.UpdatedTs,
+			&principalRaw.Type,
+			&principalRaw.Name,
+			&principalRaw.Email,
+			&principalRaw.PasswordHash,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &principalRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &principalRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
@@ -412,9 +417,10 @@ func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPat
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &principalRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
 }
