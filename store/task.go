@@ -719,7 +719,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	row := tx.QueryRowContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $3
@@ -727,51 +727,30 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	`,
 		args...,
 	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
 
 	var taskPatchedRaw *taskRaw
-	var found bool
 	// TODO(dragonly): change all row.Next() to use QueryRow/QueryRowContext().
-	if row.Next() {
-		var taskRaw taskRaw
-		if err := row.Scan(
-			&taskRaw.ID,
-			&taskRaw.CreatorID,
-			&taskRaw.CreatedTs,
-			&taskRaw.UpdaterID,
-			&taskRaw.UpdatedTs,
-			&taskRaw.PipelineID,
-			&taskRaw.StageID,
-			&taskRaw.InstanceID,
-			&taskRaw.DatabaseID,
-			&taskRaw.Name,
-			&taskRaw.Status,
-			&taskRaw.Type,
-			&taskRaw.Payload,
-			&taskRaw.EarliestAllowedTs,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		taskPatchedRaw = &taskRaw
-		found = true
-	}
-	if err := row.Err(); err != nil {
+
+	var taskRaw taskRaw
+	if err := row.Scan(
+		&taskRaw.ID,
+		&taskRaw.CreatorID,
+		&taskRaw.CreatedTs,
+		&taskRaw.UpdaterID,
+		&taskRaw.UpdatedTs,
+		&taskRaw.PipelineID,
+		&taskRaw.StageID,
+		&taskRaw.InstanceID,
+		&taskRaw.DatabaseID,
+		&taskRaw.Name,
+		&taskRaw.Status,
+		&taskRaw.Type,
+		&taskRaw.Payload,
+		&taskRaw.EarliestAllowedTs,
+	); err != nil {
 		return nil, FormatError(err)
 	}
-	if !found {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
-	}
-	// Explicitly close row for the next transaction.
-	if err := row.Close(); err != nil {
-		return nil, err
-	}
-
-	if taskPatchedRaw == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task ID not found: %d", patch.ID)}
-	}
+	taskPatchedRaw = &taskRaw
 
 	taskRunFind := &api.TaskRunFind{
 		TaskID: &taskRawObj.ID,
