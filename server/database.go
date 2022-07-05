@@ -500,71 +500,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
-			return err
-		}
-		path := getBackupRelativeFilePath(database.ID, backupCreate.Name)
-		backupCreate.Path = path
-
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
+		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, backupCreate.StorageBackend, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-
-		version, err := getLatestSchemaVersion(ctx, driver, database.Name)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
-		}
-		backupCreate.MigrationHistoryVersion = version
-
-		backup, err := s.store.CreateBackup(ctx, backupCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
-			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
-		}
-
-		payload := api.TaskDatabaseBackupPayload{
-			BackupID: backup.ID,
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task payload").SetInternal(err)
-		}
-
-		createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
-			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
-			CreatorID: backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
-		}
-
-		createdStage, err := s.store.CreateStage(ctx, &api.StageCreate{
-			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
-			EnvironmentID: database.Instance.EnvironmentID,
-			PipelineID:    createdPipeline.ID,
-			CreatorID:     backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
-		}
-
-		_, err = s.store.CreateTask(ctx, &api.TaskCreate{
-			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
-			PipelineID: createdPipeline.ID,
-			StageID:    createdStage.ID,
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     api.TaskPending,
-			Type:       api.TaskDatabaseBackup,
-			Payload:    string(bytes),
-			CreatorID:  backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task for backup %q", backupCreate.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
