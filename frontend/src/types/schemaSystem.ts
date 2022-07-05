@@ -131,7 +131,7 @@ export interface SchemaReviewPolicyTemplate {
 }
 
 export const TEMPLATE_LIST =
-  schemaSystemConfig.template_list as SchemaReviewPolicyTemplate[];
+  schemaSystemConfig.templateList as SchemaReviewPolicyTemplate[];
 
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
@@ -150,7 +150,7 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const categoryList = schemaSystemConfig.category_list as CategoryType[];
+  const categoryList = schemaSystemConfig.categoryList as CategoryType[];
   const categoryOrder = categoryList.reduce((map, category, index) => {
     map.set(category, index);
     return map;

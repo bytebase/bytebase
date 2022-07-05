@@ -1,12 +1,12 @@
 ---
-category_list:
+categoryList:
   - ENGINE
   - NAMING
   - STATEMENT
   - TABLE
   - SCHEMA
   - COLUMN
-template_list:
+templateList:
   - id: mysql.prod
     ruleList:
       - type: engine.mysql.use-innodb
