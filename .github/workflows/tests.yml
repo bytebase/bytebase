@@ -66,4 +66,5 @@ jobs:
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }}mysql ./...
       - name: Run all tests
+        timeout-minutes: 15
         run: go test -v ./... -tags=${{ matrix.release-tags }}mysql
