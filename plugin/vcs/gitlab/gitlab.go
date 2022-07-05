@@ -315,7 +315,7 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
 	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, perPage)
-	code, _, body, err := oauth.Get(
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -366,7 +366,7 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 // should be either "user" or "users/{userID}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, instanceURL, resourceURI string) (*vcs.UserInfo, error) {
 	url := fmt.Sprintf("%s/%s", p.APIURL(instanceURL), resourceURI)
-	code, _, body, err := oauth.Get(
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -414,7 +414,7 @@ func (p *Provider) TryLogin(ctx context.Context, oauthCtx common.OauthContext, i
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/commits/%s", p.APIURL(instanceURL), repositoryID, commitID)
-	code, _, body, err := oauth.Get(
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -583,7 +583,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // FetchRepositoryFileList fetch the files from repository tree
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", p.APIURL(instanceURL), repositoryID, ref, filePath)
-	code, _, body, err := oauth.Get(
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,
@@ -842,7 +842,7 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 // readFile reads the file data including metadata and content.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
-	code, _, body, err := oauth.Get(
+	code, body, err := oauth.Get(
 		ctx,
 		p.client,
 		url,

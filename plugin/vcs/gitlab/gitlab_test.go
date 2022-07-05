@@ -214,7 +214,7 @@ func TestOAuth_RefreshToken(t *testing.T) {
 		return nil
 	}
 
-	_, _, _, err := oauth.Get(
+	_, _, err := oauth.Get(
 		ctx,
 		client,
 		"https://gitlab.example.com/api/v4/users/octocat",
