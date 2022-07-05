@@ -108,10 +108,36 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 			conn.Close()
 		}
 	}()
-	txn, backupPayload, err := swapDatabasesAndPrepareForBackup(ctx, conn, task.Database, issue.CreatedTs)
+	log.Debug("Acquiring table locks in database", zap.String("database", task.Database.Name))
+	if err := mysql.FlushTablesWithReadLock(ctx, conn, task.Database.Name); err != nil {
+		return true, nil, err
+	}
+	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
+	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("Failed to swap the original and PITR database", zap.Error(err))
+		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
+	}
+	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+
+	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
+	if err != nil {
+		return true, nil, err
+	}
+	payload := api.BackupPayload{BinlogInfo: binlogInfo}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return true, nil, err
+	}
+	backupPayload := string(payloadBytes)
+
+	log.Debug("Starting new transaction and unlock tables")
+	options := sql.TxOptions{ReadOnly: true}
+	// Beginning a transaction in the same session will implicitly release existing table locks.
+	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
+	txn, err := conn.BeginTx(ctx, &options)
+	if err != nil {
+		return true, nil, err
 	}
 
 	if err := exec.backupDatabaseAfterPITR(ctx, conn, txn, backupPayload, driver, server.store, task.Database, server.profile.DataDir, issue.CreatedTs); err != nil {
@@ -144,41 +170,6 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Swapped PITR database for target database %q", task.Database.Name),
 	}, nil
-}
-
-func swapDatabasesAndPrepareForBackup(ctx context.Context, conn *sql.Conn, database *api.Database, suffixTs int64) (*sql.Tx, string, error) {
-	log.Debug("Acquiring table locks in database", zap.String("database", database.Name))
-	if err := mysql.FlushTablesWithReadLock(ctx, conn, database.Name); err != nil {
-		return nil, "", err
-	}
-	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", database.Name))
-	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, database.Name, suffixTs)
-	if err != nil {
-		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
-		return nil, "", fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
-	}
-	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
-
-	binlogInfo, err := mysql.GetBinlogInfo(ctx, conn)
-	if err != nil {
-		return nil, "", err
-	}
-	payload := api.BackupPayload{BinlogInfo: binlogInfo}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.Debug("Starting new transaction and unlock tables")
-	options := sql.TxOptions{ReadOnly: true}
-	// Beginning a transaction in the same session will implicitly release existing table locks.
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
-	txn, err := conn.BeginTx(ctx, &options)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return txn, string(payloadBytes), nil
 }
 
 func (exec *PITRCutoverTaskExecutor) backupDatabaseAfterPITR(ctx context.Context, conn *sql.Conn, txn *sql.Tx, backupPayload string, driver db.Driver, store *store.Store, database *api.Database, dataDir string, suffixTs int64) error {
