@@ -78,7 +78,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 						case "/api/v4/projects/1/members/all":
 							return &http.Response{
 								StatusCode: http.StatusOK,
-								// Example response taken from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
+								// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
 								Body: io.NopCloser(strings.NewReader(`
 [
   {
@@ -134,7 +134,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 						case "/api/v4/users/1":
 							return &http.Response{
 								StatusCode: http.StatusOK,
-								// Example response derived from https://docs.gitlab.com/ee/api/users.html#single-user
+								// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
 								Body: io.NopCloser(strings.NewReader(`
 {
   "id": 1,
