@@ -141,7 +141,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	}
 	backupCreate.MigrationHistoryVersion = migrationHistoryVersion
 
-	// Return nil, early if the backupOld already exists.
+	// Return nil early if the backupOld already exists.
 	backupOld, err := s.store.FindBackup(ctx, &api.BackupFind{Name: &backupName})
 	if err != nil {
 		return nil, fmt.Errorf("failed to find backup %q, error: %w", backupName, err)
