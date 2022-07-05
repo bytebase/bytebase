@@ -1445,8 +1445,8 @@
       "schema": "Schema"
     },
     "template": {
-      "mysql-prod": "针对生产环境的审核策略模板",
-      "mysql-dev": "针对开发环境的审核策略模板"
+      "mysql-prod": "Production Environment Template",
+      "mysql-dev": "Development Environment Template"
     },
     "input-then-press-enter": "Input the value then press enter to add",
     "rule": {
