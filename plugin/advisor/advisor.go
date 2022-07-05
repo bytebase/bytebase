@@ -109,6 +109,9 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
+	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
 )
 
 // Advice is the result of an advisor.
