@@ -216,7 +216,6 @@ export const useActivityStore = defineStore("activity", {
       const activityPatch: ActivityPatch = {
         comment: updatedComment,
       };
-      console.log("updateComment", activityId, JSON.stringify(updatedComment));
       const data = (
         await axios.patch(`/api/activity/${activityId}`, {
           data: {
