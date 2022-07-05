@@ -105,10 +105,93 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 				ConstraintName: in.RenameStmt.Subname,
 				NewName:        in.RenameStmt.Newname,
 			}, nil
+		case pgquery.ObjectType_OBJECT_INDEX:
+			return &ast.RenameIndexStmt{
+				Table:     convertRangeVarToIndexTableName(in.RenameStmt.Relation),
+				IndexName: in.RenameStmt.Relation.Relname,
+				NewName:   in.RenameStmt.Newname,
+			}, nil
+		}
+	case *pgquery.Node_IndexStmt:
+		indexDef := &ast.IndexDef{
+			Table:  convertRangeVarToTableName(in.IndexStmt.Relation),
+			Name:   in.IndexStmt.Idxname,
+			Unique: in.IndexStmt.Unique,
+		}
+
+		for _, key := range in.IndexStmt.IndexParams {
+			index, ok := key.Node.(*pgquery.Node_IndexElem)
+			if !ok {
+				return nil, parser.NewConvertErrorf("expected IndexElem but found %t", key.Node)
+			}
+			// We only support index on columns now.
+			// TODO(rebelice): support index on expressions.
+			if index.IndexElem.Name != "" {
+				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
+					Type: ast.IndexKeyTypeColumn,
+					Key:  index.IndexElem.Name,
+				})
+			} else {
+				indexDef.KeyList = append(indexDef.KeyList, &ast.IndexKeyDef{
+					Type: ast.IndexKeyTypeExpression,
+				})
+			}
+		}
+
+		return &ast.CreateIndexStmt{Index: indexDef}, nil
+	case *pgquery.Node_DropStmt:
+		switch in.DropStmt.RemoveType {
+		case pgquery.ObjectType_OBJECT_INDEX:
+			dropIndex := &ast.DropIndexStmt{}
+			for _, object := range in.DropStmt.Objects {
+				list, ok := object.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
+				}
+				indexDef, err := convertListToIndexDef(list)
+				if err != nil {
+					return nil, err
+				}
+				dropIndex.IndexList = append(dropIndex.IndexList, indexDef)
+			}
+			return dropIndex, nil
+		case pgquery.ObjectType_OBJECT_TABLE:
+			// TODO.
+			// Trick linter to use switch...case...
 		}
 	}
 
 	return nil, nil
+}
+
+func convertListToIndexDef(in *pgquery.Node_List) (*ast.IndexDef, error) {
+	stringList, err := convertListToStringList(in)
+	if err != nil {
+		return nil, err
+	}
+	indexDef := &ast.IndexDef{}
+	switch len(in.List.Items) {
+	case 2:
+		indexDef.Table = &ast.TableDef{Schema: stringList[0]}
+		indexDef.Name = stringList[1]
+	case 1:
+		indexDef.Name = stringList[0]
+	default:
+		return nil, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
+	}
+	return indexDef, nil
+}
+
+func convertListToStringList(in *pgquery.Node_List) ([]string, error) {
+	var res []string
+	for _, item := range in.List.Items {
+		s, ok := item.Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil, parser.NewConvertErrorf("expected String but found %t", item.Node)
+		}
+		res = append(res, s.String_.Str)
+	}
+	return res, nil
 }
 
 func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableDef {
@@ -116,6 +199,15 @@ func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableDef {
 		Database: in.Catalogname,
 		Schema:   in.Schemaname,
 		Name:     in.Relname,
+	}
+}
+
+func convertRangeVarToIndexTableName(in *pgquery.RangeVar) *ast.TableDef {
+	if in.Schemaname == "" {
+		return nil
+	}
+	return &ast.TableDef{
+		Schema: in.Schemaname,
 	}
 }
 
