@@ -80,7 +80,6 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 // The PITR cutover algorithm is:
 // 1. Lock tables in the current database by FLUSH TABLES table1, table2, ... WITH READ LOCK.
 // 2. Swap the current and PITR database.
-// 3. Get the current binlog coordinate and save to the backup metadata.
 // 3. Create a backup with type PITR.
 // The backup is dumped asynchronously to prevent performance issues by waiting for the backup process for too long.
 // And we must check the possible failed/ongoing PITR backup in the recovery process.

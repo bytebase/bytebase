@@ -71,11 +71,6 @@ var (
 	excludeAutoIncrement = regexp.MustCompile(`AUTO_INCREMENT=\d+ `)
 )
 
-// DumpTx dumps the database using the provided transaction.
-func (driver *Driver) DumpTx(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
-	return dumpTxn(ctx, txn, database, out, false)
-}
-
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
