@@ -12,14 +12,12 @@ import (
 )
 
 func activeProfile(dataDir string) server.Profile {
-	demoDataDir := ""
-	if flags.demo {
-		demoName := string(common.ReleaseModeDev)
-		if flags.demoName != "" {
-			demoName = flags.demoName
-		}
-		demoDataDir = fmt.Sprintf("demo/%s", demoName)
+	// `flags.demo` always be true in dev mode
+	demoName := string(common.ReleaseModeDev)
+	if flags.demoName != "" {
+		demoName = flags.demoName
 	}
+	demoDataDir := fmt.Sprintf("demo/%s", demoName)
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
 
