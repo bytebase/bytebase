@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/peterhellberg/link"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -178,12 +177,11 @@ func (e ProjectRole) String() string {
 
 // RepositoryMember represents a GitLab API response for a repository member.
 type RepositoryMember struct {
-	ID              int       `json:"id"`
-	Email           string    `json:"email"`
-	Name            string    `json:"name"`
-	State           vcs.State `json:"state"`
-	AccessLevel     int32     `json:"access_level"`
-	MembershipState vcs.State `json:"membership_state"`
+	ID          int       `json:"id"`
+	Email       string    `json:"email"`
+	Name        string    `json:"name"`
+	State       vcs.State `json:"state"`
+	AccessLevel int32     `json:"access_level"`
 }
 
 // gitLabRepository is the API message for repository in GitLab
@@ -486,51 +484,18 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 // Docs: https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	var allMembers []RepositoryMember
-
-	// The "state" filter only available in GitLab Premium self-managed, GitLab
-	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
-	nextURL := fmt.Sprintf("%s/projects/%s/members/all?state=active&per_page=100", p.APIURL(instanceURL), repositoryID)
-	for nextURL != "" {
-		code, header, body, err := oauth.Get(
-			ctx,
-			p.client,
-			nextURL,
-			&oauthCtx.AccessToken,
-			tokenRefresher(
-				instanceURL,
-				oauthContext{
-					ClientID:     oauthCtx.ClientID,
-					ClientSecret: oauthCtx.ClientSecret,
-					RefreshToken: oauthCtx.RefreshToken,
-				},
-				oauthCtx.Refresher,
-			),
-		)
+	page := 1
+	for {
+		members, hasNextPage, err := p.fetchPaginatedRepositoryActiveMemberList(ctx, oauthCtx, instanceURL, repositoryID, page)
 		if err != nil {
-			return nil, errors.Wrapf(err, "GET %s", nextURL)
-		}
-
-		if code == http.StatusNotFound {
-			return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", nextURL))
-		} else if code >= 300 {
-			return nil, fmt.Errorf("failed to read repository members from URL %s, status code: %d, body: %s",
-				nextURL,
-				code,
-				body,
-			)
-		}
-
-		var members []RepositoryMember
-		if err := json.Unmarshal([]byte(body), &members); err != nil {
-			return nil, errors.Wrap(err, "unmarshal body")
+			return nil, errors.Wrap(err, "fetch paginated list")
 		}
 		allMembers = append(allMembers, members...)
 
-		if l := link.Parse(header.Get("Link"))["next"]; l != nil {
-			nextURL = l.URI
-		} else {
-			nextURL = ""
+		if !hasNextPage {
+			break
 		}
+		page++
 	}
 
 	var emptyEmailUserIDList []string
@@ -578,6 +543,54 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 	}
 
 	return activeMembers, nil
+}
+
+// fetchPaginatedRepositoryActiveMemberList fetches active members of a
+// repository in given page. It return the paginated results along with a
+// boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (members []RepositoryMember, hasNextPage bool, err error) {
+	// The "state" filter only available in GitLab Premium self-managed, GitLab
+	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
+	url := fmt.Sprintf("%s/projects/%s/members/all?state=active&page=%d&per_page=100", p.APIURL(instanceURL), repositoryID, page)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", url))
+	} else if code >= 300 {
+		return nil, false,
+			fmt.Errorf("failed to read repository members from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	if err := json.Unmarshal([]byte(body), &members); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal body")
+	}
+
+	// NOTE: We deliberately choose to not use the Link header for checking the next
+	// page to avoid introducing a new dependency, see
+	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
+	// discussion.
+	return members, len(members) <= 100, nil
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
