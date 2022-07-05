@@ -261,6 +261,96 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 	runTests(t, tests)
 }
 
+func TestPGCreateIndexStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "CREATE INDEX idx_id ON tech_book (id)",
+			want: []ast.Node{
+				&ast.CreateIndexStmt{
+					Index: &ast.IndexDef{
+						Name:   "idx_id",
+						Table:  &ast.TableDef{Name: "tech_book"},
+						Unique: false,
+						KeyList: []*ast.IndexKeyDef{
+							{
+								Type: ast.IndexKeyTypeColumn,
+								Key:  "id",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
+			want: []ast.Node{
+				&ast.CreateIndexStmt{
+					Index: &ast.IndexDef{
+						Name:   "idx_id",
+						Table:  &ast.TableDef{Name: "tech_book"},
+						Unique: true,
+						KeyList: []*ast.IndexKeyDef{
+							{
+								Type: ast.IndexKeyTypeColumn,
+								Key:  "id",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropIndexStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP INDEX xschema.idx_id, idx_x",
+			want: []ast.Node{
+				&ast.DropIndexStmt{
+					IndexList: []*ast.IndexDef{
+						{
+							Table: &ast.TableDef{Schema: "xschema"},
+							Name:  "idx_id",
+						},
+						{Name: "idx_x"},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGAlterIndexStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
+			want: []ast.Node{
+				&ast.RenameIndexStmt{
+					Table:     &ast.TableDef{Schema: "xschema"},
+					IndexName: "idx_id",
+					NewName:   "IDX_ID",
+				},
+			},
+		},
+		{
+			stmt: "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
+			want: []ast.Node{
+				&ast.RenameIndexStmt{
+					IndexName: "idx_id",
+					NewName:   "IDX_ID",
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestPGDropConstraintStmt(t *testing.T) {
 	tests := []testData{
 		{
