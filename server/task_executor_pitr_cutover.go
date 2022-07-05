@@ -81,10 +81,9 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 // 1. Lock tables in the current database by FLUSH TABLES table1, table2, ... WITH READ LOCK.
 // 2. Swap the current and PITR database.
 // 3. Get the current binlog coordinate and save to the backup metadata.
-// 4. dump backup with type AUTOMATIC_PITR_CUTOVER.
-// 5. Unlock tables in the current database.
-// The step 4 is done asynchronously to prevent performance issues by waiting for the backup process for too long.
-// And we must check the possible failed/ongoing AUTOMATIC_PITR_CUTOVER backup in the recovery process.
+// 3. Create a backup with type PITR.
+// The backup is dumped asynchronously to prevent performance issues by waiting for the backup process for too long.
+// And we must check the possible failed/ongoing PITR backup in the recovery process.
 func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
