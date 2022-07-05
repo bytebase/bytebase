@@ -100,16 +100,20 @@ export const useActivityStore = defineStore("activity", {
       return activityList;
     },
     async fetchActivityListForIssue(issueId: IssueId) {
-      const listForIssue = await this.fetchActivityList({
+      const requestListForIssue = this.fetchActivityList({
         typePrefix: "bb.issue.",
         container: issueId,
         order: "ASC",
       });
-      const listForPipeline = await this.fetchActivityList({
+      const requestListForPipeline = this.fetchActivityList({
         typePrefix: "bb.pipeline.",
         container: issueId,
         order: "ASC",
       });
+      const [listForIssue, listForPipeline] = await Promise.all([
+        requestListForIssue,
+        requestListForPipeline,
+      ]);
 
       const mergedList = [...listForIssue, ...listForPipeline];
       mergedList.sort((a, b) => a.createdTs - b.createdTs);
