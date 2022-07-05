@@ -48,11 +48,11 @@ func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
 func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Bookmark with BookmarkCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Bookmark with BookmarkCreate[%+v], error: %w", create, err)
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", bookmarkRaw, err)
 	}
 	return bookmark, nil
 }
@@ -62,14 +62,14 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 	find := &api.BookmarkFind{ID: &id}
 	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Bookmark with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Bookmark with ID %d, error: %w", id, err)
 	}
 	if bookmarkRaw == nil {
 		return nil, nil
 	}
 	bookmark, err := s.composeBookmark(ctx, bookmarkRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", bookmarkRaw, err)
+		return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", bookmarkRaw, err)
 	}
 	return bookmark, nil
 }
@@ -78,13 +78,13 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Bookmark list with BookmarkFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Bookmark list with BookmarkFind[%+v], error: %w", find, err)
 	}
 	var bookmarkList []*api.Bookmark
 	for _, raw := range bookmarkRawList {
 		bookmark, err := s.composeBookmark(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Bookmark with bookmarkRaw[%+v], error: %w", raw, err)
 		}
 		bookmarkList = append(bookmarkList, bookmark)
 	}
@@ -194,7 +194,7 @@ func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) 
 // createBookmarkImpl creates a new bookmark.
 func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCreate) (*bookmarkRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO bookmark (
 			creator_id,
 			updater_id,
@@ -203,7 +203,8 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 		)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -215,21 +216,25 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 	}
 	defer row.Close()
 
-	row.Next()
-	var bookmarkRaw bookmarkRaw
-	if err := row.Scan(
-		&bookmarkRaw.ID,
-		&bookmarkRaw.CreatorID,
-		&bookmarkRaw.CreatedTs,
-		&bookmarkRaw.UpdaterID,
-		&bookmarkRaw.UpdatedTs,
-		&bookmarkRaw.Name,
-		&bookmarkRaw.Link,
-	); err != nil {
+	if row.Next() {
+		var bookmarkRaw bookmarkRaw
+		if err := row.Scan(
+			&bookmarkRaw.ID,
+			&bookmarkRaw.CreatorID,
+			&bookmarkRaw.CreatedTs,
+			&bookmarkRaw.UpdaterID,
+			&bookmarkRaw.UpdatedTs,
+			&bookmarkRaw.Name,
+			&bookmarkRaw.Link,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &bookmarkRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &bookmarkRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {

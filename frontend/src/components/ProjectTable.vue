@@ -75,9 +75,18 @@ export default defineComponent({
       },
     ]);
 
-    const clickProject = function (section: number, row: number) {
+    const clickProject = function (
+      section: number,
+      row: number,
+      e: MouseEvent
+    ) {
       const project = props.projectList[row];
-      router.push(`/project/${projectSlug(project)}`);
+      const url = `/project/${projectSlug(project)}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     };
 
     return {

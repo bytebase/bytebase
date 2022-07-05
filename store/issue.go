@@ -68,11 +68,11 @@ func (raw *issueRaw) toIssue() *api.Issue {
 func (s *Store) CreateIssue(ctx context.Context, create *api.IssueCreate) (*api.Issue, error) {
 	issueRaw, err := s.createIssueRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Issue with IssueCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Issue with IssueCreate[%+v], error: %w", create, err)
 	}
 	issue, err := s.composeIssue(ctx, issueRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error: %w", issueRaw, err)
 	}
 	return issue, nil
 }
@@ -82,14 +82,14 @@ func (s *Store) GetIssueByID(ctx context.Context, id int) (*api.Issue, error) {
 	find := &api.IssueFind{ID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Issue with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Issue with ID %d, error: %w", id, err)
 	}
 	if issueRaw == nil {
 		return nil, nil
 	}
 	issue, err := s.composeIssue(ctx, issueRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error: %w", issueRaw, err)
 	}
 	return issue, nil
 }
@@ -99,14 +99,14 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 	find := &api.IssueFind{PipelineID: &id}
 	issueRaw, err := s.getIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Issue with PipelineID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Issue with PipelineID %d, error: %w", id, err)
 	}
 	if issueRaw == nil {
 		return nil, nil
 	}
 	issue, err := s.composeIssue(ctx, issueRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error: %w", issueRaw, err)
 	}
 	return issue, nil
 }
@@ -115,13 +115,13 @@ func (s *Store) GetIssueByPipelineID(ctx context.Context, id int) (*api.Issue, e
 func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issue, error) {
 	issueRawList, err := s.findIssueRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Issue list with IssueFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Issue list with IssueFind[%+v], error: %w", find, err)
 	}
 	var issueList []*api.Issue
 	for _, raw := range issueRawList {
 		issue, err := s.composeIssue(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error: %w", raw, err)
 		}
 		issueList = append(issueList, issue)
 	}
@@ -132,11 +132,11 @@ func (s *Store) FindIssue(ctx context.Context, find *api.IssueFind) ([]*api.Issu
 func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Issue, error) {
 	issueRaw, err := s.patchIssueRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Issue with IssuePatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Issue with IssuePatch[%+v], error: %w", patch, err)
 	}
 	issue, err := s.composeIssue(ctx, issueRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error[%w]", issueRaw, err)
+		return nil, fmt.Errorf("failed to compose Issue with issueRaw[%+v], error: %w", issueRaw, err)
 	}
 	return issue, nil
 }
@@ -169,6 +169,9 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return res, nil
@@ -470,7 +473,7 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO issue (
 			creator_id,
 			updater_id,
@@ -485,7 +488,8 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		)
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -502,27 +506,31 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 	}
 	defer row.Close()
 
-	row.Next()
-	var issueRaw issueRaw
-	if err := row.Scan(
-		&issueRaw.ID,
-		&issueRaw.CreatorID,
-		&issueRaw.CreatedTs,
-		&issueRaw.UpdaterID,
-		&issueRaw.UpdatedTs,
-		&issueRaw.ProjectID,
-		&issueRaw.PipelineID,
-		&issueRaw.Name,
-		&issueRaw.Status,
-		&issueRaw.Type,
-		&issueRaw.Description,
-		&issueRaw.AssigneeID,
-		&issueRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var issueRaw issueRaw
+		if err := row.Scan(
+			&issueRaw.ID,
+			&issueRaw.CreatorID,
+			&issueRaw.CreatedTs,
+			&issueRaw.UpdaterID,
+			&issueRaw.UpdatedTs,
+			&issueRaw.ProjectID,
+			&issueRaw.PipelineID,
+			&issueRaw.Name,
+			&issueRaw.Status,
+			&issueRaw.Type,
+			&issueRaw.Description,
+			&issueRaw.AssigneeID,
+			&issueRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &issueRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &issueRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
@@ -669,8 +677,10 @@ func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.Issue
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &issueRaw, nil
+	}
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}

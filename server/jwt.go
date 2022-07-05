@@ -124,7 +124,7 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	cookie.Path = "/"
 	// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 	cookie.HttpOnly = true
-	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
@@ -146,7 +146,7 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie.Value = strconv.Itoa(user.ID)
 	cookie.Expires = expiration
 	cookie.Path = "/"
-	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
@@ -174,6 +174,10 @@ func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode comm
 		method := c.Request().Method
 		// Skip GET /subscription request
 		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
+			return next(c)
+		}
+		// Skip OpenAPI request
+		if common.HasPrefixes(c.Path(), openAPIPrefix) {
 			return next(c)
 		}
 

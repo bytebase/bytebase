@@ -1,5 +1,7 @@
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // Database management
+  | "bb.feature.disaster-recovery-pitr"
   // Change Workflow
   | "bb.feature.schema-review-policy"
   | "bb.feature.schema-drift"
@@ -7,6 +9,7 @@ export type FeatureType =
   | "bb.feature.multi-tenancy"
   | "bb.feature.dba-workflow"
   | "bb.feature.data-source"
+  | "bb.feature.online-migration"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
@@ -45,6 +48,8 @@ export interface Plan {
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
 // so that it can be shared between frontend/backend.
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
+  // Database management
+  ["bb.feature.disaster-recovery-pitr", [false, true, true]],
   // Change Workflow
   ["bb.feature.schema-review-policy", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
@@ -52,6 +57,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.multi-tenancy", [false, true, true]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.data-source", [false, false, false]],
+  ["bb.feature.online-migration", [false, true, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
@@ -120,7 +126,13 @@ export const FREE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-upto-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-basic-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {
@@ -170,7 +182,13 @@ export const TEAM_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-minimum-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {
@@ -226,7 +244,13 @@ export const ENTERPRISE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-customized",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
     {

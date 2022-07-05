@@ -9,6 +9,7 @@ import (
 	// embed will embeds the migration schema.
 	_ "embed"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
@@ -90,16 +91,19 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 	defer row.Close()
 
 	var version sql.NullString
-	row.Next()
-	if err := row.Scan(&version); err != nil {
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return nil, err
+		}
+		if version.Valid {
+			return &version.String, nil
+		}
+		return nil, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, err
 	}
-
-	if version.Valid {
-		return &version.String, nil
-	}
-
-	return nil, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
 }
 
 // FindLargestSequence will return the largest sequence number.
@@ -119,17 +123,20 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	defer row.Close()
 
 	var sequence sql.NullInt32
-	row.Next()
-	if err := row.Scan(&sequence); err != nil {
-		return -1, err
+	if row.Next() {
+		if err := row.Scan(&sequence); err != nil {
+			return -1, err
+		}
+		if !sequence.Valid {
+			// Returns 0 if we haven't applied any migration for this namespace.
+			return 0, nil
+		}
+		return int(sequence.Int32), nil
 	}
-
-	if !sequence.Valid {
-		// Returns 0 if we haven't applied any migration for this namespace.
-		return 0, nil
+	if err := row.Err(); err != nil {
+		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
-
-	return int(sequence.Int32), nil
+	return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
@@ -155,7 +162,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 			issue_id,
 			payload
 		)
-		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?,  ?, 'PENDING', ?, ?, ?, ?, ?, 0, ?, ?)
+		VALUES (?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, DATE_PART(EPOCH_SECOND, CURRENT_TIMESTAMP()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`
 	var insertedID int64
 	maxIDQuery := "SELECT MAX(id)+1 FROM bytebase.public.migration_history"
@@ -189,6 +196,7 @@ func (Driver) InsertPendingHistory(ctx context.Context, tx *sql.Tx, sequence int
 		sequence,
 		m.Source,
 		m.Type,
+		db.Pending,
 		storedVersion,
 		m.Description,
 		statement,
@@ -209,12 +217,12 @@ func (Driver) UpdateHistoryAsDone(ctx context.Context, tx *sql.Tx, migrationDura
 		UPDATE
 			bytebase.public.migration_history
 		SET
-			status = 'DONE',
+			status = ?,
 			execution_duration_ns = ?,
 			schema = ?
 		WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, migrationDurationNs, updatedSchema, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsDoneQuery, db.Done, migrationDurationNs, updatedSchema, insertedID)
 	return err
 }
 
@@ -224,11 +232,11 @@ func (Driver) UpdateHistoryAsFailed(ctx context.Context, tx *sql.Tx, migrationDu
 		UPDATE
 			bytebase.public.migration_history
 		SET
-			status = 'FAILED',
+			status = ?,
 			execution_duration_ns = ?
 		WHERE id = ?
 	`
-	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, migrationDurationNs, insertedID)
+	_, err := tx.ExecContext(ctx, updateHistoryAsFailedQuery, db.Failed, migrationDurationNs, insertedID)
 	return err
 }
 
@@ -313,6 +321,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	type ver struct {
 		id      int
 		version string
@@ -325,8 +334,8 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 		}
 		vers = append(vers, v)
 	}
-	if err := rows.Close(); err != nil {
-		return err
+	if err := rows.Err(); err != nil {
+		return util.FormatErrorWithQuery(err, query)
 	}
 
 	updateQuery := `

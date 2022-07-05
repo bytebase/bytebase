@@ -12,6 +12,7 @@ import (
 	// init() in pgx/v4/stdlib will register it's pgx driver
 	_ "github.com/jackc/pgx/v4/stdlib"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -193,28 +194,41 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 		}
 		dbs = append(dbs, &d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return dbs, nil
 }
 
 // GetVersion gets the version of Postgres server.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
-	versionRow, err := driver.db.QueryContext(ctx, query)
+	row, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	defer versionRow.Close()
+	defer row.Close()
 
 	var version string
-	versionRow.Next()
-	if err := versionRow.Scan(&version); err != nil {
+	if row.Next() {
+		if err := row.Scan(&version); err != nil {
+			return "", err
+		}
+		return version, nil
+	}
+	if err := row.Err(); err != nil {
 		return "", err
 	}
-	return version, nil
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string) error {
+	owner, err := driver.getCurrentDatabaseOwner()
+	if err != nil {
+		return err
+	}
+
 	var remainingStmts []string
 	f := func(stmt string) error {
 		stmt = strings.TrimLeft(stmt, " \t")
@@ -252,8 +266,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			_, err := driver.GetDbConnection(ctx, parts[1])
-			return err
+			if _, err = driver.GetDbConnection(ctx, parts[1]); err != nil {
+				return err
+			}
+			// Update current owner
+			if owner, err = driver.getCurrentDatabaseOwner(); err != nil {
+				return err
+			}
+		} else if isSuperuserStatement(stmt) {
+			// Use superuser privilege to run privileged statements.
+			remainingStmts = append(remainingStmts, "SET LOCAL ROLE NONE;")
+			remainingStmts = append(remainingStmts, stmt)
+			remainingStmts = append(remainingStmts, fmt.Sprintf("SET LOCAL ROLE %s;", owner))
 		} else {
 			remainingStmts = append(remainingStmts, stmt)
 		}
@@ -274,10 +298,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 	defer tx.Rollback()
 
-	owner, err := driver.getCurrentDatabaseOwner(tx)
-	if err != nil {
-		return err
-	}
 	// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE %s", owner)); err != nil {
 		return err
@@ -293,6 +313,14 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	return nil
 }
 
+func isSuperuserStatement(stmt string) bool {
+	upperCaseStmt := strings.ToUpper(stmt)
+	if strings.Contains(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.Contains(upperCaseStmt, "CREATE EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EXTENSION") || strings.Contains(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
+		return true
+	}
+	return false
+}
+
 func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
 	raw := strings.TrimRight(createDatabaseStatement, ";")
 	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
@@ -305,7 +333,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	return databaseName, nil
 }
 
-func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
+func (driver *Driver) getCurrentDatabaseOwner() (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -314,7 +342,7 @@ func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
 		WHERE
 			d.datname = current_database();
 		`
-	rows, err := txn.Query(query)
+	rows, err := driver.db.Query(query)
 	if err != nil {
 		return "", err
 	}
@@ -328,8 +356,11 @@ func (driver *Driver) getCurrentDatabaseOwner(txn *sql.Tx) (string, error) {
 		}
 		owner = o
 	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 	if owner == "" {
-		return "", fmt.Errorf("Owner not found for the current database")
+		return "", fmt.Errorf("owner not found for the current database")
 	}
 	return owner, nil
 }

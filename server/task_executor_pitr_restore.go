@@ -11,15 +11,14 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
 // NewPITRRestoreTaskExecutor creates a PITR restore task executor.
-func NewPITRRestoreTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
+func NewPITRRestoreTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
 	return &PITRRestoreTaskExecutor{
 		mysqlutil: instance,
 	}
@@ -27,7 +26,7 @@ func NewPITRRestoreTaskExecutor(instance *mysqlutil.Instance) TaskExecutor {
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
-	mysqlutil *mysqlutil.Instance
+	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
@@ -73,32 +72,26 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	log.Debug("Found backup list", zap.Array("backups", api.ZapBackupArray(backupList)))
 
-	connCfg, err := getConnectionConfig(ctx, instance, database.Name)
-	if err != nil {
-		return err
-	}
-
 	binlogDir := getBinlogAbsDir(dataDir, task.Instance.ID)
 	if err := createBinlogDir(dataDir, task.Instance.ID); err != nil {
 		return err
 	}
 
-	mysqlDriver, ok := driver.(*pluginmysql.Driver)
+	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
 		log.Error("failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
-
-	mysqlRestore := restoremysql.New(mysqlDriver, exec.mysqlutil, connCfg, binlogDir)
+	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
 	log.Debug("Downloading all binlog files")
 	// TODO(dragonly): Do this on a regular basis.
-	if err := mysqlRestore.FetchAllBinlogFiles(ctx); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
 		return err
 	}
 
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
-	backup, err := mysqlRestore.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
+	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
 	if err != nil {
 		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
@@ -124,7 +117,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	// Since it's ephemeral and will be renamed to the original database soon, we will reuse the original
 	// database's migration history, and append a new BASELINE migration.
 	startBinlogInfo := backup.Payload.BinlogInfo
-	if err := mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
+	if err := mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupFile), startBinlogInfo, database.Name, issue.CreatedTs, targetTs); err != nil {
 		log.Error("failed to perform a PITR restore in the PITR database",
 			zap.Int("issueID", issue.ID),
 			zap.String("database", database.Name),

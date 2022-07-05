@@ -4,19 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 )
 
 // How to add a schema review rule:
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
-//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
-//   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
+//   2. Register this advisor in map[DBType][AdvisorType].(plugin/advisor.go)
+//   3. Add advisor error code if needed(plugin/advisor/code.go).
+//   4. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // SchemaReviewRuleLevel is the error level for schema review rule.
 type SchemaReviewRuleLevel string
@@ -179,7 +177,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	}
 
 	template := nr.Format
-	keys, _ := common.ParseTemplateTokens(template)
+	keys, _ := parseTemplateTokens(template)
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
@@ -188,6 +186,27 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	}
 
 	return template, keys, nil
+}
+
+// parseTemplateTokens parses the template and returns template tokens and their delimiters.
+// For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
+// and the delimiters will be ["_hello_"].
+// The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
+// if there are special regexp characters like "$" in the delimiters. The caller should escape the delimiters in such cases.
+func parseTemplateTokens(template string) ([]string, []string) {
+	r := regexp.MustCompile(`{{[^{}]+}}`)
+	tokens := r.FindAllString(template, -1)
+	if len(tokens) > 0 {
+		split := r.Split(template, -1)
+		var delimiters []string
+		for _, s := range split {
+			if s != "" {
+				delimiters = append(delimiters, s)
+			}
+		}
+		return tokens, delimiters
+	}
+	return nil, nil
 }
 
 // UnmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
@@ -206,7 +225,7 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 type SchemaReviewCheckContext struct {
 	Charset   string
 	Collation string
-	DbType    db.Type
+	DbType    DBType
 	Catalog   catalog.Catalog
 }
 
@@ -220,7 +239,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 
 		advisorType, err := getAdvisorTypeByRule(rule.Type, context.DbType)
 		if err != nil {
-			log.Debug("not supported rule", zap.Error(err))
+			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
 			continue
 		}
 
@@ -236,7 +255,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 			statements,
 		)
 		if err != nil {
-			return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+			return nil, fmt.Errorf("failed to check statement: %w", err)
 		}
 
 		result = append(result, adviceList...)
@@ -249,7 +268,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 	if len(result) == 0 {
 		result = append(result, Advice{
 			Status:  Success,
-			Code:    common.Ok,
+			Code:    Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -257,74 +276,74 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 	return result, nil
 }
 
-func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine db.Type) (Type, error) {
+func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine DBType) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLWhereRequirement, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNoLeadingWildcardLike, nil
 		}
 	case SchemaRuleStatementNoSelectAll:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNoSelectAll, nil
 		}
 	case SchemaRuleSchemaBackwardCompatibility:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLMigrationCompatibility, nil
 		}
 	case SchemaRuleTableNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNamingTableConvention, nil
-		case db.Postgres:
+		case Postgres:
 			return PostgreSQLNamingTableConvention, nil
 		}
 	case SchemaRuleIDXNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNamingIndexConvention, nil
 		}
 	case SchemaRuleUKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNamingUKConvention, nil
 		}
 	case SchemaRuleFKNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLNamingColumnConvention, nil
-		case db.Postgres:
+		case Postgres:
 			return PostgreSQLNamingColumnConvention, nil
 		}
 	case SchemaRuleRequiredColumn:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLColumnRequirement, nil
 		}
 	case SchemaRuleColumnNotNull:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLColumnNoNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
-		case db.MySQL, db.TiDB:
+		case MySQL, TiDB:
 			return MySQLTableRequirePK, nil
 		}
 	case SchemaRuleMySQLEngine:
-		if engine == db.MySQL {
+		if engine == MySQL {
 			return MySQLUseInnoDB, nil
 		}
 	}

@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap/zapcore"
@@ -92,6 +91,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// validate data
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", table))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col int
@@ -168,11 +168,10 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -180,15 +179,19 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		validateTbl0(t, db, numRowsTime1)
+		validateTbl0(t, db, database, numRowsTime1)
 		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime1)
+		validateTbl1(t, db, database, numRowsTime1)
 		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, database)
 	})
 
 	t.Run("Drop Database", func(t *testing.T) {
@@ -212,8 +215,6 @@ func TestPITR(t *testing.T) {
 		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
 		a.NoError(err)
 		defer driver.Close(ctx)
-
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
 
 		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
@@ -241,6 +242,7 @@ func TestPITR(t *testing.T) {
 			a.NoError(err)
 			a.FailNow("Database still exists after dropped")
 		}
+		a.NoError(rows.Err())
 
 		// 6. restore
 		t.Log("restore to pitr database")
@@ -248,14 +250,18 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 	})
 
@@ -278,7 +284,6 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
 		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s\n", buf.String())
@@ -301,10 +306,10 @@ func TestPITR(t *testing.T) {
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
 		binlogDir := t.TempDir()
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg, binlogDir)
-		err = mysqlRestore.FetchAllBinlogFiles(ctx)
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
 		a.NoError(err)
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -312,15 +317,19 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, suffixTs)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		validateTbl0(t, db, numRowsTime1)
+		validateTbl0(t, db, database, numRowsTime1)
 		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime1)
+		validateTbl1(t, db, database, numRowsTime1)
 		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db)
+		validateTableUpdateRow(t, db, database)
 	})
 }
 
@@ -369,10 +378,11 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	a.NoError(err)
 }
 
-func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
+func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl0;")
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl0;", databaseName))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col int
@@ -384,10 +394,11 @@ func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
+func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl1;")
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl1;", databaseName))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col1, col2 int
@@ -400,10 +411,11 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func validateTableUpdateRow(t *testing.T, db *sql.DB) {
+func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM _update_row_;")
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s._update_row_;", databaseName))
 	a.NoError(err)
+	defer rows.Close()
 
 	a.Equal(true, rows.Next())
 	var col int
@@ -452,6 +464,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	go func() {
 		defer db.Close()
 		ticker := time.NewTicker(1 * time.Millisecond)
+		defer ticker.Stop()
 		i := 0
 		for {
 			select {

@@ -19,7 +19,6 @@ import (
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
-	ghostlog "github.com/openark/golib/log"
 	"go.uber.org/zap"
 )
 
@@ -79,8 +78,8 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	const (
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
+		timestampAllTable                   = true
 		hooksStatusIntervalSec              = 60
-		replicaServerID                     = 99999
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
 		chunkSize                           = 1000
@@ -92,7 +91,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
 	migrationContext := base.NewMigrationContext()
-	migrationContext.Log.SetLevel(ghostlog.ERROR)
 	migrationContext.InspectorConnectionConfig.Key.Hostname = config.host
 	port := 3306
 	if config.port != "" {
@@ -114,7 +112,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
@@ -137,6 +134,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	}
 	migrationContext.ServeSocketFile = config.socketFilename
 	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
+	migrationContext.TimestampAllTable = timestampAllTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
 	migrationContext.SetChunkSize(chunkSize)
@@ -166,7 +164,12 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
-			syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err)
+			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
+			// Then there's no consumer of syncError, so we must make sending to syncError non-blocking.
+			select {
+			case syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err):
+			default:
+			}
 			return
 		}
 		_, _, err = postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
@@ -273,6 +276,7 @@ func executeGhost(task *api.Task, startedNs int64, statement string, syncDone ch
 
 	go func(ctx context.Context, migrationContext *base.MigrationContext) {
 		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:

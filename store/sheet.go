@@ -74,11 +74,11 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
 	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Sheet with SheetCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Sheet with SheetCreate[%+v], error: %w", create, err)
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, create.CreatorID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
 	}
 	return sheet, nil
 }
@@ -87,14 +87,14 @@ func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.
 func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
 	sheetRaw, err := s.getSheetRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Sheet with SheetFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Sheet with SheetFind[%+v], error: %w", find, err)
 	}
 	if sheetRaw == nil {
 		return nil, nil
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, currentPrincipalID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
 	}
 	return sheet, nil
 }
@@ -103,13 +103,13 @@ func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrinci
 func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) ([]*api.Sheet, error) {
 	sheetRawList, err := s.findSheetRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Sheet list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Sheet list, error: %w", err)
 	}
 	var sheetList []*api.Sheet
 	for _, raw := range sheetRawList {
 		sheet, err := s.composeSheet(ctx, raw, currentPrincipalID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", raw, err)
 		}
 		sheetList = append(sheetList, sheet)
 	}
@@ -120,11 +120,11 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
 	sheetRaw, err := s.patchSheetRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Sheet with SheetPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Sheet with SheetPatch[%+v], error: %w", patch, err)
 	}
 	sheet, err := s.composeSheet(ctx, sheetRaw, patch.UpdaterID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error[%w]", sheetRaw, err)
+		return nil, fmt.Errorf("failed to compose Sheet with sheetRaw[%+v], error: %w", sheetRaw, err)
 	}
 	return sheet, nil
 }
@@ -180,7 +180,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 		}
 		res = append(res, &sheetCount)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -317,7 +319,7 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		create.Payload = "{}"
 	}
 
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
@@ -332,7 +334,8 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, source, type, payload
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -350,34 +353,37 @@ func createSheetImpl(ctx context.Context, tx *sql.Tx, create *api.SheetCreate) (
 	}
 	defer row.Close()
 
-	row.Next()
-	var sheetRaw sheetRaw
-	databaseID := sql.NullInt32{}
-	if err := row.Scan(
-		&sheetRaw.ID,
-		&sheetRaw.RowStatus,
-		&sheetRaw.CreatorID,
-		&sheetRaw.CreatedTs,
-		&sheetRaw.UpdaterID,
-		&sheetRaw.UpdatedTs,
-		&sheetRaw.ProjectID,
-		&databaseID,
-		&sheetRaw.Name,
-		&sheetRaw.Statement,
-		&sheetRaw.Visibility,
-		&sheetRaw.Source,
-		&sheetRaw.Type,
-		&sheetRaw.Payload,
-	); err != nil {
+	if row.Next() {
+		var sheetRaw sheetRaw
+		databaseID := sql.NullInt32{}
+		if err := row.Scan(
+			&sheetRaw.ID,
+			&sheetRaw.RowStatus,
+			&sheetRaw.CreatorID,
+			&sheetRaw.CreatedTs,
+			&sheetRaw.UpdaterID,
+			&sheetRaw.UpdatedTs,
+			&sheetRaw.ProjectID,
+			&databaseID,
+			&sheetRaw.Name,
+			&sheetRaw.Statement,
+			&sheetRaw.Visibility,
+			&sheetRaw.Source,
+			&sheetRaw.Type,
+			&sheetRaw.Payload,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		if databaseID.Valid {
+			value := int(databaseID.Int32)
+			sheetRaw.DatabaseID = &value
+		}
+		return &sheetRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheetRaw.DatabaseID = &value
-	}
-
-	return &sheetRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // patchSheetImpl updates a sheet's name/statement/visibility.
@@ -447,9 +453,10 @@ func patchSheetImpl(ctx context.Context, tx *sql.Tx, patch *api.SheetPatch) (*sh
 
 		return &sheetRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("sheet ID not found: %d", patch.ID)}
-
 }
 
 func findSheetImpl(ctx context.Context, tx *sql.Tx, find *api.SheetFind) ([]*sheetRaw, error) {

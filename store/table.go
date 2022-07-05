@@ -70,11 +70,11 @@ func (raw *tableRaw) toTable() *api.Table {
 func (s *Store) CreateTable(ctx context.Context, create *api.TableCreate) (*api.Table, error) {
 	tableRaw, err := s.createTableRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Table with TableCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Table with TableCreate[%+v], error: %w", create, err)
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", tableRaw, err)
+		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
 	}
 	return table, nil
 }
@@ -83,14 +83,14 @@ func (s *Store) CreateTable(ctx context.Context, create *api.TableCreate) (*api.
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Table with TableFind[%+v], error: %w", find, err)
 	}
 	if tableRaw == nil {
 		return nil, nil
 	}
 	table, err := s.composeTable(ctx, tableRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", tableRaw, err)
+		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
 	}
 	return table, nil
 }
@@ -99,13 +99,13 @@ func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, 
 func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Table, error) {
 	tableRawList, err := s.findTableRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Table list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Table list, error: %w", err)
 	}
 	var tableList []*api.Table
 	for _, raw := range tableRawList {
 		table, err := s.composeTable(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", raw, err)
 		}
 		tableList = append(tableList, table)
 	}
@@ -220,7 +220,7 @@ func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw
 // createTableImpl creates a new table.
 func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.TableCreate) (*tableRaw, error) {
 	// Insert row into table.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO tbl (
 			creator_id,
 			created_ts,
@@ -240,7 +240,8 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, "collation", row_count, data_size, index_size, data_free, create_options, comment
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -263,30 +264,34 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 	}
 	defer row.Close()
 
-	row.Next()
-	var tableRaw tableRaw
-	if err := row.Scan(
-		&tableRaw.ID,
-		&tableRaw.CreatorID,
-		&tableRaw.CreatedTs,
-		&tableRaw.UpdaterID,
-		&tableRaw.UpdatedTs,
-		&tableRaw.DatabaseID,
-		&tableRaw.Name,
-		&tableRaw.Type,
-		&tableRaw.Engine,
-		&tableRaw.Collation,
-		&tableRaw.RowCount,
-		&tableRaw.DataSize,
-		&tableRaw.IndexSize,
-		&tableRaw.DataFree,
-		&tableRaw.CreateOptions,
-		&tableRaw.Comment,
-	); err != nil {
+	if row.Next() {
+		var tableRaw tableRaw
+		if err := row.Scan(
+			&tableRaw.ID,
+			&tableRaw.CreatorID,
+			&tableRaw.CreatedTs,
+			&tableRaw.UpdaterID,
+			&tableRaw.UpdatedTs,
+			&tableRaw.DatabaseID,
+			&tableRaw.Name,
+			&tableRaw.Type,
+			&tableRaw.Engine,
+			&tableRaw.Collation,
+			&tableRaw.RowCount,
+			&tableRaw.DataSize,
+			&tableRaw.IndexSize,
+			&tableRaw.DataFree,
+			&tableRaw.CreateOptions,
+			&tableRaw.Comment,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &tableRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &tableRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*tableRaw, error) {

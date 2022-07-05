@@ -87,29 +87,73 @@ type indexSchema struct {
 	comment           string
 }
 
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList[k] = true
+	}
+	// Query db info
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get databases: %s", err)
+	}
+	var databaseList []db.DatabaseMeta
+	for _, database := range databases {
+		dbName := database.name
+		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+
+		databaseList = append(
+			databaseList,
+			db.DatabaseMeta{
+				Name:         dbName,
+				CharacterSet: database.encoding,
+				Collation:    database.collate,
+			},
+		)
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
 	// Skip all system databases
 	for k := range systemDatabases {
 		excludedDatabaseList[k] = true
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// Query db info
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get databases: %s", err)
+		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
 	var schemaList []*db.Schema
 	for _, database := range databases {
 		dbName := database.name
 		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+		exists := false
+		for _, k := range databaseList {
+			if dbName == k {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			continue
 		}
 
@@ -120,11 +164,11 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		sqldb, err := driver.GetDbConnection(ctx, dbName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
 		}
 		txn, err := sqldb.BeginTx(ctx, nil)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		defer txn.Rollback()
 
@@ -132,7 +176,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		indicesMap := make(map[string][]*indexSchema)
 		indices, err := getIndices(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 		}
 		for _, idx := range indices {
 			key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
@@ -142,7 +186,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// Table statements.
 		tables, err := getPgTables(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
 		}
 		for _, tbl := range tables {
 			var dbTable db.Table
@@ -182,7 +226,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// View statements.
 		views, err := getViews(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
 		}
 		for _, view := range views {
 			var dbView db.View
@@ -197,21 +241,21 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 		// Extensions.
 		extensions, err := getExtensions(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
 		}
 		schema.ExtensionList = extensions
 
 		if err := txn.Commit(); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		schemaList = append(schemaList, &schema)
 	}
 
-	return userList, schemaList, err
+	return schemaList, err
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	query := `
 		SELECT usename AS role_name,
@@ -228,27 +272,30 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		FROM pg_catalog.pg_user
 		ORDER BY role_name
 			`
-	var userList []*db.User
-	userRows, err := driver.db.QueryContext(ctx, query)
+	var userList []db.User
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
-	defer userRows.Close()
+	defer rows.Close()
 
-	for userRows.Next() {
+	for rows.Next() {
 		var role string
 		var attr string
-		if err := userRows.Scan(
+		if err := rows.Scan(
 			&role,
 			&attr,
 		); err != nil {
 			return nil, err
 		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  role,
 			Grant: attr,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return userList, nil
 }
@@ -286,6 +333,9 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 
 		tables = append(tables, &tbl)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, tbl := range tables {
 		if err := getTable(txn, tbl); err != nil {
@@ -316,8 +366,11 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -330,6 +383,9 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 			return err
 		}
 		tbl.comment = comment.String
+	}
+	if err := crows.Err(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -347,17 +403,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		cols.collation_name,
 		cols.udt_schema,
 		cols.udt_name,
-		(
-			SELECT
-					pg_catalog.col_description(c.oid, cols.ordinal_position::int)
-			FROM pg_catalog.pg_class c
-			WHERE
-					c.oid     = (SELECT cols.table_name::regclass::oid) AND
-					cols.table_schema=c.relnamespace::regnamespace::text AND
-					cols.table_name = c.relname
-		) as column_comment
-	FROM INFORMATION_SCHEMA.COLUMNS AS cols
-	WHERE table_schema=$1 AND table_name=$2;`
+		pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
+	FROM INFORMATION_SCHEMA.COLUMNS AS cols, pg_catalog.pg_class c
+	WHERE table_schema=$1 AND table_name=$2 AND cols.table_schema=c.relnamespace::regnamespace::text AND cols.table_name=c.relname;`
 	rows, err := txn.Query(query, schemaName, tableName)
 	if err != nil {
 		return nil, err
@@ -394,6 +442,9 @@ func getTableColumns(txn *sql.Tx, schemaName, tableName string) ([]*columnSchema
 		}
 		columns = append(columns, &c)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return columns, nil
 }
 
@@ -422,6 +473,9 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		ret[key] = append(ret[key], &constraint)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return ret, nil
 }
@@ -452,6 +506,9 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
 		views = append(views, &view)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, view := range views {
 		if err = getView(txn, view); err != nil {
@@ -463,7 +520,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -476,6 +533,9 @@ func getView(txn *sql.Tx, view *viewSchema) error {
 			return err
 		}
 		view.comment = comment.String
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -501,6 +561,9 @@ func getExtensions(txn *sql.Tx) ([]db.Extension, error) {
 			return nil, err
 		}
 		extensions = append(extensions, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return extensions, nil
@@ -533,6 +596,9 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		}
 		indices = append(indices, &idx)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	for _, idx := range indices {
 		if err = getIndex(txn, idx); err != nil {
@@ -544,19 +610,22 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
-	crows, err := txn.Query(commentQuery)
+	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
+	rows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
 	}
-	defer crows.Close()
+	defer rows.Close()
 
-	for crows.Next() {
+	for rows.Next() {
 		var comment sql.NullString
-		if err := crows.Scan(&comment); err != nil {
+		if err := rows.Scan(&comment); err != nil {
 			return err
 		}
 		idx.comment = comment.String
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	return nil
 }

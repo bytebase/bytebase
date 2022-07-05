@@ -46,6 +46,7 @@
     "instances": "实例",
     "environment": "环境",
     "environments": "环境",
+    "environment-name": "环境名",
     "bookmark": "书签",
     "bookmarks": "书签",
     "quick-action": "快捷操作",
@@ -235,7 +236,8 @@
       "connection": "连接",
       "migration-schema": "变更 schema",
       "sql-review": "SQL 审查",
-      "earliest-allowed-time": "最早执行时间"
+      "earliest-allowed-time": "最早执行时间",
+      "ghost-sync": "gh-ost 同步"
     },
     "earliest-allowed-time-hint": "'@:{'common.when'}' 指定了该任务最早允许执行的时间。如果该字段没有被指定，则任务会在满足其他条件后立即执行。",
     "comment": "评论",
@@ -271,7 +273,6 @@
     "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
   },
   "intro": {
-    "content": "Bytebase 是为 DBA 和开发人员进行数据库表结构 (schema) 变更而设计的团队协作工具。用户可以通过一个工作流 (pipeline)，来推进 schema 在多个环境中的变化。同时用户也可以把 schema 保存在 VCS 中 ，再由新的 schema 文件提交来触发工作流。请通过左下角的{quickstart}来熟悉该产品。如果遇到问题，请访问{doc}或在 GitHub 上报告{issue}。",
     "doc": "文档",
     "issue": "工单",
     "quickstart": "快速入门"
@@ -388,7 +389,8 @@
       "project-member-create": "添加项目成员",
       "project-member-delete": "删除项目成员",
       "project-member-role-update": "变更项目成员角色",
-      "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间"
+      "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
+      "database-recovery-pitr-done": "将数据库恢复到指定时间点"
     },
     "sentence": {
       "created-issue": "创建工单",
@@ -473,11 +475,11 @@
       "title": "变更模式",
       "normal": {
         "title": "普通变更 (适用于正常大小的表)",
-        "description": "直接在目标表上执行 schema 变更。"
+        "description": "直接在目标表上执行 schema 变更，表在整个变更期间会被锁住。"
       },
       "online": {
-        "title": "在线变更 (适用于数据量大的表)",
-        "description": "在复制的空表上执行 schema 变更，开始从原表同步数据，并在同步完成之后交换表名。如果直接在原表上变更会导致长时间不可用 {link}。"
+        "title": "在线变更 (适用于大数据量的表)",
+        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
     "new-issue": "@:common.new@:common.issue",
@@ -515,6 +517,7 @@
   "create-db": {
     "new-database-name": "新数据库名称",
     "database-owner-name": "数据库所有者",
+    "cluster": "集群",
     "reserved-db-error": "{databaseName} 是一个预留名称",
     "generated-database-name": "生成的数据库名称",
     "db-name-generated-by-template": "依据模板 \"{template}\" 生成",
@@ -723,6 +726,7 @@
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
     "schema-snapshot-after-migration": "完成这次变更后的 schema 快照",
+    "current-schema-empty": "当前 schema 为空",
     "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
     "recording-info": "每当数据库 schema 变更时，我们便会记录下变更历史。",
@@ -815,7 +819,9 @@
       "restore-to-point-in-time": "恢复到指定时间点",
       "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
-    }
+    },
+    "show-reserved-tables": "显示 Bytebase 保留的表",
+    "show-reserved-databases": "显示 Bytebase 保留的数据库"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -996,7 +1002,8 @@
       "standard": "标准",
       "tenant": "多租户"
     },
-    "db-name-template": "数据库名称模板"
+    "db-name-template": "数据库名称模板",
+    "select": "选择项目"
   },
   "inbox": {
     "mark-all-as-read": "全部标记为已读",
@@ -1223,7 +1230,7 @@
     "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
-    "description": "您可以在这里上传您购买的 bytebase 证书来解锁团队版/企业版功能。",
+    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁团队版/企业版功能。",
     "current": "当前版本",
     "instance-count": "实例数",
     "expires-at": "过期时间",
@@ -1305,6 +1312,14 @@
       "bb-feature-branding": {
         "title": "自定义品牌信息",
         "desc": "定制 Logo"
+      },
+      "bb-feature-online-migration": {
+        "title": "在线变更",
+        "desc": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级。"
+      },
+      "bb-feature-disaster-recovery-pitr": {
+        "title": "恢复到指定时间点 (PITR)",
+        "desc": "将数据库的状态恢复到一个时间点。"
       }
     },
     "feature-sections": {
@@ -1316,6 +1331,10 @@
           "instance-minimum-5": "5 ~ 无限制",
           "instance-customized": "自定义",
           "schema-change": "Schema 和数据变更",
+          "schema-change-basic": "基础",
+          "schema-change-basic-tooltip": "普通变更",
+          "schema-change-advanced": "高级",
+          "schema-change-advanced-tooltip": "普通变更 + 在线变更 (gh-ost)",
           "migration-history": "变更历史",
           "sql-editor": "SQL 编辑器",
           "disaster-recovery": "数据灾备",

@@ -3,10 +3,11 @@ package pg
 import (
 	"testing"
 
-	"github.com/bmizerany/assert"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
 func TestPostgreSQLSyntax(t *testing.T) {
@@ -16,7 +17,7 @@ func TestPostgreSQLSyntax(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "Syntax OK",
 					Content: "OK",
 				},
@@ -27,9 +28,9 @@ func TestPostgreSQLSyntax(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.DbStatementSyntaxError,
+					Code:    advisor.StatementSyntaxError,
 					Title:   "Syntax error",
-					Content: "at or near \"engine\": syntax error",
+					Content: "syntax error at or near \"ENGINE\"",
 				},
 			},
 		},

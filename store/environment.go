@@ -48,11 +48,11 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Environment with EnvironmentCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Environment with EnvironmentCreate[%+v], error: %w", create, err)
 	}
 	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Environment with environmentRaw[%+v], error[%w]", environmentRaw, err)
+		return nil, fmt.Errorf("failed to compose Environment with environmentRaw[%+v], error: %w", environmentRaw, err)
 	}
 	return Environment, nil
 }
@@ -61,13 +61,13 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	EnvironmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Environment list with EnvironmentFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Environment list with EnvironmentFind[%+v], error: %w", find, err)
 	}
 	var EnvironmentList []*api.Environment
 	for _, raw := range EnvironmentRawList {
 		Environment, err := s.composeEnvironment(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", raw, err)
 		}
 		EnvironmentList = append(EnvironmentList, Environment)
 	}
@@ -78,11 +78,11 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Environment with EnvironmentPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Environment with EnvironmentPatch[%+v], error: %w", patch, err)
 	}
 	Environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error[%w]", environmentRaw, err)
+		return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", environmentRaw, err)
 	}
 	return Environment, nil
 }
@@ -91,7 +91,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get environment with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get environment with ID %d, error: %w", id, err)
 	}
 	if envRaw == nil {
 		return nil, nil
@@ -99,7 +99,7 @@ func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environmen
 
 	env, err := s.composeEnvironment(ctx, envRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose environment with environmentRaw[%+v], error[%w]", envRaw, err)
+		return nil, fmt.Errorf("failed to compose environment with environmentRaw[%+v], error: %w", envRaw, err)
 	}
 
 	return env, nil
@@ -247,20 +247,27 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	if err1 != nil {
 		return nil, FormatError(err1)
 	}
+	defer row1.Close()
 
-	row1.Next()
 	var order int
-	if err1 := row1.Scan(
-		&order,
-	); err1 != nil {
-		return nil, FormatError(err1)
+	var found bool
+	if row1.Next() {
+		if err1 := row1.Scan(
+			&order,
+		); err1 != nil {
+			return nil, FormatError(err1)
+		}
+		found = true
 	}
-	if err := row1.Close(); err != nil {
+	if err := row1.Err(); err != nil {
 		return nil, FormatError(err)
+	}
+	if !found {
+		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
 	}
 
 	// Insert row into database.
-	row2, err2 := tx.QueryContext(ctx, `
+	query2 := `
 		INSERT INTO environment (
 			creator_id,
 			updater_id,
@@ -269,7 +276,8 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
-	`,
+	`
+	row2, err2 := tx.QueryContext(ctx, query2,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -281,22 +289,26 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 	}
 	defer row2.Close()
 
-	row2.Next()
-	var envRaw environmentRaw
-	if err := row2.Scan(
-		&envRaw.ID,
-		&envRaw.RowStatus,
-		&envRaw.CreatorID,
-		&envRaw.CreatedTs,
-		&envRaw.UpdaterID,
-		&envRaw.UpdatedTs,
-		&envRaw.Name,
-		&envRaw.Order,
-	); err != nil {
+	if row2.Next() {
+		var envRaw environmentRaw
+		if err := row2.Scan(
+			&envRaw.ID,
+			&envRaw.RowStatus,
+			&envRaw.CreatorID,
+			&envRaw.CreatedTs,
+			&envRaw.UpdaterID,
+			&envRaw.UpdatedTs,
+			&envRaw.Name,
+			&envRaw.Order,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &envRaw, nil
+	}
+	if err := row2.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &envRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 }
 
 func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*environmentRaw, error) {
@@ -304,6 +316,9 @@ func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.E
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.Name; v != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
@@ -400,6 +415,8 @@ func (s *Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api
 		}
 		return &environment, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
 }

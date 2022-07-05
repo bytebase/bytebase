@@ -38,6 +38,9 @@ type EnvironmentFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+
+	// Domain specific fields
+	Name *string
 }
 
 func (find *EnvironmentFind) String() string {

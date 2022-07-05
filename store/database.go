@@ -69,11 +69,11 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
 	databaseRaw, err := s.createDatabaseRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Database with DatabaseCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Database with DatabaseCreate[%+v], error: %w", create, err)
 	}
 	database, err := s.composeDatabase(ctx, databaseRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error: %w", databaseRaw, err)
 	}
 	return database, nil
 }
@@ -82,13 +82,13 @@ func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) 
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	databaseRawList, err := s.findDatabaseRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Database list with DatabaseFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Database list with DatabaseFind[%+v], error: %w", find, err)
 	}
 	var databaseList []*api.Database
 	for _, raw := range databaseRawList {
 		database, err := s.composeDatabase(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error: %w", raw, err)
 		}
 		databaseList = append(databaseList, database)
 	}
@@ -112,14 +112,14 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	databaseRaw, err := s.getDatabaseRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Database with DatabaseFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to get Database with DatabaseFind[%+v], error: %w", find, err)
 	}
 	if databaseRaw == nil {
 		return nil, nil
 	}
 	database, err := s.composeDatabase(ctx, databaseRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error: %w", databaseRaw, err)
 	}
 	return database, nil
 }
@@ -128,11 +128,11 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
 	databaseRaw, err := s.patchDatabaseRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Database with DatabasePatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Database with DatabasePatch[%+v], error: %w", patch, err)
 	}
 	database, err := s.composeDatabase(ctx, databaseRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error[%w]", databaseRaw, err)
+		return nil, fmt.Errorf("failed to compose Database with databaseRaw[%+v], error: %w", databaseRaw, err)
 	}
 	return database, nil
 }
@@ -193,6 +193,9 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 			BackupSettingEnabled:     enabled,
 			Count:                    count,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
 	}
 
 	return databaseCountMetricList, nil
@@ -430,7 +433,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 // createDatabaseImpl creates a new database.
 func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db (
 			creator_id,
 			updater_id,
@@ -458,7 +461,8 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 			sync_status,
 			last_successful_sync_ts,
 			schema_version
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
@@ -473,27 +477,31 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 	}
 	defer row.Close()
 
-	row.Next()
-	var databaseRaw databaseRaw
-	if err := row.Scan(
-		&databaseRaw.ID,
-		&databaseRaw.CreatorID,
-		&databaseRaw.CreatedTs,
-		&databaseRaw.UpdaterID,
-		&databaseRaw.UpdatedTs,
-		&databaseRaw.InstanceID,
-		&databaseRaw.ProjectID,
-		&databaseRaw.Name,
-		&databaseRaw.CharacterSet,
-		&databaseRaw.Collation,
-		&databaseRaw.SyncStatus,
-		&databaseRaw.LastSuccessfulSyncTs,
-		&databaseRaw.SchemaVersion,
-	); err != nil {
+	if row.Next() {
+		var databaseRaw databaseRaw
+		if err := row.Scan(
+			&databaseRaw.ID,
+			&databaseRaw.CreatorID,
+			&databaseRaw.CreatedTs,
+			&databaseRaw.UpdaterID,
+			&databaseRaw.UpdatedTs,
+			&databaseRaw.InstanceID,
+			&databaseRaw.ProjectID,
+			&databaseRaw.Name,
+			&databaseRaw.CharacterSet,
+			&databaseRaw.Collation,
+			&databaseRaw.SyncStatus,
+			&databaseRaw.LastSuccessfulSyncTs,
+			&databaseRaw.SchemaVersion,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &databaseRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &databaseRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
@@ -655,6 +663,8 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 		}
 		return &databaseRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
 }

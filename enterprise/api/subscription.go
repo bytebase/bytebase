@@ -15,4 +15,5 @@ type Subscription struct {
 	StartedTs     int64        `jsonapi:"attr,startedTs"`
 	Plan          api.PlanType `jsonapi:"attr,plan"`
 	Trialing      bool         `jsonapi:"attr,trialing"`
+	OrgID         string       `jsonapi:"attr,orgId"`
 }

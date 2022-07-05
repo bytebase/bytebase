@@ -1,5 +1,8 @@
 <template>
-  <div class="rounded-md p-4" :class="`bg-${color}-50`">
+  <div
+    class="rounded-md p-4 flex flex-col md:flex-row justify-between"
+    :class="`bg-${color}-50`"
+  >
     <div class="flex">
       <div class="flex-shrink-0">
         <!-- Heroicon name: solid/information -->
@@ -34,10 +37,13 @@
         </div>
       </div>
     </div>
-    <div v-if="actionText != ''" class="flex items-center justify-end">
+    <div
+      v-if="actionText != ''"
+      class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
+    >
       <button
         type="button"
-        class="btn-primary"
+        class="btn-primary whitespace-nowrap"
         @click.prevent="$emit('click-action')"
       >
         {{ $t(actionText) }}

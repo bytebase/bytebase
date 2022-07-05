@@ -59,10 +59,10 @@ export default {
     const { t } = useI18n();
 
     const emailBody = [
-      "Hi bytebase support,\n",
+      "Hi Bytebase support,\n",
       "I request to extend the trialing time for another 14 days.",
       "{please implement your reason to extend here}\n",
-      "My email in the bytebase hub account: {email}",
+      "My email in the Bytebase hub account: {email}",
       "My organization key: {orgKey}",
     ].join("\n");
 

@@ -64,6 +64,12 @@ const (
 	// - Support defining extra data source for a database and exposing the related data source UI.
 	FeatureDataSource FeatureType = "bb.feature.data-source"
 
+	// FeatureGhost allows user to use gh-ost for MySQL database migration.
+	FeatureGhost FeatureType = "bb.feature.ghost"
+
+	// FeaturePITR allows user to perform point-in-time recovery for databases.
+	FeaturePITR FeatureType = "bb.feature.pitr"
+
 	// Policy Control
 
 	// FeatureApprovalPolicy allows user to specify approval policy for the environment
@@ -114,6 +120,10 @@ func (e FeatureType) String() string {
 		return "bb.feature.dba-workflow"
 	case FeatureDataSource:
 		return "bb.feature.data-source"
+	case FeatureGhost:
+		return "bb.feature.ghost"
+	case FeaturePITR:
+		return "bb.feature.pitr"
 	case FeatureApprovalPolicy:
 		return "bb.feature.approval-policy"
 	case FeatureBackupPolicy:
@@ -143,6 +153,10 @@ func (e FeatureType) Name() string {
 		return "DBA workflow"
 	case FeatureDataSource:
 		return "Data source"
+	case FeatureGhost:
+		return "gh-ost integration"
+	case FeaturePITR:
+		return "Point-in-time Recovery"
 	case FeatureApprovalPolicy:
 		return "Approval policy"
 	case FeatureBackupPolicy:
@@ -183,6 +197,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.multi-tenancy":        {false, true, true},
 	"bb.feature.dba-workflow":         {false, false, true},
 	"bb.feature.data-source":          {false, false, false},
+	"bb.feature.ghost":                {false, true, true},
+	"bb.feature.pitr":                 {false, true, true},
 	"bb.feature.approval-policy":      {false, true, true},
 	"bb.feature.backup-policy":        {false, true, true},
 	"bb.feature.schema-review-policy": {false, true, true},

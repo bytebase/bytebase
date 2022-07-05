@@ -58,6 +58,11 @@ const (
 
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
+
+	// Database related
+
+	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
+	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
 func (e ActivityType) String() string {
@@ -96,6 +101,8 @@ func (e ActivityType) String() string {
 		return "bb.project.member.role.update"
 	case ActivitySQLEditorQuery:
 		return "bb.sql-editor.query"
+	case ActivityDatabaseRecoveryPITRDone:
+		return "bb.database.recovery.pitr.done"
 	}
 	return "bb.activity.unknown"
 }

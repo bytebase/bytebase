@@ -88,22 +88,18 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	if !schemaOnly {
 		log.Debug("flush tables in database with read locks",
 			zap.String("database", database))
-		if err := flushTablesWithReadLock(ctx, conn, database); err != nil {
+		if err := FlushTablesWithReadLock(ctx, conn, database); err != nil {
 			log.Error("flush tables failed", zap.Error(err))
 			return "", err
 		}
 
-		binlog, err := getBinlogInfo(ctx, conn)
+		binlog, err := GetBinlogInfo(ctx, conn)
 		if err != nil {
 			return "", err
 		}
-		log.Debug("binlog config at dump time",
-			zap.String("filename", binlog.FileName),
+		log.Debug("binlog coordinate at dump time",
+			zap.String("fileName", binlog.FileName),
 			zap.Int64("position", binlog.Position))
-
-		if err != nil {
-			return "", err
-		}
 
 		payload := api.BackupPayload{BinlogInfo: binlog}
 		payloadBytes, err = json.Marshal(payload)
@@ -138,7 +134,8 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return string(payloadBytes), nil
 }
 
-func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
+// FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.
+func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database string) error {
 	// The lock acquiring could take a long time if there are concurrent exclusive locks on the tables.
 	// We ensures that the execution is canceled after 30 seconds, otherwise we may get dead lock and stuck forever.
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -150,7 +147,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 	}
 	defer txn.Rollback()
 
-	tables, err := GetTablesTx(txn, database)
+	tables, err := getTablesTx(txn, database)
 	if err != nil {
 		return err
 	}
@@ -176,6 +173,7 @@ func flushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+	log.Debug("begin to dump database", zap.String("database", database))
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
@@ -227,9 +225,9 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := GetTablesTx(txn, dbName)
+		tables, err := getTablesTx(txn, dbName)
 		if err != nil {
-			return fmt.Errorf("failed to get tables of database %q, error[%w]", dbName, err)
+			return fmt.Errorf("failed to get tables of database %q, error: %w", dbName, err)
 		}
 		for _, tbl := range tables {
 			if schemaOnly && tbl.TableType == baseTableType {
@@ -290,21 +288,27 @@ func excludeSchemaAutoIncrementValue(s string) string {
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
-func getBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
-	rows, err := conn.QueryContext(ctx, "SHOW MASTER STATUS;")
+// GetBinlogInfo queries current binlog info from MySQL server.
+func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
+	query := "SHOW MASTER STATUS"
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return api.BinlogInfo{}, err
 	}
 	defer rows.Close()
 
-	rows.Next()
-	binlogInfo := api.BinlogInfo{}
-	var unused interface{}
-	if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
+	if rows.Next() {
+		binlogInfo := api.BinlogInfo{}
+		var unused interface{}
+		if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
+			return api.BinlogInfo{}, err
+		}
+		return binlogInfo, nil
+	}
+	if err := rows.Err(); err != nil {
 		return api.BinlogInfo{}, err
 	}
-
-	return binlogInfo, nil
+	return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // getDatabaseStmt gets the create statement of a database.
@@ -323,7 +327,10 @@ func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 		}
 		return fmt.Sprintf("%s;\n", stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned empty row", query)
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // TableSchema describes the schema of a table or view.
@@ -352,14 +359,14 @@ type triggerSchema struct {
 	statement string
 }
 
-// GetTablesTx gets all tables of a database using the provided transaction.
-func GetTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
+// getTablesTx gets all tables of a database using the provided transaction.
+func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	return getTablesImpl(txn, dbName)
 }
 
-// GetTables gets all tables of a database.
-func GetTables(ctx context.Context, db *sql.DB, dbName string) ([]*TableSchema, error) {
-	txn, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+// getTables gets all tables of a database.
+func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -382,6 +389,9 @@ func getTablesImpl(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 			return nil, err
 		}
 		tables = append(tables, &tbl)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
@@ -411,7 +421,10 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			}
 			return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 		}
-		return "", fmt.Errorf("query %q returned invalid rows", query)
+		if err := rows.Err(); err != nil {
+			return "", err
+		}
+		return "", common.FormatDBErrorEmptyRowWithQuery(query)
 	case viewTableType:
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
@@ -428,7 +441,10 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 			}
 			return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 		}
-		return "", fmt.Errorf("query %q returned invalid rows", query)
+		if err := rows.Err(); err != nil {
+			return "", err
+		}
+		return "", common.FormatDBErrorEmptyRowWithQuery(query)
 	default:
 		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
@@ -480,6 +496,9 @@ func exportTableData(txn *sql.Tx, dbName, tblName string, includeDbPrefix bool, 
 			return err
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	if _, err := io.WriteString(out, "\n"); err != nil {
 		return err
 	}
@@ -521,6 +540,9 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 
 			routines = append(routines, &r)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, r := range routines {
@@ -549,7 +571,10 @@ func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (strin
 		}
 		return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 
 }
 
@@ -568,7 +593,8 @@ func getReadableRoutineType(s string) string {
 // getEvents gets all events of a database.
 func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 	var events []*eventSchema
-	rows, err := txn.Query(fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName))
+	query := fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -590,6 +616,9 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 		r.name = fmt.Sprintf("%s", *values[1].(*interface{}))
 		events = append(events, &r)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 
 	for _, r := range events {
 		stmt, err := getEventStmt(txn, dbName, r.name)
@@ -604,26 +633,30 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 // getEventStmt gets the create statement of an event.
 func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
-	rows, err := txn.Query(query)
+	row, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
-	defer rows.Close()
+	defer row.Close()
 
-	if rows.Next() {
+	if row.Next() {
 		var sqlmode, timezone, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
+		if err := row.Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
 			return "", err
 		}
 		return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
+	if err := row.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // getTriggers gets all triggers of a database.
 func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 	var triggers []*triggerSchema
-	rows, err := txn.Query(fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName))
+	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -645,6 +678,9 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 		tr.name = fmt.Sprintf("%s", *values[0].(*interface{}))
 		triggers = append(triggers, &tr)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 	for _, tr := range triggers {
 		stmt, err := getTriggerStmt(txn, dbName, tr.name)
 		if err != nil {
@@ -658,20 +694,23 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	rows, err := txn.Query(query)
+	row, err := txn.Query(query)
 	if err != nil {
 		return "", err
 	}
-	defer rows.Close()
+	defer row.Close()
 
-	if rows.Next() {
+	if row.Next() {
 		var sqlmode, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
+		if err := row.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
 			return "", err
 		}
 		return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 	}
-	return "", fmt.Errorf("query %q returned invalid rows", query)
+	if err := row.Err(); err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	return "", common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 // Restore restores a database.

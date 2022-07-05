@@ -10,27 +10,76 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	// Query user info
+	userList, err := driver.getUserList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	excludedDatabaseList := []string{
 		// Skip our internal "bytebase" database
 		"'bytebase'",
 	}
-
 	// Skip all system databases
 	for k := range systemDatabases {
 		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", k))
 	}
 
-	// Query user info
-	userList, err := driver.getUserList(ctx)
+	var databaseList []db.DatabaseMeta
+	// Query db info
+	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	query := `
+		SELECT
+			name
+		FROM system.databases
+		WHERE ` + where
+	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, nil, err
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var databaseMeta db.DatabaseMeta
+		if err := rows.Scan(
+			&databaseMeta.Name,
+		); err != nil {
+			return nil, err
+		}
+		databaseList = append(databaseList, databaseMeta)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &db.InstanceMeta{
+		UserList:     userList,
+		DatabaseList: databaseList,
+	}, nil
+}
+
+// SyncSchema syncs the schema.
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
+	excludedDatabaseList := []string{
+		// Skip our internal "bytebase" database
+		"'bytebase'",
+	}
+	var includeDatabaseList []string
+	// Skip all system databases
+	for k := range systemDatabases {
+		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
+	}
+	for _, k := range databaseList {
+		includeDatabaseList = append(includeDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
 	}
 
 	// Query column info
 	columnWhere := fmt.Sprintf("LOWER(database) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	query := `
+	if len(databaseList) > 0 {
+		columnWhere = fmt.Sprintf("%s AND LOWER(database) IN (%s)", columnWhere, strings.Join(includeDatabaseList, ", "))
+	}
+	columnQuery := `
 			SELECT
 				database,
 				table,
@@ -41,9 +90,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				comment
 			FROM system.columns
 			WHERE ` + columnWhere
-	columnRows, err := driver.db.QueryContext(ctx, query)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 
@@ -62,7 +111,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&column.Type,
 			&column.Comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
@@ -72,10 +121,16 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			columnMap[key] = append([]db.Column(nil), column)
 		}
 	}
+	if err := columnRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, columnQuery)
+	}
 
 	// Query table info
 	tableWhere := fmt.Sprintf("LOWER(database) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	query = `
+	if len(databaseList) > 0 {
+		tableWhere = fmt.Sprintf("%s AND LOWER(database) IN (%s)", tableWhere, strings.Join(includeDatabaseList, ", "))
+	}
+	tableQuery := `
 			SELECT
 				database,
 				name,
@@ -87,9 +142,9 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 				comment
 			FROM system.tables
 			WHERE ` + tableWhere
-	tableRows, err := driver.db.QueryContext(ctx, query)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 
@@ -112,7 +167,7 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			&definition,
 			&comment,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if engine == "View" {
@@ -136,55 +191,61 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 			tableMap[dbName] = append(tableMap[dbName], table)
 		}
 	}
+	if err := tableRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, tableQuery)
+	}
 
 	var schemaList []*db.Schema
 	// Query db info
-	where := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	query = `
+	databaseWhere := fmt.Sprintf("name NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
+	if len(databaseList) > 0 {
+		databaseWhere = fmt.Sprintf("%s AND name IN (%s)", databaseWhere, strings.Join(includeDatabaseList, ", "))
+	}
+	databaseQuery := `
 		SELECT
 			name
 		FROM system.databases
-		WHERE ` + where
-	rows, err := driver.db.QueryContext(ctx, query)
+		WHERE ` + databaseWhere
+	databaseRows, err := driver.db.QueryContext(ctx, databaseQuery)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, databaseQuery)
 	}
-	defer rows.Close()
-	for rows.Next() {
+	defer databaseRows.Close()
+	for databaseRows.Next() {
 		var schema db.Schema
-		if err := rows.Scan(
+		if err := databaseRows.Scan(
 			&schema.Name,
 		); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.TableList = tableMap[schema.Name]
 		schema.ViewList = viewMap[schema.Name]
 
 		schemaList = append(schemaList, &schema)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, nil, err
+	if err := databaseRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, databaseQuery)
 	}
 
-	return userList, schemaList, nil
+	return schemaList, nil
 }
 
-func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
+func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
 	// Query user info
 	// host_ip isn't used for user identifier.
-	query := `
+	userQuery := `
 	  SELECT
 			name
 		FROM system.users
 	`
-	userRows, err := driver.db.QueryContext(ctx, query)
+	userRows, err := driver.db.QueryContext(ctx, userQuery)
 
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
+		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}
 	defer userRows.Close()
 
-	var userList []*db.User
+	var userList []db.User
 	for userRows.Next() {
 		var user string
 		if err := userRows.Scan(
@@ -196,12 +257,12 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 		// Uses single quote instead of backtick to escape because this is a string
 		// instead of table (which should use backtick instead). MySQL actually works
 		// in both ways. On the other hand, some other MySQL compatible engines might not (OceanBase in this case).
-		query = fmt.Sprintf("SHOW GRANTS FOR %s", user)
+		grantQuery := fmt.Sprintf("SHOW GRANTS FOR %s", user)
 		grantRows, err := driver.db.QueryContext(ctx,
-			query,
+			grantQuery,
 		)
 		if err != nil {
-			return nil, util.FormatErrorWithQuery(err, query)
+			return nil, util.FormatErrorWithQuery(err, grantQuery)
 		}
 		defer grantRows.Close()
 
@@ -213,11 +274,17 @@ func (driver *Driver) getUserList(ctx context.Context) ([]*db.User, error) {
 			}
 			grantList = append(grantList, grant)
 		}
+		if err := grantRows.Err(); err != nil {
+			return nil, util.FormatErrorWithQuery(err, grantQuery)
+		}
 
-		userList = append(userList, &db.User{
+		userList = append(userList, db.User{
 			Name:  user,
 			Grant: strings.Join(grantList, "\n"),
 		})
+	}
+	if err := userRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, userQuery)
 	}
 	return userList, nil
 }

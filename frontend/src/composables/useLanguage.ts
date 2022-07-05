@@ -1,6 +1,7 @@
 import { useI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 import { useRouter } from "vue-router";
+import { emitStorageChangedEvent } from "@/utils";
 
 /**
  * Language hook for i18n
@@ -18,6 +19,8 @@ const useLanguage = () => {
         language: lang,
       },
     };
+    emitStorageChangedEvent();
+
     if (currentRoute.value.meta.title) {
       const title = currentRoute.value.meta.title(currentRoute.value);
       document.title = title || "Bytebase";

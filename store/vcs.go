@@ -55,11 +55,11 @@ func (raw *vcsRaw) toVCS() *api.VCS {
 func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS, error) {
 	vcsRaw, err := s.createVCSRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create VCS with VCSCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create VCS with VCSCreate[%+v], error: %w", create, err)
 	}
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", vcsRaw, err)
 	}
 	return vcs, nil
 }
@@ -68,13 +68,13 @@ func (s *Store) CreateVCS(ctx context.Context, create *api.VCSCreate) (*api.VCS,
 func (s *Store) FindVCS(ctx context.Context, find *api.VCSFind) ([]*api.VCS, error) {
 	vcsRawList, err := s.findVCSRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find VCS list with VCSFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find VCS list with VCSFind[%+v], error: %w", find, err)
 	}
 	var vcsList []*api.VCS
 	for _, raw := range vcsRawList {
 		vcs, err := s.composeVCS(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", raw, err)
 		}
 		vcsList = append(vcsList, vcs)
 	}
@@ -102,11 +102,11 @@ func (s *Store) GetVCSByID(ctx context.Context, id int) (*api.VCS, error) {
 func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, error) {
 	vcsRaw, err := s.patchVCSRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch VCS with VCSPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch VCS with VCSPatch[%+v], error: %w", patch, err)
 	}
 	vcs, err := s.composeVCS(ctx, vcsRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error[%w]", vcsRaw, err)
+		return nil, fmt.Errorf("failed to compose VCS with vcsRaw[%+v], error: %w", vcsRaw, err)
 	}
 	return vcs, nil
 }
@@ -114,7 +114,7 @@ func (s *Store) PatchVCS(ctx context.Context, patch *api.VCSPatch) (*api.VCS, er
 // DeleteVCS deletes an instance of VCS
 func (s *Store) DeleteVCS(ctx context.Context, delete *api.VCSDelete) error {
 	if err := s.deleteVCSRaw(ctx, delete); err != nil {
-		return fmt.Errorf("failed to delete VCS with VCSDelete[%+v], error[%w]", delete, err)
+		return fmt.Errorf("failed to delete VCS with VCSDelete[%+v], error: %w", delete, err)
 	}
 	return nil
 }
@@ -249,7 +249,7 @@ func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
 // createVCSImpl creates a new vcs.
 func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcsRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vcs (
 			creator_id,
 			updater_id,
@@ -262,7 +262,8 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -278,25 +279,29 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 	}
 	defer row.Close()
 
-	row.Next()
-	var vcs vcsRaw
-	if err := row.Scan(
-		&vcs.ID,
-		&vcs.CreatorID,
-		&vcs.CreatedTs,
-		&vcs.UpdaterID,
-		&vcs.UpdatedTs,
-		&vcs.Name,
-		&vcs.Type,
-		&vcs.InstanceURL,
-		&vcs.APIURL,
-		&vcs.ApplicationID,
-		&vcs.Secret,
-	); err != nil {
+	if row.Next() {
+		var vcs vcsRaw
+		if err := row.Scan(
+			&vcs.ID,
+			&vcs.CreatorID,
+			&vcs.CreatedTs,
+			&vcs.UpdaterID,
+			&vcs.UpdatedTs,
+			&vcs.Name,
+			&vcs.Type,
+			&vcs.InstanceURL,
+			&vcs.APIURL,
+			&vcs.ApplicationID,
+			&vcs.Secret,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &vcs, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &vcs, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
@@ -403,10 +408,11 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &vcs, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 }
 

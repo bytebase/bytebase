@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"runtime"
 	"strings"
@@ -21,10 +23,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	scas "github.com/qiangmzsx/string-adapter/v2"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	enterpriseService "github.com/bytebase/bytebase/enterprise/service"
 	"github.com/bytebase/bytebase/metric"
@@ -33,6 +37,9 @@ import (
 	"github.com/bytebase/bytebase/resources/postgres"
 	"github.com/bytebase/bytebase/store"
 )
+
+// openAPIPrefix is the API prefix for Bytebase OpenAPI
+const openAPIPrefix = "/v1"
 
 // Server is the Bytebase server.
 type Server struct {
@@ -52,7 +59,7 @@ type Server struct {
 
 	profile       Profile
 	e             *echo.Echo
-	mysqlutil     *mysqlutil.Instance
+	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
 	metaDB        *store.MetadataDB
 	store         *store.Store
@@ -74,6 +81,54 @@ var casbinDBAPolicy string
 
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
+
+//go:embed dist
+var embeddedFiles embed.FS
+
+//go:embed dist/index.html
+var indexContent string
+
+func getFileSystem() http.FileSystem {
+	fs, err := fs.Sub(embeddedFiles, "dist")
+	if err != nil {
+		panic(err)
+	}
+
+	return http.FS(fs)
+}
+
+// By default, we embed a placeholder index.html. If we want to build a monolithic binary including
+// both frontend and backend (e.g. to produce our release build), we will instruct the build process
+// to copy over the frontend artifacts and overwrite that placeholder.
+func embedFrontend(e *echo.Echo) {
+	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
+	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
+	e.GET("/*", func(c echo.Context) error {
+		return c.HTML(http.StatusOK, indexContent)
+	})
+
+	assetHandler := http.FileServer(getFileSystem())
+	e.GET("/assets/*", echo.WrapHandler(assetHandler))
+}
+
+// Use following cmd to generate swagger doc
+// swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
+
+// @title Bytebase OpenAPI
+// @version 1.0
+// @description The OpenAPI for bytebase.
+// @termsOfService https://www.bytebase.com/terms
+
+// @contact.name API Support
+// @contact.url https://github.com/bytebase/bytebase/
+// @contact.email support@bytebase.com
+
+// @license.name MIT
+// @license.url https://github.com/bytebase/bytebase/blob/main/LICENSE
+
+// @host localhost:8080
+// @BasePath /v1/
+// @schemes http
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, prof Profile) (*Server, error) {
@@ -110,7 +165,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot install mysqlbinlog binary, error: %w", err)
 	}
-	s.mysqlutil = mysqlutilIns
+	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
 	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
@@ -228,6 +283,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		migrationSchemaExecutor := NewTaskCheckMigrationSchemaExecutor()
 		taskCheckScheduler.Register(api.TaskCheckInstanceMigrationSchema, migrationSchemaExecutor)
 
+		ghostSyncExecutor := NewTaskCheckGhostSyncExecutor()
+		taskCheckScheduler.Register(api.TaskCheckGhostSync, ghostSyncExecutor)
+
 		timingExecutor := NewTaskCheckTimingExecutor()
 		taskCheckScheduler.Register(api.TaskCheckGeneralEarliestAllowedTime, timingExecutor)
 
@@ -258,11 +316,16 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		}))
 	}
 	e.Use(recoverMiddleware)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	webhookGroup := e.Group("/hook")
 	s.registerWebhookRoutes(webhookGroup)
 
 	apiGroup := e.Group("/api")
+	openAPIGroup := e.Group(openAPIPrefix)
+	openAPIGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return openAPIMetricMiddleware(s, next)
+	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
@@ -307,6 +370,8 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.registerSubscriptionRoutes(apiGroup)
 	s.registerSheetRoutes(apiGroup)
 	s.registerSheetOrganizerRoutes(apiGroup)
+	s.registerOpenAPIRoutes(openAPIGroup)
+
 	// Register healthz endpoint.
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK!\n")

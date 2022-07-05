@@ -1,5 +1,10 @@
 <template>
-  <router-link v-if="!hasFeature" to="/setting/subscription" exact-active-class>
+  <router-link
+    v-if="!hasFeature"
+    to="/setting/subscription"
+    exact-active-class
+    @click.prevent="noop"
+  >
     <heroicons-solid:sparkles class="w-5 h-5" />
   </router-link>
 </template>
@@ -21,6 +26,9 @@ export default defineComponent({
 
     return {
       hasFeature,
+      noop: () => {
+        // do nothing
+      },
     };
   },
 });

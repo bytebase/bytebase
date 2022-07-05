@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
 var (
@@ -24,16 +25,53 @@ type indexSchema struct {
 	unique    bool
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema, error) {
+// SyncInstance syncs the instance.
+func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+
+	var databaseList []db.DatabaseMeta
+	for _, dbName := range databases {
+		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+
+		databaseList = append(
+			databaseList,
+			db.DatabaseMeta{
+				Name: dbName,
+			},
+		)
+	}
+
+	return &db.InstanceMeta{
+		UserList:     nil,
+		DatabaseList: databaseList,
+	}, nil
+}
+
+// SyncSchema syncs the schema.
+func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
+	databases, err := driver.getDatabases()
+	if err != nil {
+		return nil, err
 	}
 
 	var schemaList []*db.Schema
 	for _, dbName := range databases {
 		if _, ok := excludedDatabaseList[dbName]; ok {
+			continue
+		}
+		exists := false
+		for _, k := range databaseList {
+			if dbName == k {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			continue
 		}
 
@@ -42,18 +80,18 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		sqldb, err := driver.GetDbConnection(ctx, dbName)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
 		}
 		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		defer txn.Rollback()
 		// Index statements.
 		indicesMap := make(map[string][]indexSchema)
 		indices, err := getIndices(txn)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
+			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
 		}
 		for _, idx := range indices {
 			indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
@@ -61,23 +99,23 @@ func (driver *Driver) SyncSchema(ctx context.Context) ([]*db.User, []*db.Schema,
 
 		tbls, err := getTables(txn, indicesMap)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.TableList = tbls
 
 		views, err := getViews(txn)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		schema.ViewList = views
 
 		if err := txn.Commit(); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		schemaList = append(schemaList, &schema)
 	}
-	return nil, schemaList, nil
+	return schemaList, nil
 }
 
 // getTables gets all tables of a database.
@@ -97,6 +135,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 			return nil, err
 		}
 		tableNames = append(tableNames, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	for _, name := range tableNames {
 		var tbl db.Table
@@ -131,6 +172,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 
 			tbl.ColumnList = append(tbl.ColumnList, col)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 		for _, idx := range indicesMap[tbl.Name] {
 			query := fmt.Sprintf("pragma index_info(%s);", idx.name)
 			rows, err := txn.Query(query)
@@ -147,6 +191,9 @@ func getTables(txn *sql.Tx, indicesMap map[string][]indexSchema) ([]db.Table, er
 					return nil, err
 				}
 				tbl.IndexList = append(tbl.IndexList, dbIdx)
+			}
+			if err := rows.Err(); err != nil {
+				return nil, util.FormatErrorWithQuery(err, query)
 			}
 		}
 
@@ -173,6 +220,9 @@ func getIndices(txn *sql.Tx) ([]indexSchema, error) {
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
 		indices = append(indices, idx)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
 	return indices, nil
 }
 
@@ -191,6 +241,9 @@ func getViews(txn *sql.Tx) ([]db.View, error) {
 			return nil, err
 		}
 		views = append(views, view)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	return views, nil
 }

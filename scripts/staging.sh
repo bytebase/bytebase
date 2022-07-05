@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # For now, we use this script to start our staging preview on render
 # by changing the ENTRYPOINT and CMD at the dockerfile to this.
@@ -12,9 +12,9 @@
 ONLINE_DEMO_HOST='https://staging.bytebase.com'
 ONLINE_DEMO_PORT='443'
 if [ $1 ]; then
-    PROTOCAL=`echo $1 | awk -F ':' '{ print $1 }'`
-    URI=`echo $1 | awk -F '[/:]' '{ print $4; }'`
-    PORT=`echo $1 | awk -F '[/:]' '{ print $5; }'`
+    PROTOCAL=$(echo $1 | awk -F ':' '{ print $1 }')
+    URI=$(echo $1 | awk -F '[/:]' '{ print $4; }')
+    PORT=$(echo $1 | awk -F '[/:]' '{ print $5; }')
 
     ONLINE_DEMO_HOST=$PROTOCAL://$URI
 

@@ -3,9 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -15,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
 }
 
 // WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
@@ -46,7 +44,7 @@ func (adv *WhereRequirementAdvisor) Check(ctx advisor.Context, statement string)
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -63,26 +61,26 @@ type whereRequirementChecker struct {
 
 // Enter implements the ast.Visitor interface
 func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := common.Ok
+	code := advisor.Ok
 	switch node := in.(type) {
 	// DELETE
 	case *ast.DeleteStmt:
 		if node.Where == nil {
-			code = common.StatementNoWhere
+			code = advisor.StatementNoWhere
 		}
 	// UPDATE
 	case *ast.UpdateStmt:
 		if node.Where == nil {
-			code = common.StatementNoWhere
+			code = advisor.StatementNoWhere
 		}
 	// SELECT
 	case *ast.SelectStmt:
 		if node.Where == nil {
-			code = common.StatementNoWhere
+			code = advisor.StatementNoWhere
 		}
 	}
 
-	if code != common.Ok {
+	if code != advisor.Ok {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,

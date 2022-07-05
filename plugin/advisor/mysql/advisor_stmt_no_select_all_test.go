@@ -3,7 +3,6 @@ package mysql
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 )
 
@@ -14,7 +13,7 @@ func TestNoSelectAll(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.StatementSelectAll,
+					Code:    advisor.StatementSelectAll,
 					Title:   "statement.select.no-select-all",
 					Content: "\"SELECT * FROM t\" uses SELECT all",
 				},
@@ -25,7 +24,7 @@ func TestNoSelectAll(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
@@ -36,7 +35,7 @@ func TestNoSelectAll(t *testing.T) {
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.StatementSelectAll,
+					Code:    advisor.StatementSelectAll,
 					Title:   "statement.select.no-select-all",
 					Content: "\"SELECT a, b FROM (SELECT * from t1 JOIN t2) t\" uses SELECT all",
 				},

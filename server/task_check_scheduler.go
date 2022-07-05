@@ -10,7 +10,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/advisor"
 	"go.uber.org/zap"
 )
 
@@ -248,17 +247,24 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 	}
 
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		statement := ""
 
-		if task.Type == api.TaskDatabaseSchemaUpdate {
+		switch task.Type {
+		case api.TaskDatabaseSchemaUpdate:
 			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database schema update payload: %w", err)
 			}
 			statement = taskPayload.Statement
-		} else {
+		case api.TaskDatabaseDataUpdate:
 			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+			}
+			statement = taskPayload.Statement
+		case api.TaskDatabaseSchemaUpdateGhostSync:
+			taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database data update payload: %w", err)
 			}
@@ -293,7 +299,19 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		if advisor.IsSyntaxCheckSupported(database.Instance.Engine) {
+		if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGhostSync,
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if api.IsSyntaxCheckSupported(database.Instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
@@ -315,7 +333,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && advisor.IsSchemaReviewSupported(database.Instance.Engine) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine) {
 			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)

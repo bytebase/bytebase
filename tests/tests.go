@@ -113,7 +113,7 @@ type controller struct {
 
 func getTestPort(testName string) int {
 	// We allocates 4 ports for each of the integration test, who probably would start
-	// the bytebase server, Postgres, MySQL and GitLab.
+	// the Bytebase server, Postgres, MySQL and GitLab.
 	tests := []string{
 		"TestServiceRestart",
 		"TestSchemaAndDataUpdate",
@@ -1336,7 +1336,7 @@ func (ctl *controller) upsertPolicy(policyUpsert api.PolicyUpsert) error {
 }
 
 // deletePolicy deletes the archived policy.
-func (ctl *controller) deletePoliy(policyDelete api.PolicyDelete) error {
+func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 	_, err := ctl.delete(fmt.Sprintf("/policy/environment/%d?type=%s", policyDelete.EnvironmentID, policyDelete.Type), new(bytes.Buffer))
 	if err != nil {
 		return err
@@ -1449,7 +1449,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 			},
 		})
 	default:
-		return "", fmt.Errorf("Unknow schema review type for default payload: %s", ruleTp)
+		return "", fmt.Errorf("unknown schema review type for default payload: %s", ruleTp)
 	}
 
 	if err != nil {
