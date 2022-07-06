@@ -145,8 +145,8 @@ const (
 	ProjectRoleNoAccess      ProjectRole = "NoAccess"
 )
 
-// gitLabRepositoryMember is the API message for repository member
-type gitLabRepositoryMember struct {
+// RepositoryMember represents a GitLab API response for a repository member.
+type RepositoryMember struct {
 	ID          int       `json:"id"`
 	Email       string    `json:"email"`
 	Name        string    `json:"name"`
@@ -447,10 +447,79 @@ func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRo
 	return "", ""
 }
 
-// FetchRepositoryActiveMemberList fetch all active members of a repository
+// FetchRepositoryActiveMemberList fetches all active members of a repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string) ([]*vcs.RepositoryMember, error) {
-	// Official API doc: https://docs.gitlab.com/14.6/ee/api/members.html
-	url := fmt.Sprintf("%s/projects/%s/members/all", p.APIURL(instanceURL), repositoryID)
+	var allMembers []RepositoryMember
+	page := 1
+	for {
+		members, hasNextPage, err := p.fetchPaginatedRepositoryActiveMemberList(ctx, oauthCtx, instanceURL, repositoryID, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		allMembers = append(allMembers, members...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	var emptyEmailUserIDList []string
+	var activeMembers []*vcs.RepositoryMember
+	for _, m := range allMembers {
+		// We only want active member (both state and membership_state is active)
+		if m.State != vcs.StateActive {
+			continue
+		}
+
+		// The email field is only returned if the caller credential is associated with
+		// a GitLab admin account. We'll try getting the email by fetching the info of
+		// individual users.
+		if m.Email == "" {
+			// TODO: need to work around this if the user does not set public email. For now, we just return an error listing users not having public emails.
+			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
+			userInfo, err := p.FetchUserInfo(ctx, oauthCtx, instanceURL, strconv.Itoa(m.ID))
+			if err != nil {
+				return nil, errors.Wrapf(err, "fetch user info, id: %d", m.ID)
+			}
+			m.Email = userInfo.PublicEmail
+		}
+
+		if m.Email == "" {
+			emptyEmailUserIDList = append(emptyEmailUserIDList, m.Name)
+			continue
+		}
+
+		gitlabRole, bytebaseRole := getRoleAndMappedRole(m.AccessLevel)
+		activeMembers = append(
+			activeMembers,
+			&vcs.RepositoryMember{
+				Name:         m.Name,
+				Email:        m.Email,
+				Role:         bytebaseRole,
+				VCSRole:      string(gitlabRole),
+				State:        vcs.StateActive,
+				RoleProvider: vcs.GitLabSelfHost,
+			},
+		)
+	}
+
+	if len(emptyEmailUserIDList) != 0 {
+		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
+	}
+
+	return activeMembers, nil
+}
+
+// fetchPaginatedRepositoryActiveMemberList fetches active members of a
+// repository in given page. It return the paginated results along with a
+// boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (members []RepositoryMember, hasNextPage bool, err error) {
+	// The "state" filter only available in GitLab Premium self-managed, GitLab
+	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
+	url := fmt.Sprintf("%s/projects/%s/members/all?state=active&page=%d&per_page=100", p.APIURL(instanceURL), repositoryID, page)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -467,58 +536,29 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "GET")
+		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from GitLab instance %s", instanceURL))
+		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read repository members from GitLab instance %s, status code: %d",
-			instanceURL,
-			code,
-		)
+		return nil, false,
+			fmt.Errorf("failed to read repository members from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
 	}
 
-	var gitLabrepositoryMember []gitLabRepositoryMember
-	if err := json.Unmarshal([]byte(body), &gitLabrepositoryMember); err != nil {
-		return nil, err
+	if err := json.Unmarshal([]byte(body), &members); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal body")
 	}
 
-	// we only return active member (both state and membership_state is active)
-	var emptyEmailUserIDList []string
-	var activeRepositoryMemberList []*vcs.RepositoryMember
-	for _, gitLabMember := range gitLabrepositoryMember {
-		if gitLabMember.State == vcs.StateActive {
-			// The email field will only be returned if the caller credential is associated with a GitLab admin account.
-			// And since most callers are not GitLab admins, thus we fetch public email
-			// TODO: need to work around this if the user does not set public email. For now, we just return an error listing users not having public emails.
-			// TODO: if the number of the member is too large, fetching sequentially may cause performance issue
-			userInfo, err := p.FetchUserInfo(ctx, oauthCtx, instanceURL, strconv.Itoa(gitLabMember.ID))
-			if err != nil {
-				return nil, err
-			}
-			if userInfo.PublicEmail == "" {
-				emptyEmailUserIDList = append(emptyEmailUserIDList, gitLabMember.Name)
-			}
-
-			gitLabRole, bytebaseRole := getRoleAndMappedRole(gitLabMember.AccessLevel)
-			repositoryMember := &vcs.RepositoryMember{
-				Name:         gitLabMember.Name,
-				Email:        userInfo.PublicEmail,
-				Role:         bytebaseRole,
-				VCSRole:      string(gitLabRole),
-				State:        vcs.StateActive,
-				RoleProvider: vcs.GitLabSelfHost,
-			}
-			activeRepositoryMemberList = append(activeRepositoryMemberList, repositoryMember)
-		}
-	}
-
-	if len(emptyEmailUserIDList) != 0 {
-		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
-	}
-
-	return activeRepositoryMemberList, nil
+	// NOTE: We deliberately choose to not use the Link header for checking the next
+	// page to avoid introducing a new dependency, see
+	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
+	// discussion.
+	return members, len(members) >= 100, nil
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
