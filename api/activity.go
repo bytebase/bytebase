@@ -65,48 +65,6 @@ const (
 	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
-func (e ActivityType) String() string {
-	switch e {
-	case ActivityIssueCreate:
-		return "bb.issue.create"
-	case ActivityIssueCommentCreate:
-		return "bb.issue.comment.create"
-	case ActivityIssueFieldUpdate:
-		return "bb.issue.field.update"
-	case ActivityIssueStatusUpdate:
-		return "bb.issue.status.update"
-	case ActivityPipelineTaskStatusUpdate:
-		return "bb.pipeline.task.status.update"
-	case ActivityPipelineTaskFileCommit:
-		return "bb.pipeline.task.file.commit"
-	case ActivityPipelineTaskStatementUpdate:
-		return "bb.pipeline.task.statement.update"
-	case ActivityMemberCreate:
-		return "bb.member.create"
-	case ActivityMemberRoleUpdate:
-		return "bb.member.role.update"
-	case ActivityMemberActivate:
-		return "bb.member.activate"
-	case ActivityMemberDeactivate:
-		return "bb.member.deactivate"
-	case ActivityProjectRepositoryPush:
-		return "bb.project.repository.push"
-	case ActivityProjectDatabaseTransfer:
-		return "bb.project.database.transfer"
-	case ActivityProjectMemberCreate:
-		return "bb.project.member.create"
-	case ActivityProjectMemberDelete:
-		return "bb.project.member.delete"
-	case ActivityProjectMemberRoleUpdate:
-		return "bb.project.member.role.update"
-	case ActivitySQLEditorQuery:
-		return "bb.sql-editor.query"
-	case ActivityDatabaseRecoveryPITRDone:
-		return "bb.database.recovery.pitr.done"
-	}
-	return "bb.activity.unknown"
-}
-
 // ActivityLevel is the level of activities.
 type ActivityLevel string
 
@@ -118,18 +76,6 @@ const (
 	// ActivityError is the ERROR level of activities.
 	ActivityError ActivityLevel = "ERROR"
 )
-
-func (e ActivityLevel) String() string {
-	switch e {
-	case ActivityInfo:
-		return "INFO"
-	case ActivityWarn:
-		return "WARN"
-	case ActivityError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.

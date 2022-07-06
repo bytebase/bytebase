@@ -36,9 +36,9 @@ func (c *memberCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			Name:  metricAPI.MemberCountMetricName,
 			Value: memberCountMetric.Count,
 			Labels: map[string]string{
-				"role":       memberCountMetric.Role.String(),
+				"role":       string(memberCountMetric.Role),
 				"status":     string(memberCountMetric.Status),
-				"row_status": memberCountMetric.RowStatus.String(),
+				"row_status": string(memberCountMetric.RowStatus),
 			},
 		})
 	}
