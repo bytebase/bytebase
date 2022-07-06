@@ -67,44 +67,34 @@ const (
 
 func (e ActivityType) String() string {
 	switch e {
-	case ActivityIssueCreate:
-		return "bb.issue.create"
-	case ActivityIssueCommentCreate:
-		return "bb.issue.comment.create"
-	case ActivityIssueFieldUpdate:
-		return "bb.issue.field.update"
-	case ActivityIssueStatusUpdate:
-		return "bb.issue.status.update"
-	case ActivityPipelineTaskStatusUpdate:
-		return "bb.pipeline.task.status.update"
-	case ActivityPipelineTaskFileCommit:
-		return "bb.pipeline.task.file.commit"
-	case ActivityPipelineTaskStatementUpdate:
-		return "bb.pipeline.task.statement.update"
-	case ActivityMemberCreate:
-		return "bb.member.create"
-	case ActivityMemberRoleUpdate:
-		return "bb.member.role.update"
-	case ActivityMemberActivate:
-		return "bb.member.activate"
-	case ActivityMemberDeactivate:
-		return "bb.member.deactivate"
-	case ActivityProjectRepositoryPush:
-		return "bb.project.repository.push"
-	case ActivityProjectDatabaseTransfer:
-		return "bb.project.database.transfer"
-	case ActivityProjectMemberCreate:
-		return "bb.project.member.create"
-	case ActivityProjectMemberDelete:
-		return "bb.project.member.delete"
-	case ActivityProjectMemberRoleUpdate:
-		return "bb.project.member.role.update"
-	case ActivitySQLEditorQuery:
-		return "bb.sql-editor.query"
-	case ActivityDatabaseRecoveryPITRDone:
-		return "bb.database.recovery.pitr.done"
+	// Issue related.
+	case ActivityIssueCreate,
+		ActivityIssueCommentCreate,
+		ActivityIssueFieldUpdate,
+		ActivityIssueStatusUpdate,
+		ActivityPipelineTaskStatusUpdate,
+		ActivityPipelineTaskFileCommit,
+		ActivityPipelineTaskStatementUpdate,
+		ActivityPipelineTaskEarliestAllowedTimeUpdate,
+		// Member related
+		ActivityMemberCreate,
+		ActivityMemberRoleUpdate,
+		ActivityMemberActivate,
+		ActivityMemberDeactivate,
+		// Project related
+		ActivityProjectRepositoryPush,
+		ActivityProjectDatabaseTransfer,
+		ActivityProjectMemberCreate,
+		ActivityProjectMemberDelete,
+		ActivityProjectMemberRoleUpdate,
+		// SQL Editor related
+		ActivitySQLEditorQuery,
+		// Database related
+		ActivityDatabaseRecoveryPITRDone:
+		return string(e)
+	default:
+		return "bb.activity.unknown"
 	}
-	return "bb.activity.unknown"
 }
 
 // ActivityLevel is the level of activities.
@@ -121,14 +111,13 @@ const (
 
 func (e ActivityLevel) String() string {
 	switch e {
-	case ActivityInfo:
-		return "INFO"
-	case ActivityWarn:
-		return "WARN"
-	case ActivityError:
-		return "ERROR"
+	case ActivityInfo,
+		ActivityWarn,
+		ActivityError:
+		return string(e)
+	default:
+		return "UNKNOWN"
 	}
-	return "UNKNOWN"
 }
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.
