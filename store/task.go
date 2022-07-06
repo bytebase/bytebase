@@ -449,7 +449,7 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 
 	var taskRaw taskRaw
 	var databaseID sql.NullInt32
-	err := row.Scan(
+	if err := row.Scan(
 		&taskRaw.ID,
 		&taskRaw.CreatorID,
 		&taskRaw.CreatedTs,
@@ -464,11 +464,10 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 		&taskRaw.Type,
 		&taskRaw.Payload,
 		&taskRaw.EarliestAllowedTs,
-	)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	if databaseID.Valid {
@@ -595,7 +594,7 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPa
 
 	var taskRaw taskRaw
 	// Execute update query with RETURNING.
-	err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
@@ -617,11 +616,10 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPa
 		&taskRaw.Type,
 		&taskRaw.Payload,
 		&taskRaw.EarliestAllowedTs,
-	)
-	if err == sql.ErrNoRows {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
 	return &taskRaw, nil
@@ -705,7 +703,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	var taskPatchedRaw *taskRaw
 	var taskRaw taskRaw
 	// Execute update query with RETURNING.
-	err = tx.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $3
@@ -727,8 +725,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 		&taskRaw.Type,
 		&taskRaw.Payload,
 		&taskRaw.EarliestAllowedTs,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, FormatError(err)
 	}
 	taskPatchedRaw = &taskRaw

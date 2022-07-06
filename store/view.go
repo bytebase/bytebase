@@ -183,7 +183,7 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment" + `
 	`
 	var viewRaw viewRaw
-	err := tx.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -202,11 +202,10 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		&viewRaw.Name,
 		&viewRaw.Definition,
 		&viewRaw.Comment,
-	)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	return &viewRaw, nil

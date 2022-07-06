@@ -110,7 +110,7 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 		RETURNING id, created_ts, updated_ts, from_task_id, to_task_id, payload
 	`
 	var taskDAGRaw taskDAGRaw
-	err := tx.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		create.FromTaskID,
 		create.ToTaskID,
 		create.Payload,
@@ -121,11 +121,10 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 		&taskDAGRaw.FromTaskID,
 		&taskDAGRaw.ToTaskID,
 		&taskDAGRaw.Payload,
-	)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	return &taskDAGRaw, nil

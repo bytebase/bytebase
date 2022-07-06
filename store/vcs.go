@@ -264,7 +264,7 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`
 	var vcs vcsRaw
-	err := tx.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -285,11 +285,10 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		&vcs.APIURL,
 		&vcs.ApplicationID,
 		&vcs.Secret,
-	)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	return &vcs, nil
@@ -370,7 +369,7 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 
 	var vcs vcsRaw
 	// Execute update query with RETURNING.
-	err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
@@ -389,11 +388,10 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 		&vcs.APIURL,
 		&vcs.ApplicationID,
 		&vcs.Secret,
-	)
-	if err == sql.ErrNoRows {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
 	return &vcs, nil

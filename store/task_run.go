@@ -79,7 +79,7 @@ func (s *Store) createTaskRunImpl(ctx context.Context, tx *sql.Tx, create *api.T
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, type, code, comment, result, payload
 	`
 	var taskRunRaw taskRunRaw
-	err := tx.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.TaskID,
@@ -100,11 +100,10 @@ func (s *Store) createTaskRunImpl(ctx context.Context, tx *sql.Tx, create *api.T
 		&taskRunRaw.Comment,
 		&taskRunRaw.Result,
 		&taskRunRaw.Payload,
-	)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
 	return &taskRunRaw, nil
@@ -154,7 +153,7 @@ func (s *Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *a
 	}
 
 	var taskRunRaw taskRunRaw
-	err := tx.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
@@ -175,11 +174,10 @@ func (s *Store) patchTaskRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *a
 		&taskRunRaw.Comment,
 		&taskRunRaw.Result,
 		&taskRunRaw.Payload,
-	)
-	if err == sql.ErrNoRows {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
-	}
-	if err != nil {
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
 	return &taskRunRaw, nil
