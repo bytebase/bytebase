@@ -73,12 +73,10 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return terminated, result, nil
 }
 
-// The PITR cutover algorithm is:
-// 1. Lock tables in the current database by FLUSH TABLES table1, table2, ... WITH READ LOCK.
-// 2. Swap the current and PITR database.
-// 3. Create a backup with type PITR.
-// The backup is dumped asynchronously to prevent performance issues by waiting for the backup process for too long.
-// And we must check the possible failed/ongoing PITR backup in the recovery process.
+// pitrCutover performs the PITR cutover algorithm:
+// 1. Swap the current and PITR database.
+// 2. Create a backup with type PITR. The backup is scheduled asynchronously.
+// We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
@@ -104,7 +102,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
 
-	backupName := fmt.Sprintf("%s-%s-pitr_%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
 	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
 		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
 	}
