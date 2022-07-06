@@ -405,20 +405,16 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 }
 
 func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool, error) {
-	query := fmt.Sprintf("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
-	row, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return false, err
-	}
-	defer row.Close()
-	if row.Next() {
-		return true, nil
-	}
-	if err := row.Err(); err != nil {
+	query := fmt.Sprintf("SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
+	var unused string
+	if err := conn.QueryRowContext(ctx, query).Scan(&unused); err != nil {
+		if err == sql.ErrNoRows {
+			// The query returns empty row, which means there's no such database.
+			return false, nil
+		}
 		return false, util.FormatErrorWithQuery(err, query)
 	}
-	// The query returns empty row, which means there's no such database.
-	return false, nil
+	return true, nil
 }
 
 // Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
