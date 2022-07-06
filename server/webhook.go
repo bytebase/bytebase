@@ -80,7 +80,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			addedEscaped := common.EscapeForLogging(added)
 			log.Debug("Processing added file...",
 				zap.String("file", addedEscaped),
-				zap.String("commit", common.EscapeForLogging(commit.ID)),
+				zap.String("commit", commit.ID),
 			)
 
 			if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
@@ -274,8 +274,7 @@ type distinctFileItem struct {
 }
 
 func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
-	// Use list instead of map because we need to maintain the relative commit order in the source branch.
-	var distinctFileList []distinctFileItem
+	distinctFileList := []distinctFileItem{}
 	for _, commit := range commitList {
 		log.Debug("Pre-processing commit to dedup migration files...",
 			zap.String("id", common.EscapeForLogging(commit.ID)),
@@ -284,29 +283,32 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 
 		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 		if err != nil {
-			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
+			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", commit.ID), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 		}
 
 		for _, added := range commit.AddedList {
 			new := true
-			item := distinctFileItem{
-				createdTime: createdTime,
-				commit:      commit,
-				fileName:    added,
-			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
 				if added == file.fileName {
 					new = false
 					if file.createdTime.Before(createdTime) {
-						distinctFileList[i] = item
+						distinctFileList[i] = distinctFileItem{
+							createdTime: createdTime,
+							commit:      commit,
+							fileName:    added,
+						}
 					}
 					break
 				}
 			}
 
 			if new {
-				distinctFileList = append(distinctFileList, item)
+				distinctFileList = append(distinctFileList, distinctFileItem{
+					createdTime: createdTime,
+					commit:      commit,
+					fileName:    added,
+				})
 			}
 		}
 	}
