@@ -72,164 +72,156 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			zap.String("project", repo.Project.Name),
 		)
 
+		distinctFileList := dedupMigrationFilesFromCommitList(pushEvent.CommitList)
 		createdMessageList := []string{}
-		for _, commit := range pushEvent.CommitList {
-			log.Debug("Processing commit...",
-				zap.String("id", common.EscapeForLogging(commit.ID)),
-				zap.String("title", common.EscapeForLogging(commit.Title)),
+		for _, item := range distinctFileList {
+			commit := item.commit
+			added := item.fileName
+			addedEscaped := common.EscapeForLogging(added)
+			log.Debug("Processing added file...",
+				zap.String("file", addedEscaped),
+				zap.String("commit", common.EscapeForLogging(commit.ID)),
 			)
 
-			for _, added := range commit.AddedList {
-				addedEscaped := common.EscapeForLogging(added)
-				log.Debug("Processing added file...",
-					zap.String("file", addedEscaped),
-				)
+			if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
+				log.Debug("Ignored committed file, not under base directory.", zap.String("file", addedEscaped), zap.String("base_directory", repo.BaseDirectory))
+				continue
+			}
 
-				if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
-					log.Debug("Ignored committed file, not under base directory.", zap.String("file", addedEscaped), zap.String("base_directory", repo.BaseDirectory))
-					continue
-				}
+			// Ignore the schema file we auto generated to the repository.
+			if isSkipGeneratedSchemaFile(repo, addedEscaped) {
+				log.Debug("Ignored generated latest schema file.", zap.String("file", addedEscaped))
+				continue
+			}
 
-				createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
-				if err != nil {
-					log.Warn("Ignored committed file, failed to parse commit timestamp.", zap.String("file", addedEscaped), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
-				}
+			vcsPushEvent := vcs.PushEvent{
+				VCSType:            repo.VCS.Type,
+				BaseDirectory:      repo.BaseDirectory,
+				Ref:                pushEvent.Ref,
+				RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
+				RepositoryURL:      pushEvent.Project.WebURL,
+				RepositoryFullPath: pushEvent.Project.FullPath,
+				AuthorName:         pushEvent.AuthorName,
+				FileCommit: vcs.FileCommit{
+					ID:         commit.ID,
+					Title:      commit.Title,
+					Message:    commit.Message,
+					CreatedTs:  item.createdTime.Unix(),
+					URL:        commit.URL,
+					AuthorName: commit.Author.Name,
+					Added:      addedEscaped,
+				},
+			}
 
-				// Ignore the schema file we auto generated to the repository.
-				if isSkipGeneratedSchemaFile(repo, addedEscaped) {
-					log.Debug("Ignored generated latest schema file.", zap.String("file", addedEscaped))
-					continue
-				}
-
-				vcsPushEvent := vcs.PushEvent{
-					VCSType:            repo.VCS.Type,
-					BaseDirectory:      repo.BaseDirectory,
-					Ref:                pushEvent.Ref,
-					RepositoryID:       strconv.Itoa(pushEvent.Project.ID),
-					RepositoryURL:      pushEvent.Project.WebURL,
-					RepositoryFullPath: pushEvent.Project.FullPath,
-					AuthorName:         pushEvent.AuthorName,
-					FileCommit: vcs.FileCommit{
-						ID:         commit.ID,
-						Title:      commit.Title,
-						Message:    commit.Message,
-						CreatedTs:  createdTime.Unix(),
-						URL:        commit.URL,
-						AuthorName: commit.Author.Name,
-						Added:      addedEscaped,
-					},
-				}
-
-				// Create a WARNING project activity if committed file is ignored
-				var createIgnoredFileActivity = func(err error) {
-					log.Warn("Ignored committed file", zap.String("file", addedEscaped), zap.Error(err))
-					bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
-						VCSPushEvent: vcsPushEvent,
-					})
-					if marshalErr != nil {
-						log.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
-						return
-					}
-
-					activityCreate := &api.ActivityCreate{
-						CreatorID:   api.SystemBotID,
-						ContainerID: repo.ProjectID,
-						Type:        api.ActivityProjectRepositoryPush,
-						Level:       api.ActivityWarn,
-						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", addedEscaped, err.Error()),
-						Payload:     string(bytes),
-					}
-					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
-					if err != nil {
-						log.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
-					}
-				}
-
-				mi, err := db.ParseMigrationInfo(addedEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
-				if err != nil {
-					createIgnoredFileActivity(err)
-					continue
-				}
-
-				// Retrieve sql by reading the file content
-				content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
-					ctx,
-					common.OauthContext{
-						ClientID:     repo.VCS.ApplicationID,
-						ClientSecret: repo.VCS.Secret,
-						AccessToken:  repo.AccessToken,
-						RefreshToken: repo.RefreshToken,
-						Refresher:    s.refreshToken(ctx, repo.ID),
-					},
-					repo.VCS.InstanceURL,
-					repo.ExternalID,
-					addedEscaped,
-					commit.ID,
-				)
-				if err != nil {
-					createIgnoredFileActivity(err)
-					continue
-				}
-
-				// Create schema update issue.
-				var createContext string
-				if repo.Project.TenantMode == api.TenantModeTenant {
-					if !s.feature(api.FeatureMultiTenancy) {
-						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-					}
-					createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
-				} else {
-					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
-				}
-				if err != nil {
-					createIgnoredFileActivity(err)
-					continue
-				}
-
-				issueType := api.IssueDatabaseSchemaUpdate
-				if mi.Type == db.Data {
-					issueType = api.IssueDatabaseDataUpdate
-				}
-				issueCreate := &api.IssueCreate{
-					ProjectID:     repo.ProjectID,
-					Name:          commit.Title,
-					Type:          issueType,
-					Description:   commit.Message,
-					AssigneeID:    api.SystemBotID,
-					CreateContext: createContext,
-				}
-				issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
-				if err != nil {
-					errMsg := "Failed to create schema update issue"
-					if issueType == api.IssueDatabaseDataUpdate {
-						errMsg = "Failed to create data update issue"
-					}
-					return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
-				}
-
-				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, addedEscaped))
-
-				// Create a project activity after successfully creating the issue as the result of the push event
-				bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+			// Create a WARNING project activity if committed file is ignored
+			var createIgnoredFileActivity = func(err error) {
+				log.Warn("Ignored committed file", zap.String("file", addedEscaped), zap.Error(err))
+				bytes, marshalErr := json.Marshal(api.ActivityProjectRepositoryPushPayload{
 					VCSPushEvent: vcsPushEvent,
-					IssueID:      issue.ID,
-					IssueName:    issue.Name,
 				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+				if marshalErr != nil {
+					log.Warn("Failed to construct project activity payload to record ignored repository committed file", zap.Error(marshalErr))
+					return
 				}
 
 				activityCreate := &api.ActivityCreate{
 					CreatorID:   api.SystemBotID,
 					ContainerID: repo.ProjectID,
 					Type:        api.ActivityProjectRepositoryPush,
-					Level:       api.ActivityInfo,
-					Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+					Level:       api.ActivityWarn,
+					Comment:     fmt.Sprintf("Ignored committed file %q, %s.", addedEscaped, err.Error()),
 					Payload:     string(bytes),
 				}
-				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+				_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+				if err != nil {
+					log.Warn("Failed to create project activity to record ignored repository committed file", zap.Error(err))
 				}
+			}
+
+			mi, err := db.ParseMigrationInfo(addedEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+			if err != nil {
+				createIgnoredFileActivity(err)
+				continue
+			}
+
+			// Retrieve sql by reading the file content
+			content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
+				ctx,
+				common.OauthContext{
+					ClientID:     repo.VCS.ApplicationID,
+					ClientSecret: repo.VCS.Secret,
+					AccessToken:  repo.AccessToken,
+					RefreshToken: repo.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo.ID),
+				},
+				repo.VCS.InstanceURL,
+				repo.ExternalID,
+				addedEscaped,
+				commit.ID,
+			)
+			if err != nil {
+				createIgnoredFileActivity(err)
+				continue
+			}
+
+			// Create schema update issue.
+			var createContext string
+			if repo.Project.TenantMode == api.TenantModeTenant {
+				if !s.feature(api.FeatureMultiTenancy) {
+					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+				}
+				createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+			} else {
+				createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+			}
+			if err != nil {
+				createIgnoredFileActivity(err)
+				continue
+			}
+
+			issueType := api.IssueDatabaseSchemaUpdate
+			if mi.Type == db.Data {
+				issueType = api.IssueDatabaseDataUpdate
+			}
+			issueCreate := &api.IssueCreate{
+				ProjectID:     repo.ProjectID,
+				Name:          commit.Title,
+				Type:          issueType,
+				Description:   commit.Message,
+				AssigneeID:    api.SystemBotID,
+				CreateContext: createContext,
+			}
+			issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+			if err != nil {
+				errMsg := "Failed to create schema update issue"
+				if issueType == api.IssueDatabaseDataUpdate {
+					errMsg = "Failed to create data update issue"
+				}
+				return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+			}
+
+			createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, addedEscaped))
+
+			// Create a project activity after successfully creating the issue as the result of the push event
+			bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+				VCSPushEvent: vcsPushEvent,
+				IssueID:      issue.ID,
+				IssueName:    issue.Name,
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+			}
+
+			activityCreate := &api.ActivityCreate{
+				CreatorID:   api.SystemBotID,
+				ContainerID: repo.ProjectID,
+				Type:        api.ActivityProjectRepositoryPush,
+				Level:       api.ActivityInfo,
+				Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+				Payload:     string(bytes),
+			}
+			if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
 			}
 		}
 
@@ -241,6 +233,72 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
+}
+
+// We are observing the push webhook event so that we will receive the event either when:
+// 1. A commit is directly pushed to a branch.
+// 2. One or more commits are merged to a branch.
+//
+// There is a complication to deal with the 2nd type. A typical workflow is a developer first
+// commits the migration file to the feature branch, and at a later point, she creates a merge
+// request to merge the commit to the main branch. Even the developer only creates a single commit
+// on the feature branch, that merge request may contain multiple commits (unless both squash and fast-forward merge are used):
+// 1. The original commit on the feature branch.
+// 2. The merge request commit.
+//
+// And both commits would include that added migration file. Since we create an issue per migration file,
+// we need to filter the commit list to prevent creating a duplicated issue. GitLab has a limitation to distinguish
+// whether the commit is a merge commit (https://gitlab.com/gitlab-org/gitlab/-/issues/30914), so we need to dedup
+// ourselves. Below is the filtering algorithm:
+// 1. If we observe the same migration file multiple times, then we should use the latest migration file. This does not matter
+//    for change-based migration since a developer would always create different migration file with incremental names, while it
+//    will be important for the state-based migration, since the file name is always the same and we need to use the latest snapshot.
+// 2. Maintain the relative commit order between different migration files. If migration file A happens before migration file B,
+//    then we should create an issue for migration file A first.
+type distinctFileItem struct {
+	createdTime time.Time
+	commit      gitlab.WebhookCommit
+	fileName    string
+}
+
+func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
+	// Use list instead of map because we need to maintain the relative commit order in the source branch.
+	var distinctFileList []distinctFileItem
+	for _, commit := range commitList {
+		log.Debug("Pre-processing commit to dedup migration files...",
+			zap.String("id", common.EscapeForLogging(commit.ID)),
+			zap.String("title", common.EscapeForLogging(commit.Title)),
+		)
+
+		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
+		if err != nil {
+			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
+		}
+
+		for _, added := range commit.AddedList {
+			new := true
+			item := distinctFileItem{
+				createdTime: createdTime,
+				commit:      commit,
+				fileName:    added,
+			}
+			for i, file := range distinctFileList {
+				// For the migration file with the same name, keep the one from the latest commit
+				if added == file.fileName {
+					new = false
+					if file.createdTime.Before(createdTime) {
+						distinctFileList[i] = item
+					}
+					break
+				}
+			}
+
+			if new {
+				distinctFileList = append(distinctFileList, item)
+			}
+		}
+	}
+	return distinctFileList
 }
 
 func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
