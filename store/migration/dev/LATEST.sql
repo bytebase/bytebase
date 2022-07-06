@@ -537,7 +537,7 @@ CREATE TABLE backup (
     database_id INTEGER NOT NULL REFERENCES db (id),
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING_CREATE', 'DONE', 'FAILED')),
-    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC')),
+    type TEXT NOT NULL CHECK (type IN ('MANUAL', 'AUTOMATIC', 'PITR')),
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
