@@ -3,7 +3,7 @@ import { Principal } from "./principal";
 
 export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
 
-export type BackupType = "MANUAL" | "AUTOMATIC";
+export type BackupType = "MANUAL" | "AUTOMATIC" | "PITR";
 
 export type BackupStorageBackend = "LOCAL";
 

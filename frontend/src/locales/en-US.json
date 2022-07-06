@@ -200,7 +200,8 @@
     "disable": "Disable",
     "view-doc": "View doc",
     "backup-and-restore": "Backup and restore",
-    "write-only": "write only"
+    "write-only": "write only",
+    "pitr": "PITR"
   },
   "error-page": {
     "go-back-home": "Go back home"
