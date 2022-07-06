@@ -499,7 +499,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 				Name:         m.Name,
 				Email:        m.Email,
 				Role:         bytebaseRole,
-				VCSRole:      gitlabRole.String(),
+				VCSRole:      string(gitlabRole),
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			},
