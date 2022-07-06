@@ -3,6 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
+import schemaSystemConfig from "./sqlReviewConfig.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
@@ -50,15 +51,14 @@ interface StringArrayPayload {
 interface TemplatePayload {
   type: "TEMPLATE";
   default: string;
-  templateList: { id: string; description?: string }[];
+  templateList: string[];
   value?: string;
 }
 
 // RuleConfigComponent is the rule configuration options and default value.
 // Used by the frontend.
 export interface RuleConfigComponent {
-  title: string;
-  description: string;
+  key: string;
   payload: StringPayload | TemplatePayload | StringArrayPayload;
 }
 
@@ -126,242 +126,20 @@ export interface RuleTemplate {
 
 // SchemaReviewPolicyTemplate is the rule template set
 export interface SchemaReviewPolicyTemplate {
-  title: string;
-  imagePath: string;
+  id: string;
   ruleList: RuleTemplate[];
 }
 
-// RULE_TEMPLATE_PAYLOAD_MAP is the relationship mapping for the rule type and payload.
-// Used by frontend to get different rule payload configurations.
-export const RULE_TEMPLATE_PAYLOAD_MAP: Map<RuleType, RuleConfigComponent[]> =
-  new Map([
-    [
-      "naming.table",
-      [
-        {
-          title: "table-name-format",
-          description: "",
-          payload: {
-            type: "STRING",
-            default: "^[a-z]+(_[a-z]+)*$",
-          },
-        },
-      ],
-    ],
-    [
-      "naming.column",
-      [
-        {
-          title: "column-name-format",
-          description: "",
-          payload: {
-            type: "STRING",
-            default: "^[a-z]+(_[a-z]+)*$",
-          },
-        },
-      ],
-    ],
-    [
-      "naming.index.uk",
-      [
-        {
-          title: "uk-name-format",
-          description: "",
-          payload: {
-            type: "TEMPLATE",
-            default: "^uk_{{table}}_{{column_list}}$",
-            templateList: [
-              {
-                id: "table",
-                description:
-                  "schema-review-policy.payload-config.template.table-name",
-              },
-              {
-                id: "column_list",
-                description:
-                  "schema-review-policy.payload-config.template.column-list",
-              },
-            ],
-          },
-        },
-      ],
-    ],
-    [
-      "naming.index.fk",
-      [
-        {
-          title: "fk-name-format",
-          description: "",
-          payload: {
-            type: "TEMPLATE",
-            default:
-              "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
-            templateList: [
-              {
-                id: "referencing_table",
-                description:
-                  "schema-review-policy.payload-config.template.referencing-table",
-              },
-              {
-                id: "referencing_column",
-                description:
-                  "schema-review-policy.payload-config.template.referencing-column",
-              },
-              {
-                id: "referenced_table",
-                description:
-                  "schema-review-policy.payload-config.template.referenced-table",
-              },
-              {
-                id: "referenced_column",
-                description:
-                  "schema-review-policy.payload-config.template.referenced-column",
-              },
-            ],
-          },
-        },
-      ],
-    ],
-    [
-      "naming.index.idx",
-      [
-        {
-          title: "idx-name-format",
-          description: "",
-          payload: {
-            type: "TEMPLATE",
-            default: "^idx_{{table}}_{{column_list}}$",
-            templateList: [
-              {
-                id: "table",
-                description:
-                  "schema-review-policy.payload-config.template.table-name",
-              },
-              {
-                id: "column_list",
-                description:
-                  "schema-review-policy.payload-config.template.column-list",
-              },
-            ],
-          },
-        },
-      ],
-    ],
-    [
-      "column.required",
-      [
-        {
-          title: "required-column",
-          description: "",
-          payload: {
-            type: "STRING_ARRAY",
-            default: [
-              "id",
-              "created_ts",
-              "updated_ts",
-              "creator_id",
-              "updater_id",
-            ],
-          },
-        },
-      ],
-    ],
-  ]);
+export const TEMPLATE_LIST =
+  schemaSystemConfig.templateList as SchemaReviewPolicyTemplate[];
 
-// ruleTemplateList stores the default value for each rule template
-export const ruleTemplateList: RuleTemplate[] = [
-  {
-    type: "engine.mysql.use-innodb",
-    category: "ENGINE",
-    engine: "MYSQL",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "table.require-pk",
-    category: "TABLE",
-    engine: "COMMON",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "naming.table",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.table") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "naming.column",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.column") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "naming.index.uk",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.uk") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "naming.index.fk",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.fk") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "naming.index.idx",
-    category: "NAMING",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("naming.index.idx") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "column.required",
-    category: "COLUMN",
-    engine: "COMMON",
-    componentList: RULE_TEMPLATE_PAYLOAD_MAP.get("column.required") ?? [],
-    level: RuleLevel.ERROR,
-  },
-  {
-    type: "column.no-null",
-    category: "COLUMN",
-    engine: "COMMON",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "statement.select.no-select-all",
-    category: "STATEMENT",
-    engine: "COMMON",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "statement.where.require",
-    category: "STATEMENT",
-    engine: "COMMON",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "statement.where.no-leading-wildcard-like",
-    category: "STATEMENT",
-    engine: "COMMON",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-  {
-    type: "schema.backward-compatibility",
-    category: "SCHEMA",
-    engine: "MYSQL",
-    level: RuleLevel.ERROR,
-    componentList: [],
-  },
-];
+export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
+  TEMPLATE_LIST.reduce((map, template) => {
+    for (const rule of template.ruleList) {
+      map.set(rule.type, rule);
+    }
+    return map;
+  }, new Map<RuleType, RuleTemplate>());
 
 interface RuleCategory {
   id: CategoryType;
@@ -372,14 +150,11 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const categoryOrder: Map<CategoryType, number> = new Map([
-    ["ENGINE", 6],
-    ["NAMING", 5],
-    ["STATEMENT", 4],
-    ["TABLE", 3],
-    ["SCHEMA", 2],
-    ["COLUMN", 1],
-  ]);
+  const categoryList = schemaSystemConfig.categoryList as CategoryType[];
+  const categoryOrder = categoryList.reduce((map, category, index) => {
+    map.set(category, index);
+    return map;
+  }, new Map<CategoryType, number>());
 
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
@@ -519,11 +294,15 @@ export const convertRuleTemplateToPolicyRule = (
   throw new Error(`Invalid rule ${rule.type}`);
 };
 
+export const getRuleLocalizationKey = (type: RuleType): string => {
+  return type.split(".").join("-");
+};
+
 export const getRuleLocalization = (
   type: RuleType
 ): { title: string; description: string } => {
   const { t } = useI18n();
-  const key = type.split(".").join("-");
+  const key = getRuleLocalizationKey(type);
 
   const title = t(`schema-review-policy.rule.${key}.title`);
   const description = t(`schema-review-policy.rule.${key}.description`);

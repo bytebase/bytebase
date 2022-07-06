@@ -59,7 +59,13 @@
         class="mb-1"
       >
         <p class="mb-3">
-          {{ $t(`schema-review-policy.payload-config.${config.title}`) }}
+          {{
+            $t(
+              `schema-review-policy.rule.${getRuleLocalizationKey(
+                selectedRule.type
+              )}.component.${config.key}.title`
+            )
+          }}
         </p>
         <input
           v-if="config.payload.type == 'STRING'"
@@ -86,15 +92,22 @@
             type="text"
             pattern="[a-z]+"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            :placeholder="
-              $t('schema-review-policy.payload-config.input-then-press-enter')
-            "
+            :placeholder="$t('schema-review-policy.input-then-press-enter')"
             @keyup.enter="(e) => pushToList(index, e)"
           />
         </div>
         <InputWithTemplate
           v-else-if="config.payload.type == 'TEMPLATE'"
-          :template-list="config.payload.templateList"
+          :template-list="
+            config.payload.templateList.map((id) => ({
+              id,
+              description: $t(
+                `schema-review-policy.rule.${getRuleLocalizationKey(
+                  selectedRule.type
+                )}.component.${config.key}.template.${id}`
+              ),
+            }))
+          "
           :value="getStringPayload(index)"
           @change="(val) => (state.payload[index] = val)"
         />
@@ -111,6 +124,7 @@ import {
   RuleTemplate,
   RuleConfigComponent,
   getRuleLocalization,
+  getRuleLocalizationKey,
 } from "@/types/schemaSystem";
 
 type PayloadValueList = (string | string[])[];

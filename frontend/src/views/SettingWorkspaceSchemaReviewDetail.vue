@@ -213,7 +213,7 @@ import {
   DatabaseSchemaReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
-  ruleTemplateList,
+  ruleTemplateMap,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
 import {
@@ -275,11 +275,6 @@ const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
   );
 });
 
-const ruleMap = ruleTemplateList.reduce((map, rule) => {
-  map.set(rule.type, rule);
-  return map;
-}, new Map<RuleType, RuleTemplate>());
-
 const selectedRuleList = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
     return [];
@@ -288,7 +283,7 @@ const selectedRuleList = computed((): RuleTemplate[] => {
   const ruleTemplateList: RuleTemplate[] = [];
 
   for (const policyRule of reviewPolicy.value.ruleList) {
-    const rule = ruleMap.get(policyRule.type);
+    const rule = ruleTemplateMap.get(policyRule.type);
     if (!rule) {
       continue;
     }
