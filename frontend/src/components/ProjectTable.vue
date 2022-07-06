@@ -8,17 +8,20 @@
     @click-row="clickProject"
   >
     <template #header>
-      <BBTableHeaderCell class="w-4 table-cell" :title="COLUMN_LIST[0].title" />
-      <BBTableHeaderCell
-        class="w-24 table-cell"
-        :title="COLUMN_LIST[1].title"
-      />
-      <BBTableHeaderCell class="w-8 table-cell" :title="COLUMN_LIST[2].title" />
+      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[0].title" />
+      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[1].title" />
+      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[2].title" />
     </template>
     <template #body="{ rowData: project }">
-      <BBTableCell :left-padding="4" class="table-cell text-gray-500">
+      <BBTableCell :left-padding="4" class="table-cell text-gray-500 w-[30%]">
         <span class="flex flex-row items-center space-x-1">
           <span>{{ project.key }}</span>
+          <BBBadge
+            v-if="project.tenantMode === 'TENANT'"
+            :text="$t('project.mode.tenant')"
+            :can-remove="false"
+            size="small"
+          />
           <div v-if="project.rowStatus === 'ARCHIVED'" class="tooltip-wrapper">
             <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
             <span class="tooltip whitespace-nowrap">
@@ -36,7 +39,7 @@
       <BBTableCell class="truncate">
         {{ projectName(project) }}
       </BBTableCell>
-      <BBTableCell class="hidden md:table-cell">
+      <BBTableCell class="hidden md:table-cell md:w-[15%]">
         {{ humanizeTs(project.createdTs) }}
       </BBTableCell>
     </template>
