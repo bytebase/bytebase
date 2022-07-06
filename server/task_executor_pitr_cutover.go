@@ -73,17 +73,16 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return terminated, result, nil
 }
 
+// pitrCutover performs the PITR cutover algorithm:
+// 1. Swap the current and PITR database.
+// 2. Create a backup with type PITR. The backup is scheduled asynchronously.
+// We must check the possible failed/ongoing PITR type backup in the recovery process.
 func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-
-	binlogDir := getBinlogAbsDir(server.profile.DataDir, task.Instance.ID)
-	if err := createBinlogDir(server.profile.DataDir, task.Instance.ID); err != nil {
-		return true, nil, err
-	}
 
 	driverDB, err := driver.GetDbConnection(ctx, "")
 	if err != nil {
@@ -95,20 +94,18 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer conn.Close()
 
-	mysqlDriver, ok := driver.(*mysql.Driver)
-	if !ok {
-		log.Error("failed to cast driver to mysql.Driver")
-		return true, nil, fmt.Errorf("[internal] cast driver to mysql.Driver failed")
-	}
-	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
-
-	log.Debug("Swapping the original and PITR database.", zap.String("instance", task.Instance.Name), zap.String("originalDatabase", task.Database.Name))
+	log.Debug("Swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name))
 	pitrDatabaseName, pitrOldDatabaseName, err := mysql.SwapPITRDatabase(ctx, conn, task.Database.Name, issue.CreatedTs)
 	if err != nil {
-		log.Error("Failed to swap databases and backup the original database", zap.Error(err))
+		log.Error("Failed to swap the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.Error(err))
 		return true, nil, fmt.Errorf("failed to swap the original and PITR database, error: %w", err)
 	}
-	log.Debug("Finish swapping the original and PITR database", zap.String("original_database", task.Database.Name), zap.String("pitr_database", pitrDatabaseName), zap.String("old_database", pitrOldDatabaseName))
+	log.Debug("Finished swapping the original and PITR database", zap.String("originalDatabase", task.Database.Name), zap.String("pitrDatabase", pitrDatabaseName), zap.String("oldDatabase", pitrOldDatabaseName))
+
+	backupName := fmt.Sprintf("%s-%s-pitr-%d", api.ProjectShortSlug(task.Database.Project), api.EnvSlug(task.Database.Instance.Environment), issue.CreatedTs)
+	if _, err := server.scheduleBackupTask(ctx, task.Database, backupName, api.BackupTypePITR, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
+		return true, nil, fmt.Errorf("failed to schedule backup task for database %q after PITR, error: %w", task.Database.Name, err)
+	}
 
 	log.Debug("Appending new migration history record")
 	m := &db.MigrationInfo{
