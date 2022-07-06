@@ -178,7 +178,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 			Name:         "Raymond Smith",
 			State:        vcs.StateActive,
 			Role:         common.ProjectDeveloper,
-			VCSRole:      ProjectRoleDeveloper.String(),
+			VCSRole:      string(ProjectRoleDeveloper),
 			RoleProvider: vcs.GitLabSelfHost,
 		},
 	}
