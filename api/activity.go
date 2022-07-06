@@ -65,10 +65,6 @@ const (
 	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
 )
 
-func (e ActivityType) String() string {
-	return string(e)
-}
-
 // ActivityLevel is the level of activities.
 type ActivityLevel string
 
@@ -80,10 +76,6 @@ const (
 	// ActivityError is the ERROR level of activities.
 	ActivityError ActivityLevel = "ERROR"
 )
-
-func (e ActivityLevel) String() string {
-	return string(e)
-}
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.

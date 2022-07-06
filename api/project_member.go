@@ -16,10 +16,6 @@ const (
 	ProjectRoleProviderGitLabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
 )
 
-func (e ProjectRoleProvider) String() string {
-	return string(e)
-}
-
 // ProjectRoleProviderPayload is the payload for role provider
 type ProjectRoleProviderPayload struct {
 	VCSRole    string `json:"vcsRole"`

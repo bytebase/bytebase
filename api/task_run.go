@@ -22,10 +22,6 @@ const (
 	TaskRunCanceled TaskRunStatus = "CANCELED"
 )
 
-func (e TaskRunStatus) String() string {
-	return string(e)
-}
-
 // TaskRunResultPayload is the result payload for a task run.
 type TaskRunResultPayload struct {
 	Detail      string `json:"detail,omitempty"`

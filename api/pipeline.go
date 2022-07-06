@@ -19,10 +19,6 @@ const (
 	PipelineCanceled PipelineStatus = "CANCELED"
 )
 
-func (e PipelineStatus) String() string {
-	return string(e)
-}
-
 // Pipeline is the API message for pipelines.
 type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`

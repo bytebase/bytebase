@@ -340,7 +340,7 @@ func TestSchemaSystem(t *testing.T) {
 	}
 
 	// disable the schema review policy
-	disable := api.Archived.String()
+	disable := string(api.Archived)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
 		EnvironmentID: prodEnvironment.ID,
 		Type:          api.PolicyTypeSchemaReview,

@@ -22,10 +22,6 @@ const (
 	VCSWorkflow ProjectWorkflowType = "VCS"
 )
 
-func (e ProjectWorkflowType) String() string {
-	return string(e)
-}
-
 // ProjectVisibility is the visibility of a project.
 type ProjectVisibility string
 
@@ -35,10 +31,6 @@ const (
 	// Private is the project visibility for PRIVATE.
 	Private ProjectVisibility = "PRIVATE"
 )
-
-func (e ProjectVisibility) String() string {
-	return string(e)
-}
 
 // ProjectTenantMode is the tenant mode setting for project.
 type ProjectTenantMode string

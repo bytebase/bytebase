@@ -18,10 +18,6 @@ const (
 	GitHubCom Type = "GITHUB_COM"
 )
 
-func (e Type) String() string {
-	return string(e)
-}
-
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
 	AccessToken  string `json:"access_token" `

@@ -37,8 +37,8 @@ func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, 
 			Value: projectCountMetric.Count,
 			Labels: map[string]string{
 				"tenant_mode": string(projectCountMetric.TenantMode),
-				"workflow":    projectCountMetric.WorkflowType.String(),
-				"status":      projectCountMetric.RowStatus.String(),
+				"workflow":    string(projectCountMetric.WorkflowType),
+				"status":      string(projectCountMetric.RowStatus),
 			},
 		})
 	}

@@ -25,10 +25,6 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-func (e Status) String() string {
-	return string(e)
-}
-
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
 func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
@@ -118,7 +114,7 @@ type Advice struct {
 
 // MarshalLogObject constructs a field that carries Advice.
 func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("status", a.Status.String())
+	enc.AddString("status", string(a.Status))
 	enc.AddInt("code", int(a.Code))
 	enc.AddString("title", a.Title)
 	enc.AddString("content", a.Content)

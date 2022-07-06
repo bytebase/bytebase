@@ -168,10 +168,6 @@ const (
 	LIBRARY MigrationSource = "LIBRARY"
 )
 
-func (e MigrationSource) String() string {
-	return string(e)
-}
-
 // MigrationType is the type of a migration.
 type MigrationType string
 
@@ -192,10 +188,6 @@ const (
 	Data MigrationType = "DATA"
 )
 
-func (e MigrationType) String() string {
-	return string(e)
-}
-
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 
@@ -207,10 +199,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-func (e MigrationStatus) String() string {
-	return string(e)
-}
 
 // MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {

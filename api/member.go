@@ -28,10 +28,6 @@ const (
 	Developer Role = "DEVELOPER"
 )
 
-func (e Role) String() string {
-	return string(e)
-}
-
 // Member is the API message for a member.
 type Member struct {
 	ID int `jsonapi:"primary,member"`

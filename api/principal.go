@@ -17,10 +17,6 @@ const (
 	BOT PrincipalType = "BOT"
 )
 
-func (e PrincipalType) String() string {
-	return string(e)
-}
-
 // PrincipalAuthProvider is the type of an authentication provider.
 type PrincipalAuthProvider string
 

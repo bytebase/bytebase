@@ -19,10 +19,6 @@ const (
 	BackupStatusFailed BackupStatus = "FAILED"
 )
 
-func (e BackupStatus) String() string {
-	return string(e)
-}
-
 // BackupType is the type of a backup.
 type BackupType string
 
@@ -34,10 +30,6 @@ const (
 	// BackupTypeManual is the type for manual backup.
 	BackupTypeManual BackupType = "MANUAL"
 )
-
-func (e BackupType) String() string {
-	return string(e)
-}
 
 // BackupStorageBackend is the storage backend of a backup.
 type BackupStorageBackend string
@@ -52,10 +44,6 @@ const (
 	// BackupStorageBackendOSS is the AliCloud Object Storage Service (OSS) storage backend for a backup. Not used yet.
 	BackupStorageBackendOSS BackupStorageBackend = "OSS"
 )
-
-func (e BackupStorageBackend) String() string {
-	return string(e)
-}
 
 // BinlogInfo is the binlog coordination for MySQL.
 type BinlogInfo struct {

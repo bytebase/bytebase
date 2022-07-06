@@ -38,10 +38,6 @@ const (
 	WebhookPush WebhookType = "push"
 )
 
-func (e WebhookType) String() string {
-	return string(e)
-}
-
 // WebhookInfo is the API message for webhook info.
 type WebhookInfo struct {
 	ID int `json:"id"`
@@ -148,10 +144,6 @@ const (
 	ProjectRoleMinimalAccess ProjectRole = "MinimalAccess"
 	ProjectRoleNoAccess      ProjectRole = "NoAccess"
 )
-
-func (e ProjectRole) String() string {
-	return string(e)
-}
 
 // gitLabRepositoryMember is the API message for repository member
 type gitLabRepositoryMember struct {
@@ -514,7 +506,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 				Name:         gitLabMember.Name,
 				Email:        userInfo.PublicEmail,
 				Role:         bytebaseRole,
-				VCSRole:      gitLabRole.String(),
+				VCSRole:      string(gitLabRole),
 				State:        vcs.StateActive,
 				RoleProvider: vcs.GitLabSelfHost,
 			}

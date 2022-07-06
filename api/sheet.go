@@ -16,10 +16,6 @@ const (
 	PublicSheet SheetVisibility = "PUBLIC"
 )
 
-func (e SheetVisibility) String() string {
-	return string(e)
-}
-
 // SheetSource is the type of sheet origin source.
 type SheetSource string
 
@@ -32,10 +28,6 @@ const (
 	SheetFromGitHubCom SheetSource = "GITHUB_COM"
 )
 
-func (e SheetSource) String() string {
-	return string(e)
-}
-
 // SheetType is the type of sheet.
 type SheetType string
 
@@ -43,10 +35,6 @@ const (
 	// SheetForSQL is the sheet that used for saving SQL statements.
 	SheetForSQL SheetType = "SQL"
 )
-
-func (e SheetType) String() string {
-	return string(e)
-}
 
 // SheetVCSPayload is the additional data payload of the VCS sheet.
 type SheetVCSPayload struct {

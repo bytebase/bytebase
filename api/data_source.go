@@ -40,10 +40,6 @@ const (
 	RO DataSourceType = "RO"
 )
 
-func (e DataSourceType) String() string {
-	return string(e)
-}
-
 // DataSource is the API message for a data source.
 type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`

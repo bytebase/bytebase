@@ -34,10 +34,6 @@ const (
 	TaskCanceled TaskStatus = "CANCELED"
 )
 
-func (e TaskStatus) String() string {
-	return string(e)
-}
-
 // TaskType is the type of a task.
 type TaskType string
 

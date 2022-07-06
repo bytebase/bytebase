@@ -13,10 +13,6 @@ const (
 	Archived RowStatus = "ARCHIVED"
 )
 
-func (e RowStatus) String() string {
-	return string(e)
-}
-
 // SortOrder is the sort order for the returned list.
 type SortOrder string
 
@@ -26,7 +22,3 @@ const (
 	// DESC is the sort order to return in descending order.
 	DESC SortOrder = "DESC"
 )
-
-func (e SortOrder) String() string {
-	return string(e)
-}
