@@ -2,10 +2,8 @@ package server
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"runtime"
 	"strings"
@@ -82,26 +80,15 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-//go:embed dist
-var embeddedFiles embed.FS
-
-func getFileSystem() http.FileSystem {
-	fs, err := fs.Sub(embeddedFiles, "dist")
-	if err != nil {
-		panic(err)
-	}
-
-	return http.FS(fs)
-}
-
-// By default, we embed a placeholder index.html. If we want to build a monolithic binary including
-// both frontend and backend (e.g. to produce our release build), we will instruct the build process
-// to copy over the frontend artifacts and overwrite that placeholder.
+// embedFrontend using the echo static middleware to embed the dist folder built from SPA.
+// refer: https://echo.labstack.com/middleware/static/
 func embedFrontend(e *echo.Echo) {
-	// Catch-all route to return dist files, this is to prevent 404 when accessing non-root url.
-	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
-	frontendDistHandler := http.FileServer(getFileSystem())
-	e.GET("/*", echo.WrapHandler(frontendDistHandler))
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   "server/dist",
+		Index:  "index.html",
+		Browse: true,
+		HTML5:  true,
+	}))
 }
 
 // Use following cmd to generate swagger doc
