@@ -502,6 +502,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, backupCreate.StorageBackend, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
+			if common.ErrorCode(err) == common.DbConnectionFailure {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task for backup %q", backupCreate.Name)).SetInternal(err)
 		}
 
