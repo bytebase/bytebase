@@ -266,7 +266,7 @@ func sortBinlogFiles(binlogFiles []BinlogFile) []BinlogFile {
 
 // GetLatestBackupBeforeOrEqualTs finds the latest logical backup and corresponding binlog info whose time is before or equal to `targetTs`.
 // The backupList should only contain DONE backups.
-func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64) (*api.Backup, error) {
+func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backupList []*api.Backup, targetTs int64, mode common.ReleaseMode) (*api.Backup, error) {
 	if len(backupList) == 0 {
 		return nil, fmt.Errorf("no valid backup")
 	}
@@ -285,10 +285,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 		validBackupList = append(validBackupList, b)
 	}
 
-	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate)
+	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate) (*api.Backup, error) {
+func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
 		backup *api.Backup
@@ -315,11 +315,13 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 				backup = bc.backup
 				break
 			}
-			if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypePITR {
-				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
-			}
-			if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypePITR {
-				return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
+			if mode == common.ReleaseModeDev {
+				if bc.backup.Status == api.BackupStatusFailed && bc.backup.Type == api.BackupTypePITR {
+					return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is failed, so we cannot recover to a point in time before this backup", bc.backup.Name)
+				}
+				if bc.backup.Status == api.BackupStatusPendingCreate && bc.backup.Type == api.BackupTypePITR {
+					return nil, fmt.Errorf("the backup %q taken after a former PITR cutover is still in progress, please try again later", bc.backup.Name)
+				}
 			}
 		}
 	}
