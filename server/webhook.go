@@ -262,6 +262,7 @@ type distinctFileItem struct {
 }
 
 func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
+	// Use list instead of map because we need to maintain the relative commit order in the source branch.
 	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
 		log.Debug("Pre-processing commit to dedup migration files...",
