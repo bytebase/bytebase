@@ -28,18 +28,6 @@ const (
 	Developer Role = "DEVELOPER"
 )
 
-func (e Role) String() string {
-	switch e {
-	case Owner:
-		return "OWNER"
-	case DBA:
-		return "DBA"
-	case Developer:
-		return "DEVELOPER"
-	}
-	return ""
-}
-
 // Member is the API message for a member.
 type Member struct {
 	ID int `jsonapi:"primary,member"`

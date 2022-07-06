@@ -25,16 +25,6 @@ const (
 	NotFound SyncStatus = "NOT_FOUND"
 )
 
-func (e SyncStatus) String() string {
-	switch e {
-	case OK:
-		return "OK"
-	case NotFound:
-		return "NOT_FOUND"
-	}
-	return ""
-}
-
 // Database is the API message for a database.
 type Database struct {
 	ID int `jsonapi:"primary,database"`
