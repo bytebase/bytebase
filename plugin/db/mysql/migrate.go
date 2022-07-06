@@ -76,28 +76,20 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 		SELECT MAX(version) FROM bytebase.migration_history
 		WHERE namespace = ? AND sequence >= ?
 	`
-	row, err := tx.QueryContext(ctx, getLargestVersionSinceLastBaselineQuery,
+	var version sql.NullString
+	err = tx.QueryRowContext(ctx, getLargestVersionSinceLastBaselineQuery,
 		namespace, largestBaselineSequence,
-	)
+	).Scan(&version)
+	if err == sql.ErrNoRows {
+		return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+	}
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var version sql.NullString
-		if err := row.Scan(&version); err != nil {
-			return nil, err
-		}
-		if version.Valid {
-			return &version.String, nil
-		}
-		return nil, nil
+	if version.Valid {
+		return &version.String, nil
 	}
-	if err := row.Err(); err != nil {
-		return nil, err
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+	return nil, nil
 }
 
 // FindLargestSequence will return the largest sequence number.
@@ -108,29 +100,21 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	if baseline {
 		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
 	}
-	row, err := tx.QueryContext(ctx, findLargestSequenceQuery,
+	var sequence sql.NullInt32
+	err := tx.QueryRowContext(ctx, findLargestSequenceQuery,
 		namespace,
-	)
+	).Scan(&sequence)
+	if err == sql.ErrNoRows {
+		return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
+	}
 	if err != nil {
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var sequence sql.NullInt32
-		if err := row.Scan(&sequence); err != nil {
-			return -1, err
-		}
-		if !sequence.Valid {
-			// Returns 0 if we haven't applied any migration for this namespace.
-			return 0, nil
-		}
-		return int(sequence.Int32), nil
+	if !sequence.Valid {
+		// Returns 0 if we haven't applied any migration for this namespace.
+		return 0, nil
 	}
-	if err := row.Err(); err != nil {
-		return -1, err
-	}
-	return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
+	return int(sequence.Int32), nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.

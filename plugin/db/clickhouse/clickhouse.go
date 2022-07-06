@@ -100,23 +100,15 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
-	row, err := driver.db.QueryContext(ctx, query)
+	var version string
+	err := driver.db.QueryRowContext(ctx, query).Scan(&version)
+	if err == sql.ErrNoRows {
+		return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	}
 	if err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	defer row.Close()
-
-	var version string
-	if row.Next() {
-		if err := row.Scan(&version); err != nil {
-			return "", err
-		}
-		return version, nil
-	}
-	if err := row.Err(); err != nil {
-		return "", err
-	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return version, nil
 }
 
 // Execute executes a SQL statement.
