@@ -707,7 +707,7 @@ func quoteIdentifier(s string) string {
 		quote = true
 	}
 	if quote {
-		return strings.ReplaceAll(s, "\"", "\"\"")
+		return fmt.Sprintf("\"%s\"", s)
 	}
 	return s
 }
