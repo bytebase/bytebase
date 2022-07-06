@@ -274,7 +274,7 @@ type distinctFileItem struct {
 }
 
 func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []distinctFileItem {
-	distinctFileList := []distinctFileItem{}
+	var distinctFileList []distinctFileItem
 	for _, commit := range commitList {
 		log.Debug("Pre-processing commit to dedup migration files...",
 			zap.String("id", common.EscapeForLogging(commit.ID)),
@@ -288,27 +288,24 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 
 		for _, added := range commit.AddedList {
 			new := true
+			item := distinctFileItem{
+				createdTime: createdTime,
+				commit:      commit,
+				fileName:    added,
+			}
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
 				if added == file.fileName {
 					new = false
 					if file.createdTime.Before(createdTime) {
-						distinctFileList[i] = distinctFileItem{
-							createdTime: createdTime,
-							commit:      commit,
-							fileName:    added,
-						}
+						distinctFileList[i] = item
 					}
 					break
 				}
 			}
 
 			if new {
-				distinctFileList = append(distinctFileList, distinctFileItem{
-					createdTime: createdTime,
-					commit:      commit,
-					fileName:    added,
-				})
+				distinctFileList = append(distinctFileList, item)
 			}
 		}
 	}
