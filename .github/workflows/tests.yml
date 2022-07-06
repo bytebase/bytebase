@@ -67,7 +67,6 @@ jobs:
         run: go generate -tags ${{ matrix.release-tags }}mysql ./...
       - name: Run all tests
         id: run-all-tests
-        run: go test -v ./... -tags=${{ matrix.release-tags }}mysql
+        run: go test -v ./... -tags=${{ matrix.release-tags }}mysql | tee test.log
       - name: Pretty print tests running time
-        run: echo ${{ steps.run-all-tests }}
-        run: cat ${{ steps.run-all-tests.outputs }} | grep --color=never -e '--- PASS:' -e '--- FAIL:'
+        run: cat test.log | grep --color=never -e '--- PASS:' -e '--- FAIL:'
