@@ -633,23 +633,14 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 // getEventStmt gets the create statement of an event.
 func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
-	row, err := txn.Query(query)
-	if err != nil {
+	var sqlmode, timezone, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var sqlmode, timezone, stmt, charset, collation, unused string
-		if err := row.Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
-	}
-	if err := row.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
 }
 
 // getTriggers gets all triggers of a database.
@@ -694,23 +685,14 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 // getTriggerStmt gets the create statement of a trigger.
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	row, err := txn.Query(query)
-	if err != nil {
+	var sqlmode, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var sqlmode, stmt, charset, collation, unused string
-		if err := row.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
-	}
-	if err := row.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 }
 
 // Restore restores a database.
