@@ -15,7 +15,7 @@ type tokenizer struct {
 }
 
 // newTokenizer creates a new tokenizer.
-// Notice: we append a additional eofRune in statement. This is a sentinel rune.
+// Notice: we append an additional eofRune in the statement. This is a sentinel rune.
 func newTokenizer(statement string) *tokenizer {
 	t := &tokenizer{
 		statement: []rune(statement),
