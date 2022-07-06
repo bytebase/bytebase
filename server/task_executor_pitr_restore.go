@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
@@ -44,7 +45,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}
 	defer driver.Close(ctx)
 
-	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, payload.PointInTimeTs); err != nil {
+	if err := exec.doPITRRestore(ctx, task, server.store, driver, server.profile.DataDir, payload.PointInTimeTs, server.profile.Mode); err != nil {
 		log.Error("Failed to do PITR restore", zap.Error(err))
 		return true, nil, err
 	}
@@ -56,7 +57,7 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	}, nil
 }
 
-func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64) error {
+func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
 	instance := task.Instance
 	database := task.Database
 
@@ -91,7 +92,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
-	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs)
+	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, mode)
 	if err != nil {
 		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
