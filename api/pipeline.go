@@ -20,15 +20,7 @@ const (
 )
 
 func (e PipelineStatus) String() string {
-	switch e {
-	case PipelineOpen:
-		return "OPEN"
-	case PipelineDone:
-		return "DONE"
-	case PipelineCanceled:
-		return "CANCELED"
-	}
-	return ""
+	return string(e)
 }
 
 // Pipeline is the API message for pipelines.

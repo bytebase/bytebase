@@ -26,15 +26,7 @@ const (
 )
 
 func (e Status) String() string {
-	switch e {
-	case Success:
-		return "INFO"
-	case Warn:
-		return "WARN"
-	case Error:
-		return "ERROR"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.

@@ -11,11 +11,5 @@ const (
 )
 
 func (e ProjectRole) String() string {
-	switch e {
-	case ProjectOwner:
-		return "OWNER"
-	case ProjectDeveloper:
-		return "DEVELOPER"
-	}
-	return ""
+	return string(e)
 }

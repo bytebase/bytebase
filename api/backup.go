@@ -20,15 +20,7 @@ const (
 )
 
 func (e BackupStatus) String() string {
-	switch e {
-	case BackupStatusPendingCreate:
-		return "PENDING_CREATE"
-	case BackupStatusDone:
-		return "DONE"
-	case BackupStatusFailed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // BackupType is the type of a backup.
@@ -44,16 +36,7 @@ const (
 )
 
 func (e BackupType) String() string {
-	switch e {
-	case BackupTypeAutomatic:
-		return "AUTOMATIC"
-	case BackupTypePITR:
-		return "PITR"
-	case BackupTypeManual:
-		return "MANUAL"
-	default:
-		return "UNKNOWN"
-	}
+	return string(e)
 }
 
 // BackupStorageBackend is the storage backend of a backup.
@@ -71,17 +54,7 @@ const (
 )
 
 func (e BackupStorageBackend) String() string {
-	switch e {
-	case BackupStorageBackendLocal:
-		return "LOCAL"
-	case BackupStorageBackendS3:
-		return "S3"
-	case BackupStorageBackendGCS:
-		return "GCS"
-	case BackupStorageBackendOSS:
-		return "OSS"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // BinlogInfo is the binlog coordination for MySQL.

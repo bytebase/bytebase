@@ -169,15 +169,7 @@ const (
 )
 
 func (e MigrationSource) String() string {
-	switch e {
-	case UI:
-		return "UI"
-	case VCS:
-		return "VCS"
-	case LIBRARY:
-		return "LIBRARY"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // MigrationType is the type of a migration.
@@ -201,17 +193,7 @@ const (
 )
 
 func (e MigrationType) String() string {
-	switch e {
-	case Baseline:
-		return "BASELINE"
-	case Migrate:
-		return "MIGRATE"
-	case Branch:
-		return "BRANCH"
-	case Data:
-		return "DATA"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // MigrationStatus is the status of migration.
@@ -227,15 +209,7 @@ const (
 )
 
 func (e MigrationStatus) String() string {
-	switch e {
-	case Pending:
-		return "PENDING"
-	case Done:
-		return "DONE"
-	case Failed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // MigrationInfoPayload is the API message for migration info payload.

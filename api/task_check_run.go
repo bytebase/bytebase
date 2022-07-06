@@ -26,17 +26,7 @@ const (
 )
 
 func (e TaskCheckRunStatus) String() string {
-	switch e {
-	case TaskCheckRunRunning:
-		return "RUNNING"
-	case TaskCheckRunDone:
-		return "DONE"
-	case TaskCheckRunFailed:
-		return "FAILED"
-	case TaskCheckRunCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // TaskCheckStatus is the status of a task check.
@@ -52,15 +42,7 @@ const (
 )
 
 func (e TaskCheckStatus) String() string {
-	switch e {
-	case TaskCheckStatusSuccess:
-		return "SUCCESS"
-	case TaskCheckStatusWarn:
-		return "WARN"
-	case TaskCheckStatusError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // TaskCheckType is the type of a taskCheck.

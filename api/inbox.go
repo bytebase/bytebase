@@ -15,13 +15,7 @@ const (
 )
 
 func (e InboxStatus) String() string {
-	switch e {
-	case Unread:
-		return "UNREAD"
-	case Read:
-		return "READ"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // Inbox is the API message for an inbox.

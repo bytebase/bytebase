@@ -17,13 +17,7 @@ const (
 )
 
 func (e ProjectRoleProvider) String() string {
-	switch e {
-	case ProjectRoleProviderBytebase:
-		return "BYTEBASE"
-	case ProjectRoleProviderGitLabSelfHost:
-		return "GITLAB_SELF_HOST"
-	}
-	return ""
+	return string(e)
 }
 
 // ProjectRoleProviderPayload is the payload for role provider

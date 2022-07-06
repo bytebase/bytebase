@@ -26,13 +26,7 @@ const (
 )
 
 func (e SyncStatus) String() string {
-	switch e {
-	case OK:
-		return "OK"
-	case NotFound:
-		return "NOT_FOUND"
-	}
-	return ""
+	return string(e)
 }
 
 // Database is the API message for a database.

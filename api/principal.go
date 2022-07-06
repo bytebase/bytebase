@@ -18,13 +18,7 @@ const (
 )
 
 func (e PrincipalType) String() string {
-	switch e {
-	case EndUser:
-		return "END_USER"
-	case BOT:
-		return "BOT"
-	}
-	return ""
+	return string(e)
 }
 
 // PrincipalAuthProvider is the type of an authentication provider.

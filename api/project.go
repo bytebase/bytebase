@@ -23,13 +23,7 @@ const (
 )
 
 func (e ProjectWorkflowType) String() string {
-	switch e {
-	case UIWorkflow:
-		return "UI"
-	case VCSWorkflow:
-		return "VCS"
-	}
-	return ""
+	return string(e)
 }
 
 // ProjectVisibility is the visibility of a project.
@@ -43,13 +37,7 @@ const (
 )
 
 func (e ProjectVisibility) String() string {
-	switch e {
-	case Public:
-		return "PUBLIC"
-	case Private:
-		return "PRIVATE"
-	}
-	return ""
+	return string(e)
 }
 
 // ProjectTenantMode is the tenant mode setting for project.

@@ -127,15 +127,7 @@ const (
 )
 
 func (e InstanceMigrationSchemaStatus) String() string {
-	switch e {
-	case InstanceMigrationSchemaUnknown:
-		return "UNKNOWN"
-	case InstanceMigrationSchemaOK:
-		return "OK"
-	case InstanceMigrationSchemaNotExist:
-		return "NOT_EXIST"
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // InstanceMigration is the API message for instance migration.

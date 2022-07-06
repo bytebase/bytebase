@@ -41,15 +41,7 @@ const (
 )
 
 func (e DataSourceType) String() string {
-	switch e {
-	case Admin:
-		return "ADMIN"
-	case RW:
-		return "RW"
-	case RO:
-		return "RO"
-	}
-	return ""
+	return string(e)
 }
 
 // DataSource is the API message for a data source.

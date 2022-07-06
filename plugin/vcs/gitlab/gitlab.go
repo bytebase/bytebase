@@ -39,12 +39,7 @@ const (
 )
 
 func (e WebhookType) String() string {
-	switch e {
-	case WebhookPush:
-		return "push"
-	default:
-		return "UNKNOWN"
-	}
+	return string(e)
 }
 
 // WebhookInfo is the API message for webhook info.
@@ -155,23 +150,7 @@ const (
 )
 
 func (e ProjectRole) String() string {
-	switch e {
-	case ProjectRoleOwner:
-		return "Owner"
-	case ProjectRoleMaintainer:
-		return "Maintainer"
-	case ProjectRoleDeveloper:
-		return "Developer"
-	case ProjectRoleReporter:
-		return "Reporter"
-	case ProjectRoleGuest:
-		return "Guest"
-	case ProjectRoleMinimalAccess:
-		return "MinimalAccess"
-	case ProjectRoleNoAccess:
-		return "NoAccess"
-	}
-	return ""
+	return string(e)
 }
 
 // gitLabRepositoryMember is the API message for repository member

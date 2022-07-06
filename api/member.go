@@ -29,15 +29,7 @@ const (
 )
 
 func (e Role) String() string {
-	switch e {
-	case Owner:
-		return "OWNER"
-	case DBA:
-		return "DBA"
-	case Developer:
-		return "DEVELOPER"
-	}
-	return ""
+	return string(e)
 }
 
 // Member is the API message for a member.

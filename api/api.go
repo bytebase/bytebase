@@ -14,13 +14,7 @@ const (
 )
 
 func (e RowStatus) String() string {
-	switch e {
-	case Normal:
-		return "NORMAL"
-	case Archived:
-		return "ARCHIVED"
-	}
-	return ""
+	return string(e)
 }
 
 // SortOrder is the sort order for the returned list.
@@ -34,11 +28,5 @@ const (
 )
 
 func (e SortOrder) String() string {
-	switch e {
-	case ASC:
-		return "ASC"
-	case DESC:
-		return "DESC"
-	}
-	return ""
+	return string(e)
 }

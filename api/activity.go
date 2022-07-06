@@ -66,35 +66,7 @@ const (
 )
 
 func (e ActivityType) String() string {
-	switch e {
-	// Issue related.
-	case ActivityIssueCreate,
-		ActivityIssueCommentCreate,
-		ActivityIssueFieldUpdate,
-		ActivityIssueStatusUpdate,
-		ActivityPipelineTaskStatusUpdate,
-		ActivityPipelineTaskFileCommit,
-		ActivityPipelineTaskStatementUpdate,
-		ActivityPipelineTaskEarliestAllowedTimeUpdate,
-		// Member related
-		ActivityMemberCreate,
-		ActivityMemberRoleUpdate,
-		ActivityMemberActivate,
-		ActivityMemberDeactivate,
-		// Project related
-		ActivityProjectRepositoryPush,
-		ActivityProjectDatabaseTransfer,
-		ActivityProjectMemberCreate,
-		ActivityProjectMemberDelete,
-		ActivityProjectMemberRoleUpdate,
-		// SQL Editor related
-		ActivitySQLEditorQuery,
-		// Database related
-		ActivityDatabaseRecoveryPITRDone:
-		return string(e)
-	default:
-		return "bb.activity.unknown"
-	}
+	return string(e)
 }
 
 // ActivityLevel is the level of activities.
@@ -110,14 +82,7 @@ const (
 )
 
 func (e ActivityLevel) String() string {
-	switch e {
-	case ActivityInfo,
-		ActivityWarn,
-		ActivityError:
-		return string(e)
-	default:
-		return "UNKNOWN"
-	}
+	return string(e)
 }
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.

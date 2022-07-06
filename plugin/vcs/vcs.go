@@ -19,11 +19,7 @@ const (
 )
 
 func (e Type) String() string {
-	switch e {
-	case GitLabSelfHost, GitHubCom:
-		return string(e)
-	}
-	return "UNKNOWN"
+	return string(e)
 }
 
 // OAuthToken is the API message for OAuthToken.
