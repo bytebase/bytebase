@@ -182,7 +182,8 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)` +
 		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment" + `
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var viewRaw viewRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -191,34 +192,23 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		create.Name,
 		create.Definition,
 		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var viewRaw viewRaw
-		if err := row.Scan(
-			&viewRaw.ID,
-			&viewRaw.CreatorID,
-			&viewRaw.CreatedTs,
-			&viewRaw.UpdaterID,
-			&viewRaw.UpdatedTs,
-			&viewRaw.DatabaseID,
-			&viewRaw.Name,
-			&viewRaw.Definition,
-			&viewRaw.Comment,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&viewRaw.ID,
+		&viewRaw.CreatorID,
+		&viewRaw.CreatedTs,
+		&viewRaw.UpdaterID,
+		&viewRaw.UpdatedTs,
+		&viewRaw.DatabaseID,
+		&viewRaw.Name,
+		&viewRaw.Definition,
+		&viewRaw.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &viewRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &viewRaw, nil
 }
 
 func (s *Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) ([]*viewRaw, error) {
