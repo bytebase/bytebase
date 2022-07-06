@@ -14,16 +14,6 @@ const (
 	Read InboxStatus = "READ"
 )
 
-func (e InboxStatus) String() string {
-	switch e {
-	case Unread:
-		return "UNREAD"
-	case Read:
-		return "READ"
-	}
-	return "UNKNOWN"
-}
-
 // Inbox is the API message for an inbox.
 type Inbox struct {
 	ID int `jsonapi:"primary,inbox"`

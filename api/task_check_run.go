@@ -25,20 +25,6 @@ const (
 	TaskCheckRunCanceled TaskCheckRunStatus = "CANCELED"
 )
 
-func (e TaskCheckRunStatus) String() string {
-	switch e {
-	case TaskCheckRunRunning:
-		return "RUNNING"
-	case TaskCheckRunDone:
-		return "DONE"
-	case TaskCheckRunFailed:
-		return "FAILED"
-	case TaskCheckRunCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
-
 // TaskCheckStatus is the status of a task check.
 type TaskCheckStatus string
 
@@ -50,18 +36,6 @@ const (
 	// TaskCheckStatusError is the task check status for ERROR.
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
-
-func (e TaskCheckStatus) String() string {
-	switch e {
-	case TaskCheckStatusSuccess:
-		return "SUCCESS"
-	case TaskCheckStatusWarn:
-		return "WARN"
-	case TaskCheckStatusError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string

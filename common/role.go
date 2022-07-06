@@ -9,13 +9,3 @@ const (
 	// ProjectDeveloper is the developer of a project.
 	ProjectDeveloper ProjectRole = "DEVELOPER"
 )
-
-func (e ProjectRole) String() string {
-	switch e {
-	case ProjectOwner:
-		return "OWNER"
-	case ProjectDeveloper:
-		return "DEVELOPER"
-	}
-	return ""
-}
