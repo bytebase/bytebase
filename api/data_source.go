@@ -40,18 +40,6 @@ const (
 	RO DataSourceType = "RO"
 )
 
-func (e DataSourceType) String() string {
-	switch e {
-	case Admin:
-		return "ADMIN"
-	case RW:
-		return "RW"
-	case RO:
-		return "RO"
-	}
-	return ""
-}
-
 // DataSource is the API message for a data source.
 type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`

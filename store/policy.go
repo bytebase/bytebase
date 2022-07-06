@@ -393,7 +393,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 		upsert.Payload = &emptyPayload
 	}
 	if upsert.RowStatus == nil {
-		rowStatus := api.Normal.String()
+		rowStatus := string(api.Normal)
 		upsert.RowStatus = &rowStatus
 	}
 

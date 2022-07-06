@@ -126,18 +126,6 @@ const (
 	InstanceMigrationSchemaNotExist InstanceMigrationSchemaStatus = "NOT_EXIST"
 )
 
-func (e InstanceMigrationSchemaStatus) String() string {
-	switch e {
-	case InstanceMigrationSchemaUnknown:
-		return "UNKNOWN"
-	case InstanceMigrationSchemaOK:
-		return "OK"
-	case InstanceMigrationSchemaNotExist:
-		return "NOT_EXIST"
-	}
-	return "UNKNOWN"
-}
-
 // InstanceMigration is the API message for instance migration.
 type InstanceMigration struct {
 	Status InstanceMigrationSchemaStatus `jsonapi:"attr,status"`

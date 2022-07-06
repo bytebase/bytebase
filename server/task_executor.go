@@ -139,8 +139,8 @@ func executeMigration(ctx context.Context, pgInstanceDir string, task *api.Task,
 	log.Debug("Start migration...",
 		zap.String("instance", task.Instance.Name),
 		zap.String("database", databaseName),
-		zap.String("source", mi.Source.String()),
-		zap.String("type", mi.Type.String()),
+		zap.String("source", string(mi.Source)),
+		zap.String("type", string(mi.Type)),
 		zap.String("statement", statement),
 	)
 

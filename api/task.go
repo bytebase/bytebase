@@ -34,24 +34,6 @@ const (
 	TaskCanceled TaskStatus = "CANCELED"
 )
 
-func (e TaskStatus) String() string {
-	switch e {
-	case TaskPending:
-		return "PENDING"
-	case TaskPendingApproval:
-		return "PENDING_APPROVAL"
-	case TaskRunning:
-		return "RUNNING"
-	case TaskDone:
-		return "DONE"
-	case TaskFailed:
-		return "FAILED"
-	case TaskCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
-
 // TaskType is the type of a task.
 type TaskType string
 
