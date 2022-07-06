@@ -134,7 +134,7 @@ type File struct {
 // ProjectRole is the role of the project member.
 type ProjectRole string
 
-// Gitlab Role type
+// The list of GitLab roles.
 const (
 	ProjectRoleOwner         ProjectRole = "Owner"
 	ProjectRoleMaintainer    ProjectRole = "Maintainer"

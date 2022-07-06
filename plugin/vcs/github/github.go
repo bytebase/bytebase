@@ -49,6 +49,7 @@ func (p *Provider) APIURL(string) string {
 // RepositoryRole is the role of the repository collaborator.
 type RepositoryRole string
 
+// The list of GitHub roles.
 const (
 	RepositoryRoleAdmin    RepositoryRole = "admin"
 	RepositoryRoleMaintain RepositoryRole = "maintain"
