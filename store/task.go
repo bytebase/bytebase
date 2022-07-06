@@ -380,8 +380,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 
 // createTaskImpl creates a new task.
 func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
-	var row *sql.Rows
-	var err error
+	var row *sql.Row
 
 	if create.Payload == "" {
 		create.Payload = "{}"
@@ -403,7 +402,7 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`
 	if create.DatabaseID == nil {
-		row, err = tx.QueryContext(ctx, query,
+		row = tx.QueryRowContext(ctx, query,
 			create.CreatorID,
 			create.CreatorID,
 			create.PipelineID,
@@ -433,7 +432,7 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 		`
-		row, err = tx.QueryContext(ctx, query,
+		row = tx.QueryRowContext(ctx, query,
 			create.CreatorID,
 			create.CreatorID,
 			create.PipelineID,
@@ -448,42 +447,34 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 		)
 	}
 
-	if err != nil {
+	var taskRaw taskRaw
+	var databaseID sql.NullInt32
+	if err := row.Scan(
+		&taskRaw.ID,
+		&taskRaw.CreatorID,
+		&taskRaw.CreatedTs,
+		&taskRaw.UpdaterID,
+		&taskRaw.UpdatedTs,
+		&taskRaw.PipelineID,
+		&taskRaw.StageID,
+		&taskRaw.InstanceID,
+		&databaseID,
+		&taskRaw.Name,
+		&taskRaw.Status,
+		&taskRaw.Type,
+		&taskRaw.Payload,
+		&taskRaw.EarliestAllowedTs,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var taskRaw taskRaw
-		var databaseID sql.NullInt32
-		if err := row.Scan(
-			&taskRaw.ID,
-			&taskRaw.CreatorID,
-			&taskRaw.CreatedTs,
-			&taskRaw.UpdaterID,
-			&taskRaw.UpdatedTs,
-			&taskRaw.PipelineID,
-			&taskRaw.StageID,
-			&taskRaw.InstanceID,
-			&databaseID,
-			&taskRaw.Name,
-			&taskRaw.Status,
-			&taskRaw.Type,
-			&taskRaw.Payload,
-			&taskRaw.EarliestAllowedTs,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if databaseID.Valid {
-			val := int(databaseID.Int32)
-			taskRaw.DatabaseID = &val
-		}
-		return &taskRaw, nil
+	if databaseID.Valid {
+		val := int(databaseID.Int32)
+		taskRaw.DatabaseID = &val
 	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &taskRaw, nil
 }
 
 func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind) ([]*taskRaw, error) {
@@ -601,46 +592,37 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPa
 	}
 	args = append(args, patch.ID)
 
+	var taskRaw taskRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var taskRaw taskRaw
-		if err := row.Scan(
-			&taskRaw.ID,
-			&taskRaw.CreatorID,
-			&taskRaw.CreatedTs,
-			&taskRaw.UpdaterID,
-			&taskRaw.UpdatedTs,
-			&taskRaw.PipelineID,
-			&taskRaw.StageID,
-			&taskRaw.InstanceID,
-			&taskRaw.DatabaseID,
-			&taskRaw.Name,
-			&taskRaw.Status,
-			&taskRaw.Type,
-			&taskRaw.Payload,
-			&taskRaw.EarliestAllowedTs,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&taskRaw.ID,
+		&taskRaw.CreatorID,
+		&taskRaw.CreatedTs,
+		&taskRaw.UpdaterID,
+		&taskRaw.UpdatedTs,
+		&taskRaw.PipelineID,
+		&taskRaw.StageID,
+		&taskRaw.InstanceID,
+		&taskRaw.DatabaseID,
+		&taskRaw.Name,
+		&taskRaw.Status,
+		&taskRaw.Type,
+		&taskRaw.Payload,
+		&taskRaw.EarliestAllowedTs,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
 		}
-		return &taskRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("task not found with ID %d", patch.ID)}
+	return &taskRaw, nil
 }
 
 // patchTaskStatusImpl updates a task status by ID. Returns the new state of the task after update.
@@ -718,21 +700,17 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	set, args = append(set, "status = $2"), append(args, patch.Status)
 	args = append(args, patch.ID)
 
+	var taskPatchedRaw *taskRaw
+	var taskRaw taskRaw
 	// Execute update query with RETURNING.
-	row := tx.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $3
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
 	`,
 		args...,
-	)
-
-	var taskPatchedRaw *taskRaw
-	// TODO(dragonly): change all row.Next() to use QueryRow/QueryRowContext().
-
-	var taskRaw taskRaw
-	if err := row.Scan(
+	).Scan(
 		&taskRaw.ID,
 		&taskRaw.CreatorID,
 		&taskRaw.CreatedTs,
