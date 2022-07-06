@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+import { stringify } from "qs";
 import {
   Activity,
   ActivityCreate,
@@ -83,22 +84,42 @@ export const useActivityStore = defineStore("activity", {
       this.setActivityListForUser({ userId, activityList });
       return activityList;
     },
-    async fetchActivityListForIssue(issueId: IssueId) {
-      const queryList = [
-        "typePrefix=bb.issue.",
-        `container=${issueId}`,
-        `order=ASC`,
-      ];
-      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
-        .data;
-      const activityList: Activity[] = data.data.map(
+    async fetchActivityList(params: {
+      typePrefix: string;
+      container: number | string;
+      order: "ASC" | "DESC";
+      limit?: number;
+    }) {
+      const url = `/api/activity?${stringify(params)}`;
+      const response = (await axios.get(url)).data;
+      const activityList: Activity[] = response.data.map(
         (activity: ResourceObject) => {
-          return convert(activity, data.included);
+          return convert(activity, response.included);
         }
       );
-
-      this.setActivityListForIssue({ issueId, activityList });
       return activityList;
+    },
+    async fetchActivityListForIssue(issueId: IssueId) {
+      const requestListForIssue = this.fetchActivityList({
+        typePrefix: "bb.issue.",
+        container: issueId,
+        order: "ASC",
+      });
+      const requestListForPipeline = this.fetchActivityList({
+        typePrefix: "bb.pipeline.",
+        container: issueId,
+        order: "ASC",
+      });
+      const [listForIssue, listForPipeline] = await Promise.all([
+        requestListForIssue,
+        requestListForPipeline,
+      ]);
+
+      const mergedList = [...listForIssue, ...listForPipeline];
+      mergedList.sort((a, b) => a.createdTs - b.createdTs);
+
+      this.setActivityListForIssue({ issueId, activityList: mergedList });
+      return mergedList;
     },
     // We do not store the returned list because the caller will specify different limits
     async fetchActivityListForProject({
@@ -136,6 +157,31 @@ export const useActivityStore = defineStore("activity", {
         // only fetch the successful query history
         `level=INFO`,
       ];
+      const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
+        .data;
+      const activityList: Activity[] = data.data.map(
+        (activity: ResourceObject) => {
+          return convert(activity, data.included);
+        }
+      );
+
+      return activityList;
+    },
+    async fetchActivityListForDatabaseByProjectId({
+      projectId,
+      limit,
+    }: {
+      projectId: ProjectId;
+      limit?: number;
+    }) {
+      const queryList = [
+        "typePrefix=bb.database.",
+        `container=${projectId}`,
+        `order=DESC`,
+      ];
+      if (limit) {
+        queryList.push(`limit=${limit}`);
+      }
       const data = (await axios.get(`/api/activity?${queryList.join("&")}`))
         .data;
       const activityList: Activity[] = data.data.map(

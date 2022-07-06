@@ -1,14 +1,33 @@
 <template>
   <div class="flex flex-col">
-    <BBAttention style="INFO" :title="$t('setting.project.description')" />
-    <div class="px-2 py-2 flex justify-end items-center">
-      <BBTableSearch
-        ref="searchField"
-        :placeholder="$t('project.dashboard.search-bar-placeholder')"
-        @change-text="(text: string) => changeSearchText(text)"
-      />
+    <div class="py-2 flex justify-between items-center">
+      <div class="flex justify-start items-center gap-x-2">
+        <BBAttention
+          class="px-0"
+          style="INFO"
+          :title="$t('setting.project.description')"
+        />
+      </div>
+
+      <div class="flex justify-end items-center px-2 gap-x-2">
+        <BBTableSearch
+          ref="searchField"
+          :placeholder="$t('project.dashboard.search-bar-placeholder')"
+          @change-text="(text: string) => changeSearchText(text)"
+        />
+      </div>
     </div>
+
     <ProjectTable :project-list="filteredList(state.projectList)" />
+
+    <BBModal
+      v-if="state.showCreateModal"
+      class="relative overflow-hidden"
+      :title="$t('quick-action.create-project')"
+      @close="state.showCreateModal = false"
+    >
+      <ProjectCreate @dismiss="state.showCreateModal = false" />
+    </BBModal>
   </div>
 </template>
 
@@ -16,16 +35,19 @@
 import { useProjectStore } from "@/store";
 import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
+import ProjectCreate from "../components/ProjectCreate.vue";
 import { Project } from "../types";
 
 interface LocalState {
   projectList: Project[];
   searchText: string;
+  showCreateModal: boolean;
 }
 
 export default defineComponent({
-  name: "SettingWorkspaceMember",
+  name: "SettingWorkspaceProject",
   components: {
+    ProjectCreate,
     ProjectTable,
   },
   setup() {
@@ -36,6 +58,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
+      showCreateModal: false,
     });
 
     onMounted(() => {

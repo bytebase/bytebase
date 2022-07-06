@@ -23,7 +23,7 @@ import { IssueDetailLayout } from "@/components/Issue";
 import {
   IssueType,
   NORMAL_POLL_INTERVAL,
-  POST_CHANGE_POLL_INTERVAL,
+  MINIMUM_POLL_INTERVAL,
   Project,
   unknown,
   UNKNOWN_ID,
@@ -73,7 +73,7 @@ watch(issueSlug, async () => {
 });
 
 const onStatusChanged = (eager: boolean) => {
-  pollIssue(eager ? POST_CHANGE_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
+  pollIssue(eager ? MINIMUM_POLL_INTERVAL : NORMAL_POLL_INTERVAL);
 };
 
 const findProject = async (): Promise<Project> => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="divide-y">
+  <div class="divide-y relative">
     <PipelineStageList>
       <template #task-name-of-stage="{ stage }">
         {{ taskNameOfStage(stage) }}
@@ -57,8 +57,6 @@
         </div>
       </template>
     </div>
-
-    <div class="absolute right-0 top-0 bottom-0 w-10 hidden md:block"></div>
   </div>
 </template>
 

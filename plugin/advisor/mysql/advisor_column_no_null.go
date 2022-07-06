@@ -3,9 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -14,8 +12,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLColumnNoNull, &ColumnNoNullAdvisor{})
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
@@ -33,7 +31,10 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnNoNullChecker{level: level}
+	checker := &columnNoNullChecker{
+		level: level,
+		title: string(ctx.Rule.Type),
+	}
 
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -42,7 +43,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -53,6 +54,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 type columnNoNullChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 type columnName struct {
@@ -103,9 +105,9 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 	for _, column := range columns {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
-			Code:    common.ColumnCanNull,
-			Title:   "Column can have NULL value",
-			Content: fmt.Sprintf("`%s`.`%s` can have NULL value", column.tableName, column.columnName),
+			Code:    advisor.ColumnCanNotNull,
+			Title:   v.title,
+			Content: fmt.Sprintf("`%s`.`%s` can not have NULL value", column.tableName, column.columnName),
 		})
 	}
 

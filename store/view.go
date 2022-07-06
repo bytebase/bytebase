@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // viewRaw is the store model for an View.
@@ -55,11 +56,11 @@ func (raw *viewRaw) toView() *api.View {
 func (s *Store) CreateView(ctx context.Context, create *api.ViewCreate) (*api.View, error) {
 	viewRaw, err := s.createViewRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create View with ViewCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create View with ViewCreate[%+v], error: %w", create, err)
 	}
 	view, err := s.composeView(ctx, viewRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error[%w]", viewRaw, err)
+		return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", viewRaw, err)
 	}
 	return view, nil
 }
@@ -68,13 +69,13 @@ func (s *Store) CreateView(ctx context.Context, create *api.ViewCreate) (*api.Vi
 func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, error) {
 	viewRawList, err := s.findViewRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find View list with ViewFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find View list with ViewFind[%+v], error: %w", find, err)
 	}
 	var viewList []*api.View
 	for _, raw := range viewRawList {
 		view, err := s.composeView(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose View with viewRaw[%+v], error: %w", raw, err)
 		}
 		viewList = append(viewList, view)
 	}
@@ -167,7 +168,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 // createViewImpl creates a new view.
 func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.ViewCreate) (*viewRaw, error) {
 	// Insert row into view.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO vw (
 			creator_id,
 			created_ts,
@@ -178,9 +179,11 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 			definition,
 			comment
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`+
-		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment"+`
-	`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)` +
+		"RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, definition, comment" + `
+	`
+	var viewRaw viewRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -189,16 +192,7 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		create.Name,
 		create.Definition,
 		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var viewRaw viewRaw
-	if err := row.Scan(
+	).Scan(
 		&viewRaw.ID,
 		&viewRaw.CreatorID,
 		&viewRaw.CreatedTs,
@@ -209,9 +203,11 @@ func (s *Store) createViewImpl(ctx context.Context, tx *sql.Tx, create *api.View
 		&viewRaw.Definition,
 		&viewRaw.Comment,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &viewRaw, nil
 }
 

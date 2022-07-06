@@ -3,6 +3,7 @@ package api
 import (
 	"testing"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,7 +33,7 @@ func TestGetTemplateTokens(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tokens, delimiters := parseTemplateTokens(test.template)
+		tokens, delimiters := common.ParseTemplateTokens(test.template)
 		require.Equal(t, test.tokens, tokens)
 		require.Equal(t, test.delimiters, delimiters)
 	}

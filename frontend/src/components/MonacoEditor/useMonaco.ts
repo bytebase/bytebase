@@ -1,34 +1,27 @@
-import { computed } from "vue";
-import * as monaco from "monaco-editor";
+import { ref } from "vue";
+import { uniqBy } from "lodash-es";
+
 import type { editor as Editor } from "monaco-editor";
-
+import { Database, Table, CompletionItems, SQLDialect } from "@/types";
 import AutoCompletion from "./AutoCompletion";
-import { Database, Table, CompletionItems, SQLDialect } from "../../types";
 import sqlFormatter from "./sqlFormatter";
-import {
-  useDatabaseStore,
-  useTableStore,
-  useSQLEditorStore,
-  useInstanceList,
-} from "@/store";
 
-const useMonaco = async (lang: string) => {
-  const dataSourceStore = useDatabaseStore();
-  const tableStore = useTableStore();
-  const sqlEditorStore = useSQLEditorStore();
+export const useMonaco = async (lang: string) => {
+  const monaco = await import("monaco-editor");
 
-  const instanceList = useInstanceList();
-
-  const databaseList = computed(() => {
-    const currentInstanceId = sqlEditorStore.connectionContext.instanceId;
-    return dataSourceStore.getDatabaseListByInstanceId(currentInstanceId);
+  monaco.editor.defineTheme("bb-sql-editor-theme", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editorCursor.foreground": "#504de2",
+      "editorLineNumber.foreground": "#aaaaaa",
+      "editorLineNumber.activeForeground": "#111111",
+    },
   });
-
-  const tableList = computed(() => {
-    return databaseList.value
-      .map((item) => tableStore.getTableListByDatabaseId(item.id))
-      .flat();
-  });
+  monaco.editor.setTheme("bb-sql-editor-theme");
+  const databaseList = ref<Database[]>([]);
+  const tableList = ref<Table[]>([]);
 
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     ...monaco.languages.typescript.typescriptDefaults.getCompilerOptions(),
@@ -43,7 +36,7 @@ const useMonaco = async (lang: string) => {
   const completionItemProvider =
     monaco.languages.registerCompletionItemProvider(lang, {
       triggerCharacters: [" ", "."],
-      provideCompletionItems: (model, position) => {
+      provideCompletionItems: async (model, position) => {
         let suggestions: CompletionItems = [];
 
         const { lineNumber, column } = position;
@@ -74,7 +67,6 @@ const useMonaco = async (lang: string) => {
         const autoCompletion = new AutoCompletion(
           model,
           position,
-          instanceList.value,
           databaseList.value,
           tableList.value
         );
@@ -82,14 +74,12 @@ const useMonaco = async (lang: string) => {
         // MySQL allows to query different databases, so we provide the database name suggestion for MySQL.
         const suggestionsForDatabase =
           lang === "mysql"
-            ? autoCompletion.getCompletionItemsForDatabaseList()
+            ? await autoCompletion.getCompletionItemsForDatabaseList()
             : [];
-
         const suggestionsForTable =
-          autoCompletion.getCompletionItemsForTableList();
-
+          await autoCompletion.getCompletionItemsForTableList();
         const suggestionsForKeyword =
-          autoCompletion.getCompletionItemsForKeywords();
+          await autoCompletion.getCompletionItemsForKeywords();
 
         // if enter a dot
         if (lastToken.endsWith(".")) {
@@ -117,7 +107,7 @@ const useMonaco = async (lang: string) => {
 
           // if the last token is a database name
           if (lang === "mysql" && dbIdx !== -1 && tokenLevel === 1) {
-            suggestions = autoCompletion.getCompletionItemsForTableList(
+            suggestions = await autoCompletion.getCompletionItemsForTableList(
               databaseList.value[dbIdx],
               true
             );
@@ -126,10 +116,11 @@ const useMonaco = async (lang: string) => {
           if (tableIdx !== -1 || tokenLevel === 2) {
             const table = tableList.value[tableIdx];
             if (table.columnList && table.columnList.length > 0) {
-              suggestions = autoCompletion.getCompletionItemsForTableColumnList(
-                tableList.value[tableIdx],
-                false
-              );
+              suggestions =
+                await autoCompletion.getCompletionItemsForTableColumnList(
+                  tableList.value[tableIdx],
+                  false
+                );
             }
           }
         } else {
@@ -140,7 +131,9 @@ const useMonaco = async (lang: string) => {
           ];
         }
 
-        return { suggestions };
+        return {
+          suggestions: uniqBy(suggestions, "label"),
+        };
       },
     });
 
@@ -161,6 +154,10 @@ const useMonaco = async (lang: string) => {
     })(),
   ]);
 
+  const dispose = () => {
+    completionItemProvider.dispose();
+  };
+
   /**
    * set new content in monaco editor
    * use executeEdits API can preserve undo stack, allow user to undo/redo
@@ -171,49 +168,43 @@ const useMonaco = async (lang: string) => {
     editorInstance: Editor.IStandaloneCodeEditor,
     content: string
   ) => {
-    if (editorInstance) {
-      const range = editorInstance?.getModel()?.getFullModelRange();
-      // get the current endLineNumber, or use 100000 as the default
-      const endLineNumber =
-        range && range?.endLineNumber > 0 ? range.endLineNumber + 1 : 100000;
-      editorInstance.executeEdits("delete-content", [
-        {
-          range: new monaco.Range(1, 1, endLineNumber, 1),
-          text: "",
-          forceMoveMarkers: true,
-        },
-      ]);
-      // set the new content
-      editorInstance.executeEdits("insert-content", [
-        {
-          range: new monaco.Range(1, 1, 1, 1),
-          text: content,
-          forceMoveMarkers: true,
-        },
-      ]);
-      // reset the selection
-      editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
-    }
+    const range = editorInstance.getModel()?.getFullModelRange();
+    // get the current endLineNumber, or use 100000 as the default
+    const endLineNumber =
+      range && range?.endLineNumber > 0 ? range.endLineNumber + 1 : 100000;
+    editorInstance.executeEdits("delete-content", [
+      {
+        range: new monaco.Range(1, 1, endLineNumber, 1),
+        text: "",
+        forceMoveMarkers: true,
+      },
+    ]);
+    // set the new content
+    editorInstance.executeEdits("insert-content", [
+      {
+        range: new monaco.Range(1, 1, 1, 1),
+        text: content,
+        forceMoveMarkers: true,
+      },
+    ]);
+    // reset the selection
+    editorInstance.setSelection(new monaco.Range(0, 0, 0, 0));
   };
 
   const formatContent = (
     editorInstance: Editor.IStandaloneCodeEditor,
     language: SQLDialect
   ) => {
-    if (editorInstance) {
-      const sql = editorInstance.getValue();
-      const { data } = sqlFormatter(sql, language);
-      setContent(editorInstance, data);
-    }
+    const sql = editorInstance.getValue();
+    const { data } = sqlFormatter(sql, language);
+    setContent(editorInstance, data);
   };
 
   const setPositionAtEndOfLine = (
     editorInstance: Editor.IStandaloneCodeEditor
   ) => {
-    if (editorInstance) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      const range = editorInstance.getModel().getFullModelRange();
+    const range = editorInstance.getModel()?.getFullModelRange();
+    if (range) {
       editorInstance.setPosition({
         lineNumber: range?.endLineNumber,
         column: range?.endColumn,
@@ -221,13 +212,17 @@ const useMonaco = async (lang: string) => {
     }
   };
 
+  const setAutoCompletionContext = (databases: Database[], tables: Table[]) => {
+    databaseList.value = databases;
+    tableList.value = tables;
+  };
+
   return {
+    dispose,
     monaco,
-    completionItemProvider,
-    formatContent,
     setContent,
+    formatContent,
+    setAutoCompletionContext,
     setPositionAtEndOfLine,
   };
 };
-
-export { useMonaco };

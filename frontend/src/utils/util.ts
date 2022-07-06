@@ -3,6 +3,7 @@ import dayOfYear from "dayjs/plugin/dayOfYear";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
+import { round } from "lodash-es";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -40,7 +41,8 @@ export function bytesToString(size: number): string {
     }
     size = size / 1024;
   }
-  return size.toString() + " " + unitList[i];
+
+  return round(size, 2) + " " + unitList[i];
 }
 
 export function nanosecondsToString(nanoseconds: number): string {
@@ -169,4 +171,14 @@ export function defer<T = any>() {
     d.reject = reject;
   });
   return d;
+}
+
+// emitStorageChangedEvent is used to notify the storage changed event
+export function emitStorageChangedEvent() {
+  const iframeEl = document.createElement("iframe");
+  iframeEl.style.display = "none";
+  document.body.appendChild(iframeEl);
+
+  iframeEl.contentWindow?.localStorage.setItem("t", Date.now().toString());
+  iframeEl.remove();
 }

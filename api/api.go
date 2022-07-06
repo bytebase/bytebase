@@ -13,16 +13,6 @@ const (
 	Archived RowStatus = "ARCHIVED"
 )
 
-func (e RowStatus) String() string {
-	switch e {
-	case Normal:
-		return "NORMAL"
-	case Archived:
-		return "ARCHIVED"
-	}
-	return ""
-}
-
 // SortOrder is the sort order for the returned list.
 type SortOrder string
 
@@ -32,13 +22,3 @@ const (
 	// DESC is the sort order to return in descending order.
 	DESC SortOrder = "DESC"
 )
-
-func (e SortOrder) String() string {
-	switch e {
-	case ASC:
-		return "ASC"
-	case DESC:
-		return "DESC"
-	}
-	return ""
-}

@@ -64,6 +64,12 @@ const (
 	// - Support defining extra data source for a database and exposing the related data source UI.
 	FeatureDataSource FeatureType = "bb.feature.data-source"
 
+	// FeatureGhost allows user to use gh-ost for MySQL database migration.
+	FeatureGhost FeatureType = "bb.feature.ghost"
+
+	// FeaturePITR allows user to perform point-in-time recovery for databases.
+	FeaturePITR FeatureType = "bb.feature.pitr"
+
 	// Policy Control
 
 	// FeatureApprovalPolicy allows user to specify approval policy for the environment
@@ -102,34 +108,6 @@ const (
 	FeatureBranding FeatureType = "bb.feature.branding"
 )
 
-func (e FeatureType) String() string {
-	switch e {
-	case FeatureSchemaDrift:
-		return "bb.feature.schema-drift"
-	case FeatureTaskScheduleTime:
-		return "bb.feature.task-schedule-time"
-	case FeatureMultiTenancy:
-		return "bb.feature.multi-tenancy"
-	case FeatureDBAWorkflow:
-		return "bb.feature.dba-workflow"
-	case FeatureDataSource:
-		return "bb.feature.data-source"
-	case FeatureApprovalPolicy:
-		return "bb.feature.approval-policy"
-	case FeatureBackupPolicy:
-		return "bb.feature.backup-policy"
-	case FeatureSchemaReviewPolicy:
-		return "bb.feature.schema-review-policy"
-	case FeatureRBAC:
-		return "bb.feature.rbac"
-	case Feature3rdPartyAuth:
-		return "bb.feature.3rd-party-auth"
-	case FeatureBranding:
-		return "bb.feature.branding"
-	}
-	return ""
-}
-
 // Name returns a readable name of the feature
 func (e FeatureType) Name() string {
 	switch e {
@@ -143,6 +121,10 @@ func (e FeatureType) Name() string {
 		return "DBA workflow"
 	case FeatureDataSource:
 		return "Data source"
+	case FeatureGhost:
+		return "gh-ost integration"
+	case FeaturePITR:
+		return "Point-in-time Recovery"
 	case FeatureApprovalPolicy:
 		return "Approval policy"
 	case FeatureBackupPolicy:
@@ -183,6 +165,8 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	"bb.feature.multi-tenancy":        {false, true, true},
 	"bb.feature.dba-workflow":         {false, false, true},
 	"bb.feature.data-source":          {false, false, false},
+	"bb.feature.ghost":                {false, true, true},
+	"bb.feature.pitr":                 {false, true, true},
 	"bb.feature.approval-policy":      {false, true, true},
 	"bb.feature.backup-policy":        {false, true, true},
 	"bb.feature.schema-review-policy": {false, true, true},

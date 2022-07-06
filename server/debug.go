@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -24,7 +25,7 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 		if debugPatch.IsDebug {
 			lvl = zap.DebugLevel
 		}
-		s.lvl.SetLevel(lvl)
+		log.SetLevel(lvl)
 
 		s.e.Debug = debugPatch.IsDebug
 
@@ -34,7 +35,7 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 func (s *Server) currentDebugState(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-	if err := jsonapi.MarshalPayload(c.Response().Writer, &api.Debug{IsDebug: s.lvl.Enabled(zap.DebugLevel)}); err != nil {
+	if err := jsonapi.MarshalPayload(c.Response().Writer, &api.Debug{IsDebug: log.EnabledLevel(zap.DebugLevel)}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug info response").SetInternal(err)
 	}
 	return nil

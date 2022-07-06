@@ -49,7 +49,7 @@ func newDumpCmd() *cobra.Command {
 // dumpDatabase exports the schema of a database instance.
 // When file isn't specified, the schema will be exported to stdout.
 func dumpDatabase(ctx context.Context, u *dburl.URL, out io.Writer, schemaOnly bool) error {
-	db, err := open(ctx, logger, u)
+	db, err := open(ctx, u)
 	if err != nil {
 		return err
 	}

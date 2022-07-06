@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -16,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingTableConvention, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.
@@ -35,12 +32,13 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	format, err := api.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingTableConventionChecker{
 		level:  level,
+		title:  string(ctx.Rule.Type),
 		format: format,
 	}
 	for _, stmtNode := range root {
@@ -50,7 +48,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -61,6 +59,7 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 type namingTableConventionChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 	format     *regexp.Regexp
 }
 
@@ -91,8 +90,8 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !v.format.MatchString(tableName) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.NamingTableConventionMismatch,
-				Title:   "Mismatch table naming convention",
+				Code:    advisor.NamingTableConventionMismatch,
+				Title:   v.title,
 				Content: fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, v.format),
 			})
 		}

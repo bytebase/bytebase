@@ -76,65 +76,50 @@
     </div>
   </div>
   <label class="sr-only">{{ $t("common.sql-statement") }}</label>
-  <template v-if="state.editing">
-    <textarea
-      ref="editStatementTextArea"
-      v-model="state.editStatement"
-      class="whitespace-pre-wrap mt-2 w-full resize-none border-white focus:border-white outline-none"
-      :class="state.editing ? 'focus:ring-control focus-visible:ring-2' : ''"
-      :placeholder="$t('issue.add-sql-statement')"
-      @input="
-        (e) => {
-          sizeToFit(e.target as HTMLTextAreaElement);
-          // When creating the issue, we update the in-memory state.
-          if (create) {
-            updateStatement( state.editStatement);
-          }
-        }
-      "
-      @focus="
-        (e) => {
-          sizeToFit(e.target as HTMLTextAreaElement);
-        }
-      "
-    ></textarea>
-  </template>
-  <!-- Margin value is to prevent flickering when switching between edit/non-edit mode -->
-  <div v-else style="margin-left: 5px; margin-top: 8.5px; margin-bottom: 31px">
-    <highlight-code-block
-      v-if="statement"
-      :code="statement"
-      class="whitespace-pre-wrap"
+  <div
+    class="whitespace-pre-wrap mt-2 w-full overflow-hidden"
+    :class="state.editing ? 'border-t border-x' : 'border-t border-x'"
+  >
+    <MonacoEditor
+      ref="editorRef"
+      class="w-full h-auto max-h-[360px]"
+      data-label="bb-issue-sql-editor"
+      :value="state.editStatement"
+      :readonly="!state.editing"
+      @change="onStatementChange"
+      @ready="handleMonacoEditorReady"
     />
-    <div v-else-if="create" class="ml-2 text-control-light">
-      {{ $t("issue.add-sql-statement") }}
-    </div>
-    <div v-else class="ml-2 text-control-light">None</div>
   </div>
 </template>
 
 <script lang="ts">
 import {
-  nextTick,
   onMounted,
-  onUnmounted,
-  ref,
   reactive,
   watch,
   defineComponent,
   computed,
+  ref,
 } from "vue";
-import { sizeToFit } from "@/utils";
-import { useUIStateStore } from "@/store";
+import { useTableStore, useUIStateStore } from "@/store";
 import { useIssueLogic } from "./logic";
+import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 
 interface LocalState {
   editing: boolean;
   editStatement: string;
 }
 
+const EDITOR_MIN_HEIGHT = {
+  READONLY: 0, // not limited to keep the UI compact
+  EDITABLE: 120, // ~= 6 lines, a reasonable size to start writing SQL
+};
+
 export default defineComponent({
   name: "IssueTaskStatementPanel",
+  components: {
+    MonacoEditor,
+  },
   props: {
     sqlHint: {
       required: false,
@@ -152,8 +137,6 @@ export default defineComponent({
       applyStatementToOtherStages,
     } = useIssueLogic();
 
-    const editStatementTextArea = ref();
-
     const uiStateStore = useUIStateStore();
 
     const state = reactive<LocalState>({
@@ -161,54 +144,65 @@ export default defineComponent({
       editStatement: statement.value,
     });
 
+    const editorRef = ref<InstanceType<typeof MonacoEditor>>();
+
     const formatOnSave = computed({
       get: () => uiStateStore.issueFormatStatementOnSave,
       set: (value: boolean) =>
         uiStateStore.setIssueFormatStatementOnSave(value),
     });
 
-    const resizeTextAreaHandler = () => {
-      if (state.editing) {
-        sizeToFit(editStatementTextArea.value);
-      }
-    };
+    const { databaseList, tableList } = useDatabaseAndTableList();
 
     onMounted(() => {
-      window.addEventListener("resize", resizeTextAreaHandler);
       if (create.value) {
         state.editing = true;
-        nextTick(() => {
-          sizeToFit(editStatementTextArea.value);
-        });
       }
-    });
-
-    onUnmounted(() => {
-      window.removeEventListener("resize", resizeTextAreaHandler);
     });
 
     // Reset the edit state after creating the issue.
     watch(create, (curNew, prevNew) => {
       if (!curNew && prevNew) {
+        if (formatOnSave.value) {
+          editorRef.value?.formatEditorContent();
+        }
         state.editing = false;
+        updateEditorHeight();
       }
     });
 
     watch(statement, (cur) => {
       state.editStatement = cur;
-      nextTick(() => sizeToFit(editStatementTextArea.value));
     });
+
+    const handleMonacoEditorReady = () => {
+      editorRef.value?.setEditorAutoCompletionContext(
+        databaseList.value,
+        tableList.value
+      );
+
+      updateEditorHeight();
+    };
+
+    const updateEditorHeight = () => {
+      const contentHeight =
+        editorRef.value?.editorInstance?.getContentHeight() as number;
+      let actualHeight = contentHeight;
+      if (state.editing && actualHeight < EDITOR_MIN_HEIGHT.EDITABLE) {
+        actualHeight = EDITOR_MIN_HEIGHT.EDITABLE;
+      }
+      editorRef.value?.setEditorContentHeight(actualHeight);
+    };
 
     const beginEdit = () => {
       state.editStatement = statement.value;
       state.editing = true;
-      nextTick(() => {
-        sizeToFit(editStatementTextArea.value);
-        editStatementTextArea.value.focus();
-      });
     };
 
     const saveEdit = () => {
+      if (formatOnSave.value) {
+        editorRef.value?.formatEditorContent();
+      }
       updateStatement(state.editStatement, () => {
         state.editing = false;
       });
@@ -219,20 +213,59 @@ export default defineComponent({
       state.editing = false;
     };
 
+    const onStatementChange = (value: string) => {
+      state.editStatement = value;
+      if (create.value) {
+        // If we are creating an issue, emit the event immediately when every
+        // time the user types.
+        updateStatement(state.editStatement);
+      }
+
+      updateEditorHeight();
+    };
+
     return {
       create,
       allowEditStatement,
       statement,
-      updateStatement,
       allowApplyStatementToOtherStages,
-      applyStatementToOtherStages,
-      editStatementTextArea,
       formatOnSave,
       state,
+      editorRef,
+      updateStatement,
+      applyStatementToOtherStages,
       beginEdit,
       saveEdit,
       cancelEdit,
+      onStatementChange,
+      handleMonacoEditorReady,
     };
   },
 });
+
+const useDatabaseAndTableList = () => {
+  const { selectedDatabase } = useIssueLogic();
+  const tableStore = useTableStore();
+
+  const databaseList = computed(() => {
+    if (selectedDatabase.value) return [selectedDatabase.value];
+    return [];
+  });
+
+  watch(
+    databaseList,
+    (list) => {
+      list.forEach((db) => tableStore.fetchTableListByDatabaseId(db.id));
+    },
+    { immediate: true }
+  );
+
+  const tableList = computed(() => {
+    return databaseList.value
+      .map((item) => tableStore.getTableListByDatabaseId(item.id))
+      .flat();
+  });
+
+  return { databaseList, tableList };
+};
 </script>

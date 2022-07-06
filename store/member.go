@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/metric"
 )
 
 // memberRaw is the store model for an Member.
@@ -52,11 +53,11 @@ func (raw *memberRaw) toMember() *api.Member {
 func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*api.Member, error) {
 	memberRaw, err := s.createMemberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Member with MemberCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Member with MemberCreate[%+v], error: %w", create, err)
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
 	}
 	return member, nil
 }
@@ -65,13 +66,13 @@ func (s *Store) CreateMember(ctx context.Context, create *api.MemberCreate) (*ap
 func (s *Store) FindMember(ctx context.Context, find *api.MemberFind) ([]*api.Member, error) {
 	memberRawList, err := s.findMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Member list with MemberFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Member list with MemberFind[%+v], error: %w", find, err)
 	}
 	var memberList []*api.Member
 	for _, raw := range memberRawList {
 		member, err := s.composeMember(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", raw, err)
 		}
 		memberList = append(memberList, member)
 	}
@@ -83,14 +84,14 @@ func (s *Store) GetMemberByPrincipalID(ctx context.Context, id int) (*api.Member
 	find := &api.MemberFind{PrincipalID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Member with PrincipalID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Member with PrincipalID %d, error: %w", id, err)
 	}
 	if memberRaw == nil {
 		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
 	}
 	return member, nil
 }
@@ -100,14 +101,14 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 	find := &api.MemberFind{ID: &id}
 	memberRaw, err := s.getMemberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Member with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Member with ID %d, error: %w", id, err)
 	}
 	if memberRaw == nil {
 		return nil, nil
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
 	}
 	return member, nil
 }
@@ -116,13 +117,46 @@ func (s *Store) GetMemberByID(ctx context.Context, id int) (*api.Member, error) 
 func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.Member, error) {
 	memberRaw, err := s.patchMemberRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Member with MemberPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Member with MemberPatch[%+v], error: %w", patch, err)
 	}
 	member, err := s.composeMember(ctx, memberRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error[%w]", memberRaw, err)
+		return nil, fmt.Errorf("failed to compose Member with memberRaw[%+v], error: %w", memberRaw, err)
 	}
 	return member, nil
+}
+
+// CountMemberGroupByRoleAndStatus counts the number of member and group by role and status.
+// Used by the metric collector.
+func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.MemberCountMetric, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer tx.PTx.Rollback()
+
+	rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT role, status, row_status, COUNT(*)
+		FROM member
+		GROUP BY role, status, row_status`,
+	)
+	if err != nil {
+		return nil, FormatError(err)
+	}
+	defer rows.Close()
+
+	var res []*metric.MemberCountMetric
+	for rows.Next() {
+		var metric metric.MemberCountMetric
+		if err := rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
+			return nil, FormatError(err)
+		}
+		res = append(res, &metric)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return res, nil
 }
 
 //
@@ -264,7 +298,7 @@ func (s *Store) composeMember(ctx context.Context, raw *memberRaw) (*api.Member,
 // createMemberImpl creates a new member.
 func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate) (*memberRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
@@ -274,7 +308,8 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Status,
@@ -287,23 +322,27 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 	}
 	defer row.Close()
 
-	row.Next()
-	var memberRaw memberRaw
-	if err := row.Scan(
-		&memberRaw.ID,
-		&memberRaw.RowStatus,
-		&memberRaw.CreatorID,
-		&memberRaw.CreatedTs,
-		&memberRaw.UpdaterID,
-		&memberRaw.UpdatedTs,
-		&memberRaw.Status,
-		&memberRaw.Role,
-		&memberRaw.PrincipalID,
-	); err != nil {
+	if row.Next() {
+		var memberRaw memberRaw
+		if err := row.Scan(
+			&memberRaw.ID,
+			&memberRaw.RowStatus,
+			&memberRaw.CreatorID,
+			&memberRaw.CreatedTs,
+			&memberRaw.UpdaterID,
+			&memberRaw.UpdatedTs,
+			&memberRaw.Status,
+			&memberRaw.Role,
+			&memberRaw.PrincipalID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &memberRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &memberRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
@@ -408,9 +447,10 @@ func patchMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &memberRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
 }

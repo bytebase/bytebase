@@ -5,6 +5,7 @@
     :filter="filter"
     :placeholder="placeholder"
     :disabled="disabled"
+    v-bind="$attrs"
     @update:value="
       (principal) => {
         state.selectedId = principal.id;

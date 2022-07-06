@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -49,11 +50,11 @@ func (raw *pipelineRaw) toPipeline() *api.Pipeline {
 func (s *Store) CreatePipeline(ctx context.Context, create *api.PipelineCreate) (*api.Pipeline, error) {
 	pipelineRaw, err := s.createPipelineRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Pipeline with PipelineCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Pipeline with PipelineCreate[%+v], error: %w", create, err)
 	}
 	pipeline, err := s.composePipeline(ctx, pipelineRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error: %w", pipelineRaw, err)
 	}
 	return pipeline, nil
 }
@@ -63,14 +64,14 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 	find := &api.PipelineFind{ID: &id}
 	pipelineRaw, err := s.getPipelineRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Pipeline with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Pipeline with ID %d, error: %w", id, err)
 	}
 	if pipelineRaw == nil {
 		return nil, nil
 	}
 	pipeline, err := s.composePipeline(ctx, pipelineRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error: %w", pipelineRaw, err)
 	}
 	return pipeline, nil
 }
@@ -79,16 +80,16 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*api.Pipeline, err
 func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, returnOnErr bool) ([]*api.Pipeline, error) {
 	pipelineRawList, err := s.findPipelineRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Pipeline list with PipelineFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Pipeline list with PipelineFind[%+v], error: %w", find, err)
 	}
 	var pipelineList []*api.Pipeline
 	for _, raw := range pipelineRawList {
 		pipeline, err := s.composePipeline(ctx, raw)
 		if err != nil {
 			if returnOnErr {
-				return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", raw, err)
+				return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error: %w", raw, err)
 			}
-			s.l.Error("failed to compose pipeline",
+			log.Error("failed to compose pipeline",
 				zap.Any("pipelineRaw", raw),
 				zap.Error(err),
 			)
@@ -103,11 +104,11 @@ func (s *Store) FindPipeline(ctx context.Context, find *api.PipelineFind, return
 func (s *Store) PatchPipeline(ctx context.Context, patch *api.PipelinePatch) (*api.Pipeline, error) {
 	pipelineRaw, err := s.patchPipelineRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Pipeline with PipelinePatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Pipeline with PipelinePatch[%+v], error: %w", patch, err)
 	}
 	pipeline, err := s.composePipeline(ctx, pipelineRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error[%w]", pipelineRaw, err)
+		return nil, fmt.Errorf("failed to compose Pipeline with pipelineRaw[%+v], error: %w", pipelineRaw, err)
 	}
 	return pipeline, nil
 }
@@ -274,7 +275,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 
 // createPipelineImpl creates a new pipeline.
 func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO pipeline (
 			creator_id,
 			updater_id,
@@ -283,7 +284,8 @@ func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.
 		)
 		VALUES ($1, $2, $3, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -294,21 +296,25 @@ func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.
 	}
 	defer row.Close()
 
-	row.Next()
-	var pipelineRaw pipelineRaw
-	if err := row.Scan(
-		&pipelineRaw.ID,
-		&pipelineRaw.CreatorID,
-		&pipelineRaw.CreatedTs,
-		&pipelineRaw.UpdaterID,
-		&pipelineRaw.UpdatedTs,
-		&pipelineRaw.Name,
-		&pipelineRaw.Status,
-	); err != nil {
+	if row.Next() {
+		var pipelineRaw pipelineRaw
+		if err := row.Scan(
+			&pipelineRaw.ID,
+			&pipelineRaw.CreatorID,
+			&pipelineRaw.CreatedTs,
+			&pipelineRaw.UpdaterID,
+			&pipelineRaw.UpdatedTs,
+			&pipelineRaw.Name,
+			&pipelineRaw.Status,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &pipelineRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &pipelineRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
@@ -403,6 +409,8 @@ func (s *Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.Pi
 		}
 		return &pipelineRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
 }

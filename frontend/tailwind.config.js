@@ -80,6 +80,21 @@ module.exports = {
         192: "48rem",
         208: "52rem",
       },
+      animation: {
+        "ping-slow": "ping-slow 2500ms cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      },
+      keyframes: {
+        "ping-slow": {
+          "50%": {
+            transform: "scale(3)",
+            opacity: "0.05",
+          },
+          "100%": {
+            transform: "scale(3)",
+            opacity: "0",
+          },
+        },
+      },
     },
   },
   variants: {

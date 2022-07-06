@@ -9,23 +9,21 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
 // NewTaskCheckScheduler creates a task check scheduler.
-func NewTaskCheckScheduler(logger *zap.Logger, server *Server) *TaskCheckScheduler {
+func NewTaskCheckScheduler(server *Server) *TaskCheckScheduler {
 	return &TaskCheckScheduler{
-		l:         logger,
-		executors: make(map[string]TaskCheckExecutor),
+		executors: make(map[api.TaskCheckType]TaskCheckExecutor),
 		server:    server,
 	}
 }
 
 // TaskCheckScheduler is the task check scheduler.
 type TaskCheckScheduler struct {
-	l         *zap.Logger
-	executors map[string]TaskCheckExecutor
+	executors map[api.TaskCheckType]TaskCheckExecutor
 
 	server *Server
 }
@@ -35,7 +33,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
+	log.Debug(fmt.Sprintf("Task check scheduler started and will run every %v", taskSchedulerInterval))
 	runningTaskChecks := make(map[int]bool)
 	mu := sync.RWMutex{}
 	for {
@@ -48,7 +46,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Task check scheduler PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Task check scheduler PANIC RECOVER", zap.Error(err))
 					}
 				}()
 
@@ -61,13 +59,13 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				taskCheckRunList, err := s.server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
 				if err != nil {
-					s.l.Error("Failed to retrieve running tasks", zap.Error(err))
+					log.Error("Failed to retrieve running tasks", zap.Error(err))
 					return
 				}
 				for _, taskCheckRun := range taskCheckRunList {
-					executor, ok := s.executors[string(taskCheckRun.Type)]
+					executor, ok := s.executors[taskCheckRun.Type]
 					if !ok {
-						s.l.Error("Skip running task check run with unknown type",
+						log.Error("Skip running task check run with unknown type",
 							zap.Int("id", taskCheckRun.ID),
 							zap.Int("task_id", taskCheckRun.TaskID),
 							zap.String("type", string(taskCheckRun.Type)),
@@ -96,7 +94,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								ResultList: checkResultList,
 							})
 							if err != nil {
-								s.l.Error("Failed to marshal task check run result",
+								log.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -114,7 +112,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
-								s.l.Error("Failed to mark task check run as DONE",
+								log.Error("Failed to mark task check run as DONE",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -122,7 +120,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								)
 							}
 						} else {
-							s.l.Debug("Failed to run task check",
+							log.Warn("Failed to run task check",
 								zap.Int("id", taskCheckRun.ID),
 								zap.Int("task_id", taskCheckRun.TaskID),
 								zap.String("type", string(taskCheckRun.Type)),
@@ -132,7 +130,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								Detail: err.Error(),
 							})
 							if marshalErr != nil {
-								s.l.Error("Failed to marshal task check run result",
+								log.Error("Failed to marshal task check run result",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -150,7 +148,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 							_, err = s.server.store.PatchTaskCheckRunStatus(ctx, taskCheckRunStatusPatch)
 							if err != nil {
-								s.l.Error("Failed to mark task check run as FAILED",
+								log.Error("Failed to mark task check run as FAILED",
 									zap.Int("id", taskCheckRun.ID),
 									zap.Int("task_id", taskCheckRun.TaskID),
 									zap.String("type", string(taskCheckRun.Type)),
@@ -168,7 +166,7 @@ func (s *TaskCheckScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register the task check executor.
-func (s *TaskCheckScheduler) Register(taskType string, executor TaskCheckExecutor) {
+func (s *TaskCheckScheduler) Register(taskType api.TaskCheckType, executor TaskCheckExecutor) {
 	if executor == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
@@ -249,17 +247,24 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 		}
 	}
 
-	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
+	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate || task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 		statement := ""
 
-		if task.Type == api.TaskDatabaseSchemaUpdate {
+		switch task.Type {
+		case api.TaskDatabaseSchemaUpdate:
 			taskPayload := &api.TaskDatabaseSchemaUpdatePayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database schema update payload: %w", err)
 			}
 			statement = taskPayload.Statement
-		} else {
+		case api.TaskDatabaseDataUpdate:
 			taskPayload := &api.TaskDatabaseDataUpdatePayload{}
+			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
+				return nil, fmt.Errorf("invalid database data update payload: %w", err)
+			}
+			statement = taskPayload.Statement
+		case api.TaskDatabaseSchemaUpdateGhostSync:
+			taskPayload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), taskPayload); err != nil {
 				return nil, fmt.Errorf("invalid database data update payload: %w", err)
 			}
@@ -294,8 +299,19 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			return nil, err
 		}
 
-		// For now we only supported MySQL dialect syntax and compatibility check
-		if database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB {
+		if task.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+			_, err = s.server.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+				CreatorID:               creatorID,
+				TaskID:                  task.ID,
+				Type:                    api.TaskCheckGhostSync,
+				SkipIfAlreadyTerminated: skipIfAlreadyTerminated,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if api.IsSyntaxCheckSupported(database.Instance.Engine) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
@@ -317,9 +333,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) &&
-			// For now we only supported MySQL dialect schema review check.
-			(database.Instance.Engine == db.MySQL || database.Instance.Engine == db.TiDB) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine) {
 			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
@@ -361,6 +375,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
 // But this method is used for gating the automatic run, so we are more cautious here.
+// TODO(dragonly): refactor arguments.
 func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
@@ -376,7 +391,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 	}
 
 	if len(taskCheckRunList) == 0 || taskCheckRunList[0].Status == api.TaskCheckRunFailed {
-		server.l.Debug("Task is waiting for check to pass",
+		log.Debug("Task is waiting for check to pass",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.String("task_type", string(task.Type)),
@@ -391,7 +406,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 	}
 	for _, result := range checkResult.ResultList {
 		if result.Status == api.TaskCheckStatusError {
-			server.l.Debug("Task is waiting for check to pass",
+			log.Debug("Task is waiting for check to pass",
 				zap.Int("task_id", task.ID),
 				zap.String("task_name", task.Name),
 				zap.String("task_type", string(task.Type)),

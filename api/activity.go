@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
@@ -57,47 +58,12 @@ const (
 
 	// ActivitySQLEditorQuery is the type for executing query.
 	ActivitySQLEditorQuery ActivityType = "bb.sql-editor.query"
-)
 
-func (e ActivityType) String() string {
-	switch e {
-	case ActivityIssueCreate:
-		return "bb.issue.create"
-	case ActivityIssueCommentCreate:
-		return "bb.issue.comment.create"
-	case ActivityIssueFieldUpdate:
-		return "bb.issue.field.update"
-	case ActivityIssueStatusUpdate:
-		return "bb.issue.status.update"
-	case ActivityPipelineTaskStatusUpdate:
-		return "bb.pipeline.task.status.update"
-	case ActivityPipelineTaskFileCommit:
-		return "bb.pipeline.task.file.commit"
-	case ActivityPipelineTaskStatementUpdate:
-		return "bb.pipeline.task.statement.update"
-	case ActivityMemberCreate:
-		return "bb.member.create"
-	case ActivityMemberRoleUpdate:
-		return "bb.member.role.update"
-	case ActivityMemberActivate:
-		return "bb.member.activate"
-	case ActivityMemberDeactivate:
-		return "bb.member.deactivate"
-	case ActivityProjectRepositoryPush:
-		return "bb.project.repository.push"
-	case ActivityProjectDatabaseTransfer:
-		return "bb.project.database.transfer"
-	case ActivityProjectMemberCreate:
-		return "bb.project.member.create"
-	case ActivityProjectMemberDelete:
-		return "bb.project.member.delete"
-	case ActivityProjectMemberRoleUpdate:
-		return "bb.project.member.role.update"
-	case ActivitySQLEditorQuery:
-		return "bb.sql-editor.query"
-	}
-	return "bb.activity.unknown"
-}
+	// Database related
+
+	// ActivityDatabaseRecoveryPITRDone is the type for performing PITR on the database successfully.
+	ActivityDatabaseRecoveryPITRDone ActivityType = "bb.database.recovery.pitr.done"
+)
 
 // ActivityLevel is the level of activities.
 type ActivityLevel string
@@ -110,18 +76,6 @@ const (
 	// ActivityError is the ERROR level of activities.
 	ActivityError ActivityLevel = "ERROR"
 )
-
-func (e ActivityLevel) String() string {
-	switch e {
-	case ActivityInfo:
-		return "INFO"
-	case ActivityWarn:
-		return "WARN"
-	case ActivityError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // ActivityIssueCreatePayload is the API message payloads for creating issues.
 // These payload types are only used when marshalling to the json format for saving into the database.
@@ -241,11 +195,12 @@ type ActivityProjectDatabaseTransferPayload struct {
 // ActivitySQLEditorQueryPayload is the API message payloads for the executed query info.
 type ActivitySQLEditorQueryPayload struct {
 	// Used by activity table to display info without paying the join cost
-	Statement    string `json:"statement"`
-	DurationNs   int64  `json:"durationNs"`
-	InstanceName string `json:"instanceName"`
-	DatabaseName string `json:"databaseName"`
-	Error        string `json:"error"`
+	Statement    string           `json:"statement"`
+	DurationNs   int64            `json:"durationNs"`
+	InstanceName string           `json:"instanceName"`
+	DatabaseName string           `json:"databaseName"`
+	Error        string           `json:"error"`
+	AdviceList   []advisor.Advice `json:"adviceList"`
 }
 
 // Activity is the API message for an activity.

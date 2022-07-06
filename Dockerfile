@@ -7,6 +7,8 @@
 
 FROM node:14 as frontend
 
+ARG RELEASE="release"
+
 RUN npm i -g pnpm
 
 WORKDIR /frontend-build
@@ -18,9 +20,9 @@ RUN pnpm install --frozen-lockfile
 COPY ./frontend/ .
 
 # Build frontend
-RUN pnpm release-docker
+RUN pnpm "${RELEASE}-docker"
 
-FROM golang:1.16.5-alpine3.13 as backend
+FROM golang:1.16.5 as backend
 
 ARG VERSION="development"
 ARG GO_VERSION="1.16.5"
@@ -30,8 +32,8 @@ ARG BUILD_USER="unknown"
 
 ARG RELEASE="release"
 
-# Need gcc musl-dev for CGO_ENABLED=1
-RUN apk --no-cache add gcc musl-dev
+# Need gcc for CGO_ENABLED=1
+RUN apt-get install -y gcc
 
 WORKDIR /backend-build
 
@@ -43,13 +45,13 @@ COPY --from=frontend /frontend-build/dist ./server/dist
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    --tags "${RELEASE} alpine" \
+    --tags "${RELEASE}" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./bin/server/main.go
 
-# Use alpine instead of scratch because alpine contains many basic utils and the ~10mb overhead is acceptable.
-FROM alpine:3.14.3 as monolithic
+# Use debian because mysql requires glibc.
+FROM debian:bullseye-slim as monolithic
 
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
@@ -62,14 +64,21 @@ LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
+# Our HEALTHCHECK instruction in dockerfile needs curl.
+RUN apt-get update && apt-get install -y locales curl
+# Generate en_US.UTF-8 locale which is needed to start postgres server.
+# Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
+COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
 
-# Create bytebase user for running Postgres database and server.
-RUN addgroup -g 113 -S bytebase && adduser -u 113 -S -G bytebase bytebase
+# Create user "bytebase" for running Postgres database and server.
+RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase

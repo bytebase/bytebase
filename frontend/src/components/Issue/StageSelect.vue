@@ -1,31 +1,27 @@
 <template>
-  <select
-    class="btn-select w-full disabled:cursor-not-allowed"
-    @change="
-      (e) => {
-        $emit('select-stage-id', parseInt((e.target as HTMLSelectElement).value, 10));
-      }
-    "
+  <BBSelect
+    :selected-item="state.selectedStage"
+    :item-list="pipeline.stageList"
+    fit-width="min"
+    @select-item="(stage) => $emit('select-stage-id', stage.id)"
   >
-    <template v-for="(stage, index) in pipeline.stageList" :key="index">
-      <option :value="stage.id" :selected="stage.id == state.selectedId">
-        {{
-          isActiveStage(stage.id)
-            ? $t("issue.stage-select.active", { name: stage.name })
-            : stage.name
-        }}
-      </option>
+    <template #menuItem="{ item: stage }">
+      {{
+        isActiveStage(stage.id)
+          ? $t("issue.stage-select.active", { name: stage.name })
+          : stage.name
+      }}
     </template>
-  </select>
+  </BBSelect>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType, reactive, watch } from "vue";
-import { UNKNOWN_ID, Pipeline, StageId } from "../../types";
+import { UNKNOWN_ID, Pipeline, StageId, Stage } from "../../types";
 import { activeStage } from "../../utils";
 
 interface LocalState {
-  selectedId: number;
+  selectedStage: Stage | undefined;
 }
 
 export default defineComponent({
@@ -43,14 +39,18 @@ export default defineComponent({
   emits: ["select-stage-id"],
   setup(props) {
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedStage: undefined,
     });
 
     watch(
-      () => props.selectedId,
-      (cur, _) => {
-        state.selectedId = cur;
-      }
+      [() => props.selectedId, () => props.pipeline],
+
+      ([selectedId, pipeline]) => {
+        state.selectedStage = pipeline.stageList.find(
+          (stage) => stage.id === selectedId
+        );
+      },
+      { immediate: true }
     );
 
     const isActiveStage = (stageId: StageId): boolean => {

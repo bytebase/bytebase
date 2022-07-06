@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/bytebase/bytebase/common"
 )
 
@@ -19,14 +17,6 @@ const (
 	// GitHubCom is the VCS type for GitHub.com.
 	GitHubCom Type = "GITHUB_COM"
 )
-
-func (e Type) String() string {
-	switch e {
-	case GitLabSelfHost, GitHubCom:
-		return string(e)
-	}
-	return "UNKNOWN"
-}
 
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
@@ -232,7 +222,6 @@ var (
 
 // ProviderConfig is the provider configuration.
 type ProviderConfig struct {
-	Logger *zap.Logger
 	Client *http.Client
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +56,7 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
 	principalRaw, err := s.createPrincipalRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Principal with PrincipalCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Principal with PrincipalCreate[%+v], error: %w", create, err)
 	}
 	// NOTE: Currently the corresponding Member object is not created yet.
 	// YES, we are returning a Principal with empty Role field. OMG.
@@ -67,13 +68,13 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Principal list, error[%w]", err)
+		return nil, fmt.Errorf("failed to find Principal list, error: %w", err)
 	}
 	var principalList []*api.Principal
 	for _, raw := range principalRawList {
 		principal, err := s.composePrincipal(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error: %w", raw, err)
 		}
 		principalList = append(principalList, principal)
 	}
@@ -85,14 +86,14 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Pri
 	find := &api.PrincipalFind{Email: &email}
 	principalRaw, err := s.getPrincipalRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Principal with PrincipalFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Principal with PrincipalFind[%+v], error: %w", find, err)
 	}
 	if principalRaw == nil {
 		return nil, nil
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error: %w", principalRaw, err)
 	}
 	return principal, nil
 }
@@ -101,11 +102,11 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Pri
 func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	principalRaw, err := s.patchPrincipalRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Principal with PrincipalPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Principal with PrincipalPatch[%+v], error: %w", patch, err)
 	}
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error: %w", principalRaw, err)
 	}
 	return principal, nil
 }
@@ -123,7 +124,7 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 
 	principal, err := s.composePrincipal(ctx, principalRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error[%w]", principalRaw, err)
+		return nil, fmt.Errorf("failed to compose Principal role with principalRaw[%+v], error: %w", principalRaw, err)
 	}
 
 	return principal, nil
@@ -255,11 +256,11 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 			return nil, err
 		}
 		if memberRaw == nil {
-			s.l.Error("Principal has not been assigned a role.",
+			log.Error("Principal has not been assigned a role.",
 				zap.Int("id", principal.ID),
 				zap.String("name", principal.Name),
 			)
-			return nil, fmt.Errorf("member with PrincipalID[%d] not exist, error[%w]", principal.ID, err)
+			return nil, fmt.Errorf("member with PrincipalID %d not exist, error: %w", principal.ID, err)
 		}
 		principal.Role = memberRaw.Role
 	}
@@ -269,7 +270,7 @@ func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.P
 // createPrincipalImpl creates a new principal.
 func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalCreate) (*principalRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO principal (
 			creator_id,
 			updater_id,
@@ -280,7 +281,8 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Type,
@@ -294,23 +296,27 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 	}
 	defer row.Close()
 
-	row.Next()
-	var principalRaw principalRaw
-	if err := row.Scan(
-		&principalRaw.ID,
-		&principalRaw.CreatorID,
-		&principalRaw.CreatedTs,
-		&principalRaw.UpdaterID,
-		&principalRaw.UpdatedTs,
-		&principalRaw.Type,
-		&principalRaw.Name,
-		&principalRaw.Email,
-		&principalRaw.PasswordHash,
-	); err != nil {
+	if row.Next() {
+		var principalRaw principalRaw
+		if err := row.Scan(
+			&principalRaw.ID,
+			&principalRaw.CreatorID,
+			&principalRaw.CreatedTs,
+			&principalRaw.UpdaterID,
+			&principalRaw.UpdatedTs,
+			&principalRaw.Type,
+			&principalRaw.Name,
+			&principalRaw.Email,
+			&principalRaw.PasswordHash,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &principalRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &principalRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
@@ -411,9 +417,10 @@ func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPat
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &principalRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
 }

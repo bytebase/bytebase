@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 )
 
@@ -16,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingFKConvention, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
@@ -36,12 +33,13 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := api.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingFKConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 	}
@@ -52,7 +50,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -64,6 +62,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 type namingFKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
 }
@@ -77,7 +76,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for foreign key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
@@ -86,8 +85,8 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingFKConventionMismatch,
-				Title:   "Mismatch foreign key naming convention",
+				Code:    advisor.NamingFKConventionMismatch,
+				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
@@ -119,10 +118,10 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				}
 
 				metaData := map[string]string{
-					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					api.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
-					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					advisor.ReferencedTableNameTemplateToken:   constraint.Refer.Table.Name.String(),
+					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
 
 				res = append(res, &indexMetaData{
@@ -145,10 +144,10 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				}
 
 				metaData := map[string]string{
-					api.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
-					api.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-					api.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
-					api.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
+					advisor.ReferencingTableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
+					advisor.ReferencedTableNameTemplateToken:   spec.Constraint.Refer.Table.Name.String(),
+					advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
 				}
 				res = append(res, &indexMetaData{
 					indexName: spec.Constraint.Name,

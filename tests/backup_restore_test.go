@@ -8,17 +8,19 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
-	restoremysql "github.com/bytebase/bytebase/plugin/restore/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +57,8 @@ func TestBackupRestoreBasic(t *testing.T) {
 		PRIMARY KEY (id),
 		CHECK (id >= 0)
 	);
-	`, database, database, table))
+	CREATE VIEW v_%s AS SELECT * FROM %s;
+	`, database, database, table, table, table))
 	a.NoError(err)
 
 	const numRecords = 10
@@ -73,12 +76,12 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 	defer driver.Close(ctx)
 
-	buf, err := doBackup(ctx, driver, database)
+	buf, _, err := doBackup(ctx, driver, database)
 	a.NoError(err)
 	t.Logf("backup content:\n%s", buf.String())
 
-	// drop all tables
-	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s", table))
+	// drop all tables and views
+	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s; DROP VIEW v_%s;", table, table))
 	a.NoError(err)
 
 	// restore
@@ -88,6 +91,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 	// validate data
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", table))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col int
@@ -113,6 +117,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 func TestPITR(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
+	log.SetLevel(zapcore.DebugLevel)
 
 	// common configs
 	const (
@@ -147,26 +152,26 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-
-		buf, err := doBackup(ctx, driver, database)
+		backupDump, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
-		t.Logf("backup content:\n%s", buf.String())
+		t.Logf("backup content:\n%s", backupDump.String())
 
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		t1 := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
-		t.Logf("start to concurrently update data at t1: %v", t1)
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort) + 1
+		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
 		t.Log("restore to pitr database")
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
-		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
+		a.NoError(err)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -174,16 +179,19 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
-		validateTbl0(t, db, numRowsTime0)
+		validateTbl0(t, db, database, numRowsTime1)
 		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime0)
-		// TODO(dragonly): validate table _update_row_ when RestoreIncremental is implemented
+		validateTbl1(t, db, database, numRowsTime1)
 		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, db, database)
 	})
 
 	t.Run("Drop Database", func(t *testing.T) {
@@ -208,15 +216,16 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-
-		buf, err := doBackup(ctx, driver, database)
+		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s", buf.String())
 
 		// 3. insert more data for incremental restore
 		t.Log("insert more data")
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
+		// Sleep for one second so that the data in this second will be recovered by mysqlbinlog --stop-datetime.
+		time.Sleep(time.Second)
+		targetTs := time.Now().Unix()
 
 		// 4. drop database
 		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, database)
@@ -233,19 +242,26 @@ func TestPITR(t *testing.T) {
 			a.NoError(err)
 			a.FailNow("Database still exists after dropped")
 		}
+		a.NoError(rows.Err())
 
 		// 6. restore
 		t.Log("restore to pitr database")
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
-		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
+		a.NoError(err)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 	})
 
@@ -268,9 +284,7 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		defer driver.Close(ctx)
 
-		connCfg := getMySQLConnectionConfig(strconv.Itoa(mysqlPort), database)
-
-		buf, err := doBackup(ctx, driver, database)
+		buf, backupPayload, err := doBackup(ctx, driver, database)
 		a.NoError(err)
 		t.Logf("backup content:\n%s\n", buf.String())
 
@@ -278,10 +292,10 @@ func TestPITR(t *testing.T) {
 		insertRangeData(t, db, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		t1 := startUpdateRow(ctxUpdateRow, t, database, mysqlPort)
-		t.Logf("start to concurrently update data at t1: %v", t1)
+		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort) + 1
+		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
 
-		createPITRIssueTimestamp := time.Now().Unix()
+		suffixTs := time.Now().Unix()
 
 		t.Log("mimics schema migration")
 		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
@@ -291,9 +305,11 @@ func TestPITR(t *testing.T) {
 		t.Log("restore to pitr database")
 		mysqlDriver, ok := driver.(*pluginmysql.Driver)
 		a.Equal(true, ok)
-		mysqlRestore := restoremysql.New(mysqlDriver, mysqlutilInstance, connCfg)
-		binlogInfo := api.BinlogInfo{}
-		err = mysqlRestore.RestorePITR(ctx, bufio.NewScanner(buf), binlogInfo, database, createPITRIssueTimestamp)
+		binlogDir := t.TempDir()
+		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
+		err = mysqlDriver.FetchAllBinlogFiles(ctx)
+		a.NoError(err)
+		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
 		a.NoError(err)
 
 		t.Log("cutover stage")
@@ -301,16 +317,19 @@ func TestPITR(t *testing.T) {
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
 
-		_, _, err = mysqlRestore.SwapPITRDatabase(ctx, database, createPITRIssueTimestamp)
+		conn, err := db.Conn(ctx)
+		a.NoError(err)
+		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
+		a.NoError(err)
+		err = conn.Close()
 		a.NoError(err)
 
 		t.Log("validate table tbl0")
-		// TODO(zp): change to numRowsTime1 when RestoreIncremental is implemented
-		validateTbl0(t, db, numRowsTime0)
+		validateTbl0(t, db, database, numRowsTime1)
 		t.Log("validate table tbl1")
-		validateTbl1(t, db, numRowsTime0)
-		// TODO(zp): validate table _update_row_ when RestoreIncremental is implemented
+		validateTbl1(t, db, database, numRowsTime1)
 		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, db, database)
 	})
 }
 
@@ -345,7 +364,6 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 
 func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	a := require.New(t)
-
 	tx, err := db.Begin()
 	a.NoError(err)
 
@@ -360,10 +378,11 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 	a.NoError(err)
 }
 
-func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
+func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl0;")
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl0;", databaseName))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col int
@@ -375,10 +394,11 @@ func validateTbl0(t *testing.T, db *sql.DB, numRows int) {
 	a.Equal(numRows, i)
 }
 
-func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
+func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 	a := require.New(t)
-	rows, err := db.Query("SELECT * FROM tbl1;")
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl1;", databaseName))
 	a.NoError(err)
+	defer rows.Close()
 	i := 0
 	for rows.Next() {
 		var col1, col2 int
@@ -388,33 +408,63 @@ func validateTbl1(t *testing.T, db *sql.DB, numRows int) {
 		i++
 	}
 	a.NoError(rows.Err())
-	// TODO(dragonly): change to numRowsTime1 when RestoreIncremental is implemented
 	a.Equal(numRows, i)
 }
 
-func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-	_, err := driver.Dump(ctx, database, &buf, false)
-	return &buf, err
+func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
+	a := require.New(t)
+	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s._update_row_;", databaseName))
+	a.NoError(err)
+	defer rows.Close()
+
+	a.Equal(true, rows.Next())
+	var col int
+	a.NoError(rows.Scan(&col))
+	a.Equal(0, col)
+	a.Equal(false, rows.Next())
+
+	a.NoError(rows.Err())
 }
 
+func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*bytes.Buffer, *api.BackupPayload, error) {
+	var buf bytes.Buffer
+	var backupPayload api.BackupPayload
+	backupPayloadString, err := driver.Dump(ctx, database, &buf, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := json.Unmarshal([]byte(backupPayloadString), &backupPayload); err != nil {
+		return nil, nil, err
+	}
+	return &buf, &backupPayload, nil
+}
+
+// Concurrently update a single row to mimic the ongoing business workload.
+// Returns the timestamp after inserting the initial value so we could check the PITR is done right.
 func startUpdateRow(ctx context.Context, t *testing.T, database string, port int) int64 {
 	a := require.New(t)
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
-	t.Log("Start updating data")
+	t.Log("Start updating data concurrently")
 	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
 	a.NoError(err)
 
-	// init value is (0)
+	// initial value is (0)
 	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
 	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
+	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
+	// This will make a clear boundary for the binlog recovery --stop-datetime.
+	// For example, the recovery command is mysqlbinlog --stop-datetime `initTimestamp+1`, and the concurrent updates
+	// later will no be recovered. Then we can validate by checking the table _update_row_ has the initial value (0).
+	time.Sleep(time.Second)
+
 	go func() {
 		defer db.Close()
-		ticker := time.NewTicker(10 * time.Millisecond)
+		ticker := time.NewTicker(1 * time.Millisecond)
+		defer ticker.Stop()
 		i := 0
 		for {
 			select {
@@ -423,7 +473,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
-				t.Log("Stop updating data")
+				t.Log("Stop updating data concurrently")
 				return
 			}
 		}

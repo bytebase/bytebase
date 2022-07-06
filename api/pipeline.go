@@ -19,18 +19,6 @@ const (
 	PipelineCanceled PipelineStatus = "CANCELED"
 )
 
-func (e PipelineStatus) String() string {
-	switch e {
-	case PipelineOpen:
-		return "OPEN"
-	case PipelineDone:
-		return "DONE"
-	case PipelineCanceled:
-		return "CANCELED"
-	}
-	return ""
-}
-
 // Pipeline is the API message for pipelines.
 type Pipeline struct {
 	ID int `jsonapi:"primary,pipeline"`

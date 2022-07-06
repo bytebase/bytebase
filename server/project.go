@@ -10,6 +10,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"go.uber.org/zap"
 
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -130,7 +132,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -155,10 +157,21 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed patch project request").SetInternal(err)
 		}
 
+		// Ensure the project has no database before it's archived.
+		if v := projectPatch.RowStatus; v != nil && *v == string(api.Archived) {
+			databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{ProjectID: &id})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to find databases in the project %d", id)).SetInternal(err)
+			}
+			if len(databases) > 0 {
+				return echo.NewHTTPError(http.StatusBadRequest, "You should transfer all databases under the project before archiving the project.")
+			}
+		}
+
 		project, err := s.store.PatchProject(ctx, projectPatch)
 		if err != nil {
 			if common.ErrorCode(err) == common.NotFound {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch project ID: %v", id)).SetInternal(err)
 		}
@@ -190,7 +203,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", projectID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
 		if err := api.ValidateRepositoryFilePathTemplate(repositoryCreate.FilePathTemplate, project.TenantMode); err != nil {
@@ -229,7 +242,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			}
 		}
 
-		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).CreateWebhook(
+		webhookID, err := vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).CreateWebhook(
 			ctx,
 			common.OauthContext{
 				AccessToken: repositoryCreate.AccessToken,
@@ -311,7 +324,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", projectID)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", projectID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", projectID))
 		}
 
 		if repoPatch.FilePathTemplate != nil {
@@ -377,7 +390,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				}
 			}
 
-			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).PatchWebhook(
+			err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).PatchWebhook(
 				ctx,
 				common.OauthContext{
 					// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
@@ -448,7 +461,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		// Delete the webhook after we successfully delete the repository.
 		// This is because in case the webhook deletion fails, we can still have a cleanup process to cleanup the orphaned webhook.
 		// If we delete it before we delete the repository, then if the repository deletion fails, we will have a broken repository with no webhook.
-		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{Logger: s.l}).DeleteWebhook(
+		err = vcsPlugin.Get(vcs.Type, vcsPlugin.ProviderConfig{}).DeleteWebhook(
 			ctx,
 			// Need to get ApplicationID, Secret from vcs instead of repository.vcs since the latter is not composed.
 			common.OauthContext{
@@ -464,7 +477,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		)
 
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete webhook ID %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+			// Despite the error here, we have deleted the repository in the database, we still return success.
+			log.Error("Failed to delete webhook for project", zap.Int("project", projectID), zap.Int("repo", repo.ID), zap.Error(err))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -490,7 +504,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 		}
 		deploymentConfigUpsert.ProjectID = id
 
@@ -518,7 +532,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project ID: %v", id)).SetInternal(err)
 		}
 		if project == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project not found with ID %d", id))
 		}
 
 		deploymentConfig, err := s.store.GetDeploymentConfigByProjectID(ctx, id)

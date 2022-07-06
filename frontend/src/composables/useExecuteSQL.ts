@@ -44,6 +44,7 @@ const useExecuteSQL = () => {
   };
 
   const execute = async (
+    query: string,
     config: ExecuteConfig,
     option?: Partial<ExecuteOption>
   ) => {
@@ -51,23 +52,18 @@ const useExecuteSQL = () => {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
     }
 
-    const currentTab = tabStore.currentTab;
     const isDisconnected = sqlEditorStore.isDisconnected;
-    const statement = currentTab.statement;
-    const selectedStatement = currentTab.selectedStatement;
-    const sqlStatement = selectedStatement || statement;
-
     if (isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return;
     }
 
-    const { data } = parseSQL(sqlStatement);
-
-    if (isEmpty(sqlStatement)) {
+    if (isEmpty(query)) {
       notify("CRITICAL", t("sql-editor.notify-empty-statement"));
       return;
     }
+
+    const { data } = parseSQL(query);
 
     if (data === undefined) {
       notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
@@ -100,21 +96,51 @@ const useExecuteSQL = () => {
       );
     }
 
+    let selectStatement =
+      data !== null ? transformSQL(data, config.databaseType) : query;
+    if (option?.explain) {
+      selectStatement = `EXPLAIN ${selectStatement}`;
+    }
+
     try {
-      const isExplain = option?.explain || false;
       state.isLoadingData = true;
       sqlEditorStore.setIsExecuting(true);
-      // remove the comment from the sql statement in front-end
-      const selectStatement =
-        data !== null ? transformSQL(data, config.databaseType) : sqlStatement;
-      const explainStatement = `EXPLAIN ${selectStatement}`;
-      const queryResult = (await sqlEditorStore.executeQuery({
-        statement: isExplain ? explainStatement : selectStatement,
-      })) as any;
-      tabStore.updateCurrentTab({ queryResult });
+      const sqlResultSet = await sqlEditorStore.executeQuery({
+        statement: selectStatement,
+      });
+      // TODO(steven): use BBModel instead of notify to show the advice from schema review.
+      let adviceStatus = "SUCCESS";
+      let adviceNotifyMessage = "";
+      for (const advice of sqlResultSet.adviceList) {
+        if (advice.status === "ERROR") {
+          adviceStatus = "ERROR";
+        } else if (adviceStatus !== "ERROR") {
+          adviceStatus = advice.status;
+        }
+
+        adviceNotifyMessage += `${advice.status}: ${advice.title}\n`;
+        if (advice.content) {
+          adviceNotifyMessage += `${advice.content}\n`;
+        }
+      }
+      if (adviceStatus !== "SUCCESS") {
+        const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
+        notify(
+          notifyStyle,
+          t("sql-editor.sql-review-result"),
+          adviceNotifyMessage
+        );
+      }
+      tabStore.updateCurrentTab({
+        queryResult: sqlResultSet.data as any,
+        adviceList: sqlResultSet.adviceList,
+      });
       sqlEditorStore.fetchQueryHistoryList();
     } catch (error) {
-      tabStore.updateCurrentTab({ queryResult: undefined });
+      tabStore.updateCurrentTab({
+        queryResult: undefined,
+        adviceList: undefined,
+      });
       notify("CRITICAL", error as string);
     } finally {
       state.isLoadingData = false;

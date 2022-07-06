@@ -4,7 +4,7 @@ import { Database, IssueCreate, PITRContext, SYSTEM_BOT_ID } from "@/types";
 import { useBackupListByDatabaseId, useIssueStore } from "@/store";
 import { useI18n } from "vue-i18n";
 
-export const MIN_PITR_SUPPORT_MYSQL_VERSION = "5.7.0";
+export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
 export const usePITRLogic = (database: Ref<Database>) => {
   const { t } = useI18n();

@@ -89,7 +89,7 @@ const isDDLSQLStatement = computed(() => {
 const ctx = computed(() => sqlEditorStore.connectionContext);
 
 const docLink =
-  "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow";
+  "https://bytebase.com/docs/concepts/schema-change-workflow#ui-workflow?source=console";
 
 const handleColse = () => {
   emit("close");

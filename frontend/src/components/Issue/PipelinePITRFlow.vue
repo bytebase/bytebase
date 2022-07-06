@@ -46,8 +46,6 @@
         </div>
       </template>
     </div>
-
-    <div class="absolute right-0 top-0 bottom-0 w-10 hidden md:block"></div>
   </div>
 </template>
 

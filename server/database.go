@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -37,7 +38,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		databaseCreate.EnvironmentID = instance.EnvironmentID
 		project, err := s.store.GetProjectByID(ctx, databaseCreate.ProjectID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID[%d]", databaseCreate.ProjectID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", databaseCreate.ProjectID)).SetInternal(err)
 		}
 		if project == nil {
 			err := fmt.Errorf("project ID not found %v", databaseCreate.ProjectID)
@@ -88,6 +89,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		if name := c.QueryParam("name"); name != "" {
 			databaseFind.Name = &name
+		}
+		if syncStatusStr := c.QueryParam("syncStatus"); syncStatusStr != "" {
+			syncStatus := api.SyncStatus(syncStatusStr)
+			databaseFind.SyncStatus = &syncStatus
 		}
 		projectIDStr := c.QueryParams().Get("project")
 		if projectIDStr != "" {
@@ -141,15 +146,15 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 		// Wildcard(*) database is used to connect all database at instance level.
 		// Do not return it via `get database by id` API.
 		if database.Name == api.AllDatabaseName {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID[%d] is a wildcard *", id))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database with ID %d is a wildcard *", id))
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -177,10 +182,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &id})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
 		targetProject := database.Project
@@ -196,7 +201,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 			toProject, err := s.store.GetProjectByID(ctx, *dbPatch.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID[%d]", *dbPatch.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find project with ID %d", *dbPatch.ProjectID)).SetInternal(err)
 			}
 			if toProject == nil {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Project ID not found: %d", *dbPatch.ProjectID))
@@ -225,18 +230,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
 				if peerSchemaVersion != "" || peerSchema != "" {
-					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+					driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 					if err != nil {
 						return err
 					}
 					defer driver.Close(ctx)
-					schemaVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
-					if err != nil {
-						return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
-					}
-					if peerSchemaVersion != schemaVersion {
-						return fmt.Errorf("the schema version %q does not match the peer database schema version %q in the target tenant mode project %q", schemaVersion, peerSchemaVersion, toProject.Name)
-					}
 
 					var schemaBuf bytes.Buffer
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
@@ -264,10 +262,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		if dbPatch.ProjectID != nil {
 			dbExisting, err = s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &dbPatch.ID})
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID[%d]", id)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to patch database with ID %d", id)).SetInternal(err)
 			}
 			if dbExisting == nil {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID[%d]", id))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 			}
 		}
 
@@ -300,7 +298,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				}
 
 				if err != nil {
-					s.l.Warn("Failed to create project activity after transferring database",
+					log.Warn("Failed to create project activity after transferring database",
 						zap.Int("database_id", dbPatched.ID),
 						zap.String("database_name", dbPatched.Name),
 						zap.Int("old_project_id", dbExisting.ProjectID),
@@ -319,7 +317,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 					}
 					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
 					if err != nil {
-						s.l.Warn("Failed to create project activity after transferring database",
+						log.Warn("Failed to create project activity after transferring database",
 							zap.Int("database_id", dbPatched.ID),
 							zap.String("database_name", dbPatched.Name),
 							zap.Int("old_project_id", dbExisting.ProjectID),
@@ -359,7 +357,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			}
 			columnList, err := s.store.FindColumn(ctx, columnFind)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
 			table.ColumnList = columnList
 
@@ -416,7 +414,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 		columnList, err := s.store.FindColumn(ctx, columnFind)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch colmun list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch column list for database id: %d, table name: %s", id, tableName)).SetInternal(err)
 		}
 		table.ColumnList = columnList
 
@@ -502,70 +500,12 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database not found with ID %d", id))
 		}
 
-		backupCreate.Path, err = getAndCreateBackupPath(s.profile.DataDir, database, backupCreate.Name)
+		backup, err := s.scheduleBackupTask(ctx, database, backupCreate.Name, backupCreate.Type, backupCreate.StorageBackend, c.Get(getPrincipalIDContextKey()).(int))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create backup directory for database ID: %v", id)).SetInternal(err)
-		}
-
-		driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
-		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-
-		version, err := getLatestSchemaVersion(ctx, driver, database.Name)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get migration history for database %q", database.Name)).SetInternal(err)
-		}
-		backupCreate.MigrationHistoryVersion = version
-
-		backup, err := s.store.CreateBackup(ctx, backupCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Backup name already exists: %s", backupCreate.Name))
+			if common.ErrorCode(err) == common.DbConnectionFailure {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to connect to instance %q", database.Instance.Name)).SetInternal(err)
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup").SetInternal(err)
-		}
-
-		payload := api.TaskDatabaseBackupPayload{
-			BackupID: backup.ID,
-		}
-		bytes, err := json.Marshal(payload)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task payload").SetInternal(err)
-		}
-
-		createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
-			Name:      fmt.Sprintf("backup-pipeline-%s", backup.Name),
-			CreatorID: backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup pipeline").SetInternal(err)
-		}
-
-		createdStage, err := s.store.CreateStage(ctx, &api.StageCreate{
-			Name:          fmt.Sprintf("backup-stage-%s", backup.Name),
-			EnvironmentID: database.Instance.EnvironmentID,
-			PipelineID:    createdPipeline.ID,
-			CreatorID:     backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup stage").SetInternal(err)
-		}
-
-		_, err = s.store.CreateTask(ctx, &api.TaskCreate{
-			Name:       fmt.Sprintf("backup-task-%s", backup.Name),
-			PipelineID: createdPipeline.ID,
-			StageID:    createdStage.ID,
-			InstanceID: database.InstanceID,
-			DatabaseID: &database.ID,
-			Status:     api.TaskPending,
-			Type:       api.TaskDatabaseBackup,
-			Payload:    string(bytes),
-			CreatorID:  backupCreate.CreatorID,
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create backup task").SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to schedule task for backup %q", backupCreate.Name)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -875,7 +815,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
 	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
 	if err != nil {
 		return nil, err
@@ -884,7 +824,7 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{Logger: logger},
+		db.DriverConfig{PgInstanceDir: pgInstanceDir},
 		connCfg,
 		db.ConnectionContext{
 			EnvironmentName: instance.Environment.Name,
@@ -908,6 +848,11 @@ func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseNa
 	return db.ConnectionConfig{
 		Username: adminDataSource.Username,
 		Password: adminDataSource.Password,
+		TLSConfig: db.TLSConfig{
+			SslCA:   adminDataSource.SslCa,
+			SslCert: adminDataSource.SslCert,
+			SslKey:  adminDataSource.SslKey,
+		},
 		Host:     instance.Host,
 		Port:     instance.Port,
 		Database: databaseName,
@@ -916,7 +861,7 @@ func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseNa
 
 // We'd like to use read-only data source whenever possible, but fallback to admin data source if there's no read-only data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
-func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string, logger *zap.Logger) (db.Driver, error) {
+func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName string) (db.Driver, error) {
 	dataSource := api.DataSourceFromInstanceWithType(instance, api.RO)
 	// If there are no read-only data source, fall back to admin data source.
 	if dataSource == nil {
@@ -929,13 +874,19 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 	driver, err := getDatabaseDriver(
 		ctx,
 		instance.Engine,
-		db.DriverConfig{Logger: logger},
+		// We don't need postgres installation for query.
+		db.DriverConfig{},
 		db.ConnectionConfig{
 			Username: dataSource.Username,
 			Password: dataSource.Password,
 			Host:     instance.Host,
 			Port:     instance.Port,
 			Database: databaseName,
+			TLSConfig: db.TLSConfig{
+				SslCA:   dataSource.SslCa,
+				SslCert: dataSource.SslCert,
+				SslKey:  dataSource.SslKey,
+			},
 			ReadOnly: true,
 		},
 		db.ConnectionContext{

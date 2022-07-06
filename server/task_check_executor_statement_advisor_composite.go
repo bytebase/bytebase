@@ -8,32 +8,22 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/store"
 )
 
 // Schema review policy consists of a list of schema review rules.
-// There is such a logical mapping in bytebase backend:
+// There is such a logical mapping in Bytebase backend:
 //   1. One schema review policy maps a TaskCheckRun.
-//   2. Each schema reivew rule type maps an advisor.Type.
+//   2. Each schema review rule type maps an advisor.Type.
 //   3. Each [db.Type][AdvisorType] maps an advisor.
-//
-// How to add a schema review rule:
-//   1. Implement an advisor.(plugin/xxx)
-//   2. Register this advisor in map[db.Type][AdvisorType].(plugin/advisor.go)
-//   3. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
 // NewTaskCheckStatementAdvisorCompositeExecutor creates a task check statement advisor composite executor.
-func NewTaskCheckStatementAdvisorCompositeExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorCompositeExecutor{
-		l: logger,
-	}
+func NewTaskCheckStatementAdvisorCompositeExecutor() TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorCompositeExecutor{}
 }
 
 // TaskCheckStatementAdvisorCompositeExecutor is the task check statement advisor composite executor with has sub-advisor.
 type TaskCheckStatementAdvisorCompositeExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
@@ -50,15 +40,16 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
-	policy, err := server.store.GetSchemaReviewPolicyNormalByID(ctx, payload.PolicyID)
+	policy, err := server.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			return []api.TaskCheckResult{
 				{
-					Status:  api.TaskCheckStatusWarn,
-					Code:    common.TaskCheckEmptySchemaReviewPolicy,
-					Title:   "Empty schema review policy or disabled",
-					Content: "",
+					Status:    api.TaskCheckStatusWarn,
+					Namespace: api.AdvisorNamespace,
+					Code:      advisor.NotFound.Int(),
+					Title:     "Empty schema review policy or disabled",
+					Content:   "",
 				},
 			}, nil
 		}
@@ -70,134 +61,53 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get task by id: %w", err))
 	}
 
+	catalog := store.NewCatalog(task.DatabaseID, server.store)
+
+	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	if err != nil {
+		return nil, err
+	}
+
+	adviceList, err := advisor.SchemaReviewCheck(ctx, payload.Statement, policy, advisor.SchemaReviewCheckContext{
+		Charset:   payload.Charset,
+		Collation: payload.Collation,
+		DbType:    dbType,
+		Catalog:   catalog,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	result = []api.TaskCheckResult{}
-	for _, rule := range policy.RuleList {
-		if rule.Level == api.SchemaRuleLevelDisabled {
+	for _, advice := range adviceList {
+		status := api.TaskCheckStatusSuccess
+		switch advice.Status {
+		case advisor.Success:
 			continue
-		}
-		advisorType, err := getAdvisorTypeByRule(rule.Type, payload.DbType)
-		if err != nil {
-			exec.l.Debug("not supported rule", zap.Error(err))
-			continue
-		}
-		adviceList, err := advisor.Check(
-			payload.DbType,
-			advisorType,
-			advisor.Context{
-				Logger:    exec.l,
-				Charset:   payload.Charset,
-				Collation: payload.Collation,
-				Rule:      rule,
-				Catalog:   catalog.NewService(exec.l, task.DatabaseID, server.store),
-			},
-			payload.Statement,
-		)
-		if err != nil {
-			return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+		case advisor.Warn:
+			status = api.TaskCheckStatusWarn
+		case advisor.Error:
+			status = api.TaskCheckStatusError
 		}
 
-		for _, advice := range adviceList {
-			status := api.TaskCheckStatusSuccess
-			switch advice.Status {
-			case advisor.Success:
-				continue
-			case advisor.Warn:
-				status = api.TaskCheckStatusWarn
-			case advisor.Error:
-				status = api.TaskCheckStatusError
-			}
-
-			result = append(result, api.TaskCheckResult{
-				Status:  status,
-				Code:    advice.Code,
-				Title:   advice.Title,
-				Content: advice.Content,
-			})
-
-		}
-	}
-	// There may be multiple syntax errors, return one only.
-	if len(result) > 0 && result[0].Title == advisor.SyntaxErrorTitle {
-		return result[:1], nil
-	}
-	if len(result) == 0 {
 		result = append(result, api.TaskCheckResult{
-			Status:  api.TaskCheckStatusSuccess,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: "",
+			Status:    status,
+			Namespace: api.AdvisorNamespace,
+			Code:      advice.Code.Int(),
+			Title:     advice.Title,
+			Content:   advice.Content,
 		})
 	}
-	return result, nil
 
-}
-
-func getAdvisorTypeByRule(ruleType api.SchemaReviewRuleType, engine db.Type) (advisor.Type, error) {
-	switch ruleType {
-	case api.SchemaRuleStatementRequireWhere:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLWhereRequirement, nil
-		}
-	case api.SchemaRuleStatementNoLeadingWildcardLike:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNoLeadingWildcardLike, nil
-		}
-	case api.SchemaRuleStatementNoSelectAll:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNoSelectAll, nil
-		}
-	case api.SchemaRuleSchemaBackwardCompatibility:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLMigrationCompatibility, nil
-		}
-	case api.SchemaRuleTableNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNamingTableConvention, nil
-		}
-	case api.SchemaRuleIDXNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNamingIndexConvention, nil
-		}
-	case api.SchemaRuleUKNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNamingUKConvention, nil
-		}
-	case api.SchemaRuleFKNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNamingFKConvention, nil
-		}
-	case api.SchemaRuleColumnNaming:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLNamingColumnConvention, nil
-		}
-	case api.SchemaRuleRequiredColumn:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLColumnRequirement, nil
-		}
-	case api.SchemaRuleColumnNotNull:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLColumnNoNull, nil
-		}
-	case api.SchemaRuleTableRequirePK:
-		switch engine {
-		case db.MySQL, db.TiDB:
-			return advisor.MySQLTableRequirePK, nil
-		}
-	case api.SchemaRuleMySQLEngine:
-		if engine == db.MySQL {
-			return advisor.MySQLUseInnoDB, nil
-		}
+	if len(result) == 0 {
+		result = append(result, api.TaskCheckResult{
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   "",
+		})
 	}
-	return advisor.Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
+
+	return result, nil
 }

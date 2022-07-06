@@ -83,7 +83,8 @@
       </BBTableCell>
       <BBTableCell v-if="allowEdit">
         <button
-          class="normal-link"
+          :disabled="!allowRestore(backup)"
+          class="normal-link disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
           @click.stop="
             () => {
               state.restoredBackup = backup;
@@ -286,6 +287,10 @@ export default defineComponent({
       return props.allowEdit ? EDIT_COLUMN_LIST : NON_EDIT_COLUMN_LIST;
     });
 
+    const allowRestore = (backup: Backup) => {
+      return backup.status === "DONE";
+    };
+
     return {
       state,
       gotoMigrationHistory,
@@ -293,6 +298,7 @@ export default defineComponent({
       bytesToString,
       backupSectionList,
       statusIconClass,
+      allowRestore,
     };
   },
 });

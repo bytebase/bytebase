@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"go.uber.org/zap/zapcore"
 )
 
 // Status is the advisor result status.
@@ -28,24 +25,12 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-func (e Status) String() string {
-	switch e {
-	case Success:
-		return "INFO"
-	case Warn:
-		return "WARN"
-	case Error:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
-
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level api.SchemaReviewRuleLevel) (Status, error) {
+func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
-	case api.SchemaRuleLevelError:
+	case SchemaRuleLevelError:
 		return Error, nil
-	case api.SchemaRuleLevelWarning:
+	case SchemaRuleLevelWarning:
 		return Warn, nil
 	}
 	return "", fmt.Errorf("unexpected rule level type: %s", level)
@@ -57,6 +42,8 @@ type Type string
 const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
+
+	// MySQL Advisor
 
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
@@ -99,25 +86,62 @@ const (
 
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
+
+	// PostgreSQL Advisor
+
+	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
+	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
+
+	// PostgreSQLNamingTableConvention is an advisor type for PostgreSQL table naming convention.
+	PostgreSQLNamingTableConvention Type = "bb.plugin.advisor.postgresql.naming.table"
+
+	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
+	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
+	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
 )
 
 // Advice is the result of an advisor.
 type Advice struct {
-	Status  Status
-	Code    common.Code
-	Title   string
-	Content string
+	// Status is the SQL check result. Could be "SUCCESS", "WARN", "ERROR"
+	Status Status `json:"status"`
+	// Code is the SQL check error code.
+	Code    Code   `json:"code"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+// MarshalLogObject constructs a field that carries Advice.
+func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("status", string(a.Status))
+	enc.AddInt("code", int(a.Code))
+	enc.AddString("title", a.Title)
+	enc.AddString("content", a.Content)
+	return nil
+}
+
+// ZapAdviceArray is a helper to format zap.Array.
+type ZapAdviceArray []Advice
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
+func (array ZapAdviceArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for i := range array {
+		if err := enc.AppendObject(array[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Context is the context for advisor.
 type Context struct {
-	Logger    *zap.Logger
 	Charset   string
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *api.SchemaReviewRule
-	Catalog catalog.Service
+	Rule    *SchemaReviewRule
+	Catalog catalog.Catalog
 }
 
 // Advisor is the interface for advisor.
@@ -127,13 +151,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[db.Type]map[Type]Advisor)
+	advisors  = make(map[DBType]map[Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType db.Type, advType Type, f Advisor) {
+func Register(dbType DBType, advType Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -153,12 +177,12 @@ func Register(dbType db.Type, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advice, error) {
+func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice, error) {
 	advisorMu.RLock()
 	dbAdvisors, ok := advisors[dbType]
 	defer advisorMu.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
+		return nil, fmt.Errorf("advisor: unknown db advisor type %v", dbType)
 	}
 
 	f, ok := dbAdvisors[advType]
@@ -167,4 +191,20 @@ func Check(dbType db.Type, advType Type, ctx Context, statement string) ([]Advic
 	}
 
 	return f.Check(ctx, statement)
+}
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+		return true
+	}
+	return false
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(dbType DBType) bool {
+	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+		return true
+	}
+	return false
 }

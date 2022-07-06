@@ -10,13 +10,13 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"go.uber.org/zap"
 )
 
 // NewBackupRunner creates a new backup runner.
-func NewBackupRunner(logger *zap.Logger, server *Server, backupRunnerInterval time.Duration) *BackupRunner {
+func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
-		l:                    logger,
 		server:               server,
 		backupRunnerInterval: backupRunnerInterval,
 	}
@@ -24,7 +24,6 @@ func NewBackupRunner(logger *zap.Logger, server *Server, backupRunnerInterval ti
 
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
-	l                    *zap.Logger
 	server               *Server
 	backupRunnerInterval time.Duration
 }
@@ -34,13 +33,13 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(s.backupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	s.l.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
 	runningTasks := make(map[int]bool)
 	var mu sync.RWMutex
 	for {
 		select {
 		case <-ticker.C:
-			s.l.Debug("New auto backup round started...")
+			log.Debug("New auto backup round started...")
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -48,7 +47,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						if !ok {
 							err = fmt.Errorf("%v", r)
 						}
-						s.l.Error("Auto backup runner PANIC RECOVER", zap.Error(err), zap.Stack("stack"))
+						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
 
@@ -60,7 +59,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
 				if err != nil {
-					s.l.Error("Failed to retrieve backup settings match", zap.Error(err))
+					log.Error("Failed to retrieve backup settings match", zap.Error(err))
 					return
 				}
 
@@ -74,9 +73,13 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					mu.Unlock()
 
 					db := backupSetting.Database
+					if db.Name == api.AllDatabaseName {
+						// Skip backup job for wildcard database `*`.
+						continue
+					}
 					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
-						s.l.Debug("Schedule auto backup",
+						log.Debug("Schedule auto backup",
 							zap.String("database", database.Name),
 							zap.String("backup", backupName),
 						)
@@ -85,9 +88,9 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(runningTasks, backupSettingID)
 							mu.Unlock()
 						}()
-						err := s.scheduleBackupTask(ctx, database, backupName)
+						_, err := s.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID)
 						if err != nil {
-							s.l.Error("Failed to create automatic backup for database",
+							log.Error("Failed to create automatic backup for database",
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
 							return
@@ -98,7 +101,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 						_, err = http.PostForm(hookURL, nil)
 						if err != nil {
-							s.l.Warn("Failed to POST hook URL",
+							log.Warn("Failed to POST hook URL",
 								zap.String("hookURL", hookURL),
 								zap.Int("databaseID", database.ID),
 								zap.Error(err))
@@ -112,48 +115,39 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string) error {
-	path, err := getAndCreateBackupPath(s.server.profile.DataDir, database, backupName)
-	if err != nil {
-		return err
-	}
-
+func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database, backupName string, backupType api.BackupType, storageBackend api.BackupStorageBackend, creatorID int) (*api.Backup, error) {
 	// Store the migration history version if exists.
-	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.l)
+	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, s.pgInstanceDir)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get admin database driver, error: %w", err)
 	}
 	defer driver.Close(ctx)
+
 	migrationHistoryVersion, err := getLatestSchemaVersion(ctx, driver, database.Name)
 	if err != nil {
-		return fmt.Errorf("failed to get migration history for database %q: %w", database.Name, err)
+		return nil, fmt.Errorf("failed to get migration history for database %q, error: %w", database.Name, err)
 	}
-
-	// Return early if the backupOld already exists.
-	backupOld, err := s.server.store.FindBackup(ctx, &api.BackupFind{Name: &backupName})
-	if err != nil {
-		return fmt.Errorf("failed to find backup %q, error %v", backupName, err)
+	path := getBackupRelativeFilePath(database.ID, backupName)
+	if err := createBackupDirectory(s.profile.DataDir, database.ID); err != nil {
+		return nil, fmt.Errorf("failed to create backup directory, error: %w", err)
 	}
-	if backupOld != nil {
-		return nil
-	}
-
 	backupCreate := &api.BackupCreate{
-		CreatorID:               api.SystemBotID,
+		CreatorID:               creatorID,
 		DatabaseID:              database.ID,
 		Name:                    backupName,
-		Type:                    api.BackupTypeAutomatic,
-		MigrationHistoryVersion: migrationHistoryVersion,
-		StorageBackend:          api.BackupStorageBackendLocal,
+		StorageBackend:          storageBackend,
+		Type:                    backupType,
 		Path:                    path,
+		MigrationHistoryVersion: migrationHistoryVersion,
 	}
-	backupNew, err := s.server.store.CreateBackup(ctx, backupCreate)
+
+	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			// Automatic backup already exists.
-			return nil
+			// Backup already exists for the database.
+			return nil, nil
 		}
-		return fmt.Errorf("failed to create backup: %w", err)
+		return nil, fmt.Errorf("failed to create backup %q, error: %w", backupName, err)
 	}
 
 	payload := api.TaskDatabaseBackupPayload{
@@ -161,29 +155,29 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 	}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to create task payload: %w", err)
+		return nil, fmt.Errorf("failed to create task payload for backup %q, error: %w", backupName, err)
 	}
 
-	createdPipeline, err := s.server.store.CreatePipeline(ctx, &api.PipelineCreate{
-		Name:      backupName,
-		CreatorID: backupCreate.CreatorID,
+	createdPipeline, err := s.store.CreatePipeline(ctx, &api.PipelineCreate{
+		Name:      fmt.Sprintf("backup-%s", backupName),
+		CreatorID: creatorID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create pipeline: %w", err)
+		return nil, fmt.Errorf("failed to create pipeline for backup %q, error: %w", backupName, err)
 	}
 
-	createdStage, err := s.server.store.CreateStage(ctx, &api.StageCreate{
-		Name:          backupName,
+	createdStage, err := s.store.CreateStage(ctx, &api.StageCreate{
+		Name:          fmt.Sprintf("backup-%s", backupName),
 		EnvironmentID: database.Instance.EnvironmentID,
 		PipelineID:    createdPipeline.ID,
-		CreatorID:     backupCreate.CreatorID,
+		CreatorID:     creatorID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create stage: %w", err)
+		return nil, fmt.Errorf("failed to create stage for backup %q, error: %w", backupName, err)
 	}
 
-	_, err = s.server.store.CreateTask(ctx, &api.TaskCreate{
-		Name:       backupName,
+	_, err = s.store.CreateTask(ctx, &api.TaskCreate{
+		Name:       fmt.Sprintf("backup-%s", backupName),
 		PipelineID: createdPipeline.ID,
 		StageID:    createdStage.ID,
 		InstanceID: database.InstanceID,
@@ -191,10 +185,10 @@ func (s *BackupRunner) scheduleBackupTask(ctx context.Context, database *api.Dat
 		Status:     api.TaskPending,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
-		CreatorID:  backupCreate.CreatorID,
+		CreatorID:  creatorID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create task: %w", err)
+		return nil, fmt.Errorf("failed to create task for backup %q, error: %w", backupName, err)
 	}
-	return nil
+	return backupNew, nil
 }

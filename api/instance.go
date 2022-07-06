@@ -55,6 +55,9 @@ type InstanceCreate struct {
 	Port         string  `jsonapi:"attr,port"`
 	Username     string  `jsonapi:"attr,username"`
 	Password     string  `jsonapi:"attr,password"`
+	SslCa        string  `jsonapi:"attr,sslCa"`
+	SslCert      string  `jsonapi:"attr,sslCert"`
+	SslKey       string  `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after adding the instance. The client
 	// may set to false if the target instance contains too many databases
 	// to avoid the request timeout.
@@ -67,6 +70,9 @@ type InstanceFind struct {
 
 	// Standard fields
 	RowStatus *RowStatus
+
+	// Related fields
+	EnvironmentID *int
 }
 
 func (find *InstanceFind) String() string {
@@ -119,18 +125,6 @@ const (
 	// InstanceMigrationSchemaNotExist is the NOT_EXIST InstanceMigrationSchemaStatus.
 	InstanceMigrationSchemaNotExist InstanceMigrationSchemaStatus = "NOT_EXIST"
 )
-
-func (e InstanceMigrationSchemaStatus) String() string {
-	switch e {
-	case InstanceMigrationSchemaUnknown:
-		return "UNKNOWN"
-	case InstanceMigrationSchemaOK:
-		return "OK"
-	case InstanceMigrationSchemaNotExist:
-		return "NOT_EXIST"
-	}
-	return "UNKNOWN"
-}
 
 // InstanceMigration is the API message for instance migration.
 type InstanceMigration struct {

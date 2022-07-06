@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // Type is the type of a database.
@@ -118,6 +117,21 @@ type Table struct {
 	IndexList []Index
 }
 
+// InstanceMeta is the metadata for an instance.
+type InstanceMeta struct {
+	UserList     []User
+	DatabaseList []DatabaseMeta
+}
+
+// DatabaseMeta is the metadata for a database.
+type DatabaseMeta struct {
+	Name string
+	// CharacterSet isn't supported for ClickHouse, Snowflake.
+	CharacterSet string
+	// Collation isn't supported for ClickHouse, Snowflake.
+	Collation string
+}
+
 // Schema is the database schema.
 type Schema struct {
 	Name string
@@ -125,7 +139,6 @@ type Schema struct {
 	CharacterSet string
 	// Collation isn't supported for ClickHouse, Snowflake.
 	Collation     string
-	UserList      []User
 	TableList     []Table
 	ViewList      []View
 	ExtensionList []Extension
@@ -138,7 +151,7 @@ var (
 
 // DriverConfig is the driver configuration.
 type DriverConfig struct {
-	Logger *zap.Logger
+	PgInstanceDir string
 }
 
 type driverFunc func(DriverConfig) Driver
@@ -154,18 +167,6 @@ const (
 	// LIBRARY is the migration source type for LIBRARY.
 	LIBRARY MigrationSource = "LIBRARY"
 )
-
-func (e MigrationSource) String() string {
-	switch e {
-	case UI:
-		return "UI"
-	case VCS:
-		return "VCS"
-	case LIBRARY:
-		return "LIBRARY"
-	}
-	return "UNKNOWN"
-}
 
 // MigrationType is the type of a migration.
 type MigrationType string
@@ -187,20 +188,6 @@ const (
 	Data MigrationType = "DATA"
 )
 
-func (e MigrationType) String() string {
-	switch e {
-	case Baseline:
-		return "BASELINE"
-	case Migrate:
-		return "MIGRATE"
-	case Branch:
-		return "BRANCH"
-	case Data:
-		return "DATA"
-	}
-	return "UNKNOWN"
-}
-
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 
@@ -212,18 +199,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-func (e MigrationStatus) String() string {
-	switch e {
-	case Pending:
-		return "PENDING"
-	case Done:
-		return "DONE"
-	case Failed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
-}
 
 // MigrationInfoPayload is the API message for migration info payload.
 type MigrationInfoPayload struct {
@@ -243,6 +218,7 @@ type MigrationInfo struct {
 	Description    string
 	Creator        string
 	IssueID        string
+	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload        string
 	CreateDatabase bool
 	// UseSemanticVersion is whether version is a semantic version.
@@ -253,6 +229,10 @@ type MigrationInfo struct {
 	// SemanticVersionSuffix should be set to timestamp format of "20060102150405" (common.DefaultMigrationVersion) if UseSemanticVersion is set.
 	// Since stored version should be unique, we have to append a suffix if we allow users to baseline to the same semantic version for fixing schema drift.
 	SemanticVersionSuffix string
+	// Force is used to execute migration disregarding any migration history with PENDING or FAILED status.
+	// This applies to BASELINE and MIGRATE types of migrations because most of these migrations are retry-able.
+	// We don't use force option for DATA type of migrations yet till there's customer needs.
+	Force bool
 }
 
 // ParseMigrationInfo matches filePath against filePathTemplate
@@ -406,7 +386,9 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
 	GetVersion(ctx context.Context) (string, error)
-	SyncSchema(ctx context.Context) ([]*User, []*Schema, error)
+	// SyncSchema syncs the database schema. If databaseList is empty, we will sync all databases for the instance.
+	SyncSchema(ctx context.Context, databaseList ...string) ([]*Schema, error)
+	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 	Execute(ctx context.Context, statement string) error
@@ -433,6 +415,8 @@ type Driver interface {
 	Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error)
 	// Restore the database from sc, which is a full backup.
 	Restore(ctx context.Context, sc *bufio.Scanner) error
+	// RestoreTx restores the database from sc in the given transaction.
+	RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error
 }
 
 // Register makes a database driver available by the provided type.

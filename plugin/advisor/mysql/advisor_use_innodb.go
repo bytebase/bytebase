@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 )
@@ -21,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLUseInnoDB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.
@@ -42,6 +40,7 @@ func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 
 	checker := &useInnoDBChecker{
 		level: level,
+		title: string(ctx.Rule.Type),
 	}
 
 	for _, stmtNode := range root {
@@ -51,7 +50,7 @@ func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -62,17 +61,18 @@ func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 type useInnoDBChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 // Enter implements the ast.Visitor interface
 func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := common.Ok
+	code := advisor.Ok
 	switch node := in.(type) {
 	// CREATE TABLE
 	case *ast.CreateTableStmt:
 		for _, option := range node.Options {
 			if option.Tp == ast.TableOptionEngine && strings.ToLower(option.StrValue) != innoDB {
-				code = common.NotInnoDBEngine
+				code = advisor.NotInnoDBEngine
 				break
 			}
 		}
@@ -83,7 +83,7 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 			if spec.Tp == ast.AlterTableOption {
 				for _, option := range spec.Options {
 					if option.Tp == ast.TableOptionEngine && strings.ToLower(option.StrValue) != innoDB {
-						code = common.NotInnoDBEngine
+						code = advisor.NotInnoDBEngine
 						break
 					}
 				}
@@ -98,25 +98,25 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 				if err != nil {
 					v.adviceList = append(v.adviceList, advisor.Advice{
 						Status:  v.level,
-						Code:    common.Internal,
+						Code:    advisor.Internal,
 						Title:   "Internal error for use InnoDB rule",
 						Content: fmt.Sprintf("\"%s\" meet internal error %q", in.Text(), err.Error()),
 					})
 					continue
 				}
 				if text != innoDB {
-					code = common.NotInnoDBEngine
+					code = advisor.NotInnoDBEngine
 					break
 				}
 			}
 		}
 	}
 
-	if code != common.Ok {
+	if code != advisor.Ok {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
-			Title:   "InnoDB engine is not used",
+			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" doesn't use InnoDB engine", in.Text()),
 		})
 	}

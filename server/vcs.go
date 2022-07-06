@@ -25,7 +25,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 		}
 		// Trim ending "/"
 		vcsCreate.InstanceURL = strings.TrimRight(vcsCreate.InstanceURL, "/")
-		vcsCreate.APIURL = vcs.Get(vcsCreate.Type, vcs.ProviderConfig{Logger: s.l}).APIURL(vcsCreate.InstanceURL)
+		vcsCreate.APIURL = vcs.Get(vcsCreate.Type, vcs.ProviderConfig{}).APIURL(vcsCreate.InstanceURL)
 
 		vcs, err := s.store.CreateVCS(ctx, vcsCreate)
 		if err != nil {
@@ -115,7 +115,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
 		}
 		if err := s.store.DeleteVCS(ctx, vcsDelete); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete VCS with ID[%d]", id)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete VCS with ID %d", id)).SetInternal(err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -162,7 +162,7 @@ func (s *Server) registerVCSRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Failed to find VCS, ID: %v", id))
 		}
 
-		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{Logger: s.l}).FetchAllRepositoryList(
+		repoList, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).FetchAllRepositoryList(
 			ctx,
 			common.OauthContext{
 				ClientID:     vcsFound.ApplicationID,

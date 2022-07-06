@@ -50,7 +50,7 @@
               )
             }}
             <a
-              href="https://bytebase.com/docs/use-bytebase/webhook-integration/database-webhook"
+              href="https://bytebase.com/docs/features/webhook-integration/database-webhook?source=console"
               class="normal-link inline-flex flex-row items-center"
             >
               {{ $t("common.learn-more") }}
@@ -98,14 +98,23 @@
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("common.backups") }}
         </div>
-        <button
-          v-if="allowEdit"
-          type="button"
-          class="btn-normal whitespace-nowrap items-center"
-          @click.prevent="state.showCreateBackupModal = true"
-        >
-          {{ $t("database.backup-now") }}
-        </button>
+
+        <div class="flex-1 flex items-center justify-end">
+          <PITRRestoreButton
+            v-if="allowAdmin"
+            :database="database"
+            :allow-admin="allowAdmin"
+          />
+
+          <button
+            v-if="allowEdit"
+            type="button"
+            class="btn-normal whitespace-nowrap items-center"
+            @click.prevent="state.showCreateBackupModal = true"
+          >
+            {{ $t("database.backup-now") }}
+          </button>
+        </div>
       </div>
       <BackupTable
         :database="database"
@@ -150,7 +159,7 @@ import {
   NORMAL_POLL_INTERVAL,
   BackupPlanPolicyPayload,
   POLL_JITTER,
-  POST_CHANGE_POLL_INTERVAL,
+  MINIMUM_POLL_INTERVAL,
   UNKNOWN_ID,
 } from "../types";
 import BackupTable from "../components/BackupTable.vue";
@@ -323,7 +332,7 @@ export default defineComponent({
         databaseId: props.database.id,
         newBackup: newBackup,
       });
-      pollBackups(POST_CHANGE_POLL_INTERVAL);
+      pollBackups(MINIMUM_POLL_INTERVAL);
     };
 
     // pollBackups invalidates the current timer and schedule a new timer in <<interval>> microseconds

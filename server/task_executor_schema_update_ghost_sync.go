@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
@@ -23,15 +23,12 @@ import (
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
-func NewSchemaUpdateGhostSyncTaskExecutor(logger *zap.Logger) TaskExecutor {
-	return &SchemaUpdateGhostSyncTaskExecutor{
-		l: logger,
-	}
+func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
+	return &SchemaUpdateGhostSyncTaskExecutor{}
 }
 
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
-	l *zap.Logger
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
@@ -40,7 +37,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
-	return runGhostMigration(ctx, exec.l, server, task, db.Migrate, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runGhostMigration(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -81,15 +78,15 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	const (
 		allowedRunningOnMaster              = true
 		concurrentCountTableRows            = true
+		timestampAllTable                   = true
 		hooksStatusIntervalSec              = 60
-		replicaServerID                     = 99999
 		heartbeatIntervalMilliseconds       = 100
 		niceRatio                           = 0
 		chunkSize                           = 1000
 		dmlBatchSize                        = 10
 		maxLagMillisecondsThrottleThreshold = 1500
 		defaultNumRetries                   = 60
-		cutoverLockTimoutSeconds            = 3
+		cutoverLockTimeoutSeconds           = 3
 		exponentialBackoffMaxInterval       = 64
 	)
 	statement := strings.Join(strings.Fields(config.alterStatement), " ")
@@ -115,7 +112,6 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.AllowedRunningOnMaster = allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = hooksStatusIntervalSec
-	migrationContext.ReplicaServerId = replicaServerID
 	migrationContext.CutOverType = base.CutOverAtomic
 
 	if migrationContext.AlterStatement == "" {
@@ -138,8 +134,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	}
 	migrationContext.ServeSocketFile = config.socketFilename
 	migrationContext.PostponeCutOverFlagFile = config.postponeFlagFilename
-	// TODO(p0ny): set OkToDropTable to false and drop table in dropOriginalTable Task.
-	migrationContext.OkToDropTable = true
+	migrationContext.TimestampAllTable = timestampAllTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(niceRatio)
 	migrationContext.SetChunkSize(chunkSize)
@@ -147,7 +142,7 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	migrationContext.SetMaxLagMillisecondsThrottleThreshold(maxLagMillisecondsThrottleThreshold)
 	migrationContext.SetDefaultNumRetries(defaultNumRetries)
 	migrationContext.ApplyCredentials()
-	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimoutSeconds); err != nil {
+	if err := migrationContext.SetCutOverLockTimeoutSeconds(cutoverLockTimeoutSeconds); err != nil {
 		return nil, err
 	}
 	if err := migrationContext.SetExponentialBackoffMaxInterval(exponentialBackoffMaxInterval); err != nil {
@@ -156,36 +151,46 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func runGhostMigration(ctx context.Context, l *zap.Logger, server *Server, task *api.Task, migrationType db.MigrationType, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, l, server, task, migrationType, statement, schemaVersion, vcsPushEvent)
+func runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
 	if err != nil {
 		return true, nil, err
 	}
 
-	waitSync := &sync.WaitGroup{}
-	waitSync.Add(1)
+	syncDone := make(chan struct{})
+	syncError := make(chan error)
 
-	go func(waitSync *sync.WaitGroup) {
-		migrationID, schema, err := executeSync(ctx, l, task, mi, statement, waitSync)
+	go func() {
+		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
 		if err != nil {
-			l.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
+			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
+			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
+			// Then there's no consumer of syncError, so we must make sending to syncError non-blocking.
+			select {
+			case syncError <- fmt.Errorf("failed to execute schema update gh-ost sync executeSync, error: %w", err):
+			default:
+			}
 			return
 		}
-		_, _, err = postMigration(ctx, l, server, task, vcsPushEvent, mi, migrationID, schema)
+		_, _, err = postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
 		if err != nil {
-			l.Error("failed to execute schema update gh-ost sync postMigration", zap.Error(err))
+			log.Error("failed to execute schema update gh-ost sync postMigration", zap.Error(err))
 		}
-	}(waitSync)
+	}()
 
-	waitSync.Wait()
+	select {
+	case <-syncDone:
+		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
+	case err := <-syncError:
+		return true, nil, err
+	}
 
-	return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 }
 
-func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.MigrationInfo, statement string, waitSync *sync.WaitGroup) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, statement string, syncDone chan<- struct{}) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	statement = strings.TrimSpace(statement)
 
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, l)
+	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, "" /* pgInstanceDir */)
 	if err != nil {
 		return -1, "", err
 	}
@@ -212,14 +217,14 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := util.EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
-			l.Error("failed to update migration history record",
+		if err := util.EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
+			log.Error("failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
 			)
 		}
 	}()
-	if err = executeGhost(l, task, startedNs, statement, waitSync); err != nil {
+	if err = executeGhost(task, startedNs, statement, syncDone); err != nil {
 		return -1, "", err
 	}
 
@@ -231,7 +236,7 @@ func executeSync(ctx context.Context, l *zap.Logger, task *api.Task, mi *db.Migr
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement string, waitSync *sync.WaitGroup) error {
+func executeGhost(task *api.Task, startedNs int64, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -269,21 +274,22 @@ func executeGhost(l *zap.Logger, task *api.Task, startedNs int64, statement stri
 	defer cancel()
 	migrator := logic.NewMigrator(migrationContext)
 
-	go func(ctx context.Context, migrationContext *base.MigrationContext, l *zap.Logger, waitSync *sync.WaitGroup) {
+	go func(ctx context.Context, migrationContext *base.MigrationContext) {
 		ticker := time.NewTicker(1 * time.Second)
-		defer waitSync.Done()
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
 				// Since we are using postpone flag file to postpone cutover, it's gh-ost mechanism to set migrationContext.IsPostponingCutOver to 1 after synced and before postpone flag file is removed. We utilize this mechanism here to check if synced.
 				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
+					close(syncDone)
 					return
 				}
 			case <-ctx.Done():
 				return
 			}
 		}
-	}(ctx, migrationContext, l, waitSync)
+	}(ctx, migrationContext)
 
 	if err = migrator.Migrate(); err != nil {
 		return fmt.Errorf("failed to run gh-ost, error: %w", err)

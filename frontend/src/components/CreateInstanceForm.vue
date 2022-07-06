@@ -109,6 +109,7 @@
             :placeholder="defaultPort"
             :disabled="!allowEdit"
             :value="state.instance.port"
+            @wheel="$event.target.blur()"
             @input="handleInstancePortInput"
           />
         </div>
@@ -162,6 +163,18 @@
             :placeholder="$t('instance.password-write-only')"
             :value="state.instance.password"
             @input="handleInstancePasswordInput"
+          />
+        </div>
+
+        <div v-if="showSSL" class="sm:col-span-3 sm:col-start-1">
+          <div class="flex flex-row items-center space-x-2">
+            <label class="textlabel block">{{
+              $t("datasource.ssl-connection")
+            }}</label>
+          </div>
+          <SslCertificateForm
+            :value="state.instance"
+            @change="Object.assign(state.instance, $event)"
           />
         </div>
       </div>
@@ -233,10 +246,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
+import { SslCertificateForm } from "./InstanceForm";
 import { instanceSlug, isDev } from "../utils";
 import {
   InstanceCreate,
@@ -315,6 +329,19 @@ const defaultPort = computed(() => {
   return "3306";
 });
 
+const showSSL = computed((): boolean => {
+  return state.instance.engine === "CLICKHOUSE";
+});
+
+watch(showSSL, (ssl) => {
+  // Clean up SSL options when they are not needed.
+  if (!ssl) {
+    state.instance.sslCa = "";
+    state.instance.sslKey = "";
+    state.instance.sslCert = "";
+  }
+});
+
 const engineName = (type: EngineType): string => {
   switch (type) {
     case "CLICKHOUSE":
@@ -388,15 +415,24 @@ const cancel = () => {
 };
 
 const tryCreate = () => {
+  const { instance } = state;
   const connectionInfo: ConnectionInfo = {
-    engine: state.instance.engine,
-    username: state.instance.username,
-    password: state.instance.password,
+    engine: instance.engine,
+    username: instance.username,
+    password: instance.password,
     // When creating instance, the password is always needed.
     useEmptyPassword: false,
-    host: state.instance.host,
-    port: state.instance.port,
+    host: instance.host,
+    port: instance.port,
   };
+
+  if (showSSL.value) {
+    // Default to "NONE"
+    connectionInfo.sslCa = instance.sslCa ?? "";
+    connectionInfo.sslKey = instance.sslKey ?? "";
+    connectionInfo.sslCert = instance.sslCert ?? "";
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       doCreate();
@@ -435,15 +471,25 @@ const doCreate = () => {
 };
 
 const testConnection = () => {
+  const { instance } = state;
+
   const connectionInfo: ConnectionInfo = {
-    host: state.instance.host,
-    port: state.instance.port,
-    engine: state.instance.engine,
-    username: state.instance.username,
-    password: state.instance.password,
+    host: instance.host,
+    port: instance.port,
+    engine: instance.engine,
+    username: instance.username,
+    password: instance.password,
     useEmptyPassword: false,
     instanceId: undefined,
   };
+
+  if (showSSL.value) {
+    // Default to "NONE"
+    connectionInfo.sslCa = instance.sslCa ?? "";
+    connectionInfo.sslKey = instance.sslKey ?? "";
+    connectionInfo.sslCert = instance.sslCert ?? "";
+  }
+
   sqlStore.ping(connectionInfo).then((resultSet: SQLResultSet) => {
     if (isEmpty(resultSet.error)) {
       pushNotification({

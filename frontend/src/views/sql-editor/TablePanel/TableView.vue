@@ -129,7 +129,7 @@ const data = computed(() => {
   return temp;
 });
 const notifyMessage = computed(() => {
-  if (queryResult.value === null) {
+  if (!queryResult.value) {
     return t("sql-editor.table-empty-placehoder");
   }
   if (sqlEditorStore.isExecuting) {

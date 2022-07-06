@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // issueSubscriberRaw is the store model for an IssueSubscriber.
@@ -29,11 +30,11 @@ func (raw *issueSubscriberRaw) toIssueSubscriber() *api.IssueSubscriber {
 func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	issueSubRaw, err := s.createIssueSubscriberRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create IssueSubscriber with IssueSubscriberCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create IssueSubscriber with IssueSubscriberCreate[%+v], error: %w", create, err)
 	}
 	issueSub, err := s.composeIssueSubscriber(ctx, issueSubRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", issueSubRaw, err)
+		return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error: %w", issueSubRaw, err)
 	}
 	return issueSub, nil
 }
@@ -42,13 +43,13 @@ func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubs
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find IssueSubscriber list with IssueSubscriberFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find IssueSubscriber list with IssueSubscriberFind[%+v], error: %w", find, err)
 	}
 	var issueSubList []*api.IssueSubscriber
 	for _, raw := range issueSubRawList {
 		issueSub, err := s.composeIssueSubscriber(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose IssueSubscriber with issueSubRaw[%+v], error: %w", raw, err)
 		}
 		issueSubList = append(issueSubList, issueSub)
 	}
@@ -129,14 +130,15 @@ func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubsc
 // createIssueSubscriberImpl creates a new issueSubscriber.
 func createIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO issue_subscriber (
 			issue_id,
 			subscriber_id
 		)
 		VALUES ($1, $2)
 		RETURNING issue_id, subscriber_id
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.IssueID,
 		create.SubscriberID,
 	)
@@ -146,16 +148,20 @@ func createIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, create *api.Issu
 	}
 	defer row.Close()
 
-	row.Next()
-	var issueSubscriberRaw issueSubscriberRaw
-	if err := row.Scan(
-		&issueSubscriberRaw.IssueID,
-		&issueSubscriberRaw.SubscriberID,
-	); err != nil {
+	if row.Next() {
+		var issueSubscriberRaw issueSubscriberRaw
+		if err := row.Scan(
+			&issueSubscriberRaw.IssueID,
+			&issueSubscriberRaw.SubscriberID,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &issueSubscriberRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &issueSubscriberRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {

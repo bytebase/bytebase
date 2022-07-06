@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin/v2"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -23,7 +22,7 @@ func getRoleContextKey() string {
 	return roleContextKey
 }
 
-func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
+func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readonly bool) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		// Skips auth, actuator, plan
@@ -34,6 +33,10 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 		method := c.Request().Method
 		// Skip GET /subscription request
 		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
+			return next(c)
+		}
+		// Skip OpenAPI request
+		if common.HasPrefixes(c.Path(), openAPIPrefix) {
 			return next(c)
 		}
 
@@ -73,7 +76,7 @@ func aclMiddleware(l *zap.Logger, s *Server, ce *casbin.Enforcer, next echo.Hand
 			role = api.Owner
 		}
 		// Performs the ACL check.
-		pass, err := ce.Enforce(role.String(), path, method)
+		pass, err := ce.Enforce(string(role), path, method)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)

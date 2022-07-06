@@ -3,9 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/format"
 )
@@ -19,8 +17,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -48,8 +46,8 @@ func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement st
 		if checker.leadingWildcardLike {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.StatementLeadingWildcardLike,
-				Title:   "No leading wildcard LIKE",
+				Code:    advisor.StatementLeadingWildcardLike,
+				Title:   string(ctx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 			})
 		}
@@ -58,7 +56,7 @@ func (adv *NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context, statement st
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -81,7 +79,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for no leading wildcard LIKE rule",
 				Content: fmt.Sprintf("\"%s\" meet internal error %q", v.text, err.Error()),
 			})

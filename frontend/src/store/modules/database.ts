@@ -5,6 +5,7 @@ import {
   Backup,
   Database,
   DatabaseCreate,
+  DatabaseFind,
   DatabaseId,
   DatabaseLabel,
   DatabaseState,
@@ -308,8 +309,21 @@ export const useDatabaseStore = defineStore("database", {
         }
       }
     },
-    async fetchDatabaseListByInstanceId(instanceId: InstanceId) {
-      const data = (await axios.get(`/api/database?instance=${instanceId}`))
+    async fetchDatabaseList(databaseFind?: DatabaseFind) {
+      const queryList = [];
+      if (databaseFind?.projectId) {
+        queryList.push(`project=${databaseFind.projectId}`);
+      }
+      if (databaseFind?.instanceId) {
+        queryList.push(`instance=${databaseFind.instanceId}`);
+      }
+      if (databaseFind?.name) {
+        queryList.push(`name=${databaseFind.name}`);
+      }
+      if (databaseFind?.syncStatus) {
+        queryList.push(`syncStatus=${databaseFind.syncStatus}`);
+      }
+      const data = (await axios.get(`/api/database?${queryList.join("&")}`))
         .data;
       const databaseList: Database[] = data.data.map(
         (database: ResourceObject) => {
@@ -318,7 +332,14 @@ export const useDatabaseStore = defineStore("database", {
       );
       databaseList.sort(databaseSorter);
 
-      this.upsertDatabaseList({ databaseList, instanceId });
+      this.upsertDatabaseList({ databaseList });
+
+      return databaseList;
+    },
+    async fetchDatabaseListByInstanceId(instanceId: InstanceId) {
+      const databaseList = await this.fetchDatabaseList({
+        instanceId,
+      });
 
       return databaseList;
     },
@@ -329,36 +350,19 @@ export const useDatabaseStore = defineStore("database", {
       instanceId: InstanceId;
       name: string;
     }) {
-      const data = (
-        await axios.get(`/api/database?instance=${instanceId}&name=${name}`)
-      ).data;
-      const database = data.data[0];
-      return convert(database, data.included);
+      const databaseList = await this.fetchDatabaseList({
+        instanceId,
+        name,
+      });
+
+      return databaseList[0];
     },
     async fetchDatabaseListByProjectId(projectId: ProjectId) {
-      const data = (await axios.get(`/api/database?project=${projectId}`)).data;
-      const databaseList: Database[] = data.data.map(
-        (database: ResourceObject) => {
-          return convert(database, data.included);
-        }
-      );
-      databaseList.sort(databaseSorter);
+      const databaseList = await this.fetchDatabaseList({
+        projectId,
+      });
 
       this.setDatabaseListByProjectId({ databaseList, projectId });
-
-      return databaseList;
-    },
-    // Server uses the caller identity to fetch the database list related to the caller.
-    async fetchDatabaseList() {
-      const data = (await axios.get(`/api/database`)).data;
-      const databaseList: Database[] = data.data.map(
-        (database: ResourceObject) => {
-          return convert(database, data.included);
-        }
-      );
-      databaseList.sort(databaseSorter);
-
-      this.upsertDatabaseList({ databaseList });
 
       return databaseList;
     },

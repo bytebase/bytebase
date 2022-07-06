@@ -1,5 +1,7 @@
 // Check api/plan.go to understand what each feature means.
 export type FeatureType =
+  // Database management
+  | "bb.feature.disaster-recovery-pitr"
   // Change Workflow
   | "bb.feature.schema-review-policy"
   | "bb.feature.schema-drift"
@@ -7,6 +9,7 @@ export type FeatureType =
   | "bb.feature.multi-tenancy"
   | "bb.feature.dba-workflow"
   | "bb.feature.data-source"
+  | "bb.feature.online-migration"
   // Policy Control
   | "bb.feature.approval-policy"
   | "bb.feature.backup-policy"
@@ -45,6 +48,8 @@ export interface Plan {
 // TODO: fetch the matrix from the backend instead of duplicating it here or use a JSON/YAML file
 // so that it can be shared between frontend/backend.
 export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
+  // Database management
+  ["bb.feature.disaster-recovery-pitr", [false, true, true]],
   // Change Workflow
   ["bb.feature.schema-review-policy", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
@@ -52,6 +57,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   ["bb.feature.multi-tenancy", [false, true, true]],
   ["bb.feature.dba-workflow", [false, false, true]],
   ["bb.feature.data-source", [false, false, false]],
+  ["bb.feature.online-migration", [false, true, true]],
   // Policy Control
   ["bb.feature.approval-policy", [false, true, true]],
   ["bb.feature.backup-policy", [false, true, true]],
@@ -70,7 +76,7 @@ export const FEATURE_SECTIONS = [
       "schema-change",
       "migration-history",
       "sql-editor",
-      "database-backup-restore",
+      "disaster-recovery",
       "archiving",
       "sql-check",
       "anomaly-detection",
@@ -120,10 +126,22 @@ export const FREE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-upto-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-basic-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-basic-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -153,9 +171,9 @@ export const TEAM_PLAN: Plan = {
   type: PlanType.TEAM,
   trialDays: 14,
   unitPrice: 1740,
-  trialPrice: 14,
+  trialPrice: 0,
   freeInstanceCount: 5,
-  pricePerInstancePerMonth: 29,
+  pricePerInstancePerMonth: 79,
   // Plan desc and feature
   title: "team",
   features: [
@@ -164,10 +182,22 @@ export const TEAM_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-minimum-5",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",
@@ -201,7 +231,7 @@ export const TEAM_PLAN: Plan = {
 export const ENTERPRISE_PLAN: Plan = {
   // Plan meta data
   type: PlanType.ENTERPRISE,
-  trialDays: 7,
+  trialDays: 0,
   unitPrice: 0,
   trialPrice: 0,
   freeInstanceCount: 5,
@@ -214,10 +244,22 @@ export const ENTERPRISE_PLAN: Plan = {
       content:
         "subscription.feature-sections.database-management.features.instance-customized",
     },
-    { id: "schema-change" },
+    {
+      id: "schema-change",
+      content:
+        "subscription.feature-sections.database-management.features.schema-change-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.schema-change-advanced-tooltip",
+    },
     { id: "migration-history" },
     { id: "sql-editor" },
-    { id: "database-backup-restore" },
+    {
+      id: "disaster-recovery",
+      content:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced",
+      tooltip:
+        "subscription.feature-sections.database-management.features.disaster-recovery-advanced-tooltip",
+    },
     { id: "archiving" },
     {
       id: "sql-check",

@@ -60,14 +60,14 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	find := &api.ProjectFind{ID: &id}
 	projectRaw, err := s.getProjectRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Project with ID[%d], error[%w]", id, err)
+		return nil, fmt.Errorf("failed to get Project with ID %d, error: %w", id, err)
 	}
 	if projectRaw == nil {
 		return nil, nil
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error[%w]", projectRaw, err)
+		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
 	}
 	return project, nil
 }
@@ -76,13 +76,13 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
 	projectRawList, err := s.findProjectRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Project list with ProjectFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Project list with ProjectFind[%+v], error: %w", find, err)
 	}
 	var projectList []*api.Project
 	for _, raw := range projectRawList {
 		project, err := s.composeProject(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", raw, err)
 		}
 		projectList = append(projectList, project)
 	}
@@ -93,11 +93,11 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
 	projectRaw, err := s.createProjectRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Project with ProjectCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Project with ProjectCreate[%+v], error: %w", create, err)
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error[%w]", projectRaw, err)
+		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
 	}
 	return project, nil
 }
@@ -106,11 +106,11 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
 	projectRaw, err := s.patchProjectRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Project with ProjectPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Project with ProjectPatch[%+v], error: %w", patch, err)
 	}
 	project, err := s.composeProject(ctx, projectRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error[%w]", projectRaw, err)
+		return nil, fmt.Errorf("failed to compose Project with projectRaw[%+v], error: %w", projectRaw, err)
 	}
 	return project, nil
 }
@@ -143,7 +143,9 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 		}
 		res = append(res, &metric)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return res, nil
 }
 
@@ -306,7 +308,7 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 	if create.RoleProvider == "" {
 		create.RoleProvider = api.ProjectRoleProviderBytebase
 	}
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO project (
 			creator_id,
 			updater_id,
@@ -320,7 +322,8 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		)
 		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -335,27 +338,31 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 	}
 	defer row.Close()
 
-	row.Next()
-	var project projectRaw
-	if err := row.Scan(
-		&project.ID,
-		&project.RowStatus,
-		&project.CreatorID,
-		&project.CreatedTs,
-		&project.UpdaterID,
-		&project.UpdatedTs,
-		&project.Name,
-		&project.Key,
-		&project.WorkflowType,
-		&project.Visibility,
-		&project.TenantMode,
-		&project.DBNameTemplate,
-		&project.RoleProvider,
-	); err != nil {
+	if row.Next() {
+		var project projectRaw
+		if err := row.Scan(
+			&project.ID,
+			&project.RowStatus,
+			&project.CreatorID,
+			&project.CreatedTs,
+			&project.UpdaterID,
+			&project.UpdatedTs,
+			&project.Name,
+			&project.Key,
+			&project.WorkflowType,
+			&project.Visibility,
+			&project.TenantMode,
+			&project.DBNameTemplate,
+			&project.RoleProvider,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &project, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &project, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]*projectRaw, error) {
@@ -484,6 +491,8 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 
 		return &project, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
 }

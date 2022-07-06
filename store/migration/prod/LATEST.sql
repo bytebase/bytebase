@@ -540,7 +540,8 @@ CREATE TABLE backup (
     storage_backend TEXT NOT NULL CHECK (storage_backend IN ('LOCAL', 'S3', 'GCS', 'OSS')),
     migration_history_version TEXT NOT NULL,
     path TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT ''
+    comment TEXT NOT NULL DEFAULT '',
+    payload JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_backup_database_id ON backup(database_id);
@@ -662,6 +663,29 @@ CREATE TRIGGER update_task_updated_ts
 BEFORE
 UPDATE
     ON task FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
+-- task_dag describes task dependency relationship
+-- from_task_id blocks to_task_id
+CREATE TABLE task_dag (
+    id SERIAL PRIMARY KEY,
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    from_task_id INTEGER NOT NULL REFERENCES task (id),
+    to_task_id INTEGER NOT NULL REFERENCES task (id),
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON task_dag(to_task_id);
+
+ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_task_dag_updated_ts
+BEFORE
+UPDATE
+    ON task_dag FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
 -- task run table stores the task run

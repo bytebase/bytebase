@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -43,11 +45,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		// Try creating the "bytebase" db in the added instance if needed.
 		// Since we allow user to add new instance upfront even providing the incorrect username/password,
 		// thus it's OK if it fails. Frontend will surface relevant info suggesting the "bytebase" db hasn't created yet.
-		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstanceDir)
 		if err == nil {
 			defer db.Close(ctx)
 			if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-				s.l.Warn("Failed to setup migration schema on instance creation",
+				log.Warn("Failed to setup migration schema on instance creation",
 					zap.String("instance_name", instance.Name),
 					zap.String("engine", string(instance.Engine)),
 					zap.Error(err))
@@ -143,9 +145,27 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		if instancePatch.RowStatus != nil || instancePatch.Name != nil || instancePatch.ExternalLink != nil || instancePatch.Host != nil || instancePatch.Port != nil {
 			// Users can switch instance status from ARCHIVED to NORMAL.
 			// So we need to check the current instance count with NORMAL status for quota limitation.
-			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == api.Normal.String() {
+			if instancePatch.RowStatus != nil && *instancePatch.RowStatus == string(api.Normal) {
 				if err := s.instanceCountGuard(ctx); err != nil {
 					return err
+				}
+			}
+			// Ensure all databases belong to this instance are under the default project before instance is archived.
+			if v := instancePatch.RowStatus; v != nil && *v == string(api.Archived) {
+				databases, err := s.store.FindDatabase(ctx, &api.DatabaseFind{InstanceID: &id})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError,
+						fmt.Errorf("Failed to find databases in the instance %d", id)).SetInternal(err)
+				}
+				var databaseNameList []string
+				for _, database := range databases {
+					if database.ProjectID != api.DefaultProjectID {
+						databaseNameList = append(databaseNameList, database.Name)
+					}
+				}
+				if len(databaseNameList) > 0 {
+					return echo.NewHTTPError(http.StatusBadRequest,
+						fmt.Sprintf("You should transfer these databases to the default project before archiving the instance: %s.", strings.Join(databaseNameList, ", ")))
 				}
 			}
 			instancePatched, err = s.store.PatchInstance(ctx, instancePatch)
@@ -159,11 +179,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 
 		// Try immediately setup the migration schema, sync the engine version and schema after updating any connection related info.
 		if instancePatch.Host != nil || instancePatch.Port != nil {
-			db, err := getAdminDatabaseDriver(ctx, instancePatched, "", s.l)
+			db, err := getAdminDatabaseDriver(ctx, instancePatched, "", s.pgInstanceDir)
 			if err == nil {
 				defer db.Close(ctx)
 				if err := db.SetupMigrationIfNeeded(ctx); err != nil {
-					s.l.Warn("Failed to setup migration schema on instance update",
+					log.Warn("Failed to setup migration schema on instance update",
 						zap.String("instance_name", instancePatched.Name),
 						zap.String("engine", string(instancePatched.Engine)),
 						zap.Error(err))
@@ -216,7 +236,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		resultSet := &api.SQLResultSet{}
-		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstanceDir)
 		if err != nil {
 			resultSet.Error = err.Error()
 		} else {
@@ -249,7 +269,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		instanceMigration := &api.InstanceMigration{}
-		db, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+		db, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstanceDir)
 		if err != nil {
 			instanceMigration.Status = api.InstanceMigrationSchemaUnknown
 			instanceMigration.Error = err.Error()
@@ -294,7 +314,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		find := &db.MigrationHistoryFind{ID: &historyID}
-		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstanceDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history ID %d for instance %q", id, instance.Name)).SetInternal(err)
 		}
@@ -369,7 +389,7 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 		}
 
 		historyList := []*api.MigrationHistory{}
-		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.l)
+		driver, err := getAdminDatabaseDriver(ctx, instance, "", s.pgInstanceDir)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch migration history for instance %q", instance.Name)).SetInternal(err)
 		}

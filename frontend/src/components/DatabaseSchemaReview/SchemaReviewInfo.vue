@@ -49,13 +49,17 @@
             :disabled="env.disabled"
             :checked="env.id === selectedEnvironment?.id"
             @change="$emit('env-change', env)"
-            class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+            class="text-accent disabled:text-accent-disabled focus:ring-accent"
             :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
           />
           <label
             :for="`${env.id}`"
             class="ml-2 items-center text-sm"
-            :class="env.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
+            :class="
+              env.disabled
+                ? 'cursor-not-allowed text-gray-400'
+                : 'cursor-pointer'
+            "
           >
             {{ env.displayName }}
           </label>

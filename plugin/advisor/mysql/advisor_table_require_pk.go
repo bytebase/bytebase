@@ -3,14 +3,12 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 const (
@@ -22,8 +20,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLTableRequirePK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
@@ -43,9 +41,9 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 	}
 	checker := &tableRequirePKChecker{
 		level:   level,
+		title:   string(ctx.Rule.Type),
 		tables:  make(tablePK),
 		catalog: ctx.Catalog,
-		logger:  ctx.Logger,
 	}
 
 	for _, stmtNode := range root {
@@ -58,9 +56,9 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 type tableRequirePKChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 	tables     tablePK
-	catalog    catalog.Service
-	logger     *zap.Logger
+	catalog    catalog.Catalog
 }
 
 // Enter implements the ast.Visitor interface
@@ -123,8 +121,8 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 		if len(v.tables[tableName]) == 0 {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
-				Code:    common.TableNoPK,
-				Title:   "Require PRIMARY KEY",
+				Code:    advisor.TableNoPK,
+				Title:   v.title,
 				Content: fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
 			})
 		}
@@ -133,7 +131,7 @@ func (v *tableRequirePKChecker) generateAdviceList() []advisor.Advice {
 	if len(v.adviceList) == 0 {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -166,10 +164,10 @@ func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 			IndexName: primaryKeyName,
 		})
 		if err != nil {
-			v.logger.Error(
-				"Cannot find primary key in table",
-				zap.String("table_name", table),
-				zap.Error(err),
+			log.Printf(
+				"Cannot find primary key in table %s with error %v\n",
+				table,
+				err,
 			)
 			return
 		}

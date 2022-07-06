@@ -6,140 +6,138 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNamingUKConvention(t *testing.T) {
-	tests := []test{
+	tests := []advisor.TestCase{
 		{
-			statement: "CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name)",
-			want: []advisor.Advice{
+			Statement: "CREATE UNIQUE INDEX uk_tech_book_id_name ON tech_book(id, name)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
 			},
 		},
 		{
-			statement: "CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name)",
-			want: []advisor.Advice{
+			Statement: "CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
 		},
 		{
-			statement: "ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE tech_book ADD UNIQUE uk_tech_book_id_name (id, name)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
 			},
 		},
 		{
-			statement: "ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name)",
-			want: []advisor.Advice{
+			Statement: "ALTER TABLE tech_book ADD UNIQUE tech_book_id_name (id, name)",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
 				},
 			},
 		},
 		{
-			statement: fmt.Sprintf(
+			Statement: fmt.Sprintf(
 				"ALTER TABLE tech_book RENAME INDEX %s TO uk_tech_book_%s",
-				MockOldUKName,
-				strings.Join(MockIndexColumnList, "_"),
+				advisor.MockOldUKName,
+				strings.Join(advisor.MockIndexColumnList, "_"),
 			),
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
 			},
 		},
 		{
-			statement: fmt.Sprintf(
+			Statement: fmt.Sprintf(
 				"ALTER TABLE tech_book RENAME INDEX %s TO uk_tech_book",
-				MockOldUKName,
+				advisor.MockOldUKName,
 			),
-			want: []advisor.Advice{
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `uk_tech_book`",
 				},
 			},
 		},
 		{
-			statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_tech_book_name (name))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX uk_tech_book_name (name))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
-					Code:    common.Ok,
+					Code:    advisor.Ok,
 					Title:   "OK",
 					Content: "",
 				},
 			},
 		},
 		{
-			statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},
 		},
 		{
-			statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},
 		},
 		{
-			statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
-			want: []advisor.Advice{
+			Statement: "CREATE TABLE tech_book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE KEY (name))",
+			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
-					Code:    common.NamingUKConventionMismatch,
-					Title:   "Mismatch unique key naming convention",
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
 					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
 				},
 			},
 		},
 	}
 
-	payload, err := json.Marshal(api.NamingRulePayload{
+	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format: "^uk_{{table}}_{{column_list}}$",
 	})
 	require.NoError(t, err)
-	runSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &api.SchemaReviewRule{
-		Type:    api.SchemaRuleUKNaming,
-		Level:   api.SchemaRuleLevelError,
+	advisor.RunSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &advisor.SchemaReviewRule{
+		Type:    advisor.SchemaRuleUKNaming,
+		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &MockCatalogService{})
+	}, &advisor.MockCatalogService{})
 }

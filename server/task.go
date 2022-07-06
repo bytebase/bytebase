@@ -13,7 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/common/log"
 )
 
 var (
@@ -75,7 +75,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			// Tenant mode project don't allow updating SQL statement.
 			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID[%d]", issue.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
 			}
 			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
 				err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")
@@ -136,6 +136,23 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				}
 				payloadStr := string(bytes)
 				taskPatch.Payload = &payloadStr
+
+			case api.TaskDatabaseSchemaUpdateGhostSync:
+				payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
+				if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed database data update payload").SetInternal(err)
+				}
+				oldStatement = payload.Statement
+				payload.Statement = *taskPatch.Statement
+				// We should update the schema version if we've updated the SQL, otherwise we will
+				// get migration history version conflict if the previous task has been attempted.
+				payload.SchemaVersion = common.DefaultMigrationVersion()
+				bytes, err := json.Marshal(payload)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct updated task payload").SetInternal(err)
+				}
+				payloadStr := string(bytes)
+				taskPatch.Payload = &payloadStr
 			}
 		}
 
@@ -145,7 +162,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		// create an activity and trigger task check for statement update
-		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate {
+		if taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseDataUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
 			if oldStatement != newStatement {
 				// create an activity
 				if issue == nil {
@@ -177,11 +194,27 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create activity after updating task statement: %v", taskPatched.Name)).SetInternal(err)
 				}
 
-				// For now, we supported MySQL and TiDB dialect check
-				if taskPatched.Database.Instance.Engine == db.MySQL || taskPatched.Database.Instance.Engine == db.TiDB {
+				if taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostSync {
+					_, err = s.store.CreateTaskCheckRunIfNeeded(ctx, &api.TaskCheckRunCreate{
+						CreatorID:               taskPatched.CreatorID,
+						TaskID:                  task.ID,
+						Type:                    api.TaskCheckGhostSync,
+						SkipIfAlreadyTerminated: false,
+					})
+					if err != nil {
+						// It's OK if we failed to trigger a check, just emit an error log
+						log.Error("Failed to trigger gh-ost dry run after changing the task statement",
+							zap.Int("task_id", task.ID),
+							zap.String("task_name", task.Name),
+							zap.Error(err),
+						)
+					}
+				}
+
+				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
-						DbType:    taskPatched.Database.Instance.Engine,
+						DbType:    task.Database.Instance.Engine,
 						Charset:   taskPatched.Database.CharacterSet,
 						Collation: taskPatched.Database.Collation,
 					})
@@ -197,17 +230,17 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					})
 					if err != nil {
 						// It's OK if we failed to trigger a check, just emit an error log
-						s.l.Error("Failed to trigger syntax check after changing task statement",
+						log.Error("Failed to trigger syntax check after changing the task statement",
 							zap.Int("task_id", task.ID),
 							zap.String("task_name", task.Name),
 							zap.Error(err),
 						)
 					}
+				}
 
-					if s.feature(api.FeatureSchemaReviewPolicy) {
-						if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
-							return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
-						}
+				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine) {
+					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}
 				}
 			}
@@ -261,7 +294,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			})
 			if err != nil {
 				// It's OK if we failed to trigger a check, just emit an error log
-				s.l.Error("Failed to trigger timing check after changing task earliest allowed time",
+				log.Error("Failed to trigger timing check after changing task earliest allowed time",
 					zap.Int("task_id", task.ID),
 					zap.String("task_name", task.Name),
 					zap.Error(err),
@@ -300,23 +333,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Task not found with ID %d", taskID))
 		}
 
-		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
-		}
-		if issue == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", task.PipelineID))
-		}
-		if issue.AssigneeID == api.SystemBotID {
-			currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
-			}
-			if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update this task status")
-			}
-		} else if issue.AssigneeID != currentPrincipalID {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+		if err := s.validateIssueAssignee(ctx, currentPrincipalID, task.PipelineID); err != nil {
+			return err
 		}
 
 		taskPatched, err := s.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
@@ -363,6 +381,28 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 	})
 }
 
+func (s *Server) validateIssueAssignee(ctx context.Context, currentPrincipalID, pipelineID int) error {
+	issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find issue").SetInternal(err)
+	}
+	if issue == nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue not found by pipeline ID: %d", pipelineID))
+	}
+	if issue.AssigneeID == api.SystemBotID {
+		currentPrincipal, err := s.store.GetPrincipalByID(ctx, currentPrincipalID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find principal").SetInternal(err)
+		}
+		if currentPrincipal.Role != api.Owner && currentPrincipal.Role != api.DBA {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Only allow Owner/DBA system account to update task status")
+		}
+	} else if issue.AssigneeID != currentPrincipalID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Only allow the assignee to update task status")
+	}
+	return nil
+}
+
 func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus api.TaskStatus, updaterID int) (*api.Task, error) {
 	taskStatusPatch := &api.TaskStatusPatch{
 		ID:        task.ID,
@@ -375,7 +415,7 @@ func (s *Server) changeTaskStatus(ctx context.Context, task *api.Task, newStatus
 func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, taskStatusPatch *api.TaskStatusPatch) (_ *api.Task, err error) {
 	defer func() {
 		if err != nil {
-			s.l.Error("Failed to change task status.",
+			log.Error("Failed to change task status.",
 				zap.Int("id", task.ID),
 				zap.String("name", task.Name),
 				zap.String("old_status", string(task.Status)),
@@ -404,7 +444,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
-		s.l.Info("Pipeline has no linking issue",
+		log.Info("Pipeline has no linking issue",
 			zap.Int("pipelineID", task.PipelineID),
 			zap.String("task", task.Name))
 	}
@@ -453,14 +493,18 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 		return nil, err
 	}
 
-	// If create database or schema update task completes, we sync the corresponding instance schema immediately.
-	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate) &&
-		taskPatched.Status == api.TaskDone {
+	// If create database, schema update and gh-ost cutover task completes, we sync the corresponding instance schema immediately.
+	if (taskPatched.Type == api.TaskDatabaseCreate || taskPatched.Type == api.TaskDatabaseSchemaUpdate || taskPatched.Type == api.TaskDatabaseSchemaUpdateGhostCutover) && taskPatched.Status == api.TaskDone {
 		instance, err := s.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sync instance schema after completing task: %w", err)
 		}
-		s.syncEngineVersionAndSchema(ctx, instance)
+		if err := s.syncDatabaseSchema(ctx, instance, taskPatched.Database.Name); err != nil {
+			log.Error("failed to sync database schema",
+				zap.String("instance", instance.Name),
+				zap.String("databaseName", taskPatched.Database.Name),
+			)
+		}
 	}
 
 	// If this is the last task in the pipeline and just completed, and the assignee is system bot:
@@ -504,7 +548,7 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 
 	if err != nil {
 		// It's OK if we failed to find the schema review policy, just emit an error log
-		s.l.Error("Failed to found schema review policy id for task",
+		log.Error("Failed to found schema review policy id for task",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Int("environment_id", task.Instance.EnvironmentID),
@@ -532,7 +576,7 @@ func (s *Server) triggerDatabaseStatementAdviseTask(ctx context.Context, stateme
 		SkipIfAlreadyTerminated: false,
 	}); err != nil {
 		// It's OK if we failed to trigger a check, just emit an error log
-		s.l.Error("Failed to trigger statement advise task after changing task statement",
+		log.Error("Failed to trigger statement advise task after changing task statement",
 			zap.Int("task_id", task.ID),
 			zap.String("task_name", task.Name),
 			zap.Error(err),

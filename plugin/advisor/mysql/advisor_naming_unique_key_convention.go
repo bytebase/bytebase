@@ -3,15 +3,12 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 var (
@@ -19,8 +16,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingUKConvention, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
@@ -39,16 +36,16 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := api.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingUKConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
-		logger:       ctx.Logger,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -57,7 +54,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -68,10 +65,10 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 type namingUKConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
-	catalog      catalog.Service
-	logger       *zap.Logger
+	catalog      catalog.Catalog
 }
 
 // Enter implements the ast.Visitor interface
@@ -83,7 +80,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for unique key naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
@@ -92,8 +89,8 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingUKConventionMismatch,
-				Title:   "Mismatch unique key naming convention",
+				Code:    advisor.NamingUKConventionMismatch,
+				Title:   checker.title,
 				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
@@ -121,8 +118,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					columnList = append(columnList, key.Column.Name.String())
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: constraint.Name,
@@ -141,12 +138,15 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					checker.logger.Error(
-						"Cannot find index in table",
-						zap.String("table_name", node.Table.Name.String()),
-						zap.String("index_name", spec.FromKey.String()),
-						zap.Error(err),
+					log.Printf(
+						"Cannot find index %s in table %s with error %v\n",
+						node.Table.Name.String(),
+						spec.FromKey.String(),
+						err,
 					)
+					continue
+				}
+				if index == nil {
 					continue
 				}
 				if !index.Unique {
@@ -154,8 +154,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					continue
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: spec.ToKey.String(),
@@ -171,8 +171,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 					}
 
 					metaData := map[string]string{
-						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-						api.TableNameTemplateToken:  node.Table.Name.String(),
+						advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+						advisor.TableNameTemplateToken:  node.Table.Name.String(),
 					}
 					res = append(res, &indexMetaData{
 						indexName: spec.Constraint.Name,
@@ -189,8 +189,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				columnList = append(columnList, spec.Column.Name.String())
 			}
 			metaData := map[string]string{
-				api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				api.TableNameTemplateToken:  node.Table.Name.String(),
+				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+				advisor.TableNameTemplateToken:  node.Table.Name.String(),
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.IndexName,

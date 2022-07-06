@@ -3,9 +3,7 @@ package mysql
 import (
 	"fmt"
 
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/db"
 
 	"github.com/pingcap/tidb/parser/ast"
 )
@@ -15,8 +13,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLMigrationCompatibility, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.
@@ -35,7 +33,10 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 		return nil, err
 	}
 
-	c := &compatibilityChecker{level: level}
+	c := &compatibilityChecker{
+		level: level,
+		title: string(ctx.Rule.Type),
+	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(c)
 	}
@@ -43,7 +44,7 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 	if len(c.adviceList) == 0 {
 		c.adviceList = append(c.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -54,62 +55,63 @@ func (adv *CompatibilityAdvisor) Check(ctx advisor.Context, statement string) ([
 type compatibilityChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
+	title      string
 }
 
 // Enter implements the ast.Visitor interface
 func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := common.Ok
+	code := advisor.Ok
 	switch node := in.(type) {
 	// DROP DATABASE
 	case *ast.DropDatabaseStmt:
-		code = common.CompatibilityDropDatabase
+		code = advisor.CompatibilityDropDatabase
 	// RENAME TABLE
 	case *ast.RenameTableStmt:
-		code = common.CompatibilityRenameTable
+		code = advisor.CompatibilityRenameTable
 	// DROP TABLE/VIEW
 	case *ast.DropTableStmt:
-		code = common.CompatibilityDropTable
+		code = advisor.CompatibilityDropTable
 	// ALTER TABLE
 	case *ast.AlterTableStmt:
 		for _, spec := range node.Specs {
 			// RENAME COLUMN
 			if spec.Tp == ast.AlterTableRenameColumn {
-				code = common.CompatibilityRenameColumn
+				code = advisor.CompatibilityRenameColumn
 				break
 			}
 			// DROP COLUMN
 			if spec.Tp == ast.AlterTableDropColumn {
-				code = common.CompatibilityDropColumn
+				code = advisor.CompatibilityDropColumn
 				break
 			}
 			// RENAME TABLE
 			if spec.Tp == ast.AlterTableRenameTable {
-				code = common.CompatibilityRenameTable
+				code = advisor.CompatibilityRenameTable
 				break
 			}
 
 			if spec.Tp == ast.AlterTableAddConstraint {
 				// ADD PRIMARY KEY
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey {
-					code = common.CompatibilityAddPrimaryKey
+					code = advisor.CompatibilityAddPrimaryKey
 					break
 				}
 				// ADD UNIQUE/UNIQUE KEY/UNIQUE INDEX
 				if spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
 					spec.Constraint.Tp == ast.ConstraintUniq ||
 					spec.Constraint.Tp == ast.ConstraintUniqKey {
-					code = common.CompatibilityAddUniqueKey
+					code = advisor.CompatibilityAddUniqueKey
 					break
 				}
 				// ADD FOREIGN KEY
 				if spec.Constraint.Tp == ast.ConstraintForeignKey {
-					code = common.CompatibilityAddForeignKey
+					code = advisor.CompatibilityAddForeignKey
 					break
 				}
 				// Check is only supported after 8.0.16 https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html
 				// ADD CHECK ENFORCED
 				if spec.Constraint.Tp == ast.ConstraintCheck && spec.Constraint.Enforced {
-					code = common.CompatibilityAddCheck
+					code = advisor.CompatibilityAddCheck
 					break
 				}
 			}
@@ -118,7 +120,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// ALTER CHECK ENFORCED
 			if spec.Tp == ast.AlterTableAlterCheck {
 				if spec.Constraint.Enforced {
-					code = common.CompatibilityAlterCheck
+					code = advisor.CompatibilityAlterCheck
 					break
 				}
 			}
@@ -129,7 +131,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 			// 1. Change to a compatible data type such as INT to BIGINT
 			// 2. Change property like comment, change it to NULL
 			if spec.Tp == ast.AlterTableModifyColumn || spec.Tp == ast.AlterTableChangeColumn {
-				code = common.CompatibilityAlterColumn
+				code = advisor.CompatibilityAlterColumn
 				break
 			}
 		}
@@ -140,15 +142,15 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// CREATE UNIQUE INDEX
 	case *ast.CreateIndexStmt:
 		if node.KeyType == ast.IndexKeyTypeUnique {
-			code = common.CompatibilityAddUniqueKey
+			code = advisor.CompatibilityAddUniqueKey
 		}
 	}
 
-	if code != common.Ok {
+	if code != advisor.Ok {
 		v.adviceList = append(v.adviceList, advisor.Advice{
 			Status:  v.level,
 			Code:    code,
-			Title:   "Potential incompatible migration",
+			Title:   v.title,
 			Content: fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", in.Text()),
 		})
 	}

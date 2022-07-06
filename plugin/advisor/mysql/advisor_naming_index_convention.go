@@ -3,16 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"github.com/bytebase/bytebase/plugin/catalog"
-	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/pingcap/tidb/parser/ast"
-	"go.uber.org/zap"
 )
 
 var (
@@ -20,8 +17,8 @@ var (
 )
 
 func init() {
-	advisor.Register(db.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
-	advisor.Register(db.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLNamingIndexConvention, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.
@@ -40,16 +37,16 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 		return nil, err
 	}
 
-	format, templateList, err := api.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingIndexConventionChecker{
 		level:        level,
+		title:        string(ctx.Rule.Type),
 		format:       format,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
-		logger:       ctx.Logger,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -58,7 +55,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 	if len(checker.adviceList) == 0 {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  advisor.Success,
-			Code:    common.Ok,
+			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
 		})
@@ -70,10 +67,10 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 type namingIndexConventionChecker struct {
 	adviceList   []advisor.Advice
 	level        advisor.Status
+	title        string
 	format       string
 	templateList []string
-	catalog      catalog.Service
-	logger       *zap.Logger
+	catalog      catalog.Catalog
 }
 
 // Enter implements the ast.Visitor interface
@@ -85,7 +82,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.Internal,
+				Code:    advisor.Internal,
 				Title:   "Internal error for index naming convention rule",
 				Content: fmt.Sprintf("%q meet internal error %q", in.Text(), err.Error()),
 			})
@@ -94,8 +91,8 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    common.NamingIndexConventionMismatch,
-				Title:   "Mismatch index naming convention",
+				Code:    advisor.NamingIndexConventionMismatch,
+				Title:   checker.title,
 				Content: fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 			})
 		}
@@ -128,8 +125,8 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					columnList = append(columnList, key.Column.Name.String())
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: constraint.Name,
@@ -148,12 +145,15 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					IndexName: spec.FromKey.String(),
 				})
 				if err != nil {
-					checker.logger.Error(
-						"Cannot find index in table",
-						zap.String("table_name", node.Table.Name.String()),
-						zap.String("index_name", spec.FromKey.String()),
-						zap.Error(err),
+					log.Printf(
+						"Cannot find index %s in table %s with error %v\n",
+						node.Table.Name.String(),
+						spec.FromKey.String(),
+						err,
 					)
+					continue
+				}
+				if index == nil {
 					continue
 				}
 				if index.Unique {
@@ -161,8 +161,8 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					continue
 				}
 				metaData := map[string]string{
-					api.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-					api.TableNameTemplateToken:  node.Table.Name.String(),
+					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{
 					indexName: spec.ToKey.String(),
@@ -177,8 +177,8 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 					}
 
 					metaData := map[string]string{
-						api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-						api.TableNameTemplateToken:  node.Table.Name.String(),
+						advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+						advisor.TableNameTemplateToken:  node.Table.Name.String(),
 					}
 					res = append(res, &indexMetaData{
 						indexName: spec.Constraint.Name,
@@ -195,8 +195,8 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				columnList = append(columnList, spec.Column.Name.String())
 			}
 			metaData := map[string]string{
-				api.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				api.TableNameTemplateToken:  node.Table.Name.String(),
+				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+				advisor.TableNameTemplateToken:  node.Table.Name.String(),
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.IndexName,

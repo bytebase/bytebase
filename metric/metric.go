@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/metric"
 )
 
-var (
+const (
 	// InstanceCountMetricName is the metric name for instance count
 	InstanceCountMetricName metric.Name = "bb.instance.count"
 	// IssueCountMetricName is the metric name for issue count
@@ -19,12 +19,21 @@ var (
 	TaskCountMetricName metric.Name = "bb.task.count"
 	// DatabaseCountMetricName is the metric name for database count
 	DatabaseCountMetricName metric.Name = "bb.database.count"
+	// SheetCountMetricName is the metric name for sheet count
+	SheetCountMetricName metric.Name = "bb.sheet.count"
+	// MemberCountMetricName is the metric name for member count
+	MemberCountMetricName metric.Name = "bb.member.count"
+	// OpenAPIMetricName is the metric name for OpenAPI
+	OpenAPIMetricName metric.Name = "bb.api.call"
+	// SQLAdviseAPIMetricName is the metric name for SQL check API
+	SQLAdviseAPIMetricName metric.Name = "bb.api.sql.advise"
 )
 
 // InstanceCountMetric is the API message for bb.instance.count
 type InstanceCountMetric struct {
 	Engine        db.Type
 	EnvironmentID int
+	RowStatus     api.RowStatus
 	Count         int
 }
 
@@ -63,4 +72,21 @@ type DatabaseCountMetric struct {
 	BackupPlanPolicySchedule *api.BackupPlanPolicySchedule
 	BackupSettingEnabled     *bool // nil if BackupPlanPolicyScheduleUnset
 	Count                    int
+}
+
+// SheetCountMetric is the API message for sheet count metric
+type SheetCountMetric struct {
+	RowStatus  api.RowStatus
+	Visibility api.SheetVisibility
+	Source     api.SheetSource
+	Type       api.SheetType
+	Count      int
+}
+
+// MemberCountMetric is the API message for member count metric
+type MemberCountMetric struct {
+	Count     int
+	Role      api.Role
+	Status    api.MemberStatus
+	RowStatus api.RowStatus
 }

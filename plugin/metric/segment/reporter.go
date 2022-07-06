@@ -6,14 +6,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/metric"
 
 	"github.com/segmentio/analytics-go"
-	"go.uber.org/zap"
 )
 
 var _ metric.Reporter = (*reporter)(nil)
 
 // reporter is the metrics collector https://segment.com/.
 type reporter struct {
-	l          *zap.Logger
 	identifier string
 	client     analytics.Client
 }
@@ -24,11 +22,10 @@ const (
 )
 
 // NewReporter creates a new instance of segment
-func NewReporter(l *zap.Logger, key string, identifier string) metric.Reporter {
+func NewReporter(key string, identifier string) metric.Reporter {
 	client := analytics.New(key)
 
 	return &reporter{
-		l:          l,
 		identifier: identifier,
 		client:     client,
 	}

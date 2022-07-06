@@ -44,7 +44,12 @@
               <heroicons-solid:sparkles class="w-5 h-5" />
               {{ $t(currentPlan) }}
             </router-link>
-            <div class="text-sm ml-auto text-control-light">{{ version }}</div>
+            <div class="text-sm ml-auto text-control-light tooltip-wrapper">
+              {{ version }}
+              <span v-if="gitCommit" class="tooltip"
+                >Git hash {{ gitCommit }}</span
+              >
+            </div>
           </div>
         </div>
         <div class="flex-shrink-0 w-14" aria-hidden="true">
@@ -83,8 +88,11 @@
             <heroicons-outline:sparkles class="w-5 h-5" />
             {{ $t(currentPlan) }}
           </router-link>
-          <div class="text-sm ml-auto text-control-light">
+          <div class="text-sm ml-auto text-control-light tooltip-wrapper">
             {{ version }}
+            <span v-if="gitCommit" class="tooltip"
+              >Git hash {{ gitCommit }}</span
+            >
           </div>
         </div>
       </div>
@@ -118,7 +126,6 @@
           <div v-if="showBreadcrumb" class="hidden md:block px-4 pt-4">
             <Breadcrumb />
           </div>
-          <IntroBanner v-if="showIntro" />
           <div v-if="quickActionList.length > 0" class="mx-4 mt-4">
             <QuickActionPanel :quick-action-list="quickActionList" />
           </div>
@@ -141,7 +148,6 @@
 import { computed, defineComponent, reactive } from "vue";
 import { useRouter } from "vue-router";
 import Breadcrumb from "../components/Breadcrumb.vue";
-import IntroBanner from "../components/IntroBanner.vue";
 import Quickstart from "../components/Quickstart.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import { QuickActionType } from "../types";
@@ -162,7 +168,6 @@ export default defineComponent({
   name: "BodyLayout",
   components: {
     Breadcrumb,
-    IntroBanner,
     Quickstart,
     QuickActionPanel,
   },
@@ -226,10 +231,6 @@ export default defineComponent({
       return !(name === "workspace.home" || name === "workspace.profile");
     });
 
-    const showIntro = computed(
-      () => !uiStateStore.getIntroStateByKey("general.overview")
-    );
-
     const showQuickstart = computed(() => {
       // Do not show quickstart in demo mode since we don't expect user to alter the data
       return (
@@ -243,6 +244,10 @@ export default defineComponent({
         return `v${v}`;
       }
       return v;
+    });
+
+    const gitCommit = computed(() => {
+      return `${actuatorStore.gitCommit.substring(0, 7)}`;
     });
 
     const currentPlan = computed((): string => {
@@ -266,9 +271,9 @@ export default defineComponent({
       state,
       quickActionList,
       showBreadcrumb,
-      showIntro,
       showQuickstart,
       version,
+      gitCommit,
       currentPlan,
       isFreePlan,
     };

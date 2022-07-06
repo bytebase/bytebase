@@ -37,7 +37,7 @@ func (raw *taskDAGRaw) toTaskDAG() *api.TaskDAG {
 func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*api.TaskDAG, error) {
 	taskDAGRaw, err := s.createTaskDAGRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TaskDAG with TaskDAGCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create TaskDAG with TaskDAGCreate[%+v], error: %w", create, err)
 	}
 	taskDAG := taskDAGRaw.toTaskDAG()
 	return taskDAG, nil
@@ -45,13 +45,9 @@ func (s *Store) CreateTaskDAG(ctx context.Context, create *api.TaskDAGCreate) (*
 
 // FindTaskDAGList finds a TaskDAG list by ToTaskID.
 func (s *Store) FindTaskDAGList(ctx context.Context, find *api.TaskDAGFind) ([]*api.TaskDAG, error) {
-	// TODO(xz): remove this release guard once the gh-ost feature is ready to release.
-	if s.db.mode != common.ReleaseModeDev {
-		return nil, nil
-	}
 	taskDAGRawList, err := s.findTaskDAGRawList(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find TaskDAG with TaskDAGFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find TaskDAG with TaskDAGFind[%+v], error: %w", find, err)
 	}
 	var taskDAGList []*api.TaskDAG
 	for _, taskDAGRaw := range taskDAGRawList {
@@ -104,7 +100,7 @@ func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) (
 }
 
 func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO task_dag (
 			from_task_id,
 			to_task_id,
@@ -112,19 +108,13 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 		)
 		VALUES ($1, $2, $3)
 		RETURNING id, created_ts, updated_ts, from_task_id, to_task_id, payload
-	`,
+	`
+	var taskDAGRaw taskDAGRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.FromTaskID,
 		create.ToTaskID,
 		create.Payload,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	row.Next()
-	var taskDAGRaw taskDAGRaw
-	if err := row.Scan(
+	).Scan(
 		&taskDAGRaw.ID,
 		&taskDAGRaw.CreatedTs,
 		&taskDAGRaw.UpdatedTs,
@@ -132,9 +122,11 @@ func createTaskDAGImpl(ctx context.Context, tx *sql.Tx, create *api.TaskDAGCreat
 		&taskDAGRaw.ToTaskID,
 		&taskDAGRaw.Payload,
 	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-
 	return &taskDAGRaw, nil
 }
 

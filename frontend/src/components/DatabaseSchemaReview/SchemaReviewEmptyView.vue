@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg px-5 py-6 sm:px-6">
+  <div class="bg-white rounded-lg py-6">
     <div
       class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
     >

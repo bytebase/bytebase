@@ -8,21 +8,18 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*policyCountCollector)(nil)
 
 // policyCountCollector is the metric data collector for policy.
 type policyCountCollector struct {
-	l     *zap.Logger
 	store *store.Store
 }
 
 // NewPolicyCountCollector creates a new instance of policyCollector
-func NewPolicyCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+func NewPolicyCountCollector(store *store.Store) metric.Collector {
 	return &policyCountCollector{
-		l:     l,
 		store: store,
 	}
 }
@@ -48,15 +45,15 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 			if err != nil {
 				continue
 			}
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Value)
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 		case api.PolicyTypeBackupPlan:
 			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
 			if err != nil {
 				continue
 			}
-			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 			value = string(payload.Schedule)
+			key = fmt.Sprintf("%s_%s_%s", policy.Type, policy.Environment.Name, value)
 		case api.PolicyTypeSchemaReview:
 			key = fmt.Sprintf("%s_%s", policy.Type, policy.Environment.Name)
 			// schema review policy don't need to set the value.

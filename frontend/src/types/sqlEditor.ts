@@ -1,4 +1,4 @@
-import * as monaco from "monaco-editor";
+import type * as monaco from "monaco-editor";
 import { DropdownOption } from "naive-ui";
 
 import {
@@ -34,6 +34,8 @@ export enum SortText {
   KEYWORD = "3",
 }
 
+// TODO(Steven): ConnectionContext should be refactored later,
+// because it has some extra not required fields: instanceName, databaseName...
 export type ConnectionContext = {
   hasSlug: boolean;
   projectId: ProjectId;

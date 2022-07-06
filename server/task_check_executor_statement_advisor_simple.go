@@ -8,41 +8,49 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor"
-	"go.uber.org/zap"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // NewTaskCheckStatementAdvisorSimpleExecutor creates a task check statement simple advisor executor.
-func NewTaskCheckStatementAdvisorSimpleExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckStatementAdvisorSimpleExecutor{
-		l: logger,
-	}
+func NewTaskCheckStatementAdvisorSimpleExecutor() TaskCheckExecutor {
+	return &TaskCheckStatementAdvisorSimpleExecutor{}
 }
 
 // TaskCheckStatementAdvisorSimpleExecutor is the task check statement advisor simple executor.
 type TaskCheckStatementAdvisorSimpleExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check statement advisor executor once.
 func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
-	var advisorType advisor.Type
-	switch taskCheckRun.Type {
-	case api.TaskCheckDatabaseStatementFakeAdvise:
-		advisorType = advisor.Fake
-	case api.TaskCheckDatabaseStatementSyntax:
-		advisorType = advisor.MySQLSyntax
-	}
-
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
 	}
 
+	var advisorType advisor.Type
+	switch taskCheckRun.Type {
+	case api.TaskCheckDatabaseStatementFakeAdvise:
+		advisorType = advisor.Fake
+	case api.TaskCheckDatabaseStatementSyntax:
+		switch payload.DbType {
+		case db.MySQL, db.TiDB:
+			advisorType = advisor.MySQLSyntax
+		case db.Postgres:
+			advisorType = advisor.PostgreSQLSyntax
+		default:
+			return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid database type: %s for syntax statement advisor", payload.DbType))
+		}
+	}
+
+	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
+	if err != nil {
+		return nil, err
+	}
+
 	adviceList, err := advisor.Check(
-		payload.DbType,
+		dbType,
 		advisorType,
 		advisor.Context{
-			Logger:    exec.l,
 			Charset:   payload.Charset,
 			Collation: payload.Collation,
 		},
@@ -65,10 +73,11 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(ctx context.Context, se
 		}
 
 		result = append(result, api.TaskCheckResult{
-			Status:  status,
-			Code:    advice.Code,
-			Title:   advice.Title,
-			Content: advice.Content,
+			Status:    status,
+			Namespace: api.AdvisorNamespace,
+			Code:      advice.Code.Int(),
+			Title:     advice.Title,
+			Content:   advice.Content,
 		})
 	}
 

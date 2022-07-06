@@ -50,11 +50,11 @@ func (raw *settingRaw) toSetting() *api.Setting {
 func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.SettingCreate) (*api.Setting, error) {
 	settingRaw, err := s.createSettingRawIfNotExist(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Setting with SettingCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create Setting with SettingCreate[%+v], error: %w", create, err)
 	}
 	setting, err := s.composeSetting(ctx, settingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", settingRaw, err)
+		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", settingRaw, err)
 	}
 	return setting, nil
 }
@@ -63,13 +63,13 @@ func (s *Store) CreateSettingIfNotExist(ctx context.Context, create *api.Setting
 func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.Setting, error) {
 	settingRawList, err := s.findSettingRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find Setting list with SettingFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find Setting list with SettingFind[%+v], error: %w", find, err)
 	}
 	var settingList []*api.Setting
 	for _, raw := range settingRawList {
 		setting, err := s.composeSetting(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", raw, err)
 		}
 		settingList = append(settingList, setting)
 	}
@@ -80,11 +80,11 @@ func (s *Store) FindSetting(ctx context.Context, find *api.SettingFind) ([]*api.
 func (s *Store) PatchSetting(ctx context.Context, patch *api.SettingPatch) (*api.Setting, error) {
 	settingRaw, err := s.patchSettingRaw(ctx, patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch Setting with SettingPatch[%+v], error[%w]", patch, err)
+		return nil, fmt.Errorf("failed to patch Setting with SettingPatch[%+v], error: %w", patch, err)
 	}
 	setting, err := s.composeSetting(ctx, settingRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error[%w]", settingRaw, err)
+		return nil, fmt.Errorf("failed to compose Setting with settingRaw[%+v], error: %w", settingRaw, err)
 	}
 	return setting, nil
 }
@@ -205,7 +205,7 @@ func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*
 // createSettingImpl creates a new setting.
 func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreate) (*settingRaw, error) {
 	// Insert row into database.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO setting (
 			creator_id,
 			updater_id,
@@ -215,7 +215,8 @@ func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreat
 		)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING name, value, description
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -228,17 +229,21 @@ func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreat
 	}
 	defer row.Close()
 
-	row.Next()
-	var settingRaw settingRaw
-	if err := row.Scan(
-		&settingRaw.Name,
-		&settingRaw.Value,
-		&settingRaw.Description,
-	); err != nil {
+	if row.Next() {
+		var settingRaw settingRaw
+		if err := row.Scan(
+			&settingRaw.Name,
+			&settingRaw.Value,
+			&settingRaw.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &settingRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &settingRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func findSettingImpl(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]*settingRaw, error) {
@@ -326,9 +331,10 @@ func patchSettingImpl(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) 
 		); err != nil {
 			return nil, FormatError(err)
 		}
-
 		return &settingRaw, nil
 	}
-
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
 }

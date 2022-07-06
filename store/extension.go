@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -57,11 +58,11 @@ func (raw *dbExtensionRaw) toDBExtension() *api.DBExtension {
 func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCreate) (*api.DBExtension, error) {
 	dbExtensionRaw, err := s.createDBExtensionRaw(ctx, create)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error[%w]", create, err)
+		return nil, fmt.Errorf("failed to create dbExtension with dbExtensionCreate[%+v], error: %w", create, err)
 	}
 	dbExtension, err := s.composeDBExtension(ctx, dbExtensionRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", dbExtensionRaw, err)
+		return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error: %w", dbExtensionRaw, err)
 	}
 	return dbExtension, nil
 }
@@ -70,13 +71,13 @@ func (s *Store) CreateDBExtension(ctx context.Context, create *api.DBExtensionCr
 func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) ([]*api.DBExtension, error) {
 	dbExtensionRawList, err := s.findDBExtensionRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error[%w]", find, err)
+		return nil, fmt.Errorf("failed to find dbExtension list with dbExtensionFind[%+v], error: %w", find, err)
 	}
 	var dbExtensionList []*api.DBExtension
 	for _, raw := range dbExtensionRawList {
 		dbExtension, err := s.composeDBExtension(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error[%w]", raw, err)
+			return nil, fmt.Errorf("failed to compose dbExtension with dbExtensionRaw[%+v], error: %w", raw, err)
 		}
 		dbExtensionList = append(dbExtensionList, dbExtension)
 	}
@@ -169,7 +170,7 @@ func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFin
 // createDBExtensionImpl creates a new DBExtension.
 func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
 	// Insert row into db_extension.
-	row, err := tx.QueryContext(ctx, `
+	query := `
 		INSERT INTO db_extension (
 			creator_id,
 			created_ts,
@@ -183,7 +184,8 @@ func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *a
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, version, schema, description
-	`,
+	`
+	row, err := tx.QueryContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -200,24 +202,28 @@ func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *a
 	}
 	defer row.Close()
 
-	row.Next()
-	var dbExtensionRaw dbExtensionRaw
-	if err := row.Scan(
-		&dbExtensionRaw.ID,
-		&dbExtensionRaw.CreatorID,
-		&dbExtensionRaw.CreatedTs,
-		&dbExtensionRaw.UpdaterID,
-		&dbExtensionRaw.UpdatedTs,
-		&dbExtensionRaw.DatabaseID,
-		&dbExtensionRaw.Name,
-		&dbExtensionRaw.Version,
-		&dbExtensionRaw.Schema,
-		&dbExtensionRaw.Description,
-	); err != nil {
+	if row.Next() {
+		var dbExtensionRaw dbExtensionRaw
+		if err := row.Scan(
+			&dbExtensionRaw.ID,
+			&dbExtensionRaw.CreatorID,
+			&dbExtensionRaw.CreatedTs,
+			&dbExtensionRaw.UpdaterID,
+			&dbExtensionRaw.UpdatedTs,
+			&dbExtensionRaw.DatabaseID,
+			&dbExtensionRaw.Name,
+			&dbExtensionRaw.Version,
+			&dbExtensionRaw.Schema,
+			&dbExtensionRaw.Description,
+		); err != nil {
+			return nil, FormatError(err)
+		}
+		return &dbExtensionRaw, nil
+	}
+	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return &dbExtensionRaw, nil
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }
 
 func (s *Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {

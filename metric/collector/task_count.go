@@ -6,21 +6,18 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*taskCountCollector)(nil)
 
 // taskCountCollector is the metric data collector for task.
 type taskCountCollector struct {
-	l     *zap.Logger
 	store *store.Store
 }
 
 // NewTaskCountCollector creates a new instance of taskCollector.
-func NewTaskCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+func NewTaskCountCollector(store *store.Store) metric.Collector {
 	return &taskCountCollector{
-		l:     l,
 		store: store,
 	}
 }

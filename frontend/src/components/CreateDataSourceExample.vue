@@ -39,7 +39,7 @@
           </template>
         </i18n-t>
         <a
-          href="https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing"
+          href="https://bytebase.com/docs/install/install-with-docker#start-a-local-mysql-server-for-testing?source=console"
           target="_blank"
           class="normal-link"
         >
@@ -159,7 +159,7 @@ const grantStatement = (
     switch (engineType) {
       case "MYSQL":
       case "TIDB":
-        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE \nON *.* to bytebase@'%';";
+        return "CREATE USER bytebase@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, \nDELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, \nSELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, \nFLUSH_TABLES, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE, \nREPLICATION_APPLIER, SESSION_VARIABLES_ADMIN \nON *.* to bytebase@'%';";
       case "CLICKHOUSE":
         return "CREATE USER bytebase IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT ALL ON *.* TO bytebase WITH GRANT OPTION;";
       case "SNOWFLAKE":

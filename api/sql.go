@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -15,6 +16,9 @@ type ConnectionInfo struct {
 	Password         string  `jsonapi:"attr,password"`
 	UseEmptyPassword bool    `jsonapi:"attr,useEmptyPassword"`
 	InstanceID       *int    `jsonapi:"attr,instanceId"`
+	SslCa            *string `jsonapi:"attr,sslCa"`
+	SslCert          *string `jsonapi:"attr,sslCert"`
+	SslKey           *string `jsonapi:"attr,sslKey"`
 }
 
 // SQLSyncSchema is the API message for sync schemas.
@@ -42,6 +46,8 @@ type SQLResultSet struct {
 	Data string `jsonapi:"attr,data"`
 	// SQL operation may fail for connection issue and there is no proper http status code for it, so we return error in the response body.
 	Error string `jsonapi:"attr,error"`
+	// A list of SQL check advice.
+	AdviceList []advisor.Advice `jsonapi:"attr,adviceList"`
 }
 
 // SQLService is the service for SQL.

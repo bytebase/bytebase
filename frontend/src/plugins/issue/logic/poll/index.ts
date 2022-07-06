@@ -6,7 +6,7 @@ import {
   IssueType,
   NORMAL_POLL_INTERVAL,
   POLL_JITTER,
-  POST_CHANGE_POLL_INTERVAL,
+  MINIMUM_POLL_INTERVAL,
 } from "@/types";
 import { idFromSlug } from "@/utils";
 
@@ -37,7 +37,7 @@ export const usePollIssue = (
     stopPolling();
 
     const int = Math.max(
-      1000,
+      MINIMUM_POLL_INTERVAL,
       Math.min(interval, NORMAL_POLL_INTERVAL) +
         (Math.random() * 2 - 1) * POLL_JITTER
     );
@@ -62,7 +62,7 @@ export const usePollIssue = (
       Date.now() - (issue.value as Issue).updatedTs * 1000 < 5000;
     const { type } = issue.value;
     if (FASTER_TYPES.includes(type) && isNearNow) {
-      interval = POST_CHANGE_POLL_INTERVAL;
+      interval = MINIMUM_POLL_INTERVAL;
     }
     pollIssue(interval);
   };

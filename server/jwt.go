@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -125,7 +124,7 @@ func setTokenCookie(c echo.Context, name, token string, expiration time.Time) {
 	cookie.Path = "/"
 	// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 	cookie.HttpOnly = true
-	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
@@ -147,7 +146,7 @@ func setUserCookie(c echo.Context, user *api.Principal, expiration time.Time) {
 	cookie.Value = strconv.Itoa(user.ID)
 	cookie.Expires = expiration
 	cookie.Path = "/"
-	// For now, we allow bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
+	// For now, we allow Bytebase to run on non-https host, see https://github.com/bytebase/bytebase/issues/31
 	// cookie.Secure = true
 	cookie.SameSite = http.SameSiteStrictMode
 	c.SetCookie(cookie)
@@ -165,7 +164,7 @@ func removeUserCookie(c echo.Context) {
 // JWTMiddleware validates the access token.
 // If the access token is about to expire or has expired and the request has a valid refresh token, it
 // will try to generate new access token and refresh token.
-func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
+func JWTMiddleware(principalStore *store.Store, next echo.HandlerFunc, mode common.ReleaseMode, secret string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skips auth, actuator, plan
 		if common.HasPrefixes(c.Path(), "/api/auth", "/api/actuator", "/api/plan") {
@@ -175,6 +174,10 @@ func JWTMiddleware(l *zap.Logger, principalStore *store.Store, next echo.Handler
 		method := c.Request().Method
 		// Skip GET /subscription request
 		if common.HasPrefixes(c.Path(), "/api/subscription") && method == "GET" {
+			return next(c)
+		}
+		// Skip OpenAPI request
+		if common.HasPrefixes(c.Path(), openAPIPrefix) {
 			return next(c)
 		}
 

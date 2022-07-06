@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-// These are special onboarding tasks for demo purpose when bootstraping the workspace.
+// These are special onboarding tasks for demo purpose when bootstrapping the workspace.
 
 // OnboardingTaskID1 is the ID for onboarding task1.
 const OnboardingTaskID1 = 101
@@ -33,24 +33,6 @@ const (
 	// TaskCanceled is the task status for CANCELED.
 	TaskCanceled TaskStatus = "CANCELED"
 )
-
-func (e TaskStatus) String() string {
-	switch e {
-	case TaskPending:
-		return "PENDING"
-	case TaskPendingApproval:
-		return "PENDING_APPROVAL"
-	case TaskRunning:
-		return "RUNNING"
-	case TaskDone:
-		return "DONE"
-	case TaskFailed:
-		return "FAILED"
-	case TaskCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
 
 // TaskType is the type of a task.
 type TaskType string
@@ -90,7 +72,7 @@ type TaskDatabasePITRRestorePayload struct {
 	ProjectID int `json:"projectId,omitempty"`
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
-	PointInTimeTs int `json:"pointInTimeTs,omitempty"`
+	PointInTimeTs int64 `json:"pointInTimeTs,omitempty"`
 }
 
 // TaskDatabasePITRCutoverPayload is the task payload for PITR cutover.

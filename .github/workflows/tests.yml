@@ -1,4 +1,4 @@
-name: test
+name: Test
 
 on:
   push:
@@ -35,7 +35,13 @@ jobs:
           git diff --exit-code
 
   go-tests:
+    strategy:
+      matrix:
+        release-tags:
+          - "release,"
+          - ""
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -51,20 +57,14 @@ jobs:
             ./resources/mysql/*.tar.gz
             ./resources/mysql/*.tar.xz
           key: ${{ runner.OS }}-build-mysql-cache
-      - name: Install dependencies and run all tests
+      # Release mode needs to embed frontend dist
+      - name: Touch garbage dist/index.html
+        if: ${{ matrix.release-tags }}
         run: |
-          go generate -tags mysql ./...
-          go test -v ./... -tags=mysql
-
-  # tests if scripts/install_bb.sh is working correctly.
-  install-bb:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v2
-      - name: run install script
-        run: ./scripts/install_bb.sh
-      - name: check bb version
-        run: bb version
+          mkdir -p server/dist
+          touch server/dist/index.html
+      - name: Install dependencies
+        run: go generate -tags ${{ matrix.release-tags }}mysql ./...
+      - name: Run all tests
+        timeout-minutes: 15
+        run: go test -v ./... -tags=${{ matrix.release-tags }}mysql

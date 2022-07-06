@@ -56,6 +56,16 @@ export type DatabaseCreate = {
   labels?: DatabaseLabel[];
 };
 
+export type DatabaseFind = {
+  // Related fields
+  projectId?: ProjectId;
+  instanceId?: InstanceId;
+
+  // Domain specific fields
+  name?: string;
+  syncStatus?: DatabaseSyncStatus;
+};
+
 export type DatabasePatch = {
   // Related fields
   projectId?: ProjectId;

@@ -7,21 +7,18 @@ import (
 	metricAPI "github.com/bytebase/bytebase/metric"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
-	"go.uber.org/zap"
 )
 
 var _ metric.Collector = (*databaseCountCollector)(nil)
 
 // databaseCountCollector is the metric data collector for database.
 type databaseCountCollector struct {
-	l     *zap.Logger
 	store *store.Store
 }
 
 // NewDatabaseCountCollector creates a new instance of databaseCountCollector
-func NewDatabaseCountCollector(l *zap.Logger, store *store.Store) metric.Collector {
+func NewDatabaseCountCollector(store *store.Store) metric.Collector {
 	return &databaseCountCollector{
-		l:     l,
 		store: store,
 	}
 }

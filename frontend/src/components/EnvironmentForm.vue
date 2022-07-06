@@ -3,7 +3,8 @@
     <div class="grid grid-cols-1 gap-y-6 gap-x-4">
       <div class="col-span-1">
         <label for="name" class="textlabel">
-          {{ $t("common.environments") }} <span class="text-red-600">*</span>
+          {{ $t("common.environment-name") }}
+          <span class="text-red-600">*</span>
         </label>
         <BBTextField
           class="mt-2 w-full"
@@ -15,6 +16,9 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
+        <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
+          $t("policy.approval.tip")
+        }}</span>
         <div class="mt-1 textinfolabel">
           {{ $t("policy.approval.info") }}
         </div>
@@ -63,6 +67,9 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
+        <span v-show="valueChanged('backupPolicy')" class="textlabeltip">{{
+          $t("policy.backup.tip")
+        }}</span>
         <div class="mt-4 flex flex-col space-y-4">
           <div class="flex space-x-4">
             <input
@@ -128,7 +135,7 @@
           </div>
         </div>
       </div>
-      <div class="col-span-1" v-if="!create && isDev()">
+      <div v-if="!create" class="col-span-1">
         <label class="textlabel">
           {{ $t("schema-review-policy.title") }}
         </label>
@@ -140,6 +147,9 @@
             @click.prevent="onSchemaReviewPolicyClick"
           >
             {{ schemaReviewPolicy.name }}
+            <span v-if="schemaReviewPolicy.rowStatus == 'ARCHIVED'">
+              ({{ $t("schema-review-policy.disabled") }})
+            </span>
           </button>
           <button
             v-else-if="hasPermission"
@@ -147,8 +157,7 @@
             class="btn-normal py-2 px-4 gap-x-1 items-center"
             @click.prevent="onSchemaReviewPolicyClick"
           >
-            <heroicons-solid:plus class="h-4 w-4" />
-            {{ $t("schema-review-policy.create-policy") }}
+            {{ $t("schema-review-policy.configure-policy") }}
           </button>
           <span v-else class="textinfolabel">
             {{ $t("schema-review-policy.no-policy-set") }}
@@ -209,7 +218,7 @@
         <button
           type="button"
           class="btn-normal py-2 px-4"
-          :disabled="!valueChanged"
+          :disabled="!valueChanged()"
           @click.prevent="revertEnvironment"
         >
           {{ $t("common.revert") }}
@@ -217,7 +226,7 @@
         <button
           type="submit"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="!valueChanged"
+          :disabled="!valueChanged()"
           @click.prevent="updateEnvironment"
         >
           {{ $t("common.update") }}
@@ -384,17 +393,29 @@ export default defineComponent({
       );
     });
 
-    const valueChanged = computed(() => {
-      return (
-        !isEqual(props.environment, state.environment) ||
-        !isEqual(props.approvalPolicy, state.approvalPolicy) ||
-        !isEqual(props.backupPolicy, state.backupPolicy)
-      );
-    });
-
     const allowCreate = computed(() => {
       return !isEmpty(state.environment?.name);
     });
+
+    const valueChanged = (
+      field?: "environment" | "approvalPolicy" | "backupPolicy"
+    ): boolean => {
+      switch (field) {
+        case "environment":
+          return !isEqual(props.environment, state.environment);
+        case "approvalPolicy":
+          return !isEqual(props.approvalPolicy, state.approvalPolicy);
+        case "backupPolicy":
+          return !isEqual(props.backupPolicy, state.backupPolicy);
+
+        default:
+          return (
+            !isEqual(props.environment, state.environment) ||
+            !isEqual(props.approvalPolicy, state.approvalPolicy) ||
+            !isEqual(props.backupPolicy, state.backupPolicy)
+          );
+      }
+    };
 
     const revertEnvironment = () => {
       state.environment = cloneDeep(props.environment!);

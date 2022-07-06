@@ -67,6 +67,7 @@ changelog:
       - "^test:"
 release:
   draft: true
+  mode: append
   name_template: "Release {{.Tag}}"
   header: |
     # What's Changed

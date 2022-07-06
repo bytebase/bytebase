@@ -54,14 +54,14 @@ func (raw *deploymentConfigRaw) toDeploymentConfig() *api.DeploymentConfig {
 func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID int) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.getDeploymentConfigImpl(ctx, &api.DeploymentConfigFind{ProjectID: &projectID})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get DeploymentConfig with projectID[%d], error[%w]", projectID, err)
+		return nil, fmt.Errorf("failed to get DeploymentConfig with projectID %d, error: %w", projectID, err)
 	}
 	if deploymentConfigRaw == nil {
 		return nil, nil
 	}
 	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error[%w]", deploymentConfigRaw, err)
+		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error: %w", deploymentConfigRaw, err)
 	}
 	return deploymentConfig, nil
 }
@@ -70,11 +70,11 @@ func (s *Store) GetDeploymentConfigByProjectID(ctx context.Context, projectID in
 func (s *Store) UpsertDeploymentConfig(ctx context.Context, upsert *api.DeploymentConfigUpsert) (*api.DeploymentConfig, error) {
 	deploymentConfigRaw, err := s.upsertDeploymentConfigRaw(ctx, upsert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert deployment config with DeploymentConfigUpsert[%+v], error[%w]", upsert, err)
+		return nil, fmt.Errorf("failed to upsert deployment config with DeploymentConfigUpsert[%+v], error: %w", upsert, err)
 	}
 	deploymentConfig, err := s.composeDeploymentConfig(ctx, deploymentConfigRaw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error[%w]", deploymentConfigRaw, err)
+		return nil, fmt.Errorf("failed to compose DeploymentConfig with deploymentConfigRaw[%+v], error: %w", deploymentConfigRaw, err)
 	}
 	return deploymentConfig, nil
 }
@@ -205,22 +205,23 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 	if upsert.Payload == "" {
 		upsert.Payload = "{}"
 	}
-	row, err := tx.QueryContext(ctx, `
-	INSERT INTO deployment_config (
-		creator_id,
-		updater_id,
-		project_id,
-		name,
-		config
-	)
-	VALUES ($1, $2, $3, $4, $5)
-	ON CONFLICT(project_id) DO UPDATE SET
-		creator_id = excluded.creator_id,
-		updater_id = excluded.updater_id,
-		name = excluded.name,
-		config = excluded.config
-	RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
-	`,
+	query := `
+		INSERT INTO deployment_config (
+			creator_id,
+			updater_id,
+			project_id,
+			name,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT(project_id) DO UPDATE SET
+			creator_id = excluded.creator_id,
+			updater_id = excluded.updater_id,
+			name = excluded.name,
+			config = excluded.config
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
+	`
+	row, err := tx.QueryContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.ProjectID,
@@ -233,19 +234,24 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 	}
 	defer row.Close()
 
-	row.Next()
-	var cfg deploymentConfigRaw
-	if err := row.Scan(
-		&cfg.ID,
-		&cfg.CreatorID,
-		&cfg.CreatedTs,
-		&cfg.UpdaterID,
-		&cfg.UpdatedTs,
-		&cfg.ProjectID,
-		&cfg.Name,
-		&cfg.Payload,
-	); err != nil {
-		return nil, err
+	if row.Next() {
+		var cfg deploymentConfigRaw
+		if err := row.Scan(
+			&cfg.ID,
+			&cfg.CreatorID,
+			&cfg.CreatedTs,
+			&cfg.UpdaterID,
+			&cfg.UpdatedTs,
+			&cfg.ProjectID,
+			&cfg.Name,
+			&cfg.Payload,
+		); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
-	return &cfg, nil
+	if err := row.Err(); err != nil {
+		return nil, FormatError(err)
+	}
+	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 }

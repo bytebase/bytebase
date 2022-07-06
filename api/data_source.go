@@ -40,18 +40,6 @@ const (
 	RO DataSourceType = "RO"
 )
 
-func (e DataSourceType) String() string {
-	switch e {
-	case Admin:
-		return "ADMIN"
-	case RW:
-		return "RW"
-	case RO:
-		return "RO"
-	}
-	return ""
-}
-
 // DataSource is the API message for a data source.
 type DataSource struct {
 	ID int `jsonapi:"primary,dataSource"`
@@ -75,6 +63,9 @@ type DataSource struct {
 	Username string         `jsonapi:"attr,username"`
 	// Do not return the password to client
 	Password string
+	SslCa    string
+	SslCert  string
+	SslKey   string
 }
 
 // DataSourceCreate is the API message for creating a data source.
@@ -92,6 +83,9 @@ type DataSourceCreate struct {
 	Type     DataSourceType `jsonapi:"attr,type"`
 	Username string         `jsonapi:"attr,username"`
 	Password string         `jsonapi:"attr,password"`
+	SslCa    string         `jsonapi:"attr,sslCa"`
+	SslCert  string         `jsonapi:"attr,sslCert"`
+	SslKey   string         `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after creating the data source. The client
 	// may set to false if the target data source's instance contains too many databases
 	// to avoid the request timeout.
@@ -130,6 +124,9 @@ type DataSourcePatch struct {
 	Username         *string `jsonapi:"attr,username"`
 	Password         *string `jsonapi:"attr,password"`
 	UseEmptyPassword *bool   `jsonapi:"attr,useEmptyPassword"`
+	SslCa            *string `jsonapi:"attr,sslCa"`
+	SslCert          *string `jsonapi:"attr,sslCert"`
+	SslKey           *string `jsonapi:"attr,sslKey"`
 	// If true, syncs the schema after patching the data source. The client
 	// may set to false if the target data source's instance contains too many databases
 	// to avoid the request timeout.

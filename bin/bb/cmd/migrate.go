@@ -61,7 +61,7 @@ func newMigrateCmd() *cobra.Command {
 }
 
 func migrateDatabase(ctx context.Context, u *dburl.URL, description, issueID string, createDatabase bool, sqlReader io.Reader) error {
-	driver, err := open(ctx, logger, u)
+	driver, err := open(ctx, u)
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 <template>
-  <aside>
+  <aside class="pr-0.5">
     <h2 class="sr-only">Details</h2>
     <div class="grid gap-y-6 gap-x-6 grid-cols-3">
       <template v-if="!create">
@@ -24,13 +24,14 @@
         }}<span v-if="create" class="text-red-600">*</span>
       </h2>
       <!-- Only DBA can be assigned to the issue -->
-      <div class="col-span-2">
+      <div class="col-span-2" data-label="bb-assignee-select-container">
         <!-- eslint-disable vue/attribute-hyphenation -->
         <MemberSelect
           class="w-full"
           :disabled="!allowEditAssignee"
           :selectedId="create ? (issue as IssueCreate).assigneeId : (issue as Issue).assignee?.id"
           :allowed-role-list="['OWNER', 'DBA']"
+          data-label="bb-assignee-select"
           @select-principal-id="
             (principalId: number) => {
               updateAssigneeId(principalId)

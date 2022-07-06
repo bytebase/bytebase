@@ -22,16 +22,6 @@ const (
 	VCSWorkflow ProjectWorkflowType = "VCS"
 )
 
-func (e ProjectWorkflowType) String() string {
-	switch e {
-	case UIWorkflow:
-		return "UI"
-	case VCSWorkflow:
-		return "VCS"
-	}
-	return ""
-}
-
 // ProjectVisibility is the visibility of a project.
 type ProjectVisibility string
 
@@ -41,16 +31,6 @@ const (
 	// Private is the project visibility for PRIVATE.
 	Private ProjectVisibility = "PRIVATE"
 )
-
-func (e ProjectVisibility) String() string {
-	switch e {
-	case Public:
-		return "PUBLIC"
-	case Private:
-		return "PRIVATE"
-	}
-	return ""
-}
 
 // ProjectTenantMode is the tenant mode setting for project.
 type ProjectTenantMode string
@@ -171,7 +151,7 @@ var (
 
 // ValidateRepositoryFilePathTemplate validates the repository file path template.
 func ValidateRepositoryFilePathTemplate(filePathTemplate string, tenantMode ProjectTenantMode) error {
-	tokens, _ := parseTemplateTokens(filePathTemplate)
+	tokens, _ := common.ParseTemplateTokens(filePathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -202,7 +182,7 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 	if schemaPathTemplate == "" {
 		return nil
 	}
-	tokens, _ := parseTemplateTokens(schemaPathTemplate)
+	tokens, _ := common.ParseTemplateTokens(schemaPathTemplate)
 	tokenMap := make(map[string]bool)
 	for _, token := range tokens {
 		tokenMap[token] = true
@@ -233,7 +213,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 	if template == "" {
 		return nil
 	}
-	tokens, _ := parseTemplateTokens(template)
+	tokens, _ := common.ParseTemplateTokens(template)
 	// Must contain {{DB_NAME}}
 	hasDBName := false
 	for _, token := range tokens {
@@ -253,7 +233,7 @@ func ValidateProjectDBNameTemplate(template string) error {
 // FormatTemplate formats the template by using the tokens as a replacement mapping.
 // Note that the returned (modified) template should not be used as a regexp.
 func FormatTemplate(template string, tokens map[string]string) (string, error) {
-	keys, _ := parseTemplateTokens(template)
+	keys, _ := common.ParseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
 			return "", fmt.Errorf("token %q not found", key)
@@ -266,7 +246,7 @@ func FormatTemplate(template string, tokens map[string]string) (string, error) {
 // Similar to FormatTemplate, except that it will also escape special regexp characters in the delimiters
 // of the template string, which will produce the correct regexp string.
 func formatTemplateRegexp(template string, tokens map[string]string) (string, error) {
-	keys, delimiters := parseTemplateTokens(template)
+	keys, delimiters := common.ParseTemplateTokens(template)
 	for _, key := range keys {
 		if _, ok := tokens[key]; !ok {
 			return "", fmt.Errorf("token %q not found", key)
@@ -318,25 +298,4 @@ func GetBaseDatabaseName(databaseName, dbNameTemplate, labelsJSON string) (strin
 		return "", fmt.Errorf("database name %q doesn't follow database name template %q", databaseName, dbNameTemplate)
 	}
 	return names[1], nil
-}
-
-// Parses the template and returns template tokens and their delimiters.
-// For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
-// and the delimiters will be ["_hello_"].
-// The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
-// if there are special regexp characters like "$" in the delimiters. The caller should escape the delimiters in such cases.
-func parseTemplateTokens(template string) ([]string, []string) {
-	r := regexp.MustCompile(`{{[^{}]+}}`)
-	tokens := r.FindAllString(template, -1)
-	if len(tokens) > 0 {
-		split := r.Split(template, -1)
-		var delimiters []string
-		for _, s := range split {
-			if s != "" {
-				delimiters = append(delimiters, s)
-			}
-		}
-		return tokens, delimiters
-	}
-	return nil, nil
 }

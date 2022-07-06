@@ -12,16 +12,17 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"go.uber.org/zap"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute error: %w\n\nquery:\n%q", err, query))
+	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute query %q, error: %w", query, err))
 }
 
-// ApplyMultiStatements will apply the splitted statements from scanner.
+// ApplyMultiStatements will apply the split statements from scanner.
 func ApplyMultiStatements(sc *bufio.Scanner, f func(string) error) error {
 	s := ""
 	delimiter := false
@@ -103,6 +104,9 @@ func NeedsSetupMigrationSchema(ctx context.Context, sqldb *sql.DB, query string)
 	if rows.Next() {
 		return false, nil
 	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -125,7 +129,7 @@ type MigrationExecutor interface {
 
 // ExecuteMigration will execute the database migration.
 // Returns the created migration history id and the updated schema on success.
-func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
+func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.MigrationInfo, statement string, databaseName string) (migrationHistoryID int64, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	// Don't record schema if the database hasn't exist yet.
 	if !m.CreateDatabase {
@@ -136,7 +140,7 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 		}
 	}
 
-	// Phase 1 - Precheck before executing migration
+	// Phase 1 - Pre-check before executing migration
 	// Phase 2 - Record migration history as PENDING
 	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
@@ -146,8 +150,8 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, l, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
-			l.Error("Failed to update migration history record",
+		if err := EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, databaseName, resErr == nil /*isDone*/); err != nil {
+			log.Error("Failed to update migration history record",
 				zap.Error(err),
 				zap.Int64("migration_id", migrationHistoryID),
 			)
@@ -158,7 +162,14 @@ func ExecuteMigration(ctx context.Context, l *zap.Logger, executor MigrationExec
 	// Branch migration type always has empty sql.
 	// Baseline migration type could has non-empty sql but will not execute, except for CreateDatabase.
 	// https://github.com/bytebase/bytebase/issues/394
-	if statement != "" && (m.Type != db.Baseline || m.CreateDatabase) {
+	doMigrate := true
+	if statement == "" {
+		doMigrate = false
+	}
+	if m.Type == db.Baseline && !m.CreateDatabase {
+		doMigrate = false
+	}
+	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
 			if _, err := executor.GetDbConnection(ctx, m.Database); err != nil {
@@ -186,8 +197,8 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to stored version, error %w", err)
 	}
-	// Phase 1 - Precheck before executing migration
-	// Check if the same migration version has already been applied
+	// Phase 1 - Pre-check before executing migration
+	// Check if the same migration version has already been applied.
 	if list, err := executor.FindMigrationHistoryList(ctx, &db.MigrationHistoryFind{
 		Database: &m.Namespace,
 		Version:  &m.Version,
@@ -199,11 +210,21 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			return -1, common.Errorf(common.MigrationAlreadyApplied,
 				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
-			return -1, common.Errorf(common.MigrationPending,
-				fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version))
+			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return int64(list[0].ID), nil
+			}
+			return -1, common.Errorf(common.MigrationPending, err)
 		case db.Failed:
-			return -1, common.Errorf(common.MigrationFailed,
-				fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version))
+			err := fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
+			log.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			if m.Force {
+				return int64(list[0].ID), nil
+			}
+			return -1, common.Errorf(common.MigrationFailed, err)
 		}
 	}
 
@@ -247,7 +268,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 }
 
 // EndMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
+func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
 	sqldb, err := executor.GetDbConnection(ctx, databaseName)
@@ -280,7 +301,7 @@ func EndMigration(ctx context.Context, l *zap.Logger, executor MigrationExecutor
 }
 
 // Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
+func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]interface{}, error) {
 	// Not all sql engines support ReadOnly flag, so we will use tx rollback semantics to enforce readonly.
 	tx, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -368,6 +389,9 @@ func Query(ctx context.Context, l *zap.Logger, sqldb *sql.DB, statement string, 
 		if rowCount == limit {
 			break
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return []interface{}{columnNames, columnTypeNames, data}, nil

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/webhook"
 	"github.com/bytebase/bytebase/store"
 
@@ -74,7 +75,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 		return nil, fmt.Errorf("updater principal not found for ID %v", create.CreatorID)
 	}
 
-	// Call external webhook endpoint in Go routine to avoid blocking web serveing thread.
+	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
 	go func() {
 		webhookCtx, err := m.getWebhookContext(ctx, activity, meta, updater)
 		if err != nil {
@@ -86,7 +87,7 @@ func (m *ActivityManager) CreateActivity(ctx context.Context, create *api.Activi
 			webhookCtx.CreatedTs = time.Now().Unix()
 			if err := webhook.Post(hook.Type, webhookCtx); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning
-				m.s.l.Warn("Failed to post webhook event after changing the issue status",
+				log.Warn("Failed to post webhook event after changing the issue status",
 					zap.String("webhook_type", hook.Type),
 					zap.String("webhook_name", hook.Name),
 					zap.String("issue_name", meta.issue.Name),
@@ -123,7 +124,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			m.s.l.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
+			log.Warn("Failed to post webhook event after changing the issue field, failed to unmarshal payload",
 				zap.String("issue_name", meta.issue.Name),
 				zap.Error(err))
 			return webhookCtx, err
@@ -135,7 +136,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 				if update.OldValue != "" {
 					oldID, err := strconv.Atoi(update.OldValue)
 					if err != nil {
-						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
+						log.Warn("Failed to post webhook event after changing the issue assignee, old assignee id is not number",
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
@@ -143,7 +144,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 					oldAssignee, err = m.s.store.GetPrincipalByID(ctx, oldID)
 					if err != nil {
-						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
+						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find old assignee",
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
@@ -151,7 +152,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 					if oldAssignee == nil {
 						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, old assignee not found for ID %v", oldID)
-						m.s.l.Warn(err.Error(),
+						log.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("old_assignee_id", update.OldValue),
 							zap.Error(err))
@@ -162,7 +163,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 				if update.NewValue != "" {
 					newID, err := strconv.Atoi(update.NewValue)
 					if err != nil {
-						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
+						log.Warn("Failed to post webhook event after changing the issue assignee, new assignee id is not number",
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
@@ -170,7 +171,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 					newAssignee, err = m.s.store.GetPrincipalByID(ctx, newID)
 					if err != nil {
-						m.s.l.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
+						log.Warn("Failed to post webhook event after changing the issue assignee, failed to find new assignee",
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
@@ -178,7 +179,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 					}
 					if newAssignee == nil {
 						err := fmt.Errorf("failed to post webhook event after changing the issue assignee, new assignee not found for ID %v", newID)
-						m.s.l.Warn(err.Error(),
+						log.Warn(err.Error(),
 							zap.String("issue_name", meta.issue.Name),
 							zap.String("new_assignee_id", update.NewValue),
 							zap.Error(err))
@@ -204,7 +205,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 	case api.ActivityPipelineTaskStatusUpdate:
 		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
 		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
+			log.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
 				zap.String("issue_name", meta.issue.Name),
 				zap.Error(err))
 			return webhookCtx, err
@@ -212,7 +213,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 
 		task, err := m.s.store.GetTaskByID(ctx, update.TaskID)
 		if err != nil {
-			m.s.l.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
+			log.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
 				zap.String("issue_name", meta.issue.Name),
 				zap.Int("task_id", update.TaskID),
 				zap.Error(err))
@@ -220,7 +221,7 @@ func (m *ActivityManager) getWebhookContext(ctx context.Context, activity *api.A
 		}
 		if task == nil {
 			err := fmt.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
-			m.s.l.Warn(err.Error(),
+			log.Warn(err.Error(),
 				zap.String("issue_name", meta.issue.Name),
 				zap.Int("task_id", update.TaskID),
 				zap.Error(err))

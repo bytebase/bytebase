@@ -6,19 +6,15 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 // NewTaskCheckMigrationSchemaExecutor creates a task check migration schema executor.
-func NewTaskCheckMigrationSchemaExecutor(logger *zap.Logger) TaskCheckExecutor {
-	return &TaskCheckMigrationSchemaExecutor{
-		l: logger,
-	}
+func NewTaskCheckMigrationSchemaExecutor() TaskCheckExecutor {
+	return &TaskCheckMigrationSchemaExecutor{}
 }
 
 // TaskCheckMigrationSchemaExecutor is the task check migration schema executor.
 type TaskCheckMigrationSchemaExecutor struct {
-	l *zap.Logger
 }
 
 // Run will run the task check migration schema executor once.
@@ -30,10 +26,11 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 	if task == nil {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.Internal,
-				Title:   "Error",
-				Content: fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.Internal.Int(),
+				Title:     "Error",
+				Content:   fmt.Sprintf("task not found for ID %v", taskCheckRun.TaskID),
 			},
 		}, nil
 	}
@@ -43,7 +40,7 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 		return []api.TaskCheckResult{}, err
 	}
 
-	driver, err := getAdminDatabaseDriver(ctx, instance, "", exec.l)
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", server.pgInstanceDir)
 	if err != nil {
 		return []api.TaskCheckResult{}, err
 	}
@@ -57,20 +54,22 @@ func (exec *TaskCheckMigrationSchemaExecutor) Run(ctx context.Context, server *S
 	if setup {
 		return []api.TaskCheckResult{
 			{
-				Status:  api.TaskCheckStatusError,
-				Code:    common.MigrationSchemaMissing,
-				Title:   "Error",
-				Content: fmt.Sprintf("Missing migration schema for instance %q", instance.Name),
+				Status:    api.TaskCheckStatusError,
+				Namespace: api.BBNamespace,
+				Code:      common.MigrationSchemaMissing.Int(),
+				Title:     "Error",
+				Content:   fmt.Sprintf("Missing migration schema for instance %q", instance.Name),
 			},
 		}, nil
 	}
 
 	return []api.TaskCheckResult{
 		{
-			Status:  api.TaskCheckStatusSuccess,
-			Code:    common.Ok,
-			Title:   "OK",
-			Content: fmt.Sprintf("Instance %q has setup migration schema", instance.Name),
+			Status:    api.TaskCheckStatusSuccess,
+			Namespace: api.BBNamespace,
+			Code:      common.Ok.Int(),
+			Title:     "OK",
+			Content:   fmt.Sprintf("Instance %q has setup migration schema", instance.Name),
 		},
 	}, nil
 }

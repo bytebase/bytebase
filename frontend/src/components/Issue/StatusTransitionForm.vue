@@ -45,10 +45,7 @@
         </template>
       </template>
 
-      <div
-        v-if="mode == 'TASK' && task.taskCheckRunList.length > 0"
-        class="sm:col-span-4 mb-4 space-y-4"
-      >
+      <div v-if="showTaskCheckBar" class="sm:col-span-4 mb-4 space-y-4">
         <template v-if="runningCheckCount > 0">
           <BBAttention
             :style="'INFO'"
@@ -124,12 +121,12 @@
 
 <script lang="ts">
 import { computed, reactive, ref, PropType, defineComponent } from "vue";
-import cloneDeep from "lodash-es/cloneDeep";
+import { cloneDeep, groupBy, maxBy } from "lodash-es";
 import DatabaseSelect from "../DatabaseSelect.vue";
 import TaskCheckBar from "./TaskCheckBar.vue";
-import { Issue, IssueStatusTransition, Task, TaskCheckRun } from "../../types";
-import { OutputField } from "../../plugins";
-import { activeEnvironment, TaskStatusTransition } from "../../utils";
+import { Issue, IssueStatusTransition, Task } from "@/types";
+import { OutputField } from "@/plugins";
+import { activeEnvironment, TaskStatusTransition } from "@/utils";
 
 type CheckSummary = {
   successCount: number;
@@ -148,7 +145,7 @@ export default defineComponent({
   props: {
     mode: {
       required: true,
-      type: String as PropType<"ISSUE" | "TASK">,
+      type: String as PropType<"ISSUE" | "STAGE" | "TASK">,
     },
     okText: {
       type: String,
@@ -202,6 +199,7 @@ export default defineComponent({
           }
           break; // only to make eslint happy
         }
+        case "STAGE": // fallthrough the same as TASK
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).type) {
             case "RUN":
@@ -220,6 +218,12 @@ export default defineComponent({
       return ""; // only to make eslint happy
     });
 
+    const showTaskCheckBar = computed((): boolean => {
+      if (props.mode !== "TASK") return false;
+      const taskCheckCount = props.task?.taskCheckRunList.length ?? 0;
+      return taskCheckCount > 0;
+    });
+
     // Code block below will raise an eslint ERROR.
     // But I won't change it this time.
     // Disable submit if in TASK mode and there exists RUNNING check or check error and we are transitioning to RUNNING
@@ -228,6 +232,7 @@ export default defineComponent({
         case "ISSUE": {
           return true;
         }
+        case "STAGE": // fallthrough the same as TASK
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).to) {
             case "RUNNING":
@@ -260,18 +265,18 @@ export default defineComponent({
         errorCount: 0,
       };
 
-      // For a particular check type, only counts the most recent one
-      const list: TaskCheckRun[] = [];
-      for (const run of props.task!.taskCheckRunList) {
-        const index = list.findIndex((item) => item.type == run.type);
-        if (index >= 0 && list[index].updatedTs < run.updatedTs) {
-          list[index] = run;
-        } else {
-          list.push(run);
-        }
-      }
+      const taskCheckRunList = props.task?.taskCheckRunList ?? [];
 
-      for (const check of list) {
+      const listGroupByType = groupBy(taskCheckRunList, (run) => run.type);
+      const latestCheckRunOfEachType = Object.keys(listGroupByType).map(
+        (type) => {
+          const listOfType = listGroupByType[type];
+          const latest = maxBy(listOfType, (run) => run.updatedTs)!;
+          return latest;
+        }
+      );
+
+      for (const check of latestCheckRunOfEachType) {
         if (check.status == "DONE") {
           for (const result of check.result.resultList) {
             if (result.status == "SUCCESS") {
@@ -292,6 +297,7 @@ export default defineComponent({
     return {
       state,
       environmentId,
+      showTaskCheckBar,
       commentTextArea,
       submitButtonStyle,
       allowSubmit,

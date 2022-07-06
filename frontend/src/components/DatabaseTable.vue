@@ -1,18 +1,25 @@
 <template>
   <BBTable
     :column-list="columnList"
-    :data-source="databaseList"
+    :data-source="mixedDatabaseList"
     :show-header="true"
     :left-bordered="bordered"
     :right-bordered="bordered"
     :top-bordered="bordered"
     :bottom-bordered="bordered"
+    data-label="bb-database-table"
     @click-row="clickDatabase"
   >
     <template #body="{ rowData: database }: { rowData: Database }">
-      <BBTableCell :left-padding="4" class="w-16">
-        <div class="flex flex-row items-center space-x-1 tooltip-wrapper">
+      <BBTableCell :left-padding="4">
+        <div class="flex items-center space-x-2 tooltip-wrapper">
           <span>{{ database.name }}</span>
+          <BBBadge
+            v-if="isPITRDatabase(database)"
+            text="PITR"
+            :can-remove="false"
+            class="text-xs"
+          />
           <div v-if="!showMiscColumn && database.syncStatus != 'OK'">
             <span class="tooltip">
               {{
@@ -26,7 +33,7 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showProjectColumn" class="w-16">
+      <BBTableCell v-if="showProjectColumn" class="w-[20%]">
         <div class="flex flex-row space-x-2 items-center">
           <div>{{ projectName(database.project) }}</div>
           <div class="tooltip-wrapper">
@@ -49,28 +56,53 @@
           </div>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showEnvironmentColumn" class="w-16">
+      <BBTableCell v-if="showEnvironmentColumn" class="w-[10%]">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell v-if="showInstanceColumn" class="w-32">
+      <BBTableCell v-if="showInstanceColumn" class="w-[20%]">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon :instance="database.instance" />
           <span>{{ instanceName(database.instance) }}</span>
         </div>
       </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-4">
-        {{ database.syncStatus }}
+      <BBTableCell v-if="showMiscColumn" class="w-[8%]">
+        <span
+          :class="{
+            'text-error': database.syncStatus === 'NOT_FOUND',
+          }"
+        >
+          {{ database.syncStatus }}
+        </span>
       </BBTableCell>
-      <BBTableCell v-if="showMiscColumn" class="w-16">
+      <BBTableCell v-if="showMiscColumn" class="w-[14%]">
         {{ humanizeTs(database.lastSuccessfulSyncTs) }}
       </BBTableCell>
-      <BBTableCell v-if="showSQLEditorLink" class="w-16">
+      <BBTableCell v-if="showSQLEditorLink" class="w-[8%]">
         <button class="btn-icon" @click.stop="gotoSQLEditor(database)">
           <heroicons-outline:terminal class="w-4 h-4" />
         </button>
       </BBTableCell>
     </template>
+
+    <template
+      v-if="hasReservedDatabases && !state.showReservedDatabaseList"
+      #footer
+    >
+      <tfoot>
+        <tr>
+          <td :colspan="columnList.length" class="p-0">
+            <div
+              class="flex items-center justify-center cursor-pointer hover:bg-gray-200 py-2 text-gray-400 text-sm"
+              @click="state.showReservedDatabaseList = true"
+            >
+              {{ $t("database.show-reserved-databases") }}
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </template>
   </BBTable>
+
   <BBModal
     v-if="state.showIncorrectProjectModal"
     :title="$t('common.warning')"
@@ -114,6 +146,7 @@ type Mode = "ALL" | "ALL_SHORT" | "INSTANCE" | "PROJECT" | "PROJECT_SHORT";
 interface State {
   showIncorrectProjectModal: boolean;
   warningDatabase?: Database;
+  showReservedDatabaseList: boolean;
 }
 
 const props = defineProps({
@@ -149,6 +182,40 @@ const router = useRouter();
 const { t } = useI18n();
 const state = reactive<State>({
   showIncorrectProjectModal: false,
+  showReservedDatabaseList: false,
+});
+
+const sortedDatabaseList = computed(() => {
+  const list = [...props.databaseList];
+  list.sort((a, b) => {
+    if (a.syncStatus === "NOT_FOUND" && b.syncStatus === "OK") {
+      return -1;
+    }
+    if (a.syncStatus === "OK" && b.syncStatus === "NOT_FOUND") {
+      return 1;
+    }
+    return a.id - b.id;
+  });
+  return list;
+});
+
+const regularDatabaseList = computed(() =>
+  sortedDatabaseList.value.filter((db) => !isPITRDatabase(db))
+);
+const reservedDatabaseList = computed(() =>
+  sortedDatabaseList.value.filter((db) => isPITRDatabase(db))
+);
+const hasReservedDatabases = computed(
+  () => reservedDatabaseList.value.length > 0
+);
+
+const mixedDatabaseList = computed(() => {
+  const tableList = [...regularDatabaseList.value];
+  if (state.showReservedDatabaseList) {
+    tableList.push(...reservedDatabaseList.value);
+  }
+
+  return tableList;
 });
 
 const columnListMap = computed(() => {
@@ -309,14 +376,25 @@ const handleIncorrectProjectModalCancel = () => {
   state.warningDatabase = undefined;
 };
 
-const clickDatabase = (section: number, row: number) => {
+const clickDatabase = (section: number, row: number, e: MouseEvent) => {
   if (!props.rowClickable) return;
 
-  const database = props.databaseList[row];
+  const database = sortedDatabaseList.value[row];
   if (props.customClick) {
     emit("select-database", database);
   } else {
-    router.push(`/db/${databaseSlug(database)}`);
+    const url = `/db/${databaseSlug(database)}`;
+    if (e.ctrlKey || e.metaKey) {
+      window.open(url, "_blank");
+    } else {
+      router.push(url);
+    }
   }
 };
+
+function isPITRDatabase(db: Database): boolean {
+  const { name } = db;
+  // A pitr database's name is xxx_pitr_1234567890 or xxx_pitr_1234567890_old
+  return !!name.match(/^(.+?)_pitr_(\d+)(_old)?$/);
+}
 </script>

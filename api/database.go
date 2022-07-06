@@ -25,16 +25,6 @@ const (
 	NotFound SyncStatus = "NOT_FOUND"
 )
 
-func (e SyncStatus) String() string {
-	switch e {
-	case OK:
-		return "OK"
-	case NotFound:
-		return "NOT_FOUND"
-	}
-	return ""
-}
-
 // Database is the API message for a database.
 type Database struct {
 	ID int `jsonapi:"primary,database"`
@@ -97,12 +87,13 @@ type DatabaseFind struct {
 	ID *int
 
 	// Related fields
-	InstanceID *int
 	ProjectID  *int
+	InstanceID *int
 
 	// Domain specific fields
 	Name               *string
 	IncludeAllDatabase bool
+	SyncStatus         *SyncStatus
 }
 
 func (find *DatabaseFind) String() string {

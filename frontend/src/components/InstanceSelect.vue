@@ -1,34 +1,16 @@
 <template>
-  <select
-    class="btn-select w-full disabled:cursor-not-allowed"
+  <BBSelect
+    :selected-item="state.selectedInstance"
+    :item-list="instanceList"
     :disabled="disabled"
-    @change="
-      (e: any) => {
-        $emit('select-instance-id', parseInt(e.target.value));
-      }
-    "
+    :placeholder="$t('instance.select')"
+    :show-prefix-item="true"
+    @select-item="(instance) => $emit('select-instance-id', instance.id)"
   >
-    <option disabled :selected="undefined === state.selectedId">
-      {{ $t("instance.select") }}
-    </option>
-    <template v-for="(instance, index) in instanceList" :key="index">
-      <option
-        v-if="instance.rowStatus == 'NORMAL'"
-        :key="index"
-        :value="instance.id"
-        :selected="instance.id == state.selectedId"
-      >
-        {{ instanceName(instance) }}
-      </option>
-      <option
-        v-else-if="instance.id == state.selectedId"
-        :value="instance.id"
-        :selected="true"
-      >
-        {{ instanceName(instance) }}
-      </option>
+    <template #menuItem="{ item: instance }">
+      {{ instanceName(instance) }}
     </template>
-  </select>
+  </BBSelect>
 </template>
 
 <script lang="ts">
@@ -37,7 +19,7 @@ import { computed, defineComponent, reactive, watch } from "vue";
 import { Instance } from "../types";
 
 interface LocalState {
-  selectedId?: number;
+  selectedInstance?: Instance;
 }
 
 export default defineComponent({
@@ -61,10 +43,10 @@ export default defineComponent({
   setup(props, { emit }) {
     const instanceStore = useInstanceStore();
     const state = reactive<LocalState>({
-      selectedId: props.selectedId,
+      selectedInstance: undefined,
     });
 
-    const instanceList = computed(() => {
+    const rawInstanceList = computed(() => {
       if (props.environmentId) {
         return instanceStore.getInstanceListByEnvironmentId(
           props.environmentId,
@@ -74,27 +56,43 @@ export default defineComponent({
       return instanceStore.getInstanceList(["NORMAL", "ARCHIVED"]);
     });
 
-    watch(
-      () => props.selectedId,
-      (cur) => {
-        state.selectedId = cur;
-      }
-    );
+    const instanceList = computed(() => {
+      return rawInstanceList.value.filter((instance) => {
+        if (instance.rowStatus === "NORMAL") {
+          return true;
+        }
+        // instance.rowStatus === "ARCHIVED"
+        if (instance.id === state.selectedInstance?.id) {
+          return true;
+        }
+        return false;
+      });
+    });
 
     // The instance list might change if environmentId changes, and the previous selected id
     // might not exist in the new list. In such case, we need to invalidate the selection
     // and emit the event.
-    watch(
-      () => instanceList.value,
-      (curList) => {
-        if (
-          state.selectedId &&
-          !curList.find((instance: Instance) => instance.id == state.selectedId)
-        ) {
-          state.selectedId = undefined;
-          emit("select-instance-id", undefined);
-        }
+    const invalidateSelectionIfNeeded = () => {
+      if (
+        state.selectedInstance &&
+        !instanceList.value.find(
+          (item) => item.id == state.selectedInstance?.id
+        )
+      ) {
+        state.selectedInstance = undefined;
+        emit("select-instance-id", undefined);
       }
+    };
+
+    watch(
+      [() => props.selectedId, instanceList],
+      ([selectedId, list]) => {
+        invalidateSelectionIfNeeded();
+        state.selectedInstance = list.find(
+          (instance) => instance.id === selectedId
+        );
+      },
+      { immediate: true }
     );
 
     return {

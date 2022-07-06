@@ -2,6 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"go.uber.org/zap/zapcore"
 )
 
 // BackupStatus is the status of a backup.
@@ -16,37 +19,17 @@ const (
 	BackupStatusFailed BackupStatus = "FAILED"
 )
 
-func (e BackupStatus) String() string {
-	switch e {
-	case BackupStatusPendingCreate:
-		return "PENDING_CREATE"
-	case BackupStatusDone:
-		return "DONE"
-	case BackupStatusFailed:
-		return "FAILED"
-	}
-	return "UNKNOWN"
-}
-
 // BackupType is the type of a backup.
 type BackupType string
 
 const (
 	// BackupTypeAutomatic is the type for automatic backup.
 	BackupTypeAutomatic BackupType = "AUTOMATIC"
+	// BackupTypePITR is the type of backup taken at PITR cutover stage.
+	BackupTypePITR BackupType = "PITR"
 	// BackupTypeManual is the type for manual backup.
 	BackupTypeManual BackupType = "MANUAL"
 )
-
-func (e BackupType) String() string {
-	switch e {
-	case BackupTypeAutomatic:
-		return "AUTOMATIC"
-	case BackupTypeManual:
-		return "MANUAL"
-	}
-	return "UNKNOWN"
-}
 
 // BackupStorageBackend is the storage backend of a backup.
 type BackupStorageBackend string
@@ -62,24 +45,15 @@ const (
 	BackupStorageBackendOSS BackupStorageBackend = "OSS"
 )
 
-func (e BackupStorageBackend) String() string {
-	switch e {
-	case BackupStorageBackendLocal:
-		return "LOCAL"
-	case BackupStorageBackendS3:
-		return "S3"
-	case BackupStorageBackendGCS:
-		return "GCS"
-	case BackupStorageBackendOSS:
-		return "OSS"
-	}
-	return "UNKNOWN"
-}
-
 // BinlogInfo is the binlog coordination for MySQL.
 type BinlogInfo struct {
 	FileName string `json:"fileName"`
 	Position int64  `json:"position"`
+}
+
+// IsEmpty return true if the BinlogInfo is empty.
+func (b BinlogInfo) IsEmpty() bool {
+	return b == BinlogInfo{}
 }
 
 // BackupPayload contains backup related database specific info, it differs for different database types.
@@ -120,6 +94,21 @@ type Backup struct {
 	// Payload contains data such as binlog position info which will not be created at first.
 	// It is filled when the backup task executor takes database backups.
 	Payload BackupPayload `jsonapi:"attr,payload"`
+}
+
+// ZapBackupArray is a helper to format zap.Array
+type ZapBackupArray []*Backup
+
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface
+func (backups ZapBackupArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for _, backup := range backups {
+		payload, err := json.Marshal(backup.Payload)
+		if err != nil {
+			return err
+		}
+		arr.AppendString(fmt.Sprintf("{name:%s, id:%d, payload:%s}", backup.Name, backup.ID, payload))
+	}
+	return nil
 }
 
 // BackupCreate is the API message for creating a backup.

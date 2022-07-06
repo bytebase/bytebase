@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/bytebase/bytebase/common/log"
 	dbdriver "github.com/bytebase/bytebase/plugin/db"
 	"github.com/pkg/errors"
 
@@ -20,7 +21,6 @@ import (
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
 
 	"github.com/bytebase/bytebase/common"
-	"go.uber.org/zap"
 )
 
 const (
@@ -56,14 +56,15 @@ var demoFS embed.FS
 type DB struct {
 	db *sql.DB
 
-	l *zap.Logger
-
 	// db.connCfg is the connection configuration to a Postgres database.
 	// The user has superuser privilege to the database.
 	connCfg dbdriver.ConnectionConfig
 
 	// Dir to load demo data
 	demoDataDir string
+
+	// Dir for postgres instance
+	pgBaseDir string
 
 	// If true, database will be opened in readonly mode
 	readonly bool
@@ -80,11 +81,11 @@ type DB struct {
 }
 
 // NewDB returns a new instance of DB associated with the given datasource name.
-func NewDB(logger *zap.Logger, connCfg dbdriver.ConnectionConfig, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
+func NewDB(connCfg dbdriver.ConnectionConfig, pgBaseDir, demoDataDir string, readonly bool, serverVersion string, mode common.ReleaseMode) *DB {
 	db := &DB{
-		l:             logger,
 		connCfg:       connCfg,
 		demoDataDir:   demoDataDir,
+		pgBaseDir:     pgBaseDir,
 		readonly:      readonly,
 		Now:           time.Now,
 		serverVersion: serverVersion,
@@ -98,7 +99,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	d, err := dbdriver.Open(
 		ctx,
 		dbdriver.Postgres,
-		dbdriver.DriverConfig{Logger: db.l},
+		dbdriver.DriverConfig{PgInstanceDir: db.pgBaseDir},
 		db.connCfg,
 		dbdriver.ConnectionContext{},
 	)
@@ -114,7 +115,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	}
 
 	if db.readonly {
-		db.l.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
+		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// The database storing metadata is the same as user name.
 		db.db, err = d.GetDbConnection(ctx, databaseName)
 		if err != nil {
@@ -137,7 +138,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 			if !strings.Contains(err.Error(), "invalid stored version") {
 				return err
 			}
-			db.l.Info("Migrating migration history version storage format to semantic version.")
+			log.Info("Migrating migration history version storage format to semantic version.")
 			db, err := d.GetDbConnection(ctx, "bytebase")
 			if err != nil {
 				return err
@@ -162,7 +163,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
 
-	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName, db.l); err != nil {
+	if err := migrate(ctx, d, verBefore, db.mode, db.connCfg.StrictUseDb, db.serverVersion, databaseName); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 
@@ -170,7 +171,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get current schema version: %w", err)
 	}
-	db.l.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
+	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
 	db.db, err = d.GetDbConnection(ctx, databaseName)
 	if err != nil {
@@ -180,7 +181,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if err := db.setupDemoData(); err != nil {
 		return fmt.Errorf("failed to setup demo data: %w."+
 			" It could be Bytebase is running against an old Bytebase schema. If you are developing Bytebase, you can remove pgdata"+
-			" directory under the same directory where the bytebase binary resides. and restart again to let"+
+			" directory under the same directory where the Bytebase binary resides. and restart again to let"+
 			" Bytebase create the latest schema. If you are running in production and don't want to reset the data, you can contact support@bytebase.com for help",
 			err)
 	}
@@ -204,21 +205,27 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 		return nil, nil
 	}
 
-	v, err := semver.Make(history[0].Version)
-	if err != nil {
-		return nil, fmt.Errorf("invalid version %q, error: %v", history[0].Version, err)
+	for _, h := range history {
+		if h.Status != dbdriver.Done {
+			continue
+		}
+		v, err := semver.Make(h.Version)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version %q, error: %v", h.Version, err)
+		}
+		return &v, nil
 	}
 
-	return &v, nil
+	return nil, fmt.Errorf("failed to find a successful migration history")
 }
 
 // setupDemoData loads the setupDemoData data for testing
 func (db *DB) setupDemoData() error {
 	if db.demoDataDir == "" {
-		db.l.Debug("Skip setting up demo data. Demo data directory not specified.")
+		log.Debug("Skip setting up demo data. Demo data directory not specified.")
 		return nil
 	}
-	db.l.Info(fmt.Sprintf("Setting up demo data from %q...", db.demoDataDir))
+	log.Info(fmt.Sprintf("Setting up demo data from %q...", db.demoDataDir))
 	names, err := fs.Glob(demoFS, fmt.Sprintf("%s/*.sql", db.demoDataDir))
 	if err != nil {
 		return err
@@ -236,13 +243,13 @@ func (db *DB) setupDemoData() error {
 			return fmt.Errorf("applyDataFile error: name=%q err=%w", name, err)
 		}
 	}
-	db.l.Info("Completed demo data setup.")
+	log.Info("Completed demo data setup.")
 	return nil
 }
 
 // applyDataFile runs a single demo data file within a transaction.
 func (db *DB) applyDataFile(name string) error {
-	db.l.Info(fmt.Sprintf("Applying data file %s...", name))
+	log.Info(fmt.Sprintf("Applying data file %s...", name))
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -273,12 +280,12 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string, l *zap.Logger) error {
-	l.Info("Apply database migration if needed...")
+func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mode common.ReleaseMode, strictDb bool, serverVersion, databaseName string) error {
+	log.Info("Apply database migration if needed...")
 	if curVer == nil {
-		l.Info("The database schema has not been setup.")
+		log.Info("The database schema has not been setup.")
 	} else {
-		l.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+		log.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 		major := curVer.Major
 		if major != majorSchemaVersion {
 			return fmt.Errorf("current major schema version %d is different from the major schema version %d this release %s expects", major, majorSchemaVersion, serverVersion)
@@ -290,7 +297,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cutoff version")
 	}
-	l.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
+	log.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
 
 	var histories []*dbdriver.MigrationHistory
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
@@ -341,12 +348,13 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Initial migration version %s server version %s with file %s.", cutoffSchemaVersion, serverVersion, latestSchemaPath),
 				CreateDatabase:        !strictDb,
+				Force:                 true,
 			},
 			stmt,
 		); err != nil {
 			return fmt.Errorf("failed to migrate initial schema version %q, error: %v", latestSchemaPath, err)
 		}
-		l.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
+		log.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
 	} else {
 		// Apply migrations if needed.
 		retVersion := *curVer
@@ -360,11 +368,11 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			return err
 		}
 		for _, message := range messages {
-			l.Info(message)
+			log.Info(message)
 		}
 
 		for _, minorVersion := range minorVersions {
-			l.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
+			log.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
 			names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
 			if err != nil {
 				return err
@@ -385,10 +393,10 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 				//   after - prod 1.3 with 123.sql; dev: something else.
 				// When dev starts, it will try to apply version 1.3 including 123.sql. If we don't skip, the same statement will be re-applied and most likely to fail.
 				if mode == common.ReleaseModeDev && migrationExists(string(buf), histories) {
-					l.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
+					log.Info(fmt.Sprintf("Skip migrating migration file %s that's already migrated.", pv.filename))
 					continue
 				}
-				l.Info(fmt.Sprintf("Migrating %s...", pv.version))
+				log.Info(fmt.Sprintf("Migrating %s...", pv.version))
 				if _, _, err := d.ExecuteMigration(
 					ctx,
 					&dbdriver.MigrationInfo{
@@ -402,6 +410,7 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 						Source:                dbdriver.LIBRARY,
 						Type:                  dbdriver.Migrate,
 						Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
+						Force:                 true,
 					},
 					string(buf),
 				); err != nil {
@@ -411,14 +420,14 @@ func migrate(ctx context.Context, d dbdriver.Driver, curVer *semver.Version, mod
 			}
 		}
 		if retVersion.EQ(*curVer) {
-			l.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
+			log.Info(fmt.Sprintf("Database schema is at version %s; nothing to migrate.", *curVer))
 		} else {
-			l.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
+			log.Info(fmt.Sprintf("Completed database migration from version %s to %s.", *curVer, retVersion))
 		}
 	}
 
 	if mode == common.ReleaseModeDev {
-		if err := migrateDev(ctx, d, serverVersion, databaseName, cutoffSchemaVersion, histories, l); err != nil {
+		if err := migrateDev(ctx, d, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
 			return errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
@@ -456,7 +465,7 @@ func getProdCutoffVersion() (semver.Version, error) {
 	return patchVersions[len(patchVersions)-1].version, nil
 }
 
-func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory, l *zap.Logger) error {
+func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseName string, cutoffSchemaVersion semver.Version, histories []*dbdriver.MigrationHistory) error {
 	devMigrations, err := getDevMigrations()
 	if err != nil {
 		return err
@@ -466,18 +475,18 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 	// Skip migrations that are already applied, otherwise the migration reattempt will most likely to fail with already exists error.
 	for _, m := range devMigrations {
 		if migrationExists(m.statement, histories) {
-			l.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
+			log.Info(fmt.Sprintf("Skip migrating dev migration file %s that's already migrated.", m.filename))
 		} else {
 			migrations = append(migrations, m)
 		}
 	}
 	if len(migrations) == 0 {
-		l.Info("Skip dev mode migration; no new version.")
+		log.Info("Skip dev mode migration; no new version.")
 		return nil
 	}
 
 	for _, m := range migrations {
-		l.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
+		log.Info(fmt.Sprintf("Migrating dev %s...", m.filename))
 		// We expect to use semantic versioning for dev environment too because getLatestVersion() always expect to get the latest version in semantic format.
 		if _, _, err := d.ExecuteMigration(
 			ctx,
@@ -492,6 +501,7 @@ func migrateDev(ctx context.Context, d dbdriver.Driver, serverVersion, databaseN
 				Source:                dbdriver.LIBRARY,
 				Type:                  dbdriver.Migrate,
 				Description:           fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
+				Force:                 true,
 			},
 			m.statement,
 		); err != nil {
@@ -674,7 +684,7 @@ type Tx struct {
 	now time.Time
 }
 
-// FormatError returns err as a bytebase error, if possible.
+// FormatError returns err as a Bytebase error, if possible.
 // Otherwise returns the original error.
 func FormatError(err error) error {
 	if err == nil {

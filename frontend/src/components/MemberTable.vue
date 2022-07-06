@@ -50,8 +50,18 @@
                   class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
                   >{{ $t("settings.members.yourself") }}</span
                 >
+                <span
+                  v-if="member.principal.id === SYSTEM_BOT_ID"
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
+                >
+                  {{ $t("settings.members.system-bot") }}
+                </span>
               </div>
-              <span class="textlabel">{{ member.principal.email }}</span>
+              <span
+                v-if="member.principal.id !== SYSTEM_BOT_ID"
+                class="textlabel"
+                >{{ member.principal.email }}</span
+              >
             </div>
           </template>
         </div>
@@ -71,7 +81,10 @@
         />
       </BBTableCell>
       <BBTableCell class="table-cell">
-        <div class="flex flex-row items-center space-x-1">
+        <div
+          v-if="member.principal.id !== SYSTEM_BOT_ID"
+          class="flex flex-row items-center space-x-1"
+        >
           <span>{{ humanizeTs(member.updatedTs) }}</span>
           <span>by</span>
           <router-link :to="`/u/${member.updater.id}`" class="normal-link">{{
@@ -114,7 +127,14 @@ import { computed, defineComponent, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import RoleSelect from "../components/RoleSelect.vue";
 import PrincipalAvatar from "../components/PrincipalAvatar.vue";
-import { MemberId, RoleType, MemberPatch, Member, RowStatus } from "../types";
+import {
+  MemberId,
+  RoleType,
+  MemberPatch,
+  Member,
+  RowStatus,
+  SYSTEM_BOT_ID,
+} from "../types";
 import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
@@ -198,6 +218,9 @@ export default defineComponent({
     });
 
     const allowChangeRole = (member: Member) => {
+      if (member.principal.id === SYSTEM_BOT_ID) {
+        return false;
+      }
       return (
         hasRBACFeature.value &&
         allowEdit.value &&
@@ -209,6 +232,9 @@ export default defineComponent({
     const changeRoleTooltip = (member: Member): string => {
       if (allowChangeRole(member)) {
         return "";
+      }
+      if (member.principal.id === SYSTEM_BOT_ID) {
+        return t("settings.members.tooltip.cannot-change-role-of-systembot");
       }
 
       if (!hasRBACFeature.value) {
@@ -223,6 +249,9 @@ export default defineComponent({
     };
 
     const allowDeactivateMember = (member: Member) => {
+      if (member.principal.id === SYSTEM_BOT_ID) {
+        return false;
+      }
       return (
         allowEdit.value &&
         member.rowStatus == "NORMAL" &&
@@ -255,6 +284,7 @@ export default defineComponent({
     };
 
     return {
+      SYSTEM_BOT_ID,
       COLUMN_LIST,
       state,
       currentUser,

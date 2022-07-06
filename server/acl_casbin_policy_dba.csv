@@ -71,6 +71,7 @@ p, DBA, /inbox/{id}, PATCH_SELF
 p, DBA, /bookmark, POST
 p, DBA, /bookmark/user/{userID}, GET_SELF
 p, DBA, /bookmark/{id}, DELETE_SELF
+p, DBA, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DBA, /pipeline/{pipelineID}/task/{taskID}/check, POST

@@ -5,13 +5,12 @@
       :class="active ? 'bg-gray-100' : ''"
       @click="$emit('activate', selectedRule.type)"
     >
-      <heroicons-solid:chevron-right
-        class="w-5 h-5 transform transition-all"
-        :class="active ? 'rotate-90' : ''"
-      />
-
-      <div class="flex-1 flex flex-col ml-3">
+      <div class="flex-1 flex flex-col">
         <div class="flex mb-2 items-center space-x-2">
+          <heroicons-solid:chevron-right
+            class="w-5 h-5 transform transition-all"
+            :class="active ? 'rotate-90' : ''"
+          />
           <h1 class="text-base font-semibold text-gray-900">
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
@@ -21,7 +20,7 @@
           />
           <SchemaRuleLevelBadge :level="selectedRule.level" />
         </div>
-        <div class="text-sm text-gray-400">
+        <div class="text-sm text-gray-400 ml-7">
           {{ getRuleLocalization(selectedRule.type).description }}
         </div>
       </div>
@@ -41,7 +40,7 @@
               type="radio"
               :checked="level === selectedRule.level"
               @input="emit('level-change', level)"
-              class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              class="text-accent disabled:text-accent-disabled focus:ring-accent"
             />
             <label
               :for="`level-${level}`"
@@ -57,10 +56,16 @@
       <div
         v-for="(config, index) in selectedRule.componentList"
         :key="index"
-        class="mb-7"
+        class="mb-1"
       >
         <p class="mb-3">
-          {{ $t(`schema-review-policy.payload-config.${config.title}`) }}
+          {{
+            $t(
+              `schema-review-policy.rule.${getRuleLocalizationKey(
+                selectedRule.type
+              )}.component.${config.key}.title`
+            )
+          }}
         </p>
         <input
           v-if="config.payload.type == 'STRING'"
@@ -87,15 +92,22 @@
             type="text"
             pattern="[a-z]+"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            :placeholder="
-              $t('schema-review-policy.payload-config.input-then-press-enter')
-            "
+            :placeholder="$t('schema-review-policy.input-then-press-enter')"
             @keyup.enter="(e) => pushToList(index, e)"
           />
         </div>
         <InputWithTemplate
           v-else-if="config.payload.type == 'TEMPLATE'"
-          :template-list="config.payload.templateList"
+          :template-list="
+            config.payload.templateList.map((id) => ({
+              id,
+              description: $t(
+                `schema-review-policy.rule.${getRuleLocalizationKey(
+                  selectedRule.type
+                )}.component.${config.key}.template.${id}`
+              ),
+            }))
+          "
           :value="getStringPayload(index)"
           @change="(val) => (state.payload[index] = val)"
         />
@@ -112,6 +124,7 @@ import {
   RuleTemplate,
   RuleConfigComponent,
   getRuleLocalization,
+  getRuleLocalizationKey,
 } from "@/types/schemaSystem";
 
 type PayloadValueList = (string | string[])[];

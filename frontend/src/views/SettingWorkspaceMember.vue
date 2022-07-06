@@ -35,8 +35,13 @@ import { computed, defineComponent } from "vue";
 import MemberAddOrInvite from "../components/MemberAddOrInvite.vue";
 import MemberTable from "../components/MemberTable.vue";
 import { isOwner } from "../utils";
-import { Member } from "../types";
-import { featureToRef, useCurrentUser, useMemberList } from "@/store";
+import { Member, SYSTEM_BOT_ID, unknown } from "../types";
+import {
+  featureToRef,
+  useCurrentUser,
+  useMemberList,
+  usePrincipalStore,
+} from "@/store";
 
 export default defineComponent({
   name: "SettingWorkspaceMember",
@@ -49,9 +54,18 @@ export default defineComponent({
     const memberList = useMemberList();
 
     const activeMemberList = computed(() => {
-      return memberList.value.filter(
-        (member: Member) => member.rowStatus == "NORMAL"
-      );
+      const systemBotMember: Member = {
+        ...unknown("MEMBER"),
+        id: SYSTEM_BOT_ID,
+        role: "OWNER",
+        principal: usePrincipalStore().principalById(SYSTEM_BOT_ID),
+      };
+      return [
+        systemBotMember,
+        ...memberList.value.filter(
+          (member: Member) => member.rowStatus == "NORMAL"
+        ),
+      ];
     });
 
     const inactiveMemberList = computed(() => {

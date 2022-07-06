@@ -4,6 +4,7 @@
       type="button"
       class="btn-primary px-4 py-2"
       :disabled="!allowCreate"
+      data-label="bb-issue-create-button"
       @click.prevent="doCreate"
     >
       {{ $t("common.create") }}
@@ -20,10 +21,37 @@
       >
         <button
           type="button"
+          class="flex items-center gap-x-3 group relative overflow-visible"
           :class="transition.buttonClass"
           @click.prevent="tryStartTaskStatusTransition(transition)"
         >
-          {{ $t(transition.buttonName) }}
+          <span>
+            {{ $t(transition.buttonName) }}
+          </span>
+          <template v-if="allowApplyTaskTransitionToStage(transition)">
+            <span class="border-l pl-2 -mr-2">
+              <heroicons-outline:chevron-down />
+            </span>
+            <div
+              class="hidden group-hover:flex whitespace-nowrap absolute right-0 -bottom-[2px] transform translate-y-[100%] z-50 rounded-md bg-white shadow-lg"
+              @click.prevent.stop="tryStartStageStatusTransition(transition)"
+            >
+              <div
+                class="flex flex-col items-end py-1"
+                role="menu"
+                aria-orientation="vertical"
+                aria-labelledby="user-menu"
+              >
+                <div class="menu-item">
+                  {{
+                    $t("issue.action-to-current-stage", {
+                      action: $t(transition.buttonName),
+                    })
+                  }}
+                </div>
+              </div>
+            </div>
+          </template>
         </button>
       </template>
       <template v-if="applicableIssueStatusTransitionList.length > 0">
@@ -105,15 +133,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, Ref, ref } from "vue";
 import { isEmpty } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import type { TaskStatusTransition } from "@/utils";
+import type { StageStatusTransition, TaskStatusTransition } from "@/utils";
 import type {
   Issue,
   IssueCreate,
   IssueStatusTransition,
   Principal,
+  Stage,
   Task,
   TaskCreate,
 } from "@/types";
@@ -123,8 +152,7 @@ import { useCurrentUser, useIssueStore } from "@/store";
 import StatusTransitionForm from "./StatusTransitionForm.vue";
 import {
   flattenTaskList,
-  getApplicableIssueStatusTransitionList,
-  getApplicableTaskStatusTransitionList,
+  useIssueTransitionLogic,
   isApplicableTransition,
   IssueTypeWithStatement,
   TaskTypeWithStatement,
@@ -139,13 +167,16 @@ export type IssueContext = {
 };
 
 interface UpdateStatusModalState {
-  mode: "ISSUE" | "TASK";
+  mode: "ISSUE" | "STAGE" | "TASK";
   show: boolean;
   style: string;
   okText: string;
   title: string;
-  transition?: IssueStatusTransition | TaskStatusTransition;
-  payload?: Task;
+  transition?:
+    | IssueStatusTransition
+    | StageStatusTransition
+    | TaskStatusTransition;
+  payload?: Task | Stage;
   isTransiting: boolean;
 }
 
@@ -158,8 +189,10 @@ const {
   template: issueTemplate,
   activeTaskOfPipeline,
   doCreate,
+  isTenantMode,
 } = useIssueLogic();
-const { changeIssueStatus, changeTaskStatus } = useExtraIssueLogic();
+const { changeIssueStatus, changeStageAllTaskStatus, changeTaskStatus } =
+  useExtraIssueLogic();
 
 const updateStatusModalState = reactive<UpdateStatusModalState>({
   mode: "ISSUE",
@@ -180,39 +213,57 @@ const issueContext = computed((): IssueContext => {
   };
 });
 
-const applicableTaskStatusTransitionList = computed(() =>
-  getApplicableTaskStatusTransitionList(issue.value as Issue)
-);
+const {
+  applicableTaskStatusTransitionList,
+  applicableStageStatusTransitionList,
+  applicableIssueStatusTransitionList,
+  getApplicableIssueStatusTransitionList,
+  getApplicableStageStatusTransitionList,
+  getApplicableTaskStatusTransitionList,
+} = useIssueTransitionLogic(issue as Ref<Issue>);
 
-const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
-  updateStatusModalState.mode = "TASK";
+const tryStartStageOrTaskStatusTransition = (
+  transition: TaskStatusTransition | StageStatusTransition,
+  mode: "STAGE" | "TASK"
+) => {
+  updateStatusModalState.mode = mode;
   updateStatusModalState.okText = t(transition.buttonName);
   const task = currentTask.value;
+  const payload = mode === "TASK" ? task : task.stage;
+  const name = payload.name;
   switch (transition.type) {
     case "RUN":
       updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.run")} '${task.name}'?`;
+      updateStatusModalState.title = `${t("common.run")} '${name}'?`;
       break;
     case "APPROVE":
       updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.approve")} '${task.name}'?`;
+      updateStatusModalState.title = `${t("common.approve")} '${name}'?`;
       break;
     case "RETRY":
       updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.retry")} '${task.name}'?`;
+      updateStatusModalState.title = `${t("common.retry")} '${name}'?`;
       break;
     case "CANCEL":
       updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.cancel")} '${task.name}'?`;
+      updateStatusModalState.title = `${t("common.cancel")} '${name}'?`;
       break;
     case "SKIP":
       updateStatusModalState.style = "INFO";
-      updateStatusModalState.title = `${t("common.skip")} '${task.name}'?`;
+      updateStatusModalState.title = `${t("common.skip")} '${name}'?`;
       break;
   }
   updateStatusModalState.transition = transition;
-  updateStatusModalState.payload = task;
+  updateStatusModalState.payload = payload;
   updateStatusModalState.show = true;
+};
+
+const tryStartTaskStatusTransition = (transition: TaskStatusTransition) => {
+  tryStartStageOrTaskStatusTransition(transition, "TASK");
+};
+
+const tryStartStageStatusTransition = (transition: StageStatusTransition) => {
+  tryStartStageOrTaskStatusTransition(transition, "STAGE");
 };
 
 const doTaskStatusTransition = (
@@ -223,9 +274,13 @@ const doTaskStatusTransition = (
   changeTaskStatus(task, transition.to, comment);
 };
 
-const applicableIssueStatusTransitionList = computed(() =>
-  getApplicableIssueStatusTransitionList(issue.value as Issue)
-);
+const doStageStatusTransition = (
+  transition: StageStatusTransition,
+  stage: Stage,
+  comment: string
+) => {
+  changeStageAllTaskStatus(stage, transition.to, comment);
+};
 
 const currentTask = computed(() => {
   return activeTaskOfPipeline((issue.value as Issue).pipeline);
@@ -332,6 +387,18 @@ const onSubmit = async (comment: string) => {
       return cleanup();
     }
     doIssueStatusTransition(targetTransition, comment);
+  } else if (updateStatusModalState.mode === "STAGE") {
+    const targetTransition =
+      updateStatusModalState.transition as StageStatusTransition;
+    const applicableList = getApplicableStageStatusTransitionList(latestIssue);
+    if (!isApplicableTransition(targetTransition, applicableList)) {
+      return cleanup();
+    }
+    doStageStatusTransition(
+      targetTransition,
+      updateStatusModalState.payload as Stage,
+      comment
+    );
   } else if (updateStatusModalState.mode == "TASK") {
     const targetTransition =
       updateStatusModalState.transition as TaskStatusTransition;
@@ -341,11 +408,35 @@ const onSubmit = async (comment: string) => {
     }
     doTaskStatusTransition(
       targetTransition,
-      updateStatusModalState.payload!,
+      updateStatusModalState.payload as Task,
       comment
     );
   }
 
   cleanup();
+};
+
+const allowApplyTaskTransitionToStage = (transition: TaskStatusTransition) => {
+  // Only available for tenant mode, Which means
+  // 1. the project is tenant mode
+  // 2. the issue type is schema.update or data.update
+  if (!isTenantMode.value) {
+    return false;
+  }
+
+  const stage = currentTask.value.stage;
+
+  // Only available when the stage has multiple tasks.
+  if (stage.taskList.length <= 1) {
+    return false;
+  }
+
+  // Available to apply a taskStatusTransition to the stage when the transition
+  // type is also applicable to the stage.
+  return (
+    applicableStageStatusTransitionList.value.findIndex(
+      (t) => t.type === transition.type
+    ) >= 0
+  );
 };
 </script>

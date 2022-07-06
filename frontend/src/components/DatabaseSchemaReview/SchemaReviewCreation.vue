@@ -26,7 +26,7 @@
       <template #1>
         <SchemaReviewConfig
           class="py-5"
-          :select-rule-list="state.selectedRuleList"
+          :selected-rule-list="state.selectedRuleList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           @change="onRuleChange"
@@ -65,6 +65,11 @@
       @cancel="state.showAlertModal = false"
     >
     </BBAlert>
+    <FeatureModal
+      v-if="state.showFeatureModal"
+      feature="bb.feature.schema-review-policy"
+      @cancel="state.showFeatureModal = false"
+    />
   </div>
 </template>
 
@@ -74,15 +79,13 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
 import {
-  RuleType,
-  ruleTemplateList,
-  RuleLevel,
   Environment,
   RuleTemplate,
-  SchemaReviewPolicyTemplate,
+  TEMPLATE_LIST,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
 import {
+  featureToRef,
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
@@ -97,6 +100,7 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   ruleUpdated: boolean;
   showAlertModal: boolean;
+  showFeatureModal: boolean;
   templateIndex: number;
   pendingApplyTemplateIndex: number;
 }
@@ -127,86 +131,9 @@ const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
-const getRuleListWithLevel = (
-  typeList: RuleType[],
-  level: RuleLevel
-): RuleTemplate[] => {
-  return typeList.reduce((res, type) => {
-    const rule = ruleTemplateList.find((r) => r.type === type);
-    if (!rule) {
-      return res;
-    }
-
-    res.push({
-      ...rule,
-      level,
-    });
-    return res;
-  }, [] as RuleTemplate[]);
-};
-
-const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
-  {
-    title: t("schema-review-policy.template.policy-for-prod.title"),
-    imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)
-      .href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.uk",
-          "naming.index.fk",
-          "naming.index.idx",
-        ],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(
-        [
-          "statement.select.no-select-all",
-          "statement.where.require",
-          "statement.where.no-leading-wildcard-like",
-          "table.require-pk",
-        ],
-        RuleLevel.ERROR
-      ),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null"],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(
-        ["schema.backward-compatibility"],
-        RuleLevel.ERROR
-      ),
-    ],
-  },
-  {
-    title: t("schema-review-policy.template.policy-for-dev.title"),
-    imagePath: new URL("../../assets/plan-free.png", import.meta.url).href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.uk",
-          "naming.index.fk",
-          "naming.index.idx",
-          "statement.select.no-select-all",
-          "statement.where.require",
-          "statement.where.no-leading-wildcard-like",
-        ],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null", "schema.backward-compatibility"],
-        RuleLevel.WARNING
-      ),
-    ],
-  },
-];
+const hasSchemaReviewPolicyFeature = featureToRef(
+  "bb.feature.schema-review-policy"
+);
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
@@ -231,6 +158,7 @@ const state = reactive<LocalState>({
     : [...TEMPLATE_LIST[DEFAULT_TEMPLATE_INDEX].ruleList],
   ruleUpdated: false,
   showAlertModal: false,
+  showFeatureModal: false,
   templateIndex: props.policyId ? -1 : DEFAULT_TEMPLATE_INDEX,
   pendingApplyTemplateIndex: -1,
 });
@@ -282,6 +210,10 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
+  if (!hasSchemaReviewPolicyFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   if (!hasPermission.value) {
     pushNotification({
       module: "bytebase",

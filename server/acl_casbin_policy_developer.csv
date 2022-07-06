@@ -65,6 +65,7 @@ p, DEVELOPER, /inbox/{id}, PATCH_SELF
 p, DEVELOPER, /bookmark, POST
 p, DEVELOPER, /bookmark/user/{userID}, GET_SELF
 p, DEVELOPER, /bookmark/{id}, DELETE_SELF
+p, DEVELOPER, /pipeline/{pipelineID}/stage/{stageID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/status, PATCH
 p, DEVELOPER, /pipeline/{pipelineID}/task/{taskID}/check, POST

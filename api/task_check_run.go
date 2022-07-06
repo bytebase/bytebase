@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/db"
 )
 
@@ -23,20 +25,6 @@ const (
 	TaskCheckRunCanceled TaskCheckRunStatus = "CANCELED"
 )
 
-func (e TaskCheckRunStatus) String() string {
-	switch e {
-	case TaskCheckRunRunning:
-		return "RUNNING"
-	case TaskCheckRunDone:
-		return "DONE"
-	case TaskCheckRunFailed:
-		return "FAILED"
-	case TaskCheckRunCanceled:
-		return "CANCELED"
-	}
-	return "UNKNOWN"
-}
-
 // TaskCheckStatus is the status of a task check.
 type TaskCheckStatus string
 
@@ -48,18 +36,6 @@ const (
 	// TaskCheckStatusError is the task check status for ERROR.
 	TaskCheckStatusError TaskCheckStatus = "ERROR"
 )
-
-func (e TaskCheckStatus) String() string {
-	switch e {
-	case TaskCheckStatusSuccess:
-		return "SUCCESS"
-	case TaskCheckStatusWarn:
-		return "WARN"
-	case TaskCheckStatusError:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
 
 // TaskCheckType is the type of a taskCheck.
 type TaskCheckType string
@@ -77,6 +53,8 @@ const (
 	TaskCheckDatabaseConnect TaskCheckType = "bb.task-check.database.connect"
 	// TaskCheckInstanceMigrationSchema is the task check type for migrating schemas.
 	TaskCheckInstanceMigrationSchema TaskCheckType = "bb.task-check.instance.migration-schema"
+	// TaskCheckGhostSync is the task check type for the gh-ost sync task.
+	TaskCheckGhostSync TaskCheckType = "bb.task-check.database.ghost.sync"
 	// TaskCheckGeneralEarliestAllowedTime is the task check type for earliest allowed time.
 	TaskCheckGeneralEarliestAllowedTime TaskCheckType = "bb.task-check.general.earliest-allowed-time"
 )
@@ -97,12 +75,23 @@ type TaskCheckDatabaseStatementAdvisePayload struct {
 	PolicyID int `json:"policyID,omitempty"`
 }
 
+// Namespace is the namespace for task check result.
+type Namespace string
+
+const (
+	// AdvisorNamespace is task check result namespace for advisor.
+	AdvisorNamespace Namespace = "bb.advisor"
+	// BBNamespace is task check result namespace for bytebase.
+	BBNamespace Namespace = "bb.core"
+)
+
 // TaskCheckResult is the result of task checks.
 type TaskCheckResult struct {
-	Status  TaskCheckStatus `json:"status,omitempty"`
-	Code    common.Code     `json:"code,omitempty"`
-	Title   string          `json:"title,omitempty"`
-	Content string          `json:"content,omitempty"`
+	Namespace Namespace       `json:"namespace,omitempty"`
+	Code      int             `json:"code,omitempty"`
+	Status    TaskCheckStatus `json:"status,omitempty"`
+	Title     string          `json:"title,omitempty"`
+	Content   string          `json:"content,omitempty"`
 }
 
 // TaskCheckRunResultPayload is the result payload of a task check run.
@@ -189,4 +178,38 @@ type TaskCheckRunStatusPatch struct {
 	Status TaskCheckRunStatus
 	Code   common.Code
 	Result string
+}
+
+// ConvertToAdvisorDBType will convert db type into advisor db type
+func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
+	switch dbType {
+	case db.MySQL:
+		return advisor.MySQL, nil
+	case db.Postgres:
+		return advisor.Postgres, nil
+	case db.TiDB:
+		return advisor.TiDB, nil
+	}
+
+	return "", fmt.Errorf("unsupported db type %s for advisor", dbType)
+}
+
+// IsSyntaxCheckSupported checks the engine type if syntax check supports it.
+func IsSyntaxCheckSupported(dbType db.Type) bool {
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
+	}
+
+	return advisor.IsSyntaxCheckSupported(advisorDB)
+}
+
+// IsSchemaReviewSupported checks the engine type if schema review supports it.
+func IsSchemaReviewSupported(dbType db.Type) bool {
+	advisorDB, err := ConvertToAdvisorDBType(dbType)
+	if err != nil {
+		return false
+	}
+
+	return advisor.IsSchemaReviewSupported(advisorDB)
 }

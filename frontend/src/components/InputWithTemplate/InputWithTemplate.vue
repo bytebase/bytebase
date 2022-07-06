@@ -4,7 +4,7 @@
       <div
         v-for="template in templateList"
         :key="template.id"
-        class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer tooltip-wrapper"
+        class="px-4 py-1 rounded text-sm font-sm font-normal border border-gray-300 bg-gray-100 cursor-pointer tooltip-wrapper hover:bg-gray-200"
         @click="() => onTemplateAdd(template)"
       >
         {{ template.id }}

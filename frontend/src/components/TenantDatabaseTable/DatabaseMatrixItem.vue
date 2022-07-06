@@ -7,15 +7,15 @@
     }"
   >
     <template #trigger>
-      <div class="flex items-center select-none space-x-2">
+      <div class="flex items-center select-none space-x-1">
         <div class="sync-status">
-          <heroicons-solid:check
+          <heroicons-solid:check-circle
             v-if="database.syncStatus === 'OK'"
-            class="p-1 w-8 h-8 bg-success text-white"
+            class="p-1 w-8 h-8 text-success"
           />
-          <heroicons-outline:exclamation
+          <heroicons-solid:exclamation
             v-else
-            class="p-1 w-8 h-8 bg-warning text-white"
+            class="p-1 w-8 h-8 text-warning"
           />
         </div>
         <div class="flex flex-col items-start">
