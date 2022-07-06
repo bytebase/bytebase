@@ -156,10 +156,10 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
 	if !sequence.Valid {
-		// Returns 0 if we haven't applied any migration for this namespace.
-		return 0, nil
+		return int(sequence.Int32), nil
 	}
-	return int(sequence.Int32), nil
+	// Returns 0 if we haven't applied any migration for this namespace.
+	return 0, nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
