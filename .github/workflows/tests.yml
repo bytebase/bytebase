@@ -41,7 +41,7 @@ jobs:
           - "release,"
           - ""
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -66,5 +66,8 @@ jobs:
       - name: Install dependencies
         run: go generate -tags ${{ matrix.release-tags }}mysql ./...
       - name: Run all tests
-        timeout-minutes: 15
+        id: run-all-tests
         run: go test -v ./... -tags=${{ matrix.release-tags }}mysql
+      - name: Pretty print tests running time
+        run: echo ${{ steps.run-all-tests }}
+        run: cat ${{ steps.run-all-tests.outputs }} | grep --color=never -e '--- PASS:' -e '--- FAIL:'
