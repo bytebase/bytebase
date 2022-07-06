@@ -3,7 +3,7 @@ import { validateStepData } from "./guide";
 import { GuideData, HintData } from "./types";
 
 const fetchJSONData = async (path: string) => {
-  const res = await fetch("/static/demo" + path);
+  const res = await fetch("/demo" + path);
   const data = await res.json();
   return data;
 };
