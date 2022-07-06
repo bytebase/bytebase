@@ -79,12 +79,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBStepTabItem } from "@/bbkit/types";
 import {
-  RuleType,
-  ruleTemplateList,
-  RuleLevel,
   Environment,
   RuleTemplate,
-  SchemaReviewPolicyTemplate,
+  TEMPLATE_LIST,
   convertRuleTemplateToPolicyRule,
 } from "@/types";
 import {
@@ -137,87 +134,6 @@ const hasPermission = computed(() => {
 const hasSchemaReviewPolicyFeature = featureToRef(
   "bb.feature.schema-review-policy"
 );
-
-const getRuleListWithLevel = (
-  typeList: RuleType[],
-  level: RuleLevel
-): RuleTemplate[] => {
-  return typeList.reduce((res, type) => {
-    const rule = ruleTemplateList.find((r) => r.type === type);
-    if (!rule) {
-      return res;
-    }
-
-    res.push({
-      ...rule,
-      level,
-    });
-    return res;
-  }, [] as RuleTemplate[]);
-};
-
-const TEMPLATE_LIST: SchemaReviewPolicyTemplate[] = [
-  {
-    title: t("schema-review-policy.template.policy-for-prod.title"),
-    imagePath: new URL("../../assets/plan-enterprise.png", import.meta.url)
-      .href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.uk",
-          "naming.index.fk",
-          "naming.index.idx",
-        ],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(
-        [
-          "statement.select.no-select-all",
-          "statement.where.require",
-          "statement.where.no-leading-wildcard-like",
-          "table.require-pk",
-        ],
-        RuleLevel.ERROR
-      ),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null"],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(
-        ["schema.backward-compatibility"],
-        RuleLevel.ERROR
-      ),
-    ],
-  },
-  {
-    title: t("schema-review-policy.template.policy-for-dev.title"),
-    imagePath: new URL("../../assets/plan-free.png", import.meta.url).href,
-    ruleList: [
-      ...getRuleListWithLevel(["engine.mysql.use-innodb"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        [
-          "naming.table",
-          "naming.column",
-          "naming.index.uk",
-          "naming.index.fk",
-          "naming.index.idx",
-          "statement.select.no-select-all",
-          "statement.where.require",
-          "statement.where.no-leading-wildcard-like",
-        ],
-        RuleLevel.WARNING
-      ),
-      ...getRuleListWithLevel(["table.require-pk"], RuleLevel.ERROR),
-      ...getRuleListWithLevel(
-        ["column.required", "column.no-null", "schema.backward-compatibility"],
-        RuleLevel.WARNING
-      ),
-    ],
-  },
-];
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
