@@ -85,9 +85,6 @@ var casbinDeveloperPolicy string
 //go:embed dist
 var embeddedFiles embed.FS
 
-//go:embed dist/index.html
-var indexContent string
-
 func getFileSystem() http.FileSystem {
 	fs, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
