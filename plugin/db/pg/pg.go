@@ -204,11 +204,10 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
 	var version string
-	err := driver.db.QueryRowContext(ctx, query).Scan(&version)
-	if err == sql.ErrNoRows {
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 	return version, nil

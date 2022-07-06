@@ -407,12 +407,11 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool, error) {
 	query := fmt.Sprintf("SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%s'", database)
 	var unused string
-	err := conn.QueryRowContext(ctx, query).Scan(&unused)
-	if err == sql.ErrNoRows {
-		// The query returns empty row, which means there's no such database.
-		return false, nil
-	}
-	if err != nil {
+	if err := conn.QueryRowContext(ctx, query).Scan(&unused); err != nil {
+		if err == sql.ErrNoRows {
+			// The query returns empty row, which means there's no such database.
+			return false, nil
+		}
 		return false, util.FormatErrorWithQuery(err, query)
 	}
 	return true, nil

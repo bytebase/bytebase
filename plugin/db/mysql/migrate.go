@@ -77,13 +77,12 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 		WHERE namespace = ? AND sequence >= ?
 	`
 	var version sql.NullString
-	err = tx.QueryRowContext(ctx, getLargestVersionSinceLastBaselineQuery,
+	if err := tx.QueryRowContext(ctx, getLargestVersionSinceLastBaselineQuery,
 		namespace, largestBaselineSequence,
-	).Scan(&version)
-	if err == sql.ErrNoRows {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
-	}
-	if err != nil {
+	).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+		}
 		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
 	}
 	if version.Valid {
@@ -101,13 +100,12 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
 	}
 	var sequence sql.NullInt32
-	err := tx.QueryRowContext(ctx, findLargestSequenceQuery,
+	if err := tx.QueryRowContext(ctx, findLargestSequenceQuery,
 		namespace,
-	).Scan(&sequence)
-	if err == sql.ErrNoRows {
-		return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
-	}
-	if err != nil {
+	).Scan(&sequence); err != nil {
+		if err == sql.ErrNoRows {
+			return -1, common.FormatDBErrorEmptyRowWithQuery(findLargestSequenceQuery)
+		}
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
 	if !sequence.Valid {

@@ -634,11 +634,10 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
 	var sqlmode, timezone, stmt, charset, collation, unused string
-	err := txn.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused)
-	if err == sql.ErrNoRows {
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
 	return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
@@ -687,11 +686,10 @@ func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
 func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
 	var sqlmode, stmt, charset, collation, unused string
-	err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused)
-	if err == sql.ErrNoRows {
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-	if err != nil {
+	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused, &unused); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return "", err
 	}
 	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
