@@ -263,7 +263,8 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var vcs vcsRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -272,36 +273,25 @@ func createVCSImpl(ctx context.Context, tx *sql.Tx, create *api.VCSCreate) (*vcs
 		create.APIURL,
 		create.ApplicationID,
 		create.Secret,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var vcs vcsRaw
-		if err := row.Scan(
-			&vcs.ID,
-			&vcs.CreatorID,
-			&vcs.CreatedTs,
-			&vcs.UpdaterID,
-			&vcs.UpdatedTs,
-			&vcs.Name,
-			&vcs.Type,
-			&vcs.InstanceURL,
-			&vcs.APIURL,
-			&vcs.ApplicationID,
-			&vcs.Secret,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&vcs.ID,
+		&vcs.CreatorID,
+		&vcs.CreatedTs,
+		&vcs.UpdaterID,
+		&vcs.UpdatedTs,
+		&vcs.Name,
+		&vcs.Type,
+		&vcs.InstanceURL,
+		&vcs.APIURL,
+		&vcs.ApplicationID,
+		&vcs.Secret,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &vcs, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &vcs, nil
 }
 
 func findVCSImpl(ctx context.Context, tx *sql.Tx, find *api.VCSFind) ([]*vcsRaw, error) {
@@ -377,43 +367,34 @@ func patchVCSImpl(ctx context.Context, tx *sql.Tx, patch *api.VCSPatch) (*vcsRaw
 	}
 	args = append(args, patch.ID)
 
+	var vcs vcsRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, type, instance_url, api_url, application_id, secret
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var vcs vcsRaw
-		if err := row.Scan(
-			&vcs.ID,
-			&vcs.CreatorID,
-			&vcs.CreatedTs,
-			&vcs.UpdaterID,
-			&vcs.UpdatedTs,
-			&vcs.Name,
-			&vcs.Type,
-			&vcs.InstanceURL,
-			&vcs.APIURL,
-			&vcs.ApplicationID,
-			&vcs.Secret,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&vcs.ID,
+		&vcs.CreatorID,
+		&vcs.CreatedTs,
+		&vcs.UpdaterID,
+		&vcs.UpdatedTs,
+		&vcs.Name,
+		&vcs.Type,
+		&vcs.InstanceURL,
+		&vcs.APIURL,
+		&vcs.ApplicationID,
+		&vcs.Secret,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
 		}
-		return &vcs, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("vcs ID not found: %d", patch.ID)}
+	return &vcs, nil
 }
 
 // deleteVCSImpl permanently deletes a vcs by ID.
