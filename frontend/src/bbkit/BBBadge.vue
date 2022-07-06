@@ -1,9 +1,11 @@
 <template>
   <span
     :class="[
-      'inline-flex rounded-full items-center py-0.5 px-2.5 text-sm font-medium',
+      'inline-flex rounded-full items-center',
       `bg-${color}-100 text-${color}-800`,
       canRemove ? 'pr-1' : '',
+      size === 'normal' && 'py-0.5 px-2.5 text-sm font-medium',
+      size === 'small' && 'px-[6px] py-[2px] text-xs font-normal',
     ]"
   >
     {{ text }}
@@ -26,17 +28,20 @@ import { computed, withDefaults } from "vue";
 import { BBAttentionStyle } from "./types";
 
 export type BBBadgeStyle = BBAttentionStyle | "DISABLED";
+export type BBBadgeSize = "normal" | "small";
 
 const props = withDefaults(
   defineProps<{
     text: string;
     canRemove?: boolean;
     style?: BBBadgeStyle;
+    size?: BBBadgeSize;
   }>(),
   {
     style: "INFO",
     text: "",
     canRemove: true,
+    size: "normal",
   }
 );
 
@@ -51,6 +56,8 @@ const color = computed(() => {
     case "DISABLED":
       return "gray";
   }
+  throw new Error("should never reach this line");
 });
-const emit = defineEmits(["remove"]);
+
+defineEmits(["remove"]);
 </script>
