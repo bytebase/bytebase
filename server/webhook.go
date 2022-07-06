@@ -81,7 +81,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			addedEscaped := common.EscapeForLogging(added)
 			log.Debug("Processing added file...",
 				zap.String("file", addedEscaped),
-				zap.String("commit", commit.ID),
+				zap.String("commit", common.EscapeForLogging(commit.ID)),
 			)
 
 			if !strings.HasPrefix(addedEscaped, repo.BaseDirectory) {
@@ -298,7 +298,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 
 		createdTime, err := time.Parse(time.RFC3339, commit.Timestamp)
 		if err != nil {
-			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", commit.ID), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
+			log.Warn("Ignored commit, failed to parse commit timestamp.", zap.String("commit", common.EscapeForLogging(commit.ID)), zap.String("timestamp", common.EscapeForLogging(commit.Timestamp)), zap.Error(err))
 		}
 
 		for _, added := range commit.AddedList {
