@@ -155,7 +155,7 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 		}
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
-	if !sequence.Valid {
+	if sequence.Valid {
 		return int(sequence.Int32), nil
 	}
 	// Returns 0 if we haven't applied any migration for this namespace.
