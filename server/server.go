@@ -85,9 +85,6 @@ var casbinDeveloperPolicy string
 //go:embed dist
 var embeddedFiles embed.FS
 
-//go:embed dist/index.html
-var indexContent string
-
 func getFileSystem() http.FileSystem {
 	fs, err := fs.Sub(embeddedFiles, "dist")
 	if err != nil {
@@ -101,14 +98,10 @@ func getFileSystem() http.FileSystem {
 // both frontend and backend (e.g. to produce our release build), we will instruct the build process
 // to copy over the frontend artifacts and overwrite that placeholder.
 func embedFrontend(e *echo.Echo) {
-	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
+	// Catch-all route to return dist files, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
-	e.GET("/*", func(c echo.Context) error {
-		return c.HTML(http.StatusOK, indexContent)
-	})
-
-	assetHandler := http.FileServer(getFileSystem())
-	e.GET("/assets/*", echo.WrapHandler(assetHandler))
+	frontendDistHandler := http.FileServer(getFileSystem())
+	e.GET("/*", echo.WrapHandler(frontendDistHandler))
 }
 
 // Use following cmd to generate swagger doc
