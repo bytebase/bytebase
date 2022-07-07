@@ -215,7 +215,7 @@ func (t *tokenizer) scanTo(delimiter []rune) error {
 			return nil
 		}
 		if t.char(0) == eofRune {
-			return fmt.Errorf("scanTo failed: delimiter: %s not found", string(delimiter))
+			return fmt.Errorf("scanTo failed: delimiter %q not found", string(delimiter))
 		}
 		if t.char(0) == delimiter[pos] {
 			pos++
