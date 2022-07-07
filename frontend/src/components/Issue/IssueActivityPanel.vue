@@ -150,7 +150,7 @@
                       </a>
                     </div>
                     <div
-                      v-if="currentUser.id == activity.creator.id"
+                      v-if="allowEditActivity(activity)"
                       class="space-x-2 flex items-center text-control-light"
                     >
                       <template
@@ -469,6 +469,13 @@ const doCreateComment = () => {
       addSubscriberId(currentUser.value.id);
     }
   });
+};
+
+const allowEditActivity = (activity: Activity) => {
+  return (
+    activity.type === "bb.issue.comment.create" &&
+    currentUser.value.id === activity.creator.id
+  );
 };
 
 const onUpdateComment = (activity: Activity) => {
