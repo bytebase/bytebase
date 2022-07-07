@@ -1,3 +1,6 @@
+//go:build !release
+// +build !release
+
 package pg
 
 import (
