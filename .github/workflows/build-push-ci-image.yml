@@ -16,7 +16,7 @@ jobs:
       matrix:
         include:
           - docker-image-tag: "dev-ci"
-            docker-build-args: "RELEASE=dev"
+            docker-build-args: "RELEASE="
           - docker-image-tag: "release-ci"
             docker-build-args: "RELEASE=release"
     steps:

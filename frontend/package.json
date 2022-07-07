@@ -4,7 +4,6 @@
   "scripts": {
     "dev": "vite --mode dev",
     "release": "vite build --mode release --outDir=../server/dist --emptyOutDir",
-    "dev-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode dev",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=4096 && vite build --mode release",
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
