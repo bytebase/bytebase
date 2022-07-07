@@ -138,30 +138,20 @@ func createIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, create *api.Issu
 		VALUES ($1, $2)
 		RETURNING issue_id, subscriber_id
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var issueSubscriberRaw issueSubscriberRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.IssueID,
 		create.SubscriberID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var issueSubscriberRaw issueSubscriberRaw
-		if err := row.Scan(
-			&issueSubscriberRaw.IssueID,
-			&issueSubscriberRaw.SubscriberID,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&issueSubscriberRaw.IssueID,
+		&issueSubscriberRaw.SubscriberID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &issueSubscriberRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &issueSubscriberRaw, nil
 }
 
 func findIssueSubscriberImpl(ctx context.Context, tx *sql.Tx, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {

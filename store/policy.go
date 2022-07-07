@@ -411,41 +411,31 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
 	`, strings.Join(set, ","))
-	row, err := tx.QueryContext(ctx, query,
+	var policyRaw policyRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
 		upsert.RowStatus,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var policyRaw policyRaw
-		if err := row.Scan(
-			&policyRaw.ID,
-			&policyRaw.CreatorID,
-			&policyRaw.CreatedTs,
-			&policyRaw.UpdaterID,
-			&policyRaw.UpdatedTs,
-			&policyRaw.RowStatus,
-			&policyRaw.EnvironmentID,
-			&policyRaw.Type,
-			&policyRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&policyRaw.ID,
+		&policyRaw.CreatorID,
+		&policyRaw.CreatedTs,
+		&policyRaw.UpdaterID,
+		&policyRaw.UpdatedTs,
+		&policyRaw.RowStatus,
+		&policyRaw.EnvironmentID,
+		&policyRaw.Type,
+		&policyRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &policyRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &policyRaw, nil
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.

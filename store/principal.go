@@ -282,41 +282,31 @@ func createPrincipalImpl(ctx context.Context, tx *sql.Tx, create *api.PrincipalC
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var principalRaw principalRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Type,
 		create.Name,
 		create.Email,
 		create.PasswordHash,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var principalRaw principalRaw
-		if err := row.Scan(
-			&principalRaw.ID,
-			&principalRaw.CreatorID,
-			&principalRaw.CreatedTs,
-			&principalRaw.UpdaterID,
-			&principalRaw.UpdatedTs,
-			&principalRaw.Type,
-			&principalRaw.Name,
-			&principalRaw.Email,
-			&principalRaw.PasswordHash,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&principalRaw.ID,
+		&principalRaw.CreatorID,
+		&principalRaw.CreatedTs,
+		&principalRaw.UpdaterID,
+		&principalRaw.UpdatedTs,
+		&principalRaw.Type,
+		&principalRaw.Name,
+		&principalRaw.Email,
+		&principalRaw.PasswordHash,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &principalRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &principalRaw, nil
 }
 
 func findPrincipalRawListImpl(ctx context.Context, tx *sql.Tx, find *api.PrincipalFind) ([]*principalRaw, error) {
@@ -388,39 +378,30 @@ func patchPrincipalImpl(ctx context.Context, tx *sql.Tx, patch *api.PrincipalPat
 
 	args = append(args, patch.ID)
 
+	var principalRaw principalRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE principal
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, type, name, email, password_hash
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var principalRaw principalRaw
-		if err := row.Scan(
-			&principalRaw.ID,
-			&principalRaw.CreatorID,
-			&principalRaw.CreatedTs,
-			&principalRaw.UpdaterID,
-			&principalRaw.UpdatedTs,
-			&principalRaw.Type,
-			&principalRaw.Name,
-			&principalRaw.Email,
-			&principalRaw.PasswordHash,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&principalRaw.ID,
+		&principalRaw.CreatorID,
+		&principalRaw.CreatedTs,
+		&principalRaw.UpdaterID,
+		&principalRaw.UpdatedTs,
+		&principalRaw.Type,
+		&principalRaw.Name,
+		&principalRaw.Email,
+		&principalRaw.PasswordHash,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
 		}
-		return &principalRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("principal ID not found: %d", patch.ID)}
+	return &principalRaw, nil
 }
