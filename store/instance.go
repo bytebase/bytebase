@@ -133,7 +133,7 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	where, args := findInstanceQuery(find)
 
 	query := `SELECT COUNT(*) FROM instance WHERE ` + where
-	count := 0
+	var count int
 	if err := tx.PTx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
