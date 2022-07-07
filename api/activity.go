@@ -276,12 +276,3 @@ type ActivityPatch struct {
 	// Domain specific fields
 	Comment *string `jsonapi:"attr,comment"`
 }
-
-// ActivityDelete is the API message for deleting an activity.
-type ActivityDelete struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	DeleterID int
-}
