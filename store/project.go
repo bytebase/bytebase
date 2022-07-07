@@ -323,7 +323,8 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		VALUES ($1, $2, $3, $4, 'UI', 'PUBLIC', $5, $6, $7)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var project projectRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
@@ -331,38 +332,27 @@ func createProjectImpl(ctx context.Context, tx *sql.Tx, create *api.ProjectCreat
 		create.TenantMode,
 		create.DBNameTemplate,
 		create.RoleProvider,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var project projectRaw
-		if err := row.Scan(
-			&project.ID,
-			&project.RowStatus,
-			&project.CreatorID,
-			&project.CreatedTs,
-			&project.UpdaterID,
-			&project.UpdatedTs,
-			&project.Name,
-			&project.Key,
-			&project.WorkflowType,
-			&project.Visibility,
-			&project.TenantMode,
-			&project.DBNameTemplate,
-			&project.RoleProvider,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&project.ID,
+		&project.RowStatus,
+		&project.CreatorID,
+		&project.CreatedTs,
+		&project.UpdaterID,
+		&project.UpdatedTs,
+		&project.Name,
+		&project.Key,
+		&project.WorkflowType,
+		&project.Visibility,
+		&project.TenantMode,
+		&project.DBNameTemplate,
+		&project.RoleProvider,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &project, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &project, nil
 }
 
 func findProjectImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectFind) ([]*projectRaw, error) {
@@ -456,43 +446,33 @@ func patchProjectImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectPatch) 
 	args = append(args, patch.ID)
 
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	var project projectRaw
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, db_name_template, role_provider
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var project projectRaw
-		if err := row.Scan(
-			&project.ID,
-			&project.RowStatus,
-			&project.CreatorID,
-			&project.CreatedTs,
-			&project.UpdaterID,
-			&project.UpdatedTs,
-			&project.Name,
-			&project.Key,
-			&project.WorkflowType,
-			&project.Visibility,
-			&project.TenantMode,
-			&project.DBNameTemplate,
-			&project.RoleProvider,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&project.ID,
+		&project.RowStatus,
+		&project.CreatorID,
+		&project.CreatedTs,
+		&project.UpdaterID,
+		&project.UpdatedTs,
+		&project.Name,
+		&project.Key,
+		&project.WorkflowType,
+		&project.Visibility,
+		&project.TenantMode,
+		&project.DBNameTemplate,
+		&project.RoleProvider,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
 		}
-
-		return &project, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project ID not found: %d", patch.ID)}
+	return &project, nil
 }

@@ -216,34 +216,25 @@ func createSettingImpl(ctx context.Context, tx *sql.Tx, create *api.SettingCreat
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING name, value, description
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var settingRaw settingRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		create.Value,
 		create.Description,
-	)
+	).Scan(
 
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var settingRaw settingRaw
-		if err := row.Scan(
-			&settingRaw.Name,
-			&settingRaw.Value,
-			&settingRaw.Description,
-		); err != nil {
-			return nil, FormatError(err)
+		&settingRaw.Name,
+		&settingRaw.Value,
+		&settingRaw.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &settingRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &settingRaw, nil
 }
 
 func findSettingImpl(ctx context.Context, tx *sql.Tx, find *api.SettingFind) ([]*settingRaw, error) {
@@ -304,37 +295,28 @@ func patchSettingImpl(ctx context.Context, tx *sql.Tx, patch *api.SettingPatch) 
 
 	args = append(args, patch.Name)
 
+	var settingRaw settingRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE setting
 		SET `+strings.Join(set, ", ")+`
 		WHERE name = $3
 		RETURNING creator_id, created_ts, updater_id, updated_ts, name, value, description
 	`,
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var settingRaw settingRaw
-		if err := row.Scan(
-			&settingRaw.CreatorID,
-			&settingRaw.CreatedTs,
-			&settingRaw.UpdaterID,
-			&settingRaw.UpdatedTs,
-			&settingRaw.Name,
-			&settingRaw.Value,
-			&settingRaw.Description,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&settingRaw.CreatorID,
+		&settingRaw.CreatedTs,
+		&settingRaw.UpdaterID,
+		&settingRaw.UpdatedTs,
+		&settingRaw.Name,
+		&settingRaw.Value,
+		&settingRaw.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
 		}
-		return &settingRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("setting not found: %s", patch.Name)}
+	return &settingRaw, nil
 }
