@@ -192,39 +192,29 @@ func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.Sta
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, environment_id, name` + `
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var stageRaw stageRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.PipelineID,
 		create.EnvironmentID,
 		create.Name,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var stageRaw stageRaw
-		if err := row.Scan(
-			&stageRaw.ID,
-			&stageRaw.CreatorID,
-			&stageRaw.CreatedTs,
-			&stageRaw.UpdaterID,
-			&stageRaw.UpdatedTs,
-			&stageRaw.PipelineID,
-			&stageRaw.EnvironmentID,
-			&stageRaw.Name,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&stageRaw.ID,
+		&stageRaw.CreatorID,
+		&stageRaw.CreatedTs,
+		&stageRaw.UpdaterID,
+		&stageRaw.UpdatedTs,
+		&stageRaw.PipelineID,
+		&stageRaw.EnvironmentID,
+		&stageRaw.Name,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &stageRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &stageRaw, nil
 }
 
 func (s *Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
