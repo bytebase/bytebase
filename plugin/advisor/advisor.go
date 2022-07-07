@@ -194,17 +194,23 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+func IsSyntaxCheckSupported(dbType DBType, mode ReleaseMode) bool {
+	switch dbType {
+	case MySQL, TiDB:
 		return true
+	case Postgres:
+		return mode == ReleaseModeDev
 	}
 	return false
 }
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+func IsSchemaReviewSupported(dbType DBType, mode ReleaseMode) bool {
+	switch dbType {
+	case MySQL, TiDB:
 		return true
+	case Postgres:
+		return mode == ReleaseModeDev
 	}
 	return false
 }

@@ -195,21 +195,21 @@ func ConvertToAdvisorDBType(dbType db.Type) (advisor.DBType, error) {
 }
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
-func IsSyntaxCheckSupported(dbType db.Type) bool {
+func IsSyntaxCheckSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	advisorDB, err := ConvertToAdvisorDBType(dbType)
 	if err != nil {
 		return false
 	}
 
-	return advisor.IsSyntaxCheckSupported(advisorDB)
+	return advisor.IsSyntaxCheckSupported(advisorDB, mode.ConvertToAdvisorReleaseMode())
 }
 
 // IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType db.Type) bool {
+func IsSchemaReviewSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	advisorDB, err := ConvertToAdvisorDBType(dbType)
 	if err != nil {
 		return false
 	}
 
-	return advisor.IsSchemaReviewSupported(advisorDB)
+	return advisor.IsSchemaReviewSupported(advisorDB, mode.ConvertToAdvisorReleaseMode())
 }
