@@ -124,7 +124,7 @@ export default defineComponent({
     });
 
     const clickTable = (section: number, row: number, e: MouseEvent) => {
-      const table = props.tableList[row];
+      const table = mixedTableList.value[row];
       const url = `/db/${databaseSlug(table.database)}/table/${table.name}`;
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
