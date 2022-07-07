@@ -64,7 +64,6 @@ p, DBA, /issue/{id}/subscriber/{subscriberID}, DELETE
 p, DBA, /activity, POST
 p, DBA, /activity, GET
 p, DBA, /activity/{id}, PATCH_SELF
-p, DBA, /activity/{id}, DELETE_SELF
 p, DBA, /inbox/user/{userID}, GET_SELF
 p, DBA, /inbox/user/{userID}/summary, GET_SELF
 p, DBA, /inbox/{id}, PATCH_SELF
