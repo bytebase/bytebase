@@ -285,6 +285,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 		return nil, err
 	}
 
+	var repository repositoryRaw
 	// Insert row into database.
 	if s.db.mode == common.ReleaseModeDev {
 		query := `
@@ -313,7 +314,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 			RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 		`
-		row, err := tx.QueryContext(ctx, query,
+		if err := tx.QueryRowContext(ctx, query,
 			create.CreatorID,
 			create.CreatorID,
 			create.VCSID,
@@ -334,48 +335,37 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 			create.AccessToken,
 			create.ExpiresTs,
 			create.RefreshToken,
-		)
-
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row.Close()
-
-		if row.Next() {
-			var repository repositoryRaw
-			if err := row.Scan(
-				&repository.ID,
-				&repository.CreatorID,
-				&repository.CreatedTs,
-				&repository.UpdaterID,
-				&repository.UpdatedTs,
-				&repository.VCSID,
-				&repository.ProjectID,
-				&repository.Name,
-				&repository.FullPath,
-				&repository.WebURL,
-				&repository.BranchFilter,
-				&repository.BaseDirectory,
-				&repository.FilePathTemplate,
-				&repository.SchemaPathTemplate,
-				&repository.SheetPathTemplate,
-				&repository.ExternalID,
-				&repository.ExternalWebhookID,
-				&repository.WebhookURLHost,
-				&repository.WebhookEndpointID,
-				&repository.WebhookSecretToken,
-				&repository.AccessToken,
-				&repository.ExpiresTs,
-				&repository.RefreshToken,
-			); err != nil {
-				return nil, FormatError(err)
+		).Scan(
+			&repository.ID,
+			&repository.CreatorID,
+			&repository.CreatedTs,
+			&repository.UpdaterID,
+			&repository.UpdatedTs,
+			&repository.VCSID,
+			&repository.ProjectID,
+			&repository.Name,
+			&repository.FullPath,
+			&repository.WebURL,
+			&repository.BranchFilter,
+			&repository.BaseDirectory,
+			&repository.FilePathTemplate,
+			&repository.SchemaPathTemplate,
+			&repository.SheetPathTemplate,
+			&repository.ExternalID,
+			&repository.ExternalWebhookID,
+			&repository.WebhookURLHost,
+			&repository.WebhookEndpointID,
+			&repository.WebhookSecretToken,
+			&repository.AccessToken,
+			&repository.ExpiresTs,
+			&repository.RefreshToken,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 			}
-			return &repository, nil
-		}
-		if err := row.Err(); err != nil {
 			return nil, FormatError(err)
 		}
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		return &repository, nil
 	}
 	query := `
 		INSERT INTO repository (
@@ -402,7 +392,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 	`
-	row, err := tx.QueryContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.VCSID,
@@ -422,47 +412,36 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 		create.AccessToken,
 		create.ExpiresTs,
 		create.RefreshToken,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var repository repositoryRaw
-		if err := row.Scan(
-			&repository.ID,
-			&repository.CreatorID,
-			&repository.CreatedTs,
-			&repository.UpdaterID,
-			&repository.UpdatedTs,
-			&repository.VCSID,
-			&repository.ProjectID,
-			&repository.Name,
-			&repository.FullPath,
-			&repository.WebURL,
-			&repository.BranchFilter,
-			&repository.BaseDirectory,
-			&repository.FilePathTemplate,
-			&repository.SchemaPathTemplate,
-			&repository.ExternalID,
-			&repository.ExternalWebhookID,
-			&repository.WebhookURLHost,
-			&repository.WebhookEndpointID,
-			&repository.WebhookSecretToken,
-			&repository.AccessToken,
-			&repository.ExpiresTs,
-			&repository.RefreshToken,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&repository.ID,
+		&repository.CreatorID,
+		&repository.CreatedTs,
+		&repository.UpdaterID,
+		&repository.UpdatedTs,
+		&repository.VCSID,
+		&repository.ProjectID,
+		&repository.Name,
+		&repository.FullPath,
+		&repository.WebURL,
+		&repository.BranchFilter,
+		&repository.BaseDirectory,
+		&repository.FilePathTemplate,
+		&repository.SchemaPathTemplate,
+		&repository.ExternalID,
+		&repository.ExternalWebhookID,
+		&repository.WebhookURLHost,
+		&repository.WebhookEndpointID,
+		&repository.WebhookSecretToken,
+		&repository.AccessToken,
+		&repository.ExpiresTs,
+		&repository.RefreshToken,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &repository, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &repository, nil
 }
 
 func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind, mode common.ReleaseMode) ([]*repositoryRaw, error) {
@@ -587,55 +566,46 @@ func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryP
 
 	args = append(args, patch.ID)
 
+	var repository repositoryRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE repository
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token
 		`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var repository repositoryRaw
-		if err := row.Scan(
-			&repository.ID,
-			&repository.CreatorID,
-			&repository.CreatedTs,
-			&repository.UpdaterID,
-			&repository.UpdatedTs,
-			&repository.VCSID,
-			&repository.ProjectID,
-			&repository.Name,
-			&repository.FullPath,
-			&repository.WebURL,
-			&repository.BranchFilter,
-			&repository.BaseDirectory,
-			&repository.FilePathTemplate,
-			&repository.SchemaPathTemplate,
-			&repository.SheetPathTemplate,
-			&repository.ExternalID,
-			&repository.ExternalWebhookID,
-			&repository.WebhookURLHost,
-			&repository.WebhookEndpointID,
-			&repository.WebhookSecretToken,
-			&repository.AccessToken,
-			&repository.ExpiresTs,
-			&repository.RefreshToken,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&repository.ID,
+		&repository.CreatorID,
+		&repository.CreatedTs,
+		&repository.UpdaterID,
+		&repository.UpdatedTs,
+		&repository.VCSID,
+		&repository.ProjectID,
+		&repository.Name,
+		&repository.FullPath,
+		&repository.WebURL,
+		&repository.BranchFilter,
+		&repository.BaseDirectory,
+		&repository.FilePathTemplate,
+		&repository.SchemaPathTemplate,
+		&repository.SheetPathTemplate,
+		&repository.ExternalID,
+		&repository.ExternalWebhookID,
+		&repository.WebhookURLHost,
+		&repository.WebhookEndpointID,
+		&repository.WebhookSecretToken,
+		&repository.AccessToken,
+		&repository.ExpiresTs,
+		&repository.RefreshToken,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
 		}
-		return &repository, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("repository ID not found: %d", patch.ID)}
+	return &repository, nil
 }
 
 // deleteRepository permanently deletes a repository by ID.

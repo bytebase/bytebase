@@ -92,34 +92,25 @@ func upsertSheetOrganizerImpl(ctx context.Context, tx *sql.Tx, upsert *api.Sheet
 			pinned = EXCLUDED.pinned
 		RETURNING id, sheet_id, principal_id, starred, pinned
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var sheetOrganizerRaw sheetOrganizerRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.SheetID,
 		upsert.PrincipalID,
 		upsert.Starred,
 		upsert.Pinned,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var sheetOrganizerRaw sheetOrganizerRaw
-		if err := row.Scan(
-			&sheetOrganizerRaw.ID,
-			&sheetOrganizerRaw.SheetID,
-			&sheetOrganizerRaw.PrincipalID,
-			&sheetOrganizerRaw.Starred,
-			&sheetOrganizerRaw.Pinned,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&sheetOrganizerRaw.ID,
+		&sheetOrganizerRaw.SheetID,
+		&sheetOrganizerRaw.PrincipalID,
+		&sheetOrganizerRaw.Starred,
+		&sheetOrganizerRaw.Pinned,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &sheetOrganizerRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &sheetOrganizerRaw, nil
 }
 
 func findSheetOrganizerListImpl(ctx context.Context, tx *sql.Tx, find *api.SheetOrganizerFind) ([]*sheetOrganizerRaw, error) {
