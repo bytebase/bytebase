@@ -253,7 +253,9 @@ func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.Proje
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var projectWebhookRaw projectWebhookRaw
+	var txtArray pgtype.TextArray
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -261,42 +263,27 @@ func createProjectWebhookImpl(ctx context.Context, tx *sql.Tx, create *api.Proje
 		create.Name,
 		create.URL,
 		create.ActivityList,
-	)
-
-	if err != nil {
+	).Scan(
+		&projectWebhookRaw.ID,
+		&projectWebhookRaw.CreatorID,
+		&projectWebhookRaw.CreatedTs,
+		&projectWebhookRaw.UpdaterID,
+		&projectWebhookRaw.UpdatedTs,
+		&projectWebhookRaw.ProjectID,
+		&projectWebhookRaw.Type,
+		&projectWebhookRaw.Name,
+		&projectWebhookRaw.URL,
+		&txtArray,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectWebhookRaw projectWebhookRaw
-		var txtArray pgtype.TextArray
-
-		if err := row.Scan(
-			&projectWebhookRaw.ID,
-			&projectWebhookRaw.CreatorID,
-			&projectWebhookRaw.CreatedTs,
-			&projectWebhookRaw.UpdaterID,
-			&projectWebhookRaw.UpdatedTs,
-			&projectWebhookRaw.ProjectID,
-			&projectWebhookRaw.Type,
-			&projectWebhookRaw.Name,
-			&projectWebhookRaw.URL,
-			&txtArray,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &projectWebhookRaw, nil
-	}
-	if err := row.Err(); err != nil {
+	if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &projectWebhookRaw, nil
 }
 
 func findProjectWebhookImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectWebhookFind) ([]*projectWebhookRaw, error) {
@@ -390,49 +377,37 @@ func patchProjectWebhookImpl(ctx context.Context, tx *sql.Tx, patch *api.Project
 
 	args = append(args, patch.ID)
 
+	var projectWebhookRaw projectWebhookRaw
+	var txtArray pgtype.TextArray
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project_webhook
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, type, name, url, activity_list
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&projectWebhookRaw.ID,
+		&projectWebhookRaw.CreatorID,
+		&projectWebhookRaw.CreatedTs,
+		&projectWebhookRaw.UpdaterID,
+		&projectWebhookRaw.UpdatedTs,
+		&projectWebhookRaw.ProjectID,
+		&projectWebhookRaw.Type,
+		&projectWebhookRaw.Name,
+		&projectWebhookRaw.URL,
+		&txtArray,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectWebhookRaw projectWebhookRaw
-		var txtArray pgtype.TextArray
-
-		if err := row.Scan(
-			&projectWebhookRaw.ID,
-			&projectWebhookRaw.CreatorID,
-			&projectWebhookRaw.CreatedTs,
-			&projectWebhookRaw.UpdaterID,
-			&projectWebhookRaw.UpdatedTs,
-			&projectWebhookRaw.ProjectID,
-			&projectWebhookRaw.Type,
-			&projectWebhookRaw.Name,
-			&projectWebhookRaw.URL,
-			&txtArray,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
-			return nil, FormatError(err)
-		}
-
-		return &projectWebhookRaw, nil
-	}
-	if err := row.Err(); err != nil {
+	if err := txtArray.AssignTo(&projectWebhookRaw.ActivityList); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project hook ID not found: %d", patch.ID)}
+	return &projectWebhookRaw, nil
 }
 
 // deleteProjectWebhookImpl permanently deletes a projectWebhook by ID.
