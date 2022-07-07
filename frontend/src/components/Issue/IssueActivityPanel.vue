@@ -177,19 +177,6 @@
                       </template>
                       <!-- mr-2 is to vertical align with the text description edit button-->
                       <div v-else class="mr-2 flex items-center space-x-2">
-                        <!-- Delete Comment Button-->
-                        <button
-                          v-if="activity.type == 'bb.issue.comment.create'"
-                          class="btn-icon"
-                          @click.prevent="
-                            {
-                              state.activeActivity = activity;
-                              state.showDeleteCommentModal = true;
-                            }
-                          "
-                        >
-                          <heroicons-outline:trash class="w-4 h-4" />
-                        </button>
                         <!-- Edit Comment Button-->
                         <button
                           class="btn-icon"
