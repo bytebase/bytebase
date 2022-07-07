@@ -200,7 +200,8 @@
     "disable": "禁用",
     "view-doc": "查看文档",
     "backup-and-restore": "备份与恢复",
-    "write-only": "仅写入"
+    "write-only": "仅写入",
+    "pitr": "PITR"
   },
   "error-page": {
     "go-back-home": "回到主页"
