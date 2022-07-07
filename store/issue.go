@@ -489,7 +489,8 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7, $8, $9)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var issueRaw issueRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -499,38 +500,27 @@ func (s *Store) createIssueImpl(ctx context.Context, tx *sql.Tx, create *api.Iss
 		create.Description,
 		create.AssigneeID,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var issueRaw issueRaw
-		if err := row.Scan(
-			&issueRaw.ID,
-			&issueRaw.CreatorID,
-			&issueRaw.CreatedTs,
-			&issueRaw.UpdaterID,
-			&issueRaw.UpdatedTs,
-			&issueRaw.ProjectID,
-			&issueRaw.PipelineID,
-			&issueRaw.Name,
-			&issueRaw.Status,
-			&issueRaw.Type,
-			&issueRaw.Description,
-			&issueRaw.AssigneeID,
-			&issueRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&issueRaw.ID,
+		&issueRaw.CreatorID,
+		&issueRaw.CreatedTs,
+		&issueRaw.UpdaterID,
+		&issueRaw.UpdatedTs,
+		&issueRaw.ProjectID,
+		&issueRaw.PipelineID,
+		&issueRaw.Name,
+		&issueRaw.Status,
+		&issueRaw.Type,
+		&issueRaw.Description,
+		&issueRaw.AssigneeID,
+		&issueRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &issueRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &issueRaw, nil
 }
 
 func (s *Store) findIssueImpl(ctx context.Context, tx *sql.Tx, find *api.IssueFind) ([]*issueRaw, error) {
@@ -644,44 +634,34 @@ func (s *Store) patchIssueImpl(ctx context.Context, tx *sql.Tx, patch *api.Issue
 
 	args = append(args, patch.ID)
 
+	var issueRaw issueRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE issue
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, pipeline_id, name, status, type, description, assignee_id, payload
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var issueRaw issueRaw
-		if err := row.Scan(
-			&issueRaw.ID,
-			&issueRaw.CreatorID,
-			&issueRaw.CreatedTs,
-			&issueRaw.UpdaterID,
-			&issueRaw.UpdatedTs,
-			&issueRaw.ProjectID,
-			&issueRaw.PipelineID,
-			&issueRaw.Name,
-			&issueRaw.Status,
-			&issueRaw.Type,
-			&issueRaw.Description,
-			&issueRaw.AssigneeID,
-			&issueRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&issueRaw.ID,
+		&issueRaw.CreatorID,
+		&issueRaw.CreatedTs,
+		&issueRaw.UpdaterID,
+		&issueRaw.UpdatedTs,
+		&issueRaw.ProjectID,
+		&issueRaw.PipelineID,
+		&issueRaw.Name,
+		&issueRaw.Status,
+		&issueRaw.Type,
+		&issueRaw.Description,
+		&issueRaw.AssigneeID,
+		&issueRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
 		}
-		return &issueRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("unable to find issue ID to update: %d", patch.ID)}
+	return &issueRaw, nil
 }

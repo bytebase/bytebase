@@ -541,39 +541,29 @@ func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert 
 			value = excluded.value
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, key, value
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var dbLabelRaw databaseLabelRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.RowStatus,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.DatabaseID,
 		upsert.Key,
 		upsert.Value,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var dbLabelRaw databaseLabelRaw
-		if err := row.Scan(
-			&dbLabelRaw.ID,
-			&dbLabelRaw.RowStatus,
-			&dbLabelRaw.CreatorID,
-			&dbLabelRaw.CreatedTs,
-			&dbLabelRaw.UpdaterID,
-			&dbLabelRaw.UpdatedTs,
-			&dbLabelRaw.DatabaseID,
-			&dbLabelRaw.Key,
-			&dbLabelRaw.Value,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&dbLabelRaw.ID,
+		&dbLabelRaw.RowStatus,
+		&dbLabelRaw.CreatorID,
+		&dbLabelRaw.CreatedTs,
+		&dbLabelRaw.UpdaterID,
+		&dbLabelRaw.UpdatedTs,
+		&dbLabelRaw.DatabaseID,
+		&dbLabelRaw.Key,
+		&dbLabelRaw.Value,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &dbLabelRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &dbLabelRaw, nil
 }

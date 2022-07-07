@@ -285,36 +285,26 @@ func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.
 		VALUES ($1, $2, $3, 'OPEN')
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var pipelineRaw pipelineRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var pipelineRaw pipelineRaw
-		if err := row.Scan(
-			&pipelineRaw.ID,
-			&pipelineRaw.CreatorID,
-			&pipelineRaw.CreatedTs,
-			&pipelineRaw.UpdaterID,
-			&pipelineRaw.UpdatedTs,
-			&pipelineRaw.Name,
-			&pipelineRaw.Status,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&pipelineRaw.ID,
+		&pipelineRaw.CreatorID,
+		&pipelineRaw.CreatedTs,
+		&pipelineRaw.UpdaterID,
+		&pipelineRaw.UpdatedTs,
+		&pipelineRaw.Name,
+		&pipelineRaw.Status,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &pipelineRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &pipelineRaw, nil
 }
 
 func (s *Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
@@ -380,37 +370,28 @@ func (s *Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.Pi
 
 	args = append(args, patch.ID)
 
+	var pipelineRaw pipelineRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE pipeline
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, status
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var pipelineRaw pipelineRaw
-		if err := row.Scan(
-			&pipelineRaw.ID,
-			&pipelineRaw.CreatorID,
-			&pipelineRaw.CreatedTs,
-			&pipelineRaw.UpdaterID,
-			&pipelineRaw.UpdatedTs,
-			&pipelineRaw.Name,
-			&pipelineRaw.Status,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&pipelineRaw.ID,
+		&pipelineRaw.CreatorID,
+		&pipelineRaw.CreatedTs,
+		&pipelineRaw.UpdaterID,
+		&pipelineRaw.UpdatedTs,
+		&pipelineRaw.Name,
+		&pipelineRaw.Status,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
 		}
-		return &pipelineRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("pipeline ID not found: %d", patch.ID)}
+	return &pipelineRaw, nil
 }
