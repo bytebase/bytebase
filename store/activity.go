@@ -196,25 +196,6 @@ func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) 
 	return activity, nil
 }
 
-// DeleteActivity deletes an existing activity by ID.
-func (s *Store) DeleteActivity(ctx context.Context, delete *api.ActivityDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	if err := deleteActivityImpl(ctx, tx.PTx, delete); err != nil {
-		return FormatError(err)
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return FormatError(err)
-	}
-
-	return nil
-}
-
 func (s *Store) composeActivity(ctx context.Context, raw *activityRaw) (*api.Activity, error) {
 	activity := raw.toActivity()
 
@@ -413,13 +394,4 @@ func patchActivityImpl(ctx context.Context, tx *sql.Tx, patch *api.ActivityPatch
 	}
 
 	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("activity ID not found: %d", patch.ID)}
-}
-
-// deleteActivityImpl permanently deletes a activity by ID.
-func deleteActivityImpl(ctx context.Context, tx *sql.Tx, delete *api.ActivityDelete) error {
-	// Remove row from activity.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM activity WHERE id = $1`, delete.ID); err != nil {
-		return FormatError(err)
-	}
-	return nil
 }
