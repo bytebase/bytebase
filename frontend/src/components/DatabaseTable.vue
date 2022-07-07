@@ -379,7 +379,7 @@ const handleIncorrectProjectModalCancel = () => {
 const clickDatabase = (section: number, row: number, e: MouseEvent) => {
   if (!props.rowClickable) return;
 
-  const database = sortedDatabaseList.value[row];
+  const database = mixedDatabaseList.value[row];
   if (props.customClick) {
     emit("select-database", database);
   } else {
