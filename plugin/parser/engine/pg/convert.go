@@ -36,6 +36,13 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, addColumn)
+				case pgquery.AlterTableType_AT_DropColumn:
+					dropColumn := &ast.DropColumnStmt{
+						Table:      alterTable.Table,
+						ColumnName: alterCmd.Name,
+					}
+
+					alterTable.AlterItemList = append(alterTable.AlterItemList, dropColumn)
 				case pgquery.AlterTableType_AT_AddConstraint:
 					def, ok := alterCmd.Def.Node.(*pgquery.Node_Constraint)
 					if !ok {
@@ -156,12 +163,41 @@ func convert(node *pgquery.Node) (ast.Node, error) {
 			}
 			return dropIndex, nil
 		case pgquery.ObjectType_OBJECT_TABLE:
-			// TODO.
-			// Trick linter to use switch...case...
+			dropTable := &ast.DropTableStmt{}
+			for _, object := range in.DropStmt.Objects {
+				list, ok := object.Node.(*pgquery.Node_List)
+				if !ok {
+					return nil, parser.NewConvertErrorf("expected List but found %t", object.Node)
+				}
+				tableDef, err := convertListToTableDef(list)
+				if err != nil {
+					return nil, err
+				}
+				dropTable.TableList = append(dropTable.TableList, tableDef)
+			}
+			return dropTable, nil
 		}
 	}
 
 	return nil, nil
+}
+
+func convertListToTableDef(in *pgquery.Node_List) (*ast.TableDef, error) {
+	stringList, err := convertListToStringList(in)
+	if err != nil {
+		return nil, err
+	}
+	switch len(in.List.Items) {
+	case 2:
+		return &ast.TableDef{
+			Schema: stringList[0],
+			Name:   stringList[1],
+		}, nil
+	case 1:
+		return &ast.TableDef{Name: stringList[0]}, nil
+	default:
+		return nil, parser.NewConvertErrorf("expected length is 1 or 2, but found %d", len(in.List.Items))
+	}
 }
 
 func convertListToIndexDef(in *pgquery.Node_List) (*ast.IndexDef, error) {
