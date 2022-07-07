@@ -211,7 +211,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine) {
+				if api.IsSyntaxCheckSupported(task.Database.Instance.Engine, s.profile.Mode) {
 					payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 						Statement: *taskPatch.Statement,
 						DbType:    task.Database.Instance.Engine,
@@ -238,7 +238,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine) {
+				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}

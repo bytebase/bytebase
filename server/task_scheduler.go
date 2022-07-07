@@ -277,7 +277,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
-		if api.IsSyntaxCheckSupported(instance.Engine) {
+		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
@@ -287,7 +287,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return nil, err
