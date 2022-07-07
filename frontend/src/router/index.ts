@@ -941,9 +941,27 @@ router.beforeEach((to, from, next) => {
     return;
   } else {
     if (!isLoggedIn) {
-      next({ name: SIGNIN_MODULE, replace: true });
+      const query: any = {};
+      if (to.fullPath !== "/") {
+        query["redirect"] = to.fullPath;
+      }
+
+      next({
+        name: SIGNIN_MODULE,
+        query: query,
+        replace: true,
+      });
       return;
     }
+  }
+
+  // If there is a `redirect` in query param and prev page is signin or signup, redirect to the target route
+  if (
+    (from.name === SIGNIN_MODULE || from.name === SIGNUP_MODULE) &&
+    typeof from.query.redirect === "string"
+  ) {
+    window.location.href = from.query.redirect;
+    return;
   }
 
   const currentUser = authStore.currentUser;
