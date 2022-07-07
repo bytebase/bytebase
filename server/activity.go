@@ -89,7 +89,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			activityFind.Limit = &limit
 		}
 		if orderStr := c.QueryParams().Get("order"); orderStr != "" {
-			order := api.SortOrder(orderStr)
+			order, err := api.StringToSortOrder(orderStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter order is invalid").SetInternal(err)
+			}
 			activityFind.Order = &order
 		}
 		activityList, err := s.store.FindActivity(ctx, activityFind)
