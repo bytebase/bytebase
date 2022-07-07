@@ -150,7 +150,7 @@
                       </a>
                     </div>
                     <div
-                      v-if="currentUser.id == activity.creator.id"
+                      v-if="allowEditActivity(activity)"
                       class="space-x-2 flex items-center text-control-light"
                     >
                       <template
@@ -177,19 +177,6 @@
                       </template>
                       <!-- mr-2 is to vertical align with the text description edit button-->
                       <div v-else class="mr-2 flex items-center space-x-2">
-                        <!-- Delete Comment Button-->
-                        <button
-                          v-if="activity.type == 'bb.issue.comment.create'"
-                          class="btn-icon"
-                          @click.prevent="
-                            {
-                              state.activeActivity = activity;
-                              state.showDeleteCommentModal = true;
-                            }
-                          "
-                        >
-                          <heroicons-outline:trash class="w-4 h-4" />
-                        </button>
                         <!-- Edit Comment Button-->
                         <button
                           class="btn-icon"
@@ -482,6 +469,13 @@ const doCreateComment = () => {
       addSubscriberId(currentUser.value.id);
     }
   });
+};
+
+const allowEditActivity = (activity: Activity) => {
+  return (
+    activity.type === "bb.issue.comment.create" &&
+    currentUser.value.id === activity.creator.id
+  );
 };
 
 const onUpdateComment = (activity: Activity) => {
