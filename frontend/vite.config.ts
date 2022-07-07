@@ -5,6 +5,7 @@ import VueI18n from "@intlify/vite-plugin-vue-i18n";
 import Icons from "unplugin-icons/vite";
 import IconsResolver from "unplugin-icons/resolver";
 import Components from "unplugin-vue-components/vite";
+import yaml from "@rollup/plugin-yaml";
 
 const SERVER_PORT = parseInt(process.env.PORT ?? "", 10) ?? 3000;
 const HTTPS_PORT = 443;
@@ -32,6 +33,7 @@ export default defineConfig(() => {
         ],
       }),
       Icons(),
+      yaml(),
     ],
     server: {
       port: SERVER_PORT,

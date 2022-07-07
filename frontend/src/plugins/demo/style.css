@@ -18,22 +18,26 @@
     rgb(33 33 33 / 50%) 0px 0px 0px 5000px;
 }
 
-.bb-guide-dialog {
+.bb-guide-dialog,
+.bb-hint-dialog {
   @apply absolute bg-white w-72 m-1 text-black p-2 px-3 rounded-lg text-left -top-full -left-full;
   box-shadow: 0 3px 30px rgb(33 33 33 / 30%);
   z-index: 1000000;
 }
 
-.bb-guide-close-button {
+.bb-guide-close-button,
+.bb-hint-close-button {
   @apply absolute top-0 right-0.5 px-1 font-thin rounded cursor-pointer opacity-60 hover:opacity-50;
   font-size: 24px;
 }
 
-.bb-guide-title-text {
+.bb-guide-title-text,
+.bb-hint-title-text {
   @apply text-lg text-black leading-6 py-1 my-1 pr-3 break-words;
 }
 
-.bb-guide-description-text {
+.bb-guide-description-text,
+.bb-hint-description-text {
   @apply text-base text-gray-700 break-words;
 }
 
@@ -43,4 +47,25 @@
 
 .bb-guide-btns-container > button {
   @apply px-2 py-1 border text-sm rounded hover:opacity-80 hover:border-gray-400;
+}
+
+.bb-hint-highlight-wrapper {
+  @apply absolute rounded transition-all cursor-pointer;
+  z-index: 999999;
+  box-shadow: rgb(78 70 211 / 80%) 0px 0px 1px 2px;
+  animation: 0.5s linear 0.5s infinite alternate breathing;
+}
+
+@keyframes breathing {
+  0% {
+    box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
+  }
+  30% {
+    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
+      rgb(78 70 211 / 40%) 0px 0px 0px 4px;
+  }
+  100% {
+    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
+      rgb(78 70 211 / 40%) 0px 0px 0px 12px;
+  }
 }

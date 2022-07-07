@@ -60,9 +60,10 @@ import {
   ErrorCode,
   ERROR_LIST,
   GeneralErrorCode,
-  ruleTemplateList,
+  ruleTemplateMap,
   getRuleLocalization,
   SchemaReviewPolicyErrorCode,
+  RuleType,
 } from "@/types";
 
 const columnList: BBTableColumn[] = [
@@ -151,9 +152,7 @@ export default defineComponent({
         case SchemaReviewPolicyErrorCode.COLUMN_CANBE_NULL:
         case SchemaReviewPolicyErrorCode.NOT_INNODB_ENGINE:
         case SchemaReviewPolicyErrorCode.NO_PK_IN_TABLE:
-          const rule = ruleTemplateList.find(
-            (r) => r.type === checkResult.title
-          );
+          const rule = ruleTemplateMap.get(checkResult.title as RuleType);
 
           if (rule) {
             const ruleLocalization = getRuleLocalization(rule.type);

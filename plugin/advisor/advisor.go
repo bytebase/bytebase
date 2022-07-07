@@ -25,18 +25,6 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-func (e Status) String() string {
-	switch e {
-	case Success:
-		return "INFO"
-	case Warn:
-		return "WARN"
-	case Error:
-		return "ERROR"
-	}
-	return "UNKNOWN"
-}
-
 // NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
 func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
 	switch level {
@@ -109,6 +97,9 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
+	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
 )
 
 // Advice is the result of an advisor.
@@ -123,7 +114,7 @@ type Advice struct {
 
 // MarshalLogObject constructs a field that carries Advice.
 func (a Advice) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("status", a.Status.String())
+	enc.AddString("status", string(a.Status))
 	enc.AddInt("code", int(a.Code))
 	enc.AddString("title", a.Title)
 	enc.AddString("content", a.Content)

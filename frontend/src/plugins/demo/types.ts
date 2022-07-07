@@ -1,6 +1,6 @@
 type StepType = "click" | "change";
 
-export type GuidePosition = "bottom" | "top" | "left" | "right";
+export type DialogPosition = "bottom" | "top" | "left" | "right";
 
 export type I18NText = {
   [key: string]: string;
@@ -16,7 +16,7 @@ export interface StepData {
   // value is the regex-like string using for check the target content value
   value?: string;
   // position is the position of the guide dialog (default is bottom)
-  position?: GuidePosition;
+  position?: DialogPosition;
   // cover is the flag that cover should be shown
   cover?: boolean;
   // hideNextButton is the flag that next button should be hidden
@@ -26,4 +26,19 @@ export interface StepData {
 export interface GuideData {
   name: string;
   steps: StepData[];
+}
+
+// Hint is a special guide that has no Next button and is always shown.
+export interface HintData {
+  selector: string;
+  title: string | I18NText;
+  description: string | I18NText;
+  // url is using for validate url in change step
+  url?: string;
+  // position is the position of the guide dialog (default is bottom)
+  position?: DialogPosition;
+  // cover is the flag that cover should be shown
+  cover?: boolean;
+  // addtionClass is the class name that should be added to the hint element
+  additionStyle?: CSSStyleDeclaration;
 }

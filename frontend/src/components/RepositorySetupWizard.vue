@@ -4,7 +4,7 @@
       <i18n-t keypath="repository.setup-wizard-guide">
         <template #guide>
           <a
-            href="https://bytebase.com/docs/use-bytebase/vcs-integration/enable-version-control-workflow?source=console"
+            href="https://bytebase.com/docs/features/vcs-integration/enable-version-control-workflow?source=console"
             target="_blank"
             class="normal-link"
           >

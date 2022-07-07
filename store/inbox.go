@@ -120,6 +120,9 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
+	if err := row.Close(); err != nil {
+		return nil, err
+	}
 	if !found {
 		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 	}

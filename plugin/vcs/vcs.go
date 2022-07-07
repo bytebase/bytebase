@@ -18,14 +18,6 @@ const (
 	GitHubCom Type = "GITHUB_COM"
 )
 
-func (e Type) String() string {
-	switch e {
-	case GitLabSelfHost, GitHubCom:
-		return string(e)
-	}
-	return "UNKNOWN"
-}
-
 // OAuthToken is the API message for OAuthToken.
 type OAuthToken struct {
 	AccessToken  string `json:"access_token" `

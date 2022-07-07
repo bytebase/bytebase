@@ -108,38 +108,6 @@ const (
 	FeatureBranding FeatureType = "bb.feature.branding"
 )
 
-func (e FeatureType) String() string {
-	switch e {
-	case FeatureSchemaDrift:
-		return "bb.feature.schema-drift"
-	case FeatureTaskScheduleTime:
-		return "bb.feature.task-schedule-time"
-	case FeatureMultiTenancy:
-		return "bb.feature.multi-tenancy"
-	case FeatureDBAWorkflow:
-		return "bb.feature.dba-workflow"
-	case FeatureDataSource:
-		return "bb.feature.data-source"
-	case FeatureGhost:
-		return "bb.feature.ghost"
-	case FeaturePITR:
-		return "bb.feature.pitr"
-	case FeatureApprovalPolicy:
-		return "bb.feature.approval-policy"
-	case FeatureBackupPolicy:
-		return "bb.feature.backup-policy"
-	case FeatureSchemaReviewPolicy:
-		return "bb.feature.schema-review-policy"
-	case FeatureRBAC:
-		return "bb.feature.rbac"
-	case Feature3rdPartyAuth:
-		return "bb.feature.3rd-party-auth"
-	case FeatureBranding:
-		return "bb.feature.branding"
-	}
-	return ""
-}
-
 // Name returns a readable name of the feature
 func (e FeatureType) Name() string {
 	switch e {

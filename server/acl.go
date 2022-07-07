@@ -76,7 +76,7 @@ func aclMiddleware(s *Server, ce *casbin.Enforcer, next echo.HandlerFunc, readon
 			role = api.Owner
 		}
 		// Performs the ACL check.
-		pass, err := ce.Enforce(role.String(), path, method)
+		pass, err := ce.Enforce(string(role), path, method)
 
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process authorize request.").SetInternal(err)

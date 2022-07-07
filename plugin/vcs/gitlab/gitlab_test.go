@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -63,6 +64,123 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 		PublicEmail: "john@example.com",
 		Name:        "John Smith",
 		State:       vcs.StateActive,
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						switch r.URL.Path {
+						case "/api/v4/projects/1/members/all":
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
+								Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "id": 1,
+    "username": "raymond_smith",
+    "name": "Raymond Smith",
+    "state": "active",
+    "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+    "web_url": "http://192.168.1.8:3000/root",
+    "created_at": "2012-09-22T14:13:35Z",
+    "created_by": {
+      "id": 2,
+      "username": "john_doe",
+      "name": "John Doe",
+      "state": "active",
+      "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+      "web_url": "http://192.168.1.8:3000/root"
+    },
+    "expires_at": "2012-10-22T14:13:35Z",
+    "access_level": 30,
+    "group_saml_identity": null,
+    "membership_state": "active"
+  },
+  {
+    "id": 2,
+    "username": "john_doe",
+    "name": "John Doe",
+    "state": "archived",
+    "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+    "web_url": "http://192.168.1.8:3000/root",
+    "created_at": "2012-09-22T14:13:35Z",
+    "created_by": {
+      "id": 1,
+      "username": "raymond_smith",
+      "name": "Raymond Smith",
+      "state": "active",
+      "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+      "web_url": "http://192.168.1.8:3000/root"
+    },
+    "expires_at": "2012-10-22T14:13:35Z",
+    "access_level": 30,
+    "email": "john@example.com",
+    "group_saml_identity": {
+      "extern_uid":"ABC-1234567890",
+      "provider": "group_saml",
+      "saml_provider_id": 10
+    },
+    "membership_state": "active"
+  }
+]
+`)),
+							}, nil
+						case "/api/v4/users/1":
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.gitlab.com/ee/api/users.html#single-user
+								Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 1,
+  "username": "john_smith",
+  "name": "John Smith",
+  "state": "active",
+  "avatar_url": "http://localhost:3000/uploads/user/avatar/1/cd8.jpeg",
+  "web_url": "http://localhost:3000/john_smith",
+  "created_at": "2012-05-23T08:00:58Z",
+  "bio": "",
+  "bot": false,
+  "location": null,
+  "public_email": "john@example.com",
+  "skype": "",
+  "linkedin": "",
+  "twitter": "",
+  "website_url": "",
+  "organization": "",
+  "job_title": "Operations Specialist",
+  "followers": 1,
+  "following": 1
+}
+`)),
+							}, nil
+						}
+						return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "1")
+	require.NoError(t, err)
+
+	// Non-active member should be excluded
+	want := []*vcs.RepositoryMember{
+		{
+			Email:        "john@example.com",
+			Name:         "Raymond Smith",
+			State:        vcs.StateActive,
+			Role:         common.ProjectDeveloper,
+			VCSRole:      string(ProjectRoleDeveloper),
+			RoleProvider: vcs.GitLabSelfHost,
+		},
 	}
 	assert.Equal(t, want, got)
 }

@@ -104,11 +104,15 @@ func embedFrontend(e *echo.Echo) {
 	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
 	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
 	e.GET("/*", func(c echo.Context) error {
+		println("path", c.Request().URL.Path)
 		return c.HTML(http.StatusOK, indexContent)
 	})
 
-	assetHandler := http.FileServer(getFileSystem())
-	e.GET("/assets/*", echo.WrapHandler(assetHandler))
+	frontendDistHandler := http.FileServer(getFileSystem())
+	// register static file handlers for each file/subdirectory in the built dist
+	e.GET("/favicon.ico", echo.WrapHandler(frontendDistHandler))
+	e.GET("/assets/*", echo.WrapHandler(frontendDistHandler))
+	e.GET("/demo/*", echo.WrapHandler(frontendDistHandler))
 }
 
 // Use following cmd to generate swagger doc
