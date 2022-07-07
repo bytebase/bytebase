@@ -88,7 +88,8 @@ func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.Ind
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, expression, position, type, "unique", visible, comment
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var index api.Index
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
@@ -100,39 +101,28 @@ func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.Ind
 		create.Unique,
 		create.Visible,
 		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var index api.Index
-		if err := row.Scan(
-			&index.ID,
-			&index.CreatorID,
-			&index.CreatedTs,
-			&index.UpdaterID,
-			&index.UpdatedTs,
-			&index.DatabaseID,
-			&index.TableID,
-			&index.Name,
-			&index.Expression,
-			&index.Position,
-			&index.Type,
-			&index.Unique,
-			&index.Visible,
-			&index.Comment,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&index.ID,
+		&index.CreatorID,
+		&index.CreatedTs,
+		&index.UpdaterID,
+		&index.UpdatedTs,
+		&index.DatabaseID,
+		&index.TableID,
+		&index.Name,
+		&index.Expression,
+		&index.Position,
+		&index.Type,
+		&index.Unique,
+		&index.Visible,
+		&index.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &index, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &index, nil
 }
 
 func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {

@@ -241,7 +241,8 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, "collation", row_count, data_size, index_size, data_free, create_options, comment
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var tableRaw tableRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatedTs,
 		create.CreatorID,
@@ -257,41 +258,30 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 		create.DataFree,
 		create.CreateOptions,
 		create.Comment,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var tableRaw tableRaw
-		if err := row.Scan(
-			&tableRaw.ID,
-			&tableRaw.CreatorID,
-			&tableRaw.CreatedTs,
-			&tableRaw.UpdaterID,
-			&tableRaw.UpdatedTs,
-			&tableRaw.DatabaseID,
-			&tableRaw.Name,
-			&tableRaw.Type,
-			&tableRaw.Engine,
-			&tableRaw.Collation,
-			&tableRaw.RowCount,
-			&tableRaw.DataSize,
-			&tableRaw.IndexSize,
-			&tableRaw.DataFree,
-			&tableRaw.CreateOptions,
-			&tableRaw.Comment,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&tableRaw.ID,
+		&tableRaw.CreatorID,
+		&tableRaw.CreatedTs,
+		&tableRaw.UpdaterID,
+		&tableRaw.UpdatedTs,
+		&tableRaw.DatabaseID,
+		&tableRaw.Name,
+		&tableRaw.Type,
+		&tableRaw.Engine,
+		&tableRaw.Collation,
+		&tableRaw.RowCount,
+		&tableRaw.DataSize,
+		&tableRaw.IndexSize,
+		&tableRaw.DataFree,
+		&tableRaw.CreateOptions,
+		&tableRaw.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &tableRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &tableRaw, nil
 }
 
 func (s *Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*tableRaw, error) {
