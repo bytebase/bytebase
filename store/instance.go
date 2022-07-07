@@ -133,23 +133,14 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 	where, args := findInstanceQuery(find)
 
 	query := `SELECT COUNT(*) FROM instance WHERE ` + where
-	row, err := tx.PTx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return 0, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		count := 0
-		if err := row.Scan(&count); err != nil {
-			return 0, FormatError(err)
+	var count int
+	if err := tx.PTx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return count, nil
-	}
-	if err := row.Err(); err != nil {
 		return 0, FormatError(err)
 	}
-	return 0, common.FormatDBErrorEmptyRowWithQuery(query)
+	return count, nil
 }
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
@@ -431,7 +422,8 @@ func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCre
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var instanceRaw instanceRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.EnvironmentID,
@@ -440,38 +432,27 @@ func createInstanceImpl(ctx context.Context, tx *sql.Tx, create *api.InstanceCre
 		create.ExternalLink,
 		create.Host,
 		create.Port,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var instanceRaw instanceRaw
-		if err := row.Scan(
-			&instanceRaw.ID,
-			&instanceRaw.RowStatus,
-			&instanceRaw.CreatorID,
-			&instanceRaw.CreatedTs,
-			&instanceRaw.UpdaterID,
-			&instanceRaw.UpdatedTs,
-			&instanceRaw.EnvironmentID,
-			&instanceRaw.Name,
-			&instanceRaw.Engine,
-			&instanceRaw.EngineVersion,
-			&instanceRaw.ExternalLink,
-			&instanceRaw.Host,
-			&instanceRaw.Port,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&instanceRaw.ID,
+		&instanceRaw.RowStatus,
+		&instanceRaw.CreatorID,
+		&instanceRaw.CreatedTs,
+		&instanceRaw.UpdaterID,
+		&instanceRaw.UpdatedTs,
+		&instanceRaw.EnvironmentID,
+		&instanceRaw.Name,
+		&instanceRaw.Engine,
+		&instanceRaw.EngineVersion,
+		&instanceRaw.ExternalLink,
+		&instanceRaw.Host,
+		&instanceRaw.Port,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &instanceRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &instanceRaw, nil
 }
 
 func findInstanceImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceFind) ([]*instanceRaw, error) {
@@ -556,45 +537,36 @@ func patchInstanceImpl(ctx context.Context, tx *sql.Tx, patch *api.InstancePatch
 
 	args = append(args, patch.ID)
 
+	var instanceRaw instanceRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE instance
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, host, port
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var instanceRaw instanceRaw
-		if err := row.Scan(
-			&instanceRaw.ID,
-			&instanceRaw.RowStatus,
-			&instanceRaw.CreatorID,
-			&instanceRaw.CreatedTs,
-			&instanceRaw.UpdaterID,
-			&instanceRaw.UpdatedTs,
-			&instanceRaw.EnvironmentID,
-			&instanceRaw.Name,
-			&instanceRaw.Engine,
-			&instanceRaw.EngineVersion,
-			&instanceRaw.ExternalLink,
-			&instanceRaw.Host,
-			&instanceRaw.Port,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&instanceRaw.ID,
+		&instanceRaw.RowStatus,
+		&instanceRaw.CreatorID,
+		&instanceRaw.CreatedTs,
+		&instanceRaw.UpdaterID,
+		&instanceRaw.UpdatedTs,
+		&instanceRaw.EnvironmentID,
+		&instanceRaw.Name,
+		&instanceRaw.Engine,
+		&instanceRaw.EngineVersion,
+		&instanceRaw.ExternalLink,
+		&instanceRaw.Host,
+		&instanceRaw.Port,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
 		}
-		return &instanceRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("instance ID not found: %d", patch.ID)}
+	return &instanceRaw, nil
 }
 
 func findInstanceQuery(find *api.InstanceFind) (string, []interface{}) {

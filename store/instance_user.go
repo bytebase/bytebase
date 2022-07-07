@@ -85,35 +85,25 @@ func upsertInstanceUserImpl(ctx context.Context, tx *sql.Tx, upsert *api.Instanc
 			"grant" = excluded.grant
 		RETURNING id, instance_id, name, "grant"
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var instanceUser api.InstanceUser
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.CreatorID,
 		upsert.CreatorID,
 		upsert.InstanceID,
 		upsert.Name,
 		upsert.Grant,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var instanceUser api.InstanceUser
-		if err := row.Scan(
-			&instanceUser.ID,
-			&instanceUser.InstanceID,
-			&instanceUser.Name,
-			&instanceUser.Grant,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&instanceUser.ID,
+		&instanceUser.InstanceID,
+		&instanceUser.Name,
+		&instanceUser.Grant,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &instanceUser, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &instanceUser, nil
 }
 
 func findInstanceUserImpl(ctx context.Context, tx *sql.Tx, find *api.InstanceUserFind) ([]*api.InstanceUser, error) {

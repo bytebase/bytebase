@@ -101,54 +101,21 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 	defer tx.PTx.Rollback()
 
 	query := `SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD')`
-	row, err := tx.PTx.QueryContext(ctx, query, principalID)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
 	var inboxSummary api.InboxSummary
-	var found bool
-	if row.Next() {
-		if err := row.Scan(
-			&inboxSummary.HasUnread,
-		); err != nil {
-			return nil, FormatError(err)
+	if err := tx.PTx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		found = true
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
-	}
-	if err := row.Close(); err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 	}
 
 	if inboxSummary.HasUnread {
 		query2 := `SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')`
-		row2, err := tx.PTx.QueryContext(ctx, query2, principalID)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		defer row2.Close()
-
-		var found2 bool
-		if row2.Next() {
-			if err := row2.Scan(
-				&inboxSummary.HasUnreadError,
-			); err != nil {
-				return nil, FormatError(err)
+		if err := tx.PTx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 			}
-			found2 = true
-		}
-		if err := row2.Err(); err != nil {
 			return nil, FormatError(err)
-		}
-		if !found2 {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 		}
 	} else {
 		inboxSummary.HasUnreadError = false
@@ -265,38 +232,28 @@ func (s *Store) createInboxImpl(ctx context.Context, tx *sql.Tx, create *api.Inb
 		VALUES ($1, $2, 'UNREAD')
 		RETURNING id, receiver_id, activity_id, status
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var inboxRaw inboxRaw
+	var activityID int
+	if err := tx.QueryRowContext(ctx, query,
 		create.ReceiverID,
 		create.ActivityID,
-	)
-
+	).Scan(
+		&inboxRaw.ID,
+		&inboxRaw.ReceiverID,
+		&activityID,
+		&inboxRaw.Status,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, FormatError(err)
+	}
+	activityRaw, err := s.getActivityRawByID(ctx, activityID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var inboxRaw inboxRaw
-		var activityID int
-		if err := row.Scan(
-			&inboxRaw.ID,
-			&inboxRaw.ReceiverID,
-			&activityID,
-			&inboxRaw.Status,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		activityRaw, err := s.getActivityRawByID(ctx, activityID)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		inboxRaw.ActivityRaw = activityRaw
-		return &inboxRaw, nil
-	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	inboxRaw.ActivityRaw = activityRaw
+	return &inboxRaw, nil
 }
 
 func findInboxImpl(ctx context.Context, tx *sql.Tx, find *api.InboxFind) ([]*inboxRaw, error) {
@@ -375,41 +332,31 @@ func (s *Store) patchInboxImpl(ctx context.Context, tx *sql.Tx, patch *api.Inbox
 	set, args := []string{"status = $1"}, []interface{}{patch.Status}
 	args = append(args, patch.ID)
 
+	var inboxRaw inboxRaw
+	var activityID int
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE inbox
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $2
 		RETURNING id, receiver_id, activity_id, status
 	`,
 		args...,
-	)
+	).Scan(
+		&inboxRaw.ID,
+		&inboxRaw.ReceiverID,
+		&activityID,
+		&inboxRaw.Status,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("inbox ID not found: %d", patch.ID)}
+		}
+		return nil, FormatError(err)
+	}
+	activityRaw, err := s.getActivityRawByID(ctx, activityID)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var inboxRaw inboxRaw
-		var activityID int
-		if err := row.Scan(
-			&inboxRaw.ID,
-			&inboxRaw.ReceiverID,
-			&activityID,
-			&inboxRaw.Status,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		activityRaw, err := s.getActivityRawByID(ctx, activityID)
-		if err != nil {
-			return nil, FormatError(err)
-		}
-		inboxRaw.ActivityRaw = activityRaw
-		return &inboxRaw, nil
-	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("inbox ID not found: %d", patch.ID)}
+	inboxRaw.ActivityRaw = activityRaw
+	return &inboxRaw, nil
 }
