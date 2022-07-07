@@ -55,19 +55,43 @@ func Walk(v Visitor, node Node) {
 		for _, cons := range n.ConstraintList {
 			Walk(v, cons)
 		}
+	case *DropColumnStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
 	case *DropConstraintStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
+		}
+	case *DropIndexStmt:
+		for _, indexDef := range n.IndexList {
+			Walk(v, indexDef)
+		}
+	case *DropTableStmt:
+		for _, tableDef := range n.TableList {
+			Walk(v, tableDef)
 		}
 	case *ForeignDef:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
+	case *IndexDef:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+		for _, keyDef := range n.KeyList {
+			Walk(v, keyDef)
+		}
+	case *IndexKeyDef:
 	case *RenameColumnStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
 	case *RenameConstraintStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+	case *RenameIndexStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}
