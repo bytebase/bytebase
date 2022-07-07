@@ -66,8 +66,8 @@ jobs:
     strategy:
       matrix:
         release-tags:
-          - "release,"
-          - ""
+          - "release,mysql"
+          - "mysql"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -87,14 +87,14 @@ jobs:
           key: ${{ runner.OS }}-build-mysql-cache
       # Release mode needs to embed frontend dist
       - name: Touch garbage dist/index.html
-        if: ${{ matrix.release-tags }}
+        if: ${{ matrix.release-tags == 'release,mysql' }}
         run: |
           mkdir -p server/dist
           touch server/dist/index.html
       - name: Install dependencies
-        run: go generate -tags ${{ matrix.release-tags }}mysql ./...
+        run: go generate -tags ${{ matrix.release-tags }} ./...
       - name: Run all tests
-        run: go test -v ./... -tags=${{ matrix.release-tags }}mysql | tee test.log
+        run: go test -v ./... -tags=${{ matrix.release-tags }} | tee test.log
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: TestVCS (15.04s)"
         # sed: remove unnecessary characters
