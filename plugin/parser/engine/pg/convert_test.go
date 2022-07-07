@@ -472,3 +472,47 @@ func TestPGAddConstraintStmt(t *testing.T) {
 
 	runTests(t, tests)
 }
+
+func TestPGDropColumnStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book DROP COLUMN a",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.DropColumnStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropTableStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP TABLE tech_book, xschema.user",
+			want: []ast.Node{
+				&ast.DropTableStmt{
+					TableList: []*ast.TableDef{
+						{
+							Name: "tech_book",
+						},
+						{
+							Schema: "xschema",
+							Name:   "user",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
