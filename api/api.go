@@ -1,5 +1,10 @@
 package api
 
+import (
+	"fmt"
+	"strings"
+)
+
 // UnknownID is the ID for unknowns.
 const UnknownID = -1
 
@@ -22,3 +27,14 @@ const (
 	// DESC is the sort order to return in descending order.
 	DESC SortOrder = "DESC"
 )
+
+// StringToSortOrder converts a valid string to SortOrder.
+func StringToSortOrder(s string) (SortOrder, error) {
+	switch strings.ToUpper(s) {
+	case string(ASC):
+		return ASC, nil
+	case string(DESC):
+		return DESC, nil
+	}
+	return SortOrder(""), fmt.Errorf("%q cannot be converted to SortOrder", s)
+}
