@@ -19,7 +19,15 @@
           The specific value and breakpoint is to make it align with other select in the issue sidebar.
           -->
       <span class="flex lg:40 xl:w-44 items-center space-x-2">
-        <PrincipalAvatar :principal="item" :size="'SMALL'" />
+        <!-- Show a special avatar for "All" -->
+        <div
+          v-if="showAll && item.id === EMPTY_ID"
+          class="w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white"
+        >
+          <heroicons-outline:user class="w-4 h-4 text-main" />
+        </div>
+        <!-- Show the initial letters by default -->
+        <PrincipalAvatar v-else :principal="item" :size="'SMALL'" />
         <span class="truncate">{{ item.name }}</span>
       </span>
     </template>
@@ -42,15 +50,18 @@
 import { reactive, computed, watch, PropType, defineComponent } from "vue";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
 import {
+  empty,
   Member,
   Principal,
   PrincipalId,
   RoleType,
   SYSTEM_BOT_ID,
+  EMPTY_ID,
 } from "../types";
 import { isDBA, isDeveloper, isOwner } from "../utils";
 import { BBComboBox } from "../bbkit";
 import { useMemberStore, usePrincipalStore } from "@/store";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   selectedId: PrincipalId | undefined;
@@ -68,6 +79,10 @@ export default defineComponent({
     disabled: {
       default: false,
       type: Boolean,
+    },
+    showAll: {
+      type: Boolean,
+      default: false,
     },
     allowedRoleList: {
       default: () => ["OWNER", "DBA", "DEVELOPER"],
@@ -90,6 +105,7 @@ export default defineComponent({
     });
     const memberStore = useMemberStore();
     const principalStore = usePrincipalStore();
+    const { t } = useI18n();
 
     const principalList = computed((): Principal[] => {
       const list = memberStore.memberList
@@ -103,6 +119,12 @@ export default defineComponent({
       // Then we add system bot to the list so it can display properly.
       if (props.selectedId == SYSTEM_BOT_ID) {
         list.unshift(principalStore.principalById(SYSTEM_BOT_ID));
+      }
+      // If `showAll` is true, we insert a virtual user before the list.
+      if (props.showAll) {
+        const all = empty("PRINCIPAL");
+        all.name = t("common.all");
+        list.unshift(all);
       }
       return list.filter((item: Principal) => {
         // The previously selected item might no longer be applicable.
@@ -148,6 +170,7 @@ export default defineComponent({
     };
 
     return {
+      EMPTY_ID,
       state,
       principalList,
       selectedPrincipal,
