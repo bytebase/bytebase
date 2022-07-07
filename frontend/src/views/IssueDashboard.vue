@@ -145,8 +145,8 @@ export default defineComponent({
     const prepareIssueList = () => {
       // We call open and close separately because normally the number of open issues is limited
       // while the closed issues could be a lot.
-      // When "All" is selected, the userId is eventually ignored by `fetchIssueList` if it's 0 (EMPTY_ID)
-      // so we need not to check it here.
+      // When "All" is selected, the userId is eventually ignored by `fetchIssueList` because
+      // it's 0 (EMPTY_ID), so we need not to check the special value here.
       if (state.showOpen) {
         issueStore
           .fetchIssueList({
