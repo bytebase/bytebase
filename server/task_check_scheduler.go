@@ -311,7 +311,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if api.IsSyntaxCheckSupported(database.Instance.Engine) {
+		if api.IsSyntaxCheckSupported(database.Instance.Engine, s.server.profile.Mode) {
 			payload, err := json.Marshal(api.TaskCheckDatabaseStatementAdvisePayload{
 				Statement: statement,
 				DbType:    database.Instance.Engine,
@@ -333,7 +333,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine) {
+		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(database.Instance.Engine, s.server.profile.Mode) {
 			policyID, err := s.server.store.GetSchemaReviewPolicyIDByEnvID(ctx, task.Instance.EnvironmentID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get schema review policy ID for task: %v, in environment: %v, err: %w", task.Name, task.Instance.EnvironmentID, err)
