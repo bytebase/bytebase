@@ -815,22 +815,17 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
-			switch task.Status {
-			case api.TaskPendingApproval:
-				return api.TaskPendingApproval, nil
-			case api.TaskFailed:
+			if task.Status == api.TaskDone {
+				continue
+			}
+			if task.Status == api.TaskFailed {
 				var runs []string
 				for _, run := range task.TaskRunList {
 					runs = append(runs, fmt.Sprintf("%+v", run))
 				}
 				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
-			case api.TaskCanceled:
-				return api.TaskCanceled, nil
-			case api.TaskRunning:
-				return api.TaskRunning, nil
-			case api.TaskPending:
-				return api.TaskPending, nil
 			}
+			return task.Status, nil
 		}
 	}
 	return api.TaskDone, nil
