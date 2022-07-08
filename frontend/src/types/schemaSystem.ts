@@ -304,8 +304,8 @@ export const getRuleLocalization = (
   const { t } = useI18n();
   const key = getRuleLocalizationKey(type);
 
-  const title = t(`schema-review-policy.rule.${key}.title`);
-  const description = t(`schema-review-policy.rule.${key}.description`);
+  const title = t(`sql-review.rule.${key}.title`);
+  const description = t(`sql-review.rule.${key}.description`);
 
   return {
     title,

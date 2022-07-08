@@ -1,0 +1,122 @@
+{
+  "engine": {
+    "mysql": "MySQL",
+    "common": "Common"
+  },
+  "category": {
+    "engine": "Engine",
+    "naming": "Naming",
+    "statement": "Statement",
+    "table": "Table",
+    "column": "Column",
+    "schema": "Schema"
+  },
+  "template": {
+    "mysql-prod": "Production Environment Template",
+    "mysql-dev": "Development Environment Template"
+  },
+  "rule": {
+    "engine-mysql-use-innodb": {
+      "title": "Use Innodb",
+      "description": "Require InnoDB as the storage engine for MySQL."
+    },
+    "table-require-pk": {
+      "title": "Require primary key",
+      "description": "Require the table to have a primary key."
+    },
+    "naming-table": {
+      "title": "Table naming check",
+      "description": "Enforce the table name format. Default snake_lower_case.",
+      "component": {
+        "name_format": {
+          "title": "Table name format (regex)"
+        }
+      }
+    },
+    "naming-column": {
+      "title": "Column naming check",
+      "description": "Enforce the column name format. Default snake_lower_case.",
+      "component": {
+        "name_format": {
+          "title": "Column name format (regex)"
+        }
+      }
+    },
+    "naming-index-uk": {
+      "title": "Unique key naming check",
+      "description": "Enforce the unique key name format. Default uk_<table_name>_<column_list>.",
+      "component": {
+        "name_format": {
+          "title": "Unique key name format",
+          "template": {
+            "table": "The table name",
+            "column_list": "Index column names, joined by _"
+          }
+        }
+      }
+    },
+    "naming-index-fk": {
+      "title": "Foreign key naming check",
+      "description": "Enforce the foreign key name format. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column>.",
+      "component": {
+        "name_format": {
+          "title": "Foreign key name format",
+          "template": {
+            "referencing_table": "The referencing table name",
+            "referencing_column": "The referencing column name",
+            "referenced_table": "The referenced table name",
+            "referenced_column": "The referenced column name"
+          }
+        }
+      }
+    },
+    "naming-index-idx": {
+      "title": "Index naming check",
+      "description": "Enforce the index name format. Default idx_<table_name>_<column_list>.",
+      "component": {
+        "name_format": {
+          "title": "Index name format",
+          "template": {
+            "table": "The table name",
+            "column_list": "Index column names, joined by _"
+          }
+        }
+      }
+    },
+    "column-required": {
+      "title": "Required columns",
+      "description": "Enforce the required columns in each table.",
+      "component": {
+        "column_list": {
+          "title": "Required column names"
+        }
+      }
+    },
+    "column-no-null": {
+      "title": "Disallow NULL",
+      "description": "Columns cannot have NULL value."
+    },
+    "statement-select-no-select-all": {
+      "title": "Disallow \"SELECT *\"",
+      "description": "Disallow 'SELECT *' statement."
+    },
+    "statement-where-require": {
+      "title": "Require \"WHERE\"",
+      "description": "Require 'WHERE' clause."
+    },
+    "statement-where-no-leading-wildcard-like": {
+      "title": "Disallow leading wildcard like",
+      "description": "Disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed."
+    },
+    "schema-backward-compatibility": {
+      "title": "Backward compatibility",
+      "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
+    }
+  },
+  "level": {
+    "name": "Error Level",
+    "error": "Error",
+    "warning": "Warning",
+    "disabled": "Disabled"
+  }
+}
