@@ -868,13 +868,13 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 		}
 		switch status {
 		case api.TaskPendingApproval:
-			if approveOnce && approve {
+			if approveOnce && approved {
 				return api.TaskDone, nil
 			}
 			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
-			approve = true
+			approved = true
 		case api.TaskFailed:
 			return status, err
 		case api.TaskDone:
@@ -882,9 +882,9 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 		case api.TaskCanceled:
 			return status, err
 		case api.TaskPending:
-			approve = true
+			approved = true
 		case api.TaskRunning:
-			approve = true
+			approved = true
 			// no-op, keep waiting
 		}
 	}
