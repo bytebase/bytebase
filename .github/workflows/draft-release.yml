@@ -27,9 +27,11 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-      - name: Release
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          args: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: dry run
+        run: make release-dry-run
+      # - name: Release
+      #   uses: goreleaser/goreleaser-action@v2
+      #   with:
+      #     args: release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
