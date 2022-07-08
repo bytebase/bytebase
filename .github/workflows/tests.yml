@@ -15,12 +15,12 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+          check-latest: true
+          cache: true
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
           git diff --exit-code
-          check-latest: true
-          cache: true
       - name: go generate -tags mysql ./...
         run: go generate -tags mysql ./...
       - name: golangci-lint
