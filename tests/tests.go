@@ -834,21 +834,21 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 // waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
 // nolint
 func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext, true)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
 }
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext, false)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, false)
 }
 
 // waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval, false)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
-// waitIssuePipelineImpl waits for pipeline to finish and approves task(s) when necessary.
-func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
+// waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
