@@ -118,7 +118,8 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, "default", nullable, type, character_set, "collation", comment
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var column api.Column
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.DatabaseID,
@@ -131,43 +132,32 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 		create.CharacterSet,
 		create.Collation,
 		create.Comment,
-	)
-
-	if err != nil {
+	).Scan(
+		&column.ID,
+		&column.CreatorID,
+		&column.CreatedTs,
+		&column.UpdaterID,
+		&column.UpdatedTs,
+		&column.DatabaseID,
+		&column.TableID,
+		&column.Name,
+		&column.Position,
+		&defaultStr,
+		&column.Nullable,
+		&column.Type,
+		&column.CharacterSet,
+		&column.Collation,
+		&column.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var column api.Column
-		if err := row.Scan(
-			&column.ID,
-			&column.CreatorID,
-			&column.CreatedTs,
-			&column.UpdaterID,
-			&column.UpdatedTs,
-			&column.DatabaseID,
-			&column.TableID,
-			&column.Name,
-			&column.Position,
-			&defaultStr,
-			&column.Nullable,
-			&column.Type,
-			&column.CharacterSet,
-			&column.Collation,
-			&column.Comment,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if defaultStr.Valid {
-			column.Default = &defaultStr.String
-		}
-		return &column, nil
+	if defaultStr.Valid {
+		column.Default = &defaultStr.String
 	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &column, nil
 }
 
 func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
@@ -258,52 +248,40 @@ func (s *Store) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPa
 
 	args = append(args, patch.ID)
 
+	var column api.Column
+	var defaultStr sql.NullString
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE col
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $2
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, "default", nullable, type, character_set, "collation", comment
 	`,
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&column.ID,
+		&column.CreatorID,
+		&column.CreatedTs,
+		&column.UpdaterID,
+		&column.UpdatedTs,
+		&column.DatabaseID,
+		&column.TableID,
+		&column.Name,
+		&column.Position,
+		&defaultStr,
+		&column.Nullable,
+		&column.Type,
+		&column.CharacterSet,
+		&column.Collation,
+		&column.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("column ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var column api.Column
-		defaultStr := sql.NullString{}
-		if err := row.Scan(
-			&column.ID,
-			&column.CreatorID,
-			&column.CreatedTs,
-			&column.UpdaterID,
-			&column.UpdatedTs,
-			&column.DatabaseID,
-			&column.TableID,
-			&column.Name,
-			&column.Position,
-			&defaultStr,
-			&column.Nullable,
-			&column.Type,
-			&column.CharacterSet,
-			&column.Collation,
-			&column.Comment,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-
-		if defaultStr.Valid {
-			column.Default = &defaultStr.String
-		}
-
-		return &column, nil
+	if defaultStr.Valid {
+		column.Default = &defaultStr.String
 	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("column ID not found: %d", patch.ID)}
+	return &column, nil
 }
