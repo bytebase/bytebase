@@ -204,37 +204,27 @@ func createBookmarkImpl(ctx context.Context, tx *sql.Tx, create *api.BookmarkCre
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, name, link
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var bookmarkRaw bookmarkRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		create.Link,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var bookmarkRaw bookmarkRaw
-		if err := row.Scan(
-			&bookmarkRaw.ID,
-			&bookmarkRaw.CreatorID,
-			&bookmarkRaw.CreatedTs,
-			&bookmarkRaw.UpdaterID,
-			&bookmarkRaw.UpdatedTs,
-			&bookmarkRaw.Name,
-			&bookmarkRaw.Link,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&bookmarkRaw.ID,
+		&bookmarkRaw.CreatorID,
+		&bookmarkRaw.CreatedTs,
+		&bookmarkRaw.UpdaterID,
+		&bookmarkRaw.UpdatedTs,
+		&bookmarkRaw.Name,
+		&bookmarkRaw.Link,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &bookmarkRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &bookmarkRaw, nil
 }
 
 func findBookmarkImpl(ctx context.Context, tx *sql.Tx, find *api.BookmarkFind) ([]*bookmarkRaw, error) {

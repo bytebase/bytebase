@@ -212,48 +212,37 @@ func createAnomalyImpl(ctx context.Context, tx *sql.Tx, upsert *api.AnomalyUpser
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var anomalyRaw anomalyRaw
+	var databaseID sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.CreatorID,
 		upsert.CreatorID,
 		upsert.InstanceID,
 		upsert.DatabaseID,
 		upsert.Type,
 		upsert.Payload,
-	)
-
-	if err != nil {
+	).Scan(
+		&anomalyRaw.ID,
+		&anomalyRaw.CreatorID,
+		&anomalyRaw.CreatedTs,
+		&anomalyRaw.UpdaterID,
+		&anomalyRaw.UpdatedTs,
+		&anomalyRaw.InstanceID,
+		&databaseID,
+		&anomalyRaw.Type,
+		&anomalyRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var anomalyRaw anomalyRaw
-		databaseID := sql.NullInt32{}
-		if err := row.Scan(
-			&anomalyRaw.ID,
-			&anomalyRaw.CreatorID,
-			&anomalyRaw.CreatedTs,
-			&anomalyRaw.UpdaterID,
-			&anomalyRaw.UpdatedTs,
-			&anomalyRaw.InstanceID,
-			&databaseID,
-			&anomalyRaw.Type,
-			&anomalyRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if databaseID.Valid {
-			value := int(databaseID.Int32)
-			anomalyRaw.DatabaseID = &value
-		}
-		anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
-
-		return &anomalyRaw, err
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		anomalyRaw.DatabaseID = &value
 	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
+	return &anomalyRaw, nil
 }
 
 func findAnomalyListImpl(ctx context.Context, tx *sql.Tx, find *api.AnomalyFind) ([]*anomalyRaw, error) {
@@ -363,44 +352,31 @@ func patchAnomalyImpl(ctx context.Context, tx *sql.Tx, patch *anomalyPatch) (*an
 		WHERE id = $3
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload
 	`
-	row, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
+	var anomalyRaw anomalyRaw
+	var databaseID sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+
+		&anomalyRaw.ID,
+		&anomalyRaw.CreatorID,
+		&anomalyRaw.CreatedTs,
+		&anomalyRaw.UpdaterID,
+		&anomalyRaw.UpdatedTs,
+		&anomalyRaw.InstanceID,
+		&databaseID,
+		&anomalyRaw.Type,
+		&anomalyRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if err != nil {
-		return nil, FormatError(err)
+	if databaseID.Valid {
+		value := int(databaseID.Int32)
+		anomalyRaw.DatabaseID = &value
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var anomalyRaw anomalyRaw
-		databaseID := sql.NullInt32{}
-		if err := row.Scan(
-			&anomalyRaw.ID,
-			&anomalyRaw.CreatorID,
-			&anomalyRaw.CreatedTs,
-			&anomalyRaw.UpdaterID,
-			&anomalyRaw.UpdatedTs,
-			&anomalyRaw.InstanceID,
-			&databaseID,
-			&anomalyRaw.Type,
-			&anomalyRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if databaseID.Valid {
-			value := int(databaseID.Int32)
-			anomalyRaw.DatabaseID = &value
-		}
-		anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
-		return &anomalyRaw, err
-	}
-	if err := row.Err(); err != nil {
-		return nil, err
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	anomalyRaw.Severity = api.AnomalySeverityFromType(anomalyRaw.Type)
+	return &anomalyRaw, nil
 }
 
 // archiveAnomalyImpl archives an anomaly by ID.
