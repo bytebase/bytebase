@@ -142,23 +142,14 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 // getDatabaseStmt gets the create statement of a database.
 func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var stmt, unused string
-		if err := rows.Scan(&unused, &stmt); err != nil {
-			return "", err
+	var stmt, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return fmt.Sprintf("%s;\n", stmt), nil
-	}
-	if err := rows.Err(); err != nil {
 		return "", err
 	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return fmt.Sprintf("%s;\n", stmt), nil
 }
 
 // tableSchema describes the schema of a table or view.

@@ -87,8 +87,7 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 // GetVersion gets the version.
 func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
 	var version string
-	row := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();")
-	if err := row.Scan(&version); err != nil {
+	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
 		return "", err
 	}
 	return version, nil
