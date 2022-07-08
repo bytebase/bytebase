@@ -885,7 +885,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 			approved = true
 		case api.TaskRunning:
 			approved = true
-			// no-op, keep waiting
+			// keep waiting
 		}
 	}
 	return api.TaskDone, nil
