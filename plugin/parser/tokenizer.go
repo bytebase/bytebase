@@ -139,11 +139,18 @@ func (t *tokenizer) scanString(delimiter rune) error {
 	}
 }
 
+// Double dollar quoted string is a PostgreSQL-specific syntax.
+// There are two syntax styles, tag and no tag:
+// - $$ string $$
+// - $tag$ string $tag$
+// See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
 func (t *tokenizer) scanDoubleDollarQuotedString() error {
 	startPos := t.pos()
+	// scan the tag string quoted by the dollar sign($)
 	if err := t.scanString('$'); err != nil {
 		return err
 	}
+	// here tag means $$ or $tag_string$ which means include the dollar sign($).
 	tag := t.runeList(startPos, t.pos()-startPos)
 	return t.scanTo(tag)
 }
