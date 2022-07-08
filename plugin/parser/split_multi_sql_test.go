@@ -120,7 +120,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: `$$INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: fmt.Errorf("scanTo failed: delimiter: $$ not found"),
+				err: fmt.Errorf("scanTo failed: delimiter \"$$\" not found"),
 			},
 		},
 	}
