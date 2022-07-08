@@ -291,46 +291,34 @@ func excludeSchemaAutoIncrementValue(s string) string {
 // GetBinlogInfo queries current binlog info from MySQL server.
 func GetBinlogInfo(ctx context.Context, conn *sql.Conn) (api.BinlogInfo, error) {
 	query := "SHOW MASTER STATUS"
-	rows, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return api.BinlogInfo{}, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		binlogInfo := api.BinlogInfo{}
-		var unused interface{}
-		if err := rows.Scan(&binlogInfo.FileName, &binlogInfo.Position, &unused, &unused, &unused); err != nil {
-			return api.BinlogInfo{}, err
+	binlogInfo := api.BinlogInfo{}
+	var unused interface{}
+	if err := conn.QueryRowContext(ctx, query).Scan(
+		&binlogInfo.FileName,
+		&binlogInfo.Position,
+		&unused,
+		&unused,
+		&unused,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return binlogInfo, nil
-	}
-	if err := rows.Err(); err != nil {
 		return api.BinlogInfo{}, err
 	}
-	return api.BinlogInfo{}, common.FormatDBErrorEmptyRowWithQuery(query)
+	return binlogInfo, nil
 }
 
 // getDatabaseStmt gets the create statement of a database.
 func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS `%s`;", dbName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var stmt, unused string
-		if err := rows.Scan(&unused, &stmt); err != nil {
-			return "", err
+	var stmt, unused string
+	if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return fmt.Sprintf("%s;\n", stmt), nil
-	}
-	if err := rows.Err(); err != nil {
 		return "", err
 	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return fmt.Sprintf("%s;\n", stmt), nil
 }
 
 // TableSchema describes the schema of a table or view.
@@ -408,43 +396,25 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
-		rows, err := txn.Query(query)
-		if err != nil {
-			return "", err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			var stmt, unused string
-			if err := rows.Scan(&unused, &stmt); err != nil {
-				return "", err
+		var stmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
-			return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
-		}
-		if err := rows.Err(); err != nil {
 			return "", err
 		}
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		return fmt.Sprintf(tableStmtFmt, tblName, stmt), nil
 	case viewTableType:
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
-		rows, err := txn.Query(query)
-		if err != nil {
-			return "", err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			var createStmt, unused string
-			if err := rows.Scan(&unused, &createStmt, &unused, &unused); err != nil {
-				return "", err
+		var createStmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
-			return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
-		}
-		if err := rows.Err(); err != nil {
 			return "", err
 		}
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
 	default:
 		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
@@ -558,23 +528,21 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 // getRoutineStmt gets the create statement of a routine.
 func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s`;", routineType, dbName, routineName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var sqlmode, stmt, charset, collation, unused string
-		if err := rows.Scan(&unused, &sqlmode, &stmt, &charset, &collation, &unused); err != nil {
-			return "", err
+	var sqlmode, stmt, charset, collation, unused string
+	if err := txn.QueryRow(query).Scan(
+		&unused,
+		&sqlmode,
+		&stmt,
+		&charset,
+		&collation,
+		&unused,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
-	}
-	if err := rows.Err(); err != nil {
 		return "", err
 	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
 
 }
 
