@@ -20,13 +20,7 @@
       >
         <img class="h-24" :src="getTemplateImage(template.id)" alt="" />
         <span class="text-sm lg:text-base mt-4">
-          {{
-            $t(
-              `schema-review-policy.template.${template.id
-                .split(".")
-                .join("-")}`
-            )
-          }}
+          {{ $t(`sql-review.template.${template.id.split(".").join("-")}`) }}
         </span>
         <heroicons-solid:check-circle
           v-if="index == selectedTemplateIndex"
