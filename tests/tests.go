@@ -854,7 +854,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	approve := false
+	approved := false
 
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
