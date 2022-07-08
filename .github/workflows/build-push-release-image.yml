@@ -10,7 +10,7 @@ jobs:
   build-release-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Extract build args
         # Extract version from branch name
         # Example: branch name `release/1.0.0` sets up env.RELEASE_VERSION=1.0.0
