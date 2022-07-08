@@ -4,6 +4,8 @@
 package pg
 
 import (
+	"fmt"
+
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
@@ -28,13 +30,22 @@ func (p *PostgreSQLParser) Parse(ctx parser.Context, statement string) ([]ast.No
 		return nil, err
 	}
 
+	textList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stmts) != len(textList) {
+		return nil, fmt.Errorf("split multi-SQL failed: the length should be %d, but get %d. stmt: \"%s\"", len(res.Stmts), len(textList), statement)
+	}
+
 	var nodeList []ast.Node
 
-	for _, stmt := range res.Stmts {
+	for i, stmt := range res.Stmts {
 		node, err := convert(stmt.Stmt)
 		if err != nil {
 			return nil, err
 		}
+		node.SetText(textList[i])
 		nodeList = append(nodeList, node)
 	}
 	return nodeList, nil
