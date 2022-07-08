@@ -134,6 +134,8 @@ func getTestPort(testName string) int {
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
+		"TestPITRBuggyApplication",
+		"TestPITRBuggyApplication/Buggy_Application",
 		"TestSchemaSystem",
 	}
 	port := 1234

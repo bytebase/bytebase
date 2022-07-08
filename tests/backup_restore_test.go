@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	pluginmysql "github.com/bytebase/bytebase/plugin/db/mysql"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
@@ -103,6 +104,127 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.Equal(numRecords, i)
 }
 
+func TestPITRBuggyApplication(t *testing.T) {
+	const (
+		numRowsTime0 = 10
+		numRowsTime1 = 20
+	)
+	t.Parallel()
+	a := require.New(t)
+	log.SetLevel(zapcore.DebugLevel)
+
+	ctx := context.Background()
+	port := getTestPort(t.Name())
+	ctl := &controller{}
+	datadir := t.TempDir()
+	err := ctl.StartServer(ctx, datadir, port)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+	err = ctl.Login()
+	a.NoError(err)
+	err = ctl.setLicense()
+	a.NoError(err)
+
+	project, err := ctl.createProject(api.ProjectCreate{
+		Name:       "PITRTest",
+		Key:        "PTT",
+		TenantMode: api.TenantModeDisabled,
+	})
+	a.NoError(err)
+
+	environments, err := ctl.getEnvironments()
+	a.NoError(err)
+	prodEnvironment, err := findEnvironment(environments, "Prod")
+	a.NoError(err)
+
+	t.Run("Buggy Application", func(t *testing.T) {
+		t.Log(t.Name())
+		databaseName := "buggy_application"
+
+		port := getTestPort(t.Name())
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+		instance, err := ctl.addInstance(api.InstanceCreate{
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "BuggyApplicationInstance",
+			Engine:        db.MySQL,
+			Host:          connCfg.Host,
+			Port:          connCfg.Port,
+			Username:      connCfg.Username,
+		})
+		a.NoError(err)
+
+		err = ctl.createDatabase(project, instance, databaseName, nil)
+		a.NoError(err)
+
+		databases, err := ctl.getDatabases(api.DatabaseFind{
+			InstanceID: &instance.ID,
+		})
+		a.NoError(err)
+		a.Equal(1, len(databases))
+		database := databases[0]
+
+		mysqlDB, _ := initPITRDB(t, databaseName, port, false)
+		defer mysqlDB.Close()
+
+		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+		t.Log("Create a full backup")
+		backup, err := ctl.createBackup(api.BackupCreate{
+			DatabaseID:     database.ID,
+			Name:           "first-backup",
+			Type:           api.BackupTypeManual,
+			StorageBackend: api.BackupStorageBackendLocal,
+		})
+		a.NoError(err)
+		err = ctl.waitBackup(database.ID, backup.ID)
+		a.NoError(err)
+
+		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
+		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+		createCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		// Restore stage.
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		// Cutover stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		t.Log("Validate table tbl0")
+		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("Validate table tbl0")
+		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
+	})
+}
+
 // TestPITR tests the PITR behavior
 // The test plan is:
 // 0. prepare tables with foreign key constraints dependencies
@@ -133,67 +255,6 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	// test cases
-	t.Run("Buggy Application", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-
-		t.Log("initialize database")
-		// For parallel sub-tests, we use different port for MySQL
-		mysqlPort := port
-		db, stopFn := initPITRDB(t, database, mysqlPort)
-		defer stopFn()
-		defer db.Close()
-
-		t.Log("insert data")
-		insertRangeData(t, db, 0, numRowsTime0)
-
-		t.Log("make a full backup")
-		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
-		a.NoError(err)
-		defer driver.Close(ctx)
-
-		backupDump, backupPayload, err := doBackup(ctx, driver, database)
-		a.NoError(err)
-		t.Logf("backup content:\n%s", backupDump.String())
-
-		t.Log("insert more data")
-		insertRangeData(t, db, numRowsTime0, numRowsTime1)
-
-		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort) + 1
-		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
-
-		t.Log("restore to pitr database")
-		suffixTs := time.Now().Unix()
-		mysqlDriver, ok := driver.(*pluginmysql.Driver)
-		a.Equal(true, ok)
-		binlogDir := t.TempDir()
-		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
-		err = mysqlDriver.FetchAllBinlogFiles(ctx)
-		a.NoError(err)
-		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(backupDump), backupPayload.BinlogInfo, database, suffixTs, targetTs)
-		a.NoError(err)
-
-		t.Log("cutover stage")
-		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
-
-		conn, err := db.Conn(ctx)
-		a.NoError(err)
-		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
-		a.NoError(err)
-		err = conn.Close()
-		a.NoError(err)
-
-		t.Log("validate table tbl0")
-		validateTbl0(t, db, database, numRowsTime1)
-		t.Log("validate table tbl1")
-		validateTbl1(t, db, database, numRowsTime1)
-		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db, database)
-	})
-
 	t.Run("Drop Database", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
@@ -203,7 +264,7 @@ func TestPITR(t *testing.T) {
 		// 1. create database for PITR test
 		// For parallel sub-tests, we use different port for MySQL
 		mysqlPort := port + 1
-		db, stopFn := initPITRDB(t, database, mysqlPort)
+		db, stopFn := initPITRDB(t, database, mysqlPort, true)
 		defer stopFn()
 		defer db.Close()
 
@@ -272,7 +333,7 @@ func TestPITR(t *testing.T) {
 		t.Logf("test %s initialize database %s", t.Name(), database)
 
 		mysqlPort := port + 2
-		db, stopFn := initPITRDB(t, database, mysqlPort)
+		db, stopFn := initPITRDB(t, database, mysqlPort, true)
 		defer stopFn()
 		defer db.Close()
 
@@ -333,16 +394,22 @@ func TestPITR(t *testing.T) {
 	})
 }
 
-func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
+func initPITRDB(t *testing.T, database string, port int, createDatabase bool) (*sql.DB, func()) {
 	a := require.New(t)
 
-	_, stopFn := resourcemysql.SetupTestInstance(t, port)
-
+	var stopFn func()
+	var db *sql.DB
 	db, err := connectTestMySQL(port, "")
 	a.NoError(err)
 
-	_, err = db.Exec(fmt.Sprintf(`
-	CREATE DATABASE %s;
+	stmt := ""
+	if createDatabase {
+		_, stopFn = resourcemysql.SetupTestInstance(t, port)
+		stmt = fmt.Sprintf(`
+		CREATE DATABASE %s;
+		`, database)
+	}
+	stmt += fmt.Sprintf(`
 	USE %s;
 	CREATE TABLE tbl0 (
 		id INT,
@@ -356,7 +423,8 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 		UNIQUE INDEX (pid),
 		CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
 	);
-	`, database, database))
+	`, database)
+	_, err = db.Exec(stmt)
 	a.NoError(err)
 
 	return db, stopFn
