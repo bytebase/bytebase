@@ -87,10 +87,10 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 			}
 			return res, nil
 		// return error when meeting BEGIN ATOMIC.
-		case t.equalWordcaseInsensitive(beginRuneList):
+		case t.equalWordCaseInsensitive(beginRuneList):
 			t.skip(uint(len(beginRuneList)))
 			t.skipBlank()
-			if t.equalWordcaseInsensitive(atomicRuneList) {
+			if t.equalWordCaseInsensitive(atomicRuneList) {
 				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it.")
 			}
 		default:
@@ -289,7 +289,7 @@ func (t *tokenizer) runeList(startPos uint, length uint) []rune {
 	return t.statement[startPos:endPos]
 }
 
-func (t *tokenizer) equalWordcaseInsensitive(word []rune) bool {
+func (t *tokenizer) equalWordCaseInsensitive(word []rune) bool {
 	for i := range word {
 		if unicode.ToLower(t.char(uint(i))) != unicode.ToLower(word[i]) {
 			return false
