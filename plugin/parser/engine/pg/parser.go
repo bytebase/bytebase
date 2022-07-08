@@ -41,11 +41,10 @@ func (p *PostgreSQLParser) Parse(ctx parser.Context, statement string) ([]ast.No
 	var nodeList []ast.Node
 
 	for i, stmt := range res.Stmts {
-		node, err := convert(stmt.Stmt)
+		node, err := convert(stmt.Stmt, textList[i])
 		if err != nil {
 			return nil, err
 		}
-		node.SetText(textList[i])
 		nodeList = append(nodeList, node)
 	}
 	return nodeList, nil

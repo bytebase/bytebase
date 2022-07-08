@@ -10,7 +10,12 @@ import (
 )
 
 // convert converts the pg_query.Node to ast.Node.
-func convert(node *pgquery.Node) (ast.Node, error) {
+func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
+	defer func() {
+		if res != nil {
+			res.SetText(text)
+		}
+	}()
 	switch in := node.Node.(type) {
 	case *pgquery.Node_AlterTableStmt:
 		alterTable := &ast.AlterTableStmt{
