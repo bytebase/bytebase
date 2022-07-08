@@ -840,6 +840,79 @@ func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 	return api.TaskDone, nil
 }
 
+// getNextTaskStatus gets the next task status that needs to be handle.
+// nolint
+func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			switch task.Status {
+			case api.TaskPendingApproval:
+				return api.TaskPendingApproval, nil
+			case api.TaskFailed:
+				var runs []string
+				for _, run := range task.TaskRunList {
+					runs = append(runs, fmt.Sprintf("%+v", run))
+				}
+				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
+			case api.TaskCanceled:
+				return api.TaskCanceled, nil
+			case api.TaskRunning:
+				return api.TaskRunning, nil
+			case api.TaskPending:
+				return api.TaskPending, nil
+			}
+		}
+	}
+	return api.TaskDone, nil
+}
+
+// waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
+// nolint
+func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
+	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
+	time.Sleep(2 * time.Second)
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	approved := false
+
+	for range ticker.C {
+		issue, err := ctl.getIssue(id)
+		if err != nil {
+			return api.TaskFailed, err
+		}
+
+		status, err := getNextTaskStatus(issue)
+		if err != nil {
+			return status, err
+		}
+		switch status {
+		case api.TaskPendingApproval:
+			if approved {
+				return api.TaskDone, nil
+			}
+			if err := ctl.approveIssueNext(issue); err != nil {
+				return api.TaskFailed, err
+			}
+			approved = true
+		case api.TaskFailed:
+			return status, err
+		case api.TaskDone:
+			return status, err
+		case api.TaskCanceled:
+			return status, err
+		case api.TaskPending:
+			approved = true
+		case api.TaskRunning:
+			// no-op, keep waiting
+			approved = true
+		}
+	}
+	return api.TaskDone, nil
+
+}
+
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
 	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
