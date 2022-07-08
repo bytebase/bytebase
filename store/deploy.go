@@ -221,37 +221,27 @@ func (s *Store) upsertDeploymentConfigImpl(ctx context.Context, tx *sql.Tx, upse
 			config = excluded.config
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, name, config
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var cfg deploymentConfigRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.ProjectID,
 		upsert.Name,
 		upsert.Payload,
-	)
-
-	if err != nil {
+	).Scan(
+		&cfg.ID,
+		&cfg.CreatorID,
+		&cfg.CreatedTs,
+		&cfg.UpdaterID,
+		&cfg.UpdatedTs,
+		&cfg.ProjectID,
+		&cfg.Name,
+		&cfg.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
 		return nil, err
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var cfg deploymentConfigRaw
-		if err := row.Scan(
-			&cfg.ID,
-			&cfg.CreatorID,
-			&cfg.CreatedTs,
-			&cfg.UpdaterID,
-			&cfg.UpdatedTs,
-			&cfg.ProjectID,
-			&cfg.Name,
-			&cfg.Payload,
-		); err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &cfg, nil
 }
