@@ -895,25 +895,12 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 	}
 
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-	var found bool
-	if rows.Next() {
-		found = true
-	}
-	if err := rows.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	if !found {
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-
 	var varNameFound, value string
-	if err := rows.Scan(&varNameFound, &value); err != nil {
-		return "", err
+	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	if varName != varNameFound {
 		return "", fmt.Errorf("expecting variable %s, but got %s", varName, varNameFound)
