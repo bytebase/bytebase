@@ -577,35 +577,6 @@ VALUES
         '{}'
     );
 
-INSERT INTO
-    task (
-        id,
-        creator_id,
-        updater_id,
-        pipeline_id,
-        stage_id,
-        instance_id,
-        database_id,
-        name,
-        type,
-        status,
-        payload
-    )
-VALUES
-    (
-        11019,
-        1,
-        1,
-        9010,
-        10017,
-        6001,
-        7002,
-        'Update testdb_dev gh-ost drop original table',
-        'bb.task.database.schema.update.ghost.drop-original-table',
-        'PENDING_APPROVAL',
-        '{"databaseName":"testdb_prod","tableName":"_tbl1_del"}'
-    );
-
 -- Tasks for PITR pipeline
 INSERT INTO
     task (
@@ -623,7 +594,7 @@ INSERT INTO
     )
 VALUES
     (
-        11020,
+        11019,
         1,
         1,
         9011,
@@ -652,7 +623,7 @@ INSERT INTO
     )
 VALUES
     (
-        11021,
+        11020,
         1,
         1,
         9011,
@@ -681,7 +652,7 @@ INSERT INTO
     )
 VALUES
     (
-        11022,
+        11021,
         1,
         1,
         9011,
@@ -694,4 +665,4 @@ VALUES
         '{}'
     );
 
-ALTER SEQUENCE task_id_seq RESTART WITH 11023;
+ALTER SEQUENCE task_id_seq RESTART WITH 11022;
