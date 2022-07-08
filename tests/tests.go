@@ -813,7 +813,6 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 
 // getNextTaskStatus gets the next task status that needs to be handle.
 func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
-	running := false
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			switch task.Status {
@@ -833,9 +832,6 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 				return api.TaskPending, nil
 			}
 		}
-	}
-	if running {
-		return api.TaskRunning, nil
 	}
 	return api.TaskDone, nil
 }
