@@ -2,10 +2,16 @@ package parser
 
 import (
 	"fmt"
+	"unicode"
 )
 
 const (
 	eofRune = rune(-1)
+)
+
+var (
+	beginRuneList  = []rune{'B', 'E', 'G', 'I', 'N'}
+	atomicRuneList = []rune{'A', 'T', 'M', 'I', 'C'}
 )
 
 type tokenizer struct {
@@ -80,6 +86,13 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 				res = append(res, s)
 			}
 			return res, nil
+		// return error when meeting BEGIN ATOMIC.
+		case t.equalWordcaseInsensitive(beginRuneList):
+			t.skip(uint(len(beginRuneList)))
+			t.skipBlank()
+			if t.equalWordcaseInsensitive(atomicRuneList) {
+				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it.")
+			}
 		default:
 			t.skip(1)
 		}
@@ -274,6 +287,15 @@ func (t *tokenizer) runeList(startPos uint, length uint) []rune {
 		endPos = t.len
 	}
 	return t.statement[startPos:endPos]
+}
+
+func (t *tokenizer) equalWordcaseInsensitive(word []rune) bool {
+	for i := range word {
+		if unicode.ToLower(t.char(uint(i))) != unicode.ToLower(word[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func emptyRune(r rune) bool {
