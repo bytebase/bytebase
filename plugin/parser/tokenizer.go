@@ -22,7 +22,7 @@ func newTokenizer(statement string) *tokenizer {
 		cursor:    0,
 	}
 	t.len = uint(len(t.statement))
-	// append a additional eofRune
+	// append an additional eofRune.
 	t.statement = append(t.statement, eofRune)
 	return t
 }
