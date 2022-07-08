@@ -1,4 +1,4 @@
--- task_dag for task dependency
+-- task_dag for gh-ost
 INSERT INTO
     task_dag (
         id,
@@ -12,6 +12,7 @@ VALUES
         11018
     );
 
+-- task_dag for PITR tasks
 INSERT INTO
     task_dag (
         id,
@@ -21,11 +22,10 @@ INSERT INTO
 VALUES
     (
         11102,
-        11018,
-        11019
+        11019,
+        11020
     );
 
--- task_dag for PITR tasks
 INSERT INTO
     task_dag (
         id,
@@ -39,17 +39,4 @@ VALUES
         11021
     );
 
-INSERT INTO
-    task_dag (
-        id,
-        from_task_id,
-        to_task_id
-    )
-VALUES
-    (
-        11104,
-        11021,
-        11022
-    );
-
-ALTER SEQUENCE task_dag_id_seq RESTART WITH 11105;
+ALTER SEQUENCE task_dag_id_seq RESTART WITH 11104;
