@@ -11,6 +11,8 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"go.uber.org/zap"
 )
 
@@ -34,8 +36,8 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
-	runningTasks := make(map[int]bool)
-	var mu sync.RWMutex
+	runningBackupTasks := make(map[int]bool)
+	var muBackup sync.RWMutex
 	for {
 		select {
 		case <-ticker.C:
@@ -50,10 +52,47 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				s.startAutoBackups(ctx, runningTasks, &mu)
+				s.startAutoBackups(ctx, runningBackupTasks, &muBackup)
+				s.downloadBinlogFiles(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
+		}
+	}
+}
+
+func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
+	instanceFind := &api.InstanceFind{RowStatus: api.Normal.Pointer()}
+	instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
+	if err != nil {
+		log.Error("Failed to retrieve instance list", zap.Error(err))
+		return
+	}
+	for _, instance := range instanceList {
+		if instance.Engine == db.MySQL {
+			log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
+			driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
+			if err != nil {
+				log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
+				continue
+			}
+			defer driver.Close(ctx)
+
+			binlogDir := getBinlogAbsDir(s.server.profile.DataDir, instance.ID)
+			if err := createBinlogDir(s.server.profile.DataDir, instance.ID); err != nil {
+				log.Error("Failed to create binlog directory", zap.Error(err))
+				return
+			}
+			mysqlDriver, ok := driver.(*mysql.Driver)
+			if !ok {
+				log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
+				return
+			}
+			mysqlDriver.SetUpForPITR(s.server.mysqlutil, binlogDir)
+			if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
+				log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
+				continue
+			}
 		}
 	}
 }

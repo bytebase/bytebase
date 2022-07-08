@@ -80,16 +80,12 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
-		log.Error("failed to cast driver to mysql.Driver")
+		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
-	log.Debug("Downloading all binlog files")
-	// TODO(dragonly): Do this on a regular basis.
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
-		return err
-	}
+	// Note: The binlog downloading process is in backup runner and is running periodically in the background.
 
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, mode)

@@ -18,6 +18,11 @@ const (
 	Archived RowStatus = "ARCHIVED"
 )
 
+// Pointer is a helper function to take the address of a const RowStatus.
+func (s RowStatus) Pointer() *RowStatus {
+	return &s
+}
+
 // SortOrder is the sort order for the returned list.
 type SortOrder string
 
