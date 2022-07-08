@@ -100,7 +100,7 @@
               :for="engine.id"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{ $t(`engine.${engine.id.toLowerCase()}`) }}
+              {{ $t(`sql-review.engine.${engine.id.toLowerCase()}`) }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -110,7 +110,7 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-x-3">
-          <span>{{ $t("schema-review-policy.error-level.name") }}:</span>
+          <span>{{ $t("sql-review.level.name") }}:</span>
           <div
             v-for="level in errorLevelList"
             :key="level.id"
@@ -128,9 +128,7 @@
               :for="level.id"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{
-                $t(`schema-review-policy.error-level.${level.id.toLowerCase()}`)
-              }}
+              {{ $t(`sql-review.level.${level.id.toLowerCase()}`) }}
               <span
                 class="items-center px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
@@ -340,7 +338,7 @@ const toggleCheckedLevel = (level: RuleLevel) => {
 const categoryFilterList = computed((): CategoryFilterItem[] => {
   return convertToCategoryList(selectedRuleList.value).map((c) => ({
     id: c.id,
-    name: t(`schema-review-policy.category.${c.id.toLowerCase()}`),
+    name: t(`sql-review.category.${c.id.toLowerCase()}`),
   }));
 });
 
