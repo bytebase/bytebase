@@ -910,7 +910,6 @@ func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus
 		}
 	}
 	return api.TaskDone, nil
-
 }
 
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
