@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+          check-latest: true
+          cache: true
       - name: go generate -tags mysql ./...
         run: go generate -tags mysql ./...
       - name: golangci-lint
@@ -26,10 +28,12 @@ jobs:
   go-tidy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+          check-latest: true
+          cache: true
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
@@ -39,7 +43,7 @@ jobs:
   release-dry-run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.1.0
         with:
           version: 6.10.0
@@ -52,9 +56,11 @@ jobs:
         working-directory: frontend
       - run: pnpm release
         working-directory: frontend
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.16
+          check-latest: true
+          cache: true
       - name: Release dry-run
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -72,14 +78,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+          check-latest: true
+          cache: true
       - name: Cache MySQL
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ./resources/mysql/*.tar.gz
