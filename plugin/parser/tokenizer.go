@@ -62,7 +62,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 				return nil, err
 			}
 		case t.char(0) == '$':
-			if err := t.scanDollarQuotedString(); err != nil {
+			if err := t.scanDoubleDollarQuotedString(); err != nil {
 				return nil, err
 			}
 		case t.char(0) == '"':
@@ -139,7 +139,7 @@ func (t *tokenizer) scanString(delimiter rune) error {
 	}
 }
 
-func (t *tokenizer) scanDollarQuotedString() error {
+func (t *tokenizer) scanDoubleDollarQuotedString() error {
 	startPos := t.pos()
 	if err := t.scanString('$'); err != nil {
 		return err
