@@ -28,7 +28,7 @@
           :id="category.id.replace(/\./g, '-')"
           class="text-left text-2xl text-indigo-600 font-semibold hover:underline"
         >
-          {{ $t(`schema-review-policy.category.${category.id.toLowerCase()}`) }}
+          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
         </a>
         <div v-for="rule in category.ruleList" :key="rule.type" class="py-4">
           <div class="sm:flex sm:items-center sm:space-x-4">
@@ -42,7 +42,7 @@
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
               <SchemaRuleLevelBadge :level="rule.level" />
               <BBBadge
-                :text="$t(`engine.${rule.engine.toLowerCase()}`)"
+                :text="$t(`sql-review.engine.${rule.engine.toLowerCase()}`)"
                 :can-remove="false"
               />
             </div>
@@ -58,7 +58,7 @@
             >
               {{
                 $t(
-                  `schema-review-policy.rule.${getRuleLocalizationKey(
+                  `sql-review.rule.${getRuleLocalizationKey(
                     rule.type
                   )}.component.${component.key}.title`
                 )

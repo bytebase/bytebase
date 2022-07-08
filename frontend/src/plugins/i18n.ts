@@ -15,20 +15,34 @@ if (locale === "en") {
 
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
-const messages = Object.fromEntries(
-  Object.entries(import.meta.globEager("../locales/*.json")).map(
-    ([key, value]) => {
-      const name = key.slice(localPathPrefix.length, -5);
-      return [name, value.default];
-    }
-  )
-);
+const mergedLocalMessage = Object.entries(
+  import.meta.globEager("../locales/**/*.json")
+).reduce((map, [key, value]) => {
+  const name = key.slice(localPathPrefix.length, -5);
+  const sections = name.split("/");
+  if (sections.length === 1) {
+    map[name] = value.default;
+  } else {
+    const file = sections.slice(-1)[0];
+    const sectionsName = sections[0];
+    const existed = map[file] || {};
+    map[file] = {
+      ...existed,
+      [sectionsName]: {
+        ...(existed[sectionsName] || {}),
+        ...value.default,
+      },
+    };
+  }
+
+  return map;
+}, {} as { [k: string]: any });
 
 const i18n = createI18n({
   legacy: false,
   locale,
   globalInjection: true,
-  messages,
+  messages: mergedLocalMessage,
   fallbackLocale: "en-US",
 });
 
