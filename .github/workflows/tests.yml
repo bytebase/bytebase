@@ -8,13 +8,17 @@ on:
   pull_request:
 
 jobs:
-  golangci:
+  static-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code
       - name: go generate -tags mysql ./...
         run: go generate -tags mysql ./...
       - name: golangci-lint
@@ -22,18 +26,6 @@ jobs:
         with:
           version: v1.45.2
           args: -v
-
-  go-tidy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-      - name: Verify go.mod is tidy
-        run: |
-          go mod tidy
-          git diff --exit-code
 
   # Copied from draft-release.yml, should be consistent if updating draft-release.yml.
   release-dry-run:
