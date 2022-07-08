@@ -139,7 +139,7 @@ func TestPITRBuggyApplication(t *testing.T) {
 
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Log(t.Name())
-		databaseName := "buggyapplication"
+		databaseName := "buggy_application"
 
 		port := getTestPort(t.Name())
 		_, stopFn := resourcemysql.SetupTestInstance(t, port)
