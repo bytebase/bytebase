@@ -8,24 +8,7 @@ on:
   pull_request:
 
 jobs:
-  golangci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.17
-          check-latest: true
-          cache: true
-      - name: go generate -tags mysql ./...
-        run: go generate -tags mysql ./...
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.45.2
-          args: -v
-
-  go-tidy:
+  go-static-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -38,6 +21,13 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code
+      - name: go generate -tags mysql ./...
+        run: go generate -tags mysql ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.45.2
+          args: -v
 
   # Copied from draft-release.yml, should be consistent if updating draft-release.yml.
   release-dry-run:
