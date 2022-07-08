@@ -385,38 +385,29 @@ func (s *Store) patchEnvironmentImpl(ctx context.Context, tx *sql.Tx, patch *api
 
 	args = append(args, patch.ID)
 
+	var environment environmentRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE environment
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var environment environmentRaw
-		if err := row.Scan(
-			&environment.ID,
-			&environment.RowStatus,
-			&environment.CreatorID,
-			&environment.CreatedTs,
-			&environment.UpdaterID,
-			&environment.UpdatedTs,
-			&environment.Name,
-			&environment.Order,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&environment.ID,
+		&environment.RowStatus,
+		&environment.CreatorID,
+		&environment.CreatedTs,
+		&environment.UpdaterID,
+		&environment.UpdatedTs,
+		&environment.Name,
+		&environment.Order,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
 		}
-		return &environment, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("environment ID not found: %d", patch.ID)}
+	return &environment, nil
 }
