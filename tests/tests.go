@@ -836,12 +836,26 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 // waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
 // nolint
 func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
+}
+
+// waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, false)
+}
+
+// waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
+}
+
+// waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-
 	approved := false
 
 	for range ticker.C {
@@ -856,62 +870,13 @@ func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus
 		}
 		switch status {
 		case api.TaskPendingApproval:
-			if approved {
+			if approveOnce && approved {
 				return api.TaskDone, nil
 			}
-			if err := ctl.approveIssueNext(issue); err != nil {
-				return api.TaskFailed, err
-			}
-			approved = true
-		case api.TaskFailed:
-			return status, err
-		case api.TaskDone:
-			return status, err
-		case api.TaskCanceled:
-			return status, err
-		case api.TaskPending:
-			approved = true
-		case api.TaskRunning:
-			// no-op, keep waiting
-			approved = true
-		}
-	}
-	return api.TaskDone, nil
-}
-
-// waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
-}
-
-// waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval)
-}
-
-// waitIssuePipelineImpl waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error) (api.TaskStatus, error) {
-	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
-	time.Sleep(2 * time.Second)
-
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		issue, err := ctl.getIssue(id)
-		if err != nil {
-			return api.TaskFailed, err
-		}
-
-		status, err := getNextTaskStatus(issue)
-		if err != nil {
-			return status, err
-		}
-		switch status {
-		case api.TaskPendingApproval:
 			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
+			approved = true
 		case api.TaskFailed:
 			return status, err
 		case api.TaskDone:
@@ -919,8 +884,10 @@ func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api
 		case api.TaskCanceled:
 			return status, err
 		case api.TaskPending:
+			approved = true
 		case api.TaskRunning:
-			// no-op, keep waiting
+			approved = true
+			// keep waiting
 		}
 	}
 	return api.TaskDone, nil
