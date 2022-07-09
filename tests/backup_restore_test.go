@@ -223,6 +223,99 @@ func TestPITRBuggyApplication(t *testing.T) {
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
+
+	t.Run("Schema Migration Failure", func(t *testing.T) {
+		t.Log(t.Name())
+		databaseName := "schema_migration_failure"
+
+		port := getTestPort(t.Name())
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+		instance, err := ctl.addInstance(api.InstanceCreate{
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "SchemaMigrationFailureInstance",
+			Engine:        db.MySQL,
+			Host:          connCfg.Host,
+			Port:          connCfg.Port,
+			Username:      connCfg.Username,
+		})
+		a.NoError(err)
+
+		err = ctl.createDatabase(project, instance, databaseName, nil)
+		a.NoError(err)
+
+		databases, err := ctl.getDatabases(api.DatabaseFind{
+			InstanceID: &instance.ID,
+		})
+		a.NoError(err)
+		a.Equal(1, len(databases))
+		database := databases[0]
+
+		mysqlDB, _ := initPITRDB(t, databaseName, port, false)
+		defer mysqlDB.Close()
+
+		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+		t.Log("Create a full backup")
+		backup, err := ctl.createBackup(api.BackupCreate{
+			DatabaseID:     database.ID,
+			Name:           "first-backup",
+			Type:           api.BackupTypeManual,
+			StorageBackend: api.BackupStorageBackendLocal,
+		})
+		a.NoError(err)
+		err = ctl.waitBackup(database.ID, backup.ID)
+		a.NoError(err)
+
+		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
+		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+
+		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
+		t.Logf("mimics schema migration: %s\n", dropColumnStmt)
+		_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
+		a.NoError(err)
+
+		createCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		// Restore stage.
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		// Cutover stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		t.Log("Validate table tbl0")
+		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("Validate table tbl0")
+		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
+	})
 }
 
 // TestPITR tests the PITR behavior
@@ -324,73 +417,6 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		err = conn.Close()
 		a.NoError(err)
-	})
-
-	t.Run("Schema Migration Failure", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-
-		t.Logf("test %s initialize database %s", t.Name(), database)
-
-		mysqlPort := port + 2
-		db, stopFn := initPITRDB(t, database, mysqlPort, true)
-		defer stopFn()
-		defer db.Close()
-
-		t.Log("insert data")
-		insertRangeData(t, db, 0, numRowsTime0)
-
-		t.Log("make a full backup")
-		driver, err := getTestMySQLDriver(ctx, strconv.Itoa(mysqlPort), database)
-		a.NoError(err)
-		defer driver.Close(ctx)
-
-		buf, backupPayload, err := doBackup(ctx, driver, database)
-		a.NoError(err)
-		t.Logf("backup content:\n%s\n", buf.String())
-
-		t.Log("insert more data")
-		insertRangeData(t, db, numRowsTime0, numRowsTime1)
-
-		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
-		targetTs := startUpdateRow(ctxUpdateRow, t, database, mysqlPort) + 1
-		t.Logf("start to concurrently update data at t1: %v", time.Unix(targetTs, 0))
-
-		suffixTs := time.Now().Unix()
-
-		t.Log("mimics schema migration")
-		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
-		_, err = db.ExecContext(ctx, dropColumnStmt)
-		a.NoError(err)
-
-		t.Log("restore to pitr database")
-		mysqlDriver, ok := driver.(*pluginmysql.Driver)
-		a.Equal(true, ok)
-		binlogDir := t.TempDir()
-		mysqlDriver.SetUpForPITR(*mysqlutilInstance, binlogDir)
-		err = mysqlDriver.FetchAllBinlogFiles(ctx)
-		a.NoError(err)
-		err = mysqlDriver.RestorePITR(ctx, bufio.NewScanner(buf), backupPayload.BinlogInfo, database, suffixTs, targetTs)
-		a.NoError(err)
-
-		t.Log("cutover stage")
-		cancelUpdateRow()
-		// We mimics the situation where the user waits for the target database idle before doing the cutover.
-		time.Sleep(time.Second)
-
-		conn, err := db.Conn(ctx)
-		a.NoError(err)
-		_, _, err = pluginmysql.SwapPITRDatabase(ctx, conn, database, suffixTs)
-		a.NoError(err)
-		err = conn.Close()
-		a.NoError(err)
-
-		t.Log("validate table tbl0")
-		validateTbl0(t, db, database, numRowsTime1)
-		t.Log("validate table tbl1")
-		validateTbl1(t, db, database, numRowsTime1)
-		t.Log("validate table _update_row_")
-		validateTableUpdateRow(t, db, database)
 	})
 }
 
