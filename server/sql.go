@@ -442,6 +442,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 
 		var errorList []string
 		for _, databaseMetadata := range instanceMeta.DatabaseList {
+			// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
 			if err := s.syncDatabaseSchema(ctx, instance, databaseMetadata.Name); err != nil {
 				errorList = append(errorList, err.Error())
 			}
