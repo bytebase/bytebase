@@ -1,5 +1,5 @@
-//go:build !release
-// +build !release
+//go:build !embed_frontend
+// +build !embed_frontend
 
 package server
 
@@ -11,7 +11,7 @@ import (
 )
 
 func embedFrontend(e *echo.Echo) {
-	log.Info("Dev mode, skip embedding frontend")
+	log.Info("Skip embedding frontend, build with 'embed_frontend' tag if you want embedded frontend.")
 
 	e.GET("/*", func(c echo.Context) error {
 		return c.HTML(http.StatusOK, "This Bytebase build does not bundle frontend and backend together.")
