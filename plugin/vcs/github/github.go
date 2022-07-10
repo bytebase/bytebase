@@ -209,22 +209,24 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		page++
 	}
 
-	allMembers := make([]*vcs.RepositoryMember, len(allCollaborators))
-	for i, c := range allCollaborators {
+	var allMembers []*vcs.RepositoryMember
+	for _, c := range allCollaborators {
 		userInfo, err := p.FetchUserInfo(ctx, oauthCtx, "", c.Login)
 		if err != nil {
 			return nil, errors.Wrapf(err, "fetch user info, login: %s", c.Login)
 		}
 
 		githubRole, bytebaseRole := getRoleAndMappedRole(c.RoleName)
-		allMembers[i] = &vcs.RepositoryMember{
-			Name:         userInfo.Name,
-			Email:        userInfo.PublicEmail,
-			Role:         bytebaseRole,
-			VCSRole:      string(githubRole),
-			State:        vcs.StateActive,
-			RoleProvider: vcs.GitHubCom,
-		}
+		allMembers = append(allMembers,
+			&vcs.RepositoryMember{
+				Name:         userInfo.Name,
+				Email:        userInfo.PublicEmail,
+				Role:         bytebaseRole,
+				VCSRole:      string(githubRole),
+				State:        vcs.StateActive,
+				RoleProvider: vcs.GitHubCom,
+			},
+		)
 	}
 	return allMembers, nil
 }
