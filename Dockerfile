@@ -7,6 +7,8 @@
 
 FROM node:14 as frontend
 
+ARG RELEASE="release"
+
 RUN npm i -g pnpm
 
 WORKDIR /frontend-build
@@ -18,7 +20,7 @@ RUN pnpm install --frozen-lockfile
 COPY ./frontend/ .
 
 # Build frontend
-RUN pnpm release-docker
+RUN pnpm "${RELEASE}-docker"
 
 FROM golang:1.16.5 as backend
 
@@ -28,7 +30,6 @@ ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
-# Build in release mode so we will embed the frontend
 ARG RELEASE="release"
 
 # Need gcc for CGO_ENABLED=1
@@ -44,7 +45,7 @@ COPY --from=frontend /frontend-build/dist ./server/dist
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 # go-sqlite3 requires CGO_ENABLED
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    --tags "${RELEASE}" \
+    --tags "${RELEASE},embed_frontend" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./bin/server/main.go
