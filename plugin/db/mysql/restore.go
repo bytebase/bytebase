@@ -499,6 +499,43 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
+	// Ensure that there's at most one ongoing downloading process for the current MySQL instance.
+	lockFilePath := path.Join(driver.binlogDir, "download.lock")
+	_, err := os.Stat(lockFilePath)
+	if err != nil {
+		log.Debug("There's another downloading process. Waiting for the downloading is done.", zap.String("binlogDir", driver.binlogDir))
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if _, err := os.Stat(lockFilePath); err != nil {
+					if os.IsNotExist(err) {
+						return nil
+					}
+					log.Error("Failed to check the lock file", zap.String("path", lockFilePath), zap.Error(err))
+					return fmt.Errorf("failed to check the lock file %q, error: %w", lockFilePath, err)
+				}
+			case <-ctx.Done():
+				log.Error("Interrupted from waiting for another binlog downloading process", zap.String("binlogDir", driver.binlogDir))
+				return fmt.Errorf("interrupted from waiting for another binlog downloading process in binlogDir %q", driver.binlogDir)
+			}
+		}
+	}
+	if !os.IsNotExist(err) {
+		log.Error("Failed to check the lock file", zap.String("path", lockFilePath), zap.Error(err))
+		return fmt.Errorf("failed to check the lock file %q, error: %w", lockFilePath, err)
+	}
+	if _, err := os.Create(lockFilePath); err != nil {
+		log.Error("Failed to create the lock file", zap.String("path", lockFilePath), zap.Error(err))
+		return fmt.Errorf("failed to create the lock file %q, error: %w", lockFilePath, err)
+	}
+	defer func() {
+		log.Debug("Removing binlog downloading lock file", zap.String("path", lockFilePath))
+		_ = os.Remove(lockFilePath)
+	}()
+	log.Debug("Successfully got binlog downloading lock", zap.String("binlogDir", driver.binlogDir))
+
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {

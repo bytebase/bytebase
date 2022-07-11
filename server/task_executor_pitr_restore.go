@@ -85,7 +85,9 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
-	// Note: The binlog downloading process is in backup runner and is running periodically in the background.
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
+		return err
+	}
 
 	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
 	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, mode)
