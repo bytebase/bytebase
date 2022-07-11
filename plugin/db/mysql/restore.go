@@ -109,7 +109,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		// Table names are stored in lowercase on disk and name comparisons are not case-sensitive.
 		originalDBName = strings.ToLower(originalDatabase)
 	case "2":
-		// 	Table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+		// Table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 		// Name comparisons are not case-sensitive.
 		originalDBName = strings.ToLower(originalDatabase)
 	default:
