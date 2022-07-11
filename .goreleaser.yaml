@@ -19,7 +19,7 @@ builds:
       - VERSION="development"
       - GO_VERSION="1.16.5"
       - CGO_ENABLED=1
-      - CC=o64-clang
+      - CC=/home/runner/work/osxcross/target/bin/o64-clang
       # - CC=aarch64-linux-gnu-gcc
       # - CXX=aarch64-linux-gnu-g++
       # - CC=gcc
