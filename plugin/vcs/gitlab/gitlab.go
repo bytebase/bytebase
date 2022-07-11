@@ -252,6 +252,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user has a maintainer role.
+// The maintainer role is required to create webhook in the project.
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
 	repoList := []*vcs.Repository{}
 	// page is the current requesting page index, starts from 1.
