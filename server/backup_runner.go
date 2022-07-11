@@ -62,7 +62,8 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
-	instanceFind := &api.InstanceFind{RowStatus: api.Normal.Pointer()}
+	normal := api.Normal
+	instanceFind := &api.InstanceFind{RowStatus: &normal}
 	instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
 	if err != nil {
 		log.Error("Failed to retrieve instance list", zap.Error(err))
