@@ -466,7 +466,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		page++
 	}
 
-	var emptyEmailUserIDList []string
+	var emptyEmailUserList []string
 	var activeMembers []*vcs.RepositoryMember
 	for _, m := range allMembers {
 		// We only want active member (both state and membership_state is active)
@@ -488,7 +488,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		}
 
 		if m.Email == "" {
-			emptyEmailUserIDList = append(emptyEmailUserIDList, m.Name)
+			emptyEmailUserList = append(emptyEmailUserList, m.Name)
 			continue
 		}
 
@@ -506,8 +506,8 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		)
 	}
 
-	if len(emptyEmailUserIDList) != 0 {
-		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
+	if len(emptyEmailUserList) != 0 {
+		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserList, ", "))
 	}
 
 	return activeMembers, nil
