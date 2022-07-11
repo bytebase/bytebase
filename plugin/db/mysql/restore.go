@@ -37,6 +37,8 @@ import (
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
+
+	binlogDownloadLockFile = "download.lock"
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -441,6 +443,9 @@ func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	}
 	var binlogFilesLocal []BinlogFile
 	for _, fileInfo := range binlogFilesInfoLocal {
+		if fileInfo.Name() == binlogDownloadLockFile {
+			continue
+		}
 		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
 		if err != nil {
 			return nil, err
@@ -500,9 +505,9 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 	// Ensure that there's at most one ongoing downloading process for the current MySQL instance.
-	lockFilePath := path.Join(driver.binlogDir, "download.lock")
+	lockFilePath := path.Join(driver.binlogDir, binlogDownloadLockFile)
 	_, err := os.Stat(lockFilePath)
-	if err != nil {
+	if err == nil {
 		log.Debug("There's another downloading process. Waiting for the downloading is done.", zap.String("binlogDir", driver.binlogDir))
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
