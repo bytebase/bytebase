@@ -54,6 +54,9 @@ jobs:
       - name: Install cross-compiler
         # run: sudo apt-get -y install gcc-aarch64-linux-gnu
         run: |
+          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' | sudo tee -a /etc/apt/sources.list
+          sudo apt update && apt-cache policy libssl1.0-dev
+          sudo apt-get install libssl1.0-dev
           mkdir ../../osxcross
           git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
       - name: Release dry-run
