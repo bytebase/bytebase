@@ -133,6 +133,7 @@ func getTestPort(testName string) int {
 		"TestPITR/Buggy_Application",
 		"TestPITR/Schema_Migration_Failure",
 		"TestPITR/Drop_Database",
+		"TestPITR/Case_Sensitive",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
