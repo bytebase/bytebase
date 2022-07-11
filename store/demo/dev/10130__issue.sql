@@ -295,10 +295,10 @@ VALUES
         1,
         3001,
         9010,
-        'Hello task dependency!',
+        'Hello gh-ost!',
         'OPEN',
         'bb.issue.database.schema.update.ghost',
-        'This issue is to demonstrate task dependency.',
+        'This issue is to demonstrate gh-ost integration.',
         101
     );
 

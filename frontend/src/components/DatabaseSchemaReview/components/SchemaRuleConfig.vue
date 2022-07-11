@@ -15,7 +15,7 @@
             {{ getRuleLocalization(selectedRule.type).title }}
           </h1>
           <BBBadge
-            :text="$t(`engine.${selectedRule.engine.toLowerCase()}`)"
+            :text="$t(`sql-review.engine.${selectedRule.engine.toLowerCase()}`)"
             :can-remove="false"
           />
           <SchemaRuleLevelBadge :level="selectedRule.level" />
@@ -27,7 +27,7 @@
     </div>
     <div v-if="active" class="px-10 py-5 text-sm">
       <div class="mb-7">
-        <p class="mb-3">{{ $t("schema-review-policy.error-level.name") }}</p>
+        <p class="mb-3">{{ $t("sql-review.level.name") }}</p>
         <div class="flex gap-x-3">
           <div
             v-for="(level, index) in LEVEL_LIST"
@@ -46,9 +46,7 @@
               :for="`level-${level}`"
               class="ml-2 items-center text-sm text-gray-600"
             >
-              {{
-                $t(`schema-review-policy.error-level.${level.toLowerCase()}`)
-              }}
+              {{ $t(`sql-review.level.${level.toLowerCase()}`) }}
             </label>
           </div>
         </div>
@@ -61,7 +59,7 @@
         <p class="mb-3">
           {{
             $t(
-              `schema-review-policy.rule.${getRuleLocalizationKey(
+              `sql-review.rule.${getRuleLocalizationKey(
                 selectedRule.type
               )}.component.${config.key}.title`
             )
@@ -102,7 +100,7 @@
             config.payload.templateList.map((id) => ({
               id,
               description: $t(
-                `schema-review-policy.rule.${getRuleLocalizationKey(
+                `sql-review.rule.${getRuleLocalizationKey(
                   selectedRule.type
                 )}.component.${config.key}.template.${id}`
               ),

@@ -6,7 +6,7 @@
       </h1>
       <fieldset v-for="(category, index) in categoryList" :key="index">
         <div class="block text-sm font-medium text-gray-900">
-          {{ $t(`schema-review-policy.category.${category.id.toLowerCase()}`) }}
+          {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
         </div>
         <div
           v-for="(rule, ruleIndex) in category.ruleList"
