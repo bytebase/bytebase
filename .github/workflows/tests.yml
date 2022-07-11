@@ -51,16 +51,17 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-      - name: Install cross-compiler
-        # run: sudo apt-get -y install gcc-aarch64-linux-gnu
+      - name: Install cross-compiler for linux arm64
+        run: sudo apt-get -y install gcc-aarch64-linux-gnu
+      - name: Install cross-compiler for darwin
         run: |
           echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' | sudo tee -a /etc/apt/sources.list
           sudo apt update && apt-cache policy libssl1.0-dev
           sudo apt-get install libssl1.0-dev
-          mkdir ../../osxcross
-          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
+          mkdir osxcross
+          git clone https://github.com/plentico/osxcross-target.git ./osxcross/target
+          export PATH=$(pwd)/osxcross/target/bin:$PATH
       - name: Release dry-run
-        # run: make release-dry-run
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --skip-publish
