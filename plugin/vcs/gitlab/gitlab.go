@@ -131,10 +131,10 @@ type File struct {
 	LastCommitID string `json:"last_commit_id"`
 }
 
-// ProjectRole is the role of the project member
+// ProjectRole is the role of the project member.
 type ProjectRole string
 
-// Gitlab Role type
+// The list of GitLab roles.
 const (
 	ProjectRoleOwner         ProjectRole = "Owner"
 	ProjectRoleMaintainer    ProjectRole = "Maintainer"
@@ -426,7 +426,7 @@ func (p *Provider) FetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 }
 
 func getRoleAndMappedRole(accessLevel int32) (gitLabRole ProjectRole, bytebaseRole common.ProjectRole) {
-	// see https://docs.gitlab.com/ee/api/members.html for the detailed role type at GitLab
+	// Please refer to https://docs.gitlab.com/ee/api/members.html for the detailed role descriptions of GitLab.
 	switch accessLevel {
 	case 50 /* Owner */ :
 		return ProjectRoleOwner, common.ProjectOwner

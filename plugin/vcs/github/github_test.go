@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -87,6 +88,128 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	want := &vcs.UserInfo{
 		PublicEmail: "octocat@github.com",
 		Name:        "monalisa octocat",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						switch r.URL.Path {
+						case "/repos/octocat/Hello-World/collaborators":
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
+								Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "login": "octocat",
+    "id": 1,
+    "node_id": "MDQ6VXNlcjE=",
+    "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/octocat",
+    "html_url": "https://github.com/octocat",
+    "followers_url": "https://api.github.com/users/octocat/followers",
+    "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+    "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+    "organizations_url": "https://api.github.com/users/octocat/orgs",
+    "repos_url": "https://api.github.com/users/octocat/repos",
+    "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/octocat/received_events",
+    "type": "User",
+    "site_admin": false,
+    "permissions": {
+      "pull": true,
+      "triage": true,
+      "push": true,
+      "maintain": false,
+      "admin": false
+    },
+    "role_name": "write"
+  }
+]
+`)),
+							}, nil
+						case "/users/octocat":
+							return &http.Response{
+								StatusCode: http.StatusOK,
+								// Example response taken from https://docs.github.com/en/rest/reference/users#get-a-user
+								Body: io.NopCloser(strings.NewReader(`
+{
+  "login": "octocat",
+  "id": 1,
+  "node_id": "MDQ6VXNlcjE=",
+  "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+  "gravatar_id": "",
+  "url": "https://api.github.com/users/octocat",
+  "html_url": "https://github.com/octocat",
+  "followers_url": "https://api.github.com/users/octocat/followers",
+  "following_url": "https://api.github.com/users/octocat/following{/other_user}",
+  "gists_url": "https://api.github.com/users/octocat/gists{/gist_id}",
+  "starred_url": "https://api.github.com/users/octocat/starred{/owner}{/repo}",
+  "subscriptions_url": "https://api.github.com/users/octocat/subscriptions",
+  "organizations_url": "https://api.github.com/users/octocat/orgs",
+  "repos_url": "https://api.github.com/users/octocat/repos",
+  "events_url": "https://api.github.com/users/octocat/events{/privacy}",
+  "received_events_url": "https://api.github.com/users/octocat/received_events",
+  "type": "User",
+  "site_admin": false,
+  "name": "monalisa octocat",
+  "company": "GitHub",
+  "blog": "https://github.com/blog",
+  "location": "San Francisco",
+  "email": "octocat@github.com",
+  "hireable": false,
+  "bio": "There once was...",
+  "twitter_username": "monatheoctocat",
+  "public_repos": 2,
+  "public_gists": 1,
+  "followers": 20,
+  "following": 0,
+  "created_at": "2008-01-14T04:33:35Z",
+  "updated_at": "2008-01-14T04:33:35Z",
+  "private_gists": 81,
+  "total_private_repos": 100,
+  "owned_private_repos": 100,
+  "disk_usage": 10000,
+  "collaborators": 8,
+  "two_factor_authentication": true,
+  "plan": {
+    "name": "Medium",
+    "space": 400,
+    "private_repos": 20,
+    "collaborators": 0
+  }
+}
+`)),
+							}, nil
+						}
+						return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "octocat/Hello-World")
+	require.NoError(t, err)
+
+	want := []*vcs.RepositoryMember{
+		{
+			Email:        "octocat@github.com",
+			Name:         "monalisa octocat",
+			State:        vcs.StateActive,
+			Role:         common.ProjectOwner,
+			VCSRole:      string(RepositoryRoleWrite),
+			RoleProvider: vcs.GitHubCom,
+		},
 	}
 	assert.Equal(t, want, got)
 }
