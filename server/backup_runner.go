@@ -70,9 +70,24 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 	}
 	for _, instance := range instanceList {
 		if instance.Engine == db.MySQL {
+			log.Debug("Checking backup policy for environment of instance", zap.String("instance", instance.Name), zap.String("environment", instance.Environment.Name))
+			backupPolicy, err := s.server.store.GetBackupPlanPolicyByEnvID(ctx, instance.EnvironmentID)
+			if err != nil {
+				log.Error("Failed to get backup plan policy for environment of instance")
+				continue
+			}
+			if backupPolicy.Schedule == api.BackupPlanPolicyScheduleUnset {
+				log.Debug("Skip instance because of UNSET backup policy")
+				continue
+			}
+
 			log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 			driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
 			if err != nil {
+				if common.ErrorCode(err) == common.DbConnectionFailure {
+					log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+					continue
+				}
 				log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
 				continue
 			}
@@ -186,7 +201,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			// Backup already exists for the database.
+			log.Debug("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to create backup %q, error: %w", backupName, err)

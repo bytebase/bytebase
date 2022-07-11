@@ -470,7 +470,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	for _, file := range binlogFilesLocal {
 		binlogFilesLocalMap[file.Name] = file
 	}
-	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	log.Debug("Downloading binlog files")
 	for _, fileOnServer := range binlogFilesOnServerSorted {
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)

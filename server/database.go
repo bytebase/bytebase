@@ -911,7 +911,7 @@ func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.Driv
 		connCtx,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q, error: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
 	}
 	return driver, nil
 }
