@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -327,6 +328,96 @@ func TestPITR(t *testing.T) {
 		instance, err := ctl.addInstance(api.InstanceCreate{
 			EnvironmentID: prodEnvironment.ID,
 			Name:          "DropDatabaseInstance",
+			Engine:        db.MySQL,
+			Host:          connCfg.Host,
+			Port:          connCfg.Port,
+			Username:      connCfg.Username,
+		})
+		a.NoError(err)
+
+		err = ctl.createDatabase(project, instance, databaseName, nil)
+		a.NoError(err)
+
+		databases, err := ctl.getDatabases(api.DatabaseFind{
+			InstanceID: &instance.ID,
+		})
+		a.NoError(err)
+		a.Equal(1, len(databases))
+		database := databases[0]
+
+		mysqlDB, _ := initPITRDB(t, databaseName, port)
+		defer mysqlDB.Close()
+
+		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+		t.Log("Create a full backup")
+		backup, err := ctl.createBackup(api.BackupCreate{
+			DatabaseID:     database.ID,
+			Name:           "first-backup",
+			Type:           api.BackupTypeManual,
+			StorageBackend: api.BackupStorageBackendLocal,
+		})
+		a.NoError(err)
+		err = ctl.waitBackup(database.ID, backup.ID)
+		a.NoError(err)
+
+		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
+		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
+
+		time.Sleep(1 * time.Second)
+		targetTs := time.Now().Unix()
+
+		createCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		// Restore stage.
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		// Cutover stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		t.Log("Validate table tbl0")
+		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("Validate table tbl0")
+		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+	})
+
+	t.Run("Case Sensitive", func(t *testing.T) {
+		// TODO(zp): This test currently only passes correctly on the linux platform, and fails on non-case-sensitive platforms such as MacOS.
+		// This if block will be removed after the fix is complete.
+		if runtime.GOOS != "linux" {
+			return
+		}
+		t.Log(t.Name())
+		databaseName := "CASE_sensitive"
+
+		port := getTestPort(t.Name())
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+		instance, err := ctl.addInstance(api.InstanceCreate{
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "DropSensitiveInstance",
 			Engine:        db.MySQL,
 			Host:          connCfg.Host,
 			Port:          connCfg.Port,
