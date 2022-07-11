@@ -368,6 +368,21 @@ func TestPITR(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		targetTs := time.Now().Unix()
 
+		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, databaseName)
+		_, err = mysqlDB.ExecContext(ctx, dropStmt)
+		a.NoError(err)
+
+		rows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
+		a.NoError(err)
+		defer rows.Close()
+		for rows.Next() {
+			var s string
+			err := rows.Scan(&s)
+			a.NoError(err)
+			a.FailNow("Database still exists after dropped")
+		}
+		a.NoError(rows.Err())
+
 		createCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: targetTs,
