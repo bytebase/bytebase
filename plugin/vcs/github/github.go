@@ -355,7 +355,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user
-// has a owner role.
+// has a owner role, which is required to create webhook in the repository.
 //
 // Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
