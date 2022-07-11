@@ -250,7 +250,6 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "1")
 	require.NoError(t, err)
 
-	// Non-active member should be excluded
 	want := []*vcs.RepositoryMember{
 		{
 			Email:        "john@example.com",

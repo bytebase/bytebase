@@ -581,7 +581,6 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, "")
 	require.NoError(t, err)
 
-	// Non-active member should be excluded
 	want := []*vcs.Repository{
 		{
 			ID:       1296269,
