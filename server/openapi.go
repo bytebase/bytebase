@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -11,7 +12,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
+	"github.com/bytebase/bytebase/store"
 	"github.com/labstack/echo/v4"
+)
+
+var (
+	_ catalog.Catalog = (*catalogService)(nil)
 )
 
 // catalogService is the catalog service for sql check api.
@@ -33,9 +39,10 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Accept  */*
 // @Tags  Schema Review
 // @Produce  json
-// @Param  environment   query  string  true   "The environment name. Case sensitive"
-// @Param  statement     query  string  true   "The SQL statement"
-// @Param  databaseType  query  string  true   "The database type"  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  environment   query  string  true   "The environment name. Case sensitive."
+// @Param  statement     query  string  true   "The SQL statement."
+// @Param  databaseType  query  string  false  "The database type. Required if not provide the database id."  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  databaseID    query  number  false  "The database id in your instance."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
@@ -51,16 +58,40 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
 	}
 
-	dbType := c.QueryParams().Get("databaseType")
-	if dbType == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
+	ctx := c.Request().Context()
+	databaseID := c.QueryParams().Get("databaseID")
+
+	var dbType db.Type
+	var catalog catalog.Catalog = &catalogService{}
+
+	if databaseID != "" {
+		id, err := strconv.Atoi(databaseID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database ID: %v", databaseID)).SetInternal(err)
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
+			ID: &id,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by ID: %v", databaseID)).SetInternal(err)
+		}
+
+		dbType = database.Instance.Engine
+		catalog = store.NewCatalog(&id, s.store)
+	} else {
+		databaseType := c.QueryParams().Get("databaseType")
+		if databaseType == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing required database type")
+		}
+		dbType = db.Type(strings.ToUpper(databaseType))
 	}
-	advisorDBType, err := api.ConvertToAdvisorDBType(db.Type(strings.ToUpper(dbType)))
+
+	advisorDBType, err := api.ConvertToAdvisorDBType(dbType)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
 	}
 
-	ctx := c.Request().Context()
 	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
 		Name: &envName,
 	})
@@ -78,7 +109,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		"utf8mb4_general_ci",
 		envList[0].ID,
 		statement,
-		&catalogService{},
+		catalog,
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
@@ -89,7 +120,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			Name:  metricAPI.SQLAdviseAPIMetricName,
 			Value: 1,
 			Labels: map[string]string{
-				"database_type": dbType,
+				"database_type": string(dbType),
 				"environment":   envName,
 			},
 		})

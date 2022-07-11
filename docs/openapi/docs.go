@@ -41,14 +41,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "The environment name. Case sensitive",
+                        "description": "The environment name. Case sensitive.",
                         "name": "environment",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "The SQL statement",
+                        "description": "The SQL statement.",
                         "name": "statement",
                         "in": "query",
                         "required": true
@@ -60,10 +60,15 @@ const docTemplate = `{
                             "TiDB"
                         ],
                         "type": "string",
-                        "description": "The database type",
+                        "description": "The database type. Required if not provide the database id.",
                         "name": "databaseType",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "The database id.",
+                        "name": "databaseID",
+                        "in": "query"
                     }
                 ],
                 "responses": {

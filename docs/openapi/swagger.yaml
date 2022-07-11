@@ -38,25 +38,28 @@ paths:
       description: Parse and check the SQL statement according to the schema review
         policy.
       parameters:
-      - description: The environment name. Case sensitive
+      - description: The environment name. Case sensitive.
         in: query
         name: environment
         required: true
         type: string
-      - description: The SQL statement
+      - description: The SQL statement.
         in: query
         name: statement
         required: true
         type: string
-      - description: The database type
+      - description: The database type. Required if not provide the database id.
         enum:
         - MySQL
         - PostgreSQL
         - TiDB
         in: query
         name: databaseType
-        required: true
         type: string
+      - description: The database id.
+        in: query
+        name: databaseID
+        type: number
       produces:
       - application/json
       responses:
