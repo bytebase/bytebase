@@ -209,11 +209,17 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		page++
 	}
 
+	var emptyEmailUserIDList []string
 	var allMembers []*vcs.RepositoryMember
 	for _, c := range allCollaborators {
 		userInfo, err := p.FetchUserInfo(ctx, oauthCtx, "", c.Login)
 		if err != nil {
 			return nil, errors.Wrapf(err, "fetch user info, login: %s", c.Login)
+		}
+
+		if userInfo.PublicEmail == "" {
+			emptyEmailUserIDList = append(emptyEmailUserIDList, userInfo.Name)
+			continue
 		}
 
 		githubRole, bytebaseRole := getRoleAndMappedRole(c.RoleName)
@@ -228,6 +234,11 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 			},
 		)
 	}
+
+	if len(emptyEmailUserIDList) != 0 {
+		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitHub, please make sure every members' public email is configured before syncing, see https://docs.github.com/en/account-and-profile", strings.Join(emptyEmailUserIDList, ", "))
+	}
+
 	return allMembers, nil
 }
 
