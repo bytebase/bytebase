@@ -62,7 +62,7 @@ jobs:
           git clone https://github.com/plentico/osxcross-target.git ./osxcross/target
           export PATH=$(pwd)/osxcross/target/bin:$PATH
       - name: Release dry-run
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           args: release --skip-publish
         env:
