@@ -17,20 +17,33 @@ builds:
     env:
       - VERSION="development"
       - GO_VERSION="1.16.5"
-      - CGO_ENABLED=1
+      # - CGO_ENABLED=1
       # - CC=aarch64-linux-gnu-gcc
       # - CXX=aarch64-linux-gnu-g++
-      - CC=gcc
-      - CXX=g++
+      # - CC=gcc
+      # - CXX=g++
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
       - linux
-      # -darwin
+      # - darwin
     goarch:
       - amd64
-      # - arm64
+      - arm64
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CGO_ENABLED=1
+          - CC=aarch64-linux-gnu-gcc
+          - CXX=aarch64-linux-gnu-g++
+      - goos: linux
+        goarch: amd64
+        env:
+          - CGO_ENABLED=1
+          - CC=gcc
+          - CXX=g++
   # - id: cli
   #   main: ./bin/bb
   #   binary: bb

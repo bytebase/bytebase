@@ -52,6 +52,7 @@ jobs:
           check-latest: true
           cache: true
       - name: Release dry-run
+        # run: make release-dry-run
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --skip-publish
