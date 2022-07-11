@@ -52,7 +52,8 @@ jobs:
           check-latest: true
           cache: true
       - name: Install cross-compiler
-        run: sudo apt-get -y install gcc-aarch64-linux-gnu
+        # run: sudo apt-get -y install gcc-aarch64-linux-gnu
+        run: sudo apt-get -y install clang
       - name: Release dry-run
         # run: make release-dry-run
         uses: goreleaser/goreleaser-action@v2
