@@ -157,7 +157,7 @@ export default defineComponent({
           if (rule) {
             const ruleLocalization = getRuleLocalization(rule.type);
             title = `[${t(
-              `schema-review-policy.category.${rule.category.toLowerCase()}`
+              `sql-review.category.${rule.category.toLowerCase()}`
             )}] ${ruleLocalization.title}`;
           } else {
             title = checkResult.title;

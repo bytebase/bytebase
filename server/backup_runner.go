@@ -50,68 +50,71 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-
-				// Find all databases that need a backup in this hour.
-				t := time.Now().UTC().Truncate(time.Hour)
-				match := &api.BackupSettingsMatch{
-					Hour:      t.Hour(),
-					DayOfWeek: int(t.Weekday()),
-				}
-				backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
-				if err != nil {
-					log.Error("Failed to retrieve backup settings match", zap.Error(err))
-					return
-				}
-
-				for _, backupSetting := range backupSettingList {
-					mu.Lock()
-					if _, ok := runningTasks[backupSetting.ID]; ok {
-						mu.Unlock()
-						continue
-					}
-					runningTasks[backupSetting.ID] = true
-					mu.Unlock()
-
-					db := backupSetting.Database
-					if db.Name == api.AllDatabaseName {
-						// Skip backup job for wildcard database `*`.
-						continue
-					}
-					backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
-					go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
-						log.Debug("Schedule auto backup",
-							zap.String("database", database.Name),
-							zap.String("backup", backupName),
-						)
-						defer func() {
-							mu.Lock()
-							delete(runningTasks, backupSettingID)
-							mu.Unlock()
-						}()
-						_, err := s.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID)
-						if err != nil {
-							log.Error("Failed to create automatic backup for database",
-								zap.Int("databaseID", database.ID),
-								zap.Error(err))
-							return
-						}
-						// Backup succeeded. POST hook URL.
-						if hookURL == "" {
-							return
-						}
-						_, err = http.PostForm(hookURL, nil)
-						if err != nil {
-							log.Warn("Failed to POST hook URL",
-								zap.String("hookURL", hookURL),
-								zap.Int("databaseID", database.ID),
-								zap.Error(err))
-						}
-					}(db, backupSetting.ID, backupName, backupSetting.HookURL)
-				}
+				s.startAutoBackups(ctx, runningTasks, &mu)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			return
 		}
+	}
+}
+
+func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
+	// Find all databases that need a backup in this hour.
+	t := time.Now().UTC().Truncate(time.Hour)
+	match := &api.BackupSettingsMatch{
+		Hour:      t.Hour(),
+		DayOfWeek: int(t.Weekday()),
+	}
+	backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
+	if err != nil {
+		log.Error("Failed to retrieve backup settings match", zap.Error(err))
+		return
+	}
+
+	for _, backupSetting := range backupSettingList {
+		mu.Lock()
+		if _, ok := runningTasks[backupSetting.ID]; ok {
+			mu.Unlock()
+			continue
+		}
+		runningTasks[backupSetting.ID] = true
+		mu.Unlock()
+
+		db := backupSetting.Database
+		if db.Name == api.AllDatabaseName {
+			// Skip backup job for wildcard database `*`.
+			continue
+		}
+		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
+		go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
+			log.Debug("Schedule auto backup",
+				zap.String("database", database.Name),
+				zap.String("backup", backupName),
+			)
+			defer func() {
+				mu.Lock()
+				delete(runningTasks, backupSettingID)
+				mu.Unlock()
+			}()
+			_, err := s.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID)
+			if err != nil {
+				log.Error("Failed to create automatic backup for database",
+					zap.Int("databaseID", database.ID),
+					zap.Error(err))
+				return
+			}
+			// Backup succeeded. POST hook URL.
+			if hookURL == "" {
+				return
+			}
+			_, err = http.PostForm(hookURL, nil)
+			if err != nil {
+				log.Warn("Failed to POST hook URL",
+					zap.String("hookURL", hookURL),
+					zap.Int("databaseID", database.ID),
+					zap.Error(err))
+			}
+		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
 	}
 }
 

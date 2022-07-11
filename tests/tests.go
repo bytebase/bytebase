@@ -130,6 +130,11 @@ func getTestPort(testName string) int {
 
 		// PITR related cases
 		"TestPITR",
+		"TestPITR/Buggy_Application",
+		"TestPITR/Schema_Migration_Failure",
+		"TestPITR/Drop_Database",
+		"TestPITR/Case_Sensitive",
+
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
@@ -811,52 +816,50 @@ func (ctl *controller) approveIssueTasksWithStageApproval(issue *api.Issue) erro
 	return nil
 }
 
-// getAggregatedTaskStatus gets pipeline status.
-func getAggregatedTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
-	running := false
+// getNextTaskStatus gets the next task status that needs to be handle.
+func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
-			switch task.Status {
-			case api.TaskPendingApproval:
-				return api.TaskPendingApproval, nil
-			case api.TaskFailed:
+			if task.Status == api.TaskDone {
+				continue
+			}
+			if task.Status == api.TaskFailed {
 				var runs []string
 				for _, run := range task.TaskRunList {
 					runs = append(runs, fmt.Sprintf("%+v", run))
 				}
 				return api.TaskFailed, fmt.Errorf("pipeline task %v failed runs: %v", task.ID, strings.Join(runs, ", "))
-			case api.TaskCanceled:
-				return api.TaskCanceled, nil
-			case api.TaskRunning:
-				running = true
-			case api.TaskPending:
-				running = true
 			}
+			return task.Status, nil
 		}
-	}
-	if running {
-		return api.TaskRunning, nil
 	}
 	return api.TaskDone, nil
 }
 
+// waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
+// nolint
+func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
+}
+
 // waitIssuePipeline waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipeline(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueNext)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, false)
 }
 
 // waitIssuePipelineWithStageApproval waits for pipeline to finish and approves tasks when necessary.
 func (ctl *controller) waitIssuePipelineWithStageApproval(id int) (api.TaskStatus, error) {
-	return ctl.waitIssuePipelineImpl(id, ctl.approveIssueTasksWithStageApproval)
+	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueTasksWithStageApproval, false)
 }
 
-// waitIssuePipelineImpl waits for pipeline to finish and approves tasks when necessary.
-func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api.Issue) error) (api.TaskStatus, error) {
+// waitIssuePipelineImpl waits for the tasks in pipeline to finish and approves tasks when necessary.
+func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue *api.Issue) error, approveOnce bool) (api.TaskStatus, error) {
 	// Sleep for two seconds between issues so that we don't get migration version conflict because we are using second-level timestamp for the version string. We choose sleep because it mimics the user's behavior.
 	time.Sleep(2 * time.Second)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+	approved := false
 
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
@@ -864,15 +867,19 @@ func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api
 			return api.TaskFailed, err
 		}
 
-		status, err := getAggregatedTaskStatus(issue)
+		status, err := getNextTaskStatus(issue)
 		if err != nil {
 			return status, err
 		}
 		switch status {
 		case api.TaskPendingApproval:
+			if approveOnce && approved {
+				return api.TaskDone, nil
+			}
 			if err := approveFunc(issue); err != nil {
 				return api.TaskFailed, err
 			}
+			approved = true
 		case api.TaskFailed:
 			return status, err
 		case api.TaskDone:
@@ -880,8 +887,10 @@ func (ctl *controller) waitIssuePipelineImpl(id int, approveFunc func(issue *api
 		case api.TaskCanceled:
 			return status, err
 		case api.TaskPending:
+			approved = true
 		case api.TaskRunning:
-			// no-op, keep waiting
+			approved = true
+			// keep waiting
 		}
 	}
 	return api.TaskDone, nil
@@ -988,7 +997,7 @@ func (ctl *controller) createDatabase(project *api.Project, instance *api.Instan
 	if err != nil {
 		return fmt.Errorf("failed to create database creation issue, error: %v", err)
 	}
-	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
@@ -1036,7 +1045,7 @@ func (ctl *controller) cloneDatabaseFromBackup(project *api.Project, instance *a
 	if err != nil {
 		return fmt.Errorf("failed to create database creation issue, error: %v", err)
 	}
-	if status, _ := getAggregatedTaskStatus(issue); status != api.TaskPendingApproval {
+	if status, _ := getNextTaskStatus(issue); status != api.TaskPendingApproval {
 		return fmt.Errorf("issue %v pipeline %v is supposed to be pending manual approval", issue.ID, issue.Pipeline.ID)
 	}
 	status, err := ctl.waitIssuePipeline(issue.ID)
@@ -1388,7 +1397,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 			return nil, err
 		}
 
-		status, err := getAggregatedTaskStatus(issue)
+		status, err := getNextTaskStatus(issue)
 		if err != nil {
 			return nil, err
 		}
