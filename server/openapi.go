@@ -41,7 +41,7 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  environment   query  string  true   "The environment name. Case sensitive."
 // @Param  statement     query  string  true   "The SQL statement."
-// @Param  databaseType  query  string  false  "The database type. Required if not provide the database id."  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  databaseType  query  string  false  "The database type. Required if the database id is not specified."  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  databaseID    query  number  false  "The database id in your instance."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
@@ -75,6 +75,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by ID: %v", databaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find the database by ID: %v", databaseID))
 		}
 
 		dbType = database.Instance.Engine

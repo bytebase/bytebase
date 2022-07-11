@@ -60,13 +60,13 @@ const docTemplate = `{
                             "TiDB"
                         ],
                         "type": "string",
-                        "description": "The database type. Required if not provide the database id.",
+                        "description": "The database type. Required if the database id is not specified.",
                         "name": "databaseType",
                         "in": "query"
                     },
                     {
                         "type": "number",
-                        "description": "The database id.",
+                        "description": "The database id in your instance.",
                         "name": "databaseID",
                         "in": "query"
                     }

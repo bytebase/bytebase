@@ -56,7 +56,7 @@ paths:
         in: query
         name: databaseType
         type: string
-      - description: The database id.
+      - description: The database id in your instance.
         in: query
         name: databaseID
         type: number
