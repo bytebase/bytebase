@@ -252,7 +252,7 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 }
 
 // FetchAllRepositoryList fetches all repositories where the authenticated user
-// has a maintainer role.
+// has a maintainer role, which is required to create webhook in the project.
 //
 // Docs: https://docs.gitlab.com/ee/api/projects.html#list-all-projects
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
