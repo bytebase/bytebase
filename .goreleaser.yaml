@@ -14,6 +14,7 @@ builds:
       - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
     tags:
       - release
+      - embed_frontend
     env:
       - VERSION="development"
       - GO_VERSION="1.16.5"
