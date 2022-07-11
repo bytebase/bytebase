@@ -2,7 +2,7 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - id: server
+  - id: server-linux-amd64
     main: ./bin/server
     binary: bytebase
     ldflags:
@@ -19,36 +19,117 @@ builds:
       - VERSION="development"
       - GO_VERSION="1.16.5"
       - CGO_ENABLED=1
+      - CC=gcc
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
       - linux
+      # - darwin
+    goarch:
+      - amd64
+  - id: server-linux-arm64
+    main: ./bin/server
+    binary: bytebase
+    ldflags:
+      - -w -s
+      - -X github.com/bytebase/bytebase/bin/server/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
+    tags:
+      - release
+      - embed_frontend
+    env:
+      - VERSION="development"
+      - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - GIT_COMMIT="unknown"
+      - BUILD_TIME="unknown"
+      - BUILD_USER="unknown"
+    goos:
+      - linux
+      # - darwin
+    goarch:
+      # - amd64
+      - arm64
+  - id: server-darwin-amd64
+    main: ./bin/server
+    binary: bytebase
+    ldflags:
+      - -w -s
+      - -X github.com/bytebase/bytebase/bin/server/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
+    tags:
+      - release
+      - embed_frontend
+    env:
+      - VERSION="development"
+      - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
+      - CC=o64-clang
+      - GIT_COMMIT="unknown"
+      - BUILD_TIME="unknown"
+      - BUILD_USER="unknown"
+    goos:
+      # - linux
       - darwin
     goarch:
       - amd64
+      # - arm64
+  - id: server-darwin-arm64
+    main: ./bin/server
+    binary: bytebase
+    ldflags:
+      - -w -s
+      - -X github.com/bytebase/bytebase/bin/server/cmd.version={{.Version}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.gitcommit={{.Commit}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.buildtime={{.Timestamp}}
+      - -X github.com/bytebase/bytebase/bin/server/cmd.builduser=goreleaser
+    tags:
+      - release
+      - embed_frontend
+    env:
+      - VERSION="development"
+      - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
+      - CC=oa64-clang
+      - GIT_COMMIT="unknown"
+      - BUILD_TIME="unknown"
+      - BUILD_USER="unknown"
+    goos:
+      # - linux
+      - darwin
+    goarch:
+      # - amd64
       - arm64
-    overrides:
-      - goos: linux
-        goarch: arm64
-        env:
-          - CGO_ENABLED=1
-          - CC=aarch64-linux-gnu-gcc
-      - goos: linux
-        goarch: amd64
-        env:
-          - CGO_ENABLED=1
-          - CC=gcc
-      - goos: darwin
-        goarch: arm64
-        env:
-          - CGO_ENABLED=1
-          - CC=oa64-clang
-      - goos: darwin
-        goarch: amd64
-        env:
-          - CGO_ENABLED=1
-          - CC=o64-clang
+    # overrides:
+    #   - goos: linux
+    #     goarch: arm64
+    #     env:
+    #       - CGO_ENABLED=1
+    #       - CC=aarch64-linux-gnu-gcc
+    #   - goos: linux
+    #     goarch: amd64
+    #     env:
+    #       - CGO_ENABLED=1
+    #       - CC=gcc
+    #   - goos: darwin
+    #     goarch: arm64
+    #     env:
+    #       - CGO_ENABLED=1
+    #       - CC=oa64-clang
+    #   - goos: darwin
+    #     goarch: amd64
+    #     env:
+    #       - CGO_ENABLED=1
+    #       - CC=o64-clang
   # - id: cli
   #   main: ./bin/bb
   #   binary: bb
