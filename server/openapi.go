@@ -77,7 +77,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by ID: %v", databaseID)).SetInternal(err)
 		}
 		if database == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find the database by ID: %v", databaseID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find the database by ID: %v", databaseID))
 		}
 
 		dbType = database.Instance.Engine
