@@ -58,11 +58,10 @@ jobs:
           echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' | sudo tee -a /etc/apt/sources.list
           sudo apt update && apt-cache policy libssl1.0-dev
           sudo apt-get install libssl1.0-dev
-          mkdir osxcross
-          git clone https://github.com/plentico/osxcross-target.git ./osxcross/target
-          export PATH=$(pwd)/osxcross/target/bin:$PATH
+          mkdir ../../osxcross
+          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
       - name: Release dry-run
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v2
         with:
           args: release --skip-publish
         env:
