@@ -18,6 +18,7 @@ builds:
     env:
       - VERSION="development"
       - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
