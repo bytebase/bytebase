@@ -89,17 +89,17 @@ func TestBackupRestoreBasic(t *testing.T) {
 	a.NoError(err)
 
 	// validate data
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", table))
+	tableAllRows, err := db.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY id ASC", table))
 	a.NoError(err)
-	defer rows.Close()
+	defer tableAllRows.Close()
 	i := 0
-	for rows.Next() {
+	for tableAllRows.Next() {
 		var col int
-		a.NoError(rows.Scan(&col))
+		a.NoError(tableAllRows.Scan(&col))
 		a.Equal(i, col)
 		i++
 	}
-	a.NoError(rows.Err())
+	a.NoError(tableAllRows.Err())
 	a.Equal(numRecords, i)
 }
 
@@ -368,6 +368,21 @@ func TestPITR(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		targetTs := time.Now().Unix()
 
+		dropStmt := fmt.Sprintf(`DROP DATABASE %s;`, databaseName)
+		_, err = mysqlDB.ExecContext(ctx, dropStmt)
+		a.NoError(err)
+
+		dbRows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
+		a.NoError(err)
+		defer dbRows.Close()
+		for dbRows.Next() {
+			var s string
+			err := dbRows.Scan(&s)
+			a.NoError(err)
+			a.FailNow("Database still exists after dropped")
+		}
+		a.NoError(dbRows.Err())
+
 		createCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
 			PointInTimeTs: targetTs,
@@ -462,16 +477,16 @@ func TestPITR(t *testing.T) {
 		_, err = mysqlDB.ExecContext(ctx, dropStmt)
 		a.NoError(err)
 
-		rows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
+		dbRows, err := mysqlDB.Query(fmt.Sprintf(`SHOW DATABASES LIKE '%s';`, databaseName))
 		a.NoError(err)
-		defer rows.Close()
-		for rows.Next() {
+		defer dbRows.Close()
+		for dbRows.Next() {
 			var s string
-			err := rows.Scan(&s)
+			err := dbRows.Scan(&s)
 			a.NoError(err)
 			a.FailNow("Database still exists after dropped")
 		}
-		a.NoError(rows.Err())
+		a.NoError(dbRows.Err())
 
 		createCtx, err := json.Marshal(&api.PITRContext{
 			DatabaseID:    database.ID,
