@@ -23,10 +23,19 @@ builds:
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
-      - darwin
+      - linux
     goarch:
       - amd64
       - arm64
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CC=aarch64-linux-gnu-gcc
+      - goos: linux
+        goarch: amd64
+        env:
+          - CC=gcc
   - id: cli
     main: ./bin/bb
     binary: bb
@@ -47,10 +56,19 @@ builds:
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
-      - darwin
+      - linux
     goarch:
       - amd64
       - arm64
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CC=aarch64-linux-gnu-gcc
+      - goos: linux
+        goarch: amd64
+        env:
+          - CC=gcc
 archives:
   - replacements:
       darwin: Darwin
