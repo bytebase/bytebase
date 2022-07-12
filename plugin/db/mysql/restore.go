@@ -53,7 +53,7 @@ const (
 
 var (
 	binlogFileTasks = make(map[string]bool)
-	muBinlogFile    sync.RWMutex
+	muBinlogFile    sync.Mutex
 )
 
 // BinlogFile is the metadata of the MySQL binlog file

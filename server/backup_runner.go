@@ -38,7 +38,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
 	runningBackupTasks := make(map[int]bool)
-	var muBackup sync.RWMutex
+	var muBackup sync.Mutex
 	for {
 		select {
 		case <-ticker.C:
@@ -117,7 +117,7 @@ func downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance,
 	}
 }
 
-func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
+func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.Mutex) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
 	match := &api.BackupSettingsMatch{
