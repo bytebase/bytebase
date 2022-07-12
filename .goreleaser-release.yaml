@@ -10,7 +10,7 @@ release:
   draft: true
   mode: append
   extra_files:
-    - glob: ../artifacts/*
+    - glob: ./artifacts/**/*
   name_template: "Release {{.Tag}}"
   header: |
     # What's Changed
