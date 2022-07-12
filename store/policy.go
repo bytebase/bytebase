@@ -176,6 +176,8 @@ func (s *Store) SomeDatabaseEnablesBackupPolicyInInstance(ctx context.Context, i
 	if err != nil {
 		return false, FormatError(err)
 	}
+	defer rows.Close()
+
 	if rows.Next() {
 		return true, nil
 	}
