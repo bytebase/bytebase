@@ -29,7 +29,7 @@ jobs:
           version: v1.45.2
           args: -v
 
-  # Copied from draft-release.yml, should be consistent if updating draft-release.yml.
+  # Copied from build-artifacts-and-draft-release.yml, should be consistent if updating build-artifacts-and-draft-release.yml.
   release-dry-run-linux:
     runs-on: ubuntu-latest
     steps:
