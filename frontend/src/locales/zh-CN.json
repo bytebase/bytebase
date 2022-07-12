@@ -201,7 +201,8 @@
     "view-doc": "查看文档",
     "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
-    "pitr": "PITR"
+    "pitr": "PITR",
+    "go-now": "立即前往"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -485,7 +486,9 @@
     },
     "new-issue": "@:common.new@:common.issue",
     "format-on-save": "保存时格式化",
-    "action-to-current-stage": "{action}当前阶段"
+    "action-to-current-stage": "{action}当前阶段",
+    "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
+    "edit-sql-statement": "编辑 SQL 语句"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
