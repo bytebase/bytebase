@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -38,8 +39,6 @@ const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
 
-	binlogDownloadLockFile = "download.lock"
-
 	// Variable lower_case_table_names related.
 
 	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
@@ -50,6 +49,11 @@ const (
 	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 	// Name comparisons are not case-sensitive.
 	LetterCaseOnDiskLowerCaseCmp = 2
+)
+
+var (
+	binlogFileTasks = make(map[string]bool)
+	muBinlogFile    sync.RWMutex
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -477,9 +481,6 @@ func GetSortedLocalBinlogFiles(binlogDir string) ([]BinlogFile, error) {
 	}
 	var binlogFilesLocal []BinlogFile
 	for _, fileInfo := range binlogFilesInfoLocal {
-		if fileInfo.Name() == binlogDownloadLockFile {
-			continue
-		}
 		binlogFile, err := newBinlogFile(fileInfo.Name(), fileInfo.Size())
 		if err != nil {
 			return nil, err
@@ -539,41 +540,19 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 	// Ensure that there's at most one ongoing downloading process for the current MySQL instance.
-	lockFilePath := path.Join(driver.binlogDir, binlogDownloadLockFile)
-	_, err := os.Stat(lockFilePath)
-	if err == nil {
-		log.Debug("There's another downloading process. Waiting for the downloading is done.", zap.String("binlogDir", driver.binlogDir))
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				if _, err := os.Stat(lockFilePath); err != nil {
-					if os.IsNotExist(err) {
-						return nil
-					}
-					log.Error("Failed to check the lock file", zap.String("path", lockFilePath), zap.Error(err))
-					return fmt.Errorf("failed to check the lock file %q, error: %w", lockFilePath, err)
-				}
-			case <-ctx.Done():
-				log.Error("Interrupted from waiting for another binlog downloading process", zap.String("binlogDir", driver.binlogDir))
-				return fmt.Errorf("interrupted from waiting for another binlog downloading process in binlogDir %q", driver.binlogDir)
-			}
-		}
+	muBinlogFile.Lock()
+	if _, ok := binlogFileTasks[driver.connectionCtx.InstanceName]; ok {
+		log.Debug("There is another binlog file downloading process for this instance, skip downloading", zap.String("instance", driver.connectionCtx.InstanceName))
+		muBinlogFile.Unlock()
+		return nil
 	}
-	if !os.IsNotExist(err) {
-		log.Error("Failed to check the lock file", zap.String("path", lockFilePath), zap.Error(err))
-		return fmt.Errorf("failed to check the lock file %q, error: %w", lockFilePath, err)
-	}
-	if _, err := os.Create(lockFilePath); err != nil {
-		log.Error("Failed to create the lock file", zap.String("path", lockFilePath), zap.Error(err))
-		return fmt.Errorf("failed to create the lock file %q, error: %w", lockFilePath, err)
-	}
+	binlogFileTasks[driver.connectionCtx.InstanceName] = true
+	muBinlogFile.Unlock()
 	defer func() {
-		log.Debug("Removing binlog downloading lock file", zap.String("path", lockFilePath))
-		_ = os.Remove(lockFilePath)
+		muBinlogFile.Lock()
+		delete(binlogFileTasks, driver.connectionCtx.InstanceName)
+		muBinlogFile.Unlock()
 	}()
-	log.Debug("Successfully got binlog downloading lock", zap.String("binlogDir", driver.binlogDir))
 
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
