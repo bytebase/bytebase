@@ -19,7 +19,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
-const apiURL = "https://api.github.com"
+const (
+	// apiURL is the API URL.
+	apiURL = "https://api.github.com"
+	// apiPageSize is the default page size when making API requests.
+	apiPageSize = 100
+)
 
 func init() {
 	vcs.Register(vcs.GitHubCom, newProvider)
@@ -69,6 +74,14 @@ type RepositoryCollaborator struct {
 type User struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+// Repository represents a GitHub API response for a repository.
+type Repository struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	FullName string `json:"full_name"`
+	HTMLURL  string `json:"html_url"`
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
@@ -193,6 +206,8 @@ func getRoleAndMappedRole(roleName string) (githubRole RepositoryRole, bytebaseR
 }
 
 // FetchRepositoryActiveMemberList fetch all active members of a repository
+//
+// Docs: https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators
 func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string) ([]*vcs.RepositoryMember, error) {
 	var allCollaborators []RepositoryCollaborator
 	page := 1
@@ -246,7 +261,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // in given page. It return the paginated results along with a boolean
 // indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
-	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=100", apiURL, repositoryID, page)
+	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", apiURL, repositoryID, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -344,9 +359,85 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, _ string, oauthExchan
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchAllRepositoryList fetches all repositories where the authenticated user has a maintainer role.
-func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
-	return nil, errors.New("not implemented yet")
+// FetchAllRepositoryList fetches all repositories where the authenticated user
+// has a owner role, which is required to create webhook in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user
+func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, _ string) ([]*vcs.Repository, error) {
+	var githubRepos []Repository
+	page := 1
+	for {
+		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		githubRepos = append(githubRepos, repos...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	var allRepos []*vcs.Repository
+	for _, r := range githubRepos {
+		allRepos = append(allRepos,
+			&vcs.Repository{
+				ID:       r.ID,
+				Name:     r.Name,
+				FullPath: r.FullName,
+				WebURL:   r.HTMLURL,
+			},
+		)
+	}
+	return allRepos, nil
+}
+
+// fetchPaginatedRepositoryList fetches repositories where the authenticated
+// user has a owner role in given page. It return the paginated results along
+// with a boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, page int) (repos []Repository, hasNextPage bool, err error) {
+	// We will use user's token to create webhook in the project, which requires the
+	// token owner to be at least the project maintainer(40).
+	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", apiURL, page, apiPageSize)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from URL %s", url))
+	} else if code >= 300 {
+		return nil, false,
+			fmt.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	if err := json.Unmarshal([]byte(body), &repos); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal")
+	}
+
+	// NOTE: We deliberately choose to not use the Link header for checking the next
+	// page to avoid introducing a new dependency, see
+	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
+	// discussion.
+	return repos, len(repos) >= 100, nil
 }
 
 // FetchRepositoryFileList fetch the files from repository tree
