@@ -52,7 +52,7 @@ const (
 )
 
 var (
-	binlogFileTasks = make(map[string]bool)
+	binlogFileTasks = make(map[int]bool)
 	muBinlogFile    sync.Mutex
 )
 
@@ -98,9 +98,10 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 // SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string) {
+func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string, instanceID int) {
 	driver.mysqlutil = mysqlutilInstance
 	driver.binlogDir = binlogDir
+	driver.instanceID = instanceID
 }
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.
@@ -541,16 +542,16 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 	// Ensure that there's at most one ongoing downloading process for the current MySQL instance.
 	muBinlogFile.Lock()
-	if _, ok := binlogFileTasks[driver.connectionCtx.InstanceName]; ok {
+	if _, ok := binlogFileTasks[driver.instanceID]; ok {
 		log.Debug("There is another binlog file downloading process for this instance, skip downloading", zap.String("instance", driver.connectionCtx.InstanceName))
 		muBinlogFile.Unlock()
 		return nil
 	}
-	binlogFileTasks[driver.connectionCtx.InstanceName] = true
+	binlogFileTasks[driver.instanceID] = true
 	muBinlogFile.Unlock()
 	defer func() {
 		muBinlogFile.Lock()
-		delete(binlogFileTasks, driver.connectionCtx.InstanceName)
+		delete(binlogFileTasks, driver.instanceID)
 		muBinlogFile.Unlock()
 	}()
 

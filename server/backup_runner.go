@@ -70,6 +70,10 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 		log.Error("Failed to retrieve instance list", zap.Error(err))
 		return
 	}
+	downloadTimeout := s.backupRunnerInterval / 2
+	if downloadTimeout < time.Minute {
+		downloadTimeout = time.Minute
+	}
 	for _, instance := range instanceList {
 		if instance.Engine == db.MySQL && instance.RowStatus == api.Normal {
 			log.Debug("Checking if any databases of instance enables backup plan policy", zap.String("instance", instance.Name))
@@ -82,7 +86,10 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 				log.Debug("No database in instance enables backup plan policy, skip instance", zap.String("instance", instance.Name))
 				continue
 			}
-			go downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
+			// We do not cancel ctxDownload explicitly, because the downloading goroutine may run for a while after this function returns.
+			// nolint
+			ctxDownload, _ := context.WithTimeout(ctx, downloadTimeout)
+			go downloadBinlogFilesForInstance(ctxDownload, instance, s.server.profile.DataDir, s.server.mysqlutil)
 		}
 	}
 }
@@ -110,7 +117,7 @@ func downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance,
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
+	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir, instance.ID)
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
