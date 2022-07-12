@@ -241,7 +241,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
 					}
 					if peerSchema != schemaBuf.String() {
-						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name)
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
 					}
 				}
 			}
