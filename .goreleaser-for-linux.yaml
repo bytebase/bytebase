@@ -74,29 +74,5 @@ archives:
       darwin: Darwin
       linux: Linux
       amd64: x86_64
-checksum:
-  name_template: "checksums.txt"
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-release:
-  draft: true
-  mode: append
-  name_template: "Release {{.Tag}}"
-  header: |
-    # What's Changed
-
-    ## 🚀 Features
-
-    ## 🎄 Enhancements
-
-    ## 🎠 Community
-
-    ## New Contributors
-
-    ## Code Diff
