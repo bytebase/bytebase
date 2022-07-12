@@ -19,7 +19,12 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs/internal/oauth"
 )
 
-const apiURL = "https://api.github.com"
+const (
+	// apiURL is the API URL.
+	apiURL = "https://api.github.com"
+	// apiPageSize is the default page size when making API requests.
+	apiPageSize = 100
+)
 
 func init() {
 	vcs.Register(vcs.GitHubCom, newProvider)
@@ -256,7 +261,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 // in given page. It return the paginated results along with a boolean
 // indicating whether the next page exists.
 func (p *Provider) fetchPaginatedRepositoryCollaborators(ctx context.Context, oauthCtx common.OauthContext, repositoryID string, page int) (collaborators []RepositoryCollaborator, hasNextPage bool, err error) {
-	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=100", apiURL, repositoryID, page)
+	url := fmt.Sprintf("%s/repos/%s/collaborators?page=%d&per_page=%d", apiURL, repositoryID, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -394,7 +399,7 @@ func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.O
 func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, page int) (repos []Repository, hasNextPage bool, err error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=100", apiURL, page)
+	url := fmt.Sprintf("%s/user/repos?affiliation=owner&page=%d&per_page=%d", apiURL, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
