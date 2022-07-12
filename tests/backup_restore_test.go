@@ -10,7 +10,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -417,11 +416,6 @@ func TestPITR(t *testing.T) {
 	})
 
 	t.Run("Case Sensitive", func(t *testing.T) {
-		// TODO(zp): This test currently only passes correctly on the linux platform, and fails on non-case-sensitive platforms such as MacOS.
-		// This if block will be removed after the fix is complete.
-		if runtime.GOOS != "linux" {
-			return
-		}
 		t.Log(t.Name())
 		databaseName := "CASE_sensitive"
 
