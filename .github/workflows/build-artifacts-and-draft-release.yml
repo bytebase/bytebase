@@ -94,7 +94,7 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-        run: mkdir ./binaries
+      - run: mkdir ./binaries
       - name: Download linux binaries
         uses: actions/download-artifact@v3
         with:
