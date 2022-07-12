@@ -18,15 +18,24 @@ builds:
     env:
       - VERSION="development"
       - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
       - arm64
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CC=aarch64-linux-gnu-gcc
+      - goos: linux
+        goarch: amd64
+        env:
+          - CC=gcc
   - id: cli
     main: ./bin/bb
     binary: bb
@@ -42,15 +51,24 @@ builds:
     env:
       - VERSION="development"
       - GO_VERSION="1.16.5"
+      - CGO_ENABLED=1
       - GIT_COMMIT="unknown"
       - BUILD_TIME="unknown"
       - BUILD_USER="unknown"
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
       - arm64
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CC=aarch64-linux-gnu-gcc
+      - goos: linux
+        goarch: amd64
+        env:
+          - CC=gcc
 archives:
   - replacements:
       darwin: Darwin
