@@ -60,14 +60,26 @@ const docTemplate = `{
                             "TiDB"
                         ],
                         "type": "string",
-                        "description": "The database type. Required if the database id is not specified.",
+                        "description": "The database type. Required if the port, host and database name is not specified.",
                         "name": "databaseType",
                         "in": "query"
                     },
                     {
-                        "type": "number",
-                        "description": "The database id in your instance.",
-                        "name": "databaseID",
+                        "type": "string",
+                        "description": "The instance host.",
+                        "name": "host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The instance port.",
+                        "name": "port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The database name in the instance.",
+                        "name": "databaseName",
                         "in": "query"
                     }
                 ],

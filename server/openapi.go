@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -41,8 +40,10 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Produce  json
 // @Param  environment   query  string  true   "The environment name. Case sensitive."
 // @Param  statement     query  string  true   "The SQL statement."
-// @Param  databaseType  query  string  false  "The database type. Required if the database id is not specified."  Enums(MySQL, PostgreSQL, TiDB)
-// @Param  databaseID    query  number  false  "The database id in your instance."
+// @Param  databaseType  query  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MySQL, PostgreSQL, TiDB)
+// @Param  host          query  string  false  "The instance host."
+// @Param  port          query  string  false  "The instance port."
+// @Param  databaseName  query  string  false  "The database name in the instance."
 // @Success  200  {array}   advisor.Advice
 // @Failure  400  {object}  echo.HTTPError
 // @Failure  500  {object}  echo.HTTPError
@@ -59,29 +60,20 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	databaseID := c.QueryParams().Get("databaseID")
-
 	var dbType db.Type
 	var catalog catalog.Catalog = &catalogService{}
 
-	if databaseID != "" {
-		id, err := strconv.Atoi(databaseID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid database ID: %v", databaseID)).SetInternal(err)
-		}
+	databaseName := c.QueryParams().Get("databaseName")
+	host := c.QueryParams().Get("host")
+	port := c.QueryParams().Get("port")
 
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{
-			ID: &id,
-		})
+	if databaseName != "" && host != "" && port != "" {
+		database, err := s.findDatabase(ctx, host, port, databaseName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by ID: %v", databaseID)).SetInternal(err)
+			return err
 		}
-		if database == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Cannot find the database by ID: %v", databaseID))
-		}
-
 		dbType = database.Instance.Engine
-		catalog = store.NewCatalog(&id, s.store)
+		catalog = store.NewCatalog(&database.ID, s.store)
 	} else {
 		databaseType := c.QueryParams().Get("databaseType")
 		if databaseType == "" {
@@ -130,4 +122,35 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, adviceList)
+}
+
+func (s *Server) findDatabase(ctx context.Context, host string, port string, databaseName string) (*api.Database, error) {
+	instanceList, err := s.store.FindInstance(ctx, &api.InstanceFind{
+		Host: &host,
+		Port: &port,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance by host: %v, port: %v", host, port)).SetInternal(err)
+	}
+	if len(instanceList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find instance with host: %v, port: %v", host, port))
+	}
+
+	var instanceIDList []int
+	for _, instance := range instanceList {
+		instanceIDList = append(instanceIDList, instance.ID)
+	}
+
+	databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+		Name:           &databaseName,
+		InstanceIDList: &instanceIDList,
+	})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by name %v", databaseName)).SetInternal(err)
+	}
+	if len(databaseList) == 0 {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find database %v in instance %v:%v", databaseName, host, port))
+	}
+
+	return databaseList[0], nil
 }

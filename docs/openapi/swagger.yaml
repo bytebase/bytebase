@@ -48,7 +48,8 @@ paths:
         name: statement
         required: true
         type: string
-      - description: The database type. Required if the database id is not specified.
+      - description: The database type. Required if the port, host and database name
+          is not specified.
         enum:
         - MySQL
         - PostgreSQL
@@ -56,10 +57,18 @@ paths:
         in: query
         name: databaseType
         type: string
-      - description: The database id in your instance.
+      - description: The instance host.
         in: query
-        name: databaseID
-        type: number
+        name: host
+        type: string
+      - description: The instance port.
+        in: query
+        name: port
+        type: string
+      - description: The database name in the instance.
+        in: query
+        name: databaseName
+        type: string
       produces:
       - application/json
       responses:
