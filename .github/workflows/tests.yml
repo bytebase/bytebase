@@ -51,7 +51,7 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-      - name: Install cross-compiler for linux arm64
+      - name: Install cross-compiler for linux/arm64
         run: sudo apt-get -y install gcc-aarch64-linux-gnu
       - name: Release dry-run
         uses: goreleaser/goreleaser-action@v2
@@ -87,11 +87,6 @@ jobs:
           args: release --skip-publish --config .goreleaser-for-darwin.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload assets
-        uses: actions/upload-artifact@v3
-        with:
-          name: bytebase
-          path: dist/*
 
   go-tests:
     strategy:
