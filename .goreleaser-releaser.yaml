@@ -1,0 +1,26 @@
+checksum:
+  name_template: "checksums.txt"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+release:
+  draft: true
+  mode: append
+  extra_files:
+    - glob: ./binaries/*
+  name_template: "Release {{.Tag}}"
+  header: |
+    # What's Changed
+
+    ## 🚀 Features
+
+    ## 🎄 Enhancements
+
+    ## 🎠 Community
+
+    ## New Contributors
+
+    ## Code Diff
