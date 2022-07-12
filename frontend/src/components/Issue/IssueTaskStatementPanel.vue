@@ -114,7 +114,7 @@
         {{ $t("issue.edit-sql-statement-in-vcs") }}
       </div>
 
-      <div class="flex justify-end pt-4 px-4 gap-x-2">
+      <div class="flex justify-end pt-4 gap-x-2">
         <button
           type="button"
           class="btn-normal"
