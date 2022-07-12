@@ -20,6 +20,7 @@
           v-if="scopeByPrincipal"
           class="w-72"
           :show-all="true"
+          :show-system-bot="true"
           :selected-id="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
@@ -42,7 +43,6 @@
 
 <script lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { isEmpty } from "lodash-es";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
@@ -54,6 +54,7 @@ import {
   onMounted,
   watchEffect,
   defineComponent,
+  watch,
 } from "vue";
 import { activeEnvironment, isDBAOrOwner, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -128,7 +129,14 @@ export default defineComponent({
         ? EMPTY_ID // default to 'All' if current user is owner or DBA
         : currentUser.value.id; // default to current user otherwise
     };
-    state.selectedPrincipalId = initializeSelectedPrincipalIdFromQuery();
+
+    watch(
+      () => route.query.user,
+      () => {
+        state.selectedPrincipalId = initializeSelectedPrincipalIdFromQuery();
+      },
+      { immediate: true }
+    );
 
     onMounted(() => {
       // Focus on the internal search field when mounted
