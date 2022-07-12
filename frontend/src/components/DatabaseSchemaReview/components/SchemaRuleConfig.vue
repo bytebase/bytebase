@@ -54,7 +54,7 @@
       <div
         v-for="(config, index) in selectedRule.componentList"
         :key="index"
-        class="mb-1"
+        class="mb-4"
       >
         <p class="mb-3">
           {{
@@ -69,6 +69,13 @@
           v-if="config.payload.type == 'STRING'"
           v-model="state.payload[index]"
           type="text"
+          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+          :placeholder="config.payload.default"
+        />
+        <input
+          v-if="config.payload.type == 'NUMBER'"
+          v-model="state.payload[index]"
+          type="number"
           class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
           :placeholder="config.payload.default"
         />
@@ -187,3 +194,17 @@ const getStringPayload = (i: number): string => {
   return state.payload[i] as string;
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>
