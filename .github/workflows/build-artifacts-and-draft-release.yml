@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bytebase-linux
-          path: dist/bytebase-*
+          path: dist/bytebase*
   build-darwin-binary:
     runs-on: macos-latest
     steps:
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bytebase-darwin
-          path: dist/bytebase-*
+          path: dist/bytebase*
   draft-release:
     needs: [build-linux-binary, build-darwin-binary]
     runs-on: ubuntu-latest
