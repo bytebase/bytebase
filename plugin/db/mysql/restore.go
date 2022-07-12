@@ -37,6 +37,17 @@ import (
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
+
+	// Variable lower_case_table_names related.
+
+	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
+	// Name comparisons are case-sensitive.
+	LetterCaseOnDiskLetterCaseCmp = 0
+	// LowerCaseOnDiskLowerCaseCmp stores table names in lowercase on disk and name comparisons are not case-sensitive.
+	LowerCaseOnDiskLowerCaseCmp = 1
+	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+	// Name comparisons are not case-sensitive.
+	LetterCaseOnDiskLowerCaseCmp = 2
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -93,12 +104,35 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		return err
 	}
 
+	caseVariable := "lower_case_table_names"
+	identifierCaseSensitive, err := driver.getServerVariable(ctx, caseVariable)
+	if err != nil {
+		return err
+	}
+
+	identifierCaseSensitiveValue, err := strconv.Atoi(identifierCaseSensitive)
+	if err != nil {
+		return err
+	}
+
+	var originalDBName string
+	switch identifierCaseSensitiveValue {
+	case LetterCaseOnDiskLetterCaseCmp:
+		originalDBName = originalDatabase
+	case LowerCaseOnDiskLowerCaseCmp:
+		originalDBName = strings.ToLower(originalDatabase)
+	case LetterCaseOnDiskLowerCaseCmp:
+		originalDBName = strings.ToLower(originalDatabase)
+	default:
+		return fmt.Errorf("Expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
+	}
+
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
 	mysqlbinlogArgs := []string{
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
-		"--rewrite-db", fmt.Sprintf("%s->%s", originalDatabase, pitrDatabase),
+		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, pitrDatabase),
 		// List entries for just this database. It's applied after the --rewrite-db option, so we should provide the rewritten database, i.e., pitrDatabase.
 		"--database", pitrDatabase,
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
