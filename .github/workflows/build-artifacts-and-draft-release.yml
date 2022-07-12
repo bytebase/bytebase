@@ -113,6 +113,8 @@ jobs:
           cd ../artifacts
           cat ./darwin/bytebase*checksums.txt >> checksums.txt
           cat ./linux/bytebase*checksums.txt >> checksums.txt
+          rm ./darwin/bytebase*checksums.txt
+          rm ./linux/bytebase*checksums.txt
           ls -alR
       - name: Release
         uses: goreleaser/goreleaser-action@v2

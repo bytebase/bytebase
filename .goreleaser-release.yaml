@@ -10,8 +10,7 @@ release:
   draft: true
   mode: append
   extra_files:
-    - glob: ../artifacts/checksums.txt
-    - glob: ../artifacts/*/bytebase*tar.gz
+    - glob: ../artifacts/*
   name_template: "Release {{.Tag}}"
   header: |
     # What's Changed
