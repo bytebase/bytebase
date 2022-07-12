@@ -70,15 +70,15 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 		return
 	}
 	for _, instance := range instanceList {
-		if instance.Engine == db.MySQL {
-			log.Debug("Checking backup policy for environment of instance", zap.String("instance", instance.Name), zap.String("environment", instance.Environment.Name))
-			backupPolicy, err := s.server.store.GetBackupPlanPolicyByEnvID(ctx, instance.EnvironmentID)
+		if instance.Engine == db.MySQL && instance.RowStatus == api.Normal {
+			log.Debug("Checking if any databases of instance enables backup plan policy", zap.String("instance", instance.Name))
+			enabled, err := s.server.store.SomeDatabaseEnablesBackupPolicyInInstance(ctx, instance.ID)
 			if err != nil {
-				log.Error("Failed to get backup plan policy for environment of instance")
+				log.Error("Failed to get backup plan policy for databases of instance", zap.Error(err))
 				continue
 			}
-			if backupPolicy.Schedule == api.BackupPlanPolicyScheduleUnset {
-				log.Debug("Skip instance because of UNSET backup policy")
+			if !enabled {
+				log.Debug("No database in instance enables backup plan policy, skip instance", zap.String("instance", instance.Name))
 				continue
 			}
 
