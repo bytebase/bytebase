@@ -41,14 +41,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "The environment name. Case sensitive",
+                        "description": "The environment name. Case sensitive.",
                         "name": "environment",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "The SQL statement",
+                        "description": "The SQL statement.",
                         "name": "statement",
                         "in": "query",
                         "required": true
@@ -60,10 +60,27 @@ const docTemplate = `{
                             "TiDB"
                         ],
                         "type": "string",
-                        "description": "The database type",
+                        "description": "The database type. Required if the port, host and database name is not specified.",
                         "name": "databaseType",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The instance host.",
+                        "name": "host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The instance port.",
+                        "name": "port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The database name in the instance.",
+                        "name": "databaseName",
+                        "in": "query"
                     }
                 ],
                 "responses": {
