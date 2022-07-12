@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
@@ -81,35 +82,38 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 				log.Debug("No database in instance enables backup plan policy, skip instance", zap.String("instance", instance.Name))
 				continue
 			}
-
-			log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
-			driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
-			if err != nil {
-				if common.ErrorCode(err) == common.DbConnectionFailure {
-					log.Debug("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
-					continue
-				}
-				log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
-				continue
-			}
-			defer driver.Close(ctx)
-
-			binlogDir := getBinlogAbsDir(s.server.profile.DataDir, instance.ID)
-			if err := createBinlogDir(s.server.profile.DataDir, instance.ID); err != nil {
-				log.Error("Failed to create binlog directory", zap.Error(err))
-				return
-			}
-			mysqlDriver, ok := driver.(*mysql.Driver)
-			if !ok {
-				log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
-				return
-			}
-			mysqlDriver.SetUpForPITR(s.server.mysqlutil, binlogDir)
-			if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
-				log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
-				continue
-			}
+			go downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
 		}
+	}
+}
+
+func downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
+	if err != nil {
+		if common.ErrorCode(err) == common.DbConnectionFailure {
+			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+			return
+		}
+		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
+		return
+	}
+	defer driver.Close(ctx)
+
+	binlogDir := getBinlogAbsDir(dataDir, instance.ID)
+	if err := createBinlogDir(dataDir, instance.ID); err != nil {
+		log.Error("Failed to create binlog directory", zap.Error(err))
+		return
+	}
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	if !ok {
+		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
+		return
+	}
+	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
+		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
+		return
 	}
 }
 
