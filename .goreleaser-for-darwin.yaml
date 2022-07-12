@@ -2,7 +2,7 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - id: server-linux-amd64
+  - id: server
     main: ./bin/server
     binary: bytebase
     ldflags:

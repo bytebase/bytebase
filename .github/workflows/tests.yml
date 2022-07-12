@@ -103,6 +103,11 @@ jobs:
           args: release --skip-publish --config .goreleaser-for-darwin.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: bytebase
+          path: dist/*
 
   go-tests:
     strategy:
