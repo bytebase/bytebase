@@ -109,12 +109,12 @@
     :title="$t('issue.edit-sql-statement')"
     @close="state.showVCSGuideModal = false"
   >
-    <div class="space-y-4 max-w-[32rem]">
+    <div class="space-y-4 max-w-[32rem] divide-y divide-block-border">
       <div class="whitespace-pre-wrap">
         {{ $t("issue.edit-sql-statement-in-vcs") }}
       </div>
 
-      <div class="flex justify-end px-4 gap-x-2">
+      <div class="flex justify-end pt-4 px-4 gap-x-2">
         <button
           type="button"
           class="btn-normal"
