@@ -43,7 +43,6 @@
 
 <script lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { isEmpty } from "lodash-es";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
