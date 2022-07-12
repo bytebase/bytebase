@@ -69,6 +69,85 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 }
 
 func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
+	t.Run("missing public email", func(t *testing.T) {
+		p := newProvider(
+			vcs.ProviderConfig{
+				Client: &http.Client{
+					Transport: &common.MockRoundTripper{
+						MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+							switch r.URL.Path {
+							case "/api/v4/projects/1/members/all":
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									// Example response derived from https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project-including-inherited-and-invited-members
+									Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "id": 1,
+    "username": "raymond_smith",
+    "name": "Raymond Smith",
+    "state": "active",
+    "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+    "web_url": "http://192.168.1.8:3000/root",
+    "created_at": "2012-09-22T14:13:35Z",
+    "created_by": {
+      "id": 2,
+      "username": "john_doe",
+      "name": "John Doe",
+      "state": "active",
+      "avatar_url": "https://www.gravatar.com/avatar/c2525a7f58ae3776070e44c106c48e15?s=80&d=identicon",
+      "web_url": "http://192.168.1.8:3000/root"
+    },
+    "expires_at": "2012-10-22T14:13:35Z",
+    "access_level": 30,
+    "group_saml_identity": null,
+    "membership_state": "active"
+  }
+]
+`)),
+								}, nil
+							case "/api/v4/users/1":
+								return &http.Response{
+									StatusCode: http.StatusOK,
+									// Example response derived from https://docs.gitlab.com/ee/api/users.html#single-user
+									Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 1,
+  "username": "john_smith",
+  "name": "John Smith",
+  "state": "active",
+  "avatar_url": "http://localhost:3000/uploads/user/avatar/1/cd8.jpeg",
+  "web_url": "http://localhost:3000/john_smith",
+  "created_at": "2012-05-23T08:00:58Z",
+  "bio": "",
+  "bot": false,
+  "location": null,
+  "public_email": "",
+  "skype": "",
+  "linkedin": "",
+  "twitter": "",
+  "website_url": "",
+  "organization": "",
+  "job_title": "Operations Specialist",
+  "followers": 1,
+  "following": 1
+}
+`)),
+								}, nil
+							}
+							return nil, errors.Errorf("unexpected request path: %s", r.URL.Path)
+						},
+					},
+				},
+			},
+		)
+
+		ctx := context.Background()
+		_, got := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "1")
+		want := "[ Raymond Smith ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile"
+		assert.EqualError(t, got, want)
+	})
+
 	p := newProvider(
 		vcs.ProviderConfig{
 			Client: &http.Client{
@@ -171,7 +250,6 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "1")
 	require.NoError(t, err)
 
-	// Non-active member should be excluded
 	want := []*vcs.RepositoryMember{
 		{
 			Email:        "john@example.com",
@@ -289,6 +367,69 @@ func TestProvider_ExchangeOAuthToken(t *testing.T) {
 		ExpiresIn:    7200,
 		CreatedAt:    1607635748,
 		ExpiresTs:    1607642948,
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_FetchAllRepositoryList(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#list-all-projects
+							Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "id": 4,
+    "description": null,
+    "default_branch": "master",
+    "ssh_url_to_repo": "git@example.com:diaspora/diaspora-client.git",
+    "http_url_to_repo": "http://example.com/diaspora/diaspora-client.git",
+    "web_url": "http://example.com/diaspora/diaspora-client",
+    "readme_url": "http://example.com/diaspora/diaspora-client/blob/master/README.md",
+    "tag_list": [
+      "example",
+      "disapora client"
+    ],
+    "topics": [
+      "example",
+      "disapora client"
+    ],
+    "name": "Diaspora Client",
+    "name_with_namespace": "Diaspora / Diaspora Client",
+    "path": "diaspora-client",
+    "path_with_namespace": "diaspora/diaspora-client",
+    "created_at": "2013-09-30T13:46:02Z",
+    "last_activity_at": "2013-09-30T13:46:02Z",
+    "forks_count": 0,
+    "avatar_url": "http://example.com/uploads/project/avatar/4/uploads/avatar.png",
+    "star_count": 0
+  }
+]
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, "")
+	require.NoError(t, err)
+
+	// Non-active member should be excluded
+	want := []*vcs.Repository{
+		{
+			ID:       4,
+			Name:     "Diaspora Client",
+			FullPath: "diaspora/diaspora-client",
+			WebURL:   "http://example.com/diaspora/diaspora-client",
+		},
 	}
 	assert.Equal(t, want, got)
 }

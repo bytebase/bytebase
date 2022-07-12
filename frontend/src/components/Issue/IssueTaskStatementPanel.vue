@@ -72,6 +72,19 @@
             {{ $t("common.save") }}
           </button>
         </template>
+        <template v-if="issue.project.workflowType === 'VCS'">
+          <!--
+            Show a virtual pencil icon in VCS workflow which opens a guide
+            when clicked.
+          -->
+          <button
+            type="button"
+            class="btn-icon"
+            @click.prevent="state.showVCSGuideModal = true"
+          >
+            <heroicons-solid:pencil class="h-5 w-5" />
+          </button>
+        </template>
       </template>
     </div>
   </div>
@@ -90,6 +103,32 @@
       @ready="handleMonacoEditorReady"
     />
   </div>
+
+  <BBModal
+    v-if="state.showVCSGuideModal"
+    :title="$t('issue.edit-sql-statement')"
+    @close="state.showVCSGuideModal = false"
+  >
+    <div class="space-y-4 max-w-[32rem] divide-y divide-block-border">
+      <div class="whitespace-pre-wrap">
+        {{ $t("issue.edit-sql-statement-in-vcs") }}
+      </div>
+
+      <div class="flex justify-end pt-4 gap-x-2">
+        <button
+          type="button"
+          class="btn-normal"
+          @click.prevent="state.showVCSGuideModal = false"
+        >
+          {{ $t("common.cancel") }}
+        </button>
+
+        <button type="button" class="btn-primary" @click.prevent="goToVCS">
+          {{ $t("common.go-now") }}
+        </button>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts">
@@ -100,14 +139,17 @@ import {
   defineComponent,
   computed,
   ref,
+  Ref,
 } from "vue";
-import { useTableStore, useUIStateStore } from "@/store";
+import { useRepositoryStore, useTableStore, useUIStateStore } from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
+import { baseDirectoryWebUrl, Issue, Repository } from "@/types";
 
 interface LocalState {
   editing: boolean;
   editStatement: string;
+  showVCSGuideModal: boolean;
 }
 
 const EDITOR_MIN_HEIGHT = {
@@ -129,6 +171,7 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     const {
+      issue,
       create,
       allowEditStatement,
       selectedStatement: statement,
@@ -142,6 +185,7 @@ export default defineComponent({
     const state = reactive<LocalState>({
       editing: false,
       editStatement: statement.value,
+      showVCSGuideModal: false,
     });
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
@@ -224,7 +268,19 @@ export default defineComponent({
       updateEditorHeight();
     };
 
+    const goToVCS = () => {
+      const issueEntity = issue.value as Issue;
+      useRepositoryStore()
+        .fetchRepositoryByProjectId(issueEntity.project.id)
+        .then((repository: Repository) => {
+          window.open(baseDirectoryWebUrl(repository), "_blank");
+
+          state.showVCSGuideModal = false;
+        });
+    };
+
     return {
+      issue: issue as Ref<Issue>,
       create,
       allowEditStatement,
       statement,
@@ -238,6 +294,7 @@ export default defineComponent({
       saveEdit,
       cancelEdit,
       onStatementChange,
+      goToVCS,
       handleMonacoEditorReady,
     };
   },

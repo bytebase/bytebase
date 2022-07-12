@@ -26,6 +26,8 @@ const (
 
 	// apiPath is the API path.
 	apiPath = "api/v4"
+	// apiPageSize is the default page size when making API requests.
+	apiPageSize = 100
 )
 
 var _ vcs.Provider = (*Provider)(nil)
@@ -154,7 +156,7 @@ type RepositoryMember struct {
 	AccessLevel int32     `json:"access_level"`
 }
 
-// gitLabRepository is the API message for repository in GitLab
+// gitLabRepository represents a GitLab API response for a repository.
 type gitLabRepository struct {
 	ID                int64  `json:"id"`
 	Name              string `json:"name"`
@@ -251,36 +253,47 @@ func (p *Provider) ExchangeOAuthToken(ctx context.Context, instanceURL string, o
 	return oauthResp.toVCSOAuthToken(), nil
 }
 
-// FetchAllRepositoryList fetches all repositories where the authenticated user has a maintainer role.
+// FetchAllRepositoryList fetches all repositories where the authenticated user
+// has a maintainer role, which is required to create webhook in the project.
+//
+// Docs: https://docs.gitlab.com/ee/api/projects.html#list-all-projects
 func (p *Provider) FetchAllRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string) ([]*vcs.Repository, error) {
-	repoList := []*vcs.Repository{}
-	// page is the current requesting page index, starts from 1.
-	// perPage is the number of items to list per page (default: 20, max: 100).
-	// refer: https://docs.gitlab.com/ee/api/#offset-based-pagination
+	var gitlabRepos []gitLabRepository
 	page := 1
-	perPage := 40
-
 	for {
-		temp, err := p.fetchOffsetRepositoryList(ctx, oauthCtx, instanceURL, page, perPage)
+		repos, hasNextPage, err := p.fetchPaginatedRepositoryList(ctx, oauthCtx, instanceURL, page)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "fetch paginated list")
 		}
+		gitlabRepos = append(gitlabRepos, repos...)
 
-		repoList = append(repoList, temp...)
-		if len(temp) < perPage {
+		if !hasNextPage {
 			break
 		}
 		page++
 	}
 
-	return repoList, nil
+	var allRepos []*vcs.Repository
+	for _, r := range gitlabRepos {
+		allRepos = append(allRepos,
+			&vcs.Repository{
+				ID:       r.ID,
+				Name:     r.Name,
+				FullPath: r.PathWithNamespace,
+				WebURL:   r.WebURL,
+			},
+		)
+	}
+	return allRepos, nil
 }
 
-// fetchOffsetRepositoryList fetches repositories at page `page` with `perPage` items per page.
-func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page, perPage int) ([]*vcs.Repository, error) {
+// fetchPaginatedRepositoryList fetches repositories where the authenticated
+// user has a maintainer role in given page. It return the paginated results
+// along with a boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, page int) (repos []gitLabRepository, hasNextPage bool, err error) {
 	// We will use user's token to create webhook in the project, which requires the
 	// token owner to be at least the project maintainer(40).
-	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, perPage)
+	url := fmt.Sprintf("%s/projects?membership=true&simple=true&min_access_level=40&page=%d&per_page=%d", p.APIURL(instanceURL), page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -297,35 +310,29 @@ func (p *Provider) fetchOffsetRepositoryList(ctx context.Context, oauthCtx commo
 		),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "GET")
+		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("repository list for GitLab instance %s not found", instanceURL))
+		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read repository list from GitLab instance %s, status code: %d",
-			instanceURL,
-			code,
-		)
+		return nil, false,
+			fmt.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
 	}
 
-	var gitlabRepos []gitLabRepository
-	if err := json.Unmarshal([]byte(body), &gitlabRepos); err != nil {
-		return nil, errors.Wrap(err, "unmarshal")
+	if err := json.Unmarshal([]byte(body), &repos); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal")
 	}
 
-	var repos []*vcs.Repository
-	for _, r := range gitlabRepos {
-		repo := &vcs.Repository{
-			ID:       r.ID,
-			Name:     r.Name,
-			FullPath: r.PathWithNamespace,
-			WebURL:   r.WebURL,
-		}
-		repos = append(repos, repo)
-	}
-
-	return repos, nil
+	// NOTE: We deliberately choose to not use the Link header for checking the next
+	// page to avoid introducing a new dependency, see
+	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
+	// discussion.
+	return repos, len(repos) >= 100, nil
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
@@ -466,7 +473,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		page++
 	}
 
-	var emptyEmailUserIDList []string
+	var emptyEmailUserList []string
 	var activeMembers []*vcs.RepositoryMember
 	for _, m := range allMembers {
 		// We only want active member (both state and membership_state is active)
@@ -488,7 +495,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		}
 
 		if m.Email == "" {
-			emptyEmailUserIDList = append(emptyEmailUserIDList, m.Name)
+			emptyEmailUserList = append(emptyEmailUserList, m.Name)
 			continue
 		}
 
@@ -506,8 +513,8 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 		)
 	}
 
-	if len(emptyEmailUserIDList) != 0 {
-		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserIDList, ", "))
+	if len(emptyEmailUserList) != 0 {
+		return nil, fmt.Errorf("[ %v ] did not configure their public email in GitLab, please make sure every members' public email is configured before syncing, see https://docs.gitlab.com/ee/user/profile", strings.Join(emptyEmailUserList, ", "))
 	}
 
 	return activeMembers, nil
@@ -519,7 +526,7 @@ func (p *Provider) FetchRepositoryActiveMemberList(ctx context.Context, oauthCtx
 func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, page int) (members []RepositoryMember, hasNextPage bool, err error) {
 	// The "state" filter only available in GitLab Premium self-managed, GitLab
 	// Premium SaaS, and higher tiers, but worth a try for less abandoned results.
-	url := fmt.Sprintf("%s/projects/%s/members/all?state=active&page=%d&per_page=100", p.APIURL(instanceURL), repositoryID, page)
+	url := fmt.Sprintf("%s/projects/%s/members/all?state=active&page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -543,7 +550,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", url))
 	} else if code >= 300 {
 		return nil, false,
-			fmt.Errorf("failed to read repository members from URL %s, status code: %d, body: %s",
+			fmt.Errorf("failed to fetch repository members from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
