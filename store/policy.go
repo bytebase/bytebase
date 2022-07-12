@@ -166,25 +166,20 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 
 // SomeDatabaseEnablesBackupPolicyInInstance returns whether at least one of the databases in the given instance enables backup policy.
 func (s *Store) SomeDatabaseEnablesBackupPolicyInInstance(ctx context.Context, instanceID int) (bool, error) {
-	rows, err := s.db.db.QueryContext(ctx, `
+	var id int
+	if err := s.db.db.QueryRowContext(ctx, `
 		SELECT db.id
 		FROM db
-		JOIN instance ON db.id = instance.id
+		JOIN instance ON db.instance_id = instance.id
 		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true
-	`)
-	if err != nil {
+		WHERE bs.enabled = true AND instance.id = $1
+	`, instanceID).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
 		return false, FormatError(err)
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return true, nil
-	}
-	if err := rows.Err(); err != nil {
-		return false, FormatError(err)
-	}
-	return false, nil
+	return true, nil
 }
 
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.

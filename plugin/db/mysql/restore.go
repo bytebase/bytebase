@@ -564,7 +564,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 		log.Debug("No binlog file found on server to download")
 		return nil
 	}
-	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
+	log.Debug("Got sorted binlog file list on server")
 
 	// Read the local binlog files.
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)
