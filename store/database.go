@@ -503,13 +503,6 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 	}
 	if v := find.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
-	} else if v := find.InstanceIDList; v != nil && len(*v) > 0 {
-		var query []string
-		for _, instanceID := range *v {
-			query = append(query, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, instanceID)
-		}
-		where = append(where, fmt.Sprintf("instance_id IN (%s)", strings.Join(query, ",")))
 	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)

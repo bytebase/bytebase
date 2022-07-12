@@ -130,27 +130,24 @@ func (s *Server) findDatabase(ctx context.Context, host string, port string, dat
 		Port: &port,
 	})
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance by host: %v, port: %v", host, port)).SetInternal(err)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find instance by host: %s, port: %s", host, port)).SetInternal(err)
 	}
 	if len(instanceList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find instance with host: %v, port: %v", host, port))
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find instance with host: %s, port: %s", host, port))
 	}
 
-	var instanceIDList []int
 	for _, instance := range instanceList {
-		instanceIDList = append(instanceIDList, instance.ID)
+		databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+			InstanceID: &instance.ID,
+			Name:       &databaseName,
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by name %s in instance %d", databaseName, instance.ID)).SetInternal(err)
+		}
+		if len(databaseList) != 0 {
+			return databaseList[0], nil
+		}
 	}
 
-	databaseList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-		Name:           &databaseName,
-		InstanceIDList: &instanceIDList,
-	})
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to find database by name %v", databaseName)).SetInternal(err)
-	}
-	if len(databaseList) == 0 {
-		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find database %v in instance %v:%v", databaseName, host, port))
-	}
-
-	return databaseList[0], nil
+	return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Cannot find database %s in instance %s:%s", databaseName, host, port))
 }

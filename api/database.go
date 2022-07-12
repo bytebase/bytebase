@@ -87,9 +87,8 @@ type DatabaseFind struct {
 	ID *int
 
 	// Related fields
-	ProjectID      *int
-	InstanceID     *int
-	InstanceIDList *[]int
+	ProjectID  *int
+	InstanceID *int
 
 	// Domain specific fields
 	Name               *string
