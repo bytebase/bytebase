@@ -94,25 +94,26 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-      - run: mkdir ./binaries
+      - name: Make directories
+        run: |
+          mkdir -p ../artifacts/linux
+          mkdir -p ../artifacts/darwin
       - name: Download linux binaries
         uses: actions/download-artifact@v3
         with:
           name: bytebase-linux
-          path: ./binaries
+          path: ../artifacts/linux
       - name: Download darwin binaries
         uses: actions/download-artifact@v3
         with:
           name: bytebase-darwin
-          path: ./binaries
-      - name: Extract
+          path: ../artifacts/darwin
+      - name: Merge checksum file
         run: |
-          cd binaries
-          ls -al
-          tar -zxvf bytebase-linux
-          tar -zxvf bytebase-darwin
-          rm bytebase-linux
-          rm bytebase-darwin
+          cd ../artifacts
+          cat ./darwin/bytebase*checksums.txt >> checksums.txt
+          cat ./linux/bytebase*checksums.txt >> checksums.txt
+          ls -alR
       - name: Release
         uses: goreleaser/goreleaser-action@v2
         with:

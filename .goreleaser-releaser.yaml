@@ -1,5 +1,3 @@
-checksum:
-  name_template: "checksums.txt"
 changelog:
   sort: asc
   filters:
@@ -10,7 +8,8 @@ release:
   draft: true
   mode: append
   extra_files:
-    - glob: ./binaries/*
+    - glob: ../artifacts/checksums.txt
+    - glob: ../artifacts/*/bytebase*tar.gz
   name_template: "Release {{.Tag}}"
   header: |
     # What's Changed
