@@ -37,6 +37,17 @@ import (
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
+
+	// Variable lower_case_table_names related.
+
+	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
+	// Name comparisons are case-sensitive.
+	LetterCaseOnDiskLetterCaseCmp = 0
+	// LowerCaseOnDiskLowerCaseCmp stores table names in lowercase on disk and name comparisons are not case-sensitive.
+	LowerCaseOnDiskLowerCaseCmp = 1
+	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+	// Name comparisons are not case-sensitive.
+	LetterCaseOnDiskLowerCaseCmp = 2
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -99,18 +110,18 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		return err
 	}
 
+	identifierCaseSensitiveValue, err := strconv.Atoi(identifierCaseSensitive)
+	if err != nil {
+		return err
+	}
+
 	var originalDBName string
-	switch identifierCaseSensitive {
-	case "0":
-		// Table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
-		// Name comparisons are case-sensitive.
+	switch identifierCaseSensitiveValue {
+	case LetterCaseOnDiskLetterCaseCmp:
 		originalDBName = originalDatabase
-	case "1":
-		// Table names are stored in lowercase on disk and name comparisons are not case-sensitive.
+	case LowerCaseOnDiskLowerCaseCmp:
 		originalDBName = strings.ToLower(originalDatabase)
-	case "2":
-		// Table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
-		// Name comparisons are not case-sensitive.
+	case LetterCaseOnDiskLowerCaseCmp:
 		originalDBName = strings.ToLower(originalDatabase)
 	default:
 		return fmt.Errorf("Expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
