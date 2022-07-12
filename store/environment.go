@@ -237,37 +237,22 @@ func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentP
 
 // createEnvironmentImpl creates a new environment.
 func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *api.EnvironmentCreate) (*environmentRaw, error) {
+	var order int
 	// The order is the MAX(order) + 1
-	row1, err1 := tx.QueryContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 		SELECT "order"
 		FROM environment
 		ORDER BY "order" DESC
 		LIMIT 1
-	`)
-	if err1 != nil {
-		return nil, FormatError(err1)
-	}
-	defer row1.Close()
-
-	var order int
-	var found bool
-	if row1.Next() {
-		if err1 := row1.Scan(
-			&order,
-		); err1 != nil {
-			return nil, FormatError(err1)
+	`).Scan(&order); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
 		}
-		found = true
-	}
-	if err := row1.Err(); err != nil {
 		return nil, FormatError(err)
-	}
-	if !found {
-		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("no environment record found")}
 	}
 
 	// Insert row into database.
-	query2 := `
+	query := `
 		INSERT INTO environment (
 			creator_id,
 			updater_id,
@@ -277,38 +262,28 @@ func (s *Store) createEnvironmentImpl(ctx context.Context, tx *sql.Tx, create *a
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, name, "order"
 	`
-	row2, err2 := tx.QueryContext(ctx, query2,
+	var envRaw environmentRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Name,
 		order+1,
-	)
-
-	if err2 != nil {
-		return nil, FormatError(err2)
-	}
-	defer row2.Close()
-
-	if row2.Next() {
-		var envRaw environmentRaw
-		if err := row2.Scan(
-			&envRaw.ID,
-			&envRaw.RowStatus,
-			&envRaw.CreatorID,
-			&envRaw.CreatedTs,
-			&envRaw.UpdaterID,
-			&envRaw.UpdatedTs,
-			&envRaw.Name,
-			&envRaw.Order,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&envRaw.ID,
+		&envRaw.RowStatus,
+		&envRaw.CreatorID,
+		&envRaw.CreatedTs,
+		&envRaw.UpdaterID,
+		&envRaw.UpdatedTs,
+		&envRaw.Name,
+		&envRaw.Order,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &envRaw, nil
-	}
-	if err := row2.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
+	return &envRaw, nil
 }
 
 func (s *Store) findEnvironmentImpl(ctx context.Context, tx *sql.Tx, find *api.EnvironmentFind) ([]*environmentRaw, error) {
