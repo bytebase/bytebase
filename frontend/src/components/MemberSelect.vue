@@ -84,6 +84,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    showSystemBot: {
+      type: Boolean,
+      default: false,
+    },
     allowedRoleList: {
       default: () => ["OWNER", "DBA", "DEVELOPER"],
       type: Array as PropType<RoleType[]>,
@@ -117,7 +121,7 @@ export default defineComponent({
         });
       // If system bot is the selected ID (e.g. when issue is created by the bot on observing new sql file),
       // Then we add system bot to the list so it can display properly.
-      if (props.selectedId == SYSTEM_BOT_ID) {
+      if (props.selectedId == SYSTEM_BOT_ID || props.showSystemBot) {
         list.unshift(principalStore.principalById(SYSTEM_BOT_ID));
       }
       // If `showAll` is true, we insert a virtual user before the list.

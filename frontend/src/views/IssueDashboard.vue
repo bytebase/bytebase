@@ -20,6 +20,7 @@
           v-if="scopeByPrincipal"
           class="w-72"
           :show-all="true"
+          :show-system-bot="true"
           :selected-id="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
