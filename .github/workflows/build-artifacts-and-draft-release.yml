@@ -108,6 +108,7 @@ jobs:
       - name: Extract
         run: |
           cd binaries
+          ls -al
           tar -zxvf bytebase-linux
           tar -zxvf bytebase-darwin
           rm bytebase-linux
