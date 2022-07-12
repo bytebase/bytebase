@@ -55,6 +55,7 @@ import {
   onMounted,
   watchEffect,
   defineComponent,
+  watch,
 } from "vue";
 import { activeEnvironment, isDBAOrOwner, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
@@ -129,7 +130,14 @@ export default defineComponent({
         ? EMPTY_ID // default to 'All' if current user is owner or DBA
         : currentUser.value.id; // default to current user otherwise
     };
-    state.selectedPrincipalId = initializeSelectedPrincipalIdFromQuery();
+
+    watch(
+      () => route.query.user,
+      () => {
+        state.selectedPrincipalId = initializeSelectedPrincipalIdFromQuery();
+      },
+      { immediate: true }
+    );
 
     onMounted(() => {
       // Focus on the internal search field when mounted
