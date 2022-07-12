@@ -96,21 +96,21 @@ jobs:
           cache: true
       - name: Make directories
         run: |
-          mkdir -p ./artifacts/linux
-          mkdir -p ./artifacts/darwin
+          mkdir -p ./bytebase-build/linux
+          mkdir -p ./bytebase-build/darwin
       - name: Download linux binaries
         uses: actions/download-artifact@v3
         with:
           name: bytebase-linux
-          path: ./artifacts/linux
+          path: ./bytebase-build/linux
       - name: Download darwin binaries
         uses: actions/download-artifact@v3
         with:
           name: bytebase-darwin
-          path: ./artifacts/darwin
+          path: ./bytebase-build/darwin
       - name: Merge checksum file
         run: |
-          cd ./artifacts
+          cd ./bytebase-build
           cat ./darwin/bytebase*checksums.txt >> checksums.txt
           cat ./linux/bytebase*checksums.txt >> checksums.txt
           rm ./darwin/bytebase*checksums.txt
