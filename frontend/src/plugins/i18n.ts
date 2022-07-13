@@ -3,18 +3,18 @@ import { createI18n } from "vue-i18n";
 import { useLocalStorage } from "@vueuse/core";
 
 const localPathPrefix = "../locales/";
+const validLocaleList = ["en-US", "zh-CN"];
 
 const getValidLocale = () => {
-  const validLocales = ["en-US", "zh-CN"];
   const params = new URL(window.location.href).searchParams;
   let locale = params.get("locale") || "";
-  if (validLocales.includes(locale)) {
+  if (validLocaleList.includes(locale)) {
     return locale;
   }
 
   const storage = useLocalStorage("bytebase_options", {}) as any;
-  locale = storage.appearance?.language || "";
-  if (validLocales.includes(locale)) {
+  locale = storage.value?.appearance?.language || "";
+  if (validLocaleList.includes(locale)) {
     return locale;
   }
 
@@ -24,7 +24,7 @@ const getValidLocale = () => {
     // here if we got "en" from localStorage
     locale = "en-US";
   }
-  if (validLocales.includes(locale)) {
+  if (validLocaleList.includes(locale)) {
     return locale;
   }
 
