@@ -414,6 +414,7 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 		create.MigrationHistoryVersion,
 		create.Path,
 	).Scan(
+
 		&backupRaw.ID,
 		&backupRaw.CreatorID,
 		&backupRaw.CreatedTs,
