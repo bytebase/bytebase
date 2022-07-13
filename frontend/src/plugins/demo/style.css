@@ -52,7 +52,7 @@
 }
 
 .bb-hint-wrapper {
-  @apply absolute rounded transition-all cursor-pointer;
+  @apply absolute rounded cursor-pointer;
   z-index: 999999;
   box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px;
 }
