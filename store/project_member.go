@@ -301,7 +301,7 @@ func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMem
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

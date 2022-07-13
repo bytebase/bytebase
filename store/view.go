@@ -159,7 +159,7 @@ func (s *Store) createViewRaw(ctx context.Context, create *api.ViewCreate) (*vie
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

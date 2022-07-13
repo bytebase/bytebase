@@ -230,7 +230,7 @@ func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
