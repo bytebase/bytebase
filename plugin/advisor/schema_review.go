@@ -161,6 +161,11 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
+
+	if nr.MaxLength <= 0 {
+		return nil, 0, fmt.Errorf("invalid length limit in naming rule payload %q", payload)
+	}
+
 	format, err := regexp.Compile(nr.Format)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
@@ -175,6 +180,10 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+	}
+
+	if nr.MaxLength <= 0 {
+		return "", nil, 0, fmt.Errorf("invalid length limit in naming rule payload %q", payload)
 	}
 
 	template := nr.Format
