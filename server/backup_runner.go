@@ -11,21 +11,28 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
+	"github.com/bytebase/bytebase/plugin/db/mysql"
+	"github.com/bytebase/bytebase/resources/mysqlutil"
 	"go.uber.org/zap"
 )
 
 // NewBackupRunner creates a new backup runner.
 func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
-		server:               server,
-		backupRunnerInterval: backupRunnerInterval,
+		server:                    server,
+		backupRunnerInterval:      backupRunnerInterval,
+		downloadBinlogInstanceIDs: make(map[int]bool),
 	}
 }
 
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
-	server               *Server
-	backupRunnerInterval time.Duration
+	server                    *Server
+	backupRunnerInterval      time.Duration
+	downloadBinlogInstanceIDs map[int]bool
+	downloadBinlogWg          sync.WaitGroup
+	downloadBinlogMu          sync.Mutex
 }
 
 // Run is the runner for backup runner.
@@ -51,10 +58,66 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}()
 				s.startAutoBackups(ctx, runningTasks, &mu)
+				s.downloadBinlogFiles(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
+			s.downloadBinlogWg.Wait()
 			return
 		}
+	}
+}
+
+func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
+	instanceList, err := s.server.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
+	if err != nil {
+		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
+		return
+	}
+
+	s.downloadBinlogMu.Lock()
+	defer s.downloadBinlogMu.Unlock()
+	for _, instance := range instanceList {
+		if _, ok := s.downloadBinlogInstanceIDs[instance.ID]; !ok {
+			s.downloadBinlogInstanceIDs[instance.ID] = true
+			go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
+			s.downloadBinlogWg.Add(1)
+		}
+	}
+}
+
+func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
+	defer func() {
+		s.downloadBinlogMu.Lock()
+		delete(s.downloadBinlogInstanceIDs, instance.ID)
+		s.downloadBinlogMu.Unlock()
+		s.downloadBinlogWg.Done()
+	}()
+	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
+	if err != nil {
+		if common.ErrorCode(err) == common.DbConnectionFailure {
+			log.Warn("Cannot connect to instance", zap.String("instance", instance.Name), zap.Error(err))
+			return
+		}
+		log.Error("Failed to get driver for MySQL instance when downloading binlog", zap.String("instance", instance.Name), zap.Error(err))
+		return
+	}
+	defer driver.Close(ctx)
+
+	binlogDir := getBinlogAbsDir(dataDir, instance.ID)
+	if err := createBinlogDir(dataDir, instance.ID); err != nil {
+		log.Error("Failed to create binlog directory", zap.Error(err))
+		return
+	}
+	mysqlDriver, ok := driver.(*mysql.Driver)
+	if !ok {
+		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
+		return
+	}
+	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
+		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
+		return
 	}
 }
 
@@ -147,7 +210,7 @@ func (s *Server) scheduleBackupTask(ctx context.Context, database *api.Database,
 	backupNew, err := s.store.CreateBackup(ctx, backupCreate)
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
-			// Backup already exists for the database.
+			log.Debug("Backup already exists for the database", zap.String("backup", backupName), zap.String("database", database.Name))
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to create backup %q, error: %w", backupName, err)
