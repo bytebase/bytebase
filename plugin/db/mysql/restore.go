@@ -494,7 +494,7 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 }
 
 // Download binlog files on server.
-func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
+func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		log.Debug("No binlog file found on server to download")
 		return nil
@@ -506,6 +506,9 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	}
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
+		if fileOnServer.Name == latestBinlogFileOnServer.Name && !downloadLatestBinlogFile {
+			continue
+		}
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !existLocal {
@@ -532,7 +535,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 }
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
@@ -550,7 +553,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 		return fmt.Errorf("failed to read local binlog files, error: %w", err)
 	}
 
-	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
+	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, downloadLatestBinlogFile)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
