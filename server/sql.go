@@ -754,7 +754,7 @@ func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *ap
 		DatabaseID: database.ID,
 	}
 	if err := store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
-		return fmt.Errorf("failed to sync database for instance: %s. Failed to reset dbExtension info for database: %s. Error %w", database.Instance.Name, database.Name, err)
+		return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to reset dbExtension info. Error %w", database.Instance.Name, database.Name, err)
 	}
 	for _, dbExtension := range schema.ExtensionList {
 		if err := recreateDBExtensionSchema(database, dbExtension); err != nil {
