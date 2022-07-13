@@ -50,7 +50,13 @@
           <p class="py-2 text-gray-400">
             {{ getRuleLocalization(rule.type).description }}
           </p>
-          <ul role="list" class="space-y-4 list-disc list-inside">
+          <ul
+            role="list"
+            :class="[
+              'space-y-2 list-disc list-inside',
+              rule.componentList.length > 0 ? 'mt-3' : '',
+            ]"
+          >
             <li
               v-for="(component, i) in rule.componentList"
               :key="i"
@@ -66,6 +72,7 @@
               <span
                 v-if="
                   component.payload.type === 'STRING' ||
+                  component.payload.type === 'NUMBER' ||
                   component.payload.type === 'TEMPLATE'
                 "
                 class="bg-gray-100 rounded text-sm font-semibold p-2"

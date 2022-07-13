@@ -26,25 +26,31 @@
     },
     "naming-table": {
       "title": "表名命名检查",
-      "description": "限制表名命名风格，默认为小写字母_下划线。",
+      "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
       "component": {
         "name_format": {
           "title": "表命名规则（正则）"
+        },
+        "length_limit": {
+          "title": "长度限制"
         }
       }
     },
     "naming-column": {
       "title": "列名命名检查",
-      "description": "限制列名命名风格，默认为小写字母_下划线。",
+      "description": "限制列名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",
       "component": {
         "name_format": {
           "title": "列命名规则（正则）"
+        },
+        "length_limit": {
+          "title": "长度限制"
         }
       }
     },
     "naming-index-uk": {
       "title": "唯一键命名检查",
-      "description": "限制唯一键命名风格，默认为 uk_<表名>_<主键包含的字段名组合>。",
+      "description": "限制唯一键命名风格和长度，默认为 uk_<表名>_<主键包含的字段名组合>，且不超过 64 个字符。",
       "component": {
         "name_format": {
           "title": "唯一键命名规则",
@@ -52,12 +58,15 @@
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
+        },
+        "length_limit": {
+          "title": "长度限制"
         }
       }
     },
     "naming-index-fk": {
       "title": "外键命名检查",
-      "description": "限制外键命名风格，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>。",
+      "description": "限制外键命名风格和长度，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>，且不超过 64 个字符。",
       "component": {
         "name_format": {
           "title": "外键命名规则",
@@ -67,12 +76,15 @@
             "referenced_table": "被引用的表名",
             "referenced_column": "被引用的字段名"
           }
+        },
+        "length_limit": {
+          "title": "长度限制"
         }
       }
     },
     "naming-index-idx": {
       "title": "索引命名检查",
-      "description": "限制索引命名风格，默认为 idx_<表名>_<索引包含的字段名组合>。",
+      "description": "限制索引命名风格和长度，默认为 idx_<表名>_<索引包含的字段名组合>，且不超过 64 个字符。",
       "component": {
         "name_format": {
           "title": "索引命名规则",
@@ -80,6 +92,9 @@
             "table": "表名",
             "column_list": "索引包含的字段名，通过 _ 连接"
           }
+        },
+        "length_limit": {
+          "title": "长度限制"
         }
       }
     },
