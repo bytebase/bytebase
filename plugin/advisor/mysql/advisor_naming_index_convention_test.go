@@ -11,6 +11,8 @@ import (
 )
 
 func TestNamingIndexConvention(t *testing.T) {
+	invalidIndexName := advisor.RandomString(65)
+
 	tests := []advisor.TestCase{
 		{
 			Statement: "CREATE INDEX idx_tech_book_id_name ON tech_book(id, name)",
@@ -31,6 +33,23 @@ func TestNamingIndexConvention(t *testing.T) {
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
 					Content: "Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `tech_book_id_name`",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf("CREATE INDEX %s ON tech_book(id, name)", invalidIndexName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingIndexConventionMismatch,
+					Title:   "naming.index.idx",
+					Content: fmt.Sprintf("Index in table `tech_book` mismatches the naming convention, expect \"^idx_tech_book_id_name$\" but found `%s`", invalidIndexName),
+				},
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingIndexConventionMismatch,
+					Title:   "naming.index.idx",
+					Content: fmt.Sprintf("Index `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidIndexName),
 				},
 			},
 		},
@@ -110,7 +129,8 @@ func TestNamingIndexConvention(t *testing.T) {
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^idx_{{table}}_{{column_list}}$",
+		Format:    "^idx_{{table}}_{{column_list}}$",
+		MaxLength: 64,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingIndexConventionAdvisor{}, &advisor.SchemaReviewRule{
