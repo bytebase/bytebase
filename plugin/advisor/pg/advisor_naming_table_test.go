@@ -10,7 +10,8 @@ import (
 )
 
 func TestPostgreSQLNamingTableConvention(t *testing.T) {
-	invalidTableName := advisor.RandomString(65)
+	invalidTableName := advisor.RandomString(63)
+	maxLength := 60
 
 	tests := []advisor.TestCase{
 		{
@@ -31,7 +32,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should within 64 characters", invalidTableName),
+					Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should within %d characters", invalidTableName, maxLength),
 				},
 			},
 		},
@@ -112,7 +113,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format:    "^[a-z]+(_[a-z]+)*$",
-		MaxLength: 64,
+		MaxLength: maxLength,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SchemaReviewRule{

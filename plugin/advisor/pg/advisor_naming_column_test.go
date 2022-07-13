@@ -10,7 +10,8 @@ import (
 )
 
 func TestNamingColumnConvention(t *testing.T) {
-	invalidColumnName := advisor.RandomString(65)
+	invalidColumnName := advisor.RandomString(63)
+	maxLength := 60
 
 	tests := []advisor.TestCase{
 		{
@@ -31,7 +32,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
-					Content: fmt.Sprintf("\"book\".\"%s\" mismatches column naming convention, its length should within 64 characters", invalidColumnName),
+					Content: fmt.Sprintf("\"book\".\"%s\" mismatches column naming convention, its length should within %d characters", invalidColumnName, maxLength),
 				},
 			},
 		},
@@ -109,7 +110,7 @@ func TestNamingColumnConvention(t *testing.T) {
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format:    "^[a-z]+(_[a-z]+)*$",
-		MaxLength: 64,
+		MaxLength: maxLength,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SchemaReviewRule{
