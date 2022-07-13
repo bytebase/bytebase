@@ -11,11 +11,13 @@ import (
 func (s *Server) registerActuatorRoutes(g *echo.Group) {
 	g.GET("/actuator/info", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		demoName := s.profile.DemoDataDir[len("demo/"):len(s.profile.DemoDataDir)]
 		serverInfo := api.ServerInfo{
 			Version:   s.profile.Version,
 			GitCommit: s.profile.GitCommit,
 			Readonly:  s.profile.Readonly,
 			Demo:      s.profile.Demo,
+			DemoName:  demoName,
 			Host:      s.profile.BackendHost,
 			Port:      strconv.Itoa(s.profile.BackendPort),
 		}
