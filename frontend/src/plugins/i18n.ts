@@ -56,7 +56,6 @@ const mergedLocalMessage = Object.entries(
   return map;
 }, {} as { [k: string]: any });
 
-console.log("getValidLocale", getValidLocale());
 const i18n = createI18n({
   legacy: false,
   locale: getValidLocale(),
