@@ -180,6 +180,10 @@ const adjustHintDialogPosition = (
       bounding.left + bounding.width - hintDialogBounding.width
     }px`;
   }
+
+  requestAnimationFrame(() =>
+    adjustHintDialogPosition(targetElement, hintDialogDiv, position)
+  );
 };
 
 const updateHintPosition = (
