@@ -201,8 +201,7 @@
     "view-doc": "查看文档",
     "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
-    "pitr": "PITR",
-    "go-now": "立即前往"
+    "pitr": "PITR"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -486,9 +485,7 @@
     },
     "new-issue": "@:common.new@:common.issue",
     "format-on-save": "保存时格式化",
-    "action-to-current-stage": "{action}当前阶段",
-    "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
-    "edit-sql-statement": "编辑 SQL 语句"
+    "action-to-current-stage": "{action}当前阶段"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -762,7 +759,8 @@
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
     "create-backup": "创建备份",
-    "automatic-weekly-backup": "每周自动备份",
+    "automatic-x-backup": "{freq}自动备份",
+    "automatic-backup": "自动备份",
     "disable-automatic-backup": "禁用自动备份",
     "backuppolicy-backup-enforced-and-cant-be-disabled": "强制{0}备份，不能禁用",
     "backup-policy": {

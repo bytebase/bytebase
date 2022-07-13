@@ -6,6 +6,7 @@
     :show-header="true"
     :left-bordered="true"
     :right-bordered="true"
+    data-label="bb-migration-history-table"
     @click-row="clickHistory"
   >
     <template #header>

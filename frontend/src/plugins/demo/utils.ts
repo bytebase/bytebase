@@ -142,6 +142,11 @@ export const checkUrlPathnameMatched = (url: string) => {
   return urlObject.pathname === window.location.pathname;
 };
 
+export const checkUrlMatched = (url: string) => {
+  const regex = new RegExp(url);
+  return regex.test(window.location.href);
+};
+
 export const isNullOrUndefined = (value: any) => {
   return value === null || value === undefined;
 };

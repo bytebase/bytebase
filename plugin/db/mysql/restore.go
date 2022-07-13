@@ -40,12 +40,12 @@ const (
 
 	// Variable lower_case_table_names related.
 
-	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
+	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the letter case specified in the CREATE TABLE or CREATE DATABASE statement.
 	// Name comparisons are case-sensitive.
 	LetterCaseOnDiskLetterCaseCmp = 0
 	// LowerCaseOnDiskLowerCaseCmp stores table names in lowercase on disk and name comparisons are not case-sensitive.
 	LowerCaseOnDiskLowerCaseCmp = 1
-	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the letter case specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 	// Name comparisons are not case-sensitive.
 	LetterCaseOnDiskLowerCaseCmp = 2
 )
@@ -124,7 +124,7 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 	case LetterCaseOnDiskLowerCaseCmp:
 		originalDBName = strings.ToLower(originalDatabase)
 	default:
-		return fmt.Errorf("Expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
+		return fmt.Errorf("expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
 	}
 
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
