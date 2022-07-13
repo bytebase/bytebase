@@ -8,10 +8,13 @@ import {
   waitForTargetElement,
 } from "./utils";
 
+const shownHintIndexSet = new Set<number>();
 const closedHintIndexSet = new Set<number>();
 
 export const showHints = async (hintDataList: HintData[]) => {
   removeHint();
+  shownHintIndexSet.clear();
+
   const findTargetPromiseList = hintDataList.map(async (hintData) => {
     const index = indexOf(hintDataList, hintData);
     if (closedHintIndexSet.has(index) || !checkUrlMatched(hintData.url)) {
@@ -20,9 +23,15 @@ export const showHints = async (hintDataList: HintData[]) => {
 
     const targetElement = await waitForTargetElement([[hintData.selector]]);
     if (targetElement) {
-      removeHint(index);
+      if (shownHintIndexSet.has(index)) {
+        return;
+      }
       renderHint(targetElement, hintData, index);
       updateHintPosition(targetElement, hintData, index);
+      shownHintIndexSet.add(index);
+    } else {
+      removeHint(index);
+      shownHintIndexSet.delete(index);
     }
   });
 
