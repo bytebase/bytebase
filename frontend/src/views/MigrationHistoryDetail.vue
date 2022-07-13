@@ -131,7 +131,11 @@
             />
             <span>{{ $t("migration-history.schema-drift-detected") }}</span>
           </div>
-          <div class="normal-link text-sm" @click="state.viewDrift = true">
+          <div
+            class="normal-link text-sm"
+            data-label="bb-migration-history-view-drift-button"
+            @click="state.viewDrift = true"
+          >
             {{ $t("migration-history.view-drift") }}
           </div>
         </div>
@@ -141,6 +145,7 @@
             v-if="allowShowDiff"
             :label="$t('migration-history.show-diff')"
             :value="state.showDiff"
+            data-label="bb-migration-history-diff-switch"
             @toggle="state.showDiff = $event"
           />
           <div class="textinfolabel">
@@ -174,12 +179,14 @@
           :old-string="migrationHistory.schemaPrev"
           :new-string="migrationHistory.schema"
           output-format="side-by-side"
+          data-label="bb-migration-history-code-diff-block"
         />
         <template v-else>
           <highlight-code-block
             v-if="migrationHistory.schema"
             class="border mt-2 px-2 whitespace-pre-wrap w-full"
             :code="migrationHistory.schema"
+            data-label="bb-migration-history-code-block"
           />
           <div v-else class="mt-2">
             {{ $t("migration-history.current-schema-empty") }}
