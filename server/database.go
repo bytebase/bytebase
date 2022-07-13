@@ -50,7 +50,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate database labels").SetInternal(err)
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
 			}
 		}
 
@@ -221,7 +221,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
 				if err != nil {
