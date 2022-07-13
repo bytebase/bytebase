@@ -6,7 +6,7 @@
           <div
             class="flex items-center text-lg leading-6 font-medium text-main"
           >
-            {{ $t("database.automatic-weekly-backup") }}
+            {{ automaticBackupTitle }}
             <span class="ml-1 text-success">
               {{ $t("database.backup.enabled") }}
             </span>
@@ -79,7 +79,7 @@
         v-else
         class="flex items-center text-lg leading-6 font-medium text-main"
       >
-        {{ $t("database.automatic-weekly-backup") }}
+        {{ automaticBackupTitle }}
         <span class="ml-1 text-control-light">{{
           $t("database.backup.disabled")
         }}</span>
@@ -462,6 +462,16 @@ export default defineComponent({
       return { hour, dayOfWeek };
     }
 
+    const automaticBackupTitle = computed((): string => {
+      if (backupPolicy.value === "DAILY" || backupPolicy.value === "WEEKLY") {
+        return t("database.automatic-x-backup", {
+          freq: t(`database.backup-policy.${backupPolicy.value}`).toLowerCase(),
+        });
+      }
+
+      return t("database.automatic-backup");
+    });
+
     return {
       state,
       backupList,
@@ -473,6 +483,7 @@ export default defineComponent({
       toggleAutoBackup,
       UrlChanged,
       updateBackupHookUrl,
+      automaticBackupTitle,
     };
   },
 });
