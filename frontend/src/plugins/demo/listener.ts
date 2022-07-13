@@ -52,7 +52,6 @@ const tryToShowGuideDialog = async () => {
 };
 
 const tryToShowHints = async () => {
-  removeHint();
   const { hint } = storage.get(["hint"]);
 
   if (hint) {
