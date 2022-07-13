@@ -2,6 +2,22 @@ import { isNull } from "lodash-es";
 import { initGuideListeners, initHintListeners } from "./listener";
 import * as storage from "./storage";
 
+// TODO(steven): after we using help to replace the guide, we should remove this.
+// In live demo mode, we should not show the guide dialog.
+const hideConsoleGuides = () => {
+  const tempData = {
+    "database.visit": true,
+    "instance.visit": true,
+    "project.visit": true,
+    "environment.visit": true,
+    "guide.database": true,
+    "guide.instance": true,
+    "guide.project": true,
+    "guide.environment": true,
+  };
+  window.localStorage.setItem("ui.intro", JSON.stringify(tempData));
+};
+
 // initial guide listeners when window loaded
 window.addEventListener(
   "load",
@@ -24,9 +40,11 @@ window.addEventListener(
 
     if (paramGuide || storageGuide) {
       initGuideListeners();
+      hideConsoleGuides();
     }
     if (paramHint || storageHint) {
       initHintListeners();
+      hideConsoleGuides();
     }
   },
   {
