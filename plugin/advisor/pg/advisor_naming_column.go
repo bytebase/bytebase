@@ -90,12 +90,20 @@ func (checker *namingColumnConventionChecker) Visit(node ast.Node) ast.Visitor {
 	}
 
 	for _, column := range columnList {
-		if !checker.format.MatchString(column) || len(column) > checker.maxLength {
+		if !checker.format.MatchString(column) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q within %d characters", tableName, column, checker.format, checker.maxLength),
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, column, checker.format),
+			})
+		}
+		if checker.maxLength > 0 && len(column) > checker.maxLength {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NamingColumnConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should within %d characters", tableName, column, checker.maxLength),
 			})
 		}
 	}

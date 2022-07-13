@@ -101,12 +101,20 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	for _, column := range columnList {
-		if !v.format.MatchString(column) || len(column) > v.maxLength {
+		if !v.format.MatchString(column) {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q within %d characters", tableName, column, v.format, v.maxLength),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
+			})
+		}
+		if v.maxLength > 0 && len(column) > v.maxLength {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.NamingColumnConventionMismatch,
+				Title:   v.title,
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should within %d characters", tableName, column, v.maxLength),
 			})
 		}
 	}

@@ -79,12 +79,20 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 	}
 
 	for _, tableName := range tableNames {
-		if !checker.format.MatchString(tableName) || len(tableName) > checker.maxLength {
+		if !checker.format.MatchString(tableName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingTableConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q within %d characters`, tableName, checker.format, checker.maxLength),
+				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
+			})
+		}
+		if checker.maxLength > 0 && len(tableName) > checker.maxLength {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NamingTableConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf(`"%s" mismatches table naming convention, its length should within %d characters`, tableName, checker.maxLength),
 			})
 		}
 	}

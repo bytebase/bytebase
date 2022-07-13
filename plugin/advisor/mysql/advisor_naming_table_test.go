@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestMySQLNamingTableConvention(t *testing.T) {
+	invalidTableName := advisor.RandomString(65)
+
 	tests := []advisor.TestCase{
 		{
 			Statement: "CREATE TABLE techBook(id int, name varchar(255))",
@@ -17,7 +20,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
+					Content: "`techBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -33,13 +36,24 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
+			Statement: fmt.Sprintf("CREATE TABLE %s(id int, name varchar(255))", invalidTableName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingTableConventionMismatch,
+					Title:   "naming.table",
+					Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should within 64 characters", invalidTableName),
+				},
+			},
+		},
+		{
 			Statement: "ALTER TABLE techBook RENAME TO TechBook",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
+					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -61,7 +75,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
+					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},
@@ -72,13 +86,13 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
+					Content: "`TechBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 				{
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
+					Content: "`LiteraryBook` mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
 				},
 			},
 		},

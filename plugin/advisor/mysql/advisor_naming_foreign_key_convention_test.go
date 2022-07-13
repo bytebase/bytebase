@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -9,6 +10,8 @@ import (
 )
 
 func TestNamingFKConvention(t *testing.T) {
+	invalidFKName := advisor.RandomString(65)
+
 	tests := []advisor.TestCase{
 		{
 			Statement: "ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id)",
@@ -28,7 +31,24 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: "Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" within 64 characters but found `fk_author_id`",
+					Content: "Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found `fk_author_id`",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf("ALTER TABLE tech_book ADD CONSTRAINT %s FOREIGN KEY (author_id) REFERENCES author (id)", invalidFKName),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingFKConventionMismatch,
+					Title:   "naming.index.fk",
+					Content: fmt.Sprintf("Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found `%s`", invalidFKName),
+				},
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingFKConventionMismatch,
+					Title:   "naming.index.fk",
+					Content: fmt.Sprintf("Foreign key `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidFKName),
 				},
 			},
 		},
@@ -50,7 +70,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: "Foreign key in table `book` mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" within 64 characters but found `fk_book_author_id`",
+					Content: "Foreign key in table `book` mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" but found `fk_book_author_id`",
 				},
 			},
 		},
