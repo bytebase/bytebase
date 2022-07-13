@@ -21,7 +21,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -49,11 +48,6 @@ const (
 	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 	// Name comparisons are not case-sensitive.
 	LetterCaseOnDiskLowerCaseCmp = 2
-)
-
-var (
-	binlogFileTasks = make(map[int]bool)
-	muBinlogFile    sync.Mutex
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -540,21 +534,6 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
-	// Ensure that there's at most one ongoing downloading process for the current MySQL instance.
-	muBinlogFile.Lock()
-	if _, ok := binlogFileTasks[driver.instanceID]; ok {
-		log.Debug("There is another binlog file downloading process for this instance, skip downloading", zap.String("instance", driver.connectionCtx.InstanceName))
-		muBinlogFile.Unlock()
-		return nil
-	}
-	binlogFileTasks[driver.instanceID] = true
-	muBinlogFile.Unlock()
-	defer func() {
-		muBinlogFile.Lock()
-		delete(binlogFileTasks, driver.instanceID)
-		muBinlogFile.Unlock()
-	}()
-
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
