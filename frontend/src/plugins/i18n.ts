@@ -4,14 +4,32 @@ import { useLocalStorage } from "@vueuse/core";
 
 const localPathPrefix = "../locales/";
 
-const storage = useLocalStorage("bytebase_options", {}) as any;
+const getValidLocale = () => {
+  const validLocales = ["en-US", "zh-CN"];
+  const params = new URL(window.location.href).searchParams;
+  let locale = params.get("locale") || "";
+  if (validLocales.includes(locale)) {
+    return locale;
+  }
 
-let locale = storage.value?.appearance?.language || navigator.language;
-if (locale === "en") {
-  // To work with user stored legacy preferences, we switch to en-US
-  // here if we got "en" from localStorage
-  locale = "en-US";
-}
+  const storage = useLocalStorage("bytebase_options", {}) as any;
+  locale = storage.appearance?.language || "";
+  if (validLocales.includes(locale)) {
+    return locale;
+  }
+
+  locale = navigator.language;
+  if (locale === "en") {
+    // To work with user stored legacy preferences, we switch to en-US
+    // here if we got "en" from localStorage
+    locale = "en-US";
+  }
+  if (validLocales.includes(locale)) {
+    return locale;
+  }
+
+  return "en-US";
+};
 
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
@@ -40,7 +58,7 @@ const mergedLocalMessage = Object.entries(
 
 const i18n = createI18n({
   legacy: false,
-  locale,
+  locale: getValidLocale(),
   globalInjection: true,
   messages: mergedLocalMessage,
   fallbackLocale: "en-US",
