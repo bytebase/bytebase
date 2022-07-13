@@ -146,7 +146,8 @@ func (rule *SchemaReviewRule) Validate() error {
 
 // NamingRulePayload is the payload for naming rule.
 type NamingRulePayload struct {
-	Format string `json:"format"`
+	MaxLength int    `json:"maxLength"`
+	Format    string `json:"format"`
 }
 
 // RequiredColumnRulePayload is the payload for required column rule.
