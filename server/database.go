@@ -50,7 +50,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
 			}
 		}
 
@@ -66,7 +66,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, db, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
 
@@ -221,11 +221,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, labels, err)
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
 				if err != nil {
-					return err
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get schema from peer tenant database").SetInternal(err)
 				}
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
@@ -238,7 +238,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 					var schemaBuf bytes.Buffer
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
 					}
 					if peerSchema != schemaBuf.String() {
 						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
@@ -252,7 +252,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// must match instance environment.
 		if dbPatch.Labels != nil {
 			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
 
