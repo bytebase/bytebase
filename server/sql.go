@@ -713,7 +713,7 @@ func syncViewSchema(ctx context.Context, store *store.Store, database *api.Datab
 		DatabaseID: database.ID,
 	}
 	if err := store.DeleteView(ctx, viewDelete); err != nil {
-		return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", database.Instance.Name, database.Name, err)
+		return fmt.Errorf("failed to sync view for instance: %s, database %s. Failed to reset view info. Error %w", database.Instance.Name, database.Name, err)
 	}
 	for _, view := range schema.ViewList {
 		if err := recreateViewSchema(database, view); err != nil {
