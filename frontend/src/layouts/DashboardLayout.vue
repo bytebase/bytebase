@@ -17,7 +17,10 @@
         change attempt will fail.
       </div>
     </template>
-    <nav class="bg-white border-b border-block-border">
+    <nav
+      class="bg-white border-b border-block-border"
+      data-label="bb-dashboard-header"
+    >
       <div class="max-w-full mx-auto px-4">
         <DashboardHeader />
       </div>
