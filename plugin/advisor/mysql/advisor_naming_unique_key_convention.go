@@ -88,7 +88,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.indexName) || len(indexData.indexName) > checker.maxLength {
+		if !regex.MatchString(indexData.indexName) {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingUKConventionMismatch,
