@@ -221,7 +221,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get base database name").SetInternal(fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %w", database.Name, toProject.DBNameTemplate, labels, err))
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
 				if err != nil {
@@ -238,7 +238,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 					var schemaBuf bytes.Buffer
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get database schema").SetInternal(fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err))
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
 					}
 					if peerSchema != schemaBuf.String() {
 						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
