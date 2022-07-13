@@ -25,7 +25,7 @@ func TestPostgreSQLNamingTableConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: fmt.Sprintf("CREATE TABLE %s(id int, name varchar(255))", invalidTableName),
+			Statement: fmt.Sprintf("CREATE TABLE \"%s\"(id int, name varchar(255))", invalidTableName),
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,

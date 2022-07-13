@@ -25,7 +25,7 @@ func TestNamingColumnConvention(t *testing.T) {
 			},
 		},
 		{
-			Statement: fmt.Sprintf("CREATE TABLE book(id int, %s int)", invalidColumnName),
+			Statement: fmt.Sprintf("CREATE TABLE book(id int, \"%s\" int)", invalidColumnName),
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Warn,
