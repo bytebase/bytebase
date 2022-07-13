@@ -9,10 +9,10 @@
         type="primary"
         :disabled="!allowMigrate"
         tooltip-mode="DISABLED-ONLY"
+        data-label="bb-establish-baseline-button"
         @click="state.showBaselineModal = true"
       >
         {{ $t("migration-history.establish-baseline") }}
-
         <template v-if="isTenantProject" #tooltip>
           <div class="w-52 whitespace-pre-wrap">
             {{

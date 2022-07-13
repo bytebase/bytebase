@@ -32,6 +32,7 @@
             to="/db"
             class="bar-link px-2 py-2 rounded-md"
             :class="getRouteLinkClass('/db')"
+            data-label="bb-dashboard-header-database-entry"
             >{{ $t("common.databases") }}</router-link
           >
 

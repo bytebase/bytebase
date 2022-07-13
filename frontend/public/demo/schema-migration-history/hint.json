@@ -1,13 +1,188 @@
 [
   {
-    "selector": "[data-label='bb-alter-schema-button']",
-    "title": "",
-    "description": {
-      "en-US": "Alter schema is a main feature of Bytebase",
-      "zh-CN": "修改数据库 Schema 是 Bytebase 的核心功能之一"
-    },
+    "selector": "[data-label='bb-dashboard-static-sidebar']",
+    "type": "shield",
+    "url": ".+/db/"
+  },
+  {
+    "selector": "[data-label='bb-database-detail-action-buttons-container']",
+    "type": "shield",
+    "url": ".+/db/"
+  },
+  {
+    "selector": "[data-label='bb-dashboard-header']",
+    "type": "shield",
+    "url": ".+/db/"
+  },
+  {
+    "selector": "[data-label='bb-dashboard-header-database-entry']",
     "type": "hint",
-    "url": "http://localhost:3000",
+    "url": "^(?!.+/db)",
+    "cover": true,
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Let's focus on the Database",
+        "zh-CN": "我们来查看数据库模块"
+      },
+      "alwaysShow": true
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-database-table']",
+    "type": "hint",
+    "url": ".+?/db",
+    "cover": true,
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Let's focus on the target database",
+        "zh-CN": "让我们专注在目标数据库"
+      },
+      "alwaysShow": true,
+      "position": "top"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
+    "type": "hint",
+    "url": ".+?/db/.+?(?<!#migration-history)$",
+    "highlight": true,
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Let's focus on the database schema change management",
+        "zh-CN": "让我们专注在数据库变更管理场景"
+      },
+      "alwaysShow": true,
+      "position": "right"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-establish-baseline-button']",
+    "type": "hint",
+    "url": ".+?/db/.+?#migration-history$",
+    "highlight": true,
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Creating a new BASELINE can start a new Schema life cycle, but since this is a read-only DEMO, you can contact support@bytebase.com to request a full DEMO to try.",
+        "zh-CN": "新建一个 BASELINE 可以开始一个新的 Schema 生命周期，但由于这是个只读 DEMO，您可以联系 support@bytebase.com 来申请完整的 DEMO 进行尝试。"
+      },
+      "position": "right"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-database-overview-description-list']",
+    "type": "hint",
+    "url": ".+?/db/.+?#overview$",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "The basic information of the database is shown here",
+        "zh-CN": "这里展示了数据库的基本信息"
+      },
+      "alwaysShow": true,
+      "position": "topright"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-migration-history-table']",
+    "type": "hint",
+    "url": ".+?/db/.+?#migration-history$",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Here are all the migration records, where BASELINE records the initial state of the database schema, and every other change will generate a new schema version.",
+        "zh-CN": "这里是所有的迁移记录，其中 BASELINE 记录了数据库 Schema 的初始状态，其余每一次变更都将产生一个新的 Schema 版本。"
+      },
+      "alwaysShow": true,
+      "position": "bottom"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-migration-history-diff-switch']",
+    "type": "hint",
+    "url": ".+?/db/.+?/history/.+",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Let's focus on the Database",
+        "zh-CN": "也可以查看变更后的完整 Schema 快照"
+      },
+      "position": "right",
+      "showOnce": true
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-migration-history-view-drift-button']",
+    "type": "hint",
+    "url": ".+?/db/.+?/history/.+",
+    "highlight": true,
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "A schema drift was detected in this change, indicating that a change beyond the control of the Bytebase platform occurred prior to this change.",
+        "zh-CN": "这次变更检查到了 Schema 偏差，说明这次变更之前发生了脱离 Bytebase 平台管控的变更"
+      },
+      "position": "right",
+      "showOnce": true
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-migration-history-code-diff-block']",
+    "type": "hint",
+    "url": ".+?/db/.+?/history/.+",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "This is the different codes between the two versions",
+        "zh-CN": "这是两个数据库 Schema 版本之间的差异"
+      },
+      "alwaysShow": true,
+      "position": "topright"
+    },
+    "additionStyle": {
+      "z-index": "10"
+    }
+  },
+  {
+    "selector": "[data-label='bb-migration-history-code-block']",
+    "type": "hint",
+    "url": ".+?/db/.+?/history/.+",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "This is the current full schema of the database",
+        "zh-CN": "这是现在数据库的完整 Schema"
+      },
+      "alwaysShow": true,
+      "position": "topright"
+    },
     "additionStyle": {
       "z-index": "10"
     }
