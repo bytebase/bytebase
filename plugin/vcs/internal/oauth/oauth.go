@@ -120,7 +120,8 @@ func getOAuthErrorDetails(code int, body []byte) error {
 	}
 	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 	// {"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-	if oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired") {
+	// {"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
+	if (oe.Err == "invalid_token" || oe.Err == "invalid_grant") && strings.Contains(oe.ErrorDescription, "expired") {
 		return &oe
 	}
 	return nil
