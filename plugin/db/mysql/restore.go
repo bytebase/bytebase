@@ -533,6 +533,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
+	log.Debug("Downloading all binlog files on server")
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
