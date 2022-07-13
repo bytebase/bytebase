@@ -34,7 +34,6 @@ type Driver struct {
 	dbType        db.Type
 	mysqlutil     mysqlutil.Instance
 	binlogDir     string
-	instanceID    int
 	db            *sql.DB
 }
 

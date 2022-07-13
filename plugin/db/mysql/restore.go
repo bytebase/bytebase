@@ -40,12 +40,12 @@ const (
 
 	// Variable lower_case_table_names related.
 
-	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement.
+	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the letter case specified in the CREATE TABLE or CREATE DATABASE statement.
 	// Name comparisons are case-sensitive.
 	LetterCaseOnDiskLetterCaseCmp = 0
 	// LowerCaseOnDiskLowerCaseCmp stores table names in lowercase on disk and name comparisons are not case-sensitive.
 	LowerCaseOnDiskLowerCaseCmp = 1
-	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the lettercase specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the letter case specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
 	// Name comparisons are not case-sensitive.
 	LetterCaseOnDiskLowerCaseCmp = 2
 )
@@ -92,10 +92,9 @@ func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, er
 }
 
 // SetUpForPITR sets necessary fields for MySQL PITR recovery.
-func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string, instanceID int) {
+func (driver *Driver) SetUpForPITR(mysqlutilInstance mysqlutil.Instance, binlogDir string) {
 	driver.mysqlutil = mysqlutilInstance
 	driver.binlogDir = binlogDir
-	driver.instanceID = instanceID
 }
 
 // ReplayBinlog replays the binlog for `originDatabase` from `startBinlogInfo.Position` to `targetTs`.

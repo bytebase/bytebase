@@ -117,7 +117,7 @@ func downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance,
 		log.Error("Failed to cast driver to mysql.Driver", zap.String("instance", instance.Name))
 		return
 	}
-	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir, instance.ID)
+	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
