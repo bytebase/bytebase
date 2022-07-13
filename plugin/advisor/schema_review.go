@@ -129,11 +129,11 @@ func (rule *SchemaReviewRule) Validate() error {
 	// TODO(rebelice): add other schema review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
-		if _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
+		if _, _, err := UnamrshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleFKNaming, SchemaRuleIDXNaming, SchemaRuleUKNaming:
-		if _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
+		if _, _, _, err := UnmarshalNamingRulePayloadAsTemplate(rule.Type, rule.Payload); err != nil {
 			return err
 		}
 	case SchemaRuleRequiredColumn:
@@ -156,25 +156,25 @@ type RequiredColumnRulePayload struct {
 }
 
 // UnamrshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, error) {
+func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 	format, err := regexp.Compile(nr.Format)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
+		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
 	}
-	return format, nil
+	return format, nr.MaxLength, nil
 }
 
 // UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
 // "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
-func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, error) {
+func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return "", nil, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
+		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 
 	template := nr.Format
@@ -182,11 +182,11 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
-			return "", nil, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
+			return "", nil, 0, fmt.Errorf("invalid template %s for rule %s", key, ruleType)
 		}
 	}
 
-	return template, keys, nil
+	return template, keys, nr.MaxLength, nil
 }
 
 // parseTemplateTokens parses the template and returns template tokens and their delimiters.

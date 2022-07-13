@@ -36,7 +36,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -44,6 +44,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		level:        level,
 		title:        string(ctx.Rule.Type),
 		format:       format,
+		maxLength:    maxLength,
 		templateList: templateList,
 		catalog:      ctx.Catalog,
 	}
@@ -67,6 +68,7 @@ type namingUKConventionChecker struct {
 	level        advisor.Status
 	title        string
 	format       string
+	maxLength    int
 	templateList []string
 	catalog      catalog.Catalog
 }
@@ -86,12 +88,12 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			})
 			continue
 		}
-		if !regex.MatchString(indexData.indexName) {
+		if !regex.MatchString(indexData.indexName) || len(indexData.indexName) > checker.maxLength {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
+				Content: fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q within %d characters but found `%s`", indexData.tableName, regex, checker.maxLength, indexData.indexName),
 			})
 		}
 	}

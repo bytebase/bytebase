@@ -17,7 +17,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
-					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
 				},
 			},
 		},
@@ -52,7 +52,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
-					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
 				},
 			},
 		},
@@ -76,7 +76,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
-					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
+					Content: "\"book\".\"creatorId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\" within 64 characters",
 				},
 			},
 		},
@@ -94,7 +94,8 @@ func TestNamingColumnConvention(t *testing.T) {
 		},
 	}
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^[a-z]+(_[a-z]+)*$",
+		Format:    "^[a-z]+(_[a-z]+)*$",
+		MaxLength: 64,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingColumnConventionAdvisor{}, &advisor.SchemaReviewRule{

@@ -30,7 +30,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" within 64 characters but found `tech_book_id_name`",
 				},
 			},
 		},
@@ -52,7 +52,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `tech_book_id_name`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" within 64 characters but found `tech_book_id_name`",
 				},
 			},
 		},
@@ -81,7 +81,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found `uk_tech_book`",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_id_name$\" within 64 characters but found `uk_tech_book`",
 				},
 			},
 		},
@@ -103,7 +103,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" within 64 characters but found ``",
 				},
 			},
 		},
@@ -114,7 +114,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" within 64 characters but found ``",
 				},
 			},
 		},
@@ -125,14 +125,15 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" but found ``",
+					Content: "Unique key in table `tech_book` mismatches the naming convention, expect \"^uk_tech_book_name$\" within 64 characters but found ``",
 				},
 			},
 		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^uk_{{table}}_{{column_list}}$",
+		Format:    "^uk_{{table}}_{{column_list}}$",
+		MaxLength: 64,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingUKConventionAdvisor{}, &advisor.SchemaReviewRule{

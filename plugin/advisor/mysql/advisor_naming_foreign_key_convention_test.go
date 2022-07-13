@@ -28,7 +28,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: "Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found `fk_author_id`",
+					Content: "Foreign key in table `tech_book` mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" within 64 characters but found `fk_author_id`",
 				},
 			},
 		},
@@ -50,14 +50,15 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: "Foreign key in table `book` mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" but found `fk_book_author_id`",
+					Content: "Foreign key in table `book` mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" within 64 characters but found `fk_book_author_id`",
 				},
 			},
 		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
-		Format: "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+		Format:    "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+		MaxLength: 64,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SchemaReviewRule{
