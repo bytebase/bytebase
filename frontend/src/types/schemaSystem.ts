@@ -34,8 +34,8 @@ export const LEVEL_LIST = [
 // Used by the frontend.
 interface NumberPayload {
   type: "NUMBER";
-  default: string;
-  value?: string;
+  default: number;
+  value?: number;
 }
 
 // StringPayload is the string type payload configuration options and default value.
@@ -221,7 +221,7 @@ export const convertPolicyRuleToRuleTemplate = (
       } as StringPayload;
       const numberPayload = {
         ...numberComponent.payload,
-        value: `${(policyRule.payload as NamingFormatPayload).maxLength}`,
+        value: (policyRule.payload as NamingFormatPayload).maxLength,
       } as NumberPayload;
       return {
         ...res,
@@ -255,7 +255,7 @@ export const convertPolicyRuleToRuleTemplate = (
       } as TemplatePayload;
       const lengthLimitPayload = {
         ...lengthLimitComponent.payload,
-        value: `${(policyRule.payload as NamingFormatPayload).maxLength}`,
+        value: (policyRule.payload as NamingFormatPayload).maxLength,
       } as NumberPayload;
       return {
         ...res,
@@ -320,7 +320,7 @@ export const convertRuleTemplateToPolicyRule = (
         ...base,
         payload: {
           format: stringPayload.value ?? stringPayload.default,
-          maxLength: parseInt(numberPayload.value ?? numberPayload.default, 10),
+          maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
     case "naming.index.idx":
@@ -340,7 +340,7 @@ export const convertRuleTemplateToPolicyRule = (
         ...base,
         payload: {
           format: templatePayload.value ?? templatePayload.default,
-          maxLength: parseInt(lengthPayload.value ?? lengthPayload.default, 10),
+          maxLength: lengthPayload.value ?? lengthPayload.default,
         },
       };
     case "column.required":

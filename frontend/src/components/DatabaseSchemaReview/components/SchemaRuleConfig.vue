@@ -77,7 +77,7 @@
           v-model="state.payload[index]"
           type="number"
           class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-          :placeholder="config.payload.default"
+          :placeholder="`${config.payload.default}`"
         />
         <div
           v-else-if="
@@ -89,7 +89,7 @@
             <BBBadge
               v-for="(val, i) in state.payload[index]"
               :key="`${index}-${i}`"
-              :text="val"
+              :text="`${val}`"
               @remove="() => removeFromList(index, val)"
             />
           </div>
@@ -132,7 +132,7 @@ import {
   getRuleLocalizationKey,
 } from "@/types/schemaSystem";
 
-type PayloadValueList = (string | string[])[];
+type PayloadValueList = (string | number | string[])[];
 interface LocalState {
   payload: PayloadValueList;
 }
@@ -176,7 +176,7 @@ const removeFromList = (i: number, val: any) => {
 
   const values = state.payload[i] as string[];
   const index = values.indexOf(val);
-  pullAt(state.payload[i], index);
+  pullAt(state.payload[i] as string[], index);
 };
 
 const pushToList = (i: number, e: any) => {
