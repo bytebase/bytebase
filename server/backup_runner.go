@@ -17,11 +17,21 @@ import (
 	"go.uber.org/zap"
 )
 
+type taskList struct {
+	running map[int]bool
+	wg      sync.WaitGroup
+	mu      sync.Mutex
+}
+
 // NewBackupRunner creates a new backup runner.
 func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
 		server:               server,
 		backupRunnerInterval: backupRunnerInterval,
+
+		downloadBinlogTasks: taskList{
+			running: make(map[int]bool),
+		},
 	}
 }
 
@@ -29,6 +39,8 @@ func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *Backup
 type BackupRunner struct {
 	server               *Server
 	backupRunnerInterval time.Duration
+
+	downloadBinlogTasks taskList
 }
 
 // Run is the runner for backup runner.
@@ -57,6 +69,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				s.downloadBinlogFiles(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
+			s.downloadBinlogTasks.wg.Wait()
 			return
 		}
 	}
@@ -70,10 +83,7 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 		log.Error("Failed to retrieve instance list", zap.Error(err))
 		return
 	}
-	downloadTimeout := s.backupRunnerInterval / 2
-	if downloadTimeout < time.Minute {
-		downloadTimeout = time.Minute
-	}
+
 	for _, instance := range instanceList {
 		if instance.Engine == db.MySQL && instance.RowStatus == api.Normal {
 			log.Debug("Checking if any databases of instance enables backup plan policy", zap.String("instance", instance.Name))
@@ -86,16 +96,26 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 				log.Debug("No database in instance enables backup plan policy, skip instance", zap.String("instance", instance.Name))
 				continue
 			}
-			// We do not cancel ctxDownload explicitly, because the downloading goroutine may run for a while after this function returns.
-			// nolint
-			ctxDownload, _ := context.WithTimeout(ctx, downloadTimeout)
-			go downloadBinlogFilesForInstance(ctxDownload, instance, s.server.profile.DataDir, s.server.mysqlutil)
+
+			s.downloadBinlogTasks.mu.Lock()
+			if _, ok := s.downloadBinlogTasks.running[instance.ID]; !ok {
+				s.downloadBinlogTasks.running[instance.ID] = true
+				go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
+				s.downloadBinlogTasks.wg.Add(1)
+			}
+			s.downloadBinlogTasks.mu.Unlock()
 		}
 	}
 }
 
-func downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
+	defer func() {
+		s.downloadBinlogTasks.mu.Lock()
+		delete(s.downloadBinlogTasks.running, instance.ID)
+		s.downloadBinlogTasks.mu.Unlock()
+		s.downloadBinlogTasks.wg.Done()
+	}()
 	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
