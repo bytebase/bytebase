@@ -11,10 +11,17 @@ import { Event } from "@/utils";
 
 export default defineComponent({
   name: "HelpTrigger",
-  setup: () => {
+  props: {
+    name: {
+      type: String,
+      required: true,
+      default: "",
+    },
+  },
+  setup: (props) => {
     const event = inject("event") as Event;
     const handleClick = () => {
-      event.emit("help", "sql-review");
+      event.emit("help", props.name);
     };
     return {
       handleClick,

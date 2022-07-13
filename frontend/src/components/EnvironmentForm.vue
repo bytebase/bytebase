@@ -16,7 +16,7 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
-        <HelpTriggerIcon />
+        <HelpTriggerIcon name="instance" />
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
           $t("policy.approval.tip")
         }}</span>

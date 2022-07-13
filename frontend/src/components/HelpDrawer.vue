@@ -27,6 +27,7 @@ import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
 import { Event } from "@/utils";
+import { useLanguage } from "@/composables/useLanguage";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -37,7 +38,7 @@ export default defineComponent({
   components: { NDrawer, NDrawerContent },
   setup() {
     const event = inject("event") as Event;
-    const helpHTMLString = ref("");
+    const { locale } = useLanguage();
 
     const state = reactive<State>({
       frontmatter: {},
@@ -46,19 +47,20 @@ export default defineComponent({
 
     const showHelp = async (name: string) => {
       if (name) {
-        const { default: md } = await import(
-          `../../../public/help/${name}.md?raw`
+        const { default: markdown } = await import(
+          `../../../public/help/${
+            locale.value === "zh-CN" ? "zh" : "en"
+          }/${name}.md?raw`
         );
-        const ast: Node = Markdoc.parse(md);
-        const frontmatter = ast.attributes.frontmatter
+        const ast: Node = Markdoc.parse(markdown);
+        const content = Markdoc.transform(ast) as Tag;
+        const html: string = Markdoc.renderers.html(content);
+
+        content.attributes.class = "prose"; // style help content
+        state.frontmatter = ast.attributes.frontmatter
           ? (yaml.load(ast.attributes.frontmatter) as Record<string, string>)
           : {};
-        state.frontmatter = frontmatter;
-        const content = Markdoc.transform(ast) as Tag;
-        content.attributes.class = "prose";
-        const html: string = Markdoc.renderers.html(content);
         state.html = DOMPurify.sanitize(html);
-        helpHTMLString.value = DOMPurify.sanitize(html);
         activate("right");
       }
     };
@@ -79,7 +81,6 @@ export default defineComponent({
       active,
       placement,
       activate,
-      helpHTMLString,
       state,
     };
   },
