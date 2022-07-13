@@ -729,7 +729,7 @@ func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *ap
 			if common.ErrorCode(err) == common.Conflict {
 				return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", database.Instance.Name, database.Name, dbExtensionCreate.Name)
 			}
-			return fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", database.Instance.Name, database.Name, dbExtensionCreate.Name, err)
+			return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to import new dbExtension: %s. Error %w", database.Instance.Name, database.Name, dbExtensionCreate.Name, err)
 		}
 		return nil
 	}
