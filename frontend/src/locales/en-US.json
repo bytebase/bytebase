@@ -201,8 +201,7 @@
     "view-doc": "View doc",
     "backup-and-restore": "Backup and restore",
     "write-only": "write only",
-    "pitr": "PITR",
-    "go-now": "Go now"
+    "pitr": "PITR"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -485,9 +484,7 @@
     },
     "new-issue": "@:common.new @:common.issue",
     "format-on-save": "Format on save",
-    "action-to-current-stage": "{action} current stage",
-    "edit-sql-statement-in-vcs": "This project has enabled VCS based version control. Please modify the SQL file in the corresponding Git repository, and commit it to create a new issue.",
-    "edit-sql-statement": "Edit SQL statement"
+    "action-to-current-stage": "{action} current stage"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -761,7 +758,8 @@
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
-    "automatic-weekly-backup": "Automatic weekly backup",
+    "automatic-x-backup": "Automatic {freq} backup",
+    "automatic-backup": "Automatic backup",
     "disable-automatic-backup": "Disable automatic backup",
     "backuppolicy-backup-enforced-and-cant-be-disabled": "{0} backup enforced and can't be disabled",
     "backup-policy": {
