@@ -17,12 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type taskList struct {
-	running map[int]bool
-	wg      sync.WaitGroup
-	mu      sync.Mutex
-}
-
 // NewBackupRunner creates a new backup runner.
 func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
