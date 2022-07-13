@@ -6,7 +6,11 @@ const localPathPrefix = "../locales/";
 
 const storage = useLocalStorage("bytebase_options", {}) as any;
 
-let locale = storage.value?.appearance?.language || navigator.language;
+const params = new URL(window.location.href).searchParams;
+let locale =
+  storage.value?.appearance?.language ||
+  params.get("locale") ||
+  navigator.language;
 if (locale === "en") {
   // To work with user stored legacy preferences, we switch to en-US
   // here if we got "en" from localStorage
