@@ -169,8 +169,9 @@ func (s *Store) createViewRaw(ctx context.Context, create *api.ViewCreate) (*vie
 // findViewRaw retrieves a list of views based on find.
 func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw, error) {
 	var (
-		tx  *Tx
-		err error
+		tx   *Tx
+		err  error
+		list []*viewRaw
 	)
 	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -182,7 +183,7 @@ func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw
 		}
 	}()
 
-	list, err := s.findViewImpl(ctx, tx.PTx, find)
+	list, err = s.findViewImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
