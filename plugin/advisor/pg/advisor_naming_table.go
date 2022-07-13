@@ -31,15 +31,16 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 	if err != nil {
 		return nil, err
 	}
-	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	// Naming length limit is not enabled for PG, the PG parser will auto slice the name to make sure its length <= 63
+	// Reference: https://stackoverflow.com/questions/27865770/how-long-can-postgresql-table-names-be
+	format, _, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingTableConventionChecker{
-		level:     level,
-		title:     string(ctx.Rule.Type),
-		format:    format,
-		maxLength: maxLength,
+		level:  level,
+		title:  string(ctx.Rule.Type),
+		format: format,
 	}
 
 	for _, stmt := range stmts {
@@ -62,7 +63,6 @@ type namingTableConventionChecker struct {
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
-	maxLength  int
 }
 
 // Visit implements the ast.Visitor interface.
@@ -85,14 +85,6 @@ func (checker *namingTableConventionChecker) Visit(node ast.Node) ast.Visitor {
 				Code:    advisor.NamingTableConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, checker.format),
-			})
-		}
-		if checker.maxLength > 0 && len(tableName) > checker.maxLength {
-			checker.adviceList = append(checker.adviceList, advisor.Advice{
-				Status:  checker.level,
-				Code:    advisor.NamingTableConventionMismatch,
-				Title:   checker.title,
-				Content: fmt.Sprintf(`"%s" mismatches table naming convention, its length should within %d characters`, tableName, checker.maxLength),
 			})
 		}
 	}
