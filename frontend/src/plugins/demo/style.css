@@ -1,9 +1,11 @@
-.bb-guide-cover-wrapper {
+.bb-guide-cover-wrapper,
+.bb-hint-cover-wrapper {
   @apply fixed inset-0;
   z-index: 999998;
 }
 
-.bb-guide-target-element {
+.bb-guide-target-element,
+.bb-hint-target-element {
   z-index: 999999;
 }
 
@@ -20,7 +22,7 @@
 
 .bb-guide-dialog,
 .bb-hint-dialog {
-  @apply absolute bg-white w-72 m-1 text-black p-2 px-3 rounded-lg text-left -top-full -left-full;
+  @apply absolute bg-white w-72 m-1 text-black p-2 py-3 px-3 rounded-lg text-left -top-full -left-full;
   box-shadow: 0 3px 30px rgb(33 33 33 / 30%);
   z-index: 1000000;
 }
@@ -38,7 +40,7 @@
 
 .bb-guide-description-text,
 .bb-hint-description-text {
-  @apply text-base text-gray-700 break-words;
+  @apply text-base py-1 text-gray-700 break-words;
 }
 
 .bb-guide-btns-container {
@@ -49,11 +51,28 @@
   @apply px-2 py-1 border text-sm rounded hover:opacity-80 hover:border-gray-400;
 }
 
-.bb-hint-highlight-wrapper {
+.bb-hint-wrapper {
   @apply absolute rounded transition-all cursor-pointer;
   z-index: 999999;
+  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px;
+}
+
+.bb-hint-wrapper.covered {
+  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px,
+    rgb(33 33 33 / 60%) 0px 0px 0px 5000px !important;
+}
+
+.bb-hint-wrapper.highlight {
   box-shadow: rgb(78 70 211 / 80%) 0px 0px 1px 2px;
   animation: 0.5s linear 0.5s infinite alternate breathing;
+}
+
+.bb-hint-wrapper.shield {
+  @apply border-none rounded-none;
+  background: rgb(33 33 33 / 50%);
+  box-shadow: none;
+  cursor: not-allowed;
+  pointer-events: auto !important;
 }
 
 @keyframes breathing {
