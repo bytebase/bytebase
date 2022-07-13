@@ -26,25 +26,31 @@
     },
     "naming-table": {
       "title": "Table naming check",
-      "description": "Enforce the table name format. Default snake_lower_case.",
+      "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
       "component": {
         "name_format": {
           "title": "Table name format (regex)"
+        },
+        "length_limit": {
+          "title": "Length limit"
         }
       }
     },
     "naming-column": {
       "title": "Column naming check",
-      "description": "Enforce the column name format. Default snake_lower_case.",
+      "description": "Enforce the column name format and length limit. Default snake_lower_case with 64 characters.",
       "component": {
         "name_format": {
           "title": "Column name format (regex)"
+        },
+        "length_limit": {
+          "title": "Length limit"
         }
       }
     },
     "naming-index-uk": {
       "title": "Unique key naming check",
-      "description": "Enforce the unique key name format. Default uk_<table_name>_<column_list>.",
+      "description": "Enforce the unique key name format and length limit. Default uk_<table_name>_<column_list> with 64 characters.",
       "component": {
         "name_format": {
           "title": "Unique key name format",
@@ -52,12 +58,15 @@
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
+        },
+        "length_limit": {
+          "title": "Length limit"
         }
       }
     },
     "naming-index-fk": {
       "title": "Foreign key naming check",
-      "description": "Enforce the foreign key name format. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column>.",
+      "description": "Enforce the foreign key name format and length limit. Default fk_<referencing_table>_<referencing_column>_<referenced_table>_<referenced_column> with 64 characters.",
       "component": {
         "name_format": {
           "title": "Foreign key name format",
@@ -67,12 +76,15 @@
             "referenced_table": "The referenced table name",
             "referenced_column": "The referenced column name"
           }
+        },
+        "length_limit": {
+          "title": "Length limit"
         }
       }
     },
     "naming-index-idx": {
       "title": "Index naming check",
-      "description": "Enforce the index name format. Default idx_<table_name>_<column_list>.",
+      "description": "Enforce the index name format and length limit. Default idx_<table_name>_<column_list> with 64 characters.",
       "component": {
         "name_format": {
           "title": "Index name format",
@@ -80,6 +92,9 @@
             "table": "The table name",
             "column_list": "Index column names, joined by _"
           }
+        },
+        "length_limit": {
+          "title": "Length limit"
         }
       }
     },

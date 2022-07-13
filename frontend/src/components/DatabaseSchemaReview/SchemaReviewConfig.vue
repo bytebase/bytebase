@@ -102,7 +102,10 @@ const onRuleActivate = (type: RuleType) => {
   }
 };
 
-const onPayloadChange = (rule: RuleTemplate, data: (string | string[])[]) => {
+const onPayloadChange = (
+  rule: RuleTemplate,
+  data: (string | number | string[])[]
+) => {
   if (!rule.componentList) {
     return;
   }
@@ -118,6 +121,15 @@ const onPayloadChange = (rule: RuleTemplate, data: (string | string[])[]) => {
             payload: {
               ...component.payload,
               value: data[index] as string[],
+            },
+          });
+          break;
+        case "NUMBER":
+          list.push({
+            ...component,
+            payload: {
+              ...component.payload,
+              value: data[index] as number,
             },
           });
           break;
