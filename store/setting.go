@@ -123,18 +123,26 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 		return nil, err
 	}
 	if setting == nil {
-		tx, err := s.db.BeginTx(ctx, nil)
+		var (
+			tx  *Tx
+			err error
+		)
+		tx, err = s.db.BeginTx(ctx, nil)
 		if err != nil {
 			return nil, FormatError(err)
 		}
-		defer tx.PTx.Rollback()
+		defer func() {
+			if err != nil {
+				tx.PTx.Rollback()
+			}
+		}()
 
-		setting, err := createSettingImpl(ctx, tx.PTx, create)
+		setting, err = createSettingImpl(ctx, tx.PTx, create)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := tx.PTx.Commit(); err != nil {
+		if err = tx.PTx.Commit(); err != nil {
 			return nil, FormatError(err)
 		}
 
@@ -146,13 +154,22 @@ func (s *Store) createSettingRawIfNotExist(ctx context.Context, create *api.Sett
 
 // findSettingRaw retrieves a list of settings based on find.
 func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*settingRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findSettingImpl(ctx, tx.PTx, find)
+	list, err = findSettingImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -162,13 +179,22 @@ func (s *Store) findSettingRaw(ctx context.Context, find *api.SettingFind) ([]*s
 // getSettingRaw retrieves a single setting based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*settingRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findSettingImpl(ctx, tx.PTx, find)
+	list, err = findSettingImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -184,13 +210,22 @@ func (s *Store) getSettingRaw(ctx context.Context, find *api.SettingFind) (*sett
 // patchSettingRaw updates an existing setting by name.
 // Returns ENOTFOUND if setting does not exist.
 func (s *Store) patchSettingRaw(ctx context.Context, patch *api.SettingPatch) (*settingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx      *Tx
+		err     error
+		setting *settingRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	setting, err := patchSettingImpl(ctx, tx.PTx, patch)
+	setting, err = patchSettingImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}

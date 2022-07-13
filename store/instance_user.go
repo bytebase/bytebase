@@ -11,18 +11,28 @@ import (
 
 // UpsertInstanceUser would update the existing user if name matches.
 func (s *Store) UpsertInstanceUser(ctx context.Context, upsert *api.InstanceUserUpsert) (*api.InstanceUser, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx           *Tx
+		err          error
+		instanceUser *api.InstanceUser
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	instanceUser, err := upsertInstanceUserImpl(ctx, tx.PTx, upsert)
+	instanceUser, err = upsertInstanceUserImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -35,13 +45,22 @@ func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*ap
 		InstanceID: id,
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*api.InstanceUser
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findInstanceUserImpl(ctx, tx.PTx, find)
+	list, err = findInstanceUserImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -51,17 +70,25 @@ func (s *Store) FindInstanceUserByInstanceID(ctx context.Context, id int) ([]*ap
 
 // DeleteInstanceUser deletes an existing instance user by ID.
 func (s *Store) DeleteInstanceUser(ctx context.Context, delete *api.InstanceUserDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteInstanceUser(ctx, tx.PTx, delete); err != nil {
+	if err = deleteInstanceUser(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 

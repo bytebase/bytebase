@@ -143,18 +143,27 @@ func (s *Store) composeVCS(ctx context.Context, raw *vcsRaw) (*api.VCS, error) {
 
 // createVCSRaw creates a new vcs.
 func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+		vcs *vcsRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	vcs, err := createVCSImpl(ctx, tx.PTx, create)
+	vcs, err = createVCSImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -163,13 +172,22 @@ func (s *Store) createVCSRaw(ctx context.Context, create *api.VCSCreate) (*vcsRa
 
 // findVCSRaw retrieves a list of VCSs based on find conditions.
 func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*vcsRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findVCSImpl(ctx, tx.PTx, find)
+	list, err = findVCSImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -180,16 +198,25 @@ func (s *Store) findVCSRaw(ctx context.Context, find *api.VCSFind) ([]*vcsRaw, e
 // getVCSRaw retrieves a single vcs based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*vcsRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	find := &api.VCSFind{
 		ID: &id,
 	}
-	list, err := findVCSImpl(ctx, tx.PTx, find)
+	list, err = findVCSImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -205,18 +232,27 @@ func (s *Store) getVCSRaw(ctx context.Context, id int) (*vcsRaw, error) {
 // patchVCSRaw updates an existing vcs by ID.
 // Returns ENOTFOUND if vcs does not exist.
 func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*vcsRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+		vcs *vcsRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	vcs, err := patchVCSImpl(ctx, tx.PTx, patch)
+	vcs, err = patchVCSImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -225,17 +261,25 @@ func (s *Store) patchVCSRaw(ctx context.Context, patch *api.VCSPatch) (*vcsRaw, 
 
 // deleteVCSRaw deletes an existing vcs by ID.
 func (s *Store) deleteVCSRaw(ctx context.Context, delete *api.VCSDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteVCSImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 

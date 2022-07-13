@@ -124,17 +124,25 @@ func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*a
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	where, args := findInstanceQuery(find)
 
 	query := `SELECT COUNT(*) FROM instance WHERE ` + where
 	var count int
-	if err := tx.PTx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+	if err = tx.PTx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -146,13 +154,22 @@ func (s *Store) CountInstance(ctx context.Context, find *api.InstanceFind) (int,
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment_id.
 // Used by the metric collector.
 func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) ([]*metric.InstanceCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT engine, environment_id, row_status, COUNT(*)
 		FROM instance
 		WHERE (id <= 101 AND updater_id != 1) OR id > 101
@@ -167,12 +184,12 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
-		if err := rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
+		if err = rows.Scan(&metric.Engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -272,13 +289,23 @@ func (s *Store) composeInstance(ctx context.Context, raw *instanceRaw) (*api.Ins
 
 // createInstanceRaw creates a new instance.
 func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreate) (*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx          *Tx
+		err         error
+		instance    *instanceRaw
+		allDatabase *databaseRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	instance, err := createInstanceImpl(ctx, tx.PTx, create)
+	instance, err = createInstanceImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +320,7 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		CharacterSet:  api.DefaultCharactorSetName,
 		Collation:     api.DefaultCollationName,
 	}
-	allDatabase, err := s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)
+	allDatabase, err = s.createDatabaseRawTx(ctx, tx.PTx, databaseCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -311,15 +338,15 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 		SslCert:    create.SslCert,
 		SslCa:      create.SslCa,
 	}
-	if err := s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
+	if err = s.createDataSourceRawTx(ctx, tx.PTx, adminDataSourceCreate); err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err = s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
 
@@ -328,13 +355,22 @@ func (s *Store) createInstanceRaw(ctx context.Context, create *api.InstanceCreat
 
 // findInstanceRaw retrieves a list of instances based on find.
 func (s *Store) findInstanceRaw(ctx context.Context, find *api.InstanceFind) ([]*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*instanceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findInstanceImpl(ctx, tx.PTx, find)
+	list, err = findInstanceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -356,13 +392,22 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*instanceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findInstanceImpl(ctx, tx.PTx, find)
+	list, err = findInstanceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +419,7 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 	}
 
 	instance := list[0]
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err = s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
 	return instance, nil
@@ -383,22 +428,31 @@ func (s *Store) getInstanceRaw(ctx context.Context, find *api.InstanceFind) (*in
 // patchInstanceRaw updates an existing instance by ID.
 // Returns ENOTFOUND if instance does not exist.
 func (s *Store) patchInstanceRaw(ctx context.Context, patch *api.InstancePatch) (*instanceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		instance *instanceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	instance, err := patchInstanceImpl(ctx, tx.PTx, patch)
+	instance, err = patchInstanceImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
+	if err = s.cache.UpsertCache(api.InstanceCache, instance.ID, instance); err != nil {
 		return nil, err
 	}
 

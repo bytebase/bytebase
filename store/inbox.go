@@ -94,15 +94,23 @@ func (s *Store) PatchInbox(ctx context.Context, patch *api.InboxPatch) (*api.Inb
 
 // FindInboxSummary returns the inbox summary for a particular principal
 func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.InboxSummary, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	query := `SELECT EXISTS (SELECT 1 FROM inbox WHERE receiver_id = $1 AND status = 'UNREAD')`
 	var inboxSummary api.InboxSummary
-	if err := tx.PTx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
+	if err = tx.PTx.QueryRowContext(ctx, query, principalID).Scan(&inboxSummary.HasUnread); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -111,7 +119,7 @@ func (s *Store) FindInboxSummary(ctx context.Context, principalID int) (*api.Inb
 
 	if inboxSummary.HasUnread {
 		query2 := `SELECT EXISTS (SELECT 1 FROM inbox, activity WHERE inbox.receiver_id = $1 AND inbox.status = 'UNREAD' AND inbox.activity_id = activity.id AND activity.level = 'ERROR')`
-		if err := tx.PTx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
+		if err = tx.PTx.QueryRowContext(ctx, query2, principalID).Scan(&inboxSummary.HasUnreadError); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, common.FormatDBErrorEmptyRowWithQuery(query2)
 			}
@@ -143,18 +151,27 @@ func (s *Store) composeInbox(ctx context.Context, raw *inboxRaw) (*api.Inbox, er
 
 // createInboxRaw creates a new inbox.
 func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		inbox *inboxRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	inbox, err := s.createInboxImpl(ctx, tx.PTx, create)
+	inbox, err = s.createInboxImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -163,13 +180,22 @@ func (s *Store) createInboxRaw(ctx context.Context, create *api.InboxCreate) (*i
 
 // findInboxRaw retrieves a list of inboxes based on find.
 func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*inboxRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findInboxImpl(ctx, tx.PTx, find)
+	list, err = findInboxImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -180,13 +206,22 @@ func (s *Store) findInboxRaw(ctx context.Context, find *api.InboxFind) ([]*inbox
 // getInboxRawByID retrieves a single inbox based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*inboxRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findInboxImpl(ctx, tx.PTx, find)
+	list, err = findInboxImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -202,18 +237,27 @@ func (s *Store) getInboxRawByID(ctx context.Context, find *api.InboxFind) (*inbo
 // patchInboxRaw updates an existing inbox by ID.
 // Returns ENOTFOUND if inbox does not exist.
 func (s *Store) patchInboxRaw(ctx context.Context, patch *api.InboxPatch) (*inboxRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		inbox *inboxRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	inbox, err := s.patchInboxImpl(ctx, tx.PTx, patch)
+	inbox, err = s.patchInboxImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

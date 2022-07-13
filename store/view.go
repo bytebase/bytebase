@@ -84,17 +84,25 @@ func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, 
 
 // DeleteView deletes an existing view by ID.
 func (s *Store) DeleteView(ctx context.Context, delete *api.ViewDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteViewImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteViewImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -131,13 +139,22 @@ func (s *Store) composeView(ctx context.Context, raw *viewRaw) (*api.View, error
 
 // createViewRaw creates a new view.
 func (s *Store) createViewRaw(ctx context.Context, create *api.ViewCreate) (*viewRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		view *viewRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	view, err := s.createViewImpl(ctx, tx.PTx, create)
+	view, err = s.createViewImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +168,19 @@ func (s *Store) createViewRaw(ctx context.Context, create *api.ViewCreate) (*vie
 
 // findViewRaw retrieves a list of views based on find.
 func (s *Store) findViewRaw(ctx context.Context, find *api.ViewFind) ([]*viewRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	list, err := s.findViewImpl(ctx, tx.PTx, find)
 	if err != nil {

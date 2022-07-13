@@ -118,13 +118,22 @@ func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api
 // CountProjectGroupByTenantModeAndWorkflow counts the number of projects and group by tenant mode and workflow type.
 // Used by the metric collector.
 func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT tenant_mode, workflow_type, row_status, COUNT(*)
 		FROM project
 		GROUP BY tenant_mode, workflow_type, row_status`,
@@ -138,12 +147,12 @@ func (s *Store) CountProjectGroupByTenantModeAndWorkflow(ctx context.Context) ([
 
 	for rows.Next() {
 		var metric metric.ProjectCountMetric
-		if err := rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
+		if err = rows.Scan(&metric.TenantMode, &metric.WorkflowType, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 	return res, nil
@@ -179,22 +188,31 @@ func (s *Store) composeProject(ctx context.Context, raw *projectRaw) (*api.Proje
 
 // createProjectRaw creates a new project.
 func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate) (*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		err        error
+		projectRaw *projectRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	projectRaw, err := createProjectImpl(ctx, tx.PTx, create)
+	projectRaw, err = createProjectImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, projectRaw.ID, projectRaw); err != nil {
+	if err = s.cache.UpsertCache(api.ProjectCache, projectRaw.ID, projectRaw); err != nil {
 		return nil, err
 	}
 
@@ -203,20 +221,29 @@ func (s *Store) createProjectRaw(ctx context.Context, create *api.ProjectCreate)
 
 // findProjectRaw retrieves a list of projects based on find.
 func (s *Store) findProjectRaw(ctx context.Context, find *api.ProjectFind) ([]*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectImpl(ctx, tx.PTx, find)
+	list, err = findProjectImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if err == nil {
 		for _, project := range list {
-			if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+			if err = s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
 				return nil, err
 			}
 		}
@@ -239,13 +266,22 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectImpl(ctx, tx.PTx, find)
+	list, err = findProjectImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -264,22 +300,31 @@ func (s *Store) getProjectRaw(ctx context.Context, find *api.ProjectFind) (*proj
 // patchProjectRaw updates an existing project by ID.
 // Returns ENOTFOUND if project does not exist.
 func (s *Store) patchProjectRaw(ctx context.Context, patch *api.ProjectPatch) (*projectRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx      *Tx
+		err     error
+		project *projectRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	project, err := patchProjectImpl(ctx, tx.PTx, patch)
+	project, err = patchProjectImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
+	if err = s.cache.UpsertCache(api.ProjectCache, project.ID, project); err != nil {
 		return nil, err
 	}
 

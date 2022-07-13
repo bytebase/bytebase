@@ -166,22 +166,31 @@ func (s *Store) composePipeline(ctx context.Context, raw *pipelineRaw) (*api.Pip
 
 // createPipelineRaw creates a new pipeline.
 func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreate) (*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		pipeline *pipelineRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	pipeline, err := s.createPipelineImpl(ctx, tx.PTx, create)
+	pipeline, err = s.createPipelineImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
+	if err = s.cache.UpsertCache(api.PipelineCache, pipeline.ID, pipeline); err != nil {
 		return nil, err
 	}
 
@@ -190,13 +199,22 @@ func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreat
 
 // findPipelineRaw retrieves a list of pipelines based on find.
 func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*pipelineRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findPipelineImpl(ctx, tx.PTx, find)
+	list, err = s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -226,13 +244,22 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx              *Tx
+		err             error
+		pipelineRawList []*pipelineRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	pipelineRawList, err := s.findPipelineImpl(ctx, tx.PTx, find)
+	pipelineRawList, err = s.findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +269,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	} else if len(pipelineRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d pipelines with filter %+v, expect 1", len(pipelineRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
+	if err = s.cache.UpsertCache(api.PipelineCache, pipelineRawList[0].ID, pipelineRawList[0]); err != nil {
 		return nil, err
 	}
 	return pipelineRawList[0], nil
@@ -251,22 +278,31 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 // patchPipelineRaw updates an existing pipeline by ID.
 // Returns ENOTFOUND if pipeline does not exist.
 func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) (*pipelineRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx          *Tx
+		err         error
+		pipelineRaw *pipelineRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	pipelineRaw, err := s.patchPipelineImpl(ctx, tx.PTx, patch)
+	pipelineRaw, err = s.patchPipelineImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PipelineCache, pipelineRaw.ID, pipelineRaw); err != nil {
+	if err = s.cache.UpsertCache(api.PipelineCache, pipelineRaw.ID, pipelineRaw); err != nil {
 		return nil, err
 	}
 

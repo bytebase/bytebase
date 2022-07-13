@@ -145,18 +145,28 @@ func (s *Store) composeStage(ctx context.Context, raw *stageRaw) (*api.Stage, er
 
 // createStageRaw creates a new stage.
 func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*stageRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		err   error
+		tx    *Tx
+		stage *stageRaw
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	stage, err := s.createStageImpl(ctx, tx.PTx, create)
+	stage, err = s.createStageImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -165,13 +175,23 @@ func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*s
 
 // findStageRaw retrieves a list of stages based on find.
 func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stageRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx           *Tx
+		err          error
+		stageRawList []*stageRaw
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	stageRawList, err := s.findStageImpl(ctx, tx.PTx, find)
+	stageRawList, err = s.findStageImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

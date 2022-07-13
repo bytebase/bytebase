@@ -114,18 +114,27 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+		cfg *deploymentConfigRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	cfg, err := s.upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
+	cfg, err = s.upsertDeploymentConfigImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -134,11 +143,20 @@ func (s *Store) upsertDeploymentConfigRaw(ctx context.Context, upsert *api.Deplo
 
 // getDeploymentConfigImpl finds the deployment configuration in a project.
 func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.DeploymentConfigFind) (*deploymentConfigRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -149,7 +167,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
 	}
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -172,7 +190,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 	var ret []*deploymentConfigRaw
 	for rows.Next() {
 		var cfg deploymentConfigRaw
-		if err := rows.Scan(
+		if err = rows.Scan(
 			&cfg.ID,
 			&cfg.CreatorID,
 			&cfg.CreatedTs,
@@ -187,7 +205,7 @@ func (s *Store) getDeploymentConfigImpl(ctx context.Context, find *api.Deploymen
 
 		ret = append(ret, &cfg)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 

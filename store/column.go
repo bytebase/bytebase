@@ -12,18 +12,27 @@ import (
 
 // CreateColumn creates a new column.
 func (s *Store) CreateColumn(ctx context.Context, create *api.ColumnCreate) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		column *api.Column
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	column, err := s.createColumnImpl(ctx, tx.PTx, create)
+	column, err = s.createColumnImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -32,13 +41,22 @@ func (s *Store) CreateColumn(ctx context.Context, create *api.ColumnCreate) (*ap
 
 // FindColumn retrieves a list of columns based on find.
 func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*api.Column
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findColumnImpl(ctx, tx.PTx, find)
+	list, err = s.findColumnImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +67,22 @@ func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Co
 // GetColumn retrieves a single column based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) GetColumn(ctx context.Context, find *api.ColumnFind) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*api.Column
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findColumnImpl(ctx, tx.PTx, find)
+	list, err = s.findColumnImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -71,18 +98,27 @@ func (s *Store) GetColumn(ctx context.Context, find *api.ColumnFind) (*api.Colum
 // PatchColumn updates an existing column by ID.
 // Returns ENOTFOUND if column does not exist.
 func (s *Store) PatchColumn(ctx context.Context, patch *api.ColumnPatch) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		column *api.Column
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	column, err := s.patchColumn(ctx, tx.PTx, patch)
+	column, err = s.patchColumn(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

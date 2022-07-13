@@ -115,18 +115,27 @@ func (s *Store) composeBookmark(ctx context.Context, raw *bookmarkRaw) (*api.Boo
 
 // createBookmarkRaw creates a new bookmark.
 func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreate) (*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		bookmark *bookmarkRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	bookmark, err := createBookmarkImpl(ctx, tx.PTx, create)
+	bookmark, err = createBookmarkImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -135,13 +144,22 @@ func (s *Store) createBookmarkRaw(ctx context.Context, create *api.BookmarkCreat
 
 // findBookmarkRaw retrieves a list of bookmarks based on find.
 func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*bookmarkRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findBookmarkImpl(ctx, tx.PTx, find)
+	list, err = findBookmarkImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +170,22 @@ func (s *Store) findBookmarkRaw(ctx context.Context, find *api.BookmarkFind) ([]
 // getBookmarkRaw retrieves a single bookmark based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bookmarkRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx              *Tx
+		err             error
+		bookmarkRawList []*bookmarkRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	bookmarkRawList, err := findBookmarkImpl(ctx, tx.PTx, find)
+	bookmarkRawList, err = findBookmarkImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -174,17 +201,25 @@ func (s *Store) getBookmarkRaw(ctx context.Context, find *api.BookmarkFind) (*bo
 // DeleteBookmark deletes an existing bookmark by ID.
 // Returns ENOTFOUND if bookmark does not exist.
 func (s *Store) DeleteBookmark(ctx context.Context, delete *api.BookmarkDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteBookmarkImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteBookmarkImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 

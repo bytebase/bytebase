@@ -155,18 +155,27 @@ func (s *Store) composeDataSource(ctx context.Context, raw *dataSourceRaw) (*api
 
 // createDataSourceRaw creates a new dataSource.
 func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceCreate) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		err        error
+		dataSource *dataSourceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	dataSource, err := s.createDataSourceImpl(ctx, tx.PTx, create)
+	dataSource, err = s.createDataSourceImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -175,13 +184,22 @@ func (s *Store) createDataSourceRaw(ctx context.Context, create *api.DataSourceC
 
 // findDataSourceRaw retrieves a list of data sources based on find.
 func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*dataSourceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
+	list, err = s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -192,13 +210,22 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 // getDataSourceRaw retrieves a single dataSource based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*dataSourceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
+	list, err = s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -214,18 +241,27 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 // patchDataSourceRaw updates an existing dataSource by ID.
 // Returns ENOTFOUND if dataSource does not exist.
 func (s *Store) patchDataSourceRaw(ctx context.Context, patch *api.DataSourcePatch) (*dataSourceRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		err        error
+		dataSource *dataSourceRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	dataSource, err := s.patchDataSourceImpl(ctx, tx.PTx, patch)
+	dataSource, err = s.patchDataSourceImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

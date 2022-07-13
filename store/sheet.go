@@ -132,17 +132,25 @@ func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.She
 // DeleteSheet deletes an existing sheet by ID.
 // Returns ENOTFOUND if sheet does not exist.
 func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteSheet(ctx, tx.PTx, delete); err != nil {
+	if err = deleteSheet(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -151,13 +159,22 @@ func (s *Store) DeleteSheet(ctx context.Context, delete *api.SheetDelete) error 
 
 // CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
 func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT row_status, visibility, source, type, COUNT(*) AS count
 		FROM sheet
 		GROUP BY row_status, visibility, source, type`)
@@ -169,7 +186,7 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 	var res []*metric.SheetCountMetric
 	for rows.Next() {
 		var sheetCount metric.SheetCountMetric
-		if err := rows.Scan(
+		if err = rows.Scan(
 			&sheetCount.RowStatus,
 			&sheetCount.Visibility,
 			&sheetCount.Source,
@@ -180,7 +197,7 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 		}
 		res = append(res, &sheetCount)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 	return res, nil
@@ -237,18 +254,27 @@ func (s *Store) composeSheet(ctx context.Context, raw *sheetRaw, currentPrincipa
 
 // createSheetRaw creates a new sheet.
 func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		sheet *sheetRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	sheet, err := createSheetImpl(ctx, tx.PTx, create)
+	sheet, err = createSheetImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -257,18 +283,27 @@ func (s *Store) createSheetRaw(ctx context.Context, create *api.SheetCreate) (*s
 
 // patchSheetRaw updates an existing sheet by ID.
 func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		sheet *sheetRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	sheet, err := patchSheetImpl(ctx, tx.PTx, patch)
+	sheet, err = patchSheetImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -277,13 +312,22 @@ func (s *Store) patchSheetRaw(ctx context.Context, patch *api.SheetPatch) (*shee
 
 // findSheetRaw retrieves a list of sheet based on find.
 func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*sheetRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find)
+	list, err = findSheetImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -294,13 +338,22 @@ func (s *Store) findSheetRaw(ctx context.Context, find *api.SheetFind) ([]*sheet
 // getSheetRaw retrieves a single sheet based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getSheetRaw(ctx context.Context, find *api.SheetFind) (*sheetRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*sheetRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findSheetImpl(ctx, tx.PTx, find)
+	list, err = findSheetImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

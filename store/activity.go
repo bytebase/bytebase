@@ -118,18 +118,27 @@ func (s *Store) PatchActivity(ctx context.Context, patch *api.ActivityPatch) (*a
 
 // createActivityRaw creates a new activity.
 func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreate) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		activity *activityRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	activity, err := createActivityImpl(ctx, tx.PTx, create)
+	activity, err = createActivityImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -138,13 +147,22 @@ func (s *Store) createActivityRaw(ctx context.Context, create *api.ActivityCreat
 
 // findActivityRaw retrieves a list of activities based on the find condition.
 func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*activityRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findActivityImpl(ctx, tx.PTx, find)
+	list, err = findActivityImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -156,13 +174,22 @@ func (s *Store) findActivityRaw(ctx context.Context, find *api.ActivityFind) ([]
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, error) {
 	find := &api.ActivityFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*activityRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findActivityImpl(ctx, tx.PTx, find)
+	list, err = findActivityImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -178,18 +205,27 @@ func (s *Store) getActivityRawByID(ctx context.Context, id int) (*activityRaw, e
 // patchActivityRaw updates an existing activity by ID.
 // Returns ENOTFOUND if activity does not exist.
 func (s *Store) patchActivityRaw(ctx context.Context, patch *api.ActivityPatch) (*activityRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		activity *activityRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	activity, err := patchActivityImpl(ctx, tx.PTx, patch)
+	activity, err = patchActivityImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

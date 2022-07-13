@@ -116,17 +116,25 @@ func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMember
 
 // DeleteProjectMember deletes an existing projectMember by ID.
 func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemberDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -188,18 +196,27 @@ func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw)
 
 // createProjectMemberRaw creates a new projectMember.
 func (s *Store) createProjectMemberRaw(ctx context.Context, create *api.ProjectMemberCreate) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		projectMember *projectMemberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	projectMember, err := createProjectMemberImpl(ctx, tx.PTx, create)
+	projectMember, err = createProjectMemberImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -208,13 +225,22 @@ func (s *Store) createProjectMemberRaw(ctx context.Context, create *api.ProjectM
 
 // findProjectMemberRaw retrieves a list of projectMembers based on find.
 func (s *Store) findProjectMemberRaw(ctx context.Context, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectMemberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectMemberImpl(ctx, tx.PTx, find)
+	list, err = findProjectMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -224,13 +250,22 @@ func (s *Store) findProjectMemberRaw(ctx context.Context, find *api.ProjectMembe
 
 // getProjectMemberRaw finds project members.
 func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMemberFind) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectMemberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectMemberImpl(ctx, tx.PTx, find)
+	list, err = findProjectMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -246,13 +281,22 @@ func (s *Store) getProjectMemberRaw(ctx context.Context, find *api.ProjectMember
 // patchProjectMemberRaw updates an existing projectMember by ID.
 // Returns ENOTFOUND if projectMember does not exist.
 func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMemberPatch) (*projectMemberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		projectMember *projectMemberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	projectMember, err := patchProjectMemberImpl(ctx, tx.PTx, patch)
+	projectMember, err = patchProjectMemberImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -300,23 +344,38 @@ func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList 
 func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*projectMemberRaw, []*projectMemberRaw, error) {
 	var createdMemberRawList []*projectMemberRaw
 	var deletedMemberRawList []*projectMemberRaw
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx                      *Tx
+		txRead                  *Tx
+		err                     error
+		oldProjectMemberRawList []*projectMemberRaw
+		patchedMemberRaw        *projectMemberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	txRead, err := s.db.BeginTx(ctx, nil)
+	txRead, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, nil, FormatError(err)
 	}
-	defer txRead.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			txRead.PTx.Rollback()
+		}
+	}()
 
 	findProjectMember := &api.ProjectMemberFind{
 		ProjectID:    &batchUpdate.ID,
 		RoleProvider: &batchUpdate.RoleProvider,
 	}
-	oldProjectMemberRawList, err := findProjectMemberImpl(ctx, txRead.PTx, findProjectMember)
+	oldProjectMemberRawList, err = findProjectMemberImpl(ctx, txRead.PTx, findProjectMember)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -355,7 +414,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 			RoleProvider: (*string)(&newMemberCreate.RoleProvider),
 			Payload:      &newMemberCreate.Payload,
 		}
-		patchedMemberRaw, err := patchProjectMemberImpl(ctx, tx.PTx, memberPatch)
+		patchedMemberRaw, err = patchProjectMemberImpl(ctx, tx.PTx, memberPatch)
 		if err != nil {
 			return nil, nil, FormatError(err)
 		}
@@ -375,7 +434,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 		deletedMemberRawList = append(deletedMemberRawList, deletedMember)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, nil, FormatError(err)
 	}
 

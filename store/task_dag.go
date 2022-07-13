@@ -69,30 +69,48 @@ func (s *Store) GetTaskDAGByToTaskID(ctx context.Context, id int) (*api.TaskDAG,
 }
 
 func (s *Store) createTaskDAGRaw(ctx context.Context, create *api.TaskDAGCreate) (*taskDAGRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx      *Tx
+		err     error
+		taskDAG *taskDAGRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	taskDAG, err := createTaskDAGImpl(ctx, tx.PTx, create)
+	taskDAG, err = createTaskDAGImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 	return taskDAG, nil
 }
 
 func (s *Store) findTaskDAGRawList(ctx context.Context, find *api.TaskDAGFind) ([]*taskDAGRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*taskDAGRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findTaskDAGRawListImpl(ctx, tx.PTx, find)
+	list, err = findTaskDAGRawListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

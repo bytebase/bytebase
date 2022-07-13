@@ -144,13 +144,22 @@ func (s *Store) PatchIssue(ctx context.Context, patch *api.IssuePatch) (*api.Iss
 // CountIssueGroupByTypeAndStatus counts the number of issue and group by type and status.
 // Used by the metric collector.
 func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.IssueCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM issue
 		WHERE (id <= 101 AND updater_id != 1) OR id > 101
@@ -165,12 +174,12 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 
 	for rows.Next() {
 		var metric metric.IssueCountMetric
-		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
+		if err = rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -372,22 +381,31 @@ func (s *Store) composeIssue(ctx context.Context, raw *issueRaw) (*api.Issue, er
 
 // createIssueRaw creates a new issue.
 func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		issue *issueRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	issue, err := s.createIssueImpl(ctx, tx.PTx, create)
+	issue, err = s.createIssueImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+	if err = s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
 		return nil, err
 	}
 
@@ -396,13 +414,22 @@ func (s *Store) createIssueRaw(ctx context.Context, create *api.IssueCreate) (*i
 
 // findIssueRaw retrieves a list of issues based on find.
 func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*issueRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findIssueImpl(ctx, tx.PTx, find)
+	list, err = s.findIssueImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -421,13 +448,22 @@ func (s *Store) findIssueRaw(ctx context.Context, find *api.IssueFind) ([]*issue
 // getIssueRaw retrieves a single issue based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*issueRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findIssueImpl(ctx, tx.PTx, find)
+	list, err = s.findIssueImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +473,7 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d issues with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
+	if err = s.cache.UpsertCache(api.IssueCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 	return list[0], nil
@@ -446,22 +482,31 @@ func (s *Store) getIssueRaw(ctx context.Context, find *api.IssueFind) (*issueRaw
 // patchIssueRaw updates an existing issue by ID.
 // Returns ENOTFOUND if issue does not exist.
 func (s *Store) patchIssueRaw(ctx context.Context, patch *api.IssuePatch) (*issueRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		issue *issueRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	issue, err := s.patchIssueImpl(ctx, tx.PTx, patch)
+	issue, err = s.patchIssueImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
+	if err = s.cache.UpsertCache(api.IssueCache, issue.ID, issue); err != nil {
 		return nil, err
 	}
 

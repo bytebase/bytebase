@@ -87,17 +87,26 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("invalid policy type")}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		policyRawList []*policyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	find := &api.PolicyFind{
 		EnvironmentID: &delete.EnvironmentID,
 		Type:          &delete.Type,
 	}
-	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err = findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return fmt.Errorf("failed to list policy with PolicyFind[%+v], error: %w", find, err)
 	}
@@ -109,11 +118,11 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
-	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -128,20 +137,30 @@ func (s *Store) ListPolicy(ctx context.Context, find *api.PolicyFind) ([]*api.Po
 			return nil, &common.Error{Code: common.Invalid, Err: err}
 		}
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		policyRawList []*policyRaw
+		policy        *api.Policy
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err = findPolicyImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list policy with PolicyFind[%+v], error: %w", find, err)
 	}
 
 	policyList := []*api.Policy{}
 	for _, raw := range policyRawList {
-		policy, err := s.composePolicy(ctx, raw)
+		policy, err = s.composePolicy(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compose policy with policyRaw[%+v], error: %w", raw, err)
 		}
@@ -248,13 +267,23 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 			return nil, &common.Error{Code: common.Invalid, Err: err}
 		}
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		policyRawList []*policyRaw
+		payload       string
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	policyRawList, err := findPolicyImpl(ctx, tx.PTx, find)
+	policyRawList, err = findPolicyImpl(ctx, tx.PTx, find)
 	var ret *policyRaw
 	if err != nil {
 		return nil, err
@@ -277,7 +306,7 @@ func (s *Store) getPolicyRaw(ctx context.Context, find *api.PolicyFind) (*policy
 
 	if ret.Payload == "" {
 		// Return the default policy when there is no stored policy.
-		payload, err := api.GetDefaultPolicy(*find.Type)
+		payload, err = api.GetDefaultPolicy(*find.Type)
 		if err != nil {
 			return nil, &common.Error{Code: common.Internal, Err: err}
 		}
@@ -355,18 +384,27 @@ func (s *Store) upsertPolicyRaw(ctx context.Context, upsert *api.PolicyUpsert) (
 			return nil, &common.Error{Code: common.Invalid, Err: err}
 		}
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		policy *policyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	policy, err := upsertPolicyImpl(ctx, tx.PTx, upsert)
+	policy, err = upsertPolicyImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

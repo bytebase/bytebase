@@ -265,18 +265,27 @@ func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw)
 
 // createBackupRaw creates a new backup.
 func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx        *Tx
+		err       error
+		backupRaw *backupRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	backupRaw, err := s.createBackupImpl(ctx, tx.PTx, create)
+	backupRaw, err = s.createBackupImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -287,13 +296,22 @@ func (s *Store) createBackupRaw(ctx context.Context, create *api.BackupCreate) (
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error) {
 	find := &api.BackupFind{ID: &id}
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		backupRawList []*backupRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err = s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -308,13 +326,22 @@ func (s *Store) getBackupRawByID(ctx context.Context, id int) (*backupRaw, error
 
 // findBackupRaw retrieves a list of backups based on find.
 func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		backupRawList []*backupRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	backupRawList, err := s.findBackupImpl(ctx, tx.PTx, find)
+	backupRawList, err = s.findBackupImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -325,18 +352,27 @@ func (s *Store) findBackupRaw(ctx context.Context, find *api.BackupFind) ([]*bac
 // patchBackupRaw updates an existing backup by ID.
 // Returns ENOTFOUND if backup does not exist.
 func (s *Store) patchBackupRaw(ctx context.Context, patch *api.BackupPatch) (*backupRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx        *Tx
+		err       error
+		backupRaw *backupRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	backupRaw, err := s.patchBackupImpl(ctx, tx.PTx, patch)
+	backupRaw, err = s.patchBackupImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -365,19 +401,26 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 			}
 		}
 	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx        *Tx
+		backupRaw *backupSettingRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	backupRaw, err := s.upsertBackupSettingImpl(ctx, tx.PTx, upsert)
+	backupRaw, err = s.upsertBackupSettingImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -566,13 +609,22 @@ func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.Back
 // getBackupSettingRaw finds the backup setting for a database.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSettingFind) (*backupSettingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*backupSettingRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findBackupSettingImpl(ctx, tx.PTx, find)
+	list, err = s.findBackupSettingImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -696,13 +748,22 @@ func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert 
 
 // findBackupSettingsMatchImpl retrieves a list of backup settings based on match condition.
 func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.BackupSettingsMatch) ([]*backupSettingRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT
 			id,
 			creator_id,
@@ -753,7 +814,7 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 
 		backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 

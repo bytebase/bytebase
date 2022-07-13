@@ -98,11 +98,16 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 		return nil, FormatError(err)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var tx *Tx
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	var ret []*api.DatabaseLabel
 
@@ -119,7 +124,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 			Key:        oldLabelRaw.Key,
 			Value:      oldLabelRaw.Value,
 		}
-		if _, err := s.upsertDatabaseLabelImpl(ctx, tx.PTx, upsert); err != nil {
+		if _, err = s.upsertDatabaseLabelImpl(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -142,7 +147,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 			return nil, err
 		}
 
-		label, err := s.composeDatabaseLabel(ctx, labelRaw)
+		label, err = s.composeDatabaseLabel(ctx, labelRaw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compose DatabaseLabel with databaseLabelRaw[%+v], error: %w", labelRaw, err)
 		}
@@ -248,18 +253,27 @@ func (s *Store) composeDatabaseLabel(ctx context.Context, raw *databaseLabelRaw)
 
 // findLabelKeyRaw retrieves a list of label keys for labels based on find.
 func (s *Store) findLabelKeyRaw(ctx context.Context, find *api.LabelKeyFind) ([]*labelKeyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+		ret []*labelKeyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	ret, err := s.findLabelKeyImpl(ctx, tx.PTx, find)
+	ret, err = s.findLabelKeyImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -355,13 +369,22 @@ type labelValueUpsert struct {
 
 // patchLabelKeyRaw patches a label key.
 func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) (*labelKeyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx              *Tx
+		err             error
+		labelKeyRawList []*labelKeyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	labelKeyRawList, err := s.findLabelKeyImpl(ctx, tx.PTx, &api.LabelKeyFind{})
+	labelKeyRawList, err = s.findLabelKeyImpl(ctx, tx.PTx, &api.LabelKeyFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -403,12 +426,12 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 	}
 
 	for _, upsert := range upserts {
-		if err := s.upsertLabelValueImpl(ctx, tx.PTx, upsert); err != nil {
+		if err = s.upsertLabelValueImpl(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -445,18 +468,27 @@ func (s *Store) upsertLabelValueImpl(ctx context.Context, tx *sql.Tx, upsert lab
 
 // findDatabaseLabelRaw finds the labels associated with the database.
 func (s *Store) findDatabaseLabelRaw(ctx context.Context, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx                *Tx
+		err               error
+		databaseLabelList []*databaseLabelRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	databaseLabelList, err := s.findDatabaseLabelsImpl(ctx, tx.PTx, find)
+	databaseLabelList, err = s.findDatabaseLabelsImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

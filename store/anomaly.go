@@ -112,11 +112,20 @@ func (s *Store) composeAnomaly(ctx context.Context, raw *anomalyRaw) (*api.Anoma
 // Do not use ON CONFLICT (upsert syntax) as it will consume auto-increment id. Functional wise, this is fine, but
 // from the UX perspective, it's not great, since user will see large id gaps.
 func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyUpsert) (*anomalyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*anomalyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	status := api.Normal
 	find := &api.AnomalyFind{
@@ -125,7 +134,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 		DatabaseID: upsert.DatabaseID,
 		Type:       &upsert.Type,
 	}
-	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
+	list, err = findAnomalyListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +160,7 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d active anomalies with filter %+v, expect 1", len(list), find)}
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -160,13 +169,22 @@ func (s *Store) upsertActiveAnomalyRaw(ctx context.Context, upsert *api.AnomalyU
 
 // findAnomalyRaw retrieves a list of anomalies based on the find condition.
 func (s *Store) findAnomalyRaw(ctx context.Context, find *api.AnomalyFind) ([]*anomalyRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*anomalyRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findAnomalyListImpl(ctx, tx.PTx, find)
+	list, err = findAnomalyListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -177,17 +195,25 @@ func (s *Store) findAnomalyRaw(ctx context.Context, find *api.AnomalyFind) ([]*a
 // ArchiveAnomaly archives an existing anomaly by ID.
 // Returns ENOTFOUND if anomaly does not exist.
 func (s *Store) ArchiveAnomaly(ctx context.Context, archive *api.AnomalyArchive) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := archiveAnomalyImpl(ctx, tx.PTx, archive); err != nil {
+	if err = archiveAnomalyImpl(ctx, tx.PTx, archive); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 

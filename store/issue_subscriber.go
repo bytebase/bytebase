@@ -58,17 +58,25 @@ func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscrib
 
 // DeleteIssueSubscriber deletes an existing issueSubscriber by ID.
 func (s *Store) DeleteIssueSubscriber(ctx context.Context, delete *api.IssueSubscriberDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteIssueSubscriberImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteIssueSubscriberImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -93,18 +101,27 @@ func (s *Store) composeIssueSubscriber(ctx context.Context, raw *issueSubscriber
 
 // createIssueSubscriberRaw creates a new issueSubscriber.
 func (s *Store) createIssueSubscriberRaw(ctx context.Context, create *api.IssueSubscriberCreate) (*issueSubscriberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx              *Tx
+		err             error
+		issueSubscriber *issueSubscriberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	issueSubscriber, err := createIssueSubscriberImpl(ctx, tx.PTx, create)
+	issueSubscriber, err = createIssueSubscriberImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -113,13 +130,22 @@ func (s *Store) createIssueSubscriberRaw(ctx context.Context, create *api.IssueS
 
 // findIssueSubscriberRaw retrieves a list of issueSubscribers based on find.
 func (s *Store) findIssueSubscriberRaw(ctx context.Context, find *api.IssueSubscriberFind) ([]*issueSubscriberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*issueSubscriberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findIssueSubscriberImpl(ctx, tx.PTx, find)
+	list, err = findIssueSubscriberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

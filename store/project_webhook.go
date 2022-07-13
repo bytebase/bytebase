@@ -119,17 +119,25 @@ func (s *Store) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebho
 
 // DeleteProjectWebhook deletes an existing projectWebhook by ID.
 func (s *Store) DeleteProjectWebhook(ctx context.Context, delete *api.ProjectWebhookDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteProjectWebhookImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -160,18 +168,27 @@ func (s *Store) composeProjectWebhook(ctx context.Context, raw *projectWebhookRa
 
 // createProjectWebhookRaw creates a new projectWebhook.
 func (s *Store) createProjectWebhookRaw(ctx context.Context, create *api.ProjectWebhookCreate) (*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx             *Tx
+		err            error
+		projectWebhook *projectWebhookRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	projectWebhook, err := createProjectWebhookImpl(ctx, tx.PTx, create)
+	projectWebhook, err = createProjectWebhookImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -180,13 +197,22 @@ func (s *Store) createProjectWebhookRaw(ctx context.Context, create *api.Project
 
 // findProjectWebhookRaw retrieves a list of projectWebhooks based on find.
 func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) ([]*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectWebhookRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectWebhookImpl(ctx, tx.PTx, find)
+	list, err = findProjectWebhookImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +223,22 @@ func (s *Store) findProjectWebhookRaw(ctx context.Context, find *api.ProjectWebh
 // getProjectWebhookRaw retrieves a single projectWebhook based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getProjectWebhookRaw(ctx context.Context, find *api.ProjectWebhookFind) (*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*projectWebhookRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findProjectWebhookImpl(ctx, tx.PTx, find)
+	list, err = findProjectWebhookImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -219,18 +254,27 @@ func (s *Store) getProjectWebhookRaw(ctx context.Context, find *api.ProjectWebho
 // patchProjectWebhookRaw updates an existing projectWebhook by ID.
 // Returns ENOTFOUND if projectWebhook does not exist.
 func (s *Store) patchProjectWebhookRaw(ctx context.Context, patch *api.ProjectWebhookPatch) (*projectWebhookRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx             *Tx
+		err            error
+		projectWebhook *projectWebhookRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	projectWebhook, err := patchProjectWebhookImpl(ctx, tx.PTx, patch)
+	projectWebhook, err = patchProjectWebhookImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

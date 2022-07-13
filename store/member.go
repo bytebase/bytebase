@@ -129,13 +129,22 @@ func (s *Store) PatchMember(ctx context.Context, patch *api.MemberPatch) (*api.M
 // CountMemberGroupByRoleAndStatus counts the number of member and group by role and status.
 // Used by the metric collector.
 func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.MemberCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT role, status, row_status, COUNT(*)
 		FROM member
 		GROUP BY role, status, row_status`,
@@ -148,12 +157,12 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	var res []*metric.MemberCountMetric
 	for rows.Next() {
 		var metric metric.MemberCountMetric
-		if err := rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
+		if err = rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 	return res, nil
@@ -165,22 +174,31 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 
 // createMemberRaw creates a new member.
 func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (*memberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		member *memberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	member, err := createMemberImpl(ctx, tx.PTx, create)
+	member, err = createMemberImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+	if err = s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 
@@ -189,19 +207,28 @@ func (s *Store) createMemberRaw(ctx context.Context, create *api.MemberCreate) (
 
 // findMemberRaw retrieves a list of memberRaw instances.
 func (s *Store) findMemberRaw(ctx context.Context, find *api.MemberFind) ([]*memberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx            *Tx
+		err           error
+		memberRawList []*memberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	memberRawList, err := findMemberImpl(ctx, tx.PTx, find)
+	memberRawList, err = findMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, member := range memberRawList {
-		if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+		if err = s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 			return nil, err
 		}
 	}
@@ -223,13 +250,22 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*memberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findMemberImpl(ctx, tx.PTx, find)
+	list, err = findMemberImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +275,7 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 	} else if len(list) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d members with filter %+v, expect 1", len(list), find)}
 	}
-	if err := s.cache.UpsertCache(api.MemberCache, list[0].PrincipalID, list[0]); err != nil {
+	if err = s.cache.UpsertCache(api.MemberCache, list[0].PrincipalID, list[0]); err != nil {
 		return nil, err
 	}
 	return list[0], nil
@@ -248,22 +284,31 @@ func (s *Store) getMemberRaw(ctx context.Context, find *api.MemberFind) (*member
 // patchMemberRaw updates an existing instance of memberRaw by ID.
 // Returns ENOTFOUND if member does not exist.
 func (s *Store) patchMemberRaw(ctx context.Context, patch *api.MemberPatch) (*memberRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		member *memberRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	member, err := patchMemberImpl(ctx, tx.PTx, patch)
+	member, err = patchMemberImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
+	if err = s.cache.UpsertCache(api.MemberCache, member.PrincipalID, member); err != nil {
 		return nil, err
 	}
 

@@ -138,17 +138,25 @@ func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch)
 
 // DeleteRepository deletes an existing repository by ID.
 func (s *Store) DeleteRepository(ctx context.Context, delete *api.RepositoryDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := s.deleteRepository(ctx, tx.PTx, delete); err != nil {
+	if err = s.deleteRepository(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -195,18 +203,27 @@ func (s *Store) composeRepository(ctx context.Context, raw *repositoryRaw) (*api
 
 // createRepositoryRaw creates a new repository.
 func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryCreate) (*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		err        error
+		repository *repositoryRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	repository, err := s.createRepositoryImpl(ctx, tx.PTx, create)
+	repository, err = s.createRepositoryImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -215,13 +232,22 @@ func (s *Store) createRepositoryRaw(ctx context.Context, create *api.RepositoryC
 
 // findRepositoryRaw retrieves a list of repositories based on find.
 func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind) ([]*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*repositoryRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err = findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -232,13 +258,22 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 // getRepositoryRaw retrieves a single repository based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) (*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*repositoryRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err = findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -254,18 +289,27 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 // patchRepositoryRaw updates an existing repository by ID.
 // Returns ENOTFOUND if repository does not exist.
 func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPatch) (*repositoryRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		err        error
+		repository *repositoryRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	repository, err := patchRepositoryImpl(ctx, tx.PTx, patch, s.db.mode)
+	repository, err = patchRepositoryImpl(ctx, tx.PTx, patch, s.db.mode)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

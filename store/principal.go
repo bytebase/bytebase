@@ -136,22 +136,31 @@ func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, e
 
 // createPrincipalRaw creates an instance of principalRaw.
 func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCreate) (*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx        *Tx
+		err       error
+		principal *principalRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	principal, err := createPrincipalImpl(ctx, tx.PTx, create)
+	principal, err = createPrincipalImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+	if err = s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
 		return nil, err
 	}
 
@@ -160,19 +169,28 @@ func (s *Store) createPrincipalRaw(ctx context.Context, create *api.PrincipalCre
 
 // findPrincipalRawList retrieves a list of principalRaw instances.
 func (s *Store) findPrincipalRawList(ctx context.Context) ([]*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*principalRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findPrincipalRawListImpl(ctx, tx.PTx, &api.PrincipalFind{})
+	list, err = findPrincipalRawListImpl(ctx, tx.PTx, &api.PrincipalFind{})
 	if err != nil {
 		return nil, err
 	}
 
 	for _, principal := range list {
-		if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+		if err = s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
 			return nil, err
 		}
 	}
@@ -194,13 +212,22 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*principalRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := findPrincipalRawListImpl(ctx, tx.PTx, find)
+	list, err = findPrincipalRawListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -220,22 +247,31 @@ func (s *Store) getPrincipalRaw(ctx context.Context, find *api.PrincipalFind) (*
 // patchPrincipalRaw updates an existing instance of principalRaw by ID.
 // Returns ENOTFOUND if principal does not exist.
 func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch) (*principalRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx        *Tx
+		err       error
+		principal *principalRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	principal, err := patchPrincipalImpl(ctx, tx.PTx, patch)
+	principal, err = patchPrincipalImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
+	if err = s.cache.UpsertCache(api.PrincipalCache, principal.ID, principal); err != nil {
 		return nil, err
 	}
 

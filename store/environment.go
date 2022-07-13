@@ -129,22 +129,31 @@ func (s *Store) composeEnvironment(ctx context.Context, raw *environmentRaw) (*a
 
 // createEnvironmentRaw creates a new environment.
 func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.EnvironmentCreate) (*environmentRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx          *Tx
+		err         error
+		environment *environmentRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	environment, err := s.createEnvironmentImpl(ctx, tx.PTx, create)
+	environment, err = s.createEnvironmentImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+	if err = s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
 		return nil, err
 	}
 
@@ -153,20 +162,29 @@ func (s *Store) createEnvironmentRaw(ctx context.Context, create *api.Environmen
 
 // findEnvironmentRaw retrieves a list of environments based on find.
 func (s *Store) findEnvironmentRaw(ctx context.Context, find *api.EnvironmentFind) ([]*environmentRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*environmentRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findEnvironmentImpl(ctx, tx.PTx, find)
+	list, err = s.findEnvironmentImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if err == nil {
 		for _, environment := range list {
-			if err := s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
+			if err = s.cache.UpsertCache(api.EnvironmentCache, environment.ID, environment); err != nil {
 				return nil, err
 			}
 		}
@@ -187,14 +205,22 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 		return envRaw, nil
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx         *Tx
+		envRawList []*environmentRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	find := &api.EnvironmentFind{ID: &id}
-	envRawList, err := s.findEnvironmentImpl(ctx, tx.PTx, find)
+	envRawList, err = s.findEnvironmentImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +230,7 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 	} else if len(envRawList) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d environments with filter %+v, expect 1", len(envRawList), find)}
 	}
-	if err := s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
+	if err = s.cache.UpsertCache(api.EnvironmentCache, envRawList[0].ID, envRawList[0]); err != nil {
 		return nil, err
 	}
 	return envRawList[0], nil
@@ -213,22 +239,31 @@ func (s *Store) getEnvironmentByIDRaw(ctx context.Context, id int) (*environment
 // patchEnvironmentRaw updates an existing environment by ID.
 // Returns ENOTFOUND if environment does not exist.
 func (s *Store) patchEnvironmentRaw(ctx context.Context, patch *api.EnvironmentPatch) (*environmentRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx     *Tx
+		err    error
+		envRaw *environmentRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	envRaw, err := s.patchEnvironmentImpl(ctx, tx.PTx, patch)
+	envRaw, err = s.patchEnvironmentImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.EnvironmentCache, envRaw.ID, envRaw); err != nil {
+	if err = s.cache.UpsertCache(api.EnvironmentCache, envRaw.ID, envRaw); err != nil {
 		return nil, err
 	}
 

@@ -128,11 +128,21 @@ func (s *Store) composeTaskCheckRun(ctx context.Context, raw *taskCheckRunRaw) (
 
 // createTaskCheckRunRawIfNeeded creates a new taskCheckRun. See interface for the expected behavior
 func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx               *Tx
+		err              error
+		taskCheckRunList []*taskCheckRunRaw
+		taskCheckRun     *taskCheckRunRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunRunning}
 	if create.SkipIfAlreadyTerminated {
@@ -146,7 +156,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		StatusList: &statusList,
 	}
 
-	taskCheckRunList, err := s.findTaskCheckRunRawTx(ctx, tx.PTx, taskCheckRunFind)
+	taskCheckRunList, err = s.findTaskCheckRunRawTx(ctx, tx.PTx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}
@@ -176,12 +186,12 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return taskCheckRunList[0], nil
 	}
 
-	taskCheckRun, err := s.createTaskCheckRunImpl(ctx, tx.PTx, create)
+	taskCheckRun, err = s.createTaskCheckRunImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -238,13 +248,22 @@ func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *
 
 // findTaskCheckRunRaw retrieves a list of taskCheckRuns based on find.
 func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*taskCheckRunRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findTaskCheckRunImpl(ctx, tx.PTx, find)
+	list, err = s.findTaskCheckRunImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -264,18 +283,27 @@ func (s *Store) findTaskCheckRunRawTx(ctx context.Context, tx *sql.Tx, find *api
 
 // patchTaskCheckRunRawStatus updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
 func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx           *Tx
+		err          error
+		taskCheckRun *taskCheckRunRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	taskCheckRun, err := s.patchTaskCheckRunStatusImpl(ctx, tx.PTx, patch)
+	taskCheckRun, err = s.patchTaskCheckRunStatusImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 

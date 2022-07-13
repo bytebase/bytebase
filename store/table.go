@@ -114,17 +114,24 @@ func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Tabl
 
 // DeleteTable deletes an existing table by ID.
 func (s *Store) DeleteTable(ctx context.Context, delete *api.TableDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
-
-	if err := deleteTableImpl(ctx, tx.PTx, delete); err != nil {
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
+	if err = deleteTableImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -161,18 +168,28 @@ func (s *Store) composeTable(ctx context.Context, raw *tableRaw) (*api.Table, er
 
 // createTableRaw creates a new table.
 func (s *Store) createTableRaw(ctx context.Context, create *api.TableCreate) (*tableRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		table *tableRaw
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	table, err := s.createTableImpl(ctx, tx.PTx, create)
+	table, err = s.createTableImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -181,13 +198,23 @@ func (s *Store) createTableRaw(ctx context.Context, create *api.TableCreate) (*t
 
 // findTableRaw retrieves a list of tables based on find.
 func (s *Store) findTableRaw(ctx context.Context, find *api.TableFind) ([]*tableRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*tableRaw
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findTableImpl(ctx, tx.PTx, find)
+	list, err = s.findTableImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -198,13 +225,23 @@ func (s *Store) findTableRaw(ctx context.Context, find *api.TableFind) ([]*table
 // getTableRaw retrieves a single table based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getTableRaw(ctx context.Context, find *api.TableFind) (*tableRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*tableRaw
+	)
+
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findTableImpl(ctx, tx.PTx, find)
+	list, err = s.findTableImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

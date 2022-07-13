@@ -139,13 +139,23 @@ func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*a
 
 // CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx               *Tx
+		err              error
+		rows             *sql.Rows
+		backupPlanPolicy *api.BackupPlanPolicy
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		WITH database_backup_policy AS (
 			SELECT db.id AS database_id, backup_policy.payload AS payload
 			FROM db, instance LEFT JOIN (
@@ -173,12 +183,12 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 		var optionalPayload sql.NullString
 		var optionalEnabled sql.NullBool
 		var count int
-		if err := rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
+		if err = rows.Scan(&optionalPayload, &optionalEnabled, &count); err != nil {
 			return nil, FormatError(err)
 		}
 		var backupPlanPolicySchedule *api.BackupPlanPolicySchedule
 		if optionalPayload.Valid {
-			backupPlanPolicy, err := api.UnmarshalBackupPlanPolicy(optionalPayload.String)
+			backupPlanPolicy, err = api.UnmarshalBackupPlanPolicy(optionalPayload.String)
 			if err != nil {
 				return nil, FormatError(err)
 			}
@@ -194,7 +204,7 @@ func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context
 			Count:                    count,
 		})
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -286,18 +296,27 @@ func (s *Store) composeDatabase(ctx context.Context, raw *databaseRaw) (*api.Dat
 
 // createDatabaseRaw creates a new database.
 func (s *Store) createDatabaseRaw(ctx context.Context, create *api.DatabaseCreate) (*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		database *databaseRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	database, err := s.createDatabaseRawTx(ctx, tx.PTx, create)
+	database, err = s.createDatabaseRawTx(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -345,20 +364,29 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 
 // findDatabaseRaw retrieves a list of databases based on find.
 func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*databaseRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err = s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
 
 	if err == nil {
 		for _, database := range list {
-			if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+			if err = s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
 				return nil, err
 			}
 		}
@@ -381,13 +409,22 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 		}
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*databaseRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err = s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +435,7 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d databases with filter %+v, expect 1. ", len(list), find)}
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, list[0].ID, list[0]); err != nil {
+	if err = s.cache.UpsertCache(api.DatabaseCache, list[0].ID, list[0]); err != nil {
 		return nil, err
 	}
 
@@ -408,22 +445,31 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 // patchDatabaseRaw updates an existing database by ID.
 // Returns ENOTFOUND if database does not exist.
 func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) (*databaseRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx       *Tx
+		err      error
+		database *databaseRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	database, err := s.patchDatabaseImpl(ctx, tx.PTx, patch)
+	database, err = s.patchDatabaseImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
+	if err = s.cache.UpsertCache(api.DatabaseCache, database.ID, database); err != nil {
 		return nil, err
 	}
 

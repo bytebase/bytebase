@@ -34,18 +34,28 @@ func (raw *sheetOrganizerRaw) toSheetOrganizer() *api.SheetOrganizer {
 
 // UpsertSheetOrganizer upserts a new SheetOrganizer.
 func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrganizerUpsert) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+
+	var (
+		tx                *Tx
+		err               error
+		sheetOrganizerRaw *sheetOrganizerRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	sheetOrganizerRaw, err := upsertSheetOrganizerImpl(ctx, tx.PTx, upsert)
+	sheetOrganizerRaw, err = upsertSheetOrganizerImpl(ctx, tx.PTx, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -56,13 +66,22 @@ func (s *Store) UpsertSheetOrganizer(ctx context.Context, upsert *api.SheetOrgan
 
 // FindSheetOrganizer retrieves a SheetOrganizer.
 func (s *Store) FindSheetOrganizer(ctx context.Context, find *api.SheetOrganizerFind) (*api.SheetOrganizer, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx                    *Tx
+		err                   error
+		sheetOrganizerRawlist []*sheetOrganizerRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	sheetOrganizerRawlist, err := findSheetOrganizerListImpl(ctx, tx.PTx, find)
+	sheetOrganizerRawlist, err = findSheetOrganizerListImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

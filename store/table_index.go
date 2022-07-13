@@ -12,18 +12,27 @@ import (
 
 // CreateIndex creates a new index.
 func (s *Store) CreateIndex(ctx context.Context, create *api.IndexCreate) (*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx    *Tx
+		err   error
+		index *api.Index
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	index, err := s.createIndexImpl(ctx, tx.PTx, create)
+	index, err = s.createIndexImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -32,13 +41,22 @@ func (s *Store) CreateIndex(ctx context.Context, create *api.IndexCreate) (*api.
 
 // FindIndex retrieves a list of indices based on find.
 func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*api.Index
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findIndexImpl(ctx, tx.PTx, find)
+	list, err = s.findIndexImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +67,22 @@ func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Inde
 // GetIndex retrieves a single index based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) GetIndex(ctx context.Context, find *api.IndexFind) (*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*api.Index
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findIndexImpl(ctx, tx.PTx, find)
+	list, err = s.findIndexImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

@@ -86,17 +86,25 @@ func (s *Store) FindDBExtension(ctx context.Context, find *api.DBExtensionFind) 
 
 // DeleteDBExtension deletes an existing dbExtension by ID.
 func (s *Store) DeleteDBExtension(ctx context.Context, delete *api.DBExtensionDelete) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	if err := deleteDBExtensionImpl(ctx, tx.PTx, delete); err != nil {
+	if err = deleteDBExtensionImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return FormatError(err)
 	}
 
@@ -133,18 +141,27 @@ func (s *Store) composeDBExtension(ctx context.Context, raw *dbExtensionRaw) (*a
 
 // createDBExtensionRaw creates a new DBExtension.
 func (s *Store) createDBExtensionRaw(ctx context.Context, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx          *Tx
+		err         error
+		dbExtension *dbExtensionRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	dbExtension, err := s.createDBExtensionImpl(ctx, tx.PTx, create)
+	dbExtension, err = s.createDBExtensionImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -153,13 +170,22 @@ func (s *Store) createDBExtensionRaw(ctx context.Context, create *api.DBExtensio
 
 // findDBExtensionRaw retrieves a list of DBExtensions based on find.
 func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*dbExtensionRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findDBExtensionImpl(ctx, tx.PTx, find)
+	list, err = s.findDBExtensionImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}

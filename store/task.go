@@ -163,13 +163,22 @@ func (s *Store) PatchTaskStatus(ctx context.Context, patch *api.TaskStatusPatch)
 // CountTaskGroupByTypeAndStatus counts the number of TaskGroup and group by TaskType.
 // Used for the metric collector.
 func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.TaskCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		rows *sql.Rows
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	rows, err := tx.PTx.QueryContext(ctx, `
+	rows, err = tx.PTx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM task
 		WHERE (id <= 102 AND updater_id != 1) OR id > 102
@@ -183,12 +192,12 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	var res []*metric.TaskCountMetric
 	for rows.Next() {
 		var metric metric.TaskCountMetric
-		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
+		if err = rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
 		res = append(res, &metric)
 	}
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, FormatError(err)
 	}
 	return res, nil
@@ -273,18 +282,27 @@ func (s *Store) composeTask(ctx context.Context, raw *taskRaw) (*api.Task, error
 
 // createTaskRaw creates a new task.
 func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		task *taskRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	task, err := s.createTaskImpl(ctx, tx.PTx, create)
+	task, err = s.createTaskImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
@@ -293,13 +311,22 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 
 // findTaskRaw retrieves a list of tasks based on find.
 func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		list []*taskRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	list, err := s.findTaskImpl(ctx, tx.PTx, find)
+	list, err = s.findTaskImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -310,11 +337,19 @@ func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw
 // getTaskRaw retrieves a single task based on find.
 // Returns ECONFLICT if finding more than 1 matching records.
 func (s *Store) getTaskRaw(ctx context.Context, find *api.TaskFind) (*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx  *Tx
+		err error
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
 	return s.getTaskRawTx(ctx, tx.PTx, find)
 }
@@ -336,13 +371,22 @@ func (s *Store) getTaskRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 // patchTaskRaw updates an existing task.
 // Returns ENOTFOUND if task does not exist.
 func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	var (
+		tx   *Tx
+		err  error
+		task *taskRaw
+	)
+	tx, err = s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	task, err := s.patchTaskImpl(ctx, tx.PTx, patch)
+	task, err = s.patchTaskImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -360,18 +404,27 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	// Without using serializable isolation transaction, we will get race condition and have multiple task runs inserted because
 	// we do a read and write on task, without guaranteed consistency on task runs.
 	// Once we have multiple task runs, the task will get to unrecoverable state because find task run will fail with two active runs.
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	var (
+		tx   *Tx
+		err  error
+		task *taskRaw
+	)
+	tx, err = s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return nil, FormatError(err)
 	}
-	defer tx.PTx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.PTx.Rollback()
+		}
+	}()
 
-	task, err := s.patchTaskStatusImpl(ctx, tx.PTx, patch)
+	task, err = s.patchTaskStatusImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
+	if err = tx.PTx.Commit(); err != nil {
 		return nil, FormatError(err)
 	}
 
