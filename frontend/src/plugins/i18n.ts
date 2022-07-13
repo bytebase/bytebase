@@ -6,13 +6,18 @@ const localPathPrefix = "../locales/";
 const validLocaleList = ["en-US", "zh-CN"];
 
 const getValidLocale = () => {
+  const storage = useLocalStorage("bytebase_options", {}) as any;
+
   const params = new URL(window.location.href).searchParams;
   let locale = params.get("locale") || "";
   if (validLocaleList.includes(locale)) {
-    return locale;
+    storage.value = {
+      appearance: {
+        language: locale,
+      },
+    };
   }
 
-  const storage = useLocalStorage("bytebase_options", {}) as any;
   locale = storage.value?.appearance?.language || "";
   if (validLocaleList.includes(locale)) {
     return locale;
