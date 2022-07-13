@@ -3,7 +3,9 @@ package advisor
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/stretchr/testify/assert"
@@ -76,4 +78,16 @@ func RunSchemaReviewRuleTests(
 		require.NoError(t, err)
 		assert.Equal(t, tc.Want, adviceList, tc.Statement)
 	}
+}
+
+// RandomString returns random string with specific length.
+func RandomString(length int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+	rand.Seed(time.Now().UnixNano())
+
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
