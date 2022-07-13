@@ -37,8 +37,8 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
-	runningBackupTasks := make(map[int]bool)
-	var muBackup sync.Mutex
+	runningTasks := make(map[int]bool)
+	var mu sync.Mutex
 	for {
 		select {
 		case <-ticker.C:
@@ -53,7 +53,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				s.startAutoBackups(ctx, runningBackupTasks, &muBackup)
+				s.startAutoBackups(ctx, runningTasks, &mu)
 				s.downloadBinlogFiles(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
