@@ -462,57 +462,119 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
-	var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
-		table, err := s.store.CreateTable(ctx, tableCreate)
+	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
+	if err != nil {
+		return err
+	}
+	defer driver.Close(ctx)
+
+	databaseFind := &api.DatabaseFind{
+		InstanceID: &instance.ID,
+		Name:       &databaseName,
+	}
+	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
+	if err != nil {
+		return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+	}
+
+	// Sync schema
+	schemaList, err := driver.SyncSchema(ctx, databaseName)
+	if err != nil {
+		return err
+	}
+	if len(schemaList) != 1 {
+		return fmt.Errorf("found %v databases with name %s, expecting one", len(schemaList), databaseName)
+	}
+	schema := schemaList[0]
+
+	// When there are too many databases, this might have performance issue and will
+	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
+	schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
+	if err != nil {
+		return err
+	}
+
+	var database *api.Database
+	if matchedDb != nil {
+		syncStatus := api.OK
+		ts := time.Now().Unix()
+		databasePatch := &api.DatabasePatch{
+			ID:                   matchedDb.ID,
+			UpdaterID:            api.SystemBotID,
+			SyncStatus:           &syncStatus,
+			LastSuccessfulSyncTs: &ts,
+			SchemaVersion:        &schemaVersion,
+		}
+		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
+			}
+			return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
+		}
+		database = dbPatched
+	} else {
+		databaseCreate := &api.DatabaseCreate{
+			CreatorID:     api.SystemBotID,
+			ProjectID:     api.DefaultProjectID,
+			InstanceID:    instance.ID,
+			EnvironmentID: instance.EnvironmentID,
+			Name:          schema.Name,
+			CharacterSet:  schema.CharacterSet,
+			Collation:     schema.Collation,
+			SchemaVersion: schemaVersion,
+		}
+		createdDatabase, err := s.store.CreateDatabase(ctx, databaseCreate)
 		if err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", instance.Name, database.Name, tableCreate.Name)
+				return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
 			}
-			return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", instance.Name, database.Name, tableCreate.Name, err)
+			return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
+		}
+		database = createdDatabase
+	}
+	// If we successfully synced a particular db schema, we just recreate its table, index, column info. We do this because
+	// we don't reference those objects and they are for information purpose.
+	if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
+		return err
+	}
+	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
+		return err
+	}
+	if err := syncDBExtensionSchema(ctx, s.store, database, schema); err != nil {
+		return err
+	}
+	return nil
+}
+
+func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+	var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
+		table, err := store.CreateTable(ctx, tableCreate)
+		if err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Table name already exists: %s", database.Instance.Name, database.Name, tableCreate.Name)
+			}
+			return nil, fmt.Errorf("failed to sync table for instance: %s, database: %s. Failed to import new table: %s. Error %w", database.Instance.Name, database.Name, tableCreate.Name, err)
 		}
 		return table, nil
 	}
 
-	var createView = func(database *api.Database, viewCreate *api.ViewCreate) (*api.View, error) {
-		createView, err := s.store.CreateView(ctx, viewCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", instance.Name, database.Name, viewCreate.Name)
-			}
-			return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, viewCreate.Name, err)
-		}
-		return createView, nil
-	}
-
-	var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) (*api.DBExtension, error) {
-		createDBExtension, err := s.store.CreateDBExtension(ctx, dbExtensionCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return nil, fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", instance.Name, database.Name, dbExtensionCreate.Name)
-			}
-			return nil, fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", instance.Name, database.Name, dbExtensionCreate.Name, err)
-		}
-		return createDBExtension, nil
-	}
-
 	var createColumn = func(database *api.Database, table *api.Table, columnCreate *api.ColumnCreate) error {
-		_, err := s.store.CreateColumn(ctx, columnCreate)
-		if err != nil {
+		if _, err := store.CreateColumn(ctx, columnCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", instance.Name, database.Name, table.Name, columnCreate.Name)
+				return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Column name already exists: %s", database.Instance.Name, database.Name, table.Name, columnCreate.Name)
 			}
-			return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to import new column: %s. Error %w", instance.Name, database.Name, table.Name, columnCreate.Name, err)
+			return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Failed to import new column: %s. Error %w", database.Instance.Name, database.Name, table.Name, columnCreate.Name, err)
 		}
 		return nil
 	}
 
 	var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-		_, err := s.store.CreateIndex(ctx, indexCreate)
-		if err != nil {
+		if _, err := store.CreateIndex(ctx, indexCreate); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
+				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", database.Instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
 			}
-			return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to import new index and expression: %s(%s). Error %w", instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression, err)
+			return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Failed to import new index and expression: %s(%s). Error %w", database.Instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression, err)
 		}
 		return nil
 	}
@@ -547,9 +609,9 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 				TableID:    &upsertedTable.ID,
 				Name:       &column.Name,
 			}
-			col, err := s.store.GetColumn(ctx, columnFind)
+			col, err := store.GetColumn(ctx, columnFind)
 			if err != nil {
-				return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+				return fmt.Errorf("failed to sync column for instance: %s, database: %s, table: %s. Error %w", database.Instance.Name, database.Name, upsertedTable.Name, err)
 			}
 			// Create column if not exists yet.
 			if col == nil {
@@ -580,9 +642,9 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 				Name:       &index.Name,
 				Expression: &index.Expression,
 			}
-			idx, err := s.store.GetIndex(ctx, indexFind)
+			idx, err := store.GetIndex(ctx, indexFind)
 			if err != nil {
-				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", instance.Name, database.Name, upsertedTable.Name, err)
+				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", database.Instance.Name, database.Name, upsertedTable.Name, err)
 			}
 			if idx == nil {
 				// Create index if not exists.
@@ -606,6 +668,30 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		return nil
 	}
 
+	tableDelete := &api.TableDelete{
+		DatabaseID: database.ID,
+	}
+	if err := store.DeleteTable(ctx, tableDelete); err != nil {
+		return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", database.Instance.Name, database.Name, err)
+	}
+	for _, table := range schema.TableList {
+		if err := recreateTableSchema(database, table); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncViewSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+	var createView = func(database *api.Database, viewCreate *api.ViewCreate) error {
+		if _, err := store.CreateView(ctx, viewCreate); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", database.Instance.Name, database.Name, viewCreate.Name)
+			}
+			return fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", database.Instance.Name, database.Name, viewCreate.Name, err)
+		}
+		return nil
+	}
 	var recreateViewSchema = func(database *api.Database, view db.View) error {
 		// View
 		viewCreate := &api.ViewCreate{
@@ -617,9 +703,33 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 			Definition: view.Definition,
 			Comment:    view.Comment,
 		}
-		_, err := createView(database, viewCreate)
-		if err != nil {
+		if err := createView(database, viewCreate); err != nil {
 			return err
+		}
+		return nil
+	}
+
+	viewDelete := &api.ViewDelete{
+		DatabaseID: database.ID,
+	}
+	if err := store.DeleteView(ctx, viewDelete); err != nil {
+		return fmt.Errorf("failed to sync view for instance: %s, database %s. Failed to reset view info. Error %w", database.Instance.Name, database.Name, err)
+	}
+	for _, view := range schema.ViewList {
+		if err := recreateViewSchema(database, view); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+	var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) error {
+		if _, err := store.CreateDBExtension(ctx, dbExtensionCreate); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", database.Instance.Name, database.Name, dbExtensionCreate.Name)
+			}
+			return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to import new dbExtension: %s. Error %w", database.Instance.Name, database.Name, dbExtensionCreate.Name, err)
 		}
 		return nil
 	}
@@ -634,147 +744,23 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 			Schema:      dbExtension.Schema,
 			Description: dbExtension.Description,
 		}
-		_, err := createDBExtension(database, dbExtensionCreate)
-		if err != nil {
+		if err := createDBExtension(database, dbExtensionCreate); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
-	if err != nil {
-		return err
+	dbExtensionDelete := &api.DBExtensionDelete{
+		DatabaseID: database.ID,
 	}
-	defer driver.Close(ctx)
-
-	databaseFind := &api.DatabaseFind{
-		InstanceID: &instance.ID,
-		Name:       &databaseName,
+	if err := store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
+		return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to reset dbExtension info. Error %w", database.Instance.Name, database.Name, err)
 	}
-	matchedDb, err := s.store.GetDatabase(ctx, databaseFind)
-	if err != nil {
-		return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
-	}
-
-	// Sync schema
-	schemaList, err := driver.SyncSchema(ctx, databaseName)
-	if err != nil {
-		return err
-	}
-	if len(schemaList) != 1 {
-		return fmt.Errorf("found %v databases with name %s, expecting one", len(schemaList), databaseName)
-	}
-	schema := schemaList[0]
-
-	// When there are too many databases, this might have performance issue and will
-	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).
-	schemaVersion, err := getLatestSchemaVersion(ctx, driver, schema.Name)
-	if err != nil {
-		return err
-	}
-
-	if matchedDb != nil {
-		syncStatus := api.OK
-		ts := time.Now().Unix()
-		databasePatch := &api.DatabasePatch{
-			ID:                   matchedDb.ID,
-			UpdaterID:            api.SystemBotID,
-			SyncStatus:           &syncStatus,
-			LastSuccessfulSyncTs: &ts,
-			SchemaVersion:        &schemaVersion,
-		}
-		dbPatched, err := s.store.PatchDatabase(ctx, databasePatch)
-		if err != nil {
-			if common.ErrorCode(err) == common.NotFound {
-				return fmt.Errorf("failed to sync database for instance: %s. Database not found: %v", instance.Name, matchedDb.Name)
-			}
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error %w", instance.Name, matchedDb.Name, err)
-		}
-
-		// If we successfully synced a particular db schema, we just recreate its table, index, column info. We do this because
-		// we don't reference those objects and they are for information purpose.
-		tableDelete := &api.TableDelete{
-			DatabaseID: dbPatched.ID,
-		}
-		if err := s.store.DeleteTable(ctx, tableDelete); err != nil {
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to reset table info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
-		}
-
-		for _, table := range schema.TableList {
-			err = recreateTableSchema(dbPatched, table)
-			if err != nil {
-				return err
-			}
-		}
-
-		viewDelete := &api.ViewDelete{
-			DatabaseID: dbPatched.ID,
-		}
-		if err := s.store.DeleteView(ctx, viewDelete); err != nil {
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to reset view info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
-		}
-
-		for _, view := range schema.ViewList {
-			err = recreateViewSchema(dbPatched, view)
-			if err != nil {
-				return err
-			}
-		}
-
-		dbExtensionDelete := &api.DBExtensionDelete{
-			DatabaseID: dbPatched.ID,
-		}
-		if err := s.store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to reset dbExtension info for database: %s. Error %w", instance.Name, dbPatched.Name, err)
-		}
-
-		for _, dbExtension := range schema.ExtensionList {
-			err = recreateDBExtensionSchema(dbPatched, dbExtension)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		databaseCreate := &api.DatabaseCreate{
-			CreatorID:     api.SystemBotID,
-			ProjectID:     api.DefaultProjectID,
-			InstanceID:    instance.ID,
-			EnvironmentID: instance.EnvironmentID,
-			Name:          schema.Name,
-			CharacterSet:  schema.CharacterSet,
-			Collation:     schema.Collation,
-			SchemaVersion: schemaVersion,
-		}
-		database, err := s.store.CreateDatabase(ctx, databaseCreate)
-		if err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-			}
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
-		}
-
-		for _, table := range schema.TableList {
-			err = recreateTableSchema(database, table)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, view := range schema.ViewList {
-			err = recreateViewSchema(database, view)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, dbExtension := range schema.ExtensionList {
-			err = recreateDBExtensionSchema(database, dbExtension)
-			if err != nil {
-				return err
-			}
+	for _, dbExtension := range schema.ExtensionList {
+		if err := recreateDBExtensionSchema(database, dbExtension); err != nil {
+			return err
 		}
 	}
-
 	return nil
 }
 
