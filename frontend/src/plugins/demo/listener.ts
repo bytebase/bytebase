@@ -91,7 +91,8 @@ const initMutationListenerForHint = () => {
       for (const changedNode of changedNodes) {
         if (
           changedNode instanceof HTMLElement &&
-          !changedNode.matches(".bb-hint-highlight-wrapper") &&
+          !changedNode.matches(".bb-hint-wrapper") &&
+          !changedNode.matches(".bb-hint-cover-wrapper") &&
           !changedNode.matches(".bb-hint-dialog")
         ) {
           tryToShowHints();

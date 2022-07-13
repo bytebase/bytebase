@@ -102,7 +102,10 @@
             </DatabaseLabelProps>
           </dl>
         </div>
-        <div class="flex items-center gap-x-2">
+        <div
+          class="flex items-center gap-x-2"
+          data-label="bb-database-detail-action-buttons-container"
+        >
           <button
             v-if="allowChangeProject"
             type="button"
@@ -157,6 +160,7 @@
       :responsive="false"
       :tab-item-list="tabItemList"
       :selected-index="state.selectedIndex"
+      data-label="bb-database-detail-tab"
       @select-index="
         (index: number) => {
           selectTab(index);
