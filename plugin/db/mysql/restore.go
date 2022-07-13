@@ -504,7 +504,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	for _, file := range binlogFilesLocal {
 		binlogFilesLocalMap[file.Name] = file
 	}
-	log.Debug("Downloading binlog files")
+	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
@@ -533,7 +533,6 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
 func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
-	log.Debug("Downloading all binlog files on server")
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
@@ -543,7 +542,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 		log.Debug("No binlog file found on server to download")
 		return nil
 	}
-	log.Debug("Got sorted binlog file list on server")
+	log.Debug("Got sorted binlog file list on server", zap.Array("list", ZapBinlogFiles(binlogFilesOnServerSorted)))
 
 	// Read the local binlog files.
 	binlogFilesLocalSorted, err := GetSortedLocalBinlogFiles(driver.binlogDir)

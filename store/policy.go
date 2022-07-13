@@ -164,24 +164,6 @@ func (s *Store) GetBackupPlanPolicyByEnvID(ctx context.Context, environmentID in
 	return api.UnmarshalBackupPlanPolicy(policy.Payload)
 }
 
-// SomeDatabaseEnablesBackupPolicyInInstance returns whether at least one of the databases in the given instance enables backup policy.
-func (s *Store) SomeDatabaseEnablesBackupPolicyInInstance(ctx context.Context, instanceID int) (bool, error) {
-	var id int
-	if err := s.db.db.QueryRowContext(ctx, `
-		SELECT db.id
-		FROM db
-		JOIN instance ON db.instance_id = instance.id
-		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true AND instance.id = $1
-	`, instanceID).Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
-		}
-		return false, FormatError(err)
-	}
-	return true, nil
-}
-
 // GetPipelineApprovalPolicy will get the pipeline approval policy for an environment.
 func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int) (*api.PipelineApprovalPolicy, error) {
 	pType := api.PolicyTypePipelineApproval

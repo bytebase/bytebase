@@ -28,10 +28,7 @@ func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *Backup
 	return &BackupRunner{
 		server:               server,
 		backupRunnerInterval: backupRunnerInterval,
-
-		downloadBinlogTasks: taskList{
-			running: make(map[int]bool),
-		},
+		downloadBinlogTasks:  make(map[int]bool),
 	}
 }
 
@@ -39,8 +36,9 @@ func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *Backup
 type BackupRunner struct {
 	server               *Server
 	backupRunnerInterval time.Duration
-
-	downloadBinlogTasks taskList
+	downloadBinlogTasks  map[int]bool
+	downloadBinlogWg     sync.WaitGroup
+	downloadBinlogMu     sync.Mutex
 }
 
 // Run is the runner for backup runner.
@@ -50,7 +48,7 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
 	runningTasks := make(map[int]bool)
-	var mu sync.Mutex
+	var mu sync.RWMutex
 	for {
 		select {
 		case <-ticker.C:
@@ -69,41 +67,28 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				s.downloadBinlogFiles(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
-			s.downloadBinlogTasks.wg.Wait()
+			s.downloadBinlogWg.Wait()
 			return
 		}
 	}
 }
 
 func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
-	normal := api.Normal
-	instanceFind := &api.InstanceFind{RowStatus: &normal}
-	instanceList, err := s.server.store.FindInstance(ctx, instanceFind)
+	instanceList, err := s.server.store.FindInstanceWithDatabaseBackupEnabledByID(ctx)
 	if err != nil {
-		log.Error("Failed to retrieve instance list", zap.Error(err))
+		log.Error("Failed to retrieve instance list with at least one database backup enabled", zap.Error(err))
 		return
 	}
 
 	for _, instance := range instanceList {
-		if instance.Engine == db.MySQL && instance.RowStatus == api.Normal {
-			log.Debug("Checking if any databases of instance enables backup plan policy", zap.String("instance", instance.Name))
-			enabled, err := s.server.store.SomeDatabaseEnablesBackupPolicyInInstance(ctx, instance.ID)
-			if err != nil {
-				log.Error("Failed to get backup plan policy for databases of instance", zap.Error(err))
-				continue
-			}
-			if !enabled {
-				log.Debug("No database in instance enables backup plan policy, skip instance", zap.String("instance", instance.Name))
-				continue
-			}
-
-			s.downloadBinlogTasks.mu.Lock()
-			if _, ok := s.downloadBinlogTasks.running[instance.ID]; !ok {
-				s.downloadBinlogTasks.running[instance.ID] = true
+		if instance.Engine == db.MySQL {
+			s.downloadBinlogMu.Lock()
+			if _, ok := s.downloadBinlogTasks[instance.ID]; !ok {
+				s.downloadBinlogTasks[instance.ID] = true
 				go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
-				s.downloadBinlogTasks.wg.Add(1)
+				s.downloadBinlogWg.Add(1)
 			}
-			s.downloadBinlogTasks.mu.Unlock()
+			s.downloadBinlogMu.Unlock()
 		}
 	}
 }
@@ -111,10 +96,10 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
-		s.downloadBinlogTasks.mu.Lock()
-		delete(s.downloadBinlogTasks.running, instance.ID)
-		s.downloadBinlogTasks.mu.Unlock()
-		s.downloadBinlogTasks.wg.Done()
+		s.downloadBinlogMu.Lock()
+		delete(s.downloadBinlogTasks, instance.ID)
+		s.downloadBinlogMu.Unlock()
+		s.downloadBinlogWg.Done()
 	}()
 	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
 	if err != nil {
@@ -144,7 +129,7 @@ func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	}
 }
 
-func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.Mutex) {
+func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
 	match := &api.BackupSettingsMatch{

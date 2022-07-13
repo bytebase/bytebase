@@ -85,6 +85,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
 
+	log.Debug("Downloading all binlog files")
 	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
 		return err
 	}
