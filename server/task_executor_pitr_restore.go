@@ -80,7 +80,7 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 
 	mysqlDriver, ok := driver.(*mysql.Driver)
 	if !ok {
-		log.Error("failed to cast driver to mysql.Driver")
+		log.Error("Failed to cast driver to mysql.Driver")
 		return fmt.Errorf("[internal] cast driver to mysql.Driver failed")
 	}
 	mysqlDriver.SetUpForPITR(exec.mysqlutil, binlogDir)
