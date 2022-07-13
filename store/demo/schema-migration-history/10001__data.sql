@@ -1,7 +1,7 @@
 -- schema migration seeding data
 INSERT INTO "public"."principal" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "type", "name", "email", "password_hash") VALUES
 (1, 'NORMAL', 1, 1657272778, 1, 1657272778, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', ''),
-(101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$fYA10Pd85RQdmMf8HPBusemcqTRbxNYwcJW72B7N3a1qkw9Yp9whm');
+(101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'END_USER', 'Demo', 'demo@example.com', '$2a$10$/65QFlHOmDzXshEMt/qYuunbJrXtRLcaYDcRODbyOPa/9/N0N8Zc2');
 
 INSERT INTO "public"."member" ("id", "row_status", "creator_id", "created_ts", "updater_id", "updated_ts", "status", "role", "principal_id") VALUES
 (101, 'NORMAL', 1, 1657272815, 1, 1657272815, 'ACTIVE', 'OWNER', 101);
