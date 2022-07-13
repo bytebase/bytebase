@@ -20,19 +20,19 @@ import (
 // NewBackupRunner creates a new backup runner.
 func NewBackupRunner(server *Server, backupRunnerInterval time.Duration) *BackupRunner {
 	return &BackupRunner{
-		server:               server,
-		backupRunnerInterval: backupRunnerInterval,
-		downloadBinlogTasks:  make(map[int]bool),
+		server:                    server,
+		backupRunnerInterval:      backupRunnerInterval,
+		downloadBinlogInstanceIDs: make(map[int]bool),
 	}
 }
 
 // BackupRunner is the backup runner scheduling automatic backups.
 type BackupRunner struct {
-	server               *Server
-	backupRunnerInterval time.Duration
-	downloadBinlogTasks  map[int]bool
-	downloadBinlogWg     sync.WaitGroup
-	downloadBinlogMu     sync.Mutex
+	server                    *Server
+	backupRunnerInterval      time.Duration
+	downloadBinlogInstanceIDs map[int]bool
+	downloadBinlogWg          sync.WaitGroup
+	downloadBinlogMu          sync.Mutex
 }
 
 // Run is the runner for backup runner.
@@ -74,14 +74,14 @@ func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
 		return
 	}
 
+	s.downloadBinlogMu.Lock()
+	defer s.downloadBinlogMu.Unlock()
 	for _, instance := range instanceList {
-		s.downloadBinlogMu.Lock()
-		if _, ok := s.downloadBinlogTasks[instance.ID]; !ok {
-			s.downloadBinlogTasks[instance.ID] = true
+		if _, ok := s.downloadBinlogInstanceIDs[instance.ID]; !ok {
+			s.downloadBinlogInstanceIDs[instance.ID] = true
 			go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
 			s.downloadBinlogWg.Add(1)
 		}
-		s.downloadBinlogMu.Unlock()
 	}
 }
 
@@ -89,7 +89,7 @@ func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
 		s.downloadBinlogMu.Lock()
-		delete(s.downloadBinlogTasks, instance.ID)
+		delete(s.downloadBinlogInstanceIDs, instance.ID)
 		s.downloadBinlogMu.Unlock()
 		s.downloadBinlogWg.Done()
 	}()
@@ -115,7 +115,7 @@ func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 		return
 	}
 	mysqlDriver.SetUpForPITR(mysqlutil, binlogDir)
-	if err := mysqlDriver.FetchAllBinlogFiles(ctx); err != nil {
+	if err := mysqlDriver.FetchAllBinlogFiles(ctx, false /* downloadLatestBinlogFile */); err != nil {
 		log.Error("Failed to download all binlog files for instance", zap.String("instance", instance.Name), zap.Error(err))
 		return
 	}
