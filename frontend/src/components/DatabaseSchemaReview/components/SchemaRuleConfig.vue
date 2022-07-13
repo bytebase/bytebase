@@ -54,7 +54,7 @@
       <div
         v-for="(config, index) in selectedRule.componentList"
         :key="index"
-        class="mb-1"
+        class="mb-4"
       >
         <p class="mb-3">
           {{
@@ -72,6 +72,13 @@
           class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
           :placeholder="config.payload.default"
         />
+        <input
+          v-if="config.payload.type == 'NUMBER'"
+          v-model="state.payload[index]"
+          type="number"
+          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
+          :placeholder="`${config.payload.default}`"
+        />
         <div
           v-else-if="
             config.payload.type == 'STRING_ARRAY' &&
@@ -82,7 +89,7 @@
             <BBBadge
               v-for="(val, i) in state.payload[index]"
               :key="`${index}-${i}`"
-              :text="val"
+              :text="`${val}`"
               @remove="() => removeFromList(index, val)"
             />
           </div>
@@ -125,7 +132,7 @@ import {
   getRuleLocalizationKey,
 } from "@/types/schemaSystem";
 
-type PayloadValueList = (string | string[])[];
+type PayloadValueList = (string | number | string[])[];
 interface LocalState {
   payload: PayloadValueList;
 }
@@ -169,7 +176,7 @@ const removeFromList = (i: number, val: any) => {
 
   const values = state.payload[i] as string[];
   const index = values.indexOf(val);
-  pullAt(state.payload[i], index);
+  pullAt(state.payload[i] as string[], index);
 };
 
 const pushToList = (i: number, e: any) => {
@@ -187,3 +194,17 @@ const getStringPayload = (i: number): string => {
   return state.payload[i] as string;
 };
 </script>
+
+<style scoped>
+/*  Removed the ticker in the number field  */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

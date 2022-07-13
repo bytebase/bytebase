@@ -30,6 +30,14 @@ export const LEVEL_LIST = [
   RuleLevel.DISABLED,
 ];
 
+// NumberPayload is the number type payload configuration options and default value.
+// Used by the frontend.
+interface NumberPayload {
+  type: "NUMBER";
+  default: number;
+  value?: number;
+}
+
 // StringPayload is the string type payload configuration options and default value.
 // Used by the frontend.
 interface StringPayload {
@@ -59,7 +67,7 @@ interface TemplatePayload {
 // Used by the frontend.
 export interface RuleConfigComponent {
   key: string;
-  payload: StringPayload | TemplatePayload | StringArrayPayload;
+  payload: StringPayload | NumberPayload | TemplatePayload | StringArrayPayload;
 }
 
 // The identifier for rule template
@@ -82,6 +90,7 @@ export type RuleType =
 // Used by the backend.
 interface NamingFormatPayload {
   format: string;
+  maxLength: number;
 }
 
 // The naming format rule payload.
@@ -196,11 +205,24 @@ export const convertPolicyRuleToRuleTemplate = (
   switch (ruleTemplate.type) {
     case "naming.column":
     case "naming.table":
-      const stringComponent = ruleTemplate.componentList[0];
+      const stringComponent = ruleTemplate.componentList.find(
+        (c) => c.payload.type === "STRING"
+      );
+      const numberComponent = ruleTemplate.componentList.find(
+        (c) => c.payload.type === "NUMBER"
+      );
+      if (!stringComponent || !numberComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
       const namingRulepayload = {
         ...stringComponent.payload,
         value: (policyRule.payload as NamingFormatPayload).format,
       } as StringPayload;
+      const numberPayload = {
+        ...numberComponent.payload,
+        value: (policyRule.payload as NamingFormatPayload).maxLength,
+      } as NumberPayload;
       return {
         ...res,
         componentList: [
@@ -208,22 +230,43 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: namingRulepayload,
           },
+          {
+            ...numberComponent,
+            payload: numberPayload,
+          },
         ],
       };
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
-      const templateComponent = ruleTemplate.componentList[0];
+      const templateComponent = ruleTemplate.componentList.find(
+        (c) => c.payload.type === "TEMPLATE"
+      );
+      const lengthLimitComponent = ruleTemplate.componentList.find(
+        (c) => c.payload.type === "NUMBER"
+      );
+      if (!templateComponent || !lengthLimitComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
       const indexRulePayload = {
         ...templateComponent.payload,
         value: (policyRule.payload as NamingFormatPayload).format,
       } as TemplatePayload;
+      const lengthLimitPayload = {
+        ...lengthLimitComponent.payload,
+        value: (policyRule.payload as NamingFormatPayload).maxLength,
+      } as NumberPayload;
       return {
         ...res,
         componentList: [
           {
             ...templateComponent,
             payload: indexRulePayload,
+          },
+          {
+            ...lengthLimitComponent,
+            payload: lengthLimitPayload,
           },
         ],
       };
@@ -263,21 +306,41 @@ export const convertRuleTemplateToPolicyRule = (
   switch (rule.type) {
     case "naming.column":
     case "naming.table":
-      const stringPayload = rule.componentList[0].payload as StringPayload;
+      const stringPayload = rule.componentList.find(
+        (c) => c.payload.type === "STRING"
+      )?.payload as StringPayload | undefined;
+      const numberPayload = rule.componentList.find(
+        (c) => c.payload.type === "NUMBER"
+      )?.payload as NumberPayload | undefined;
+      if (!stringPayload || !numberPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
+
       return {
         ...base,
         payload: {
           format: stringPayload.value ?? stringPayload.default,
+          maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
-      const templatePayload = rule.componentList[0].payload as TemplatePayload;
+      const templatePayload = rule.componentList.find(
+        (c) => c.payload.type === "TEMPLATE"
+      )?.payload as TemplatePayload | undefined;
+      const lengthPayload = rule.componentList.find(
+        (c) => c.payload.type === "NUMBER"
+      )?.payload as NumberPayload | undefined;
+
+      if (!templatePayload || !lengthPayload) {
+        throw new Error(`Invalid rule ${rule.type}`);
+      }
       return {
         ...base,
         payload: {
           format: templatePayload.value ?? templatePayload.default,
+          maxLength: lengthPayload.value ?? lengthPayload.default,
         },
       };
     case "column.required":
