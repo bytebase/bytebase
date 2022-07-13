@@ -74,22 +74,20 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
-	instanceList, err := s.server.store.FindInstanceWithDatabaseBackupEnabledByID(ctx)
+	instanceList, err := s.server.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
 	if err != nil {
-		log.Error("Failed to retrieve instance list with at least one database backup enabled", zap.Error(err))
+		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
 		return
 	}
 
 	for _, instance := range instanceList {
-		if instance.Engine == db.MySQL {
-			s.downloadBinlogMu.Lock()
-			if _, ok := s.downloadBinlogTasks[instance.ID]; !ok {
-				s.downloadBinlogTasks[instance.ID] = true
-				go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
-				s.downloadBinlogWg.Add(1)
-			}
-			s.downloadBinlogMu.Unlock()
+		s.downloadBinlogMu.Lock()
+		if _, ok := s.downloadBinlogTasks[instance.ID]; !ok {
+			s.downloadBinlogTasks[instance.ID] = true
+			go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
+			s.downloadBinlogWg.Add(1)
 		}
+		s.downloadBinlogMu.Unlock()
 	}
 }
 

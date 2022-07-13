@@ -179,8 +179,8 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	return res, nil
 }
 
-// FindInstanceWithDatabaseBackupEnabledByID finds instances with at least one database who enables backup policy.
-func (s *Store) FindInstanceWithDatabaseBackupEnabledByID(ctx context.Context) ([]*api.Instance, error) {
+// FindInstanceWithDatabaseBackupEnabled finds instances with at least one database who enables backup policy.
+func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engineType db.Type) ([]*api.Instance, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 		SELECT
 			instance.id,
@@ -199,8 +199,8 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabledByID(ctx context.Context) (
 		FROM instance
 		JOIN db ON db.instance_id = instance.id
 		JOIN backup_setting AS bs ON db.id = bs.database_id
-		WHERE bs.enabled = true AND instance.row_status = $1
-	`, api.Normal)
+		WHERE bs.enabled = true AND instance.row_status = $1 AND instance.engine = $2
+	`, api.Normal, engineType)
 
 	if err != nil {
 		return nil, FormatError(err)
