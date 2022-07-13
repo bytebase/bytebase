@@ -74,6 +74,9 @@ const (
 	ReferencedTableNameTemplateToken = "{{referenced_table}}"
 	// ReferencedColumnNameTemplateToken is the token for referenced column name
 	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
+
+	// defaultNameLengthLimit is the default length limit for naming rules.
+	defaultNameLengthLimit = 64
 )
 
 var (
@@ -162,7 +165,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 		return nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 
-	if nr.MaxLength <= 0 {
+	if nr.MaxLength < 0 {
 		return nil, 0, fmt.Errorf("invalid length limit in naming rule payload %q", payload)
 	}
 
@@ -170,7 +173,14 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compile regular expression: %v, err: %v", nr.Format, err)
 	}
-	return format, nr.MaxLength, nil
+
+	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
+	maxLength := nr.MaxLength
+	if maxLength == 0 {
+		maxLength = defaultNameLengthLimit
+	}
+
+	return format, maxLength, nil
 }
 
 // UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
@@ -182,7 +192,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
 	}
 
-	if nr.MaxLength <= 0 {
+	if nr.MaxLength < 0 {
 		return "", nil, 0, fmt.Errorf("invalid length limit in naming rule payload %q", payload)
 	}
 
@@ -195,7 +205,13 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload
 		}
 	}
 
-	return template, keys, nr.MaxLength, nil
+	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
+	maxLength := nr.MaxLength
+	if maxLength == 0 {
+		maxLength = defaultNameLengthLimit
+	}
+
+	return template, keys, maxLength, nil
 }
 
 // parseTemplateTokens parses the template and returns template tokens and their delimiters.
