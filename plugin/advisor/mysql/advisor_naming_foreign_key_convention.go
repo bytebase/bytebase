@@ -33,7 +33,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 		return nil, err
 	}
 
-	format, templateList, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ctx.Rule.Type, ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +41,7 @@ func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement str
 		level:        level,
 		title:        string(ctx.Rule.Type),
 		format:       format,
+		maxLength:    maxLength,
 		templateList: templateList,
 	}
 	for _, stmtNode := range root {
@@ -64,6 +65,7 @@ type namingFKConventionChecker struct {
 	level        advisor.Status
 	title        string
 	format       string
+	maxLength    int
 	templateList []string
 }
 
@@ -88,6 +90,14 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
+			})
+		}
+		if checker.maxLength > 0 && len(indexData.indexName) > checker.maxLength {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.NamingFKConventionMismatch,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
 			})
 		}
 	}
