@@ -68,7 +68,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, err
 	}
 
-	adviceList, err := advisor.SchemaReviewCheck(ctx, payload.Statement, policy, advisor.SchemaReviewCheckContext{
+	adviceList, err := advisor.SchemaReviewCheck(ctx, payload.Statement, policy, advisor.SQLReviewCheckContext{
 		Charset:   payload.Charset,
 		Collation: payload.Collation,
 		DbType:    dbType,
