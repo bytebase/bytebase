@@ -74,6 +74,7 @@ export interface RuleConfigComponent {
 export type RuleType =
   | "engine.mysql.use-innodb"
   | "table.require-pk"
+  | "table.no-foreign-key"
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
