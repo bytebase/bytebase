@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -106,6 +107,7 @@ func TestPITR(t *testing.T) {
 	const (
 		numRowsTime0 = 10
 		numRowsTime1 = 20
+		numRowsTime2 = 30
 	)
 	t.Parallel()
 	a := require.New(t)
@@ -413,6 +415,8 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
 	t.Run("Case Sensitive", func(t *testing.T) {
@@ -513,6 +517,147 @@ func TestPITR(t *testing.T) {
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
+	})
+
+	t.Run("PITR Twice", func(t *testing.T) {
+		t.Log(t.Name())
+		databaseName := "pitr_twice"
+
+		port := getTestPort(t.Name())
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+		instance, err := ctl.addInstance(api.InstanceCreate{
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "PITRTwiceInstance",
+			Engine:        db.MySQL,
+			Host:          connCfg.Host,
+			Port:          connCfg.Port,
+			Username:      connCfg.Username,
+		})
+		a.NoError(err)
+
+		err = ctl.createDatabase(project, instance, databaseName, nil)
+		a.NoError(err)
+
+		databases, err := ctl.getDatabases(api.DatabaseFind{
+			InstanceID: &instance.ID,
+		})
+		a.NoError(err)
+		a.Equal(1, len(databases))
+		database := databases[0]
+
+		mysqlDB, _ := initPITRDB(t, databaseName, port)
+		defer mysqlDB.Close()
+
+		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+		t.Log("Create a full backup")
+		backup, err := ctl.createBackup(api.BackupCreate{
+			DatabaseID:     database.ID,
+			Name:           "first-backup",
+			Type:           api.BackupTypeManual,
+			StorageBackend: api.BackupStorageBackendLocal,
+		})
+		a.NoError(err)
+		err = ctl.waitBackup(database.ID, backup.ID)
+		a.NoError(err)
+
+		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
+		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
+
+		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
+		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+		createCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		// Restore stage.
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		// Cutover stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		t.Log("Validate table tbl0")
+		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("Validate table tbl0")
+		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
+
+		// Preparing database mutation for second PITR
+		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
+		targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
+		insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
+
+		// Wait first PITR auto backup finish
+		backups, err := ctl.listBackups(database.ID)
+		a.NoError(err)
+		a.Equal(len(backups), 2)
+		sort.Slice(backups, func(i int, j int) bool {
+			return backups[i].CreatedTs > backups[j].CreatedTs
+		})
+		err = ctl.waitBackup(database.ID, backups[0].ID)
+		a.NoError(err)
+
+		createCtx, err = json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+
+		issue, err = ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		// Restore stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		cancelUpdateRow()
+		// We mimics the situation where the user waits for the target database idle before doing the cutover.
+		time.Sleep(time.Second)
+
+		// Cutover stage.
+		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.NoError(err)
+		a.Equal(status, api.TaskDone)
+
+		// Second PITR
+		t.Log("Validate table tbl0")
+		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("Validate table tbl0")
+		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
+		t.Log("validate table _update_row_")
+		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 }
 
@@ -538,6 +683,8 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 		UNIQUE INDEX (pid),
 		CONSTRAINT FOREIGN KEY (pid) REFERENCES tbl0(id) ON DELETE NO ACTION
 	);
+	CREATE TABLE _update_row_ (id INT PRIMARY KEY);
+	INSERT INTO _update_row_ VALUES (0);
 	`, database)
 	_, err = db.Exec(stmt)
 	a.NoError(err)
@@ -630,12 +777,6 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	a.NoError(err)
 
 	t.Log("Start updating data concurrently")
-	_, err = db.Exec("CREATE TABLE _update_row_ (id INT PRIMARY KEY);")
-	a.NoError(err)
-
-	// initial value is (0)
-	_, err = db.Exec("INSERT INTO _update_row_ VALUES (0);")
-	a.NoError(err)
 	initTimestamp := time.Now().Unix()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
