@@ -526,7 +526,7 @@ func TestPITR(t *testing.T) {
 		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
 		instance, err := ctl.addInstance(api.InstanceCreate{
 			EnvironmentID: prodEnvironment.ID,
-			Name:          "DropSensitiveInstance",
+			Name:          "InvalidTimePointInstance",
 			Engine:        db.MySQL,
 			Host:          connCfg.Host,
 			Port:          connCfg.Port,
