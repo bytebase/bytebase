@@ -39,8 +39,7 @@ func TestSchemaSystem(t *testing.T) {
 				"updater_id INT NOT NULL," +
 				"updated_ts TIMESTAMP NOT NULL," +
 				"INDEX idx_user_name(name)," +
-				"UNIQUE KEY uk_user_id_name(id, name)," +
-				"FOREIGN KEY fk_user_room_id_room_id(room_id) REFERENCES room(id)" +
+				"UNIQUE KEY uk_user_id_name(id, name)" +
 				") ENGINE = INNODB",
 			"CREATE TABLE userTable(" +
 				"id INT," +
@@ -136,6 +135,13 @@ func TestSchemaSystem(t *testing.T) {
 						Code:      advisor.TableNoPK.Int(),
 						Title:     "table.require-pk",
 						Content:   "Table `userTable` requires PRIMARY KEY",
+					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.TableHasFK.Int(),
+						Title:     "table.no-foreign-key",
+						Content:   "Foreign key is not allowed in the table `userTable`",
 					},
 					{
 						Status:    api.TaskCheckStatusWarn,

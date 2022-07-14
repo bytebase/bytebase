@@ -12,8 +12,8 @@ var (
 )
 
 func init() {
-	advisor.Register(advisor.MySQL, advisor.MySQLTableNoFK, &NamingFKConventionAdvisor{})
-	advisor.Register(advisor.TiDB, advisor.MySQLTableNoFK, &NamingFKConventionAdvisor{})
+	advisor.Register(advisor.MySQL, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(advisor.TiDB, advisor.MySQLTableNoFK, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.
