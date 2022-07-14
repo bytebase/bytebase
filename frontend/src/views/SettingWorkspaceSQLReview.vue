@@ -7,7 +7,7 @@
       :description="$t('subscription.features.bb-feature-sql-review.desc')"
     />
     <div v-if="store.reviewPolicyList.length > 0" class="space-y-6 my-5">
-      <div class="flex items-center justify-end" v-if="hasPermission">
+      <div v-if="hasPermission" class="flex items-center justify-end">
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"

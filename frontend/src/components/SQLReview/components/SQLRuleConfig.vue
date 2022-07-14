@@ -39,8 +39,8 @@
               :value="level"
               type="radio"
               :checked="level === selectedRule.level"
-              @input="emit('level-change', level)"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
+              @input="emit('level-change', level)"
             />
             <label
               :for="`level-${level}`"

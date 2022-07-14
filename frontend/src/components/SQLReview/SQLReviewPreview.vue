@@ -2,7 +2,7 @@
   <div class="flex gap-x-20">
     <SQLReviewSidebar :selected-rule-list="selectedRuleList" />
     <div class="flex-1">
-      <div class="mb-5" v-if="name">
+      <div v-if="name" class="mb-5">
         <h1 class="text-left text-3xl font-bold mb-2">
           {{ name }}
         </h1>
@@ -22,8 +22,8 @@
       />
       <div v-for="category in categoryList" :key="category.id" class="pb-4">
         <a
-          :href="`#${category.id.replace(/\./g, '-')}`"
           :id="category.id.replace(/\./g, '-')"
+          :href="`#${category.id.replace(/\./g, '-')}`"
           class="text-left text-2xl text-indigo-600 font-semibold hover:underline"
         >
           {{ $t(`sql-review.category.${category.id.toLowerCase()}`) }}
@@ -31,8 +31,8 @@
         <div v-for="rule in category.ruleList" :key="rule.type" class="py-4">
           <div class="sm:flex sm:items-center sm:space-x-4">
             <a
-              :href="`#${rule.type.replace(/\./g, '-')}`"
               :id="rule.type.replace(/\./g, '-')"
+              :href="`#${rule.type.replace(/\./g, '-')}`"
               class="text-left text-xl hover:underline whitespace-nowrap"
             >
               {{ getRuleLocalization(rule.type).title }}

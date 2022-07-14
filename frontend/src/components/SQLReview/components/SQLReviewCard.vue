@@ -36,7 +36,7 @@
             >
               {{ environmentName(reviewPolicy.environment) }}
             </router-link>
-            <span class="text-yellow-700" v-else>
+            <span v-else class="text-yellow-700">
               {{ $t("sql-review.create.basic-info.no-linked-environments") }}
             </span>
           </dd>

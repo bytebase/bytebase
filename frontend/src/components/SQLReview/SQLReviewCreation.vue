@@ -17,10 +17,10 @@
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           :is-edit="!!policyId"
+          class="py-5"
           @select-template="tryApplyTemplate"
           @name-change="(val) => (state.name = val)"
           @env-change="(env) => onEnvChange(env)"
-          class="py-5"
         />
       </template>
       <template #1>

@@ -3,13 +3,13 @@
     <SQLReviewSidebar :selected-rule-list="selectedRuleList" />
     <div class="flex-1">
       <SQLReviewTemplates
-        :required="true"
         v-if="selectedRuleList.length === 0"
+        :required="true"
         :template-list="templateList"
         :title="$t('sql-review.create.basic-info.choose-template')"
         @select="(index) => onTemplateApply(index)"
       />
-      <div class="mb-5" v-if="selectedRuleList.length > 0">
+      <div v-if="selectedRuleList.length > 0" class="mb-5">
         <div
           class="flex cursor-pointer items-center px-2 text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
@@ -27,8 +27,8 @@
           :required="false"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
-          @select="(index) => onTemplateApply(index)"
           class="mx-8 mt-5"
+          @select="(index) => onTemplateApply(index)"
         />
       </div>
       <div

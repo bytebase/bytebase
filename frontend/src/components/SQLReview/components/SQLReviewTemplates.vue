@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p class="textlabel" v-if="title">
+    <p v-if="title" class="textlabel">
       {{ title }}
       <span v-if="required" style="color: red">*</span>
     </p>

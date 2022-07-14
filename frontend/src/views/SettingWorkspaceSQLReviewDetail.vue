@@ -14,7 +14,7 @@
       :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
     />
-    <div class="my-5" v-else>
+    <div v-else class="my-5">
       <div
         class="flex flex-col items-center space-x-2 justify-center md:flex-row"
       >
@@ -56,8 +56,8 @@
         </button>
       </div>
       <div
-        class="flex items-center flex-wrap gap-x-3 my-5"
         v-if="reviewPolicy.environment"
+        class="flex items-center flex-wrap gap-x-3 my-5"
       >
         <span class="font-semibold">{{ $t("common.environment") }}</span>
         <router-link
@@ -83,12 +83,12 @@
             class="flex items-center"
           >
             <input
-              type="checkbox"
               :id="engine.id"
+              type="checkbox"
               :value="engine.id"
               :checked="state.checkedEngine.has(engine.id)"
-              @input="toggleCheckedEngine(engine.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              @input="toggleCheckedEngine(engine.id)"
             />
             <label
               :for="engine.id"
@@ -111,12 +111,12 @@
             class="flex items-center"
           >
             <input
-              type="checkbox"
               :id="level.id"
+              type="checkbox"
               :value="level.id"
               :checked="state.checkedLevel.has(level.id)"
-              @input="toggleCheckedLevel(level.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              @input="toggleCheckedLevel(level.id)"
             />
             <label
               :for="level.id"
