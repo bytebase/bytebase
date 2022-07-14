@@ -117,7 +117,8 @@ type FileCommit struct {
 	LastCommitID  string `json:"last_commit_id,omitempty"`
 }
 
-// RepositoryTreeNode is the API message for git tree node.
+// RepositoryTreeNode represents a GitLab API response for a repository tree
+// node.
 type RepositoryTreeNode struct {
 	Path string `json:"path"`
 	Type string `json:"type"`
