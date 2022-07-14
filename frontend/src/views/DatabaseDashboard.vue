@@ -54,7 +54,7 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const event = inject("event") as Event;
+    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const router = useRouter();
@@ -79,7 +79,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.database")) {
         setTimeout(() => {
-          event.emit("help", "database");
+          event?.emit("help", "database");
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,

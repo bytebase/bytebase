@@ -51,7 +51,7 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const searchField = ref();
-    const event = inject("event") as Event;
+    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const currentUser = useCurrentUser();
@@ -68,7 +68,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.project")) {
         setTimeout(() => {
-          event.emit("help", "project");
+          event?.emit("help", "project");
           uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,

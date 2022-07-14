@@ -60,7 +60,7 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
-    const event = inject("event") as Event;
+    const event = inject<Event>("event");
 
     const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
@@ -85,7 +85,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.instance")) {
         setTimeout(() => {
-          event.emit("help", "instance");
+          event?.emit("help", "instance");
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,

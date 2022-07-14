@@ -132,7 +132,7 @@ export default defineComponent({
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
     const router = useRouter();
-    const event = inject("event") as Event;
+    const event = inject<Event>("event");
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -164,7 +164,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
-          event.emit("help", "environment");
+          event?.emit("help", "environment");
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
