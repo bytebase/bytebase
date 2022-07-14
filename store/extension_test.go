@@ -40,6 +40,18 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 			},
 		},
 		{
+			oldDBExtensionMap: nil,
+			newDBExtensionMap: map[extensionKey]*api.DBExtensionCreate{
+				{"hstore", "public"}: {Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
+				{"hdd", "ddd"}:       {Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+			},
+			wantDeletes: nil,
+			wantCreates: []*api.DBExtensionCreate{
+				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
+				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+			},
+		},
+		{
 			oldDBExtensionMap: map[extensionKey]*dbExtensionRaw{
 				{"hstore", "public"}: {ID: 123, Version: "v1", Description: "desc1"},
 			},
