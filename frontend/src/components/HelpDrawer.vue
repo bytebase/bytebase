@@ -46,6 +46,8 @@ export default defineComponent({
     const event = inject("event") as Event;
     const helpName = ref<string>("");
     const isHelpGuide = ref<boolean>(false);
+    const active = ref(false);
+    const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
 
@@ -96,8 +98,6 @@ export default defineComponent({
     onUnmounted(() => {
       event.off("help");
     });
-    const active = ref(false);
-    const placement = ref<DrawerPlacement>("right");
     const activate = (place: DrawerPlacement) => {
       active.value = true;
       placement.value = place;
