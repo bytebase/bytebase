@@ -724,44 +724,18 @@ func syncViewSchema(ctx context.Context, store *store.Store, database *api.Datab
 }
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) error {
-		if _, err := store.CreateDBExtension(ctx, dbExtensionCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", database.Instance.Name, database.Name, dbExtensionCreate.Name)
-			}
-			return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to import new dbExtension: %s. Error %w", database.Instance.Name, database.Name, dbExtensionCreate.Name, err)
-		}
-		return nil
-	}
-
-	var recreateDBExtensionSchema = func(database *api.Database, dbExtension db.Extension) error {
-		// dbExtension
-		dbExtensionCreate := &api.DBExtensionCreate{
+	var creates []*api.DBExtensionCreate
+	for _, dbExtension := range schema.ExtensionList {
+		creates = append(creates, &api.DBExtensionCreate{
 			CreatorID:   api.SystemBotID,
 			DatabaseID:  database.ID,
 			Name:        dbExtension.Name,
 			Version:     dbExtension.Version,
 			Schema:      dbExtension.Schema,
 			Description: dbExtension.Description,
-		}
-		if err := createDBExtension(database, dbExtensionCreate); err != nil {
-			return err
-		}
-		return nil
+		})
 	}
-
-	dbExtensionDelete := &api.DBExtensionDelete{
-		DatabaseID: database.ID,
-	}
-	if err := store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
-		return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to reset dbExtension info. Error %w", database.Instance.Name, database.Name, err)
-	}
-	for _, dbExtension := range schema.ExtensionList {
-		if err := recreateDBExtensionSchema(database, dbExtension); err != nil {
-			return err
-		}
-	}
-	return nil
+	return store.SetDBExtensionList(ctx, creates, database.ID, api.SystemBotID)
 }
 
 func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
