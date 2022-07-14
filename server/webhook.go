@@ -52,7 +52,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
 		if repo == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 		}
 
 		if repo.VCS == nil {
@@ -145,17 +145,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			// Retrieve sql by reading the file content
+
+			// Retrieve the latest AccessToken and RefreshToken as the previous ReadFileContent call may have
+			// updated the stored token pair. ReadFileContent will fetch and store the new token pair
+			// if the existing token pair has expired.
+			repo2, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+			}
+			if repo2 == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+			}
+
 			content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
 				ctx,
 				common.OauthContext{
-					ClientID:     repo.VCS.ApplicationID,
-					ClientSecret: repo.VCS.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
+					ClientID:     repo2.VCS.ApplicationID,
+					ClientSecret: repo2.VCS.Secret,
+					AccessToken:  repo2.AccessToken,
+					RefreshToken: repo2.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo2.ID),
 				},
-				repo.VCS.InstanceURL,
-				repo.ExternalID,
+				repo2.VCS.InstanceURL,
+				repo2.ExternalID,
 				addedEscaped,
 				commit.ID,
 			)
