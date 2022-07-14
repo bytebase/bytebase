@@ -144,6 +144,9 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 2 - Record migration history as PENDING
 	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
 		return -1, "", err
 	}
 
@@ -207,7 +210,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
-			return -1, common.Errorf(common.MigrationAlreadyApplied,
+			return int64(list[0].ID), common.Errorf(common.MigrationAlreadyApplied,
 				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
 			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
