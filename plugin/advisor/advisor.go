@@ -87,6 +87,9 @@ const (
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 
+	// MySQLTableNoFK is an advisor type for MySQL table disallow foreign key.
+	MySQLTableNoFK Type = "bb.plugin.advisor.mysql.table.no-foreign-key"
+
 	// PostgreSQL Advisor
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
