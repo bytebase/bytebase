@@ -1427,6 +1427,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 	case advisor.SchemaRuleStatementRequireWhere:
 	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
 	case advisor.SchemaRuleTableRequirePK:
+	case advisor.SchemaRuleTableNoFK:
 	case advisor.SchemaRuleColumnNotNull:
 	case advisor.SchemaRuleSchemaBackwardCompatibility:
 	case advisor.SchemaRuleTableNaming:
@@ -1510,6 +1511,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleTableRequirePK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableNoFK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{
