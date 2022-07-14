@@ -607,9 +607,9 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 
+		// Preparing database mutation for second PITR
 		ctxUpdateRow, cancelUpdateRow = context.WithCancel(ctx)
 		targetTs = startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
-
 		insertRangeData(t, mysqlDB, numRowsTime1, numRowsTime2)
 
 		// Wait first PITR auto backup finish
