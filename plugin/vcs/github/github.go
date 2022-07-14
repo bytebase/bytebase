@@ -523,7 +523,7 @@ func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oaut
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
+			return errors.Errorf("non-200 POST %s status code %d with body %q", url, resp.StatusCode, body)
 		}
 
 		var r refreshOAuthResponse
