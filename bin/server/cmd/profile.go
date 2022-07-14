@@ -5,15 +5,14 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/server"
 )
 
 // GetTestProfile will return a profile for testing.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports.
-func GetTestProfile(dataDir string, port int) server.Profile {
+func GetTestProfile(dataDir string, port int) common.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := port + 1
-	return server.Profile{
+	return common.Profile{
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
 		BackendPort:          port,
@@ -28,8 +27,8 @@ func GetTestProfile(dataDir string, port int) server.Profile {
 // GetTestProfileWithExternalPg will return a profile for testing with external Postgres.
 // We require port as an argument of GetTestProfile so that test can run in parallel in different ports,
 // pgURL for connect to Postgres.
-func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) server.Profile {
-	return server.Profile{
+func GetTestProfileWithExternalPg(dataDir string, port int, pgUser string, pgURL string) common.Profile {
+	return common.Profile{
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
 		BackendPort:          port,

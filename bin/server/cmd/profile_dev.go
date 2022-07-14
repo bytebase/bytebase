@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/server"
 )
 
-func activeProfile(dataDir string) server.Profile {
+func activeProfile(dataDir string) common.Profile {
 	// `flags.demo` always be true in dev mode
 	demoName := string(common.ReleaseModeDev)
 	if flags.demoName != "" {
@@ -21,7 +20,7 @@ func activeProfile(dataDir string) server.Profile {
 	// Using flags.port + 1 as our datastore port
 	datastorePort := flags.port + 1
 
-	return server.Profile{
+	return common.Profile{
 		Mode:                 common.ReleaseModeDev,
 		BackendHost:          flags.host,
 		BackendPort:          flags.port,

@@ -55,7 +55,7 @@ type Server struct {
 	LicenseService enterpriseAPI.LicenseService
 	subscription   enterpriseAPI.Subscription
 
-	profile       Profile
+	profile       common.Profile
 	e             *echo.Echo
 	mysqlutil     mysqlutil.Instance
 	pgInstanceDir string
@@ -100,23 +100,23 @@ var casbinDeveloperPolicy string
 // @schemes http
 
 // NewServer creates a server.
-func NewServer(ctx context.Context, prof Profile) (*Server, error) {
+func NewServer(ctx context.Context, profile common.Profile) (*Server, error) {
 	s := &Server{
-		profile:   prof,
+		profile:   profile,
 		startedTs: time.Now().Unix(),
 	}
 
 	// Display config
 	fmt.Println("-----Config BEGIN-----")
-	fmt.Printf("mode=%s\n", prof.Mode)
-	fmt.Printf("server=%s:%d\n", prof.BackendHost, prof.BackendPort)
-	fmt.Printf("datastore=%s:%d\n", prof.BackendHost, prof.DatastorePort)
-	fmt.Printf("frontend=%s:%d\n", prof.FrontendHost, prof.FrontendPort)
-	fmt.Printf("demoDataDir=%s\n", prof.DemoDataDir)
-	fmt.Printf("readonly=%t\n", prof.Readonly)
-	fmt.Printf("demo=%t\n", prof.Demo)
-	fmt.Printf("debug=%t\n", prof.Debug)
-	fmt.Printf("dataDir=%s\n", prof.DataDir)
+	fmt.Printf("mode=%s\n", profile.Mode)
+	fmt.Printf("server=%s:%d\n", profile.BackendHost, profile.BackendPort)
+	fmt.Printf("datastore=%s:%d\n", profile.BackendHost, profile.DatastorePort)
+	fmt.Printf("frontend=%s:%d\n", profile.FrontendHost, profile.FrontendPort)
+	fmt.Printf("demoDataDir=%s\n", profile.DemoDataDir)
+	fmt.Printf("readonly=%t\n", profile.Readonly)
+	fmt.Printf("demo=%t\n", profile.Demo)
+	fmt.Printf("debug=%t\n", profile.Debug)
+	fmt.Printf("dataDir=%s\n", profile.DataDir)
 	fmt.Println("-----Config END-------")
 
 	serverStarted := false
@@ -128,7 +128,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	var err error
 
-	resourceDir := common.GetResourceDir(prof.DataDir)
+	resourceDir := common.GetResourceDir(profile.DataDir)
 	// Install mysqlutil
 	mysqlutilIns, err := mysqlutil.Install(resourceDir)
 	if err != nil {
@@ -137,7 +137,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.mysqlutil = *mysqlutilIns
 
 	// Install Postgres.
-	pgDataDir := common.GetPostgresDataDir(prof.DataDir)
+	pgDataDir := common.GetPostgresDataDir(profile.DataDir)
 	log.Info("-----Embedded Postgres Config BEGIN-----")
 	log.Info(fmt.Sprintf("resourceDir=%s\n", resourceDir))
 	log.Info(fmt.Sprintf("pgdataDir=%s\n", pgDataDir))
@@ -146,24 +146,24 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	// Installs the Postgres binary and creates the 'activeProfile.pgUser' user/database
 	// to store Bytebase's own metadata.
 	log.Info(fmt.Sprintf("Installing Postgres OS %q Arch %q\n", runtime.GOOS, runtime.GOARCH))
-	pgInstance, err := postgres.Install(resourceDir, pgDataDir, prof.PgUser)
+	pgInstance, err := postgres.Install(resourceDir, pgDataDir, profile.PgUser)
 	if err != nil {
 		return nil, err
 	}
 	s.pgInstanceDir = pgInstance.BaseDir
 
 	// New MetadataDB instance.
-	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+	if profile.UseEmbedDB() {
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, profile.PgUser, profile.DataDir, profile.DemoDataDir, profile.Mode)
 	} else {
-		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, profile.PgURL, profile.DemoDataDir, profile.Mode)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot create MetadataDB instance, error: %w", err)
 	}
 
 	// New store.DB instance that represents the db connection.
-	storeDB, err := s.metaDB.Connect(prof.DatastorePort, prof.Readonly, prof.Version)
+	storeDB, err := s.metaDB.Connect(profile.DatastorePort, profile.Readonly, profile.Version)
 	if err != nil {
 		return nil, fmt.Errorf("cannot new db: %w", err)
 	}
@@ -175,7 +175,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	cacheService := NewCacheService()
-	storeInstance := store.New(storeDB, cacheService)
+	storeInstance := store.New(storeDB, cacheService, profile)
 	s.store = storeInstance
 
 	config, err := s.initSetting(ctx, storeInstance)
@@ -185,7 +185,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	s.secret = config.secret
 
 	e := echo.New()
-	e.Debug = prof.Debug
+	e.Debug = profile.Debug
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -197,7 +197,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	embedFrontend(e)
 	s.e = e
 
-	if !prof.Readonly {
+	if !profile.Readonly {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
@@ -264,7 +264,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		s.SchemaSyncer = NewSchemaSyncer(s)
 
 		// Backup runner
-		s.BackupRunner = NewBackupRunner(s, prof.BackupRunnerInterval)
+		s.BackupRunner = NewBackupRunner(s, profile.BackupRunnerInterval)
 
 		// Anomaly scanner
 		s.AnomalyScanner = NewAnomalyScanner(s)
@@ -274,7 +274,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	// Middleware
-	if prof.Mode == common.ReleaseModeDev || prof.Debug {
+	if profile.Mode == common.ReleaseModeDev || profile.Debug {
 		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 			Skipper: func(c echo.Context) bool {
 				return !common.HasPrefixes(c.Path(), "/api", "/hook")
@@ -297,7 +297,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return JWTMiddleware(s.store, next, prof.Mode, config.secret)
+		return JWTMiddleware(s.store, next, profile.Mode, config.secret)
 	})
 
 	m, err := model.NewModelFromString(casbinModel)
@@ -310,7 +310,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		return nil, err
 	}
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return aclMiddleware(s, ce, next, prof.Readonly)
+		return aclMiddleware(s, ce, next, profile.Readonly)
 	})
 	s.registerDebugRoutes(apiGroup)
 	s.registerSettingRoutes(apiGroup)
@@ -357,7 +357,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	}
 
 	s.ActivityManager = NewActivityManager(s, storeInstance)
-	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
+	s.LicenseService, err = enterpriseService.NewLicenseService(profile.Mode, s.store)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create license service, error: %w", err)
 	}
