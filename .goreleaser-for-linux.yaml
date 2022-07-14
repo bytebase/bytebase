@@ -24,14 +24,10 @@ builds:
       - BUILD_USER="unknown"
     goos:
       - linux
+    # We currently cannot run mysqlbinlog on arm64.
     goarch:
       - amd64
-      - arm64
     overrides:
-      - goos: linux
-        goarch: arm64
-        env:
-          - CC=aarch64-linux-gnu-gcc
       - goos: linux
         goarch: amd64
         env:
@@ -57,14 +53,10 @@ builds:
       - BUILD_USER="unknown"
     goos:
       - linux
+    # We currently cannot run mysqlbinlog on arm64.
     goarch:
       - amd64
-      - arm64
     overrides:
-      - goos: linux
-        goarch: arm64
-        env:
-          - CC=aarch64-linux-gnu-gcc
       - goos: linux
         goarch: amd64
         env:

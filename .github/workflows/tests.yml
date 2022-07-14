@@ -51,8 +51,6 @@ jobs:
           go-version: 1.16
           check-latest: true
           cache: true
-      - name: Install cross-compiler for linux/arm64
-        run: sudo apt-get -y install gcc-aarch64-linux-gnu
       - name: Release dry-run
         uses: goreleaser/goreleaser-action@v2
         with:
