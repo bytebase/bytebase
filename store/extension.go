@@ -76,7 +76,7 @@ type extensionKey struct {
 	schema string
 }
 
-// SetDBExtensionList sets the labels for a database.
+// SetDBExtensionList sets the extensions for a database.
 func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []*api.DBExtensionCreate, databaseID int, updaterID int) error {
 	oldDBExtensionRawList, err := s.findDBExtensionRaw(ctx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
