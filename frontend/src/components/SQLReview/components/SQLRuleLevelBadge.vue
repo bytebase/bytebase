@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
-import { RuleLevel } from "@/types/schemaSystem";
+import { RuleLevel } from "@/types/sqlReview";
 import { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 
 const props = defineProps({

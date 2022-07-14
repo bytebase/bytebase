@@ -28,7 +28,7 @@ func TestSchemaSystem(t *testing.T) {
 
 	var (
 		databaseName          = "testSchemaSystem"
-		schemaReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSchemaReviewPolicy.AccessErrorMessage())
+		schemaReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
 		statements            = []string{
 			"CREATE TABLE user(" +
 				"id INT PRIMARY KEY," +

@@ -33,12 +33,12 @@
 
 <script lang="ts" setup>
 import { PropType } from "vue";
-import { SchemaReviewPolicyTemplate } from "@/types/schemaSystem";
+import { SQLReviewPolicyTemplate } from "@/types/sqlReview";
 
 const props = defineProps({
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
+    type: Object as PropType<SQLReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: false,

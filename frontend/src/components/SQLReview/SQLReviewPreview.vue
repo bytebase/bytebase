@@ -1,6 +1,6 @@
 <template>
   <div class="flex gap-x-20">
-    <SchemaReviewSidebar :selected-rule-list="selectedRuleList" />
+    <SQLReviewSidebar :selected-rule-list="selectedRuleList" />
     <div class="flex-1">
       <div class="mb-5" v-if="name">
         <h1 class="text-left text-3xl font-bold mb-2">
@@ -18,9 +18,7 @@
         v-else-if="isPreviewStep"
         class="my-5"
         :style="`WARN`"
-        :title="
-          $t('schema-review-policy.create.basic-info.no-linked-environments')
-        "
+        :title="$t('sql-review.create.basic-info.no-linked-environments')"
       />
       <div v-for="category in categoryList" :key="category.id" class="pb-4">
         <a
@@ -40,7 +38,7 @@
               {{ getRuleLocalization(rule.type).title }}
             </a>
             <div class="mt-3 flex items-center space-x-2 sm:mt-0">
-              <SchemaRuleLevelBadge :level="rule.level" />
+              <SQLRuleLevelBadge :level="rule.level" />
               <BBBadge
                 :text="$t(`sql-review.engine.${rule.engine.toLowerCase()}`)"
                 :can-remove="false"
