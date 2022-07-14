@@ -66,8 +66,7 @@ type namingDropTableConventionChecker struct {
 
 // Enter implements the ast.Visitor interface
 func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
-	case *ast.DropTableStmt:
+	if node, ok := in.(*ast.DropTableStmt); ok {
 		for _, table := range node.Tables {
 			if !v.format.MatchString(table.Name.O) {
 				v.adviceList = append(v.adviceList, advisor.Advice{
@@ -79,6 +78,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 			}
 		}
 	}
+
 	return in, false
 }
 
