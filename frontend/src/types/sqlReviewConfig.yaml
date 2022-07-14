@@ -19,6 +19,11 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
+      - type: table.no-foreign-key
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList: []
       - type: statement.select.no-select-all
         category: STATEMENT
         engine: COMMON
@@ -145,6 +150,11 @@ templateList:
         category: TABLE
         engine: COMMON
         level: ERROR
+        componentList: []
+      - type: table.no-foreign-key
+        category: TABLE
+        engine: COMMON
+        level: WARNING
         componentList: []
       - type: naming.table
         category: NAMING

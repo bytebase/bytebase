@@ -24,6 +24,10 @@
       "title": "强制主键",
       "description": "要求每张表必须有一个主键。"
     },
+    "table-no-foreign-key": {
+      "title": "禁止外键",
+      "description": "禁止给表创建外键。"
+    },
     "naming-table": {
       "title": "表名命名检查",
       "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",

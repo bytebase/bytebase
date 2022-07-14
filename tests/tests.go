@@ -134,6 +134,8 @@ func getTestPort(testName string) int {
 		"TestPITR/Schema_Migration_Failure",
 		"TestPITR/Drop_Database",
 		"TestPITR/Case_Sensitive",
+		"TestPITR/Invalid_Time_Point",
+		"TestPITR/PITR_Twice",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
@@ -1427,6 +1429,7 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 	case advisor.SchemaRuleStatementRequireWhere:
 	case advisor.SchemaRuleStatementNoLeadingWildcardLike:
 	case advisor.SchemaRuleTableRequirePK:
+	case advisor.SchemaRuleTableNoFK:
 	case advisor.SchemaRuleColumnNotNull:
 	case advisor.SchemaRuleSchemaBackwardCompatibility:
 	case advisor.SchemaRuleTableNaming:
@@ -1510,6 +1513,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleTableRequirePK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableNoFK,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{

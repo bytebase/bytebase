@@ -24,6 +24,10 @@
       "title": "Require primary key",
       "description": "Require the table to have a primary key."
     },
+    "table-no-foreign-key": {
+      "title": "No foreign key",
+      "description": "Disallow the foreign key in the table."
+    },
     "naming-table": {
       "title": "Table naming check",
       "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",
