@@ -45,6 +45,7 @@ export default defineComponent({
   setup() {
     const event = inject("event") as Event;
     const helpName = ref<string>("");
+    const isHelpGuide = ref<boolean>(false);
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
 
@@ -53,9 +54,12 @@ export default defineComponent({
       html: "",
     });
 
-    const showHelp = async (name: string) => {
+    const showHelp = async (name: string, isGuide?: boolean) => {
       if (name) {
         helpName.value = name;
+        if (isGuide) {
+          isHelpGuide.value = true;
+        }
         const { default: markdown } = await import(
           `../../../public/help/${
             locale.value === "zh-CN" ? "zh" : "en"
@@ -75,12 +79,15 @@ export default defineComponent({
     };
 
     const onClose = () => {
-      if (!uiStateStore.getIntroStateByKey(`guide.${helpName.value}`)) {
-        uiStateStore.saveIntroStateByKey({
-          key: `guide.${helpName.value}`,
-          newState: true,
-        });
+      if (isHelpGuide.value) {
+        if (!uiStateStore.getIntroStateByKey(`guide.${helpName.value}`)) {
+          uiStateStore.saveIntroStateByKey({
+            key: `guide.${helpName.value}`,
+            newState: true,
+          });
+        }
       }
+      // else do nth
     };
 
     onMounted(() => {

@@ -44,7 +44,11 @@
         </button>
       </div>
     </div>
-    <HelpTriggerIcon :name="routeHelpNameMap[currentRoute.name]" />
+    <HelpTriggerIcon
+      v-if="currentRoute.name in routeHelpNameMap"
+      :name="routeHelpNameMap[currentRoute.name]"
+      :is-guide="true"
+    />
   </nav>
 </template>
 

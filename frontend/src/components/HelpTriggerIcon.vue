@@ -17,11 +17,16 @@ export default defineComponent({
       required: true,
       default: "",
     },
+    isGuide: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup: (props) => {
     const event = inject("event") as Event;
     const handleClick = () => {
-      event.emit("help", props.name);
+      event.emit("help", props.name, props.isGuide);
     };
     return {
       handleClick,

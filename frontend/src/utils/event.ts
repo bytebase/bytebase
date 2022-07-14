@@ -18,9 +18,9 @@ class Event {
     }
   }
 
-  emit(event: string, params?: any) {
+  emit(event: string, ...params: any[]) {
     if (this.eventList[event]) {
-      this.eventList[event](params);
+      this.eventList[event](...params);
     }
   }
 }
