@@ -173,6 +173,7 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
+  autoBackupRetentionPeriodTs: number;
   autoBackupHookUrl: string;
   autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
@@ -208,6 +209,7 @@ export default defineComponent({
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
+      autoBackupRetentionPeriodTs: 0,
       autoBackupHookUrl: "",
       autoBackupUpdatedHookUrl: "",
     });
@@ -237,6 +239,7 @@ export default defineComponent({
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
+      state.autoBackupRetentionPeriodTs = backupSetting.retentionPeriodTs;
       state.autoBackupHookUrl = backupSetting.hookUrl;
       state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
     };
@@ -390,6 +393,7 @@ export default defineComponent({
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
+        retentionPeriodTs: on ? 7 : 0,
         hookUrl: "",
       };
       backupStore
@@ -416,6 +420,7 @@ export default defineComponent({
         enabled: state.autoBackupEnabled,
         hour: state.autoBackupHour,
         dayOfWeek: state.autoBackupDayOfWeek,
+        retentionPeriodTs: state.autoBackupRetentionPeriodTs,
         hookUrl: state.autoBackupUpdatedHookUrl,
       };
       backupStore
