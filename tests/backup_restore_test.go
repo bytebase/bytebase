@@ -659,6 +659,73 @@ func TestPITR(t *testing.T) {
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
+
+	t.Run("Invalid Time Point", func(t *testing.T) {
+		t.Log(t.Name())
+		databaseName := "invalid_time_point"
+
+		port := getTestPort(t.Name())
+		_, stopFn := resourcemysql.SetupTestInstance(t, port)
+		defer stopFn()
+
+		connCfg := getMySQLConnectionConfig(strconv.Itoa(port), "")
+		instance, err := ctl.addInstance(api.InstanceCreate{
+			EnvironmentID: prodEnvironment.ID,
+			Name:          "InvalidTimePointInstance",
+			Engine:        db.MySQL,
+			Host:          connCfg.Host,
+			Port:          connCfg.Port,
+			Username:      connCfg.Username,
+		})
+		a.NoError(err)
+
+		err = ctl.createDatabase(project, instance, databaseName, nil)
+		a.NoError(err)
+
+		databases, err := ctl.getDatabases(api.DatabaseFind{
+			InstanceID: &instance.ID,
+		})
+		a.NoError(err)
+		a.Equal(1, len(databases))
+		database := databases[0]
+
+		mysqlDB, _ := initPITRDB(t, databaseName, port)
+		defer mysqlDB.Close()
+
+		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		insertRangeData(t, mysqlDB, 0, numRowsTime0)
+
+		t.Log("Create a full backup")
+		backup, err := ctl.createBackup(api.BackupCreate{
+			DatabaseID:     database.ID,
+			Name:           "first-backup",
+			Type:           api.BackupTypeManual,
+			StorageBackend: api.BackupStorageBackendLocal,
+		})
+		a.NoError(err)
+		err = ctl.waitBackup(database.ID, backup.ID)
+		a.NoError(err)
+
+		targetTs := backup.CreatedTs - 1
+
+		createCtx, err := json.Marshal(&api.PITRContext{
+			DatabaseID:    database.ID,
+			PointInTimeTs: targetTs,
+		})
+		a.NoError(err)
+		issue, err := ctl.createIssue(api.IssueCreate{
+			ProjectID:     project.ID,
+			Name:          fmt.Sprintf("Restore database %s to the time %d", databaseName, targetTs),
+			Type:          api.IssueDatabasePITR,
+			AssigneeID:    project.Creator.ID,
+			CreateContext: string(createCtx),
+		})
+		a.NoError(err)
+
+		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
+		a.Error(err)
+		a.Equal(status, api.TaskFailed)
+	})
 }
 
 func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
