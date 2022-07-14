@@ -75,7 +75,7 @@ export type RuleType =
   | "engine.mysql.use-innodb"
   | "table.require-pk"
   | "table.no-foreign-key"
-  | "table.drop-with-name-pattern"
+  | "table.drop-naming-convention"
   | "naming.table"
   | "naming.column"
   | "naming.index.uk"
@@ -215,7 +215,7 @@ export const convertPolicyRuleToRuleTemplate = (
   );
 
   switch (ruleTemplate.type) {
-    case "table.drop-with-name-pattern":
+    case "table.drop-naming-convention":
       if (!stringComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -327,7 +327,7 @@ export const convertRuleTemplateToPolicyRule = (
   )?.payload as TemplatePayload | undefined;
 
   switch (rule.type) {
-    case "table.drop-with-name-pattern":
+    case "table.drop-naming-convention":
       if (!stringPayload) {
         throw new Error(`Invalid rule ${rule.type}`);
       }

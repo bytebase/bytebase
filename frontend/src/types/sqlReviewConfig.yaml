@@ -24,7 +24,7 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
-      - type: table.drop-with-name-pattern
+      - type: table.drop-naming-convention
         category: TABLE
         engine: COMMON
         level: ERROR
@@ -165,7 +165,7 @@ templateList:
         engine: COMMON
         level: WARNING
         componentList: []
-      - type: table.drop-with-name-pattern
+      - type: table.drop-naming-convention
         category: TABLE
         engine: COMMON
         level: ERROR
