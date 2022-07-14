@@ -16,7 +16,6 @@
       </div>
       <div class="col-span-1">
         <label class="textlabel"> {{ $t("policy.approval.name") }} </label>
-        <HelpTriggerIcon name="instance" />
         <span v-show="valueChanged('approvalPolicy')" class="textlabeltip">{{
           $t("policy.approval.tip")
         }}</span>
@@ -261,7 +260,6 @@ import {
   useEnvironmentList,
   useSchemaSystemStore,
 } from "@/store";
-import HelpTriggerIcon from "./HelpTriggerIcon.vue";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -273,7 +271,6 @@ const ROUTE_NAME = "setting.workspace.schema-review-policy";
 
 export default defineComponent({
   name: "EnvironmentForm",
-  components: { HelpTriggerIcon },
   props: {
     create: {
       type: Boolean,

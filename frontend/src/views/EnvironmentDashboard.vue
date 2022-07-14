@@ -52,22 +52,6 @@
     />
   </BBModal>
 
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('common.do-not-show-again')"
-    :cancel-text="$t('common.dismiss')"
-    :title="$t('environment.how-to-setup-environment')"
-    :description="$t('environment.how-to-setup-environment-description')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
-
   <FeatureModal
     v-if="state.missingRequiredFeature != undefined"
     :feature="state.missingRequiredFeature"
@@ -76,9 +60,16 @@
 </template>
 
 <script lang="ts">
-import { onMounted, computed, reactive, watch, defineComponent } from "vue";
+import {
+  onMounted,
+  computed,
+  reactive,
+  watch,
+  defineComponent,
+  inject,
+} from "vue";
 import { useRouter } from "vue-router";
-import { array_swap } from "../utils";
+import { array_swap, Event } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -124,7 +115,6 @@ interface LocalState {
   selectedIndex: number;
   showCreateModal: boolean;
   reorder: boolean;
-  showGuide: boolean;
   missingRequiredFeature?:
     | "bb.feature.approval-policy"
     | "bb.feature.backup-policy";
@@ -142,13 +132,13 @@ export default defineComponent({
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
     const router = useRouter();
+    const event = inject("event") as Event;
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
       selectedIndex: -1,
       showCreateModal: false,
       reorder: false,
-      showGuide: false,
     });
 
     const selectEnvironmentOnHash = () => {
@@ -174,7 +164,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
-          state.showGuide = true;
+          event.emit("help", "environment");
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
@@ -271,14 +261,6 @@ export default defineComponent({
         });
     };
 
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.environment",
-        newState: true,
-      });
-      state.showGuide = false;
-    };
-
     const startReorder = () => {
       state.reorderedEnvironmentList = [...environmentList.value];
       state.reorder = true;
@@ -343,7 +325,6 @@ export default defineComponent({
       createEnvironment,
       doCreate,
       doArchive,
-      doDismissGuide,
       reorderEnvironment,
       orderChanged,
       discardReorder,

@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex" aria-label="Breadcrumb">
+  <nav class="flex flex-row justify-between" aria-label="Breadcrumb">
     <div v-for="(item, index) in breadcrumbList" :key="index">
       <div class="flex items-center space-x-2">
         <router-link
@@ -44,6 +44,7 @@
         </button>
       </div>
     </div>
+    <HelpTriggerIcon :name="routeHelpNameMap[currentRoute.name]" />
   </nav>
 </template>
 
@@ -51,7 +52,12 @@
 import { computed, ComputedRef, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
+import {
+  Bookmark,
+  UNKNOWN_ID,
+  BookmarkCreate,
+  routeHelpNameMap,
+} from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -61,6 +67,7 @@ import {
   useDatabaseStore,
   useProjectStore,
 } from "@/store";
+import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
 
 interface BreadcrumbItem {
   name: string;
@@ -69,7 +76,9 @@ interface BreadcrumbItem {
 
 export default defineComponent({
   name: "Breadcrumb",
-  components: {},
+  components: {
+    HelpTriggerIcon,
+  },
   setup() {
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
@@ -198,6 +207,8 @@ export default defineComponent({
       isBookmarked,
       breadcrumbList,
       toggleBookmark,
+      currentRoute,
+      routeHelpNameMap,
     };
   },
 });
