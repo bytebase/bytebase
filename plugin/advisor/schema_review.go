@@ -55,6 +55,8 @@ const (
 	SchemaRuleTableRequirePK SchemaReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
 	SchemaRuleTableNoFK SchemaReviewRuleType = "table.no-foreign-key"
+	// SchemaRuleTableDropNamingConvention require only the table following the naming convention can be deleted.
+	SchemaRuleTableDropNamingConvention SchemaReviewRuleType = "table.drop-naming-convention"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SchemaReviewRuleType = "column.required"
@@ -366,6 +368,11 @@ func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine DBType) (Type, e
 		switch engine {
 		case MySQL, TiDB:
 			return MySQLTableNoFK, nil
+		}
+	case SchemaRuleTableDropNamingConvention:
+		switch engine {
+		case MySQL, TiDB:
+			return MySQLTableDropNamingConvention, nil
 		}
 	case SchemaRuleMySQLEngine:
 		if engine == MySQL {
