@@ -724,7 +724,6 @@ func syncViewSchema(ctx context.Context, store *store.Store, database *api.Datab
 }
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	// SetDBExtensionList
 	var creates []*api.DBExtensionCreate
 	for _, dbExtension := range schema.ExtensionList {
 		creates = append(creates, &api.DBExtensionCreate{
