@@ -26,7 +26,7 @@ func (s *Server) registerActuatorRoutes(g *echo.Group) {
 		}
 
 		if s.profile.Demo && strings.HasPrefix(s.profile.DemoDataDir, demoDataPath) {
-			serverInfo.DemoName = s.profile.DemoDataDir[len(demoDataPath):len(s.profile.DemoDataDir)]
+			serverInfo.DemoName = strings.TrimPrefix(s.profile.DemoDataDir, demoDataPath)
 		}
 
 		findRole := api.Owner
