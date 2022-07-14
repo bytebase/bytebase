@@ -654,6 +654,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "")
 		require.NoError(t, err)
 
+		// Non-blob type should excluded
 		want := []*vcs.RepositoryTreeNode{
 			{
 				Path: "file.rb",
@@ -676,6 +677,7 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "subdir")
 		require.NoError(t, err)
 
+		// Non-blob type should excluded
 		want := []*vcs.RepositoryTreeNode{
 			{
 				Path: "subdir/exec_file",
