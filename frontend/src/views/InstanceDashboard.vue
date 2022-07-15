@@ -85,7 +85,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.instance")) {
         setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "instance");
+          event?.emit(EventType.EVENT_HELP, "help.instance");
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,

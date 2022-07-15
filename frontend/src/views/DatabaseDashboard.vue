@@ -79,7 +79,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.database")) {
         setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "database");
+          event?.emit(EventType.EVENT_HELP, "help.database");
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,
