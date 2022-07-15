@@ -9,18 +9,18 @@ import (
 
 func TestGenerateDBExtensionActions(t *testing.T) {
 	tests := []struct {
-		oldDBExtensionMap map[extensionKey]*dbExtensionRaw
-		newDBExtensionMap map[extensionKey]*api.DBExtensionCreate
-		wantDeletes       []*api.DBExtensionDelete
-		wantCreates       []*api.DBExtensionCreate
+		oldDBExtensionRawList []*dbExtensionRaw
+		dbExtensionCreateList []*api.DBExtensionCreate
+		wantDeletes           []*api.DBExtensionDelete
+		wantCreates           []*api.DBExtensionCreate
 	}{
 		{
-			oldDBExtensionMap: map[extensionKey]*dbExtensionRaw{
-				{"hstore", "public"}: {ID: 123, Version: "v1", Description: "desc1"},
+			oldDBExtensionRawList: []*dbExtensionRaw{
+				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			newDBExtensionMap: map[extensionKey]*api.DBExtensionCreate{
-				{"hstore", "public"}: {Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
-				{"hdd", "ddd"}:       {Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+			dbExtensionCreateList: []*api.DBExtensionCreate{
+				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
+				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
 			},
 			wantDeletes: []*api.DBExtensionDelete{
 				{ID: 123},
@@ -31,19 +31,19 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 			},
 		},
 		{
-			oldDBExtensionMap: map[extensionKey]*dbExtensionRaw{
-				{"hstore", "public"}: {ID: 123, Version: "v1", Description: "desc1"},
+			oldDBExtensionRawList: []*dbExtensionRaw{
+				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			newDBExtensionMap: nil,
+			dbExtensionCreateList: nil,
 			wantDeletes: []*api.DBExtensionDelete{
 				{ID: 123},
 			},
 		},
 		{
-			oldDBExtensionMap: nil,
-			newDBExtensionMap: map[extensionKey]*api.DBExtensionCreate{
-				{"hstore", "public"}: {Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
-				{"hdd", "ddd"}:       {Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+			oldDBExtensionRawList: nil,
+			dbExtensionCreateList: []*api.DBExtensionCreate{
+				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
+				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
 			},
 			wantDeletes: nil,
 			wantCreates: []*api.DBExtensionCreate{
@@ -52,11 +52,11 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 			},
 		},
 		{
-			oldDBExtensionMap: map[extensionKey]*dbExtensionRaw{
-				{"hstore", "public"}: {ID: 123, Version: "v1", Description: "desc1"},
+			oldDBExtensionRawList: []*dbExtensionRaw{
+				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			newDBExtensionMap: map[extensionKey]*api.DBExtensionCreate{
-				{"hstore", "public"}: {Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
+			dbExtensionCreateList: []*api.DBExtensionCreate{
+				{Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
 			wantDeletes: nil,
 			wantCreates: nil,
@@ -64,7 +64,7 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deletes, creates := generateDBExtensionActions(test.oldDBExtensionMap, test.newDBExtensionMap)
+		deletes, creates := generateDBExtensionActions(test.oldDBExtensionRawList, test.dbExtensionCreateList)
 		require.Equal(t, test.wantDeletes, deletes)
 		require.Equal(t, test.wantCreates, creates)
 	}
