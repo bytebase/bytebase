@@ -2,17 +2,22 @@
   {
     "selector": "[data-label='bb-dashboard-static-sidebar']",
     "type": "shield",
-    "url": ".+/db/"
+    "url": ".*"
   },
   {
     "selector": "[data-label='bb-database-detail-action-buttons-container']",
     "type": "shield",
-    "url": ".+/db/"
+    "url": ".*"
   },
   {
     "selector": "[data-label='bb-dashboard-header']",
     "type": "shield",
-    "url": ".+/db/"
+    "url": ".*"
+  },
+  {
+    "selector": "[data-label='bb-breadcrumb']",
+    "type": "shield",
+    "url": ".*"
   },
   {
     "selector": "[data-label='bb-migration-history-establish-baseline-alert'] [data-label='bb-alert-ok-button']",
@@ -32,7 +37,7 @@
   },
   {
     "selector": "[data-label='bb-dashboard-header-database-entry']",
-    "url": "^(?!.+/db)",
+    "url": "^(?!.+/(db|issue/))",
     "cover": true,
     "dialog": {
       "title": "",
@@ -68,7 +73,15 @@
         "zh-CN": "让我们专注在数据库变更管理场景"
       },
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "-16px"
     }
+  },
+  {
+    "selector": "[data-label='bb-database-detail-tab'] button:nth-child(3)",
+    "url": ".*",
+    "type": "shield"
   },
   {
     "selector": "[data-label='bb-establish-baseline-button']",
@@ -84,19 +97,6 @@
     },
     "additionStyle": {
       "marginLeft": "8px"
-    }
-  },
-  {
-    "selector": "[data-label='bb-database-overview-description-list']",
-    "url": ".+?/db/.+?#overview$",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "The basic information of the database is shown here",
-        "zh-CN": "这里展示了数据库的基本信息"
-      },
-      "alwaysShow": true,
-      "position": "topright"
     }
   },
   {
@@ -204,6 +204,20 @@
       },
       "alwaysShow": true,
       "position": "topright"
+    }
+  },
+  {
+    "selector": "a.bb-comment-link",
+    "url": ".+?/issue/.+",
+    "type": "tooltip",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Let's go back to Migration History",
+        "zh-CN": "让我们回到 Migration History"
+      },
+      "alwaysShow": true,
+      "position": "right"
     }
   }
 ]
