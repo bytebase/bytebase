@@ -572,8 +572,8 @@ CREATE TABLE backup_setting (
     hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
     day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
-    -- retention_period_ts == -1 means infinite retention period, 0 means do not keep any data.
-    retention_period_ts INTEGER NOT NULL CHECK (retention_period_ts >= -1),
+    -- retention_period_ts is NULL means infinite retention period, 0 means do not keep any data.
+    retention_period_ts INTEGER CHECK (retention_period_ts >= 0),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );
