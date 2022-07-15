@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
+	github.com/ClickHouse/clickhouse-go/v2 v2.2.0
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -11,7 +11,7 @@ require (
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
@@ -29,7 +29,7 @@ require (
 	github.com/segmentio/backo-go v1.0.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.3
 	github.com/spf13/cobra v1.2.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.5
 	github.com/swaggo/echo-swagger v1.3.3
 	github.com/swaggo/swag v1.8.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
