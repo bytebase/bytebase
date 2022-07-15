@@ -9,6 +9,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -367,19 +368,12 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 			filepath.Join(binlogDir, "binlog.000001"),
 		}
 		cmd := exec.Command(instance.GetPath(mysqlutil.MySQL), args...)
-		pr, err := cmd.StdoutPipe()
-		if err != nil {
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
 			return nil, err
 		}
-		s := bufio.NewScanner(pr)
-		if err := cmd.Start(); err != nil {
-			return nil, err
-		}
-		defer func() {
-			_ = pr.Close()
-			_ = cmd.Process.Kill()
-		}()
-		log.Error(s.Text())
+		log.Error(out.String())
 		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
