@@ -1,6 +1,6 @@
 .bb-guide-cover-wrapper,
 .bb-hint-cover-wrapper {
-  @apply fixed inset-0;
+  @apply fixed inset-0 overflow-hidden;
   z-index: 999998;
 }
 
@@ -22,14 +22,18 @@
 
 .bb-guide-dialog,
 .bb-hint-dialog {
-  @apply absolute bg-white w-72 m-1 text-black p-2 py-3 px-3 rounded-lg text-left -top-full -left-full;
+  @apply fixed bg-white w-72 m-1 text-black p-3 px-4 rounded-lg text-left -top-full -left-full overflow-hidden;
   box-shadow: 0 3px 30px rgb(33 33 33 / 30%);
   z-index: 1000000;
 }
 
+.bb-hint-dialog.tooltip-dialog {
+  @apply mx-2;
+}
+
 .bb-guide-close-button,
 .bb-hint-close-button {
-  @apply absolute top-0 right-0.5 px-1 font-thin rounded cursor-pointer opacity-60 hover:opacity-50;
+  @apply fixed top-0 right-0.5 px-1 font-thin rounded cursor-pointer opacity-60 hover:opacity-50;
   font-size: 24px;
 }
 
@@ -52,9 +56,9 @@
 }
 
 .bb-hint-wrapper {
-  @apply absolute rounded cursor-pointer;
+  @apply fixed rounded cursor-pointer overflow-hidden;
   z-index: 999999;
-  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px;
+  box-shadow: rgb(33 33 33 / 30%) 0px 0px 1px 2px;
 }
 
 .bb-hint-wrapper.covered {
@@ -62,17 +66,18 @@
     rgb(33 33 33 / 60%) 0px 0px 0px 5000px !important;
 }
 
-.bb-hint-wrapper.highlight {
-  box-shadow: rgb(78 70 211 / 80%) 0px 0px 1px 2px;
-  animation: 0.5s linear 0.5s infinite alternate breathing;
+.bb-hint-wrapper.shield {
+  @apply border-none rounded-none overflow-hidden bg-transparent shadow-none cursor-not-allowed;
+  pointer-events: auto !important;
+  backdrop-filter: blur(2px);
+  background: rgba(255, 255, 255, 0.4);
 }
 
-.bb-hint-wrapper.shield {
-  @apply border-none rounded-none;
-  background: rgb(33 33 33 / 50%);
-  box-shadow: none;
-  cursor: not-allowed;
-  pointer-events: auto !important;
+.bb-hint-tooltip-wrapper {
+  @apply fixed w-4 h-4 text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
+  animation: 2s linear 2s infinite breathing;
+  box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
+  color: rgb(78 70 211);
 }
 
 @keyframes breathing {
@@ -83,8 +88,15 @@
     box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
       rgb(78 70 211 / 40%) 0px 0px 0px 4px;
   }
-  100% {
+  60% {
     box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
       rgb(78 70 211 / 40%) 0px 0px 0px 12px;
+  }
+  70% {
+    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
+      rgb(78 70 211 / 40%) 0px 0px 0px 8px;
+  }
+  100% {
+    box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
   }
 }
