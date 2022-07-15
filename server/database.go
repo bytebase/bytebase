@@ -365,7 +365,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				DatabaseID: &id,
 				TableID:    &table.ID,
 			}
-			indexList, err := s.store.FindIndex(ctx, indexFind)
+			indexList, err := s.store.FindIndex(ctx, indexFind, s.profile.Mode)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 			}
@@ -422,7 +422,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			DatabaseID: &id,
 			TableID:    &table.ID,
 		}
-		indexList, err := s.store.FindIndex(ctx, indexFind)
+		indexList, err := s.store.FindIndex(ctx, indexFind, s.profile.Mode)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch index list for database id: %d, table name: %s", id, table.Name)).SetInternal(err)
 		}

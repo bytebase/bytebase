@@ -73,7 +73,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return err
 		}
 		dbType = database.Instance.Engine
-		catalog = store.NewCatalog(&database.ID, s.store)
+		catalog = store.NewCatalog(&database.ID, s.store, s.profile.Mode)
 	} else {
 		databaseType := c.QueryParams().Get("databaseType")
 		if databaseType == "" {

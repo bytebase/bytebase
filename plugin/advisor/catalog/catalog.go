@@ -15,6 +15,7 @@ type Index struct {
 	TableName         string
 	Type              string
 	Unique            bool
+	Primary           bool
 	ColumnExpressions []string
 }
 
