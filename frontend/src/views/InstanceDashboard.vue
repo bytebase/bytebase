@@ -34,7 +34,7 @@ import {
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { Environment, Instance } from "../types";
+import { Environment, Instance, EventType } from "../types";
 import { cloneDeep } from "lodash-es";
 import { sortInstanceList, Event } from "../utils";
 import { useI18n } from "vue-i18n";
@@ -85,7 +85,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.instance")) {
         setTimeout(() => {
-          event?.emit("help", "instance");
+          event?.emit(EventType.EVENT_HELP, "instance");
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,

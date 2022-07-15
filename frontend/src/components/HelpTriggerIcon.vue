@@ -8,6 +8,7 @@
 <script lang="ts">
 import { defineComponent, inject } from "vue";
 import { Event } from "@/utils";
+import { EventType } from "@/types";
 
 export default defineComponent({
   name: "HelpTrigger",
@@ -26,7 +27,7 @@ export default defineComponent({
   setup: (props) => {
     const event = inject("event") as Event;
     const handleClick = () => {
-      event.emit("help", props.name, props.isGuide);
+      event.emit(EventType.EVENT_HELP, props.name, props.isGuide);
     };
     return {
       handleClick,

@@ -81,6 +81,7 @@ import {
   DefaultSchedulePolicy,
   PipelineApporvalPolicyPayload,
   BackupPlanPolicyPayload,
+  EventType,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
 import {
@@ -164,7 +165,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.environment")) {
         setTimeout(() => {
-          event?.emit("help", "environment");
+          event?.emit(EventType.EVENT_HELP, "environment");
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,

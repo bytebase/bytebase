@@ -29,7 +29,7 @@ import {
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database, UNKNOWN_ID } from "../types";
+import { Environment, Database, UNKNOWN_ID, EventType } from "../types";
 import { sortDatabaseList, Event } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
@@ -79,7 +79,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.database")) {
         setTimeout(() => {
-          event?.emit("help", "database");
+          event?.emit(EventType.EVENT_HELP, "database");
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,

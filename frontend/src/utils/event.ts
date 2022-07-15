@@ -1,4 +1,5 @@
 // a publish-subscribe pattern
+import { EventType } from "@/types";
 
 class Event {
   eventList: Record<string, (...args: any[]) => any>;
@@ -6,19 +7,19 @@ class Event {
     this.eventList = {};
   }
 
-  on(event: string, fn: (...args: any[]) => any) {
+  on(event: EventType, fn: (...args: any[]) => any) {
     if (!this.eventList[event]) {
       this.eventList[event] = fn;
     }
   }
 
-  off(event: string) {
+  off(event: EventType) {
     if (this.eventList[event]) {
       delete this.eventList[event];
     }
   }
 
-  emit(event: string, ...params: any[]) {
+  emit(event: EventType, ...params: any[]) {
     if (this.eventList[event]) {
       this.eventList[event](...params);
     }

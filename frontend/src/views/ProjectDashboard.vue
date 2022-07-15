@@ -36,7 +36,7 @@ import {
 } from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
 import { Event } from "../utils";
-import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
+import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID, EventType } from "../types";
 
 interface LocalState {
   projectList: Project[];
@@ -68,7 +68,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.project")) {
         setTimeout(() => {
-          event?.emit("help", "project");
+          event?.emit(EventType.EVENT_HELP, "project");
           uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,

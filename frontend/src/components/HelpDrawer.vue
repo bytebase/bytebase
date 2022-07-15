@@ -34,6 +34,7 @@ import yaml from "js-yaml";
 import { Event } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore } from "@/store";
+import { EventType } from "@/types";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -93,10 +94,10 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      event.on("help", showHelp);
+      event.on(EventType.EVENT_HELP, showHelp);
     });
     onUnmounted(() => {
-      event.off("help");
+      event.off(EventType.EVENT_HELP);
     });
     const activate = (place: DrawerPlacement) => {
       active.value = true;
