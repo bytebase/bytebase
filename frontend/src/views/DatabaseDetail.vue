@@ -20,6 +20,7 @@
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+            data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">

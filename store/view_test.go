@@ -9,20 +9,20 @@ import (
 
 func TestGenerateViewActions(t *testing.T) {
 	tests := []struct {
-		oldViewMap  map[string]*viewRaw
-		newViewMap  map[string]*api.ViewCreate
-		wantDeletes []*api.ViewDelete
-		wantCreates []*api.ViewCreate
+		oldViewRawList []*viewRaw
+		viewCreateList []*api.ViewCreate
+		wantDeletes    []*api.ViewDelete
+		wantCreates    []*api.ViewCreate
 	}{
 		{
-			oldViewMap: map[string]*viewRaw{
-				"view1": {ID: 123, Definition: "def1", Comment: "comment1"},
-				"view2": {ID: 124, Definition: "def2", Comment: "comment2"},
+			oldViewRawList: []*viewRaw{
+				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
+				{ID: 124, Name: "view2", Definition: "def2", Comment: "comment2"},
 			},
-			newViewMap: map[string]*api.ViewCreate{
-				"view1": {Name: "view1", Definition: "def1-change", Comment: "comment1"},
-				"view2": {Name: "view2", Definition: "def2", Comment: "comment2-change"},
-				"view3": {Name: "view3", Definition: "def3", Comment: "comment3"},
+			viewCreateList: []*api.ViewCreate{
+				{Name: "view1", Definition: "def1-change", Comment: "comment1"},
+				{Name: "view2", Definition: "def2", Comment: "comment2-change"},
+				{Name: "view3", Definition: "def3", Comment: "comment3"},
 			},
 			wantDeletes: []*api.ViewDelete{
 				{ID: 123},
@@ -35,19 +35,20 @@ func TestGenerateViewActions(t *testing.T) {
 			},
 		},
 		{
-			oldViewMap: map[string]*viewRaw{
-				"view1": {ID: 123, Definition: "def1", Comment: "comment1"},
+			oldViewRawList: []*viewRaw{
+				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
-			newViewMap: nil,
+			viewCreateList: nil,
+			wantCreates:    nil,
 			wantDeletes: []*api.ViewDelete{
 				{ID: 123},
 			},
 		},
 		{
-			oldViewMap: nil,
-			newViewMap: map[string]*api.ViewCreate{
-				"view1": {Name: "view1", Definition: "def1", Comment: "comment1"},
-				"view2": {Name: "view2", Definition: "def2", Comment: "comment2"},
+			oldViewRawList: nil,
+			viewCreateList: []*api.ViewCreate{
+				{Name: "view1", Definition: "def1", Comment: "comment1"},
+				{Name: "view2", Definition: "def2", Comment: "comment2"},
 			},
 			wantDeletes: nil,
 			wantCreates: []*api.ViewCreate{
@@ -56,11 +57,11 @@ func TestGenerateViewActions(t *testing.T) {
 			},
 		},
 		{
-			oldViewMap: map[string]*viewRaw{
-				"view1": {ID: 123, Definition: "def1", Comment: "comment1"},
+			oldViewRawList: []*viewRaw{
+				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
-			newViewMap: map[string]*api.ViewCreate{
-				"view1": {Name: "view1", Definition: "def1", Comment: "comment1"},
+			viewCreateList: []*api.ViewCreate{
+				{Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
 			wantDeletes: nil,
 			wantCreates: nil,
@@ -68,7 +69,7 @@ func TestGenerateViewActions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deletes, creates := generateViewActions(test.oldViewMap, test.newViewMap)
+		deletes, creates := generateViewActions(test.oldViewRawList, test.viewCreateList)
 		require.Equal(t, test.wantDeletes, deletes)
 		require.Equal(t, test.wantCreates, creates)
 	}

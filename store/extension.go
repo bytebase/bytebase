@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -77,21 +78,23 @@ type extensionKey struct {
 }
 
 // SetDBExtensionList sets the extensions for a database.
-func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []*api.DBExtensionCreate, databaseID int, updaterID int) error {
+func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
+	var newDBExtensionList []*api.DBExtensionCreate
+	for _, dbExtension := range schema.ExtensionList {
+		newDBExtensionList = append(newDBExtensionList, &api.DBExtensionCreate{
+			CreatorID:   api.SystemBotID,
+			DatabaseID:  databaseID,
+			Name:        dbExtension.Name,
+			Version:     dbExtension.Version,
+			Schema:      dbExtension.Schema,
+			Description: dbExtension.Description,
+		})
+	}
 	oldDBExtensionRawList, err := s.findDBExtensionRaw(ctx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
 		return FormatError(err)
-	}
-
-	oldDBExtensionMap := make(map[extensionKey]*dbExtensionRaw)
-	for _, e := range oldDBExtensionRawList {
-		oldDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
-	}
-	newDBExtensionMap := make(map[extensionKey]*api.DBExtensionCreate)
-	for _, e := range dbExtensionCreateList {
-		newDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -100,7 +103,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []
 	}
 	defer tx.PTx.Rollback()
 
-	deletes, creates := generateDBExtensionActions(oldDBExtensionMap, newDBExtensionMap)
+	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, newDBExtensionList)
 	for _, d := range deletes {
 		if err := deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
 			return err
@@ -122,10 +125,20 @@ func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []
 //
 // private functions
 //
-func generateDBExtensionActions(oldDBExtensionMap map[extensionKey]*dbExtensionRaw, newDBExtensionMap map[extensionKey]*api.DBExtensionCreate) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
+func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, dbExtensionCreateList []*api.DBExtensionCreate) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
+	oldDBExtensionMap := make(map[extensionKey]*dbExtensionRaw)
+	for _, e := range oldDBExtensionRawList {
+		oldDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
+	}
+	newDBExtensionMap := make(map[extensionKey]*api.DBExtensionCreate)
+	for _, e := range dbExtensionCreateList {
+		newDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
+	}
+
 	var deletes []*api.DBExtensionDelete
 	var creates []*api.DBExtensionCreate
-	for k, oldValue := range oldDBExtensionMap {
+	for _, oldValue := range oldDBExtensionRawList {
+		k := extensionKey{name: oldValue.Name, schema: oldValue.Schema}
 		newValue, ok := newDBExtensionMap[k]
 		if !ok {
 			deletes = append(deletes, &api.DBExtensionDelete{ID: oldValue.ID})
@@ -134,7 +147,8 @@ func generateDBExtensionActions(oldDBExtensionMap map[extensionKey]*dbExtensionR
 			creates = append(creates, newValue)
 		}
 	}
-	for k, newValue := range newDBExtensionMap {
+	for _, newValue := range dbExtensionCreateList {
+		k := extensionKey{name: newValue.Name, schema: newValue.Schema}
 		if _, ok := oldDBExtensionMap[k]; !ok {
 			creates = append(creates, newValue)
 		}

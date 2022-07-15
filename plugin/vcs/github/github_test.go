@@ -592,6 +592,102 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_FetchRepositoryFileList(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/git/trees/main", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/git/trees#get-a-tree
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "sha": "9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
+  "url": "https://api.github.com/repos/octocat/Hello-World/trees/9fb037999f264ba9a7fc6274d15fa3ae2ab98312",
+  "tree": [
+    {
+      "path": "file.rb",
+      "mode": "100644",
+      "type": "blob",
+      "size": 30,
+      "sha": "44b4fc6d56897b048c772eb4087f854f46256132",
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/44b4fc6d56897b048c772eb4087f854f46256132"
+    },
+    {
+      "path": "subdir",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f484d249c660418515fb01c2b9662073663c242e",
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/f484d249c660418515fb01c2b9662073663c242e"
+    },
+    {
+      "path": "subdir/exec_file",
+      "mode": "100755",
+      "type": "blob",
+      "size": 75,
+      "sha": "45b983be36b73c0788dc9cbcb76cbb80fc7bb057",
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/45b983be36b73c0788dc9cbcb76cbb80fc7bb057"
+    },
+    {
+      "path": "anotherdir/.gitignore",
+      "mode": "100755",
+      "type": "blob",
+      "size": 75,
+      "sha": "5ff01e0bbbd12a36679ddf2ddd186bac8ad5c6b4",
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/5ff01e0bbbd12a36679ddf2ddd186bac8ad5c6b4"
+    }
+  ],
+  "truncated": false
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	t.Run("no path prefix", func(t *testing.T) {
+		ctx := context.Background()
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "")
+		require.NoError(t, err)
+
+		// Non-blob type should excluded
+		want := []*vcs.RepositoryTreeNode{
+			{
+				Path: "file.rb",
+				Type: "blob",
+			},
+			{
+				Path: "subdir/exec_file",
+				Type: "blob",
+			},
+			{
+				Path: "anotherdir/.gitignore",
+				Type: "blob",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("has path prefix", func(t *testing.T) {
+		ctx := context.Background()
+		got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "octocat/Hello-World", "main", "subdir")
+		require.NoError(t, err)
+
+		// Non-blob type should excluded
+		want := []*vcs.RepositoryTreeNode{
+			{
+				Path: "subdir/exec_file",
+				Type: "blob",
+			},
+		}
+		assert.Equal(t, want, got)
+	})
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // viewRaw is the store model for an View.
@@ -70,7 +71,20 @@ func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, 
 }
 
 // SetViewList sets the views for a database.
-func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreate, databaseID int, updaterID int) error {
+func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
+	var viewCreateList []*api.ViewCreate
+	for _, view := range schema.ViewList {
+		viewCreateList = append(viewCreateList, &api.ViewCreate{
+			CreatorID:  api.SystemBotID,
+			CreatedTs:  view.CreatedTs,
+			UpdatedTs:  view.UpdatedTs,
+			DatabaseID: databaseID,
+			Name:       view.Name,
+			Definition: view.Definition,
+			Comment:    view.Comment,
+		})
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -84,16 +98,7 @@ func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreat
 		return FormatError(err)
 	}
 
-	oldViewMap := make(map[string]*viewRaw)
-	for _, v := range oldViewRawList {
-		oldViewMap[v.Name] = v
-	}
-	newViewMap := make(map[string]*api.ViewCreate)
-	for _, v := range viewCreateList {
-		newViewMap[v.Name] = v
-	}
-
-	deletes, creates := generateViewActions(oldViewMap, newViewMap)
+	deletes, creates := generateViewActions(oldViewRawList, viewCreateList)
 	for _, d := range deletes {
 		if err := deleteViewImpl(ctx, tx.PTx, d); err != nil {
 			return err
@@ -115,10 +120,20 @@ func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreat
 //
 // private functions
 //
-func generateViewActions(oldViewMap map[string]*viewRaw, newViewMap map[string]*api.ViewCreate) ([]*api.ViewDelete, []*api.ViewCreate) {
+func generateViewActions(oldViewRawList []*viewRaw, viewCreateList []*api.ViewCreate) ([]*api.ViewDelete, []*api.ViewCreate) {
+	oldViewMap := make(map[string]*viewRaw)
+	for _, v := range oldViewRawList {
+		oldViewMap[v.Name] = v
+	}
+	newViewMap := make(map[string]*api.ViewCreate)
+	for _, v := range viewCreateList {
+		newViewMap[v.Name] = v
+	}
+
 	var deletes []*api.ViewDelete
 	var creates []*api.ViewCreate
-	for k, oldValue := range oldViewMap {
+	for _, oldValue := range oldViewRawList {
+		k := oldValue.Name
 		newValue, ok := newViewMap[k]
 		if !ok {
 			deletes = append(deletes, &api.ViewDelete{ID: oldValue.ID})
@@ -127,7 +142,8 @@ func generateViewActions(oldViewMap map[string]*viewRaw, newViewMap map[string]*
 			creates = append(creates, newValue)
 		}
 	}
-	for k, newValue := range newViewMap {
+	for _, newValue := range viewCreateList {
+		k := newValue.Name
 		if _, ok := oldViewMap[k]; !ok {
 			creates = append(creates, newValue)
 		}

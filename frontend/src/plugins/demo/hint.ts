@@ -113,7 +113,9 @@ const renderHintDialog = (
     dialog: { title, description, position, alwaysShow },
   } = hintData;
   const hintDialogDiv = document.createElement("div");
-  hintDialogDiv.className = `bb-hint-dialog bb-hint-${hintIndex}`;
+  hintDialogDiv.className = `bb-hint-dialog bb-hint-${hintIndex} ${
+    position ?? "bottom"
+  }`;
 
   if (hintData.type === "tooltip") {
     hintDialogDiv.classList.add("tooltip-dialog");
@@ -287,6 +289,11 @@ const updateTooltipPosition = (
 
   const position = hintData.position;
   const bounding = getElementBounding(targetElement);
+
+  if (bounding.width === 0 && bounding.height === 0) {
+    removeHint(hintIndex);
+    return;
+  }
 
   if (!position || position === "right") {
     hintWrapper.style.top = `${bounding.top}px`;

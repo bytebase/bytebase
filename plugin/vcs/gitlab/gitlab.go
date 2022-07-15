@@ -117,7 +117,8 @@ type FileCommit struct {
 	LastCommitID  string `json:"last_commit_id,omitempty"`
 }
 
-// RepositoryTreeNode is the API message for git tree node.
+// RepositoryTreeNode represents a GitLab API response for a repository tree
+// node.
 type RepositoryTreeNode struct {
 	Path string `json:"path"`
 	Type string `json:"type"`
@@ -568,9 +569,45 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	return members, len(members) >= 100, nil
 }
 
-// FetchRepositoryFileList fetch the files from repository tree
+// FetchRepositoryFileList fetches the all files from the given repository tree
+// recursively.
+//
+// Docs: https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
 func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s", p.APIURL(instanceURL), repositoryID, ref, filePath)
+	var gitlabTreeNodes []RepositoryTreeNode
+	page := 1
+	for {
+		treeNodes, hasNextPage, err := p.fetchPaginatedRepositoryFileList(ctx, oauthCtx, instanceURL, repositoryID, ref, filePath, page)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch paginated list")
+		}
+		gitlabTreeNodes = append(gitlabTreeNodes, treeNodes...)
+
+		if !hasNextPage {
+			break
+		}
+		page++
+	}
+
+	var allTreeNodes []*vcs.RepositoryTreeNode
+	for _, n := range gitlabTreeNodes {
+		if n.Type == "blob" {
+			allTreeNodes = append(allTreeNodes,
+				&vcs.RepositoryTreeNode{
+					Path: n.Path,
+					Type: n.Type,
+				},
+			)
+		}
+	}
+	return allTreeNodes, nil
+}
+
+// fetchPaginatedRepositoryFileList fetches files under a repository tree
+// recursively in given page. It return the paginated results along with a
+// boolean indicating whether the next page exists.
+func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string, page int) (treeNodes []RepositoryTreeNode, hasNextPage bool, err error) {
+	url := fmt.Sprintf("%s/projects/%s/repository/tree?recursive=true&ref=%s&path=%s&page=%d&per_page=%d", p.APIURL(instanceURL), repositoryID, ref, filePath, page, apiPageSize)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
@@ -587,32 +624,29 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, err: %w", instanceURL, err)
-	}
-	if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch repository tree on GitLab instance %s, status code: %d",
-			instanceURL,
-			code,
-		)
+		return nil, false, errors.Wrapf(err, "GET %s", url)
 	}
 
-	var nodeList []*RepositoryTreeNode
-	if err := json.Unmarshal([]byte(body), &nodeList); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal repository tree from GitLab instance %s, err: %w", instanceURL, err)
+	if code == http.StatusNotFound {
+		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository file list from URL %s", url))
+	} else if code >= 300 {
+		return nil, false,
+			fmt.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
 	}
 
-	// Filter out folder nodes, we only need the file nodes.
-	var fileList []*vcs.RepositoryTreeNode
-	for _, node := range nodeList {
-		if node.Type == "blob" {
-			fileList = append(fileList, &vcs.RepositoryTreeNode{
-				Path: node.Path,
-				Type: node.Type,
-			})
-		}
+	if err := json.Unmarshal([]byte(body), &treeNodes); err != nil {
+		return nil, false, errors.Wrap(err, "unmarshal body")
 	}
 
-	return fileList, nil
+	// NOTE: We deliberately choose to not use the Link header for checking the next
+	// page to avoid introducing a new dependency, see
+	// https://github.com/bytebase/bytebase/pull/1423#discussion_r884278534 for the
+	// discussion.
+	return treeNodes, len(treeNodes) >= 100, nil
 }
 
 // CreateFile creates a file.
