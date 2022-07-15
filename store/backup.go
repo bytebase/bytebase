@@ -618,6 +618,57 @@ func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api
 		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
 
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		FROM backup_setting
+		WHERE `+strings.Join(where, " AND "),
+			args...,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into backupSettingRawList.
+		var backupSettingRawList []*backupSettingRaw
+		for rows.Next() {
+			var backupSettingRaw backupSettingRaw
+			if err := rows.Scan(
+				&backupSettingRaw.ID,
+				&backupSettingRaw.CreatorID,
+				&backupSettingRaw.CreatedTs,
+				&backupSettingRaw.UpdaterID,
+				&backupSettingRaw.UpdatedTs,
+				&backupSettingRaw.DatabaseID,
+				&backupSettingRaw.Enabled,
+				&backupSettingRaw.Hour,
+				&backupSettingRaw.DayOfWeek,
+				&backupSettingRaw.RetentionPeriodTs,
+				&backupSettingRaw.HookURL,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+		return backupSettingRawList, nil
+	}
+
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
@@ -776,6 +827,67 @@ func (s *Store) findBackupSettingsMatchImpl(ctx context.Context, match *api.Back
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
+
+	if s.db.mode == common.ReleaseModeDev {
+		rows, err := tx.PTx.QueryContext(ctx, `
+		SELECT
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		FROM backup_setting
+		WHERE
+			enabled = true
+			AND (
+				(hour = $1 AND day_of_week = $2)
+				OR
+				(hour = $3 AND day_of_week = -1)
+				OR
+				(hour = -1 AND day_of_week = $4)
+			)
+		`,
+			match.Hour, match.DayOfWeek, match.Hour, match.DayOfWeek,
+		)
+		if err != nil {
+			return nil, FormatError(err)
+		}
+		defer rows.Close()
+
+		// Iterate over result set and deserialize rows into backupSettingRawList.
+		var backupSettingRawList []*backupSettingRaw
+		for rows.Next() {
+			var backupSettingRaw backupSettingRaw
+			if err := rows.Scan(
+				&backupSettingRaw.ID,
+				&backupSettingRaw.CreatorID,
+				&backupSettingRaw.CreatedTs,
+				&backupSettingRaw.UpdaterID,
+				&backupSettingRaw.UpdatedTs,
+				&backupSettingRaw.DatabaseID,
+				&backupSettingRaw.Enabled,
+				&backupSettingRaw.Hour,
+				&backupSettingRaw.DayOfWeek,
+				&backupSettingRaw.RetentionPeriodTs,
+				&backupSettingRaw.HookURL,
+			); err != nil {
+				return nil, FormatError(err)
+			}
+
+			backupSettingRawList = append(backupSettingRawList, &backupSettingRaw)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, FormatError(err)
+		}
+
+		return backupSettingRawList, nil
+	}
 
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT
