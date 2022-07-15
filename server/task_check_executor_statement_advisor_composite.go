@@ -61,7 +61,7 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get task by id: %w", err))
 	}
 
-	catalog := store.NewCatalog(task.DatabaseID, server.store)
+	catalog := store.NewCatalog(task.DatabaseID, server.store, server.profile.Mode)
 
 	dbType, err := api.ConvertToAdvisorDBType(payload.DbType)
 	if err != nil {
