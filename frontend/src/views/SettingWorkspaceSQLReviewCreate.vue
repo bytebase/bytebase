@@ -1,14 +1,12 @@
 <template>
   <div class="my-4 space-y-4 divide-y divide-block-border">
     <FeatureAttention
-      v-if="!hasSchemaReviewPolicyFeature"
+      v-if="!hasSQLReviewPolicyFeature"
       custom-class="mb-5"
-      feature="bb.feature.schema-review-policy"
-      :description="
-        $t('subscription.features.bb-feature-schema-review-policy.desc')
-      "
+      feature="bb.feature.sql-review"
+      :description="$t('subscription.features.bb-feature-sql-review.desc')"
     />
-    <SchemaReviewCreation
+    <SQLReviewCreation
       :selected-rule-list="[]"
       :selected-environment="environment"
     />
@@ -17,21 +15,15 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import {
-  useEnvironmentStore,
-  featureToRef,
-  useSchemaSystemStore,
-} from "@/store";
+import { useEnvironmentStore, featureToRef, useSQLReviewStore } from "@/store";
 import { EMPTY_ID } from "@/types";
 
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
 const environmentId = params.get("environmentId") ?? "";
-const store = useSchemaSystemStore();
+const store = useSQLReviewStore();
 
-const hasSchemaReviewPolicyFeature = featureToRef(
-  "bb.feature.schema-review-policy"
-);
+const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 watchEffect(() => {
   store.fetchReviewPolicyList();

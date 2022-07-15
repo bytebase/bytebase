@@ -159,7 +159,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine, s.profile.Mode) {
+		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
 			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
@@ -814,7 +814,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SchemaReviewCheckContext{
+	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,
