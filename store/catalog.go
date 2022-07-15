@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 )
 
@@ -16,13 +17,15 @@ var (
 type Catalog struct {
 	databaseID *int
 	store      *Store
+	mode       common.ReleaseMode
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID *int, store *Store) *Catalog {
+func NewCatalog(databaseID *int, store *Store, mode common.ReleaseMode) *Catalog {
 	return &Catalog{
 		databaseID: databaseID,
 		store:      store,
+		mode:       mode,
 	}
 }
 
@@ -40,7 +43,7 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 		DatabaseID: c.databaseID,
 		TableID:    &table.ID,
 		Name:       &find.IndexName,
-	})
+	}, c.mode)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +65,7 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 		TableName:         table.Name,
 		Type:              indexList[0].Type,
 		Unique:            indexList[0].Unique,
+		Primary:           indexList[0].Primary,
 		ColumnExpressions: columnExpressions,
 	}, nil
 }

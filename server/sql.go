@@ -188,7 +188,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				db.Collation,
 				instance.EnvironmentID,
 				exec.Statement,
-				store.NewCatalog(&db.ID, s.store),
+				store.NewCatalog(&db.ID, s.store, s.profile.Mode),
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)
@@ -535,7 +535,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	}
 	// If we successfully synced a particular db schema, we just recreate its table, index, column info. We do this because
 	// we don't reference those objects and they are for information purpose.
-	if err := syncTableSchema(ctx, s.store, database, schema); err != nil {
+	if err := syncTableSchema(ctx, s.store, database, schema, s.profile.Mode); err != nil {
 		return err
 	}
 	if err := syncViewSchema(ctx, s.store, database, schema); err != nil {
@@ -547,7 +547,7 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 	return nil
 }
 
-func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
+func syncTableSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema, mode common.ReleaseMode) error {
 	var createTable = func(database *api.Database, tableCreate *api.TableCreate) (*api.Table, error) {
 		table, err := store.CreateTable(ctx, tableCreate)
 		if err != nil {
@@ -570,7 +570,7 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 	}
 
 	var createIndex = func(database *api.Database, table *api.Table, indexCreate *api.IndexCreate) error {
-		if _, err := store.CreateIndex(ctx, indexCreate); err != nil {
+		if _, err := store.CreateIndex(ctx, indexCreate, mode); err != nil {
 			if common.ErrorCode(err) == common.Conflict {
 				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. index and expression already exists: %s(%s)", database.Instance.Name, database.Name, table.Name, indexCreate.Name, indexCreate.Expression)
 			}
@@ -642,7 +642,7 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 				Name:       &index.Name,
 				Expression: &index.Expression,
 			}
-			idx, err := store.GetIndex(ctx, indexFind)
+			idx, err := store.GetIndex(ctx, indexFind, mode)
 			if err != nil {
 				return fmt.Errorf("failed to sync index for instance: %s, database: %s, table: %s. Error %w", database.Instance.Name, database.Name, upsertedTable.Name, err)
 			}
@@ -657,6 +657,7 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 					Position:   index.Position,
 					Type:       index.Type,
 					Unique:     index.Unique,
+					Primary:    index.Primary,
 					Visible:    index.Visible,
 					Comment:    index.Comment,
 				}

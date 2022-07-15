@@ -65,8 +65,9 @@ type Index struct {
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
-	Type   string
-	Unique bool
+	Type    string
+	Unique  bool
+	Primary bool
 	// Visible isn't supported for Postgres, SQLite.
 	Visible bool
 	// Comment isn't supported for SQLite.
