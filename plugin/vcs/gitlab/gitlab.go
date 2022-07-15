@@ -698,16 +698,20 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	return nil
 }
 
-// OverwriteFile overwrite the content of a file.
+// OverwriteFile overwrites an existing file at given path in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
 func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	body, err := json.Marshal(FileCommit{
-		Branch:        fileCommitCreate.Branch,
-		CommitMessage: fileCommitCreate.CommitMessage,
-		Content:       fileCommitCreate.Content,
-		LastCommitID:  fileCommitCreate.LastCommitID,
-	})
+	body, err := json.Marshal(
+		FileCommit{
+			Branch:        fileCommitCreate.Branch,
+			Content:       fileCommitCreate.Content,
+			CommitMessage: fileCommitCreate.CommitMessage,
+			LastCommitID:  fileCommitCreate.LastCommitID,
+		},
+	)
 	if err != nil {
-		return fmt.Errorf("failed to marshal file commit: %w", err)
+		return errors.Wrap(err, "marshal file commit")
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
@@ -728,11 +732,14 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 		),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s on GitLab instance %s, error: %w", filePath, instanceURL, err)
+		return errors.Wrapf(err, "PUT %s", url)
 	}
 
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to overwrite file through URL %s", url))
+	}
 	if code >= 300 {
-		return fmt.Errorf("failed to create file %s on GitLab instance %s, status code: %d",
+		return fmt.Errorf("failed to overwrite file %s on GitLab instance %s, status code: %d",
 			filePath,
 			instanceURL,
 			code,

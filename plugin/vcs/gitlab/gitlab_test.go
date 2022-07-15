@@ -527,6 +527,51 @@ func TestProvider_CreateFile(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestProvider_OverwriteFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+
+						body, err := io.ReadAll(r.Body)
+						require.NoError(t, err)
+						wantBody := `{"branch":"master","content":"some content","commit_message":"update file","last_commit_id":"7638417db6d59f3c431d3e1f261cc637155684cd"}`
+						assert.Equal(t, wantBody, string(body))
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#update-existing-file-in-repository
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "file_path": "app/project.rb",
+  "branch": "master"
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.OverwriteFile(
+		ctx,
+		common.OauthContext{},
+		"",
+		"1",
+		"lib/class.rb",
+		vcs.FileCommitCreate{
+			Branch:        "master",
+			Content:       "some content",
+			CommitMessage: "update file",
+			LastCommitID:  "7638417db6d59f3c431d3e1f261cc637155684cd",
+		},
+	)
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

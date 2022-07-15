@@ -534,6 +534,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 			Message: fileCommitCreate.CommitMessage,
 			Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
 			Branch:  fileCommitCreate.Branch,
+			SHA:     fileCommitCreate.LastCommitID,
 		},
 	)
 	if err != nil {
@@ -573,9 +574,11 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	return nil
 }
 
-// OverwriteFile overwrite the content of a file.
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// OverwriteFile overwrites an existing file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
 // ReadFileMeta reads the file metadata.
