@@ -126,8 +126,8 @@ func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.Ind
 			}
 			return nil, FormatError(err)
 		}
-		return &index, nil
 
+		return &index, nil
 	}
 	// Insert row into index.
 	query := `
@@ -262,7 +262,6 @@ func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFi
 		}
 
 		return indexList, nil
-
 	}
 
 	rows, err := tx.QueryContext(ctx, `
