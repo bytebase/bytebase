@@ -215,7 +215,7 @@ const APPLICABLE_TASK_TRANSITION_LIST: Map<
   TaskStatus,
   TaskStatusTransitionType[]
 > = new Map([
-  ["PENDING", ["RUN"]],
+  ["PENDING", []],
   ["PENDING_APPROVAL", ["APPROVE"]],
   ["RUNNING", []],
   ["DONE", []],
