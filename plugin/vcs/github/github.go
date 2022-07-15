@@ -3,6 +3,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -153,6 +154,14 @@ type Commit struct {
 		Date time.Time `json:"date"`
 		Name string    `json:"name"`
 	} `json:"author"`
+}
+
+// FileCommit represents a GitHub API request for committing a new file.
+type FileCommit struct {
+	Message string `json:"message"`
+	Content string `json:"content"`
+	SHA     string `json:"sha,omitempty"`
+	Branch  string `json:"branch,omitempty"`
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -516,9 +525,52 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 	return allTreeNodes, nil
 }
 
-// CreateFile creates a file.
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// CreateFile creates a file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	body, err := json.Marshal(
+		FileCommit{
+			Message: fileCommitCreate.CommitMessage,
+			Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
+			Branch:  fileCommitCreate.Branch,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal file commit")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/contents/%s", apiURL, repositoryID, url.QueryEscape(filePath))
+	code, _, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to create file through URL %s", url))
+	}
+	if code >= 300 {
+		return fmt.Errorf("failed to create file through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // OverwriteFile overwrite the content of a file.

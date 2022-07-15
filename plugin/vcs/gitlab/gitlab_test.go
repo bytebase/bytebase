@@ -483,6 +483,50 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_CreateFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/repository/files/lib%2Fclass.rb", r.URL.RawPath)
+
+						body, err := io.ReadAll(r.Body)
+						require.NoError(t, err)
+						wantBody := `{"branch":"master","content":"some content","commit_message":"create a new file"}`
+						assert.Equal(t, wantBody, string(body))
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "file_path": "app/project.rb",
+  "branch": "master"
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreateFile(
+		ctx,
+		common.OauthContext{},
+		"",
+		"1",
+		"lib/class.rb",
+		vcs.FileCommitCreate{
+			Branch:        "master",
+			Content:       "some content",
+			CommitMessage: "create a new file",
+		},
+	)
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{

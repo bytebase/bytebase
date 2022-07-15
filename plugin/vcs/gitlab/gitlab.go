@@ -109,7 +109,7 @@ type Commit struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// FileCommit is the API message for file commit.
+// FileCommit represents a GitLab API request for committing a new file.
 type FileCommit struct {
 	Branch        string `json:"branch"`
 	Content       string `json:"content"`
@@ -649,15 +649,19 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	return treeNodes, len(treeNodes) >= 100, nil
 }
 
-// CreateFile creates a file.
+// CreateFile creates a file at given path in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/repository_files.html#create-new-file-in-repository
 func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
-	body, err := json.Marshal(FileCommit{
-		Branch:        fileCommitCreate.Branch,
-		CommitMessage: fileCommitCreate.CommitMessage,
-		Content:       fileCommitCreate.Content,
-	})
+	body, err := json.Marshal(
+		FileCommit{
+			Branch:        fileCommitCreate.Branch,
+			CommitMessage: fileCommitCreate.CommitMessage,
+			Content:       fileCommitCreate.Content,
+		},
+	)
 	if err != nil {
-		return fmt.Errorf("failed to marshal file commit: %w", err)
+		return errors.Wrap(err, "marshal file commit")
 	}
 
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath))
@@ -678,9 +682,12 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 		),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s on GitLab instance %s, err: %w", filePath, instanceURL, err)
+		return errors.Wrapf(err, "POST %s", url)
 	}
 
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to create file through URL %s", url))
+	}
 	if code >= 300 {
 		return fmt.Errorf("failed to create file %s on GitLab instance %s, status code: %d",
 			filePath,
