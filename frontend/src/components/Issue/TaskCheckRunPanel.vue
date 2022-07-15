@@ -62,7 +62,7 @@ import {
   ruleTemplateMap,
   getRuleLocalization,
   CompatibilityErrorCode,
-  SchemaReviewPolicyErrorCode,
+  SQLReviewPolicyErrorCode,
   RuleType,
 } from "@/types";
 
@@ -139,24 +139,24 @@ export default defineComponent({
       let title = "";
 
       switch (checkResult.code) {
-        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+        case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           title = checkResult.title;
           break;
         // SchemaReviewPolicyErrorCode
-        case SchemaReviewPolicyErrorCode.STATEMENT_NO_WHERE:
-        case SchemaReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
-        case SchemaReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
-        case SchemaReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.UK_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.FK_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
-        case SchemaReviewPolicyErrorCode.COLUMN_CANBE_NULL:
-        case SchemaReviewPolicyErrorCode.NOT_INNODB_ENGINE:
-        case SchemaReviewPolicyErrorCode.NO_PK_IN_TABLE:
-        case SchemaReviewPolicyErrorCode.FK_IN_TABLE:
-        case SchemaReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
+        case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
+        case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
+        case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SQLReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.UK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
+        case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:
+        case SQLReviewPolicyErrorCode.NO_PK_IN_TABLE:
+        case SQLReviewPolicyErrorCode.FK_IN_TABLE:
+        case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
         // CompatibilityErrorCode
         case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
         case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:
@@ -191,11 +191,11 @@ export default defineComponent({
       switch (checkResult.code) {
         case GeneralErrorCode.OK:
           return;
-        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+        case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           return {
-            title: t("schema-review-policy.configure-policy"),
+            title: t("sql-review.configure-policy"),
             target: "_self",
-            url: "/setting/schema-review-policy",
+            url: "/setting/sql-review",
           };
         default:
           const url = `https://www.bytebase.com/docs/reference/error-code/${

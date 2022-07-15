@@ -159,7 +159,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine, s.profile.Mode) {
+		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
 			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
@@ -683,18 +683,9 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 }
 
 func syncViewSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var createView = func(database *api.Database, viewCreate *api.ViewCreate) error {
-		if _, err := store.CreateView(ctx, viewCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", database.Instance.Name, database.Name, viewCreate.Name)
-			}
-			return fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", database.Instance.Name, database.Name, viewCreate.Name, err)
-		}
-		return nil
-	}
-	var recreateViewSchema = func(database *api.Database, view db.View) error {
-		// View
-		viewCreate := &api.ViewCreate{
+	var creates []*api.ViewCreate
+	for _, view := range schema.ViewList {
+		creates = append(creates, &api.ViewCreate{
 			CreatorID:  api.SystemBotID,
 			CreatedTs:  view.CreatedTs,
 			UpdatedTs:  view.UpdatedTs,
@@ -702,25 +693,9 @@ func syncViewSchema(ctx context.Context, store *store.Store, database *api.Datab
 			Name:       view.Name,
 			Definition: view.Definition,
 			Comment:    view.Comment,
-		}
-		if err := createView(database, viewCreate); err != nil {
-			return err
-		}
-		return nil
+		})
 	}
-
-	viewDelete := &api.ViewDelete{
-		DatabaseID: database.ID,
-	}
-	if err := store.DeleteView(ctx, viewDelete); err != nil {
-		return fmt.Errorf("failed to sync view for instance: %s, database %s. Failed to reset view info. Error %w", database.Instance.Name, database.Name, err)
-	}
-	for _, view := range schema.ViewList {
-		if err := recreateViewSchema(database, view); err != nil {
-			return err
-		}
-	}
-	return nil
+	return store.SetViewList(ctx, creates, database.ID, api.SystemBotID)
 }
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
@@ -839,7 +814,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SchemaReviewCheckContext{
+	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

@@ -29,7 +29,7 @@ func (adv *ColumnRequirementAdvisor) Check(ctx advisor.Context, statement string
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}

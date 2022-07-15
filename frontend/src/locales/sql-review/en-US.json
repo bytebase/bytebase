@@ -12,8 +12,8 @@
     "schema": "Schema"
   },
   "template": {
-    "mysql-prod": "Production Environment Template",
-    "mysql-dev": "Development Environment Template"
+    "mysql-prod": "Template for Prod Environment",
+    "mysql-dev": "Template for Dev Environment"
   },
   "rule": {
     "engine-mysql-use-innodb": {
