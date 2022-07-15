@@ -651,6 +651,8 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, r
 			)
 	}
 
+	// This API endpoint returns a JSON array if the path is a directory, and we do
+	// not want that.
 	if body != "" && body[0] == '[' {
 		return nil, errors.Errorf("%q is a directory not a file", filePath)
 	}
