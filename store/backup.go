@@ -90,7 +90,29 @@ type backupSettingRaw struct {
 
 // toBackupSetting creates an instance of BackupSetting based on the backupSettingRaw.
 // This is intended to be called when we need to compose an BackupSetting relationship.
-func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
+func (raw *backupSettingRaw) toBackupSetting(mode common.ReleaseMode) *api.BackupSetting {
+	if mode == common.ReleaseModeDev {
+		return &api.BackupSetting{
+			ID: raw.ID,
+
+			// Standard fields
+			CreatorID: raw.CreatorID,
+			CreatedTs: raw.CreatedTs,
+			UpdaterID: raw.UpdaterID,
+			UpdatedTs: raw.UpdatedTs,
+
+			// Related fields
+			DatabaseID: raw.DatabaseID,
+
+			// Domain specific fields
+			Enabled:           raw.Enabled,
+			Hour:              raw.Hour,
+			DayOfWeek:         raw.DayOfWeek,
+			RetentionPeriodTs: raw.RetentionPeriodTs,
+			// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
+			HookURL: raw.HookURL,
+		}
+	}
 	return &api.BackupSetting{
 		ID: raw.ID,
 
@@ -241,7 +263,7 @@ func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup,
 }
 
 func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw) (*api.BackupSetting, error) {
-	backupSetting := raw.toBackupSetting()
+	backupSetting := raw.toBackupSetting(s.db.mode)
 
 	creator, err := s.GetPrincipalByID(ctx, backupSetting.CreatorID)
 	if err != nil {

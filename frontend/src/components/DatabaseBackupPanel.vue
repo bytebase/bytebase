@@ -39,6 +39,9 @@
             <template #time>
               <span class="text-accent"> {{ autoBackupHourText }}</span>
             </template>
+            <template #retentionDays>
+              <span class="text-accent"> {{ autoBackupRetentionDays }}</span>
+            </template>
           </i18n-t>
         </div>
         <div class="mt-2">
@@ -306,6 +309,10 @@ export default defineComponent({
       })`;
     });
 
+    const autoBackupRetentionDays = computed(() => {
+      return state.autoBackupRetentionPeriodTs / 3600 / 24;
+    });
+
     const backupPolicy = computed(() => {
       const policy = policyStore.getPolicyByEnvironmentIdAndType(
         props.database.instance.environment.id,
@@ -393,7 +400,7 @@ export default defineComponent({
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
-        retentionPeriodTs: on ? 7 : 0,
+        retentionPeriodTs: on ? 7 * 24 * 3600 : 0,
         hookUrl: "",
       };
       backupStore
@@ -482,6 +489,7 @@ export default defineComponent({
       backupList,
       autoBackupWeekdayText,
       autoBackupHourText,
+      autoBackupRetentionDays,
       allowDisableAutoBackup,
       backupPolicy,
       createBackup,
