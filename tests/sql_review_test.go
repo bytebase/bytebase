@@ -174,18 +174,6 @@ func TestSQLReview(t *testing.T) {
 				},
 			},
 			{
-				statement: "DROP TABLE IF EXISTS t",
-				result: []api.TaskCheckResult{
-					{
-						Status:    api.TaskCheckStatusError,
-						Namespace: api.AdvisorNamespace,
-						Code:      advisor.TableDropNamingConventionMismatch.Int(),
-						Title:     "table.drop-naming-convention",
-						Content:   "`t` mismatches drop table naming convention, naming format should be \"_delete$\"",
-					},
-				},
-			},
-			{
 				statement: "DELETE FROM t",
 				result: []api.TaskCheckResult{
 					{
