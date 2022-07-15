@@ -82,6 +82,9 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 
+			// Allow frontend to change the SQL statement of
+			// a PendingApproval task, which hasn't started yet
+			// a Failed task, which can be retried
 			if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Can not update task in %v state", task.Status))
 			}
