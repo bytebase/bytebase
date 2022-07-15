@@ -32,7 +32,7 @@ func TestTableNoFK(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &TableNoFKAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &TableNoFKAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleTableNoFK,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",

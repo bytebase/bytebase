@@ -1,14 +1,12 @@
 <template>
   <FeatureAttention
-    v-if="!hasSchemaReviewPolicyFeature"
+    v-if="!hasSQLReviewPolicyFeature"
     custom-class="my-5"
-    feature="bb.feature.schema-review-policy"
-    :description="
-      $t('subscription.features.bb-feature-schema-review-policy.desc')
-    "
+    feature="bb.feature.sql-review"
+    :description="$t('subscription.features.bb-feature-sql-review.desc')"
   />
   <transition appear name="slide-from-bottom" mode="out-in">
-    <SchemaReviewCreation
+    <SQLReviewCreation
       v-if="state.editMode"
       :policy-id="reviewPolicy.id"
       :name="reviewPolicy.name"
@@ -16,7 +14,7 @@
       :selected-rule-list="selectedRuleList"
       @cancel="state.editMode = false"
     />
-    <div class="my-5" v-else>
+    <div v-else class="my-5">
       <div
         class="flex flex-col items-center space-x-2 justify-center md:flex-row"
       >
@@ -26,7 +24,7 @@
           </h1>
           <div v-if="reviewPolicy.rowStatus == 'ARCHIVED'">
             <BBBadge
-              :text="$t('schema-review-policy.disabled')"
+              :text="$t('sql-review.disabled')"
               :can-remove="false"
               :style="'DISABLED'"
             />
@@ -58,8 +56,8 @@
         </button>
       </div>
       <div
-        class="flex items-center flex-wrap gap-x-3 my-5"
         v-if="reviewPolicy.environment"
+        class="flex items-center flex-wrap gap-x-3 my-5"
       >
         <span class="font-semibold">{{ $t("common.environment") }}</span>
         <router-link
@@ -73,14 +71,10 @@
         v-else
         class="my-5"
         :style="`WARN`"
-        :title="
-          $t('schema-review-policy.create.basic-info.no-linked-environments')
-        "
+        :title="$t('sql-review.create.basic-info.no-linked-environments')"
       />
       <div class="space-y-2 my-5">
-        <span class="font-semibold">{{
-          $t("schema-review-policy.filter")
-        }}</span>
+        <span class="font-semibold">{{ $t("sql-review.filter") }}</span>
         <div class="flex flex-wrap gap-x-3">
           <span>{{ $t("common.database") }}:</span>
           <div
@@ -89,12 +83,12 @@
             class="flex items-center"
           >
             <input
-              type="checkbox"
               :id="engine.id"
+              type="checkbox"
               :value="engine.id"
               :checked="state.checkedEngine.has(engine.id)"
-              @input="toggleCheckedEngine(engine.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              @input="toggleCheckedEngine(engine.id)"
             />
             <label
               :for="engine.id"
@@ -117,12 +111,12 @@
             class="flex items-center"
           >
             <input
-              type="checkbox"
               :id="level.id"
+              type="checkbox"
               :value="level.id"
               :checked="state.checkedLevel.has(level.id)"
-              @input="toggleCheckedLevel(level.id)"
               class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
+              @input="toggleCheckedLevel(level.id)"
             />
             <label
               :for="level.id"
@@ -139,25 +133,25 @@
         </div>
       </div>
       <div class="py-2 flex justify-between items-center mt-5">
-        <SchemaReviewCategoryTabFilter
+        <SQLReviewCategoryTabFilter
           :selected="state.selectedCategory"
           :category-list="categoryFilterList"
           @select="selectCategory"
         />
         <BBTableSearch
           ref="searchField"
-          :placeholder="$t('schema-review-policy.search-rule-name')"
+          :placeholder="$t('sql-review.search-rule-name')"
           @change-text="(text) => (state.searchText = text)"
         />
       </div>
-      <SchemaReviewPreview
+      <SQLReviewPreview
         :selected-rule-list="filteredSelectedRuleList"
         class="py-5"
       />
       <BBButtonConfirm
         v-if="reviewPolicy.rowStatus === 'ARCHIVED'"
         :style="'DELETE'"
-        :button-text="$t('schema-review-policy.delete')"
+        :button-text="$t('sql-review.delete')"
         :ok-text="$t('common.delete')"
         :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"
         :require-confirm="true"
@@ -208,7 +202,7 @@ import {
   LEVEL_LIST,
   RuleLevel,
   RuleTemplate,
-  DatabaseSchemaReviewPolicy,
+  SQLReviewPolicy,
   SchemaRuleEngineType,
   convertToCategoryList,
   ruleTemplateMap,
@@ -218,12 +212,12 @@ import {
   featureToRef,
   useCurrentUser,
   pushNotification,
-  useSchemaSystemStore,
+  useSQLReviewStore,
 } from "@/store";
-import { CategoryFilterItem } from "../components/DatabaseSchemaReview/components/SchemaReviewCategoryTabFilter.vue";
+import { CategoryFilterItem } from "../components/SQLReview/components/SQLReviewCategoryTabFilter.vue";
 
 const props = defineProps({
-  schemaReviewPolicySlug: {
+  sqlReviewPolicySlug: {
     required: true,
     type: String,
   },
@@ -240,10 +234,10 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const store = useSchemaSystemStore();
+const store = useSQLReviewStore();
 const router = useRouter();
 const currentUser = useCurrentUser();
-const ROUTE_NAME = "setting.workspace.schema-review-policy";
+const ROUTE_NAME = "setting.workspace.sql-review";
 
 const state = reactive<LocalState>({
   showDisableModal: false,
@@ -257,19 +251,17 @@ const state = reactive<LocalState>({
   checkedLevel: new Set<RuleLevel>(),
 });
 
-const hasSchemaReviewPolicyFeature = featureToRef(
-  "bb.feature.schema-review-policy"
-);
+const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const hasPermission = computed(() => {
   return isDBAOrOwner(currentUser.value.role);
 });
 
-const reviewPolicy = computed((): DatabaseSchemaReviewPolicy => {
+const reviewPolicy = computed((): SQLReviewPolicy => {
   return (
     store.getReviewPolicyByEnvironmentId(
-      idFromSlug(props.schemaReviewPolicySlug)
-    ) || (unknown("SCHEMA_REVIEW") as DatabaseSchemaReviewPolicy)
+      idFromSlug(props.sqlReviewPolicySlug)
+    ) || (unknown("SQL_REVIEW") as SQLReviewPolicy)
   );
 });
 
@@ -413,7 +405,7 @@ const onRemove = () => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("schema-review-policy.policy-removed"),
+    title: t("sql-review.policy-removed"),
   });
 };
 </script>

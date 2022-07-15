@@ -15,7 +15,7 @@
 import { computed, reactive, PropType, watch } from "vue";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
-import { CategoryType } from "@/types/schemaSystem";
+import { CategoryType } from "@/types/sqlReview";
 
 export interface CategoryFilterItem {
   id: CategoryType;

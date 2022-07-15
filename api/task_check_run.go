@@ -208,15 +208,15 @@ func IsSyntaxCheckSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType db.Type, mode common.ReleaseMode) bool {
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType db.Type, mode common.ReleaseMode) bool {
 	if mode == common.ReleaseModeDev || dbType == db.MySQL || dbType == db.TiDB {
 		advisorDB, err := ConvertToAdvisorDBType(dbType)
 		if err != nil {
 			return false
 		}
 
-		return advisor.IsSchemaReviewSupported(advisorDB)
+		return advisor.IsSQLReviewSupported(advisorDB)
 	}
 
 	return false
