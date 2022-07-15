@@ -49,7 +49,7 @@ func TestMySQLTableDropNamingConvention(t *testing.T) {
 		Format: "_delete$",
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &TableDropNamingConventionAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &TableDropNamingConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleTableDropNamingConvention,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
