@@ -82,10 +82,10 @@ const (
 	// e.g. One can configure to NOT require backup for dev environment while require
 	//      weekly backup for staging and daily backup for production.
 	FeatureBackupPolicy FeatureType = "bb.feature.backup-policy"
-	// FeatureSchemaReviewPolicy allows user to specify schema policy for the environment
+	// FeatureSQLReviewPolicy allows user to specify schema policy for the environment
 	//
 	// e.g. One can configure rules for database schema or SQL query.
-	FeatureSchemaReviewPolicy FeatureType = "bb.feature.schema-review-policy"
+	FeatureSQLReviewPolicy FeatureType = "bb.feature.sql-review"
 
 	// Admin & Security
 
@@ -129,8 +129,8 @@ func (e FeatureType) Name() string {
 		return "Approval policy"
 	case FeatureBackupPolicy:
 		return "Backup policy"
-	case FeatureSchemaReviewPolicy:
-		return "Schema review policy"
+	case FeatureSQLReviewPolicy:
+		return "SQL review policy"
 	case FeatureRBAC:
 		return "RBAC"
 	case Feature3rdPartyAuth:
@@ -160,19 +160,19 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 
 // FeatureMatrix is a map from the a particular feature to the respective enablement of a particular plan
 var FeatureMatrix = map[FeatureType][3]bool{
-	"bb.feature.schema-drift":         {false, true, true},
-	"bb.feature.task-schedule-time":   {false, true, true},
-	"bb.feature.multi-tenancy":        {false, true, true},
-	"bb.feature.dba-workflow":         {false, false, true},
-	"bb.feature.data-source":          {false, false, false},
-	"bb.feature.ghost":                {false, true, true},
-	"bb.feature.pitr":                 {false, true, true},
-	"bb.feature.approval-policy":      {false, true, true},
-	"bb.feature.backup-policy":        {false, true, true},
-	"bb.feature.schema-review-policy": {false, true, true},
-	"bb.feature.rbac":                 {false, true, true},
-	"bb.feature.3rd-party-auth":       {false, true, true},
-	"bb.feature.branding":             {false, true, true},
+	"bb.feature.schema-drift":       {false, true, true},
+	"bb.feature.task-schedule-time": {false, true, true},
+	"bb.feature.multi-tenancy":      {false, true, true},
+	"bb.feature.dba-workflow":       {false, false, true},
+	"bb.feature.data-source":        {false, false, false},
+	"bb.feature.ghost":              {false, true, true},
+	"bb.feature.pitr":               {false, true, true},
+	"bb.feature.approval-policy":    {false, true, true},
+	"bb.feature.backup-policy":      {false, true, true},
+	"bb.feature.sql-review":         {false, true, true},
+	"bb.feature.rbac":               {false, true, true},
+	"bb.feature.3rd-party-auth":     {false, true, true},
+	"bb.feature.branding":           {false, true, true},
 }
 
 // Plan is the API message for a plan.

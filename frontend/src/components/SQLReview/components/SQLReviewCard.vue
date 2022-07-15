@@ -9,7 +9,7 @@
         </h3>
         <BBBadge
           v-if="reviewPolicy.rowStatus == 'ARCHIVED'"
-          :text="$t('schema-review-policy.disabled')"
+          :text="$t('sql-review.disabled')"
           :can-remove="false"
           :style="'DISABLED'"
         />
@@ -36,12 +36,8 @@
             >
               {{ environmentName(reviewPolicy.environment) }}
             </router-link>
-            <span class="text-yellow-700" v-else>
-              {{
-                $t(
-                  "schema-review-policy.create.basic-info.no-linked-environments"
-                )
-              }}
+            <span v-else class="text-yellow-700">
+              {{ $t("sql-review.create.basic-info.no-linked-environments") }}
             </span>
           </dd>
         </div>
@@ -77,14 +73,14 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
-import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
+import { SQLReviewPolicy } from "@/types/sqlReview";
 import { useEnvironmentStore } from "@/store";
 import { environmentName } from "@/utils";
 
 const props = defineProps({
   reviewPolicy: {
     required: true,
-    type: Object as PropType<DatabaseSchemaReviewPolicy>,
+    type: Object as PropType<SQLReviewPolicy>,
   },
 });
 const emit = defineEmits(["click"]);

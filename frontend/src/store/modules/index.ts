@@ -39,4 +39,4 @@ export * from "./uistate";
 export * from "./vcs";
 export * from "./view";
 export * from "./db_extension";
-export * from "./schemaSystem";
+export * from "./sqlReview";

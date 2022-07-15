@@ -238,7 +238,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+				if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}
