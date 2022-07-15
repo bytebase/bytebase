@@ -11,6 +11,11 @@ import (
 	"github.com/bytebase/bytebase/common"
 )
 
+const (
+	// BackupRetentionPeriodUnset is the unset value of a backup retention period in second.
+	BackupRetentionPeriodUnset = 0
+)
+
 // backupRaw is the store model for an Backup.
 // Fields have exactly the same meanings as Backup.
 type backupRaw struct {

@@ -61,7 +61,7 @@ type BinlogFile struct {
 }
 
 func newBinlogFile(name string, size int64) (BinlogFile, error) {
-	seq, err := getBinlogNameSeq(name)
+	seq, err := GetBinlogNameSeq(name)
 	if err != nil {
 		return BinlogFile{}, err
 	}
@@ -85,7 +85,7 @@ type binlogCoordinate struct {
 }
 
 func newBinlogCoordinate(binlogFileName string, pos int64) (binlogCoordinate, error) {
-	seq, err := getBinlogNameSeq(binlogFileName)
+	seq, err := GetBinlogNameSeq(binlogFileName)
 	if err != nil {
 		return binlogCoordinate{}, err
 	}
@@ -240,7 +240,7 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 
 // getBinlogReplayList returns the path list of the binlog that need be replayed.
 func getBinlogReplayList(startBinlogInfo api.BinlogInfo, binlogDir string) ([]string, error) {
-	startBinlogSeq, err := getBinlogNameSeq(startBinlogInfo.FileName)
+	startBinlogSeq, err := GetBinlogNameSeq(startBinlogInfo.FileName)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the start binlog file name %q, error: %w", startBinlogInfo.FileName, err)
 	}
@@ -711,7 +711,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		isLastBinlogFile = true
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
-	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
+	targetSeq, err := GetBinlogNameSeq(binlogFileTarget.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
 	}
@@ -863,9 +863,9 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	return pos, nil
 }
 
-// getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
+// GetBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
 // For example: ("binlog.000001") => 1, ("binlog000001") => err
-func getBinlogNameSeq(name string) (int64, error) {
+func GetBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
 		return 0, fmt.Errorf("failed to parse binlog extension, expecting two parts in the binlog file name %q but got %d", name, len(s))
