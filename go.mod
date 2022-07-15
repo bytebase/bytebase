@@ -3,14 +3,14 @@ module github.com/bytebase/bytebase
 go 1.18
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.0.7
+	github.com/ClickHouse/clickhouse-go/v2 v2.2.0
 	github.com/VictoriaMetrics/fastcache v1.6.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/github/gh-ost v1.1.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	github.com/google/jsonapi v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gosimple/slug v1.10.0
@@ -27,7 +27,7 @@ require (
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/snowflakedb/gosnowflake v1.6.3
 	github.com/spf13/cobra v1.2.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.5
 	github.com/swaggo/echo-swagger v1.3.3
 	github.com/swaggo/swag v1.8.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
@@ -44,7 +44,6 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20210818145353-234c94e4ce64 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.3.2 // indirect
@@ -66,7 +65,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.3.1 // indirect
 	github.com/go-ini/ini v1.62.0 // indirect
 	github.com/go-mysql-org/go-mysql v1.3.0 // indirect
-	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
@@ -97,8 +96,8 @@ require (
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8 // indirect
 	github.com/opentracing/basictracer-go v1.0.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/paulmach/orb v0.4.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.12 // indirect
+	github.com/paulmach/orb v0.7.1 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pingcap/errors v0.11.5-0.20211009033009-93128226aaa3 // indirect
 	github.com/pingcap/failpoint v0.0.0-20210316064728-7acb0f0a3dfd // indirect
 	github.com/pingcap/kvproto v0.0.0-20211122024046-03abd340988f // indirect
@@ -113,7 +112,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/backo-go v1.0.0 // indirect
-	github.com/shirou/gopsutil v3.21.2+incompatible // indirect
+	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726 // indirect
 	github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07 // indirect
@@ -127,14 +126,15 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20210512015243-d19fbe541bf9 // indirect
-	go.opentelemetry.io/otel v1.3.0 // indirect
-	go.opentelemetry.io/otel/trace v1.3.0 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
+	golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
 	golang.org/x/tools v0.1.10 // indirect
@@ -144,7 +144,7 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // copied from pingcap/tidb
