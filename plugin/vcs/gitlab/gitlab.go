@@ -109,7 +109,7 @@ type Commit struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// FileCommit represents a GitLab API request for committing a new file.
+// FileCommit represents a GitLab API request for committing a file.
 type FileCommit struct {
 	Branch        string `json:"branch"`
 	Content       string `json:"content"`

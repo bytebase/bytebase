@@ -156,7 +156,7 @@ type Commit struct {
 	} `json:"author"`
 }
 
-// FileCommit represents a GitHub API request for committing a new file.
+// FileCommit represents a GitHub API request for committing a file.
 type FileCommit struct {
 	Message string `json:"message"`
 	Content string `json:"content"`
@@ -562,10 +562,10 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, fmt.Errorf("failed to create file through URL %s", url))
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to create/update file through URL %s", url))
 	}
 	if code >= 300 {
-		return fmt.Errorf("failed to create file through URL %s, status code: %d, body: %s",
+		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
 			body,
