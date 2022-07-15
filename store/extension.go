@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // dbExtensionRaw is the store model for an DBExtension.
@@ -77,7 +78,18 @@ type extensionKey struct {
 }
 
 // SetDBExtensionList sets the extensions for a database.
-func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []*api.DBExtensionCreate, databaseID int, updaterID int) error {
+func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
+	var newDBExtensionList []*api.DBExtensionCreate
+	for _, dbExtension := range schema.ExtensionList {
+		newDBExtensionList = append(newDBExtensionList, &api.DBExtensionCreate{
+			CreatorID:   api.SystemBotID,
+			DatabaseID:  databaseID,
+			Name:        dbExtension.Name,
+			Version:     dbExtension.Version,
+			Schema:      dbExtension.Schema,
+			Description: dbExtension.Description,
+		})
+	}
 	oldDBExtensionRawList, err := s.findDBExtensionRaw(ctx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
 	})
@@ -91,7 +103,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, dbExtensionCreateList []
 	}
 	defer tx.PTx.Rollback()
 
-	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, dbExtensionCreateList)
+	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, newDBExtensionList)
 	for _, d := range deletes {
 		if err := deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
 			return err
