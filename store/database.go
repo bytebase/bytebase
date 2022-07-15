@@ -325,6 +325,16 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 			Hour:       rand.Intn(24),
 			HookURL:    "",
 		}
+		if s.db.mode == common.ReleaseModeDev {
+			backupSettingUpsert = &api.BackupSettingUpsert{
+				UpdaterID:         api.SystemBotID,
+				DatabaseID:        databaseRaw.ID,
+				Enabled:           true,
+				Hour:              rand.Intn(24),
+				RetentionPeriodTs: 7 * 24 * 3600,
+				HookURL:           "",
+			}
+		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
 			backupSettingUpsert.DayOfWeek = -1

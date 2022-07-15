@@ -80,9 +80,10 @@ type backupSettingRaw struct {
 	DatabaseID int
 
 	// Domain specific fields
-	Enabled   bool
-	Hour      int
-	DayOfWeek int
+	Enabled           bool
+	Hour              int
+	DayOfWeek         int
+	RetentionPeriodTs int
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string
 }
@@ -647,6 +648,58 @@ func (s *Store) findBackupSettingImpl(ctx context.Context, tx *sql.Tx, find *api
 // upsertBackupSettingImpl updates an existing backup setting.
 func (s *Store) upsertBackupSettingImpl(ctx context.Context, tx *sql.Tx, upsert *api.BackupSettingUpsert) (*backupSettingRaw, error) {
 	// Upsert row into backup_setting.
+	if s.db.mode == common.ReleaseModeDev {
+		query := `
+		INSERT INTO backup_setting (
+			creator_id,
+			updater_id,
+			database_id,
+			enabled,
+			hour,
+			day_of_week,
+			retention_period_ts,
+			hook_url
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT(database_id) DO UPDATE SET
+				enabled = EXCLUDED.enabled,
+				hour = EXCLUDED.hour,
+				day_of_week = EXCLUDED.day_of_week,
+				retention_period_ts = EXCLUDED.retention_period_ts,
+				hook_url = EXCLUDED.hook_url
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, enabled, hour, day_of_week, retention_period_ts, hook_url
+	`
+		var backupSettingRaw backupSettingRaw
+		if err := tx.QueryRowContext(ctx, query,
+			upsert.UpdaterID,
+			upsert.UpdaterID,
+			upsert.DatabaseID,
+			upsert.Enabled,
+			upsert.Hour,
+			upsert.DayOfWeek,
+			upsert.RetentionPeriodTs,
+			upsert.HookURL,
+		).Scan(
+			&backupSettingRaw.ID,
+			&backupSettingRaw.CreatorID,
+			&backupSettingRaw.CreatedTs,
+			&backupSettingRaw.UpdaterID,
+			&backupSettingRaw.UpdatedTs,
+			&backupSettingRaw.DatabaseID,
+			&backupSettingRaw.Enabled,
+			&backupSettingRaw.Hour,
+			&backupSettingRaw.DayOfWeek,
+			&backupSettingRaw.RetentionPeriodTs,
+			&backupSettingRaw.HookURL,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return nil, FormatError(err)
+		}
+		return &backupSettingRaw, nil
+	}
+
 	query := `
 		INSERT INTO backup_setting (
 			creator_id,
