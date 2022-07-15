@@ -2,14 +2,14 @@
 import { EventType } from "@/types";
 
 class Event {
-  eventList: Record<string, (...args: any[]) => any>;
+  eventList: Partial<Record<EventType, (...args: any[]) => any>>;
   constructor() {
     this.eventList = {};
   }
 
-  on(event: EventType, fn: (...args: any[]) => any) {
+  on(event: EventType, handler: (...args: any[]) => any) {
     if (!this.eventList[event]) {
-      this.eventList[event] = fn;
+      this.eventList[event] = handler;
     }
   }
 
@@ -21,7 +21,7 @@ class Event {
 
   emit(event: EventType, ...params: any[]) {
     if (this.eventList[event]) {
-      this.eventList[event](...params);
+      this.eventList[event]?.(...params);
     }
   }
 }
