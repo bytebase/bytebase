@@ -10,21 +10,21 @@
       @cancel="onCancel"
     >
       <template #0>
-        <SchemaReviewInfo
+        <SQLReviewInfo
           :name="state.name"
           :selected-environment="state.selectedEnvironment"
           :available-environment-list="availableEnvironmentList"
           :template-list="TEMPLATE_LIST"
           :selected-template-index="state.templateIndex"
           :is-edit="!!policyId"
+          class="py-5"
           @select-template="tryApplyTemplate"
           @name-change="(val) => (state.name = val)"
           @env-change="(env) => onEnvChange(env)"
-          class="py-5"
         />
       </template>
       <template #1>
-        <SchemaReviewConfig
+        <SQLReviewConfig
           class="py-5"
           :selected-rule-list="state.selectedRuleList"
           :template-list="TEMPLATE_LIST"
@@ -34,7 +34,7 @@
         />
       </template>
       <template #2>
-        <SchemaReviewPreview
+        <SQLReviewPreview
           :name="state.name"
           :is-preview-step="true"
           :selected-rule-list="state.selectedRuleList"
@@ -47,13 +47,9 @@
       v-if="state.showAlertModal"
       style="CRITICAL"
       :ok-text="$t('common.confirm')"
-      :title="
-        $t('schema-review-policy.create.configure-rule.confirm-override-title')
-      "
+      :title="$t('sql-review.create.configure-rule.confirm-override-title')"
       :description="
-        $t(
-          'schema-review-policy.create.configure-rule.confirm-override-description'
-        )
+        $t('sql-review.create.configure-rule.confirm-override-description')
       "
       @ok="
         () => {
@@ -67,7 +63,7 @@
     </BBAlert>
     <FeatureModal
       v-if="state.showFeatureModal"
-      feature="bb.feature.schema-review-policy"
+      feature="bb.feature.sql-review"
       @cancel="state.showFeatureModal = false"
     />
   </div>
@@ -89,7 +85,7 @@ import {
   useCurrentUser,
   pushNotification,
   useEnvironmentList,
-  useSchemaSystemStore,
+  useSQLReviewStore,
 } from "@/store";
 import { isOwner, isDBA } from "@/utils";
 
@@ -124,34 +120,30 @@ const emit = defineEmits(["cancel"]);
 
 const { t } = useI18n();
 const router = useRouter();
-const store = useSchemaSystemStore();
+const store = useSQLReviewStore();
 const currentUser = useCurrentUser();
 
 const hasPermission = computed(() => {
   return isOwner(currentUser.value.role) || isDBA(currentUser.value.role);
 });
 
-const hasSchemaReviewPolicyFeature = featureToRef(
-  "bb.feature.schema-review-policy"
-);
+const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
-const ROUTE_NAME = "setting.workspace.schema-review-policy";
+const ROUTE_NAME = "setting.workspace.sql-review";
 const DEFAULT_TEMPLATE_INDEX = 0;
 
 const STEP_LIST: BBStepTabItem[] = [
-  { title: t("schema-review-policy.create.basic-info.name") },
-  { title: t("schema-review-policy.create.configure-rule.name") },
-  { title: t("schema-review-policy.create.preview.name") },
+  { title: t("sql-review.create.basic-info.name") },
+  { title: t("sql-review.create.configure-rule.name") },
+  { title: t("sql-review.create.preview.name") },
 ];
 
 const state = reactive<LocalState>({
   currentStep: BASIC_INFO_STEP,
-  name:
-    props.name ||
-    t("schema-review-policy.create.basic-info.display-name-default"),
+  name: props.name || t("sql-review.create.basic-info.display-name-default"),
   selectedEnvironment: props.selectedEnvironment,
   selectedRuleList: props.selectedRuleList.length
     ? [...props.selectedRuleList]
@@ -210,7 +202,7 @@ const tryChangeStep = (
 };
 
 const tryFinishSetup = (allowChangeCallback: () => void) => {
-  if (!hasSchemaReviewPolicyFeature.value) {
+  if (!hasSQLReviewPolicyFeature.value) {
     state.showFeatureModal = true;
     return;
   }
@@ -218,7 +210,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-review-policy.no-permission"),
+      title: t("sql-review.no-permission"),
     });
   }
   const upsert = {
@@ -243,9 +235,7 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t(
-      `schema-review-policy.policy-${props.policyId ? "updated" : "created"}`
-    ),
+    title: t(`sql-review.policy-${props.policyId ? "updated" : "created"}`),
   });
 
   allowChangeCallback();

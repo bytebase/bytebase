@@ -113,7 +113,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 		MaxLength: 64,
 	})
 	require.NoError(t, err)
-	advisor.RunSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &NamingTableConventionAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleTableNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),

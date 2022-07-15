@@ -1,29 +1,27 @@
 <template>
   <div class="mx-auto">
     <FeatureAttention
-      v-if="!hasSchemaReviewPolicyFeature"
+      v-if="!hasSQLReviewPolicyFeature"
       custom-class="mt-5"
-      feature="bb.feature.schema-review-policy"
-      :description="
-        $t('subscription.features.bb-feature-schema-review-policy.desc')
-      "
+      feature="bb.feature.sql-review"
+      :description="$t('subscription.features.bb-feature-sql-review.desc')"
     />
     <div v-if="store.reviewPolicyList.length > 0" class="space-y-6 my-5">
-      <div class="flex items-center justify-end" v-if="hasPermission">
+      <div v-if="hasPermission" class="flex items-center justify-end">
         <button
           type="button"
           class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
           @click.prevent="goToCreationView"
         >
-          {{ $t("schema-review-policy.create-policy") }}
+          {{ $t("sql-review.create-policy") }}
         </button>
       </div>
       <template v-for="review in store.reviewPolicyList" :key="review.id">
-        <SchemaReviewCard :review-policy="review" @click="onClick" />
+        <SQLReviewCard :review-policy="review" @click="onClick" />
       </template>
     </div>
     <template v-else>
-      <SchemaReviewEmptyView @create="goToCreationView" />
+      <SQLReviewEmptyView @create="goToCreationView" />
     </template>
   </div>
 </template>
@@ -34,16 +32,16 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
-  useSchemaSystemStore,
+  useSQLReviewStore,
   useCurrentUser,
   featureToRef,
 } from "@/store";
-import { DatabaseSchemaReviewPolicy } from "@/types/schemaSystem";
-import { schemaReviewPolicySlug, isDBAOrOwner } from "@/utils";
+import { SQLReviewPolicy } from "@/types/sqlReview";
+import { sqlReviewPolicySlug, isDBAOrOwner } from "@/utils";
 
 const router = useRouter();
-const store = useSchemaSystemStore();
-const ROUTE_NAME = "setting.workspace.schema-review-policy";
+const store = useSQLReviewStore();
+const ROUTE_NAME = "setting.workspace.sql-review";
 const currentUser = useCurrentUser();
 const { t } = useI18n();
 
@@ -55,9 +53,7 @@ const hasPermission = computed(() => {
   return isDBAOrOwner(currentUser.value.role);
 });
 
-const hasSchemaReviewPolicyFeature = featureToRef(
-  "bb.feature.schema-review-policy"
-);
+const hasSQLReviewPolicyFeature = featureToRef("bb.feature.sql-review");
 
 const goToCreationView = () => {
   if (hasPermission.value) {
@@ -68,16 +64,16 @@ const goToCreationView = () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-review-policy.no-permission"),
+      title: t("sql-review.no-permission"),
     });
   }
 };
 
-const onClick = (review: DatabaseSchemaReviewPolicy) => {
+const onClick = (review: SQLReviewPolicy) => {
   router.push({
     name: `${ROUTE_NAME}.detail`,
     params: {
-      schemaReviewPolicySlug: schemaReviewPolicySlug(review),
+      sqlReviewPolicySlug: sqlReviewPolicySlug(review),
     },
   });
 };

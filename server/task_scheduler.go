@@ -287,7 +287,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			}
 		}
 
-		if s.server.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine, s.server.profile.Mode) {
+		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return nil, err
