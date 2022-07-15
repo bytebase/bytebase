@@ -250,6 +250,13 @@ func TestSQLReview(t *testing.T) {
 						Title:     "schema.backward-compatibility",
 						Content:   "\"DROP TABLE user\" may cause incompatibility with the existing data and code",
 					},
+					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.TableDropNamingConventionMismatch.Int(),
+						Title:     "table.drop-naming-convention",
+						Content:   "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
+					},
 				},
 			},
 		}

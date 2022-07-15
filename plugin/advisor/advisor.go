@@ -90,7 +90,7 @@ const (
 	// MySQLTableNoFK is an advisor type for MySQL table disallow foreign key.
 	MySQLTableNoFK Type = "bb.plugin.advisor.mysql.table.no-foreign-key"
 
-	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with name pattern naming.
+	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
 	// PostgreSQL Advisor

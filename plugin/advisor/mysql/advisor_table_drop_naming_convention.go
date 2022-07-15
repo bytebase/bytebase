@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*TableNoFKAdvisor)(nil)
+	_ advisor.Advisor = (*TableDropNamingConventionAdvisor)(nil)
 )
 
 func init() {
