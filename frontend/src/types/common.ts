@@ -951,10 +951,3 @@ const makeEmpty = (type: ResourceType) => {
   }
 };
 export const empty = makeEmpty as ResourceMaker;
-
-export const routeHelpNameMap = {
-  "workspace.project": "project",
-  "workspace.instance": "instance",
-  "workspace.database": "database",
-  "workspace.environment": "environment",
-};

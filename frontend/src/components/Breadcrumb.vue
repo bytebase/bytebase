@@ -56,12 +56,7 @@
 import { computed, ComputedRef, defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  Bookmark,
-  UNKNOWN_ID,
-  BookmarkCreate,
-  routeHelpNameMap,
-} from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -72,6 +67,7 @@ import {
   useProjectStore,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
+import { routeHelpNameMap } from "../../public/help/config";
 
 interface BreadcrumbItem {
   name: string;
