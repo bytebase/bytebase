@@ -84,16 +84,7 @@ func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreat
 		return FormatError(err)
 	}
 
-	oldViewMap := make(map[string]*viewRaw)
-	for _, v := range oldViewRawList {
-		oldViewMap[v.Name] = v
-	}
-	newViewMap := make(map[string]*api.ViewCreate)
-	for _, v := range viewCreateList {
-		newViewMap[v.Name] = v
-	}
-
-	deletes, creates := generateViewActions(oldViewMap, newViewMap)
+	deletes, creates := generateViewActions(oldViewRawList, viewCreateList)
 	for _, d := range deletes {
 		if err := deleteViewImpl(ctx, tx.PTx, d); err != nil {
 			return err
@@ -115,10 +106,20 @@ func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreat
 //
 // private functions
 //
-func generateViewActions(oldViewMap map[string]*viewRaw, newViewMap map[string]*api.ViewCreate) ([]*api.ViewDelete, []*api.ViewCreate) {
+func generateViewActions(oldViewRawList []*viewRaw, viewCreateList []*api.ViewCreate) ([]*api.ViewDelete, []*api.ViewCreate) {
+	oldViewMap := make(map[string]*viewRaw)
+	for _, v := range oldViewRawList {
+		oldViewMap[v.Name] = v
+	}
+	newViewMap := make(map[string]*api.ViewCreate)
+	for _, v := range viewCreateList {
+		newViewMap[v.Name] = v
+	}
+
 	var deletes []*api.ViewDelete
 	var creates []*api.ViewCreate
-	for k, oldValue := range oldViewMap {
+	for _, oldValue := range oldViewRawList {
+		k := oldValue.Name
 		newValue, ok := newViewMap[k]
 		if !ok {
 			deletes = append(deletes, &api.ViewDelete{ID: oldValue.ID})
@@ -127,7 +128,8 @@ func generateViewActions(oldViewMap map[string]*viewRaw, newViewMap map[string]*
 			creates = append(creates, newValue)
 		}
 	}
-	for k, newValue := range newViewMap {
+	for _, newValue := range viewCreateList {
+		k := newValue.Name
 		if _, ok := oldViewMap[k]; !ok {
 			creates = append(creates, newValue)
 		}
