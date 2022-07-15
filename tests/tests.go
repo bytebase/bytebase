@@ -141,7 +141,7 @@ func getTestPort(testName string) int {
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
-		"TestSchemaSystem",
+		"TestSQLReview",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -1420,7 +1420,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 }
 
 // setDefaultSchemaReviewRulePayload sets the default payload for this rule.
-func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (string, error) {
+func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -1472,9 +1472,9 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 
 // prodTemplateSchemaReviewPolicy returns the default schema review policy.
 func prodTemplateSchemaReviewPolicy() (string, error) {
-	policy := advisor.SchemaReviewPolicy{
+	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
-		RuleList: []*advisor.SchemaReviewRule{
+		RuleList: []*advisor.SQLReviewRule{
 			{
 				Type:  advisor.SchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,

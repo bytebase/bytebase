@@ -212,7 +212,7 @@ func TestRequirePK(t *testing.T) {
 		},
 	}
 
-	advisor.RunSchemaReviewRuleTests(t, tests, &TableRequirePKAdvisor{}, &advisor.SchemaReviewRule{
+	advisor.RunSchemaReviewRuleTests(t, tests, &TableRequirePKAdvisor{}, &advisor.SQLReviewRule{
 		Type:    advisor.SchemaRuleTableRequirePK,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",

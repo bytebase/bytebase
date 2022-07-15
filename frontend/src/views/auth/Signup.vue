@@ -128,9 +128,11 @@
               @click="onToggleAcceptTermsAndPolicyCheckbox"
             >
               <template #terms>
-                <a href="https://www.bytebase.com/terms?source=console" class="text-accent">{{
-                  $t("auth.sign-up.terms-of-service")
-                }}</a>
+                <a
+                  href="https://www.bytebase.com/terms?source=console"
+                  class="text-accent"
+                  >{{ $t("auth.sign-up.terms-of-service") }}</a
+                >
               </template>
               <template #policy>
                 <a
