@@ -683,34 +683,11 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 }
 
 func syncViewSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var creates []*api.ViewCreate
-	for _, view := range schema.ViewList {
-		creates = append(creates, &api.ViewCreate{
-			CreatorID:  api.SystemBotID,
-			CreatedTs:  view.CreatedTs,
-			UpdatedTs:  view.UpdatedTs,
-			DatabaseID: database.ID,
-			Name:       view.Name,
-			Definition: view.Definition,
-			Comment:    view.Comment,
-		})
-	}
-	return store.SetViewList(ctx, creates, database.ID, api.SystemBotID)
+	return store.SetViewList(ctx, schema, database.ID, api.SystemBotID)
 }
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var creates []*api.DBExtensionCreate
-	for _, dbExtension := range schema.ExtensionList {
-		creates = append(creates, &api.DBExtensionCreate{
-			CreatorID:   api.SystemBotID,
-			DatabaseID:  database.ID,
-			Name:        dbExtension.Name,
-			Version:     dbExtension.Version,
-			Schema:      dbExtension.Schema,
-			Description: dbExtension.Description,
-		})
-	}
-	return store.SetDBExtensionList(ctx, creates, database.ID, api.SystemBotID)
+	return store.SetDBExtensionList(ctx, schema, database.ID, api.SystemBotID)
 }
 
 func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {

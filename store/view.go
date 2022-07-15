@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // viewRaw is the store model for an View.
@@ -70,7 +71,20 @@ func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, 
 }
 
 // SetViewList sets the views for a database.
-func (s *Store) SetViewList(ctx context.Context, viewCreateList []*api.ViewCreate, databaseID int, updaterID int) error {
+func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
+	var viewCreateList []*api.ViewCreate
+	for _, view := range schema.ViewList {
+		viewCreateList = append(viewCreateList, &api.ViewCreate{
+			CreatorID:  api.SystemBotID,
+			CreatedTs:  view.CreatedTs,
+			UpdatedTs:  view.UpdatedTs,
+			DatabaseID: databaseID,
+			Name:       view.Name,
+			Definition: view.Definition,
+			Comment:    view.Comment,
+		})
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
