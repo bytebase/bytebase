@@ -14,55 +14,55 @@ import (
 //   1. Implement an advisor.(plugin/advisor/mysql or plugin/advisor/pg)
 //   2. Register this advisor in map[DBType][AdvisorType].(plugin/advisor.go)
 //   3. Add advisor error code if needed(plugin/advisor/code.go).
-//   4. Map SchemaReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
+//   4. Map SQLReviewRuleType to advisor.Type in getAdvisorTypeByRule(current file).
 
-// SchemaReviewRuleLevel is the error level for schema review rule.
-type SchemaReviewRuleLevel string
+// SQLReviewRuleLevel is the error level for schema review rule.
+type SQLReviewRuleLevel string
 
-// SchemaReviewRuleType is the type of schema rule.
-type SchemaReviewRuleType string
+// SQLReviewRuleType is the type of schema rule.
+type SQLReviewRuleType string
 
 const (
-	// SchemaRuleLevelError is the error level of SchemaReviewRuleLevel.
-	SchemaRuleLevelError SchemaReviewRuleLevel = "ERROR"
-	// SchemaRuleLevelWarning is the warning level of SchemaReviewRuleLevel.
-	SchemaRuleLevelWarning SchemaReviewRuleLevel = "WARNING"
-	// SchemaRuleLevelDisabled is the disabled level of SchemaReviewRuleLevel.
-	SchemaRuleLevelDisabled SchemaReviewRuleLevel = "DISABLED"
+	// SchemaRuleLevelError is the error level of SQLReviewRuleLevel.
+	SchemaRuleLevelError SQLReviewRuleLevel = "ERROR"
+	// SchemaRuleLevelWarning is the warning level of SQLReviewRuleLevel.
+	SchemaRuleLevelWarning SQLReviewRuleLevel = "WARNING"
+	// SchemaRuleLevelDisabled is the disabled level of SQLReviewRuleLevel.
+	SchemaRuleLevelDisabled SQLReviewRuleLevel = "DISABLED"
 
 	// SchemaRuleMySQLEngine require InnoDB as the storage engine.
-	SchemaRuleMySQLEngine SchemaReviewRuleType = "engine.mysql.use-innodb"
+	SchemaRuleMySQLEngine SQLReviewRuleType = "engine.mysql.use-innodb"
 
 	// SchemaRuleTableNaming enforce the table name format.
-	SchemaRuleTableNaming SchemaReviewRuleType = "naming.table"
+	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
 	// SchemaRuleColumnNaming enforce the column name format
-	SchemaRuleColumnNaming SchemaReviewRuleType = "naming.column"
+	SchemaRuleColumnNaming SQLReviewRuleType = "naming.column"
 	// SchemaRuleUKNaming enforce the unique key name format.
-	SchemaRuleUKNaming SchemaReviewRuleType = "naming.index.uk"
+	SchemaRuleUKNaming SQLReviewRuleType = "naming.index.uk"
 	// SchemaRuleFKNaming enforce the foreign key name format.
-	SchemaRuleFKNaming SchemaReviewRuleType = "naming.index.fk"
+	SchemaRuleFKNaming SQLReviewRuleType = "naming.index.fk"
 	// SchemaRuleIDXNaming enforce the index name format.
-	SchemaRuleIDXNaming SchemaReviewRuleType = "naming.index.idx"
+	SchemaRuleIDXNaming SQLReviewRuleType = "naming.index.idx"
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
-	SchemaRuleStatementNoSelectAll SchemaReviewRuleType = "statement.select.no-select-all"
+	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
 	// SchemaRuleStatementRequireWhere require 'WHERE' clause.
-	SchemaRuleStatementRequireWhere SchemaReviewRuleType = "statement.where.require"
+	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
-	SchemaRuleStatementNoLeadingWildcardLike SchemaReviewRuleType = "statement.where.no-leading-wildcard-like"
+	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
-	SchemaRuleTableRequirePK SchemaReviewRuleType = "table.require-pk"
+	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
-	SchemaRuleTableNoFK SchemaReviewRuleType = "table.no-foreign-key"
+	SchemaRuleTableNoFK SQLReviewRuleType = "table.no-foreign-key"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
-	SchemaRuleRequiredColumn SchemaReviewRuleType = "column.required"
+	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
-	SchemaRuleColumnNotNull SchemaReviewRuleType = "column.no-null"
+	SchemaRuleColumnNotNull SQLReviewRuleType = "column.no-null"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
-	SchemaRuleSchemaBackwardCompatibility SchemaReviewRuleType = "schema.backward-compatibility"
+	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
 
 	// TableNameTemplateToken is the token for table name
 	TableNameTemplateToken = "{{table}}"
@@ -83,7 +83,7 @@ const (
 
 var (
 	// TemplateNamingTokens is the mapping for rule type to template token
-	TemplateNamingTokens = map[SchemaReviewRuleType]map[string]bool{
+	TemplateNamingTokens = map[SQLReviewRuleType]map[string]bool{
 		SchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
 			ColumnListTemplateToken: true,
@@ -101,14 +101,14 @@ var (
 	}
 )
 
-// SchemaReviewPolicy is the policy configuration for schema review.
-type SchemaReviewPolicy struct {
-	Name     string              `json:"name"`
-	RuleList []*SchemaReviewRule `json:"ruleList"`
+// SQLReviewPolicy is the policy configuration for schema review.
+type SQLReviewPolicy struct {
+	Name     string           `json:"name"`
+	RuleList []*SQLReviewRule `json:"ruleList"`
 }
 
-// Validate validates the SchemaReviewPolicy. It also validates the each review rule.
-func (policy *SchemaReviewPolicy) Validate() error {
+// Validate validates the SQLReviewPolicy. It also validates the each review rule.
+func (policy *SQLReviewPolicy) Validate() error {
 	if policy.Name == "" || len(policy.RuleList) == 0 {
 		return fmt.Errorf("invalid payload, name or rule list cannot be empty")
 	}
@@ -120,17 +120,17 @@ func (policy *SchemaReviewPolicy) Validate() error {
 	return nil
 }
 
-// SchemaReviewRule is the rule for schema review policy.
-type SchemaReviewRule struct {
-	Type  SchemaReviewRuleType  `json:"type"`
-	Level SchemaReviewRuleLevel `json:"level"`
+// SQLReviewRule is the rule for schema review policy.
+type SQLReviewRule struct {
+	Type  SQLReviewRuleType  `json:"type"`
+	Level SQLReviewRuleLevel `json:"level"`
 	// Payload is the stringify value for XXXRulePayload (e.g. NamingRulePayload, RequiredColumnRulePayload)
 	// If the rule doesn't have any payload configuration, the payload would be "{}"
 	Payload string `json:"payload"`
 }
 
 // Validate validates the schema review rule.
-func (rule *SchemaReviewRule) Validate() error {
+func (rule *SQLReviewRule) Validate() error {
 	// TODO(rebelice): add other schema review rule validation.
 	switch rule.Type {
 	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
@@ -184,7 +184,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 // UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
 // "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
-func UnmarshalNamingRulePayloadAsTemplate(ruleType SchemaReviewRuleType, payload string) (string, []string, int, error) {
+func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
 		return "", nil, 0, fmt.Errorf("failed to unmarshal naming rule payload %q: %q", payload, err)
@@ -241,8 +241,8 @@ func UnmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 	return &rcr, nil
 }
 
-// SchemaReviewCheckContext is the context for schema review check.
-type SchemaReviewCheckContext struct {
+// SQLReviewCheckContext is the context for schema review check.
+type SQLReviewCheckContext struct {
 	Charset   string
 	Collation string
 	DbType    DBType
@@ -250,7 +250,7 @@ type SchemaReviewCheckContext struct {
 }
 
 // SchemaReviewCheck checks the statments with schema review policy.
-func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaReviewPolicy, context SchemaReviewCheckContext) ([]Advice, error) {
+func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReviewPolicy, context SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 	for _, rule := range policy.RuleList {
 		if rule.Level == SchemaRuleLevelDisabled {
@@ -296,7 +296,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SchemaRev
 	return result, nil
 }
 
-func getAdvisorTypeByRule(ruleType SchemaReviewRuleType, engine DBType) (Type, error) {
+func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
 		switch engine {

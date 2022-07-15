@@ -1,15 +1,15 @@
 <template>
   <div class="flex gap-x-20">
-    <SchemaReviewSidebar :selected-rule-list="selectedRuleList" />
+    <SQLReviewSidebar :selected-rule-list="selectedRuleList" />
     <div class="flex-1">
-      <SchemaReviewTemplates
-        :required="true"
+      <SQLReviewTemplates
         v-if="selectedRuleList.length === 0"
+        :required="true"
         :template-list="templateList"
-        :title="$t('schema-review-policy.create.basic-info.choose-template')"
+        :title="$t('sql-review.create.basic-info.choose-template')"
         @select="(index) => onTemplateApply(index)"
       />
-      <div class="mb-5" v-if="selectedRuleList.length > 0">
+      <div v-if="selectedRuleList.length > 0" class="mb-5">
         <div
           class="flex cursor-pointer items-center px-2 text-indigo-500"
           @click="state.openTemplate = !state.openTemplate"
@@ -19,18 +19,16 @@
             :class="state.openTemplate ? 'rotate-90' : ''"
           />
           <span class="ml-1 text-sm font-medium">
-            {{
-              $t("schema-review-policy.create.configure-rule.change-template")
-            }}
+            {{ $t("sql-review.create.configure-rule.change-template") }}
           </span>
         </div>
-        <SchemaReviewTemplates
+        <SQLReviewTemplates
           v-if="state.openTemplate"
           :required="false"
           :template-list="templateList"
           :selected-template-index="selectedTemplateIndex"
-          @select="(index) => onTemplateApply(index)"
           class="mx-8 mt-5"
+          @select="(index) => onTemplateApply(index)"
         />
       </div>
       <div
@@ -38,7 +36,7 @@
       >
         <ul role="list" class="divide-y divide-gray-200">
           <li v-for="rule in selectedRuleList" :key="rule.type">
-            <SchemaRuleConfig
+            <SQLRuleConfig
               :selected-rule="rule"
               :active="rule.type === state.activeRuleType"
               @activate="onRuleActivate"
@@ -59,8 +57,8 @@ import {
   RuleLevel,
   RuleTemplate,
   RuleConfigComponent,
-  SchemaReviewPolicyTemplate,
-} from "@/types/schemaSystem";
+  SQLReviewPolicyTemplate,
+} from "@/types/sqlReview";
 
 interface LocalState {
   activeRuleType: RuleType | null;
@@ -74,7 +72,7 @@ const props = defineProps({
   },
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
+    type: Object as PropType<SQLReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: true,

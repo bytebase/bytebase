@@ -20,15 +20,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSchemaSystem(t *testing.T) {
+func TestSQLReview(t *testing.T) {
 	type test struct {
 		statement string
 		result    []api.TaskCheckResult
 	}
 
 	var (
-		databaseName          = "testSchemaSystem"
-		schemaReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSchemaReviewPolicy.AccessErrorMessage())
+		databaseName          = "testSQLReview"
+		schemaReviewAccessErr = fmt.Sprintf(`http response error code %d body "{\"message\":\"%s\"}\n"`, http.StatusForbidden, api.FeatureSQLReviewPolicy.AccessErrorMessage())
 		statements            = []string{
 			"CREATE TABLE user(" +
 				"id INT PRIMARY KEY," +
@@ -276,8 +276,8 @@ func TestSchemaSystem(t *testing.T) {
 
 	// Create a project.
 	project, err := ctl.createProject(api.ProjectCreate{
-		Name: "Test Schema System Project",
-		Key:  "TestSchemaSystem",
+		Name: "Test SQL Review Project",
+		Key:  "TestSQLReview",
 	})
 	a.NoError(err)
 

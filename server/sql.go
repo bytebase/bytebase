@@ -159,7 +159,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		adviceLevel := advisor.Success
 		adviceList := []advisor.Advice{}
 
-		if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(instance.Engine, s.profile.Mode) {
+		if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.profile.Mode) {
 			dbType, err := api.ConvertToAdvisorDBType(instance.Engine)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to convert db type %v into advisor db type", instance.Engine))
@@ -683,85 +683,11 @@ func syncTableSchema(ctx context.Context, store *store.Store, database *api.Data
 }
 
 func syncViewSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var createView = func(database *api.Database, viewCreate *api.ViewCreate) error {
-		if _, err := store.CreateView(ctx, viewCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync view for instance: %s, database: %s. View name already exists: %s", database.Instance.Name, database.Name, viewCreate.Name)
-			}
-			return fmt.Errorf("failed to sync view for instance: %s, database: %s. Failed to import new view: %s. Error %w", database.Instance.Name, database.Name, viewCreate.Name, err)
-		}
-		return nil
-	}
-	var recreateViewSchema = func(database *api.Database, view db.View) error {
-		// View
-		viewCreate := &api.ViewCreate{
-			CreatorID:  api.SystemBotID,
-			CreatedTs:  view.CreatedTs,
-			UpdatedTs:  view.UpdatedTs,
-			DatabaseID: database.ID,
-			Name:       view.Name,
-			Definition: view.Definition,
-			Comment:    view.Comment,
-		}
-		if err := createView(database, viewCreate); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	viewDelete := &api.ViewDelete{
-		DatabaseID: database.ID,
-	}
-	if err := store.DeleteView(ctx, viewDelete); err != nil {
-		return fmt.Errorf("failed to sync view for instance: %s, database %s. Failed to reset view info. Error %w", database.Instance.Name, database.Name, err)
-	}
-	for _, view := range schema.ViewList {
-		if err := recreateViewSchema(database, view); err != nil {
-			return err
-		}
-	}
-	return nil
+	return store.SetViewList(ctx, schema, database.ID, api.SystemBotID)
 }
 
 func syncDBExtensionSchema(ctx context.Context, store *store.Store, database *api.Database, schema *db.Schema) error {
-	var createDBExtension = func(database *api.Database, dbExtensionCreate *api.DBExtensionCreate) error {
-		if _, err := store.CreateDBExtension(ctx, dbExtensionCreate); err != nil {
-			if common.ErrorCode(err) == common.Conflict {
-				return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. dbExtension name and schema already exists: %s", database.Instance.Name, database.Name, dbExtensionCreate.Name)
-			}
-			return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to import new dbExtension: %s. Error %w", database.Instance.Name, database.Name, dbExtensionCreate.Name, err)
-		}
-		return nil
-	}
-
-	var recreateDBExtensionSchema = func(database *api.Database, dbExtension db.Extension) error {
-		// dbExtension
-		dbExtensionCreate := &api.DBExtensionCreate{
-			CreatorID:   api.SystemBotID,
-			DatabaseID:  database.ID,
-			Name:        dbExtension.Name,
-			Version:     dbExtension.Version,
-			Schema:      dbExtension.Schema,
-			Description: dbExtension.Description,
-		}
-		if err := createDBExtension(database, dbExtensionCreate); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	dbExtensionDelete := &api.DBExtensionDelete{
-		DatabaseID: database.ID,
-	}
-	if err := store.DeleteDBExtension(ctx, dbExtensionDelete); err != nil {
-		return fmt.Errorf("failed to sync dbExtension for instance: %s, database: %s. Failed to reset dbExtension info. Error %w", database.Instance.Name, database.Name, err)
-	}
-	for _, dbExtension := range schema.ExtensionList {
-		if err := recreateDBExtensionSchema(database, dbExtension); err != nil {
-			return err
-		}
-	}
-	return nil
+	return store.SetDBExtensionList(ctx, schema, database.ID, api.SystemBotID)
 }
 
 func getLatestSchemaVersion(ctx context.Context, driver db.Driver, databaseName string) (string, error) {
@@ -865,7 +791,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SchemaReviewCheckContext{
+	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

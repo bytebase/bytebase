@@ -3,7 +3,7 @@ export type FeatureType =
   // Database management
   | "bb.feature.disaster-recovery-pitr"
   // Change Workflow
-  | "bb.feature.schema-review-policy"
+  | "bb.feature.sql-review"
   | "bb.feature.schema-drift"
   | "bb.feature.task-schedule-time"
   | "bb.feature.multi-tenancy"
@@ -51,7 +51,7 @@ export const FEATURE_MATRIX: Map<FeatureType, boolean[]> = new Map([
   // Database management
   ["bb.feature.disaster-recovery-pitr", [false, true, true]],
   // Change Workflow
-  ["bb.feature.schema-review-policy", [false, true, true]],
+  ["bb.feature.sql-review", [false, true, true]],
   ["bb.feature.schema-drift", [false, true, true]],
   ["bb.feature.task-schedule-time", [false, true, true]],
   ["bb.feature.multi-tenancy", [false, true, true]],

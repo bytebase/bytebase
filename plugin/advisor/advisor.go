@@ -25,8 +25,8 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
+// NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
+func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	switch level {
 	case SchemaRuleLevelError:
 		return Error, nil
@@ -143,7 +143,7 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SchemaReviewRule
+	Rule    *SQLReviewRule
 	Catalog catalog.Catalog
 }
 
@@ -205,8 +205,8 @@ func IsSyntaxCheckSupported(dbType DBType) bool {
 	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType DBType) bool {
 	switch dbType {
 	case MySQL, TiDB, Postgres:
 		return true
