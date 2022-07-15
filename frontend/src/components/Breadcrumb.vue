@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex" aria-label="Breadcrumb">
+  <nav class="flex" aria-label="Breadcrumb" data-label="bb-breadcrumb">
     <div v-for="(item, index) in breadcrumbList" :key="index">
       <div class="flex items-center space-x-2">
         <router-link
