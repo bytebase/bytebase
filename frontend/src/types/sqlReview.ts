@@ -3,7 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import schemaSystemConfig from "./sqlReviewConfig.yaml";
+import sqlReviewConfig from "./sqlReviewConfig.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
@@ -108,8 +108,8 @@ export interface SchemaPolicyRule {
   payload?: NamingFormatPayload | RequiredColumnPayload;
 }
 
-// The API for schema review policy in backend.
-export interface DatabaseSchemaReviewPolicy {
+// The API for SQL review policy in backend.
+export interface SQLReviewPolicy {
   id: PolicyId;
 
   // Standard fields
@@ -134,14 +134,14 @@ export interface RuleTemplate {
   level: RuleLevel;
 }
 
-// SchemaReviewPolicyTemplate is the rule template set
-export interface SchemaReviewPolicyTemplate {
+// SQLReviewPolicyTemplate is the rule template set
+export interface SQLReviewPolicyTemplate {
   id: string;
   ruleList: RuleTemplate[];
 }
 
 export const TEMPLATE_LIST =
-  schemaSystemConfig.templateList as SchemaReviewPolicyTemplate[];
+  sqlReviewConfig.templateList as SQLReviewPolicyTemplate[];
 
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
@@ -160,7 +160,7 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const categoryList = schemaSystemConfig.categoryList as CategoryType[];
+  const categoryList = sqlReviewConfig.categoryList as CategoryType[];
   const categoryOrder = categoryList.reduce((map, category, index) => {
     map.set(category, index);
     return map;

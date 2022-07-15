@@ -1,6 +1,6 @@
 import { indexOf, isUndefined } from "lodash-es";
 import { getStringFromI18NText } from "./i18n";
-import { DialogPosition, HintData } from "./types";
+import { Position, HintData } from "./types";
 import {
   checkUrlMatched,
   getElementBounding,
@@ -17,17 +17,17 @@ export const showHints = async (hintDataList: HintData[]) => {
 
   const findTargetPromiseList = hintDataList.map(async (hintData) => {
     const index = indexOf(hintDataList, hintData);
-    if (closedHintIndexSet.has(index) || !checkUrlMatched(hintData.url)) {
+    if (
+      shownHintIndexSet.has(index) ||
+      closedHintIndexSet.has(index) ||
+      !checkUrlMatched(hintData.url)
+    ) {
       return;
     }
 
     const targetElement = await waitForTargetElement([[hintData.selector]]);
     if (targetElement) {
-      if (shownHintIndexSet.has(index)) {
-        return;
-      }
       renderHint(targetElement, hintData, index);
-      updateHintPosition(targetElement, hintData, index);
       shownHintIndexSet.add(index);
     } else {
       removeHint(index);
@@ -43,19 +43,25 @@ const renderHint = (
   hintData: HintData,
   hintIndex: number
 ) => {
+  if (hintData.type === "tooltip") {
+    renderTooltip(targetElement, hintData, hintIndex);
+    return;
+  }
+
   const hintWrapper = document.createElement("div");
   hintWrapper.className = `bb-hint-wrapper bb-hint-${hintIndex}`;
-  if (hintData.highlight) {
-    hintWrapper.classList.add("highlight");
-  }
   if (hintData.type === "shield") {
     hintWrapper.classList.add("shield");
   }
   document.body.appendChild(hintWrapper);
 
+  if (hintData.cover) {
+    hintWrapper.classList.add("covered");
+    renderCover(targetElement, hintIndex);
+  }
+
   const maxZIndex = getElementMaxZIndex(targetElement);
   hintWrapper.style.zIndex = `${maxZIndex}`;
-
   if (hintData.additionStyle) {
     for (const key in hintData.additionStyle) {
       hintWrapper.style[key] = hintData.additionStyle[key];
@@ -67,24 +73,21 @@ const renderHint = (
   hintWrapper.style.left = `${bounding.left}px`;
   hintWrapper.style.width = `${bounding.width}px`;
   hintWrapper.style.height = `${bounding.height}px`;
+  hintWrapper.style.pointerEvents = "none";
 
-  if (isUndefined(hintData.dialog)) {
-    hintWrapper.style.pointerEvents = "none";
-  } else {
+  if (hintData.dialog) {
     if (hintData.dialog.alwaysShow) {
       renderHintDialog(targetElement, hintData, hintIndex);
-      hintWrapper.style.pointerEvents = "none";
     } else {
+      hintWrapper.style.pointerEvents = "auto";
       hintWrapper.addEventListener(
         "click",
         (e) => {
           e.stopPropagation();
           hintWrapper.style.pointerEvents = "none";
-          if (!isUndefined(hintData.dialog)) {
-            if (hintData.dialog.showOnce) {
-              closedHintIndexSet.add(hintIndex);
-            }
-            renderHintDialog(targetElement, hintData, hintIndex);
+          renderHintDialog(targetElement, hintData, hintIndex);
+          if (hintData.dialog?.showOnce) {
+            closedHintIndexSet.add(hintIndex);
           }
         },
         {
@@ -94,15 +97,7 @@ const renderHint = (
     }
   }
 
-  if (hintData.cover) {
-    const maxZIndex = getElementMaxZIndex(targetElement);
-    hintWrapper.classList.add("covered");
-    const coverElement = document.createElement("div");
-    coverElement.className = `bb-hint-cover-wrapper bb-hint-${hintIndex}`;
-    coverElement.style.zIndex = `${Math.max(maxZIndex - 1, 0)}`;
-    document.body.appendChild(coverElement);
-    targetElement.classList.add("bb-hint-target-element");
-  }
+  updateHintPosition(targetElement, hintData, hintIndex);
 };
 
 const renderHintDialog = (
@@ -110,7 +105,7 @@ const renderHintDialog = (
   hintData: HintData,
   hintIndex: number
 ) => {
-  if (isUndefined(hintData.dialog)) {
+  if (isUndefined(hintData.dialog) || closedHintIndexSet.has(hintIndex)) {
     return;
   }
 
@@ -118,16 +113,14 @@ const renderHintDialog = (
     dialog: { title, description, position, alwaysShow },
   } = hintData;
   const hintDialogDiv = document.createElement("div");
-  hintDialogDiv.className = `bb-hint-dialog bb-hint-dialog-${hintIndex}`;
+  hintDialogDiv.className = `bb-hint-dialog bb-hint-${hintIndex}`;
+
+  if (hintData.type === "tooltip") {
+    hintDialogDiv.classList.add("tooltip-dialog");
+  }
 
   const maxZIndex = getElementMaxZIndex(targetElement);
   hintDialogDiv.style.zIndex = `${maxZIndex}`;
-
-  if (hintData.additionStyle) {
-    for (const key in hintData.additionStyle) {
-      hintDialogDiv.style[key] = hintData.additionStyle[key];
-    }
-  }
 
   if (!alwaysShow) {
     const closeButton = document.createElement("button");
@@ -155,15 +148,22 @@ const renderHintDialog = (
 
   document.body.appendChild(hintDialogDiv);
   adjustHintDialogPosition(targetElement, hintDialogDiv, position);
+
+  return hintDialogDiv;
 };
 
 const adjustHintDialogPosition = (
   targetElement: HTMLElement,
   hintDialogDiv: HTMLElement,
-  position: DialogPosition = "bottom"
+  position: Position = "bottom"
 ) => {
   const bounding = getElementBounding(targetElement);
   const hintDialogBounding = getElementBounding(hintDialogDiv);
+
+  if (bounding.width === 0 && bounding.height === 0) {
+    hintDialogDiv.remove();
+    return;
+  }
 
   if (position === "bottom") {
     hintDialogDiv.style.top = `${bounding.top + bounding.height}px`;
@@ -221,6 +221,95 @@ const updateHintPosition = (
   );
 };
 
+const renderTooltip = (
+  targetElement: HTMLElement,
+  hintData: HintData,
+  hintIndex: number
+) => {
+  const tooltipWrapper = document.createElement("div");
+  tooltipWrapper.className = `bb-hint-tooltip-wrapper bb-hint-${hintIndex}`;
+  tooltipWrapper.style.zIndex = `${getElementMaxZIndex(targetElement)}`;
+  tooltipWrapper.textContent = "!";
+  if (hintData.additionStyle) {
+    for (const key in hintData.additionStyle) {
+      tooltipWrapper.style[key] = `${hintData.additionStyle[key]}`;
+    }
+  }
+  document.body.appendChild(tooltipWrapper);
+
+  tooltipWrapper.addEventListener("mouseenter", () => {
+    const dialogElement = renderHintDialog(tooltipWrapper, hintData, hintIndex);
+    tooltipWrapper.addEventListener(
+      "mouseleave",
+      () => {
+        dialogElement?.remove();
+      },
+      {
+        once: true,
+      }
+    );
+  });
+
+  tooltipWrapper.addEventListener("click", () => {
+    closedHintIndexSet.add(hintIndex);
+    removeHint(hintIndex);
+  });
+
+  targetElement.addEventListener(
+    "click",
+    () => {
+      closedHintIndexSet.add(hintIndex);
+      removeHint(hintIndex);
+    },
+    {
+      once: true,
+    }
+  );
+
+  requestAnimationFrame(() =>
+    updateTooltipPosition(targetElement, hintData, hintIndex)
+  );
+};
+
+const updateTooltipPosition = (
+  targetElement: HTMLElement,
+  hintData: HintData,
+  hintIndex: number
+) => {
+  const hintWrapper = document.body.querySelector(
+    `.bb-hint-tooltip-wrapper.bb-hint-${hintIndex}`
+  ) as HTMLElement;
+
+  if (!targetElement || !hintWrapper) {
+    removeHint(hintIndex);
+    return;
+  }
+
+  const position = hintData.position;
+  const bounding = getElementBounding(targetElement);
+
+  if (!position || position === "right") {
+    hintWrapper.style.top = `${bounding.top}px`;
+    hintWrapper.style.left = `${bounding.left + bounding.width}px`;
+  } else if (position === "left") {
+    hintWrapper.style.top = `${bounding.top}px`;
+    hintWrapper.style.left = `${bounding.left}px`;
+  }
+
+  requestAnimationFrame(() =>
+    updateTooltipPosition(targetElement, hintData, hintIndex)
+  );
+};
+
+const renderCover = (targetElement: HTMLElement, hintIndex: number) => {
+  const coverElement = document.createElement("div");
+  coverElement.className = `bb-hint-cover-wrapper bb-hint-${hintIndex}`;
+  const maxZIndex = getElementMaxZIndex(targetElement);
+  coverElement.style.zIndex = `${Math.max(maxZIndex - 1, 0)}`;
+  document.body.appendChild(coverElement);
+  targetElement.classList.add("bb-hint-target-element");
+};
+
 export const removeHint = (hintIndex?: number) => {
   if (isUndefined(hintIndex)) {
     const hintWrappers = document.querySelectorAll(".bb-hint-wrapper");
@@ -229,15 +318,24 @@ export const removeHint = (hintIndex?: number) => {
         hintWrapper.remove();
       });
     }
+
     const hintDialogs = document.querySelectorAll(".bb-hint-dialog");
     if (hintDialogs) {
       hintDialogs.forEach((hintDialog) => {
         hintDialog.remove();
       });
     }
+
     const hintCovers = document.querySelectorAll(".bb-hint-cover-wrapper");
     if (hintCovers) {
       hintCovers.forEach((item) => {
+        item.remove();
+      });
+    }
+
+    const hintTooltips = document.querySelectorAll(".bb-hint-tooltip-wrapper");
+    if (hintTooltips) {
+      hintTooltips.forEach((item) => {
         item.remove();
       });
     }
@@ -250,7 +348,7 @@ export const removeHint = (hintIndex?: number) => {
     }
 
     const hintDialog = document.querySelector(
-      `.bb-hint-dialog.bb-hint-dialog-${hintIndex}`
+      `.bb-hint-dialog.bb-hint-${hintIndex}`
     );
     if (hintDialog) {
       hintDialog.remove();
@@ -261,6 +359,13 @@ export const removeHint = (hintIndex?: number) => {
     );
     if (hintCover) {
       hintCover.remove();
+    }
+
+    const hintTooltip = document.querySelector(
+      `.bb-hint-tooltip-wrapper.bb-hint-${hintIndex}`
+    );
+    if (hintTooltip) {
+      hintTooltip.remove();
     }
   }
 };

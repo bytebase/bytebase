@@ -64,7 +64,7 @@ func RunSchemaReviewRuleTests(
 	t *testing.T,
 	tests []TestCase,
 	adv Advisor,
-	rule *SchemaReviewRule,
+	rule *SQLReviewRule,
 	catalog catalog.Catalog,
 ) {
 	ctx := Context{

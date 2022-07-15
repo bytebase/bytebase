@@ -178,7 +178,7 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 }
 
 // GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
-func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SchemaReviewPolicy, error) {
+func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
 	if find.ID != nil && *find.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", *find.ID)}
 	}
@@ -195,7 +195,7 @@ func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.Polic
 	if policy.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
-	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
 // GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
