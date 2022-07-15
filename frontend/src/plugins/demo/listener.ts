@@ -84,6 +84,7 @@ const initLocationListenerForGuide = () => {
 
 // initMutationListenerForHint using mutation observer to detect DOM changes.
 const initMutationListenerForHint = () => {
+  let flag: any = -1;
   const observer = new MutationObserver(async (mutations: MutationRecord[]) => {
     for (const mutation of mutations) {
       const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
@@ -92,9 +93,15 @@ const initMutationListenerForHint = () => {
           changedNode instanceof HTMLElement &&
           !changedNode.matches(".bb-hint-wrapper") &&
           !changedNode.matches(".bb-hint-cover-wrapper") &&
-          !changedNode.matches(".bb-hint-dialog")
+          !changedNode.matches(".bb-hint-dialog") &&
+          !changedNode.matches(".bb-hint-tooltip-wrapper")
         ) {
-          tryToShowHints();
+          if (flag) {
+            clearTimeout(flag);
+          }
+          flag = setTimeout(() => {
+            tryToShowHints();
+          }, 100);
           return;
         }
       }
