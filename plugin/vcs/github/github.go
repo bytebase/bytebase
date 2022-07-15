@@ -84,6 +84,18 @@ type Repository struct {
 	HTMLURL  string `json:"html_url"`
 }
 
+// RepositoryTree represents a GitHub API response for a repository tree.
+type RepositoryTree struct {
+	Tree []RepositoryTreeNode `json:"tree"`
+}
+
+// RepositoryTreeNode represents a GitHub API response for a repository tree
+// node.
+type RepositoryTreeNode struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
@@ -440,9 +452,68 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, len(repos) >= 100, nil
 }
 
-// FetchRepositoryFileList fetch the files from repository tree
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// FetchRepositoryFileList fetches the all files from the given repository tree
+// recursively.
+//
+// Docs: https://docs.github.com/en/rest/git/trees#get-a-tree
+//
+// TODO: GitHub returns truncated response if the number of items in the tree
+// array exceeded their maximum limit. It is not noted what exactly is the
+// maximum limit and requires making non-recursive request to each sub-tree.
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", apiURL, repositoryID, ref)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository file list from URL %s", url))
+	} else if code >= 300 {
+		return nil,
+			fmt.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var repoTree RepositoryTree
+	if err := json.Unmarshal([]byte(body), &repoTree); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	if filePath != "" && !strings.HasSuffix(filePath, "/") {
+		filePath += "/"
+	}
+
+	var allTreeNodes []*vcs.RepositoryTreeNode
+	for _, n := range repoTree.Tree {
+		// GitHub does not support filtering by path prefix, thus simulating the
+		// behavior here.
+		if n.Type == "blob" && strings.HasPrefix(n.Path, filePath) {
+			allTreeNodes = append(allTreeNodes,
+				&vcs.RepositoryTreeNode{
+					Path: n.Path,
+					Type: n.Type,
+				},
+			)
+		}
+	}
+	return allTreeNodes, nil
 }
 
 // CreateFile creates a file.

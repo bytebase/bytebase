@@ -250,6 +250,7 @@ func TestProvider_FetchRepositoryActiveMemberList(t *testing.T) {
 	got, err := p.FetchRepositoryActiveMemberList(ctx, common.OauthContext{}, "", "1")
 	require.NoError(t, err)
 
+	// Non-active member should be excluded
 	want := []*vcs.RepositoryMember{
 		{
 			Email:        "john@example.com",
@@ -422,13 +423,61 @@ func TestProvider_FetchAllRepositoryList(t *testing.T) {
 	got, err := p.FetchAllRepositoryList(ctx, common.OauthContext{}, "")
 	require.NoError(t, err)
 
-	// Non-active member should be excluded
 	want := []*vcs.Repository{
 		{
 			ID:       4,
 			Name:     "Diaspora Client",
 			FullPath: "diaspora/diaspora-client",
 			WebURL:   "http://example.com/diaspora/diaspora-client",
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_FetchRepositoryFileList(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/repository/tree", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
+							Body: io.NopCloser(strings.NewReader(`
+[
+  {
+    "id": "a1e8f8d745cc87e3a9248358d9352bb7f9a0aeba",
+    "name": "html",
+    "type": "tree",
+    "path": "files/html",
+    "mode": "040000"
+  },
+  {
+    "id": "7d70e02340bac451f281cecf0a980907974bd8be",
+    "name": "whitespace",
+    "type": "blob",
+    "path": "files/whitespace",
+    "mode": "100644"
+  }
+]
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.FetchRepositoryFileList(ctx, common.OauthContext{}, "", "1", "main", "")
+	require.NoError(t, err)
+
+	// Non-blob type should excluded
+	want := []*vcs.RepositoryTreeNode{
+		{
+			Path: "files/whitespace",
+			Type: "blob",
 		},
 	}
 	assert.Equal(t, want, got)
