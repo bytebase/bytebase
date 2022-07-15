@@ -5,10 +5,10 @@
 
 # $ docker run --init --rm --name bb bytebase/bb
 
-FROM golang:1.16.5 as bb
+FROM golang:1.18.4 as bb
 
 ARG VERSION="development"
-ARG GO_VERSION="1.16.5"
+ARG GO_VERSION="1.18.4"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
