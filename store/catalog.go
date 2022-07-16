@@ -38,6 +38,9 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 	if err != nil {
 		return nil, err
 	}
+	if table == nil {
+		return nil, nil
+	}
 
 	indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
 		DatabaseID: c.databaseID,
