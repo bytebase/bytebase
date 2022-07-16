@@ -10,7 +10,8 @@ import (
 )
 
 func TestNamingFKConvention(t *testing.T) {
-	invalidFKName := advisor.RandomString(65)
+	invalidFKName := advisor.RandomString(42)
+	maxLength := 32
 
 	tests := []advisor.TestCase{
 		{
@@ -48,7 +49,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: fmt.Sprintf("Foreign key `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidFKName),
+					Content: fmt.Sprintf("Foreign key `%s` in table `tech_book` mismatches the naming convention, its length should within %d characters", invalidFKName, maxLength),
 				},
 			},
 		},
@@ -78,7 +79,7 @@ func TestNamingFKConvention(t *testing.T) {
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
 		Format:    "^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
-		MaxLength: 64,
+		MaxLength: maxLength,
 	})
 	require.NoError(t, err)
 	advisor.RunSchemaReviewRuleTests(t, tests, &NamingFKConventionAdvisor{}, &advisor.SQLReviewRule{
