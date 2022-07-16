@@ -8,27 +8,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
-
-// CreateColumn creates a new column.
-func (s *Store) CreateColumn(ctx context.Context, create *api.ColumnCreate) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	column, err := s.createColumnImpl(ctx, tx.PTx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return column, nil
-}
 
 // FindColumn retrieves a list of columns based on find.
 func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Column, error) {
@@ -46,47 +27,51 @@ func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Co
 	return list, nil
 }
 
-// GetColumn retrieves a single column based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) GetColumn(ctx context.Context, find *api.ColumnFind) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
+func generateColumnActions(oldColumnList []*api.Column, columnList []db.Column, databaseID, tableID int) ([]*api.ColumnDelete, []*api.ColumnCreate) {
+	var columnCreateList []*api.ColumnCreate
+	for _, column := range columnList {
+		columnCreateList = append(columnCreateList, &api.ColumnCreate{
+			CreatorID:    api.SystemBotID,
+			DatabaseID:   databaseID,
+			TableID:      tableID,
+			Name:         column.Name,
+			Position:     column.Position,
+			Default:      column.Default,
+			Nullable:     column.Nullable,
+			Type:         column.Type,
+			CharacterSet: column.CharacterSet,
+			Collation:    column.Collation,
+			Comment:      column.Comment,
+		})
 	}
-	defer tx.PTx.Rollback()
-
-	list, err := s.findColumnImpl(ctx, tx.PTx, find)
-	if err != nil {
-		return nil, err
+	oldColumnMap := make(map[string]*api.Column)
+	for _, c := range oldColumnList {
+		oldColumnMap[c.Name] = c
 	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d columns with filter %+v, expect 1", len(list), find)}
-	}
-	return list[0], nil
-}
-
-// PatchColumn updates an existing column by ID.
-// Returns ENOTFOUND if column does not exist.
-func (s *Store) PatchColumn(ctx context.Context, patch *api.ColumnPatch) (*api.Column, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	column, err := s.patchColumn(ctx, tx.PTx, patch)
-	if err != nil {
-		return nil, FormatError(err)
+	newColumnMap := make(map[string]*api.ColumnCreate)
+	for _, c := range columnCreateList {
+		newColumnMap[c.Name] = c
 	}
 
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
+	var deletes []*api.ColumnDelete
+	var creates []*api.ColumnCreate
+	for _, oldValue := range oldColumnList {
+		k := oldValue.Name
+		newValue, ok := newColumnMap[k]
+		if !ok {
+			deletes = append(deletes, &api.ColumnDelete{ID: oldValue.ID})
+		} else if ok && (oldValue.Position != newValue.Position || oldValue.Default != newValue.Default || oldValue.Nullable != newValue.Nullable || oldValue.Type != newValue.Type || oldValue.CharacterSet != newValue.CharacterSet || oldValue.Collation != newValue.Collation || oldValue.Comment != newValue.Comment) {
+			deletes = append(deletes, &api.ColumnDelete{ID: oldValue.ID})
+			creates = append(creates, newValue)
+		}
 	}
-
-	return column, nil
+	for _, newValue := range columnCreateList {
+		k := newValue.Name
+		if _, ok := oldColumnMap[k]; !ok {
+			creates = append(creates, newValue)
+		}
+	}
+	return deletes, creates
 }
 
 // createColumnImpl creates a new column.
@@ -284,4 +269,12 @@ func (s *Store) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPa
 		column.Default = &defaultStr.String
 	}
 	return &column, nil
+}
+
+// deleteColumnImpl deletes columns.
+func deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM col WHERE id = $1`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }

@@ -78,8 +78,26 @@ func (find *TableFind) String() string {
 	return string(str)
 }
 
+// TablePatch is the API message for patching a table.
+type TablePatch struct {
+	ID int
+
+	// Standard fields
+	UpdaterID int
+
+	// Domain specific fields
+	Type          string
+	Engine        string
+	Collation     string
+	RowCount      int64
+	DataSize      int64
+	IndexSize     int64
+	DataFree      int64
+	CreateOptions string
+	Comment       string
+}
+
 // TableDelete is the API message for deleting a table.
 type TableDelete struct {
-	// Related fields
-	DatabaseID int
+	ID int
 }

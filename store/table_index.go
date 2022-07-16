@@ -8,37 +8,18 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
-// CreateIndex creates a new index.
-func (s *Store) CreateIndex(ctx context.Context, create *api.IndexCreate, mode common.ReleaseMode) (*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	index, err := s.createIndexImpl(ctx, tx.PTx, create, mode)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
-
-	return index, nil
-}
-
 // FindIndex retrieves a list of indices based on find.
-func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind, mode common.ReleaseMode) ([]*api.Index, error) {
+func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Index, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findIndexImpl(ctx, tx.PTx, find, mode)
+	list, err := s.findIndexImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -46,31 +27,56 @@ func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind, mode common.
 	return list, nil
 }
 
-// GetIndex retrieves a single index based on find.
-// Returns ECONFLICT if finding more than 1 matching records.
-func (s *Store) GetIndex(ctx context.Context, find *api.IndexFind, mode common.ReleaseMode) (*api.Index, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
+func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, databaseID, tableID int) ([]*api.IndexDelete, []*api.IndexCreate) {
+	var indexCreateList []*api.IndexCreate
+	for _, index := range indexList {
+		indexCreateList = append(indexCreateList, &api.IndexCreate{
+			CreatorID:  api.SystemBotID,
+			DatabaseID: databaseID,
+			TableID:    tableID,
+			Name:       index.Name,
+			Expression: index.Expression,
+			Position:   index.Position,
+			Type:       index.Type,
+			Unique:     index.Unique,
+			Primary:    index.Primary,
+			Visible:    index.Visible,
+			Comment:    index.Comment,
+		})
 	}
-	defer tx.PTx.Rollback()
+	oldIndexMap := make(map[string]*api.Index)
+	for _, index := range oldIndexList {
+		oldIndexMap[index.Name] = index
+	}
+	newIndexMap := make(map[string]*api.IndexCreate)
+	for _, index := range indexCreateList {
+		newIndexMap[index.Name] = index
+	}
 
-	list, err := s.findIndexImpl(ctx, tx.PTx, find, mode)
-	if err != nil {
-		return nil, err
+	var deletes []*api.IndexDelete
+	var creates []*api.IndexCreate
+	for _, oldValue := range oldIndexList {
+		k := oldValue.Name
+		newValue, ok := newIndexMap[k]
+		if !ok {
+			deletes = append(deletes, &api.IndexDelete{ID: oldValue.ID})
+		} else if ok && (oldValue.Expression != newValue.Expression || oldValue.Position != newValue.Position || oldValue.Type != newValue.Type || oldValue.Unique != newValue.Unique || oldValue.Primary != newValue.Primary || oldValue.Visible != newValue.Visible || oldValue.Comment != newValue.Comment) {
+			deletes = append(deletes, &api.IndexDelete{ID: oldValue.ID})
+			creates = append(creates, newValue)
+		}
 	}
-
-	if len(list) == 0 {
-		return nil, nil
-	} else if len(list) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: fmt.Errorf("found %d indices with filter %+v, expect 1", len(list), find)}
+	for _, newValue := range indexCreateList {
+		k := newValue.Name
+		if _, ok := oldIndexMap[k]; !ok {
+			creates = append(creates, newValue)
+		}
 	}
-	return list[0], nil
+	return deletes, creates
 }
 
 // createIndexImpl creates a new index.
-func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.IndexCreate, mode common.ReleaseMode) (*api.Index, error) {
-	if mode == common.ReleaseModeDev {
+func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.IndexCreate) (*api.Index, error) {
+	if s.db.mode == common.ReleaseModeDev {
 		// Insert row into index.
 		query := `
 		INSERT INTO idx (
@@ -184,7 +190,7 @@ func (s *Store) createIndexImpl(ctx context.Context, tx *sql.Tx, create *api.Ind
 	return &index, nil
 }
 
-func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind, mode common.ReleaseMode) ([]*api.Index, error) {
+func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFind) ([]*api.Index, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -203,7 +209,7 @@ func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFi
 		where, args = append(where, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, *v)
 	}
 
-	if mode == common.ReleaseModeDev {
+	if s.db.mode == common.ReleaseModeDev {
 		rows, err := tx.QueryContext(ctx, `
 			SELECT
 				id,
@@ -320,4 +326,12 @@ func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFi
 	}
 
 	return indexList, nil
+}
+
+// deleteIndexImpl deletes an index.
+func deleteIndexImpl(ctx context.Context, tx *sql.Tx, delete *api.IndexDelete) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM idx WHERE id = $1`, delete.ID); err != nil {
+		return FormatError(err)
+	}
+	return nil
 }

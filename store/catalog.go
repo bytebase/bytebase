@@ -46,7 +46,7 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 		DatabaseID: c.databaseID,
 		TableID:    &table.ID,
 		Name:       &find.IndexName,
-	}, c.mode)
+	})
 	if err != nil {
 		return nil, err
 	}
