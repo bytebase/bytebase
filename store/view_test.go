@@ -4,13 +4,15 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateViewActions(t *testing.T) {
+	databaseID := 198
 	tests := []struct {
 		oldViewRawList []*viewRaw
-		viewCreateList []*api.ViewCreate
+		viewList       []db.View
 		wantDeletes    []*api.ViewDelete
 		wantCreates    []*api.ViewCreate
 	}{
@@ -19,7 +21,7 @@ func TestGenerateViewActions(t *testing.T) {
 				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
 				{ID: 124, Name: "view2", Definition: "def2", Comment: "comment2"},
 			},
-			viewCreateList: []*api.ViewCreate{
+			viewList: []db.View{
 				{Name: "view1", Definition: "def1-change", Comment: "comment1"},
 				{Name: "view2", Definition: "def2", Comment: "comment2-change"},
 				{Name: "view3", Definition: "def3", Comment: "comment3"},
@@ -29,38 +31,38 @@ func TestGenerateViewActions(t *testing.T) {
 				{ID: 124},
 			},
 			wantCreates: []*api.ViewCreate{
-				{Name: "view1", Definition: "def1-change", Comment: "comment1"},
-				{Name: "view2", Definition: "def2", Comment: "comment2-change"},
-				{Name: "view3", Definition: "def3", Comment: "comment3"},
+				{Name: "view1", Definition: "def1-change", Comment: "comment1", CreatorID: api.SystemBotID, DatabaseID: databaseID},
+				{Name: "view2", Definition: "def2", Comment: "comment2-change", CreatorID: api.SystemBotID, DatabaseID: databaseID},
+				{Name: "view3", Definition: "def3", Comment: "comment3", CreatorID: api.SystemBotID, DatabaseID: databaseID},
 			},
 		},
 		{
 			oldViewRawList: []*viewRaw{
 				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
-			viewCreateList: nil,
-			wantCreates:    nil,
+			viewList:    nil,
+			wantCreates: nil,
 			wantDeletes: []*api.ViewDelete{
 				{ID: 123},
 			},
 		},
 		{
 			oldViewRawList: nil,
-			viewCreateList: []*api.ViewCreate{
+			viewList: []db.View{
 				{Name: "view1", Definition: "def1", Comment: "comment1"},
 				{Name: "view2", Definition: "def2", Comment: "comment2"},
 			},
 			wantDeletes: nil,
 			wantCreates: []*api.ViewCreate{
-				{Name: "view1", Definition: "def1", Comment: "comment1"},
-				{Name: "view2", Definition: "def2", Comment: "comment2"},
+				{Name: "view1", Definition: "def1", Comment: "comment1", CreatorID: api.SystemBotID, DatabaseID: databaseID},
+				{Name: "view2", Definition: "def2", Comment: "comment2", CreatorID: api.SystemBotID, DatabaseID: databaseID},
 			},
 		},
 		{
 			oldViewRawList: []*viewRaw{
 				{ID: 123, Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
-			viewCreateList: []*api.ViewCreate{
+			viewList: []db.View{
 				{Name: "view1", Definition: "def1", Comment: "comment1"},
 			},
 			wantDeletes: nil,
@@ -69,7 +71,7 @@ func TestGenerateViewActions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deletes, creates := generateViewActions(test.oldViewRawList, test.viewCreateList)
+		deletes, creates := generateViewActions(test.oldViewRawList, test.viewList, databaseID)
 		require.Equal(t, test.wantDeletes, deletes)
 		require.Equal(t, test.wantCreates, creates)
 	}

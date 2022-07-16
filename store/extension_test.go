@@ -4,13 +4,15 @@ import (
 	"testing"
 
 	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateDBExtensionActions(t *testing.T) {
+	databaseID := 198
 	tests := []struct {
 		oldDBExtensionRawList []*dbExtensionRaw
-		dbExtensionCreateList []*api.DBExtensionCreate
+		dbExtensionList       []db.Extension
 		wantDeletes           []*api.DBExtensionDelete
 		wantCreates           []*api.DBExtensionCreate
 	}{
@@ -18,7 +20,7 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 			oldDBExtensionRawList: []*dbExtensionRaw{
 				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			dbExtensionCreateList: []*api.DBExtensionCreate{
+			dbExtensionList: []db.Extension{
 				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
 				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
 			},
@@ -26,36 +28,37 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 				{ID: 123},
 			},
 			wantCreates: []*api.DBExtensionCreate{
-				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
-				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1", CreatorID: api.SystemBotID, DatabaseID: databaseID},
+				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3", CreatorID: api.SystemBotID, DatabaseID: databaseID},
 			},
 		},
 		{
 			oldDBExtensionRawList: []*dbExtensionRaw{
 				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			dbExtensionCreateList: nil,
+			dbExtensionList: nil,
 			wantDeletes: []*api.DBExtensionDelete{
 				{ID: 123},
 			},
+			wantCreates: nil,
 		},
 		{
 			oldDBExtensionRawList: nil,
-			dbExtensionCreateList: []*api.DBExtensionCreate{
+			dbExtensionList: []db.Extension{
 				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
 				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
 			},
 			wantDeletes: nil,
 			wantCreates: []*api.DBExtensionCreate{
-				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1"},
-				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3"},
+				{Name: "hstore", Schema: "public", Version: "v2", Description: "desc1", CreatorID: api.SystemBotID, DatabaseID: databaseID},
+				{Name: "hdd", Schema: "ddd", Version: "v3", Description: "desc3", CreatorID: api.SystemBotID, DatabaseID: databaseID},
 			},
 		},
 		{
 			oldDBExtensionRawList: []*dbExtensionRaw{
 				{ID: 123, Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
-			dbExtensionCreateList: []*api.DBExtensionCreate{
+			dbExtensionList: []db.Extension{
 				{Name: "hstore", Schema: "public", Version: "v1", Description: "desc1"},
 			},
 			wantDeletes: nil,
@@ -64,7 +67,7 @@ func TestGenerateDBExtensionActions(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deletes, creates := generateDBExtensionActions(test.oldDBExtensionRawList, test.dbExtensionCreateList)
+		deletes, creates := generateDBExtensionActions(test.oldDBExtensionRawList, test.dbExtensionList, databaseID)
 		require.Equal(t, test.wantDeletes, deletes)
 		require.Equal(t, test.wantCreates, creates)
 	}
