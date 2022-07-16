@@ -688,6 +688,294 @@ func TestProvider_FetchRepositoryFileList(t *testing.T) {
 	})
 }
 
+func TestProvider_CreateFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
+
+						body, err := io.ReadAll(r.Body)
+						require.NoError(t, err)
+						wantBody := `{"message":"my commit message","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","branch":"master"}`
+						assert.Equal(t, wantBody, string(body))
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "content": {
+    "name": "hello.txt",
+    "path": "notes/hello.txt",
+    "sha": "95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+    "size": 9,
+    "url": "https://api.github.com/repos/octocat/Hello-World/contents/notes/hello.txt",
+    "html_url": "https://github.com/octocat/Hello-World/blob/master/notes/hello.txt",
+    "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+    "download_url": "https://raw.githubusercontent.com/octocat/HelloWorld/master/notes/hello.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/octocat/Hello-World/contents/notes/hello.txt",
+      "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+      "html": "https://github.com/octocat/Hello-World/blob/master/notes/hello.txt"
+    }
+  },
+  "commit": {
+    "sha": "7638417db6d59f3c431d3e1f261cc637155684cd",
+    "node_id": "MDY6Q29tbWl0NzYzODQxN2RiNmQ1OWYzYzQzMWQzZTFmMjYxY2M2MzcxNTU2ODRjZA==",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd",
+    "html_url": "https://github.com/octocat/Hello-World/git/commit/7638417db6d59f3c431d3e1f261cc637155684cd",
+    "author": {
+      "date": "2014-11-07T22:01:45Z",
+      "name": "Monalisa Octocat",
+      "email": "octocat@github.com"
+    },
+    "committer": {
+      "date": "2014-11-07T22:01:45Z",
+      "name": "Monalisa Octocat",
+      "email": "octocat@github.com"
+    },
+    "message": "my commit message",
+    "tree": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/trees/691272480426f78a0138979dd3ce63b77f706feb",
+      "sha": "691272480426f78a0138979dd3ce63b77f706feb"
+    },
+    "parents": [
+      {
+        "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/1acc419d4d6a9ce985db7be48c6349a0475975b5",
+        "html_url": "https://github.com/octocat/Hello-World/git/commit/1acc419d4d6a9ce985db7be48c6349a0475975b5",
+        "sha": "1acc419d4d6a9ce985db7be48c6349a0475975b5"
+      }
+    ],
+    "verification": {
+      "verified": false,
+      "reason": "unsigned",
+      "signature": null,
+      "payload": null
+    }
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.CreateFile(
+		ctx,
+		common.OauthContext{},
+		"",
+		"octocat/Hello-World",
+		"notes/hello.txt",
+		vcs.FileCommitCreate{
+			Branch:        "master",
+			Content:       "my new file contents",
+			CommitMessage: "my commit message",
+		},
+	)
+	require.NoError(t, err)
+}
+
+func TestProvider_OverwriteFile(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/contents/notes%2Fhello.txt", r.URL.RawPath)
+
+						body, err := io.ReadAll(r.Body)
+						require.NoError(t, err)
+						wantBody := `{"message":"update file","content":"bXkgbmV3IGZpbGUgY29udGVudHM=","sha":"7638417db6d59f3c431d3e1f261cc637155684cd","branch":"master"}`
+						assert.Equal(t, wantBody, string(body))
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "content": {
+    "name": "hello.txt",
+    "path": "notes/hello.txt",
+    "sha": "95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+    "size": 9,
+    "url": "https://api.github.com/repos/octocat/Hello-World/contents/notes/hello.txt",
+    "html_url": "https://github.com/octocat/Hello-World/blob/master/notes/hello.txt",
+    "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+    "download_url": "https://raw.githubusercontent.com/octocat/HelloWorld/master/notes/hello.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/octocat/Hello-World/contents/notes/hello.txt",
+      "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/95b966ae1c166bd92f8ae7d1c313e738c731dfc3",
+      "html": "https://github.com/octocat/Hello-World/blob/master/notes/hello.txt"
+    }
+  },
+  "commit": {
+    "sha": "7638417db6d59f3c431d3e1f261cc637155684cd",
+    "node_id": "MDY6Q29tbWl0NzYzODQxN2RiNmQ1OWYzYzQzMWQzZTFmMjYxY2M2MzcxNTU2ODRjZA==",
+    "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd",
+    "html_url": "https://github.com/octocat/Hello-World/git/commit/7638417db6d59f3c431d3e1f261cc637155684cd",
+    "author": {
+      "date": "2014-11-07T22:01:45Z",
+      "name": "Monalisa Octocat",
+      "email": "octocat@github.com"
+    },
+    "committer": {
+      "date": "2014-11-07T22:01:45Z",
+      "name": "Monalisa Octocat",
+      "email": "octocat@github.com"
+    },
+    "message": "my commit message",
+    "tree": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/git/trees/691272480426f78a0138979dd3ce63b77f706feb",
+      "sha": "691272480426f78a0138979dd3ce63b77f706feb"
+    },
+    "parents": [
+      {
+        "url": "https://api.github.com/repos/octocat/Hello-World/git/commits/1acc419d4d6a9ce985db7be48c6349a0475975b5",
+        "html_url": "https://github.com/octocat/Hello-World/git/commit/1acc419d4d6a9ce985db7be48c6349a0475975b5",
+        "sha": "1acc419d4d6a9ce985db7be48c6349a0475975b5"
+      }
+    ],
+    "verification": {
+      "verified": false,
+      "reason": "unsigned",
+      "signature": null,
+      "payload": null
+    }
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.OverwriteFile(
+		ctx,
+		common.OauthContext{},
+		"",
+		"octocat/Hello-World",
+		"notes/hello.txt",
+		vcs.FileCommitCreate{
+			Branch:        "master",
+			Content:       "my new file contents",
+			CommitMessage: "update file",
+			LastCommitID:  "7638417db6d59f3c431d3e1f261cc637155684cd",
+		},
+	)
+	require.NoError(t, err)
+}
+
+func TestProvider_ReadFileMeta(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "type": "file",
+  "encoding": "base64",
+  "size": 442,
+  "name": "README.md",
+  "path": "README.md",
+  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
+  "sha": "3d21ec53a331a6f037a91c368710b99387d012c1",
+  "url": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
+  "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
+  "html_url": "https://github.com/octocat/Hello-World/blob/master/README.md",
+  "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/master/README.md",
+  "_links": {
+    "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
+    "self": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
+    "html": "https://github.com/octocat/Hello-World/blob/master/README.md"
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.ReadFileMeta(ctx, common.OauthContext{}, "", "octocat/Hello-World", "README.md", "master")
+	require.NoError(t, err)
+
+	want := &vcs.FileMeta{
+		Name:         "README.md",
+		Path:         "README.md",
+		Size:         442,
+		LastCommitID: "3d21ec53a331a6f037a91c368710b99387d012c1",
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestProvider_ReadFileContent(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/octocat/Hello-World/contents/README.md", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response derived from https://docs.github.com/en/rest/repos/contents#get-repository-content
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "type": "file",
+  "encoding": "base64",
+  "size": 442,
+  "name": "README.md",
+  "path": "README.md",
+  "content": "IyBTYW1wbGUgR2l0TGFiIFByb2plY3QKClRoaXMgc2FtcGxlIHByb2plY3Qgc2hvd3MgaG93IGEgcHJvamVjdCBpbiBHaXRMYWIgbG9va3MgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMuIEl0IGNvbnRhaW5zIGlzc3VlcywgbWVyZ2UgcmVxdWVzdHMgYW5kIE1hcmtkb3duIGZpbGVzIGluIG1hbnkgYnJhbmNoZXMsCm5hbWVkIGFuZCBmaWxsZWQgd2l0aCBsb3JlbSBpcHN1bS4KCllvdSBjYW4gbG9vayBhcm91bmQgdG8gZ2V0IGFuIGlkZWEgaG93IHRvIHN0cnVjdHVyZSB5b3VyIHByb2plY3QgYW5kLCB3aGVuIGRvbmUsIHlvdSBjYW4gc2FmZWx5IGRlbGV0ZSB0aGlzIHByb2plY3QuCgpbTGVhcm4gbW9yZSBhYm91dCBjcmVhdGluZyBHaXRMYWIgcHJvamVjdHMuXShodHRwczovL2RvY3MuZ2l0bGFiLmNvbS9lZS9naXRsYWItYmFzaWNzL2NyZWF0ZS1wcm9qZWN0Lmh0bWwpCg==",
+  "sha": "3d21ec53a331a6f037a91c368710b99387d012c1",
+  "url": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
+  "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
+  "html_url": "https://github.com/octocat/Hello-World/blob/master/README.md",
+  "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/master/README.md",
+  "_links": {
+    "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1",
+    "self": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
+    "html": "https://github.com/octocat/Hello-World/blob/master/README.md"
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.ReadFileContent(ctx, common.OauthContext{}, "", "octocat/Hello-World", "README.md", "master")
+	require.NoError(t, err)
+
+	want := `# Sample GitLab Project
+
+This sample project shows how a project in GitLab looks for demonstration purposes. It contains issues, merge requests and Markdown files in many branches,
+named and filled with lorem ipsum.
+
+You can look around to get an idea how to structure your project and, when done, you can safely delete this project.
+
+[Learn more about creating GitLab projects.](https://docs.gitlab.com/ee/gitlab-basics/create-project.html)
+`
+	assert.Equal(t, want, got)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
