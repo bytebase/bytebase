@@ -124,7 +124,7 @@ type RepositoryTreeNode struct {
 	Type string `json:"type"`
 }
 
-// File is the API message for file metadata.
+// File represents a GitLab API response for a repository file.
 type File struct {
 	FileName     string `json:"file_name"`
 	FilePath     string `json:"file_path"`
@@ -748,11 +748,13 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	return nil
 }
 
-// ReadFileMeta reads the file metadata.
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*vcs.FileMeta, error) {
+// ReadFileMeta reads the metadata of the given file in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
 	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file metadata %s from GitLab instance %s: %w", filePath, instanceURL, err)
+		return nil, errors.Wrap(err, "read file")
 	}
 
 	return &vcs.FileMeta{
@@ -763,13 +765,14 @@ func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContex
 	}, nil
 }
 
-// ReadFileContent reads the file content.
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (string, error) {
+// ReadFileContent reads the content of the given file in the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
 	file, err := p.readFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, ref)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file content %s from GitLab instance %s: %w", filePath, instanceURL, err)
+		return "", errors.Wrap(err, "read file")
 	}
-
 	return file.Content, nil
 }
 
@@ -875,7 +878,10 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 	return nil
 }
 
-// readFile reads the file data including metadata and content.
+// readFile reads the given file in the repository.
+//
+// TODO: The same GitLab API endpoint supports using the HEAD request to only
+// get the file metadata.
 func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL string, repositoryID string, filePath string, ref string) (*File, error) {
 	url := fmt.Sprintf("%s/projects/%s/repository/files/%s?ref=%s", p.APIURL(instanceURL), repositoryID, url.QueryEscape(filePath), url.QueryEscape(ref))
 	code, body, err := oauth.Get(
@@ -894,39 +900,33 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 		),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "GET")
+		return nil, errors.Wrapf(err, "GET %s", url)
 	}
+
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file data from GitLab instance %s", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read file data from GitLab instance %s, status code: %d",
-			instanceURL,
-			code,
-		)
+		return nil,
+			fmt.Errorf("failed to read file %s on GitLab instance %s, status code: %d",
+				filePath,
+				instanceURL,
+				code,
+			)
 	}
 
-	file := &File{}
-	if err := json.Unmarshal([]byte(body), file); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal file from GitLab instance %s: %w", instanceURL, err)
+	var file File
+	if err = json.Unmarshal([]byte(body), &file); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
 	}
 
-	content := file.Content
 	if file.Encoding == "base64" {
 		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode file content, err %w", err)
+			return nil, errors.Wrap(err, "decode file content")
 		}
-		content = string(decodedContent)
+		file.Content = string(decodedContent)
 	}
-
-	return &File{
-		FileName:     file.FileName,
-		FilePath:     file.FilePath,
-		Size:         file.Size,
-		Encoding:     file.Encoding,
-		Content:      content,
-		LastCommitID: file.LastCommitID,
-	}, nil
+	return &file, nil
 }
 
 // oauthContext is the request context for refreshing oauth token.
