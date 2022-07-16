@@ -54,6 +54,28 @@ func TestNamingFKConvention(t *testing.T) {
 			},
 		},
 		{
+			Statement: "ALTER TABLE tech_book ADD COLUMN author_id INT CONSTRAINT fk_tech_book_author_id_author_id REFERENCES author (id)",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			Statement: "ALTER TABLE tech_book ADD COLUMN author_id INT CONSTRAINT fk_author_id REFERENCES author (id)",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingFKConventionMismatch,
+					Title:   "naming.index.fk",
+					Content: "Foreign key in table \"tech_book\" mismatches the naming convention, expect \"^fk_tech_book_author_id_author_id$\" but found \"fk_author_id\"",
+				},
+			},
+		},
+		{
 			Statement: "CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id_author_id FOREIGN KEY (author_id) REFERENCES author (id))",
 			Want: []advisor.Advice{
 				{
@@ -66,6 +88,28 @@ func TestNamingFKConvention(t *testing.T) {
 		},
 		{
 			Statement: "CREATE TABLE book(id INT, author_id INT, CONSTRAINT fk_book_author_id FOREIGN KEY (author_id) REFERENCES author (id))",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingFKConventionMismatch,
+					Title:   "naming.index.fk",
+					Content: "Foreign key in table \"book\" mismatches the naming convention, expect \"^fk_book_author_id_author_id$\" but found \"fk_book_author_id\"",
+				},
+			},
+		},
+		{
+			Statement: "CREATE TABLE book(id INT, author_id INT CONSTRAINT fk_book_author_id_author_id REFERENCES author (id))",
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			Statement: "CREATE TABLE book(id INT, author_id INT CONSTRAINT fk_book_author_id REFERENCES author (id))",
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,

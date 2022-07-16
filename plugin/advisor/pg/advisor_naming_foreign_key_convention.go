@@ -124,11 +124,28 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				res = append(res, metadata)
 			}
 		}
+		for _, column := range node.ColumnList {
+			for _, constraint := range column.ConstraintList {
+				metadata := getForeignKeyMetadata(constraint, node.Name.Name)
+				if metadata != nil {
+					res = append(res, metadata)
+				}
+			}
+		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
 		metadata := getForeignKeyMetadata(constraint, node.Table.Name)
 		if metadata != nil {
 			res = append(res, metadata)
+		}
+	case *ast.AddColumnListStmt:
+		for _, column := range node.ColumnList {
+			for _, constraint := range column.ConstraintList {
+				metadata := getForeignKeyMetadata(constraint, node.Table.Name)
+				if metadata != nil {
+					res = append(res, metadata)
+				}
+			}
 		}
 	}
 	return res
