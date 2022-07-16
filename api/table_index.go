@@ -70,3 +70,8 @@ func (find *IndexFind) String() string {
 	}
 	return string(str)
 }
+
+// IndexDelete is the API message for deleting an index.
+type IndexDelete struct {
+	ID int
+}

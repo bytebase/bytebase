@@ -78,32 +78,21 @@ type extensionKey struct {
 }
 
 // SetDBExtensionList sets the extensions for a database.
-func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
-	var newDBExtensionList []*api.DBExtensionCreate
-	for _, dbExtension := range schema.ExtensionList {
-		newDBExtensionList = append(newDBExtensionList, &api.DBExtensionCreate{
-			CreatorID:   api.SystemBotID,
-			DatabaseID:  databaseID,
-			Name:        dbExtension.Name,
-			Version:     dbExtension.Version,
-			Schema:      dbExtension.Schema,
-			Description: dbExtension.Description,
-		})
-	}
-	oldDBExtensionRawList, err := s.findDBExtensionRaw(ctx, &api.DBExtensionFind{
-		DatabaseID: &databaseID,
-	})
-	if err != nil {
-		return FormatError(err)
-	}
-
+func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, databaseID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, newDBExtensionList)
+	oldDBExtensionRawList, err := s.findDBExtensionImpl(ctx, tx.PTx, &api.DBExtensionFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
+		return FormatError(err)
+	}
+
+	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, schema.ExtensionList, databaseID)
 	for _, d := range deletes {
 		if err := deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
 			return err
@@ -125,13 +114,24 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 //
 // private functions
 //
-func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, dbExtensionCreateList []*api.DBExtensionCreate) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
+func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, extensionList []db.Extension, databaseID int) ([]*api.DBExtensionDelete, []*api.DBExtensionCreate) {
+	var newDBExtensionList []*api.DBExtensionCreate
+	for _, dbExtension := range extensionList {
+		newDBExtensionList = append(newDBExtensionList, &api.DBExtensionCreate{
+			CreatorID:   api.SystemBotID,
+			DatabaseID:  databaseID,
+			Name:        dbExtension.Name,
+			Version:     dbExtension.Version,
+			Schema:      dbExtension.Schema,
+			Description: dbExtension.Description,
+		})
+	}
 	oldDBExtensionMap := make(map[extensionKey]*dbExtensionRaw)
 	for _, e := range oldDBExtensionRawList {
 		oldDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
 	}
 	newDBExtensionMap := make(map[extensionKey]*api.DBExtensionCreate)
-	for _, e := range dbExtensionCreateList {
+	for _, e := range newDBExtensionList {
 		newDBExtensionMap[extensionKey{name: e.Name, schema: e.Schema}] = e
 	}
 
@@ -147,7 +147,7 @@ func generateDBExtensionActions(oldDBExtensionRawList []*dbExtensionRaw, dbExten
 			creates = append(creates, newValue)
 		}
 	}
-	for _, newValue := range dbExtensionCreateList {
+	for _, newValue := range newDBExtensionList {
 		k := extensionKey{name: newValue.Name, schema: newValue.Schema}
 		if _, ok := oldDBExtensionMap[k]; !ok {
 			creates = append(creates, newValue)

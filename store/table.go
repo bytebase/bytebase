@@ -8,6 +8,8 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 // tableRaw is the store model for an Table.
@@ -66,19 +68,6 @@ func (raw *tableRaw) toTable() *api.Table {
 	}
 }
 
-// CreateTable creates an instance of Table
-func (s *Store) CreateTable(ctx context.Context, create *api.TableCreate) (*api.Table, error) {
-	tableRaw, err := s.createTableRaw(ctx, create)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Table with TableCreate[%+v], error: %w", create, err)
-	}
-	table, err := s.composeTable(ctx, tableRaw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose Table with tableRaw[%+v], error: %w", tableRaw, err)
-	}
-	return table, nil
-}
-
 // GetTable gets an instance of Table
 func (s *Store) GetTable(ctx context.Context, find *api.TableFind) (*api.Table, error) {
 	tableRaw, err := s.getTableRaw(ctx, find)
@@ -112,16 +101,89 @@ func (s *Store) FindTable(ctx context.Context, find *api.TableFind) ([]*api.Tabl
 	return tableList, nil
 }
 
-// DeleteTable deletes an existing table by ID.
-func (s *Store) DeleteTable(ctx context.Context, delete *api.TableDelete) error {
+// SetTableList sets the tables for a database.
+func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteTableImpl(ctx, tx.PTx, delete); err != nil {
+	oldTableRawList, err := s.findTableImpl(ctx, tx.PTx, &api.TableFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
 		return FormatError(err)
+	}
+	creates, patches, deletes := generateTableActions(oldTableRawList, schema.TableList, databaseID)
+	for _, d := range deletes {
+		if err := deleteTableImpl(ctx, tx.PTx, d); err != nil {
+			return err
+		}
+	}
+	for _, p := range patches {
+		if _, err := s.patchTableImpl(ctx, tx.PTx, p); err != nil {
+			return err
+		}
+	}
+	for _, c := range creates {
+		if _, err := s.createTableImpl(ctx, tx.PTx, c); err != nil {
+			return err
+		}
+	}
+
+	tableRawList, err := s.findTableImpl(ctx, tx.PTx, &api.TableFind{
+		DatabaseID: &databaseID,
+	})
+	if err != nil {
+		return err
+	}
+	tableIDMap := make(map[string]int)
+	for _, table := range tableRawList {
+		tableIDMap[table.Name] = table.ID
+	}
+
+	for _, table := range schema.TableList {
+		tableID, ok := tableIDMap[table.Name]
+		if !ok {
+			log.Error(fmt.Sprintf("table ID cannot be found for database %v table %s", databaseID, table.Name))
+		}
+
+		columnList, err := s.findColumnImpl(ctx, tx.PTx, &api.ColumnFind{
+			TableID: &tableID,
+		})
+		if err != nil {
+			return err
+		}
+		deletes, creates := generateColumnActions(columnList, table.ColumnList, databaseID, tableID)
+		for _, d := range deletes {
+			if err := deleteColumnImpl(ctx, tx.PTx, d); err != nil {
+				return err
+			}
+		}
+		for _, c := range creates {
+			if _, err := s.createColumnImpl(ctx, tx.PTx, c); err != nil {
+				return err
+			}
+		}
+
+		indexList, err := s.findIndexImpl(ctx, tx.PTx, &api.IndexFind{
+			TableID: &tableID,
+		})
+		if err != nil {
+			return err
+		}
+		idxDeletes, idxCreates := generateIndexActions(indexList, table.IndexList, databaseID, tableID)
+		for _, d := range idxDeletes {
+			if err := deleteIndexImpl(ctx, tx.PTx, d); err != nil {
+				return err
+			}
+		}
+		for _, c := range idxCreates {
+			if _, err := s.createIndexImpl(ctx, tx.PTx, c); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := tx.PTx.Commit(); err != nil {
@@ -129,6 +191,75 @@ func (s *Store) DeleteTable(ctx context.Context, delete *api.TableDelete) error 
 	}
 
 	return nil
+}
+
+func generateTableActions(oldTableRawList []*tableRaw, tableList []db.Table, databaseID int) ([]*api.TableCreate, []*api.TablePatch, []*api.TableDelete) {
+	oldTableMap := make(map[string]*tableRaw)
+	for _, t := range oldTableRawList {
+		oldTableMap[t.Name] = t
+	}
+	newTableMap := make(map[string]db.Table)
+	for _, t := range tableList {
+		newTableMap[t.Name] = t
+	}
+
+	var creates []*api.TableCreate
+	var patches []*api.TablePatch
+	var deletes []*api.TableDelete
+	for _, oldValue := range oldTableRawList {
+		k := oldValue.Name
+		newValue, ok := newTableMap[k]
+		if !ok {
+			deletes = append(deletes, &api.TableDelete{ID: oldValue.ID})
+		} else if ok &&
+			(oldValue.Type != newValue.Type ||
+				oldValue.Engine != newValue.Engine ||
+				oldValue.Collation != newValue.Collation ||
+				oldValue.RowCount != newValue.RowCount ||
+				oldValue.DataSize != newValue.DataSize ||
+				oldValue.IndexSize != newValue.IndexSize ||
+				oldValue.DataFree != newValue.DataFree ||
+				oldValue.CreateOptions != newValue.CreateOptions ||
+				oldValue.Comment != newValue.Comment) {
+			patches = append(patches,
+				&api.TablePatch{
+					ID:            oldValue.ID,
+					UpdaterID:     api.SystemBotID,
+					Type:          newValue.Type,
+					Engine:        newValue.Engine,
+					Collation:     newValue.Collation,
+					RowCount:      newValue.RowCount,
+					DataSize:      newValue.DataSize,
+					IndexSize:     newValue.IndexSize,
+					DataFree:      newValue.DataFree,
+					CreateOptions: newValue.CreateOptions,
+					Comment:       newValue.Comment,
+				},
+			)
+		}
+	}
+	for _, newValue := range tableList {
+		k := newValue.Name
+		if _, ok := oldTableMap[k]; !ok {
+			creates = append(creates, &api.TableCreate{
+				CreatorID:     api.SystemBotID,
+				CreatedTs:     newValue.CreatedTs,
+				UpdatedTs:     newValue.UpdatedTs,
+				DatabaseID:    databaseID,
+				Name:          newValue.Name,
+				Type:          newValue.Type,
+				Engine:        newValue.Engine,
+				Collation:     newValue.Collation,
+				RowCount:      newValue.RowCount,
+				DataSize:      newValue.DataSize,
+				IndexSize:     newValue.IndexSize,
+				DataFree:      newValue.DataFree,
+				CreateOptions: newValue.CreateOptions,
+				Comment:       newValue.Comment,
+			})
+		}
+	}
+	return creates, patches, deletes
 }
 
 //
@@ -155,26 +286,6 @@ func (s *Store) composeTable(ctx context.Context, raw *tableRaw) (*api.Table, er
 		return nil, err
 	}
 	table.Database = database
-
-	return table, nil
-}
-
-// createTableRaw creates a new table.
-func (s *Store) createTableRaw(ctx context.Context, create *api.TableCreate) (*tableRaw, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer tx.PTx.Rollback()
-
-	table, err := s.createTableImpl(ctx, tx.PTx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.PTx.Commit(); err != nil {
-		return nil, FormatError(err)
-	}
 
 	return table, nil
 }
@@ -284,6 +395,51 @@ func (s *Store) createTableImpl(ctx context.Context, tx *sql.Tx, create *api.Tab
 	return &tableRaw, nil
 }
 
+// patchTableImpl patches a table.
+func (s *Store) patchTableImpl(ctx context.Context, tx *sql.Tx, patch *api.TablePatch) (*tableRaw, error) {
+	var tableRaw tableRaw
+	// Execute update query with RETURNING.
+	if err := tx.QueryRowContext(ctx, `
+		UPDATE tbl
+		SET	type=$1, engine=$2, "collation"=$3, row_count=$4, data_size=$5, index_size=$6, data_free=$7, create_options=$8, comment=$9
+		WHERE id = $10
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, name, type, engine, "collation", row_count, data_size, index_size, data_free, create_options, comment`,
+		patch.Type,
+		patch.Engine,
+		patch.Collation,
+		patch.RowCount,
+		patch.DataSize,
+		patch.IndexSize,
+		patch.DataFree,
+		patch.CreateOptions,
+		patch.Comment,
+		patch.ID,
+	).Scan(
+		&tableRaw.ID,
+		&tableRaw.CreatorID,
+		&tableRaw.CreatedTs,
+		&tableRaw.UpdaterID,
+		&tableRaw.UpdatedTs,
+		&tableRaw.DatabaseID,
+		&tableRaw.Name,
+		&tableRaw.Type,
+		&tableRaw.Engine,
+		&tableRaw.Collation,
+		&tableRaw.RowCount,
+		&tableRaw.DataSize,
+		&tableRaw.IndexSize,
+		&tableRaw.DataFree,
+		&tableRaw.CreateOptions,
+		&tableRaw.Comment,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("table ID not found: %d", patch.ID)}
+		}
+		return nil, FormatError(err)
+	}
+	return &tableRaw, nil
+}
+
 func (s *Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind) ([]*tableRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
@@ -361,7 +517,7 @@ func (s *Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFi
 // deleteTableImpl permanently deletes tables from a database.
 func deleteTableImpl(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
 	// Remove row from database.
-	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE database_id = $1`, delete.DatabaseID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
 	return nil
