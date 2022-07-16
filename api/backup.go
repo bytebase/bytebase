@@ -181,9 +181,13 @@ type BackupSetting struct {
 	Database *Database
 
 	// Domain specific fields
-	Enabled   bool `jsonapi:"attr,enabled"`
-	Hour      int  `jsonapi:"attr,hour"`
-	DayOfWeek int  `jsonapi:"attr,dayOfWeek"`
+	Enabled bool `jsonapi:"attr,enabled"`
+	// Schedule related fields
+	Hour      int `jsonapi:"attr,hour"`
+	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
+	// RetentionPeriodTs is the period that backup data is kept for the database.
+	// 0 means unset and we do not delete data.
+	RetentionPeriodTs int `jsonapi:"attr,retentionPeriodTs"`
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string `jsonapi:"attr,hookUrl"`
 }
@@ -211,10 +215,11 @@ type BackupSettingUpsert struct {
 	EnvironmentID int
 
 	// Domain specific fields
-	Enabled   bool   `jsonapi:"attr,enabled"`
-	Hour      int    `jsonapi:"attr,hour"`
-	DayOfWeek int    `jsonapi:"attr,dayOfWeek"`
-	HookURL   string `jsonapi:"attr,hookUrl"`
+	Enabled           bool   `jsonapi:"attr,enabled"`
+	Hour              int    `jsonapi:"attr,hour"`
+	DayOfWeek         int    `jsonapi:"attr,dayOfWeek"`
+	RetentionPeriodTs int    `jsonapi:"attr,retentionPeriodTs"`
+	HookURL           string `jsonapi:"attr,hookUrl"`
 }
 
 // BackupSettingsMatch is the message to find backup settings matching the conditions.

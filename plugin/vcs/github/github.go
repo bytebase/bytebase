@@ -3,6 +3,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -96,6 +97,16 @@ type RepositoryTreeNode struct {
 	Type string `json:"type"`
 }
 
+// File represents a GitHub API response for a repository file.
+type File struct {
+	Encoding string `json:"encoding"`
+	Size     int64  `json:"size"`
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	Content  string `json:"content"`
+	SHA      string `json:"sha"`
+}
+
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
@@ -153,6 +164,14 @@ type Commit struct {
 		Date time.Time `json:"date"`
 		Name string    `json:"name"`
 	} `json:"author"`
+}
+
+// FileCommit represents a GitHub API request for committing a file.
+type FileCommit struct {
+	Message string `json:"message"`
+	Content string `json:"content"`
+	SHA     string `json:"sha,omitempty"`
+	Branch  string `json:"branch,omitempty"`
 }
 
 // FetchCommitByID fetches the commit data by its ID from the repository.
@@ -516,24 +535,141 @@ func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.
 	return allTreeNodes, nil
 }
 
-// CreateFile creates a file.
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// CreateFile creates a file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	body, err := json.Marshal(
+		FileCommit{
+			Message: fileCommitCreate.CommitMessage,
+			Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
+			Branch:  fileCommitCreate.Branch,
+			SHA:     fileCommitCreate.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal file commit")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/contents/%s", apiURL, repositoryID, url.QueryEscape(filePath))
+	code, _, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to create/update file through URL %s", url))
+	}
+	if code >= 300 {
+		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
-// OverwriteFile overwrite the content of a file.
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// OverwriteFile overwrites an existing file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
-// ReadFileMeta reads the file metadata.
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// ReadFileMeta reads the metadata of the given file in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+	if err != nil {
+		return nil, errors.Wrap(err, "read file")
+	}
+
+	return &vcs.FileMeta{
+		Name:         file.Name,
+		Path:         file.Path,
+		Size:         file.Size,
+		LastCommitID: file.SHA,
+	}, nil
 }
 
-// ReadFileContent reads the file content.
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// ReadFileContent reads the content of the given file in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (string, error) {
+	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+	if err != nil {
+		return "", errors.Wrap(err, "read file")
+	}
+	return file.Content, nil
+}
+
+// readFile reads the given file in the repository.
+func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, repositoryID, filePath, ref string) (*File, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", apiURL, repositoryID, url.QueryEscape(filePath), ref)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file from URL %s", url))
+	} else if code >= 300 {
+		return nil,
+			fmt.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	// This API endpoint returns a JSON array if the path is a directory, and we do
+	// not want that.
+	if body != "" && body[0] == '[' {
+		return nil, errors.Errorf("%q is a directory not a file", filePath)
+	}
+
+	var file File
+	if err = json.Unmarshal([]byte(body), &file); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	if file.Encoding == "base64" {
+		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
+		if err != nil {
+			return nil, errors.Wrap(err, "decode file content")
+		}
+		file.Content = string(decodedContent)
+	}
+	return &file, nil
 }
 
 // CreateWebhook creates a webhook in a GitLab project.

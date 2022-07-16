@@ -24,6 +24,7 @@ type Index struct {
 	Position   int    `json:"position"`
 	Type       string `json:"type"`
 	Unique     bool   `json:"unique"`
+	Primary    bool   `json:"primary"`
 	Visible    bool   `json:"visible"`
 	Comment    string `json:"comment"`
 }
@@ -44,6 +45,7 @@ type IndexCreate struct {
 	Position   int
 	Type       string
 	Unique     bool
+	Primary    bool
 	Visible    bool
 	Comment    string
 }
