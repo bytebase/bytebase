@@ -71,20 +71,7 @@ func (s *Store) FindView(ctx context.Context, find *api.ViewFind) ([]*api.View, 
 }
 
 // SetViewList sets the views for a database.
-func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID int, updaterID int) error {
-	var viewCreateList []*api.ViewCreate
-	for _, view := range schema.ViewList {
-		viewCreateList = append(viewCreateList, &api.ViewCreate{
-			CreatorID:  api.SystemBotID,
-			CreatedTs:  view.CreatedTs,
-			UpdatedTs:  view.UpdatedTs,
-			DatabaseID: databaseID,
-			Name:       view.Name,
-			Definition: view.Definition,
-			Comment:    view.Comment,
-		})
-	}
-
+func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return FormatError(err)
@@ -98,7 +85,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 		return FormatError(err)
 	}
 
-	deletes, creates := generateViewActions(oldViewRawList, viewCreateList)
+	deletes, creates := generateViewActions(oldViewRawList, schema.ViewList, databaseID)
 	for _, d := range deletes {
 		if err := deleteViewImpl(ctx, tx.PTx, d); err != nil {
 			return err
@@ -120,7 +107,19 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 //
 // private functions
 //
-func generateViewActions(oldViewRawList []*viewRaw, viewCreateList []*api.ViewCreate) ([]*api.ViewDelete, []*api.ViewCreate) {
+func generateViewActions(oldViewRawList []*viewRaw, viewList []db.View, databaseID int) ([]*api.ViewDelete, []*api.ViewCreate) {
+	var viewCreateList []*api.ViewCreate
+	for _, view := range viewList {
+		viewCreateList = append(viewCreateList, &api.ViewCreate{
+			CreatorID:  api.SystemBotID,
+			CreatedTs:  view.CreatedTs,
+			UpdatedTs:  view.UpdatedTs,
+			DatabaseID: databaseID,
+			Name:       view.Name,
+			Definition: view.Definition,
+			Comment:    view.Comment,
+		})
+	}
 	oldViewMap := make(map[string]*viewRaw)
 	for _, v := range oldViewRawList {
 		oldViewMap[v.Name] = v
