@@ -102,7 +102,7 @@ const (
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 
 	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
-	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.mysql.naming.fk"
+	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
