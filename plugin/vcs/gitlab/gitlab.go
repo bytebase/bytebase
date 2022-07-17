@@ -40,7 +40,7 @@ const (
 	WebhookPush WebhookType = "push"
 )
 
-// WebhookInfo is the API message for webhook info.
+// WebhookInfo represents a GitLab API response for the webhook information.
 type WebhookInfo struct {
 	ID int `json:"id"`
 }
@@ -776,7 +776,9 @@ func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthCon
 	return file.Content, nil
 }
 
-// CreateWebhook creates a webhook in a GitLab project.
+// CreateWebhook creates a webhook in the repository with given payload.
+//
+// Docs: https://docs.gitlab.com/ee/api/projects.html#add-project-hook
 func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
 	url := fmt.Sprintf("%s/projects/%s/hooks", p.APIURL(instanceURL), repositoryID)
 	code, body, err := oauth.Post(
@@ -796,35 +798,39 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 		),
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to create webhook for repository %s from GitLab instance %s: %w", repositoryID, instanceURL, err)
+		return "", errors.Wrapf(err, "POST %s", url)
 	}
 
-	if code >= 300 {
-		reason := fmt.Sprintf(
-			"failed to create webhook for repository %s from GitLab instance %s, status code: %d",
-			repositoryID,
-			instanceURL,
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, fmt.Errorf("failed to create webhook through URL %s", url))
+	} else if code >= 300 {
+		reason := fmt.Sprintf("failed to create webhook through URL %s, status code: %d, body: %s",
+			url,
 			code,
+			body,
 		)
-		// Add helper tips if the status code is 422, refer to bytebase#101 for more context.
+
+		// Add helper tips if the status code is 422, refer to https://github.com/bytebase/bytebase/issues/101 for more context.
 		if code == http.StatusUnprocessableEntity {
 			reason += ".\n\nIf GitLab and Bytebase are in the same private network, " +
 				"please follow the instructions in https://docs.gitlab.com/ee/security/webhooks.html"
 		}
-		return "", fmt.Errorf(reason)
+		return "", errors.New(reason)
 	}
 
-	webhookInfo := &WebhookInfo{}
-	if err := json.Unmarshal([]byte(body), webhookInfo); err != nil {
-		return "", fmt.Errorf("failed to unmarshal create webhook response for repository %s from GitLab instance %s: %w", repositoryID, instanceURL, err)
+	var webhookInfo WebhookInfo
+	if err = json.Unmarshal([]byte(body), &webhookInfo); err != nil {
+		return "", errors.Wrap(err, "unmarshal body")
 	}
 	return strconv.Itoa(webhookInfo.ID), nil
 }
 
-// PatchWebhook patches a webhook in a GitLab project.
+// PatchWebhook patches the webhook in the repository with given payload.
+//
+// Docs: https://docs.gitlab.com/ee/api/projects.html#edit-project-hook
 func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, err := oauth.Put(
+	code, body, err := oauth.Put(
 		ctx,
 		p.client,
 		url,
@@ -841,19 +847,27 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 		),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
+		return errors.Wrapf(err, "PUT %s", url)
 	}
 
-	if code >= 300 {
-		return fmt.Errorf("failed to patch webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to patch webhook through URL %s", url))
+	} else if code >= 300 {
+		return fmt.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
 	}
 	return nil
 }
 
-// DeleteWebhook deletes a webhook in a GitLab project.
+// DeleteWebhook deletes the webhook from the repository.
+//
+// Docs: https://docs.gitlab.com/ee/api/projects.html#delete-project-hook
 func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
 	url := fmt.Sprintf("%s/projects/%s/hooks/%s", p.APIURL(instanceURL), repositoryID, webhookID)
-	code, _, err := oauth.Delete(
+	code, body, err := oauth.Delete(
 		ctx,
 		p.client,
 		url,
@@ -869,11 +883,17 @@ func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthConte
 		),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s: %w", webhookID, repositoryID, instanceURL, err)
+		return errors.Wrapf(err, "DELETE %s", url)
 	}
 
-	if code >= 300 {
-		return fmt.Errorf("failed to delete webhook ID %s for repository %s from GitLab instance %s, status code: %d", webhookID, repositoryID, instanceURL, code)
+	if code == http.StatusNotFound {
+		return nil // It is OK if the webhook has already gone
+	} else if code >= 300 {
+		return fmt.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
 	}
 	return nil
 }
