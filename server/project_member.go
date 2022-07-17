@@ -108,7 +108,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 				CreatorID:    c.Get(getPrincipalIDContextKey()).(int),
 				PrincipalID:  principal.ID,
 				Role:         projectMember.Role,
-				RoleProvider: projectMember.RoleProvider,
+				RoleProvider: api.ProjectRoleProvider(projectMember.RoleProvider),
 				Payload:      string(providerPayloadBytes),
 			}
 			createList = append(createList, createProjectMember)
