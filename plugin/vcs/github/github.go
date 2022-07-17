@@ -112,6 +112,34 @@ type WebhookInfo struct {
 	ID int `json:"id"`
 }
 
+// WebhookConfig represents the GitHub API message for webhook configuration.
+type WebhookConfig struct {
+	// URL is the URL to which the payloads will be delivered.
+	URL string `json:"url"`
+	// ContentType is the media type used to serialize the payloads. Supported
+	// values include "json" and "form". The default is "form".
+	ContentType string `json:"content_type"`
+	// Secret is the secret will be used as the key to generate the HMAC hex digest
+	// value for delivery signature headers.
+	Secret string `json:"secret"`
+	// InsecureSSL determines whether the SSL certificate of the host for url will
+	// be verified when delivering payloads. Supported values include 0
+	// (verification is performed) and 1 (verification is not performed). The
+	// default is 0.
+	InsecureSSL int `json:"insecure_ssl"`
+}
+
+// WebhookCreateOrUpdate represents a GitHub API request for creating or
+// updating a webhook.
+type WebhookCreateOrUpdate struct {
+	// Config contains settings for the webhook.
+	Config WebhookConfig `json:"config"`
+	// Events determines what events the hook is triggered for. The default is
+	// ["push"]. The full list of events can be viewed at
+	// https://docs.github.com/webhooks/event-payloads.
+	Events []string `json:"events"`
+}
+
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {

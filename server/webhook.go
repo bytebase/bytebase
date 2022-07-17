@@ -25,6 +25,7 @@ import (
 
 var (
 	gitlabWebhookPath = "hook/gitlab"
+	githubWebhookPath = "hook/github"
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
