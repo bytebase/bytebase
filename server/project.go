@@ -8,17 +8,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/jsonapi"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-
-	"github.com/google/jsonapi"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
@@ -238,6 +237,20 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
 				EnableSSLVerification:  false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
 			}
+			webhookCreatePayload, err = json.Marshal(webhookCreate)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
+			}
+		case vcsPlugin.GitHubCom:
+			webhookPost := github.WebhookCreateOrUpdate{
+				Config: github.WebhookConfig{
+					URL:         fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, githubWebhookPath, repositoryCreate.WebhookEndpointID),
+					ContentType: "json",
+					Secret:      repositoryCreate.WebhookSecretToken,
+					InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryCreate
+				},
+				Events: []string{"push"},
+			}
 			webhookCreatePayload, err = json.Marshal(webhookPost)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
@@ -386,6 +399,20 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				webhookUpdate := gitlab.WebhookUpdate{
 					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
+				}
+				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+				}
+			case vcsPlugin.GitHubCom:
+				webhookUpdate := github.WebhookCreateOrUpdate{
+					Config: github.WebhookConfig{
+						URL:         fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, githubWebhookPath, updatedRepo.WebhookEndpointID),
+						ContentType: "json",
+						Secret:      updatedRepo.WebhookSecretToken,
+						InsecureSSL: 1, // TODO: Allow user to specify this value through api.RepositoryPatch
+					},
+					Events: []string{"push"},
 				}
 				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
 				if err != nil {
