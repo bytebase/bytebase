@@ -29,7 +29,7 @@ type GitLab struct {
 }
 
 type projectData struct {
-	webhooks []*gitlab.WebhookPost
+	webhooks []*gitlab.WebhookCreate
 	// files is a map that the full file path is the key and the file content is the value.
 	files map[string]string
 }
@@ -87,15 +87,15 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read create project hook request body, error %w", err)
 	}
-	webhookPost := &gitlab.WebhookPost{}
-	if err := json.Unmarshal(b, webhookPost); err != nil {
+	webhookCreate := &gitlab.WebhookCreate{}
+	if err := json.Unmarshal(b, webhookCreate); err != nil {
 		return fmt.Errorf("failed to unmarshal create project hook request body, error %w", err)
 	}
 	pd, ok := gl.projects[gitlabProjectID]
 	if !ok {
 		return fmt.Errorf("gitlab project %q doesn't exist", gitlabProjectID)
 	}
-	pd.webhooks = append(pd.webhooks, webhookPost)
+	pd.webhooks = append(pd.webhooks, webhookCreate)
 
 	if err := json.NewEncoder(c.Response().Writer).Encode(&gitlab.WebhookInfo{
 		ID: gl.nextWebhookID,

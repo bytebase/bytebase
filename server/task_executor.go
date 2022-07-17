@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // TaskExecutor is the task executor.
@@ -336,7 +337,7 @@ func findRepositoryByTask(ctx context.Context, server *Server, task *api.Task) (
 // Writes back the latest schema to the repository after migration
 // Returns the commit id on success.
 func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.Repository, pushEvent *vcsPlugin.PushEvent, mi *db.MigrationInfo, branch string, latestSchemaFile string, schema string, bytebaseURL string) (string, error) {
-	schemaFileMeta, err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
@@ -383,7 +384,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 			zap.String("schema_file", latestSchemaFile),
 		)
 
-		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).CreateFile(
+		err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).CreateFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
@@ -407,7 +408,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 		)
 
 		schemaFileCommit.LastCommitID = schemaFileMeta.LastCommitID
-		err := vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).OverwriteFile(
+		err := vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).OverwriteFile(
 			ctx,
 			common.OauthContext{
 				ClientID:     repository.VCS.ApplicationID,
@@ -427,7 +428,7 @@ func writeBackLatestSchema(ctx context.Context, server *Server, repository *api.
 	}
 
 	// VCS such as GitLab API doesn't return the commit on write, so we have to call ReadFileMeta again
-	schemaFileMeta, err = vcsPlugin.Get(vcsPlugin.GitLabSelfHost, vcsPlugin.ProviderConfig{}).ReadFileMeta(
+	schemaFileMeta, err = vcsPlugin.Get(repository.VCS.Type, vcsPlugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		common.OauthContext{
 			ClientID:     repository.VCS.ApplicationID,
