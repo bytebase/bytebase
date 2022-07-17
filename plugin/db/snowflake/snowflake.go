@@ -106,8 +106,8 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 	return driver.db, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {

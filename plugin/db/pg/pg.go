@@ -200,8 +200,8 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 	return dbs, nil
 }
 
-// GetVersion gets the version of Postgres server.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version of Postgres server.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {

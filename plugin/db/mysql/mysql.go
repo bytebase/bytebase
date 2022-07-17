@@ -133,8 +133,8 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
