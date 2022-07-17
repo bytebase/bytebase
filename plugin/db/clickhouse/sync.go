@@ -67,8 +67,8 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}, nil
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+// SyncDBSchema syncs the schema of a database.
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 
 	// Query column info
 	columnWhere := fmt.Sprintf("LOWER(database) = '%s'", strings.ToLower(databaseName))

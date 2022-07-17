@@ -323,6 +323,7 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 	return resultSet
 }
 
+// syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
 func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
 	// Sync instance metadata.
 	instanceMeta, err := driver.SyncInstance(ctx)
@@ -384,7 +385,6 @@ func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance,
 		}
 	}
 
-	// Sync all database metadata first without diving into the deep structure of each database.
 	// Compare the stored db info with the just synced db schema.
 	// Case 1: If item appears in both stored db info and the synced db metadata, then it's a no-op. We rely on syncDatabaseSchema() later to sync its details.
 	// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the database record in the stored db.
@@ -485,8 +485,8 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 	}
 
-	// Sync schema
-	schema, err := driver.SyncSchema(ctx, databaseName)
+	// Sync database schema
+	schema, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}

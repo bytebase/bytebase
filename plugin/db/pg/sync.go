@@ -135,7 +135,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 }
 
 // SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query db info
 	databases, err := driver.getDatabases()
 	if err != nil {

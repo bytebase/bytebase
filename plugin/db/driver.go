@@ -387,8 +387,8 @@ type Driver interface {
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
 	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
-	// SyncSchema syncs a single database schema.
-	SyncSchema(ctx context.Context, database string) (*Schema, error)
+	// SyncDBSchema syncs a single database schema.
+	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
