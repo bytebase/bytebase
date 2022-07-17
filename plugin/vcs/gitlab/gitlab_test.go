@@ -665,6 +665,95 @@ You can look around to get an idea how to structure your project and, when done,
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_CreateWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/hooks", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.gitlab.com/ee/api/projects.html#get-project-hook
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "id": 1,
+  "url": "http://example.com/hook",
+  "project_id": 3,
+  "push_events": true,
+  "push_events_branch_filter": "",
+  "issues_events": true,
+  "confidential_issues_events": true,
+  "merge_requests_events": true,
+  "tag_push_events": true,
+  "note_events": true,
+  "confidential_note_events": true,
+  "job_events": true,
+  "pipeline_events": true,
+  "wiki_page_events": true,
+  "deployment_events": true,
+  "releases_events": true,
+  "enable_ssl_verification": true,
+  "created_at": "2012-10-12T17:04:47Z"
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.CreateWebhook(ctx, common.OauthContext{}, "", "1", []byte(""))
+	require.NoError(t, err)
+	assert.Equal(t, "1", got)
+}
+
+func TestProvider_PatchWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       io.NopCloser(strings.NewReader("")),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.PatchWebhook(ctx, common.OauthContext{}, "", "1", "1", []byte(""))
+	require.NoError(t, err)
+}
+
+func TestProvider_DeleteWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/api/v4/projects/1/hooks/1", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       io.NopCloser(strings.NewReader("")),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.DeleteWebhook(ctx, common.OauthContext{}, "", "1", "1")
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
