@@ -84,7 +84,7 @@ func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.
 	}
 	defer driver.Close(ctx)
 
-	driverDB, err := driver.GetDbConnection(ctx, "")
+	driverDB, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return true, nil, err
 	}

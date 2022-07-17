@@ -117,7 +117,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	if db.readonly {
 		log.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 		// The database storing metadata is the same as user name.
-		db.db, err = d.GetDbConnection(ctx, databaseName)
+		db.db, err = d.GetDBConnection(ctx, databaseName)
 		if err != nil {
 			return fmt.Errorf("failed to connect to database %q which may not be setup yet, error: %v", databaseName, err)
 		}
@@ -139,7 +139,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 				return err
 			}
 			log.Info("Migrating migration history version storage format to semantic version.")
-			db, err := d.GetDbConnection(ctx, "bytebase")
+			db, err := d.GetDBConnection(ctx, "bytebase")
 			if err != nil {
 				return err
 			}
@@ -173,7 +173,7 @@ func (db *DB) Open(ctx context.Context) (err error) {
 	}
 	log.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
-	db.db, err = d.GetDbConnection(ctx, databaseName)
+	db.db, err = d.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database %q, error: %v", db.connCfg.Username, err)
 	}

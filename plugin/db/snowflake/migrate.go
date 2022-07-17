@@ -294,7 +294,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 }
 
 func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) error {
-	sqldb, err := driver.GetDbConnection(ctx, "bytebase")
+	sqldb, err := driver.GetDBConnection(ctx, "bytebase")
 	if err != nil {
 		return err
 	}
