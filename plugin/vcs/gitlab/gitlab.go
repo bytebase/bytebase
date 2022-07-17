@@ -360,16 +360,12 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		errInfo := []string{fmt.Sprintf("failed to fetch user info from GitLab instance %s", instanceURL)}
-		resourceURISplit := strings.Split(resourceURI, "/")
-		if len(resourceURI) > 1 {
-			errInfo = append(errInfo, fmt.Sprintf("UserID: %s", resourceURISplit[1]))
-		}
-		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitLab instance %s, status code: %d",
-			instanceURL,
+		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s",
+			url,
 			code,
+			body,
 		)
 	}
 
@@ -407,10 +403,10 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		return nil, errors.Wrap(err, "GET")
 	}
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from GitLab instance %s, not found", instanceURL))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitLab instance %s, status code: %d, body: %s",
-			instanceURL,
+		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s",
+			url,
 			code,
 			body,
 		)
@@ -687,12 +683,11 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, fmt.Errorf("failed to create file through URL %s", url))
-	}
-	if code >= 300 {
-		return fmt.Errorf("failed to create file %s on GitLab instance %s, status code: %d",
-			filePath,
-			instanceURL,
+	} else if code >= 300 {
+		return fmt.Errorf("failed to create file through URL %s, status code: %d, body: %s",
+			url,
 			code,
+			body,
 		)
 	}
 	return nil
@@ -737,12 +732,11 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, fmt.Errorf("failed to overwrite file through URL %s", url))
-	}
-	if code >= 300 {
-		return fmt.Errorf("failed to overwrite file %s on GitLab instance %s, status code: %d",
-			filePath,
-			instanceURL,
+	} else if code >= 300 {
+		return fmt.Errorf("failed to overwrite file through URL %s, status code: %d, body: %s",
+			url,
 			code,
+			body,
 		)
 	}
 	return nil
@@ -927,10 +921,10 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file from URL %s", url))
 	} else if code >= 300 {
 		return nil,
-			fmt.Errorf("failed to read file %s on GitLab instance %s, status code: %d",
-				filePath,
-				instanceURL,
+			fmt.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
 				code,
+				body,
 			)
 	}
 

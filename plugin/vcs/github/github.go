@@ -135,14 +135,9 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		errInfo := []string{"failed to fetch user info from GitHub.com"}
-		resourceURISplit := strings.Split(resourceURI, "/")
-		if len(resourceURI) > 1 {
-			errInfo = append(errInfo, fmt.Sprintf("Username: %s", resourceURISplit[1]))
-		}
-		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitHub.com, status code: %d", code)
+		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	var user User
@@ -201,9 +196,9 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, errors.New("failed to fetch commit data from GitHub.com, not found"))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d, body: %s", code, body)
+		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	commit := &Commit{}
@@ -578,8 +573,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, fmt.Errorf("failed to create/update file through URL %s", url))
-	}
-	if code >= 300 {
+	} else if code >= 300 {
 		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
