@@ -297,153 +297,15 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 		}
 		defer driver.Close(ctx)
 
-		// Sync engine version
-		version, err := driver.GetVersion(ctx)
+		databaseList, err := s.syncInstanceSchema(ctx, instance, driver)
 		if err != nil {
 			return err
 		}
-		// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
-		// to avoid changing the updated_ts
-		if version != instance.EngineVersion {
-			_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
-				ID:            instance.ID,
-				UpdaterID:     api.SystemBotID,
-				EngineVersion: &version,
-			})
-			if err != nil {
-				return err
-			}
-			instance.EngineVersion = version
-		}
-
-		// Sync instance metadata.
-		instanceMeta, err := driver.SyncInstance(ctx)
-		if err != nil {
-			resultSet.Error = err.Error()
-			return nil
-		}
-
-		instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
-		}
-
-		// Upsert user found in the instance
-		for _, user := range instanceMeta.UserList {
-			userUpsert := &api.InstanceUserUpsert{
-				CreatorID:  api.SystemBotID,
-				InstanceID: instance.ID,
-				Name:       user.Name,
-				Grant:      user.Grant,
-			}
-			_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
-			if err != nil {
-				return fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
-			}
-		}
-
-		// Delete user no longer found in the instance
-		for _, user := range instanceUserList {
-			found := false
-			for _, dbUser := range instanceMeta.UserList {
-				if user.Name == dbUser.Name {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				userDelete := &api.InstanceUserDelete{
-					ID: user.ID,
-				}
-				err := s.store.DeleteInstanceUser(ctx, userDelete)
-				if err != nil {
-					return fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
-				}
-			}
-		}
-
-		// Sync all database metadata first without diving into the deep structure of each database.
-		// Compare the stored db info with the just synced db schema.
-		// Case 1: If item appears in both stored db info and the synced db metadata, then it's a no-op. We rely on syncDatabaseSchema() later to sync its details.
-		// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the database record in the stored db.
-		// Case 3: Conversely, if item only appears in the stored db, but not in the synced schema, then we MARK the record as NOT_FOUND.
-		//   	   We don't delete the entry because:
-		//   	   1. This entry has already been associated with other entities, we can't simply delete it.
-		//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
-		databaseFind := &api.DatabaseFind{
-			InstanceID: &instance.ID,
-		}
-		dbList, err := s.store.FindDatabase(ctx, databaseFind)
-		if err != nil {
-			return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
-		}
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
-			databaseName := databaseMetadata.Name
-
-			var matchedDb *api.Database
-			for _, db := range dbList {
-				if db.Name == databaseName {
-					matchedDb = db
-					break
-				}
-			}
-			if matchedDb != nil {
-				// Case 1, appear in both the Bytebase metadata and the synced database metadata.
-				// We rely on syncDatabaseSchema() to sync the database details.
-			} else {
-				// Case 2, only appear in the synced db schema.
-				databaseCreate := &api.DatabaseCreate{
-					CreatorID:     api.SystemBotID,
-					ProjectID:     api.DefaultProjectID,
-					InstanceID:    instance.ID,
-					EnvironmentID: instance.EnvironmentID,
-					Name:          databaseName,
-					CharacterSet:  databaseMetadata.CharacterSet,
-					Collation:     databaseMetadata.Collation,
-				}
-				if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
-					if common.ErrorCode(err) == common.Conflict {
-						return fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
-					}
-					return fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
-				}
-			}
-		}
-
-		// Case 3, only appear in the Bytebase metadata
-		for _, db := range dbList {
-			found := false
-			for _, databaseMetadata := range instanceMeta.DatabaseList {
-				if db.Name == databaseMetadata.Name {
-					found = true
-					break
-				}
-			}
-			if !found {
-				syncStatus := api.NotFound
-				ts := time.Now().Unix()
-				databasePatch := &api.DatabasePatch{
-					ID:                   db.ID,
-					UpdaterID:            api.SystemBotID,
-					SyncStatus:           &syncStatus,
-					LastSuccessfulSyncTs: &ts,
-					// SchemaVersion will not be over-written.
-				}
-				database, err := s.store.PatchDatabase(ctx, databasePatch)
-				if err != nil {
-					if common.ErrorCode(err) == common.NotFound {
-						return fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
-					}
-					return fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error: %w", instance.Name, database.Name, err)
-				}
-			}
-		}
 
 		var errorList []string
-		for _, databaseMetadata := range instanceMeta.DatabaseList {
+		for _, databaseName := range databaseList {
 			// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-			if err := s.syncDatabaseSchema(ctx, instance, databaseMetadata.Name); err != nil {
+			if err := s.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
 				errorList = append(errorList, err.Error())
 			}
 		}
@@ -459,6 +321,152 @@ func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.I
 	}
 
 	return resultSet
+}
+
+// syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
+func (s *Server) syncInstanceSchema(ctx context.Context, instance *api.Instance, driver db.Driver) ([]string, error) {
+	// Sync instance metadata.
+	instanceMeta, err := driver.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Underlying version may change due to upgrade, however it's a rare event, so we only update if it actually differs
+	// to avoid changing the updated_ts.
+	if instanceMeta.Version != instance.EngineVersion {
+		_, err := s.store.PatchInstance(ctx, &api.InstancePatch{
+			ID:            instance.ID,
+			UpdaterID:     api.SystemBotID,
+			EngineVersion: &instanceMeta.Version,
+		})
+		if err != nil {
+			return nil, err
+		}
+		instance.EngineVersion = instanceMeta.Version
+	}
+
+	instanceUserList, err := s.store.FindInstanceUserByInstanceID(ctx, instance.ID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch user list for instance: %v", instance.ID)).SetInternal(err)
+	}
+
+	// Upsert user found in the instance
+	for _, user := range instanceMeta.UserList {
+		userUpsert := &api.InstanceUserUpsert{
+			CreatorID:  api.SystemBotID,
+			InstanceID: instance.ID,
+			Name:       user.Name,
+			Grant:      user.Grant,
+		}
+		_, err := s.store.UpsertInstanceUser(ctx, userUpsert)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sync user for instance: %s. Failed to upsert user. Error %w", instance.Name, err)
+		}
+	}
+
+	// Delete user no longer found in the instance
+	for _, user := range instanceUserList {
+		found := false
+		for _, dbUser := range instanceMeta.UserList {
+			if user.Name == dbUser.Name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			userDelete := &api.InstanceUserDelete{
+				ID: user.ID,
+			}
+			err := s.store.DeleteInstanceUser(ctx, userDelete)
+			if err != nil {
+				return nil, fmt.Errorf("failed to sync user for instance: %s. Failed to delete user: %s. Error %w", instance.Name, user.Name, err)
+			}
+		}
+	}
+
+	// Compare the stored db info with the just synced db schema.
+	// Case 1: If item appears in both stored db info and the synced db metadata, then it's a no-op. We rely on syncDatabaseSchema() later to sync its details.
+	// Case 2: If item only appears in the synced schema and not in the stored db, then we CREATE the database record in the stored db.
+	// Case 3: Conversely, if item only appears in the stored db, but not in the synced schema, then we MARK the record as NOT_FOUND.
+	//   	   We don't delete the entry because:
+	//   	   1. This entry has already been associated with other entities, we can't simply delete it.
+	//   	   2. The deletion in the schema might be a mistake, so it's better to surface as NOT_FOUND to let user review it.
+	databaseFind := &api.DatabaseFind{
+		InstanceID: &instance.ID,
+	}
+	dbList, err := s.store.FindDatabase(ctx, databaseFind)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
+	}
+	for _, databaseMetadata := range instanceMeta.DatabaseList {
+		databaseName := databaseMetadata.Name
+
+		var matchedDb *api.Database
+		for _, db := range dbList {
+			if db.Name == databaseName {
+				matchedDb = db
+				break
+			}
+		}
+		if matchedDb != nil {
+			// Case 1, appear in both the Bytebase metadata and the synced database metadata.
+			// We rely on syncDatabaseSchema() to sync the database details.
+		} else {
+			// Case 2, only appear in the synced db schema.
+			databaseCreate := &api.DatabaseCreate{
+				CreatorID:     api.SystemBotID,
+				ProjectID:     api.DefaultProjectID,
+				InstanceID:    instance.ID,
+				EnvironmentID: instance.EnvironmentID,
+				Name:          databaseName,
+				CharacterSet:  databaseMetadata.CharacterSet,
+				Collation:     databaseMetadata.Collation,
+			}
+			if _, err := s.store.CreateDatabase(ctx, databaseCreate); err != nil {
+				if common.ErrorCode(err) == common.Conflict {
+					return nil, fmt.Errorf("failed to sync database for instance: %s. Database name already exists: %s", instance.Name, databaseCreate.Name)
+				}
+				return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to import new database: %s. Error %w", instance.Name, databaseCreate.Name, err)
+			}
+		}
+	}
+
+	// Case 3, only appear in the Bytebase metadata
+	for _, db := range dbList {
+		found := false
+		for _, databaseMetadata := range instanceMeta.DatabaseList {
+			if db.Name == databaseMetadata.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			syncStatus := api.NotFound
+			ts := time.Now().Unix()
+			databasePatch := &api.DatabasePatch{
+				ID:                   db.ID,
+				UpdaterID:            api.SystemBotID,
+				SyncStatus:           &syncStatus,
+				LastSuccessfulSyncTs: &ts,
+				// SchemaVersion will not be over-written.
+			}
+			database, err := s.store.PatchDatabase(ctx, databasePatch)
+			if err != nil {
+				if common.ErrorCode(err) == common.NotFound {
+					return nil, fmt.Errorf("failed to sync database for instance: %s. Database not found: %s", instance.Name, database.Name)
+				}
+				return nil, fmt.Errorf("failed to sync database for instance: %s. Failed to update database: %s. Error: %w", instance.Name, database.Name, err)
+			}
+		}
+	}
+
+	var databaseList []string
+	for _, database := range instanceMeta.DatabaseList {
+		databaseList = append(databaseList, database.Name)
+	}
+
+	return databaseList, nil
 }
 
 func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance, databaseName string) error {
@@ -477,15 +485,11 @@ func (s *Server) syncDatabaseSchema(ctx context.Context, instance *api.Instance,
 		return fmt.Errorf("failed to sync database for instance: %s. Failed to find database list. Error %w", instance.Name, err)
 	}
 
-	// Sync schema
-	schemaList, err := driver.SyncSchema(ctx, databaseName)
+	// Sync database schema
+	schema, err := driver.SyncDBSchema(ctx, databaseName)
 	if err != nil {
 		return err
 	}
-	if len(schemaList) != 1 {
-		return fmt.Errorf("found %v databases with name %s, expecting one", len(schemaList), databaseName)
-	}
-	schema := schemaList[0]
 
 	// When there are too many databases, this might have performance issue and will
 	// cause frontend timeout since we set a 30s limit (INSTANCE_OPERATION_TIMEOUT).

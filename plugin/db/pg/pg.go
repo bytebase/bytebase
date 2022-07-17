@@ -170,8 +170,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection gets a database connection.
+func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}
@@ -200,8 +200,8 @@ func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
 	return dbs, nil
 }
 
-// GetVersion gets the version of Postgres server.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version of Postgres server.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
@@ -252,12 +252,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 				return err
 			}
 		} else if strings.HasPrefix(stmt, "\\connect ") {
-			// For the case of `\connect "dbname";`, we need to use GetDbConnection() instead of executing the statement.
+			// For the case of `\connect "dbname";`, we need to use GetDBConnection() instead of executing the statement.
 			parts := strings.Split(stmt, `"`)
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			if _, err = driver.GetDbConnection(ctx, parts[1]); err != nil {
+			if _, err = driver.GetDBConnection(ctx, parts[1]); err != nil {
 				return err
 			}
 			// Update current owner

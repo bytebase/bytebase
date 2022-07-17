@@ -47,7 +47,7 @@ type sqliteSchema struct {
 }
 
 func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
-	if _, err := driver.GetDbConnection(ctx, database); err != nil {
+	if _, err := driver.GetDBConnection(ctx, database); err != nil {
 		return err
 	}
 

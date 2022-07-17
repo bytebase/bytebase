@@ -43,7 +43,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 	driver.dir = config.Host
 
 	// If config.Database is empty, we will get a connection to in-memory database.
-	if _, err := driver.GetDbConnection(ctx, config.Database); err != nil {
+	if _, err := driver.GetDBConnection(ctx, config.Database); err != nil {
 		return nil, err
 	}
 	driver.connectionCtx = connCtx
@@ -63,9 +63,9 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
+// GetDBConnection gets a database connection.
 // If database is empty, we will get a connect to in-memory database.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
 	if driver.db != nil {
 		if err := driver.db.Close(); err != nil {
 			return nil, err
@@ -84,8 +84,8 @@ func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sq
 	return db, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	var version string
 	if err := driver.db.QueryRowContext(ctx, "SELECT sqlite_version();").Scan(&version); err != nil {
 		return "", err
@@ -132,7 +132,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 			if len(parts) != 3 {
 				return fmt.Errorf("invalid statement %q", stmt)
 			}
-			db, err := driver.GetDbConnection(ctx, parts[1])
+			db, err := driver.GetDBConnection(ctx, parts[1])
 			if err != nil {
 				return err
 			}

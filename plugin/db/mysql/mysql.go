@@ -105,8 +105,8 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection gets a database connection.
+func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
 	return driver.db, nil
 }
 
@@ -133,8 +133,8 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	return dbNames, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
