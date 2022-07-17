@@ -107,6 +107,11 @@ type File struct {
 	SHA      string `json:"sha"`
 }
 
+// WebhookInfo represents a GitHub API response for the webhook information.
+type WebhookInfo struct {
+	ID int `json:"id"`
+}
+
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
@@ -130,14 +135,9 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		errInfo := []string{"failed to fetch user info from GitHub.com"}
-		resourceURISplit := strings.Split(resourceURI, "/")
-		if len(resourceURI) > 1 {
-			errInfo = append(errInfo, fmt.Sprintf("Username: %s", resourceURISplit[1]))
-		}
-		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitHub.com, status code: %d", code)
+		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	var user User
@@ -196,9 +196,9 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, errors.New("failed to fetch commit data from GitHub.com, not found"))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d, body: %s", code, body)
+		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	commit := &Commit{}
@@ -573,8 +573,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 
 	if code == http.StatusNotFound {
 		return common.Errorf(common.NotFound, fmt.Errorf("failed to create/update file through URL %s", url))
-	}
-	if code >= 300 {
+	} else if code >= 300 {
 		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
 			url,
 			code,
@@ -672,19 +671,117 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, r
 	return &file, nil
 }
 
-// CreateWebhook creates a webhook in a GitLab project.
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// CreateWebhook creates a webhook in the repository with given payload.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string, payload []byte) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/hooks", apiURL, repositoryID)
+	code, body, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, fmt.Errorf("failed to create webhook through URL %s", url))
+	} else if code >= 300 {
+		return "",
+			fmt.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var webhookInfo WebhookInfo
+	if err = json.Unmarshal([]byte(body), &webhookInfo); err != nil {
+		return "", errors.Wrap(err, "unmarshal body")
+	}
+	return strconv.Itoa(webhookInfo.ID), nil
 }
 
-// PatchWebhook patches a webhook in a GitLab project.
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// PatchWebhook patches the webhook in the repository with given payload.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#update-a-repository-webhook
+func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string, payload []byte) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+	code, body, err := oauth.Patch(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PATCH %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to patch webhook through URL %s", url))
+	} else if code >= 300 {
+		return fmt.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
-// DeleteWebhook deletes a webhook in a GitLab project.
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// DeleteWebhook deletes the webhook from the repository.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+	code, body, err := oauth.Delete(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "DELETE %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil // It is OK if the webhook has already gone
+	} else if code >= 300 {
+		return fmt.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // oauthContext is the request context for refreshing oauth token.
