@@ -197,6 +197,15 @@ const setEditorContent = (content: string) => {
   monacoInstanceRef.value?.setContent(editorInstanceRef.value!, content);
 };
 
+watch(
+  () => props.value,
+  (value) => {
+    if (value !== getEditorContent()) {
+      setEditorContent(value);
+    }
+  }
+);
+
 const getEditorContentHeight = () => {
   return editorInstanceRef.value?.getContentHeight();
 };
