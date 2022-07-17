@@ -31,7 +31,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	if !exist {
 		return true, nil
 	}
-	if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+	if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 		return false, err
 	}
 
@@ -57,7 +57,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 
-		if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+		if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 			log.Error("Failed to switch to database \"bytebase\".",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),

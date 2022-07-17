@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -23,6 +24,11 @@ var (
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Query user info
 	userList, err := driver.getUserList(ctx)
 	if err != nil {
@@ -70,38 +76,23 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 
 	return &db.InstanceMeta{
+		Version:      version,
 		UserList:     userList,
 		DatabaseList: databaseList,
 	}, nil
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
+// SyncDBSchema syncs a single database schema.
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query MySQL version
-	version, err := driver.GetVersion(ctx)
+	version, err := driver.getVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
 	isMySQL8 := strings.HasPrefix(version, "8.0")
 
-	excludedDatabaseList := []string{
-		// Skip our internal "bytebase" database
-		"'bytebase'",
-	}
-	var includeDatabaseList []string
-	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabaseList = append(excludedDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
-	}
-	for _, k := range databaseList {
-		includeDatabaseList = append(includeDatabaseList, fmt.Sprintf("'%s'", strings.ToLower(k)))
-	}
-
 	// Query index info
-	indexWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	if len(databaseList) > 0 {
-		indexWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", indexWhere, strings.Join(includeDatabaseList, ", "))
-	}
+	indexWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
 	indexQuery := `
 			SELECT
 				TABLE_SCHEMA,
@@ -179,10 +170,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	}
 
 	// Query column info
-	columnWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	if len(databaseList) > 0 {
-		columnWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", columnWhere, strings.Join(includeDatabaseList, ", "))
-	}
+	columnWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
 	columnQuery := `
 			SELECT
 				TABLE_SCHEMA,
@@ -242,10 +230,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	}
 
 	// Query table info
-	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	if len(databaseList) > 0 {
-		tableWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", tableWhere, strings.Join(includeDatabaseList, ", "))
-	}
+	tableWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
 	tableQuery := `
 			SELECT
 				TABLE_SCHEMA,
@@ -329,10 +314,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	}
 
 	// Query view info
-	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	if len(databaseList) > 0 {
-		viewWhere = fmt.Sprintf("%s AND LOWER(TABLE_SCHEMA) IN (%s)", viewWhere, strings.Join(includeDatabaseList, ", "))
-	}
+	viewWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) = '%s'", strings.ToLower(databaseName))
 	viewQuery := `
 			SELECT
 				TABLE_SCHEMA,
@@ -375,10 +357,7 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 	}
 
 	// Query db info
-	databaseWhere := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabaseList, ", "))
-	if len(databaseList) > 0 {
-		databaseWhere = fmt.Sprintf("%s AND LOWER(SCHEMA_NAME) IN (%s)", databaseWhere, strings.Join(includeDatabaseList, ", "))
-	}
+	databaseWhere := fmt.Sprintf("LOWER(SCHEMA_NAME) = '%s'", strings.ToLower(databaseName))
 	databaseQuery := `
 		SELECT
 			SCHEMA_NAME,
@@ -386,36 +365,20 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
 		WHERE ` + databaseWhere
-	databaseRows, err := driver.db.QueryContext(ctx, databaseQuery)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, databaseQuery)
-	}
-	defer databaseRows.Close()
-
-	var schemaList []*db.Schema
-	for databaseRows.Next() {
-		var schema db.Schema
-		if err := databaseRows.Scan(
-			&schema.Name,
-			&schema.CharacterSet,
-			&schema.Collation,
-		); err != nil {
-			return nil, err
+	var schema db.Schema
+	if err := driver.db.QueryRowContext(ctx, databaseQuery).Scan(
+		&schema.Name,
+		&schema.CharacterSet,
+		&schema.Collation); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
 		}
-
-		schema.TableList = tableMap[schema.Name]
-		schema.ViewList = viewMap[schema.Name]
-
-		schemaList = append(schemaList, &schema)
-	}
-	if err := databaseRows.Err(); err != nil {
 		return nil, err
 	}
-	if err := databaseRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, databaseQuery)
-	}
+	schema.TableList = tableMap[schema.Name]
+	schema.ViewList = viewMap[schema.Name]
 
-	return schemaList, err
+	return &schema, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
