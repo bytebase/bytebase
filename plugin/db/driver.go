@@ -386,7 +386,7 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
+	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
 	// SyncDBSchema syncs a single database schema.
 	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
