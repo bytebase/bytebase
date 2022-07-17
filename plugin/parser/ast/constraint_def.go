@@ -44,7 +44,7 @@ type ConstraintDef struct {
 	KeyList []string
 	// Foreign is a FOREIGN type specific field.
 	Foreign *ForeignDef
-	// IndexName is a ConstraintTypePrimaryUsingIndex/ConstraintTypeUniqueUsingIndex type specific field.
+	// IndexName is a ConstraintTypePrimaryUsingIndex or ConstraintTypeUniqueUsingIndex type specific field.
 	// See https://www.postgresql.org/docs/current/sql-altertable.html.
 	IndexName string
 }
