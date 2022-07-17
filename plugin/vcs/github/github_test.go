@@ -976,6 +976,101 @@ You can look around to get an idea how to structure your project and, when done,
 	assert.Equal(t, want, got)
 }
 
+func TestProvider_CreateWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/1/hooks", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							// Example response taken from https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+							Body: io.NopCloser(strings.NewReader(`
+{
+  "type": "Repository",
+  "id": 12345678,
+  "name": "web",
+  "active": true,
+  "events": [
+    "push",
+    "pull_request"
+  ],
+  "config": {
+    "content_type": "json",
+    "insecure_ssl": "0",
+    "url": "https://example.com/webhook"
+  },
+  "updated_at": "2019-06-03T00:57:16Z",
+  "created_at": "2019-06-03T00:57:16Z",
+  "url": "https://api.github.com/repos/octocat/Hello-World/hooks/12345678",
+  "test_url": "https://api.github.com/repos/octocat/Hello-World/hooks/12345678/test",
+  "ping_url": "https://api.github.com/repos/octocat/Hello-World/hooks/12345678/pings",
+  "deliveries_url": "https://api.github.com/repos/octocat/Hello-World/hooks/12345678/deliveries",
+  "last_response": {
+    "code": null,
+    "status": "unused",
+    "message": null
+  }
+}
+`)),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	got, err := p.CreateWebhook(ctx, common.OauthContext{}, "", "1", []byte(""))
+	require.NoError(t, err)
+	assert.Equal(t, "12345678", got)
+}
+
+func TestProvider_PatchWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       io.NopCloser(strings.NewReader("")),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.PatchWebhook(ctx, common.OauthContext{}, "", "1", "1", []byte(""))
+	require.NoError(t, err)
+}
+
+func TestProvider_DeleteWebhook(t *testing.T) {
+	p := newProvider(
+		vcs.ProviderConfig{
+			Client: &http.Client{
+				Transport: &common.MockRoundTripper{
+					MockRoundTrip: func(r *http.Request) (*http.Response, error) {
+						assert.Equal(t, "/repos/1/hooks/1", r.URL.Path)
+						return &http.Response{
+							StatusCode: http.StatusOK,
+							Body:       io.NopCloser(strings.NewReader("")),
+						}, nil
+					},
+				},
+			},
+		},
+	)
+
+	ctx := context.Background()
+	err := p.DeleteWebhook(ctx, common.OauthContext{}, "", "1", "1")
+	require.NoError(t, err)
+}
+
 func TestOAuth_RefreshToken(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{
