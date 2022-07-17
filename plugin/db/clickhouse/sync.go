@@ -67,7 +67,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}, nil
 }
 
-// SyncDBSchema syncs the schema of a database.
+// SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 
 	// Query column info

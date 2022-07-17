@@ -226,51 +226,6 @@ func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.Column
 	return columnList, nil
 }
 
-// patchColumn updates a column by ID. Returns the new state of the column after update.
-func (s *Store) patchColumn(ctx context.Context, tx *sql.Tx, patch *api.ColumnPatch) (*api.Column, error) {
-	// Build UPDATE clause.
-	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
-
-	args = append(args, patch.ID)
-
-	var column api.Column
-	var defaultStr sql.NullString
-	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, `
-		UPDATE col
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $2
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, database_id, table_id, name, position, "default", nullable, type, character_set, "collation", comment
-	`,
-		args...,
-	).Scan(
-		&column.ID,
-		&column.CreatorID,
-		&column.CreatedTs,
-		&column.UpdaterID,
-		&column.UpdatedTs,
-		&column.DatabaseID,
-		&column.TableID,
-		&column.Name,
-		&column.Position,
-		&defaultStr,
-		&column.Nullable,
-		&column.Type,
-		&column.CharacterSet,
-		&column.Collation,
-		&column.Comment,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("column ID not found: %d", patch.ID)}
-		}
-		return nil, FormatError(err)
-	}
-	if defaultStr.Valid {
-		column.Default = &defaultStr.String
-	}
-	return &column, nil
-}
-
 // deleteColumnImpl deletes columns.
 func deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM col WHERE id = $1`, delete.ID); err != nil {

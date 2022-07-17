@@ -82,7 +82,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}, nil
 }
 
-// SyncSchema syncs a single database schema.
+// SyncDBSchema syncs a single database schema.
 func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query MySQL version
 	version, err := driver.getVersion(ctx)
