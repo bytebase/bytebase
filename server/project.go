@@ -8,10 +8,11 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"go.uber.org/zap"
 
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -226,19 +227,20 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 		repositoryCreate.WebhookEndpointID = uuid.New().String()
 		repositoryCreate.WebhookSecretToken = common.RandomString(gitlab.SecretTokenLength)
 
-		// Create webhook and retrieve the created webhook id
+		// Create a new webhook and retrieve the created webhook ID
 		var webhookCreatePayload []byte
-		if vcs.Type == "GITLAB_SELF_HOST" {
-			webhookPost := gitlab.WebhookPost{
-				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, repositoryCreate.WebhookEndpointID),
+		switch vcs.Type {
+		case vcsPlugin.GitLabSelfHost:
+			webhookCreate := gitlab.WebhookCreate{
+				URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, repositoryCreate.WebhookEndpointID),
 				SecretToken:            repositoryCreate.WebhookSecretToken,
 				PushEvents:             true,
 				PushEventsBranchFilter: repositoryCreate.BranchFilter,
-				EnableSSLVerification:  false,
+				EnableSSLVerification:  false, // TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
 			}
 			webhookCreatePayload, err = json.Marshal(webhookPost)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal post request for creating webhook for project ID: %v", repositoryCreate.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for creating webhook for project ID: %d", repositoryCreate.ProjectID)).SetInternal(err)
 			}
 		}
 
@@ -378,15 +380,16 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			// Update the webhook after we successfully update the repository.
 			// This is because in case the webhook update fails, we can still have a reconcile process to reconcile the webhook state.
 			// If we update it before we update the repository, then if the repository update fails, then the reconcile process will reconcile the webhook to the pre-update state which is likely not intended.
-			var webhookPatchPayload []byte
-			if vcs.Type == "GITLAB_SELF_HOST" {
-				webhookPut := gitlab.WebhookPut{
-					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitLabWebhookPath, updatedRepo.WebhookEndpointID),
+			var webhookUpdatePayload []byte
+			switch vcs.Type {
+			case vcsPlugin.GitLabSelfHost:
+				webhookUpdate := gitlab.WebhookUpdate{
+					URL:                    fmt.Sprintf("%s:%d/%s/%s", s.profile.BackendHost, s.profile.BackendPort, gitlabWebhookPath, updatedRepo.WebhookEndpointID),
 					PushEventsBranchFilter: *repoPatch.BranchFilter,
 				}
-				webhookPatchPayload, err = json.Marshal(webhookPut)
+				webhookUpdatePayload, err = json.Marshal(webhookUpdate)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal put request for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal request body for updating webhook %s for project ID: %v", repo.ExternalWebhookID, projectID)).SetInternal(err)
 				}
 			}
 
@@ -403,7 +406,7 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 				vcs.InstanceURL,
 				repo.ExternalID,
 				repo.ExternalWebhookID,
-				webhookPatchPayload,
+				webhookUpdatePayload,
 			)
 
 			if err != nil {
