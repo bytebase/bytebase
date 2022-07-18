@@ -375,13 +375,14 @@ func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.
 				return nil, err
 			}
 			log.Debug(out.String())
-			oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
-			log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
-				zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
-				zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
-			return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 		}
+		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
+		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
+			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
+			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
+		return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 	}
+
 	return backup, nil
 }
 
