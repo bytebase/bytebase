@@ -119,18 +119,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					// Skip execution if has any dependency not finished.
-					isBlocked, err := s.isTaskBlocked(ctx, task)
-					if err != nil {
-						log.Error("failed to check if task is blocked",
-							zap.Int("id", task.ID),
-							zap.Error(err))
-						continue
-					}
-					if isBlocked {
-						continue
-					}
-
 					tasks.mu.Lock()
 					if _, ok := tasks.running[task.ID]; ok {
 						tasks.mu.Unlock()
@@ -238,16 +226,23 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-// ScheduleIfNeeded schedules the task if its required check does not contain error in the latest run
-func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
+func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
+	blocked, err := s.isTaskBlocked(ctx, task)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
+	}
+	if blocked {
+		return false, nil
+	}
 	// timing task check
 	if task.EarliestAllowedTs != 0 {
 		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 	}
 
@@ -255,48 +250,63 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
 		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 
 		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if !pass {
-			return task, nil
+			return false, nil
 		}
 
 		instance, err := s.server.store.GetInstanceByID(ctx, task.InstanceID)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
 		if instance == nil {
-			return nil, fmt.Errorf("instance ID not found %v", task.InstanceID)
+			return false, fmt.Errorf("instance ID not found %v", task.InstanceID)
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 			if !pass {
-				return task, nil
+				return false, nil
 			}
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
 			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
-				return nil, err
+				return false, err
 			}
 			if !pass {
-				return task, nil
+				return false, nil
 			}
 		}
 	}
+	return true, nil
+}
+
+// ScheduleIfNeeded schedules the task if
+// 1. its required check does not contain error in the latest run
+// 2. it has no blocking tasks
+func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
+	schedule, err := s.canScheduleTask(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if !schedule {
+		return task, nil
+	}
+
 	updatedTask, err := s.server.changeTaskStatus(ctx, task, api.TaskRunning, api.SystemBotID)
 	if err != nil {
 		return nil, err
