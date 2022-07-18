@@ -1432,6 +1432,10 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string
 	case advisor.SchemaRuleTableNoFK:
 	case advisor.SchemaRuleColumnNotNull:
 	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleTableDropNamingConvention:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format: "_delete$",
+		})
 	case advisor.SchemaRuleTableNaming:
 		fallthrough
 	case advisor.SchemaRuleColumnNaming:
@@ -1517,6 +1521,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleTableNoFK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDropNamingConvention,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{

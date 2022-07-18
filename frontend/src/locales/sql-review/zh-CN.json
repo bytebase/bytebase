@@ -28,6 +28,15 @@
       "title": "禁止外键",
       "description": "禁止给表创建外键。"
     },
+    "table-drop-naming-convention": {
+      "title": "待删除表的命名规范",
+      "description": "只有符合命名规范的表才可以被删除，通过强制用户在删除前重命名来避免误删。默认情况下待删除表名必须以 \"_delete\" 结尾。",
+      "component": {
+        "name_format": {
+          "title": "命名规则（正则）"
+        }
+      }
+    },
     "naming-table": {
       "title": "表名命名检查",
       "description": "限制表名命名风格和长度，默认为小写字母_下划线，且不超过 64 个字符。",

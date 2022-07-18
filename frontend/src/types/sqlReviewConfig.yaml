@@ -24,6 +24,15 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
+      - type: table.drop-naming-convention
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList:
+          - key: name_format
+            payload:
+              type: STRING
+              default: "_delete$"
       - type: statement.select.no-select-all
         category: STATEMENT
         engine: COMMON
@@ -156,6 +165,15 @@ templateList:
         engine: COMMON
         level: WARNING
         componentList: []
+      - type: table.drop-naming-convention
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList:
+          - key: name_format
+            payload:
+              type: STRING
+              default: "_delete$"
       - type: naming.table
         category: NAMING
         engine: COMMON

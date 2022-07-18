@@ -225,11 +225,14 @@ export type TaskCheckDatabaseSchemaUpdateGhostCutoverPayload = {
 
 export type TaskCheckStatus = "SUCCESS" | "WARN" | "ERROR";
 
+export type TaskCheckNamespace = "bb.advisor" | "bb.core";
+
 export type TaskCheckResult = {
   status: TaskCheckStatus;
   code: ErrorCode;
   title: string;
   content: string;
+  namespace: TaskCheckNamespace;
 };
 
 export type TaskCheckRunResultPayload = {
