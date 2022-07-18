@@ -376,7 +376,7 @@ func (s *TaskCheckScheduler) ScheduleCheckIfNeeded(ctx context.Context, task *ap
 // Returns true only if there is NO warning and error. User can still manually run the task if there is warning.
 // But this method is used for gating the automatic run, so we are more cautious here.
 // TODO(dragonly): refactor arguments.
-func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, checkType api.TaskCheckType) (bool, error) {
+func (s *Server) passCheck(ctx context.Context, task *api.Task, checkType api.TaskCheckType) (bool, error) {
 	statusList := []api.TaskCheckRunStatus{api.TaskCheckRunDone, api.TaskCheckRunFailed}
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID:     &task.ID,
@@ -385,7 +385,7 @@ func (s *Server) passCheck(ctx context.Context, server *Server, task *api.Task, 
 		Latest:     true,
 	}
 
-	taskCheckRunList, err := server.store.FindTaskCheckRun(ctx, taskCheckRunFind)
+	taskCheckRunList, err := s.store.FindTaskCheckRun(ctx, taskCheckRunFind)
 	if err != nil {
 		return false, err
 	}
