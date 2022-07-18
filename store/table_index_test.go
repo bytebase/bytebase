@@ -27,7 +27,7 @@ func TestGenerateIndexActions(t *testing.T) {
 				{Name: "index1", Expression: "def1-change", Comment: "comment1"},
 				{Name: "index2", Expression: "def2", Position: 1, Comment: "comment2"},
 				{Name: "index2", Expression: "def2", Position: 2, Comment: "comment2-change"},
-				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2"},
+				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2-new"},
 				{Name: "index3", Expression: "def3", Comment: "comment3"},
 			},
 			wantDeletes: []*api.IndexDelete{
