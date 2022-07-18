@@ -237,7 +237,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 	}
 	// timing task check
 	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
 			return false, err
 		}
@@ -248,7 +248,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 
 	// only schema update or data update task has required task check
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return false, err
 		}
@@ -256,7 +256,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 			return false, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema)
 		if err != nil {
 			return false, err
 		}
@@ -273,7 +273,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return false, err
 			}
@@ -283,7 +283,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return false, err
 			}
