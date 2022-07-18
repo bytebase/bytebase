@@ -1,6 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <template v-if="isDemo">
+    <template v-if="isDemo && !shouldHideDemoBanner">
       <BannerDemo />
     </template>
     <template v-if="showDebugBanner">
@@ -8,14 +8,6 @@
     </template>
     <template v-else-if="isExpired || isTrialing">
       <BannerSubscription />
-    </template>
-    <template v-else-if="isReadonly">
-      <div
-        class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
-      >
-        Server is in readonly mode. You can still view the console, but any
-        change attempt will fail.
-      </div>
     </template>
     <nav
       class="bg-white border-b border-block-border"
@@ -89,7 +81,8 @@ export default defineComponent({
       });
     };
 
-    const { isDemo, isReadonly } = storeToRefs(actuatorStore);
+    const { isDemo, isReadonly, shouldHideDemoBanner } =
+      storeToRefs(actuatorStore);
     const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
     const { isDebug } = storeToRefs(debugStore);
@@ -110,6 +103,7 @@ export default defineComponent({
       isTrialing,
       isExpired,
       showDebugBanner,
+      shouldHideDemoBanner,
     };
   },
 });

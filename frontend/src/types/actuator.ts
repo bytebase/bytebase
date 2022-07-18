@@ -3,6 +3,7 @@ export type ServerInfo = {
   gitCommit: string;
   readonly: boolean;
   demo: boolean;
+  demoName: string;
   host: string;
   port: string;
   needAdminSetup: boolean;
