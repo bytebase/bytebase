@@ -8,6 +8,7 @@ export * from "./base";
 export * from "./common";
 export * from "./extra";
 export * from "./transition";
+export * from "./utils";
 
 export {
   IssueLogic,
