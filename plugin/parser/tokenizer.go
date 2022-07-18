@@ -91,7 +91,7 @@ func (t *tokenizer) splitPostgreSQLMultiSQL() ([]string, error) {
 			t.skip(uint(len(beginRuneList)))
 			t.skipBlank()
 			if t.equalWordCaseInsensitive(atomicRuneList) {
-				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it.")
+				return nil, fmt.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
 			}
 		default:
 			t.skip(1)
