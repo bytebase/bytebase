@@ -14,22 +14,6 @@
     </div>
     <DatabaseTable :bordered="false" :database-list="filteredList" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('common.do-not-show-again')"
-    :cancel-text="$t('common.dismiss')"
-    :title="$t('database.how-to-setup-database')"
-    :description="$t('database.show-guide-description')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
@@ -40,12 +24,13 @@ import {
   reactive,
   ref,
   defineComponent,
+  inject,
 } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database, UNKNOWN_ID } from "../types";
-import { sortDatabaseList } from "../utils";
+import { Environment, Database, UNKNOWN_ID, EventType } from "../types";
+import { sortDatabaseList, Event } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
@@ -59,7 +44,6 @@ interface LocalState {
   searchText: string;
   databaseList: Database[];
   selectedEnvironment?: Environment;
-  showGuide: boolean;
 }
 
 export default defineComponent({
@@ -70,6 +54,7 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
+    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const router = useRouter();
@@ -82,7 +67,6 @@ export default defineComponent({
             parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
-      showGuide: false,
     });
 
     const currentUser = useCurrentUser();
@@ -93,9 +77,9 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.database")) {
+      if (!uiStateStore.getIntroStateByKey("guide.help.database")) {
         setTimeout(() => {
-          state.showGuide = true;
+          event?.emit(EventType.EVENT_HELP, "help.database", true);
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,
@@ -119,14 +103,6 @@ export default defineComponent({
     };
 
     watchEffect(prepareDatabaseList);
-
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.database",
-        newState: true,
-      });
-      state.showGuide = false;
-    };
 
     const selectEnvironment = (environment: Environment) => {
       state.selectedEnvironment = environment;
@@ -165,7 +141,6 @@ export default defineComponent({
       searchField,
       state,
       filteredList,
-      doDismissGuide,
       selectEnvironment,
       changeSearchText,
     };
