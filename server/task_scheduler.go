@@ -228,11 +228,11 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
 
 // canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
 func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
-	pass, err := s.isTaskBlocked(ctx, task)
+	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
 	}
-	if !pass {
+	if blocked {
 		return false, nil
 	}
 	// timing task check
