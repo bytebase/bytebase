@@ -242,7 +242,7 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	// timing task check
 	if task.EarliestAllowedTs != 0 {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckGeneralEarliestAllowedTime)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckGeneralEarliestAllowedTime)
 		if err != nil {
 			return nil, err
 		}
@@ -253,7 +253,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 
 	// only schema update or data update task has required task check
 	if task.Type == api.TaskDatabaseSchemaUpdate || task.Type == api.TaskDatabaseDataUpdate {
-		pass, err := s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseConnect)
+		pass, err := s.server.passCheck(ctx, task, api.TaskCheckDatabaseConnect)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 			return task, nil
 		}
 
-		pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckInstanceMigrationSchema)
+		pass, err = s.server.passCheck(ctx, task, api.TaskCheckInstanceMigrationSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -278,7 +278,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		}
 
 		if api.IsSyntaxCheckSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementSyntax)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementSyntax)
 			if err != nil {
 				return nil, err
 			}
@@ -288,7 +288,7 @@ func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*
 		}
 
 		if s.server.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(instance.Engine, s.server.profile.Mode) {
-			pass, err = s.server.passCheck(ctx, s.server, task, api.TaskCheckDatabaseStatementAdvise)
+			pass, err = s.server.passCheck(ctx, task, api.TaskCheckDatabaseStatementAdvise)
 			if err != nil {
 				return nil, err
 			}
