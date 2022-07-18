@@ -194,7 +194,13 @@ const getEditorContent = () => {
 };
 
 const setEditorContent = (content: string) => {
+  editorInstanceRef.value?.updateOptions({
+    readOnly: false,
+  });
   monacoInstanceRef.value?.setContent(editorInstanceRef.value!, content);
+  editorInstanceRef.value?.updateOptions({
+    readOnly: true,
+  });
 };
 
 watch(
