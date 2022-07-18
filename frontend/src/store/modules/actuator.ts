@@ -29,7 +29,8 @@ export const useActuatorStore = defineStore("actuator", {
     shouldHideDemoBanner: (state) => {
       return (
         !state.serverInfo?.demo ||
-        (!state.serverInfo?.demoName &&
+        (state.serverInfo?.demo &&
+          !state.serverInfo?.demoName &&
           state.serverInfo?.demoName !== "dev" &&
           state.serverInfo?.demoName !== "prod")
       );
