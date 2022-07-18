@@ -25,10 +25,11 @@ export const useActuatorStore = defineStore("actuator", {
     needAdminSetup: (state) => {
       return state.serverInfo?.needAdminSetup || false;
     },
+    // shouldHideDemoBanner is using to hide demo banner in live demo website.
     shouldHideDemoBanner: (state) => {
       return (
         !state.serverInfo?.demo ||
-        (state.serverInfo?.demoName !== "" &&
+        (!state.serverInfo?.demoName &&
           state.serverInfo?.demoName !== "dev" &&
           state.serverInfo?.demoName !== "prod")
       );
