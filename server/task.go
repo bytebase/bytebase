@@ -447,7 +447,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
-		log.Info("Pipeline has no linking issue",
+		log.Debug("Pipeline has no linking issue",
 			zap.Int("pipelineID", task.PipelineID),
 			zap.String("task", task.Name))
 	}
