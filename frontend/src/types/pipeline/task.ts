@@ -159,6 +159,8 @@ export type TaskCreate = {
 export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
+
+  updatedTs: number;
 };
 
 export type TaskStatusPatch = {

@@ -123,10 +123,12 @@ export const useExtraIssueLogic = () => {
         selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
       }
     } else {
+      const task = selectedTask.value as Task;
       const taskPatch: TaskPatch = {
         earliestAllowedTs: newEarliestAllowedTsMs,
+        updatedTs: task.updatedTs,
       };
-      patchTask((selectedTask.value as Task).id, taskPatch);
+      patchTask(task.id, taskPatch);
     }
   };
 
