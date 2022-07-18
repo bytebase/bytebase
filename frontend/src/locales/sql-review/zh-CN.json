@@ -142,7 +142,7 @@
       "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
     },
     "database-drop-empty-database": {
-      "title": "删除空数据库",
+      "title": "数据库删除限制",
       "description": "只有当数据库内没有表时，才可以被删除。"
     }
   },
