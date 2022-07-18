@@ -768,7 +768,7 @@
     },
     "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "An HTTP POST request will be sent to it after a successful backup.",
     "backup-info": {
-      "template": "Backup will be taken on every {dayOrWeek} at {time}"
+      "template": "Backup will be taken on every {dayOrWeek} at {time}. Backup data will be kept for {retentionDays} days."
     },
     "week": {
       "Sunday": "Sunday",
