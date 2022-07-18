@@ -1,49 +1,56 @@
 <template>
-  <nav class="flex flex-row justify-between" aria-label="Breadcrumb" data-label="bb-breadcrumb">
-    <div v-for="(item, index) in breadcrumbList" :key="index">
-      <div class="flex items-center space-x-2">
-        <router-link
-          v-if="index == 0"
-          to="/"
-          class="text-control-light hover:text-control-light-hover"
-          active-class="link"
-          exact-active-class="link"
-        >
-          <!-- Heroicon name: solid/home -->
-          <heroicons-solid:home class="flex-shrink-0 h-4 w-4" />
-          <span class="sr-only">Home</span>
-        </router-link>
-        <heroicons-solid:chevron-right
-          class="ml-2 flex-shrink-0 h-4 w-4 text-control-light"
-        />
-        <router-link
-          v-if="item.path"
-          :to="item.path"
-          class="text-sm anchor-link max-w-prose truncate"
-          active-class="anchor-link"
-          exact-active-class="anchor-link"
-          >{{ item.name }}</router-link
-        >
-        <div v-else class="text-sm max-w-prose truncate">
-          {{ item.name }}
+  <nav
+    class="flex flex-row justify-between"
+    aria-label="Breadcrumb"
+    data-label="bb-breadcrumb"
+  >
+    <div class="flex flex-row grow items-center">
+      <div v-for="(item, index) in breadcrumbList" :key="index">
+        <div class="flex items-center space-x-2">
+          <router-link
+            v-if="index == 0"
+            to="/"
+            class="text-control-light hover:text-control-light-hover"
+            active-class="link"
+            exact-active-class="link"
+          >
+            <!-- Heroicon name: solid/home -->
+            <heroicons-solid:home class="flex-shrink-0 h-4 w-4" />
+            <span class="sr-only">Home</span>
+          </router-link>
+          <heroicons-solid:chevron-right
+            class="ml-2 flex-shrink-0 h-4 w-4 text-control-light"
+          />
+          <router-link
+            v-if="item.path"
+            :to="item.path"
+            class="text-sm anchor-link max-w-prose truncate"
+            active-class="anchor-link"
+            exact-active-class="anchor-link"
+            >{{ item.name }}</router-link
+          >
+          <div v-else class="text-sm max-w-prose truncate">
+            {{ item.name }}
+          </div>
+          <button
+            v-if="allowBookmark && index == breadcrumbList.length - 1"
+            class="relative focus:outline-none"
+            type="button"
+            @click.prevent="toggleBookmark"
+          >
+            <heroicons-solid:star
+              v-if="isBookmarked"
+              class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
+            />
+            <heroicons-solid:star
+              v-else
+              class="h-5 w-5 text-control-light hover:text-control-light-hover"
+            />
+          </button>
         </div>
-        <button
-          v-if="allowBookmark && index == breadcrumbList.length - 1"
-          class="relative focus:outline-none"
-          type="button"
-          @click.prevent="toggleBookmark"
-        >
-          <heroicons-solid:star
-            v-if="isBookmarked"
-            class="h-5 w-5 text-yellow-400 hover:text-yellow-600"
-          />
-          <heroicons-solid:star
-            v-else
-            class="h-5 w-5 text-control-light hover:text-control-light-hover"
-          />
-        </button>
       </div>
     </div>
+
     <HelpTriggerIcon
       v-if="currentRoute.name in routeHelpNameMap"
       :name="routeHelpNameMap[currentRoute.name]"
