@@ -27,6 +27,11 @@ func (s *Store) FindIndex(ctx context.Context, find *api.IndexFind) ([]*api.Inde
 	return list, nil
 }
 
+type indexKey struct {
+	name     string
+	position int
+}
+
 func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, databaseID, tableID int) ([]*api.IndexDelete, []*api.IndexCreate) {
 	var indexCreateList []*api.IndexCreate
 	for _, index := range indexList {
@@ -44,19 +49,19 @@ func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, datab
 			Comment:    index.Comment,
 		})
 	}
-	oldIndexMap := make(map[string]*api.Index)
+	oldIndexMap := make(map[indexKey]*api.Index)
 	for _, index := range oldIndexList {
-		oldIndexMap[index.Name] = index
+		oldIndexMap[indexKey{index.Name, index.Position}] = index
 	}
-	newIndexMap := make(map[string]*api.IndexCreate)
+	newIndexMap := make(map[indexKey]*api.IndexCreate)
 	for _, index := range indexCreateList {
-		newIndexMap[index.Name] = index
+		newIndexMap[indexKey{index.Name, index.Position}] = index
 	}
 
 	var deletes []*api.IndexDelete
 	var creates []*api.IndexCreate
 	for _, oldValue := range oldIndexList {
-		k := oldValue.Name
+		k := indexKey{oldValue.Name, oldValue.Position}
 		newValue, ok := newIndexMap[k]
 		if !ok {
 			deletes = append(deletes, &api.IndexDelete{ID: oldValue.ID})
@@ -66,7 +71,7 @@ func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, datab
 		}
 	}
 	for _, newValue := range indexCreateList {
-		k := newValue.Name
+		k := indexKey{newValue.Name, newValue.Position}
 		if _, ok := oldIndexMap[k]; !ok {
 			creates = append(creates, newValue)
 		}
