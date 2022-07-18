@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -76,6 +77,13 @@ func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, datab
 			creates = append(creates, newValue)
 		}
 	}
+	sort.Slice(deletes, func(i, j int) bool {
+		return deletes[i].ID < deletes[j].ID
+	})
+	sort.Slice(creates, func(i, j int) bool {
+		return creates[i].Name < creates[j].Name || (creates[i].Name == creates[j].Name && creates[i].Position == creates[j].Position)
+	})
+
 	return deletes, creates
 }
 
