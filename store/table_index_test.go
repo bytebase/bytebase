@@ -37,7 +37,7 @@ func TestGenerateIndexActions(t *testing.T) {
 			wantCreates: []*api.IndexCreate{
 				{Name: "index1", Expression: "def1-change", Comment: "comment1", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
 				{Name: "index2", Expression: "def2", Position: 2, Comment: "comment2-change", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
-				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
+				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2-new", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
 				{Name: "index3", Expression: "def3", Comment: "comment3", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
 			},
 		},
