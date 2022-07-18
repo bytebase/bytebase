@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex" aria-label="Breadcrumb" data-label="bb-breadcrumb">
+  <nav class="flex flex-row justify-between" aria-label="Breadcrumb" data-label="bb-breadcrumb">
     <div v-for="(item, index) in breadcrumbList" :key="index">
       <div class="flex items-center space-x-2">
         <router-link
@@ -44,6 +44,11 @@
         </button>
       </div>
     </div>
+    <HelpTriggerIcon
+      v-if="currentRoute.name in routeHelpNameMap"
+      :name="routeHelpNameMap[currentRoute.name]"
+      :is-guide="true"
+    />
   </nav>
 </template>
 
@@ -61,6 +66,8 @@ import {
   useDatabaseStore,
   useProjectStore,
 } from "@/store";
+import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
+import { routeHelpNameMap } from "../../public/help/config";
 
 interface BreadcrumbItem {
   name: string;
@@ -69,7 +76,9 @@ interface BreadcrumbItem {
 
 export default defineComponent({
   name: "Breadcrumb",
-  components: {},
+  components: {
+    HelpTriggerIcon,
+  },
   setup() {
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
@@ -198,6 +207,8 @@ export default defineComponent({
       isBookmarked,
       breadcrumbList,
       toggleBookmark,
+      currentRoute,
+      routeHelpNameMap,
     };
   },
 });

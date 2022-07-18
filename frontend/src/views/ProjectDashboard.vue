@@ -21,35 +21,26 @@
     </div>
     <ProjectTable :project-list="filteredList(state.projectList)" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('project.dashboard.modal.confirm')"
-    :cancel-text="$t('project.dashboard.modal.cancel')"
-    :title="$t('project.dashboard.modal.title')"
-    :description="$t('project.dashboard.modal.content')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
 import { useCurrentUser, useUIStateStore, useProjectStore } from "@/store";
 import { useRouter } from "vue-router";
-import { watchEffect, onMounted, reactive, ref, defineComponent } from "vue";
+import {
+  watchEffect,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+  inject,
+} from "vue";
 import ProjectTable from "../components/ProjectTable.vue";
-import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID } from "../types";
+import { Event } from "../utils";
+import { Project, UNKNOWN_ID, DEFAULT_PROJECT_ID, EventType } from "../types";
 
 interface LocalState {
   projectList: Project[];
   searchText: string;
-  showGuide: boolean;
 }
 
 export default defineComponent({
@@ -60,6 +51,7 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const searchField = ref();
+    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
     const currentUser = useCurrentUser();
@@ -68,16 +60,15 @@ export default defineComponent({
     const state = reactive<LocalState>({
       projectList: [],
       searchText: "",
-      showGuide: false,
     });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.project")) {
+      if (!uiStateStore.getIntroStateByKey("guide.help.project")) {
         setTimeout(() => {
-          state.showGuide = true;
+          event?.emit(EventType.EVENT_HELP, "help.project", true);
           uiStateStore.saveIntroStateByKey({
             key: "project.visit",
             newState: true,
@@ -106,14 +97,6 @@ export default defineComponent({
       state.searchText = searchText;
     };
 
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.project",
-        newState: true,
-      });
-      state.showGuide = false;
-    };
-
     const goDefaultProject = () => {
       router.push({
         name: "workspace.project.detail",
@@ -140,7 +123,6 @@ export default defineComponent({
       searchField,
       state,
       filteredList,
-      doDismissGuide,
       changeSearchText,
       goDefaultProject,
     };
