@@ -230,8 +230,11 @@ const renderTooltip = (
 ) => {
   const tooltipWrapper = document.createElement("div");
   tooltipWrapper.className = `bb-hint-tooltip-wrapper bb-hint-${hintIndex}`;
+  const pingElement = document.createElement("span");
+  pingElement.className = "bb-hint-tooltip-ping";
+  tooltipWrapper.appendChild(pingElement);
+
   tooltipWrapper.style.zIndex = `${getElementMaxZIndex(targetElement)}`;
-  tooltipWrapper.textContent = "!";
   if (hintData.additionStyle) {
     for (const key in hintData.additionStyle) {
       tooltipWrapper.style[key] = `${hintData.additionStyle[key]}`;
@@ -257,17 +260,6 @@ const renderTooltip = (
     removeHint(hintIndex);
   });
 
-  targetElement.addEventListener(
-    "click",
-    () => {
-      closedHintIndexSet.add(hintIndex);
-      removeHint(hintIndex);
-    },
-    {
-      once: true,
-    }
-  );
-
   requestAnimationFrame(() =>
     updateTooltipPosition(targetElement, hintData, hintIndex)
   );
@@ -283,7 +275,6 @@ const updateTooltipPosition = (
   ) as HTMLElement;
 
   if (!targetElement || !hintWrapper) {
-    removeHint(hintIndex);
     return;
   }
 
@@ -291,7 +282,6 @@ const updateTooltipPosition = (
   const bounding = getElementBounding(targetElement);
 
   if (bounding.width === 0 && bounding.height === 0) {
-    removeHint(hintIndex);
     return;
   }
 
