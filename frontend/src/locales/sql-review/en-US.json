@@ -28,6 +28,15 @@
       "title": "No foreign key",
       "description": "Disallow the foreign key in the table."
     },
+    "table-drop-naming-convention": {
+      "title": "Drop table with naming convention",
+      "description": "Only tables named with specific patterns can be deleted. The requires users to do a rename before dropping the table. The table name must have \"_delete\" suffix by default.",
+      "component": {
+        "name_format": {
+          "title": "Table name format (regex)"
+        }
+      }
+    },
     "naming-table": {
       "title": "Table naming check",
       "description": "Enforce the table name format and length limit. Default snake_lower_case with 64 characters.",

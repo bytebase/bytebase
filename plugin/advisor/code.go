@@ -48,8 +48,9 @@ const (
 	NotInnoDBEngine Code = 501
 
 	// 601 ~ 699 table rule advisor error code
-	TableNoPK  Code = 601
-	TableHasFK Code = 602
+	TableNoPK                         Code = 601
+	TableHasFK                        Code = 602
+	TableDropNamingConventionMismatch Code = 603
 )
 
 // Int returns the int type of code.
