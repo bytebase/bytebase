@@ -296,8 +296,8 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 }
 
 // ScheduleIfNeeded schedules the task if
-// its required check does not contain error in the latest run
-// and has no blocking tasks
+// 1. its required check does not contain error in the latest run
+// 2. it has no blocking tasks
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	schedule, err := s.canScheduleTask(ctx, task)
 	if err != nil {
