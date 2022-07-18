@@ -150,15 +150,8 @@ func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 // getForeignKeyMetadata returns index metadata of a foreign key constraint, nil if other constraints.
 func getForeignKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
 	if constraint.Type == ast.ConstraintTypeForeign {
-		var referencingColumnList []string
-		for _, key := range constraint.KeyList {
-			referencingColumnList = append(referencingColumnList, key)
-		}
-
-		var referencedColumnList []string
-		for _, key := range constraint.Foreign.ColumnList {
-			referencedColumnList = append(referencedColumnList, key)
-		}
+		referencingColumnList := constraint.KeyList
+		referencedColumnList := constraint.Foreign.ColumnList
 
 		metaData := map[string]string{
 			advisor.ReferencingTableNameTemplateToken:  tableName,
