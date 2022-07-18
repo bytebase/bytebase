@@ -67,7 +67,7 @@
   },
   {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
-    "url": ".+?/db/.+?(?<!#migration-history)$",
+    "url": ".+?/db/.+?#overview$",
     "type": "tooltip",
     "dialog": {
       "title": "",
