@@ -341,6 +341,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, erro
 		switch engine {
 		case MySQL, TiDB:
 			return MySQLNamingFKConvention, nil
+		case Postgres:
+			return PostgreSQLNamingFKConvention, nil
 		}
 	case SchemaRuleColumnNaming:
 		switch engine {
