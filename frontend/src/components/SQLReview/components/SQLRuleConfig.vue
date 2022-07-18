@@ -18,7 +18,7 @@
             :text="$t(`sql-review.engine.${selectedRule.engine.toLowerCase()}`)"
             :can-remove="false"
           />
-          <SchemaRuleLevelBadge :level="selectedRule.level" />
+          <SQLRuleLevelBadge :level="selectedRule.level" />
         </div>
         <div class="text-sm text-gray-400 ml-7">
           {{ getRuleLocalization(selectedRule.type).description }}
@@ -39,8 +39,8 @@
               :value="level"
               type="radio"
               :checked="level === selectedRule.level"
-              @input="emit('level-change', level)"
               class="text-accent disabled:text-accent-disabled focus:ring-accent"
+              @input="emit('level-change', level)"
             />
             <label
               :for="`level-${level}`"
@@ -97,7 +97,7 @@
             type="text"
             pattern="[a-z]+"
             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md"
-            :placeholder="$t('schema-review-policy.input-then-press-enter')"
+            :placeholder="$t('sql-review.input-then-press-enter')"
             @keyup.enter="(e) => pushToList(index, e)"
           />
         </div>
@@ -130,7 +130,7 @@ import {
   RuleConfigComponent,
   getRuleLocalization,
   getRuleLocalizationKey,
-} from "@/types/schemaSystem";
+} from "@/types/sqlReview";
 
 type PayloadValueList = (string | number | string[])[];
 interface LocalState {

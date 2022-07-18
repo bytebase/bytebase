@@ -24,7 +24,7 @@ import { VCS } from "./vcs";
 import { DeploymentConfig } from "./deployment";
 import { DefaultApporvalPolicy } from "./policy";
 import { Sheet } from "./sheet";
-import { DatabaseSchemaReviewPolicy } from "./schemaSystem";
+import { SQLReviewPolicy } from "./sqlReview";
 
 // System bot id
 export const SYSTEM_BOT_ID = 1;
@@ -73,7 +73,7 @@ export type RouterSlug = {
   vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
-  schemaReviewPolicySlug?: string;
+  sqlReviewPolicySlug?: string;
 };
 
 // Quick Action Type
@@ -137,7 +137,7 @@ export type ResourceType =
   | "ANOMALY"
   | "DEPLOYMENT_CONFIG"
   | "SHEET"
-  | "SCHEMA_REVIEW";
+  | "SQL_REVIEW";
 
 interface ResourceMaker {
   (type: "PRINCIPAL"): Principal;
@@ -163,7 +163,7 @@ interface ResourceMaker {
   (type: "ANOMALY"): Anomaly;
   (type: "DEPLOYMENT_CONFIG"): DeploymentConfig;
   (type: "SHEET"): Sheet;
-  (type: "SCHEMA_REVIEW"): DatabaseSchemaReviewPolicy;
+  (type: "SQL_REVIEW"): SQLReviewPolicy;
 }
 
 const makeUnknown = (type: ResourceType) => {
@@ -495,7 +495,7 @@ const makeUnknown = (type: ResourceType) => {
     pinned: false,
   };
 
-  const UNKNOWN_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: UNKNOWN_ID,
     creator: UNKNOWN_PRINCIPAL,
     updater: UNKNOWN_PRINCIPAL,
@@ -554,8 +554,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_DEPLOYMENT_CONFIG;
     case "SHEET":
       return UNKNOWN_SHEET;
-    case "SCHEMA_REVIEW":
-      return UNKNOWN_SCHEMA_REVIEW_POLICY;
+    case "SQL_REVIEW":
+      return UNKNOWN_SQL_REVIEW_POLICY;
   }
 };
 export const unknown = makeUnknown as ResourceMaker;
@@ -887,7 +887,7 @@ const makeEmpty = (type: ResourceType) => {
     pinned: false,
   };
 
-  const EMPTY_SCHEMA_REVIEW_POLICY: DatabaseSchemaReviewPolicy = {
+  const EMPTY_SQL_REVIEW_POLICY: SQLReviewPolicy = {
     id: EMPTY_ID,
     creator: EMPTY_PRINCIPAL,
     updater: EMPTY_PRINCIPAL,
@@ -946,8 +946,8 @@ const makeEmpty = (type: ResourceType) => {
       return EMPTY_DEPLOYMENT_CONFIG;
     case "SHEET":
       return EMPTY_SHEET;
-    case "SCHEMA_REVIEW":
-      return EMPTY_SCHEMA_REVIEW_POLICY;
+    case "SQL_REVIEW":
+      return EMPTY_SQL_REVIEW_POLICY;
   }
 };
 export const empty = makeEmpty as ResourceMaker;

@@ -65,6 +65,5 @@ func (find *DBExtensionFind) String() string {
 
 // DBExtensionDelete is the API message for deleting a database extension.
 type DBExtensionDelete struct {
-	// Related fields
-	DatabaseID int
+	ID int
 }

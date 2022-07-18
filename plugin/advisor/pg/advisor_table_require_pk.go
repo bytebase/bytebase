@@ -24,7 +24,7 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 		return errAdvice, nil
 	}
 
-	_, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	_, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ func (adv *TableNoFKAdvisor) Check(ctx advisor.Context, statement string) ([]adv
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}

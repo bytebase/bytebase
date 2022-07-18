@@ -158,9 +158,9 @@ func UnmarshalBackupPlanPolicy(payload string) (*BackupPlanPolicy, error) {
 	return &bp, nil
 }
 
-// UnmarshalSchemaReviewPolicy will unmarshal payload to schema review policy.
-func UnmarshalSchemaReviewPolicy(payload string) (*advisor.SchemaReviewPolicy, error) {
-	var sr advisor.SchemaReviewPolicy
+// UnmarshalSQLReviewPolicy will unmarshal payload to schema review policy.
+func UnmarshalSQLReviewPolicy(payload string) (*advisor.SQLReviewPolicy, error) {
+	var sr advisor.SQLReviewPolicy
 	if err := json.Unmarshal([]byte(payload), &sr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema review policy %q: %q", payload, err)
 	}
@@ -194,7 +194,7 @@ func ValidatePolicy(pType PolicyType, payload string) error {
 			return fmt.Errorf("invalid backup plan policy schedule: %q", bp.Schedule)
 		}
 	case PolicyTypeSchemaReview:
-		sr, err := UnmarshalSchemaReviewPolicy(payload)
+		sr, err := UnmarshalSQLReviewPolicy(payload)
 		if err != nil {
 			return err
 		}

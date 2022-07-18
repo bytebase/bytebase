@@ -31,8 +31,8 @@ export type BackupPlanPolicyPayload = {
 
 export const DefaultSchedulePolicy: BackupPlanPolicySchedule = "UNSET";
 
-// SchemaReviewPolicyPayload is the payload for schema review policy in the backend.
-export type SchemaReviewPolicyPayload = {
+// SQLReviewPolicyPayload is the payload for schema review policy in the backend.
+export type SQLReviewPolicyPayload = {
   name: string;
   ruleList: {
     type: RuleType;
@@ -44,7 +44,7 @@ export type SchemaReviewPolicyPayload = {
 export type PolicyPayload =
   | PipelineApporvalPolicyPayload
   | BackupPlanPolicyPayload
-  | SchemaReviewPolicyPayload;
+  | SQLReviewPolicyPayload;
 
 export type Policy = {
   id: PolicyId;

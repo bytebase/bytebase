@@ -2,16 +2,16 @@
   <div class="space-y-9">
     <div>
       <label class="textlabel">
-        {{ $t("schema-review-policy.create.basic-info.display-name") }}
+        {{ $t("sql-review.create.basic-info.display-name") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel">
-        {{ $t("schema-review-policy.create.basic-info.display-name-label") }}
+        {{ $t("sql-review.create.basic-info.display-name-label") }}
       </p>
       <BBTextField
         class="mt-2 w-full"
         :placeholder="
-          $t('schema-review-policy.create.basic-info.display-name-placeholder')
+          $t('sql-review.create.basic-info.display-name-placeholder')
         "
         :value="name"
         @input="(e) => onNameChange(e)"
@@ -19,20 +19,18 @@
     </div>
     <div>
       <label class="textlabel">
-        {{ $t("schema-review-policy.create.basic-info.environments") }}
+        {{ $t("sql-review.create.basic-info.environments") }}
         <span style="color: red">*</span>
       </label>
       <p class="mt-1 textinfolabel mb-5">
-        {{ $t("schema-review-policy.create.basic-info.environments-label") }}
+        {{ $t("sql-review.create.basic-info.environments-label") }}
       </p>
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         :style="'WARN'"
         :title="$t('common.environment')"
         :description="
-          $t(
-            'schema-review-policy.create.basic-info.no-available-environment-desc'
-          )
+          $t('sql-review.create.basic-info.no-available-environment-desc')
         "
         class="mb-5"
       />
@@ -82,12 +80,10 @@
             :class="state.openTemplate ? 'rotate-90' : ''"
           />
           <span class="ml-l text-sm font-medium">
-            {{
-              $t("schema-review-policy.create.configure-rule.change-template")
-            }}
+            {{ $t("sql-review.create.configure-rule.change-template") }}
           </span>
         </div>
-        <SchemaReviewTemplates
+        <SQLReviewTemplates
           v-if="state.openTemplate"
           :required="false"
           :template-list="templateList"
@@ -96,12 +92,12 @@
           class="mx-5 mt-5"
         />
       </div>
-      <SchemaReviewTemplates
+      <SQLReviewTemplates
         v-else
         :required="true"
         :template-list="templateList"
         :selected-template-index="selectedTemplateIndex"
-        :title="$t('schema-review-policy.create.basic-info.choose-template')"
+        :title="$t('sql-review.create.basic-info.choose-template')"
         @select="(index) => $emit('select-template', index)"
       />
     </div>
@@ -110,8 +106,8 @@
 
 <script lang="ts" setup>
 import { PropType, reactive, computed } from "vue";
-import { useSchemaSystemStore, useEnvironmentList } from "@/store";
-import { Environment, SchemaReviewPolicyTemplate } from "@/types";
+import { useSQLReviewStore, useEnvironmentList } from "@/store";
+import { Environment, SQLReviewPolicyTemplate } from "@/types";
 import { environmentName } from "@/utils";
 
 interface LocalEnvironment extends Environment {
@@ -139,7 +135,7 @@ const props = defineProps({
   },
   templateList: {
     required: true,
-    type: Object as PropType<SchemaReviewPolicyTemplate[]>,
+    type: Object as PropType<SQLReviewPolicyTemplate[]>,
   },
   selectedTemplateIndex: {
     required: true,
@@ -157,7 +153,7 @@ const state = reactive<LocalState>({
   openTemplate: false,
 });
 
-const store = useSchemaSystemStore();
+const store = useSQLReviewStore();
 
 const environmentList = computed((): LocalEnvironment[] => {
   const environmentList = useEnvironmentList(["NORMAL"]);

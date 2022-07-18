@@ -212,6 +212,9 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 
 	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
 	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
 		return -1, "", err
 	}
 	startedNs := time.Now().UnixNano()

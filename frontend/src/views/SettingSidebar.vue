@@ -74,9 +74,9 @@
             >{{ $t("settings.sidebar.version-control") }}</router-link
           >
           <router-link
-            to="/setting/schema-review-policy"
+            to="/setting/sql-review"
             class="outline-item group w-full flex items-center pl-11 pr-2 py-2"
-            >{{ $t("schema-review-policy.title") }}</router-link
+            >{{ $t("sql-review.title") }}</router-link
           >
           <router-link
             to="/setting/subscription"
@@ -115,7 +115,7 @@ export default defineComponent({
       default: "",
       type: String,
     },
-    schemaReviewPolicySlug: {
+    sqlReviewPolicySlug: {
       default: "",
       type: String,
     },

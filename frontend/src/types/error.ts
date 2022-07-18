@@ -21,7 +21,7 @@ export enum MigrationErrorCode {
   MIGRATION_BASELINE_MISSING = 204,
 }
 
-export enum SchemaReviewPolicyErrorCode {
+export enum SQLReviewPolicyErrorCode {
   EMPTY_POLICY = 401,
   STATEMENT_NO_WHERE = 10101,
   STATEMENT_NO_SELECT_ALL = 10102,
@@ -56,7 +56,7 @@ export type ErrorCode =
   | DBErrorCode
   | MigrationErrorCode
   | CompatibilityErrorCode
-  | SchemaReviewPolicyErrorCode;
+  | SQLReviewPolicyErrorCode;
 
 export type ErrorTag = "General" | "Compatibility";
 

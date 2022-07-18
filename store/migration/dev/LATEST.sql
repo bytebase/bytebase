@@ -424,8 +424,10 @@ CREATE TABLE idx (
     position INTEGER NOT NULL,
     type TEXT NOT NULL,
     "unique" BOOLEAN NOT NULL,
+    "primary" BOOLEAN NOT NULL,
     visible BOOLEAN NOT NULL,
-    comment TEXT NOT NULL
+    comment TEXT NOT NULL,
+    CONSTRAINT check_primary_must_unique CHECK(NOT "primary" OR ("primary" AND "unique"))
 );
 
 CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
