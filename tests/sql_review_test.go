@@ -232,6 +232,13 @@ func TestSQLReview(t *testing.T) {
 				statement: "DROP TABLE user",
 				result: []api.TaskCheckResult{
 					{
+						Status:    api.TaskCheckStatusError,
+						Namespace: api.AdvisorNamespace,
+						Code:      advisor.TableDropNamingConventionMismatch.Int(),
+						Title:     "table.drop-naming-convention",
+						Content:   "`user` mismatches drop table naming convention, naming format should be \"_delete$\"",
+					},
+					{
 						Status:    api.TaskCheckStatusWarn,
 						Namespace: api.AdvisorNamespace,
 						Code:      advisor.CompatibilityDropTable.Int(),
