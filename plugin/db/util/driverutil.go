@@ -144,6 +144,9 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	// Phase 2 - Record migration history as PENDING
 	insertedID, err := BeginMigration(ctx, executor, m, prevSchemaBuf.String(), statement, databaseName)
 	if err != nil {
+		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
+			return insertedID, prevSchemaBuf.String(), nil
+		}
 		return -1, "", err
 	}
 
@@ -172,7 +175,7 @@ func ExecuteMigration(ctx context.Context, executor MigrationExecutor, m *db.Mig
 	if doMigrate {
 		// Switch to the target database only if we're NOT creating this target database.
 		if !m.CreateDatabase {
-			if _, err := executor.GetDbConnection(ctx, m.Database); err != nil {
+			if _, err := executor.GetDBConnection(ctx, m.Database); err != nil {
 				return -1, "", err
 			}
 		}
@@ -207,7 +210,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
-			return -1, common.Errorf(common.MigrationAlreadyApplied,
+			return int64(list[0].ID), common.Errorf(common.MigrationAlreadyApplied,
 				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
 		case db.Pending:
 			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
@@ -228,7 +231,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		}
 	}
 
-	sqldb, err := executor.GetDbConnection(ctx, databaseName)
+	sqldb, err := executor.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return -1, err
 	}
@@ -271,7 +274,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 func EndMigration(ctx context.Context, executor MigrationExecutor, startedNs int64, migrationHistoryID int64, updatedSchema string, databaseName string, isDone bool) (err error) {
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 
-	sqldb, err := executor.GetDbConnection(ctx, databaseName)
+	sqldb, err := executor.GetDBConnection(ctx, databaseName)
 	if err != nil {
 		return err
 	}
@@ -401,7 +404,7 @@ func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]i
 func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string, find *db.MigrationHistoryFind, baseQuery string) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
-	sqldb, err := driver.GetDbConnection(ctx, database)
+	sqldb, err := driver.GetDBConnection(ctx, database)
 	if err != nil {
 		return nil, err
 	}

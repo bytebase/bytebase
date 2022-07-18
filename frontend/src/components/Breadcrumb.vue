@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex" aria-label="Breadcrumb">
+  <nav class="flex" aria-label="Breadcrumb" data-label="bb-breadcrumb">
     <div v-for="(item, index) in breadcrumbList" :key="index">
       <div class="flex items-center space-x-2">
         <router-link
@@ -103,7 +103,7 @@ export default defineComponent({
       const dataSourceSlug = routeSlug.dataSourceSlug;
       const migrationHistory = routeSlug.migrationHistorySlug;
       const versionControlSlug = routeSlug.vcsSlug;
-      const schemaReviewPolicySlug = routeSlug.schemaReviewPolicySlug;
+      const sqlReviewPolicySlug = routeSlug.sqlReviewPolicySlug;
 
       const list: Array<BreadcrumbItem> = [];
       if (environmentSlug) {
@@ -155,10 +155,10 @@ export default defineComponent({
           name: t("common.version-control"),
           path: "/setting/version-control",
         });
-      } else if (schemaReviewPolicySlug) {
+      } else if (sqlReviewPolicySlug) {
         list.push({
-          name: t("schema-review-policy.title"),
-          path: "/setting/schema-review-policy",
+          name: t("sql-review.title"),
+          path: "/setting/sql-review",
         });
       }
 

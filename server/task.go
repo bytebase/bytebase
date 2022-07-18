@@ -82,7 +82,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 
-			if task.Status != api.TaskPending && task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
+			// Allow frontend to change the SQL statement of
+			// a PendingApproval task, which hasn't started yet
+			// a Failed task, which can be retried
+			if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Can not update task in %v state", task.Status))
 			}
 			newStatement = *taskPatch.Statement
@@ -238,7 +241,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 					}
 				}
 
-				if s.feature(api.FeatureSchemaReviewPolicy) && api.IsSchemaReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
+				if s.feature(api.FeatureSQLReviewPolicy) && api.IsSQLReviewSupported(task.Database.Instance.Engine, s.profile.Mode) {
 					if err := s.triggerDatabaseStatementAdviseTask(ctx, *taskPatch.Statement, taskPatched); err != nil {
 						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to trigger database statement advise task, err: %w", err)).SetInternal(err)
 					}
@@ -444,7 +447,7 @@ func (s *Server) changeTaskStatusWithPatch(ctx context.Context, task *api.Task, 
 	}
 	// Not all pipelines belong to an issue, so it's OK if issue is not found.
 	if issue == nil {
-		log.Info("Pipeline has no linking issue",
+		log.Debug("Pipeline has no linking issue",
 			zap.Int("pipelineID", task.PipelineID),
 			zap.String("task", task.Name))
 	}

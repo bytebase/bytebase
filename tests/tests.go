@@ -134,13 +134,14 @@ func getTestPort(testName string) int {
 		"TestPITR/Schema_Migration_Failure",
 		"TestPITR/Drop_Database",
 		"TestPITR/Case_Sensitive",
+		"TestPITR/Invalid_Time_Point",
 		"TestPITR/PITR_Twice",
 
 		"TestCheckEngineInnoDB",
 		"TestCheckServerVersionAndBinlogForPITR",
 		"TestFetchBinlogFiles",
 
-		"TestSchemaSystem",
+		"TestSQLReview",
 	}
 	port := 1234
 	for _, name := range tests {
@@ -1419,7 +1420,7 @@ func (ctl *controller) getSchemaReviewResult(id int) ([]api.TaskCheckResult, err
 }
 
 // setDefaultSchemaReviewRulePayload sets the default payload for this rule.
-func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (string, error) {
+func setDefaultSchemaReviewRulePayload(ruleTp advisor.SQLReviewRuleType) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
@@ -1431,6 +1432,10 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 	case advisor.SchemaRuleTableNoFK:
 	case advisor.SchemaRuleColumnNotNull:
 	case advisor.SchemaRuleSchemaBackwardCompatibility:
+	case advisor.SchemaRuleTableDropNamingConvention:
+		payload, err = json.Marshal(advisor.NamingRulePayload{
+			Format: "_delete$",
+		})
 	case advisor.SchemaRuleTableNaming:
 		fallthrough
 	case advisor.SchemaRuleColumnNaming:
@@ -1471,9 +1476,9 @@ func setDefaultSchemaReviewRulePayload(ruleTp advisor.SchemaReviewRuleType) (str
 
 // prodTemplateSchemaReviewPolicy returns the default schema review policy.
 func prodTemplateSchemaReviewPolicy() (string, error) {
-	policy := advisor.SchemaReviewPolicy{
+	policy := advisor.SQLReviewPolicy{
 		Name: "Prod",
-		RuleList: []*advisor.SchemaReviewRule{
+		RuleList: []*advisor.SQLReviewRule{
 			{
 				Type:  advisor.SchemaRuleMySQLEngine,
 				Level: advisor.SchemaRuleLevelError,
@@ -1516,6 +1521,10 @@ func prodTemplateSchemaReviewPolicy() (string, error) {
 			},
 			{
 				Type:  advisor.SchemaRuleTableNoFK,
+				Level: advisor.SchemaRuleLevelError,
+			},
+			{
+				Type:  advisor.SchemaRuleTableDropNamingConvention,
 				Level: advisor.SchemaRuleLevelError,
 			},
 			{

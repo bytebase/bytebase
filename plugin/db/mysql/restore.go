@@ -202,7 +202,7 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 		"SET foreign_key_checks=OFF",
 		pitrDatabaseName, pitrDatabaseName)
 
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -627,7 +627,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 
 // GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
 func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -894,7 +894,7 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
 func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -926,7 +926,7 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return "", err
 	}

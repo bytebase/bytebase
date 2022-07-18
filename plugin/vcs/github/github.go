@@ -3,6 +3,7 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -84,6 +85,33 @@ type Repository struct {
 	HTMLURL  string `json:"html_url"`
 }
 
+// RepositoryTree represents a GitHub API response for a repository tree.
+type RepositoryTree struct {
+	Tree []RepositoryTreeNode `json:"tree"`
+}
+
+// RepositoryTreeNode represents a GitHub API response for a repository tree
+// node.
+type RepositoryTreeNode struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
+// File represents a GitHub API response for a repository file.
+type File struct {
+	Encoding string `json:"encoding"`
+	Size     int64  `json:"size"`
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	Content  string `json:"content"`
+	SHA      string `json:"sha"`
+}
+
+// WebhookInfo represents a GitHub API response for the webhook information.
+type WebhookInfo struct {
+	ID int `json:"id"`
+}
+
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
@@ -107,14 +135,9 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		errInfo := []string{"failed to fetch user info from GitHub.com"}
-		resourceURISplit := strings.Split(resourceURI, "/")
-		if len(resourceURI) > 1 {
-			errInfo = append(errInfo, fmt.Sprintf("Username: %s", resourceURISplit[1]))
-		}
-		return nil, common.Errorf(common.NotFound, fmt.Errorf(strings.Join(errInfo, ", ")))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from GitHub.com, status code: %d", code)
+		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	var user User
@@ -143,6 +166,14 @@ type Commit struct {
 	} `json:"author"`
 }
 
+// FileCommit represents a GitHub API request for committing a file.
+type FileCommit struct {
+	Message string `json:"message"`
+	Content string `json:"content"`
+	SHA     string `json:"sha,omitempty"`
+	Branch  string `json:"branch,omitempty"`
+}
+
 // FetchCommitByID fetches the commit data by its ID from the repository.
 func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, commitID string) (*vcs.Commit, error) {
 	url := fmt.Sprintf("%s/repos/%s/git/commits/%s", apiURL, repositoryID, commitID)
@@ -165,9 +196,9 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, errors.New("failed to fetch commit data from GitHub.com, not found"))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from URL %s", url))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to fetch commit data from GitHub.com, status code: %d, body: %s", code, body)
+		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s", url, code, body)
 	}
 
 	commit := &Commit{}
@@ -440,44 +471,317 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	return repos, len(repos) >= 100, nil
 }
 
-// FetchRepositoryFileList fetch the files from repository tree
-func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// FetchRepositoryFileList fetches the all files from the given repository tree
+// recursively.
+//
+// Docs: https://docs.github.com/en/rest/git/trees#get-a-tree
+//
+// TODO: GitHub returns truncated response if the number of items in the tree
+// array exceeded their maximum limit. It is not noted what exactly is the
+// maximum limit and requires making non-recursive request to each sub-tree.
+func (p *Provider) FetchRepositoryFileList(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, ref, filePath string) ([]*vcs.RepositoryTreeNode, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/trees/%s?recursive=true", apiURL, repositoryID, ref)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository file list from URL %s", url))
+	} else if code >= 300 {
+		return nil,
+			fmt.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var repoTree RepositoryTree
+	if err := json.Unmarshal([]byte(body), &repoTree); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	if filePath != "" && !strings.HasSuffix(filePath, "/") {
+		filePath += "/"
+	}
+
+	var allTreeNodes []*vcs.RepositoryTreeNode
+	for _, n := range repoTree.Tree {
+		// GitHub does not support filtering by path prefix, thus simulating the
+		// behavior here.
+		if n.Type == "blob" && strings.HasPrefix(n.Path, filePath) {
+			allTreeNodes = append(allTreeNodes,
+				&vcs.RepositoryTreeNode{
+					Path: n.Path,
+					Type: n.Type,
+				},
+			)
+		}
+	}
+	return allTreeNodes, nil
 }
 
-// CreateFile creates a file.
-func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// CreateFile creates a file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	body, err := json.Marshal(
+		FileCommit{
+			Message: fileCommitCreate.CommitMessage,
+			Content: base64.StdEncoding.EncodeToString([]byte(fileCommitCreate.Content)),
+			Branch:  fileCommitCreate.Branch,
+			SHA:     fileCommitCreate.LastCommitID,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal file commit")
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/contents/%s", apiURL, repositoryID, url.QueryEscape(filePath))
+	code, _, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to create/update file through URL %s", url))
+	} else if code >= 300 {
+		return fmt.Errorf("failed to create/update file through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
-// OverwriteFile overwrite the content of a file.
-func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommit vcs.FileCommitCreate) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// OverwriteFile overwrites an existing file at given path in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath string, fileCommitCreate vcs.FileCommitCreate) error {
+	return p.CreateFile(ctx, oauthCtx, instanceURL, repositoryID, filePath, fileCommitCreate)
 }
 
-// ReadFileMeta reads the file metadata.
-func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
-	return nil, errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// ReadFileMeta reads the metadata of the given file in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
+func (p *Provider) ReadFileMeta(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (*vcs.FileMeta, error) {
+	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+	if err != nil {
+		return nil, errors.Wrap(err, "read file")
+	}
+
+	return &vcs.FileMeta{
+		Name:         file.Name,
+		Path:         file.Path,
+		Size:         file.Size,
+		LastCommitID: file.SHA,
+	}, nil
 }
 
-// ReadFileContent reads the file content.
-func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, filePath, ref string) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// ReadFileContent reads the content of the given file in the repository.
+//
+// Docs: https://docs.github.com/en/rest/repos/contents#get-repository-content
+func (p *Provider) ReadFileContent(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, filePath, ref string) (string, error) {
+	file, err := p.readFile(ctx, oauthCtx, repositoryID, filePath, ref)
+	if err != nil {
+		return "", errors.Wrap(err, "read file")
+	}
+	return file.Content, nil
 }
 
-// CreateWebhook creates a webhook in a GitLab project.
-func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID string, payload []byte) (string, error) {
-	return "", errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// readFile reads the given file in the repository.
+func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, repositoryID, filePath, ref string) (*File, error) {
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", apiURL, repositoryID, url.QueryEscape(filePath), ref)
+	code, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file from URL %s", url))
+	} else if code >= 300 {
+		return nil,
+			fmt.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	// This API endpoint returns a JSON array if the path is a directory, and we do
+	// not want that.
+	if body != "" && body[0] == '[' {
+		return nil, errors.Errorf("%q is a directory not a file", filePath)
+	}
+
+	var file File
+	if err = json.Unmarshal([]byte(body), &file); err != nil {
+		return nil, errors.Wrap(err, "unmarshal body")
+	}
+
+	if file.Encoding == "base64" {
+		decodedContent, err := base64.StdEncoding.DecodeString(file.Content)
+		if err != nil {
+			return nil, errors.Wrap(err, "decode file content")
+		}
+		file.Content = string(decodedContent)
+	}
+	return &file, nil
 }
 
-// PatchWebhook patches a webhook in a GitLab project.
-func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string, payload []byte) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// CreateWebhook creates a webhook in the repository with given payload.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID string, payload []byte) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/hooks", apiURL, repositoryID)
+	code, body, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "POST %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, fmt.Errorf("failed to create webhook through URL %s", url))
+	} else if code >= 300 {
+		return "",
+			fmt.Errorf("failed to create webhook through URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var webhookInfo WebhookInfo
+	if err = json.Unmarshal([]byte(body), &webhookInfo); err != nil {
+		return "", errors.Wrap(err, "unmarshal body")
+	}
+	return strconv.Itoa(webhookInfo.ID), nil
 }
 
-// DeleteWebhook deletes a webhook in a GitLab project.
-func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, instanceURL, repositoryID, webhookID string) error {
-	return errors.New("not implemented yet") // TODO: https://github.com/bytebase/bytebase/issues/928
+// PatchWebhook patches the webhook in the repository with given payload.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#update-a-repository-webhook
+func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string, payload []byte) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+	code, body, err := oauth.Patch(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(payload),
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PATCH %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, fmt.Errorf("failed to patch webhook through URL %s", url))
+	} else if code >= 300 {
+		return fmt.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
+}
+
+// DeleteWebhook deletes the webhook from the repository.
+//
+// Docs: https://docs.github.com/en/rest/webhooks/repos#delete-a-repository-webhook
+func (p *Provider) DeleteWebhook(ctx context.Context, oauthCtx common.OauthContext, _, repositoryID, webhookID string) error {
+	url := fmt.Sprintf("%s/repos/%s/hooks/%s", apiURL, repositoryID, webhookID)
+	code, body, err := oauth.Delete(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "DELETE %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil // It is OK if the webhook has already gone
+	} else if code >= 300 {
+		return fmt.Errorf("failed to delete webhook through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+	return nil
 }
 
 // oauthContext is the request context for refreshing oauth token.
@@ -523,7 +827,7 @@ func tokenRefresher(oauthCtx oauthContext, refresher common.TokenRefresher) oaut
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return errors.Errorf("non-200 status code %d with body %q", resp.StatusCode, body)
+			return errors.Errorf("non-200 POST %s status code %d with body %q", url, resp.StatusCode, body)
 		}
 
 		var r refreshOAuthResponse

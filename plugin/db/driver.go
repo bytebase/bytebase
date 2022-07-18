@@ -65,8 +65,9 @@ type Index struct {
 	Expression string
 	Position   int
 	// Type isn't supported for SQLite.
-	Type   string
-	Unique bool
+	Type    string
+	Unique  bool
+	Primary bool
 	// Visible isn't supported for Postgres, SQLite.
 	Visible bool
 	// Comment isn't supported for SQLite.
@@ -119,6 +120,7 @@ type Table struct {
 
 // InstanceMeta is the metadata for an instance.
 type InstanceMeta struct {
+	Version      string
 	UserList     []User
 	DatabaseList []DatabaseMeta
 }
@@ -384,10 +386,9 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetDbConnection(ctx context.Context, database string) (*sql.DB, error)
-	GetVersion(ctx context.Context) (string, error)
-	// SyncSchema syncs the database schema. If databaseList is empty, we will sync all databases for the instance.
-	SyncSchema(ctx context.Context, databaseList ...string) ([]*Schema, error)
+	GetDBConnection(ctx context.Context, database string) (*sql.DB, error)
+	// SyncDBSchema syncs a single database schema.
+	SyncDBSchema(ctx context.Context, database string) (*Schema, error)
 	SyncInstance(ctx context.Context) (*InstanceMeta, error)
 	// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 	// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.

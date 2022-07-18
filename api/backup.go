@@ -186,6 +186,7 @@ type BackupSetting struct {
 	Hour      int `jsonapi:"attr,hour"`
 	DayOfWeek int `jsonapi:"attr,dayOfWeek"`
 	// RetentionPeriodTs is the period that backup data is kept for the database.
+	// 0 means unset and we do not delete data.
 	RetentionPeriodTs int `jsonapi:"attr,retentionPeriodTs"`
 	// HookURL is the callback url to be requested (using HTTP GET) after a successful backup.
 	HookURL string `jsonapi:"attr,hookUrl"`

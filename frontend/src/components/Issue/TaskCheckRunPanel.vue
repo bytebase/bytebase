@@ -37,11 +37,11 @@
         <BBTableCell class="w-64">
           {{ checkResult.content }}
           <a
-            v-if="errorCodeLink(checkResult.code)"
+            v-if="errorCodeLink(checkResult)"
             class="normal-link"
-            :href="errorCodeLink(checkResult.code)?.url"
-            :target="errorCodeLink(checkResult.code)?.target"
-            >{{ errorCodeLink(checkResult.code)?.title }}</a
+            :href="errorCodeLink(checkResult)?.url"
+            :target="errorCodeLink(checkResult)?.target"
+            >{{ errorCodeLink(checkResult)?.title }}</a
           >
         </BBTableCell>
       </template>
@@ -58,11 +58,11 @@ import {
   TaskCheckRun,
   TaskCheckResult,
   ErrorCode,
-  ERROR_LIST,
   GeneralErrorCode,
   ruleTemplateMap,
   getRuleLocalization,
-  SchemaReviewPolicyErrorCode,
+  CompatibilityErrorCode,
+  SQLReviewPolicyErrorCode,
   RuleType,
 } from "@/types";
 
@@ -117,6 +117,7 @@ export default defineComponent({
             title: t("common.error"),
             code: props.taskCheckRun.code,
             content: props.taskCheckRun.result.detail,
+            namespace: "bb.core",
           },
         ];
       } else if (props.taskCheckRun.status == "CANCELED") {
@@ -126,6 +127,7 @@ export default defineComponent({
             title: t("common.canceled"),
             code: props.taskCheckRun.code,
             content: "",
+            namespace: "bb.core",
           },
         ];
       }
@@ -137,21 +139,36 @@ export default defineComponent({
       let title = "";
 
       switch (checkResult.code) {
-        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+        case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           title = checkResult.title;
           break;
-        case SchemaReviewPolicyErrorCode.STATEMENT_NO_WHERE:
-        case SchemaReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
-        case SchemaReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
-        case SchemaReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.UK_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.FK_NAMING_DISMATCH:
-        case SchemaReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
-        case SchemaReviewPolicyErrorCode.COLUMN_CANBE_NULL:
-        case SchemaReviewPolicyErrorCode.NOT_INNODB_ENGINE:
-        case SchemaReviewPolicyErrorCode.NO_PK_IN_TABLE:
+        // SchemaReviewPolicyErrorCode
+        case SQLReviewPolicyErrorCode.STATEMENT_NO_WHERE:
+        case SQLReviewPolicyErrorCode.STATEMENT_NO_SELECT_ALL:
+        case SQLReviewPolicyErrorCode.STATEMENT_LEADING_WILDCARD_LIKE:
+        case SQLReviewPolicyErrorCode.TABLE_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.COLUMN_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.INDEX_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.UK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.FK_NAMING_DISMATCH:
+        case SQLReviewPolicyErrorCode.NO_REQUIRED_COLUMN:
+        case SQLReviewPolicyErrorCode.COLUMN_CANBE_NULL:
+        case SQLReviewPolicyErrorCode.NOT_INNODB_ENGINE:
+        case SQLReviewPolicyErrorCode.NO_PK_IN_TABLE:
+        case SQLReviewPolicyErrorCode.FK_IN_TABLE:
+        case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
+        // CompatibilityErrorCode
+        case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
+        case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:
+        case CompatibilityErrorCode.COMPATIBILITY_DROP_TABLE:
+        case CompatibilityErrorCode.COMPATIBILITY_RENAME_COLUMN:
+        case CompatibilityErrorCode.COMPATIBILITY_DROP_COLUMN:
+        case CompatibilityErrorCode.COMPATIBILITY_ADD_PRIMARY_KEY:
+        case CompatibilityErrorCode.COMPATIBILITY_ADD_UNIQUE_KEY:
+        case CompatibilityErrorCode.COMPATIBILITY_ADD_FOREIGN_KEY:
+        case CompatibilityErrorCode.COMPATIBILITY_ADD_CHECK:
+        case CompatibilityErrorCode.COMPATIBILITY_ALTER_CHECK:
+        case CompatibilityErrorCode.COMPATIBILITY_ALTER_COLUMN:
           const rule = ruleTemplateMap.get(checkResult.title as RuleType);
 
           if (rule) {
@@ -168,25 +185,26 @@ export default defineComponent({
       return title ? `${title} (${checkResult.code})` : checkResult.title;
     };
 
-    const errorCodeLink = (code: ErrorCode): ErrorCodeLink | undefined => {
-      switch (code) {
+    const errorCodeLink = (
+      checkResult: TaskCheckResult
+    ): ErrorCodeLink | undefined => {
+      switch (checkResult.code) {
         case GeneralErrorCode.OK:
           return;
-        case SchemaReviewPolicyErrorCode.EMPTY_POLICY:
+        case SQLReviewPolicyErrorCode.EMPTY_POLICY:
           return {
-            title: t("schema-review-policy.configure-policy"),
+            title: t("sql-review.configure-policy"),
             target: "_self",
-            url: "/setting/schema-review-policy",
+            url: "/setting/sql-review",
           };
         default:
-          const error = ERROR_LIST.find((item) => item.code == code);
-          if (!error) {
-            return;
-          }
+          const url = `https://www.bytebase.com/docs/reference/error-code/${
+            checkResult.namespace === "bb.advisor" ? "advisor" : "core"
+          }?source=console`;
           return {
             title: t("common.view-doc"),
             target: "__blank",
-            url: `https://bytebase.com/docs/error-code#${error.hash}?source=console`,
+            url: url,
           };
       }
     };

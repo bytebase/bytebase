@@ -31,16 +31,17 @@ type BackupRunner struct {
 	server                    *Server
 	backupRunnerInterval      time.Duration
 	downloadBinlogInstanceIDs map[int]bool
+	backupWg                  sync.WaitGroup
 	downloadBinlogWg          sync.WaitGroup
 	downloadBinlogMu          sync.Mutex
 }
 
 // Run is the runner for backup runner.
-func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(s.backupRunnerInterval)
+func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
+	ticker := time.NewTicker(r.backupRunnerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
-	log.Debug("Auto backup runner started", zap.Duration("interval", s.backupRunnerInterval))
+	log.Debug("Auto backup runner started", zap.Duration("interval", r.backupRunnerInterval))
 	runningTasks := make(map[int]bool)
 	var mu sync.RWMutex
 	for {
@@ -57,41 +58,43 @@ func (s *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 						log.Error("Auto backup runner PANIC RECOVER", zap.Error(err))
 					}
 				}()
-				s.startAutoBackups(ctx, runningTasks, &mu)
-				s.downloadBinlogFiles(ctx)
+				r.startAutoBackups(ctx, runningTasks, &mu)
+				r.downloadBinlogFiles(ctx)
+
 			}()
 		case <-ctx.Done(): // if cancel() execute
-			s.downloadBinlogWg.Wait()
+			r.backupWg.Wait()
+			r.downloadBinlogWg.Wait()
 			return
 		}
 	}
 }
 
-func (s *BackupRunner) downloadBinlogFiles(ctx context.Context) {
-	instanceList, err := s.server.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
+func (r *BackupRunner) downloadBinlogFiles(ctx context.Context) {
+	instanceList, err := r.server.store.FindInstanceWithDatabaseBackupEnabled(ctx, db.MySQL)
 	if err != nil {
 		log.Error("Failed to retrieve MySQL instance list with at least one database backup enabled", zap.Error(err))
 		return
 	}
 
-	s.downloadBinlogMu.Lock()
-	defer s.downloadBinlogMu.Unlock()
+	r.downloadBinlogMu.Lock()
+	defer r.downloadBinlogMu.Unlock()
 	for _, instance := range instanceList {
-		if _, ok := s.downloadBinlogInstanceIDs[instance.ID]; !ok {
-			s.downloadBinlogInstanceIDs[instance.ID] = true
-			go s.downloadBinlogFilesForInstance(ctx, instance, s.server.profile.DataDir, s.server.mysqlutil)
-			s.downloadBinlogWg.Add(1)
+		if _, ok := r.downloadBinlogInstanceIDs[instance.ID]; !ok {
+			r.downloadBinlogInstanceIDs[instance.ID] = true
+			go r.downloadBinlogFilesForInstance(ctx, instance, r.server.profile.DataDir, r.server.mysqlutil)
+			r.downloadBinlogWg.Add(1)
 		}
 	}
 }
 
-func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
+func (r *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, instance *api.Instance, dataDir string, mysqlutil mysqlutil.Instance) {
 	log.Debug("Downloading binlog files for MySQL instance", zap.String("instance", instance.Name))
 	defer func() {
-		s.downloadBinlogMu.Lock()
-		delete(s.downloadBinlogInstanceIDs, instance.ID)
-		s.downloadBinlogMu.Unlock()
-		s.downloadBinlogWg.Done()
+		r.downloadBinlogMu.Lock()
+		delete(r.downloadBinlogInstanceIDs, instance.ID)
+		r.downloadBinlogMu.Unlock()
+		r.downloadBinlogWg.Done()
 	}()
 	driver, err := getAdminDatabaseDriver(ctx, instance, "", "" /* pgInstanceDir */)
 	if err != nil {
@@ -121,14 +124,14 @@ func (s *BackupRunner) downloadBinlogFilesForInstance(ctx context.Context, insta
 	}
 }
 
-func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
+func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[int]bool, mu *sync.RWMutex) {
 	// Find all databases that need a backup in this hour.
 	t := time.Now().UTC().Truncate(time.Hour)
 	match := &api.BackupSettingsMatch{
 		Hour:      t.Hour(),
 		DayOfWeek: int(t.Weekday()),
 	}
-	backupSettingList, err := s.server.store.FindBackupSettingsMatch(ctx, match)
+	backupSettingList, err := r.server.store.FindBackupSettingsMatch(ctx, match)
 	if err != nil {
 		log.Error("Failed to retrieve backup settings match", zap.Error(err))
 		return
@@ -150,17 +153,17 @@ func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 		go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
-			log.Debug("Schedule auto backup",
-				zap.String("database", database.Name),
-				zap.String("backup", backupName),
-			)
 			defer func() {
 				mu.Lock()
 				delete(runningTasks, backupSettingID)
 				mu.Unlock()
+				r.backupWg.Done()
 			}()
-			_, err := s.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID)
-			if err != nil {
+			log.Debug("Schedule auto backup",
+				zap.String("database", database.Name),
+				zap.String("backup", backupName),
+			)
+			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
@@ -170,14 +173,14 @@ func (s *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			if hookURL == "" {
 				return
 			}
-			_, err = http.PostForm(hookURL, nil)
-			if err != nil {
+			if _, err := http.PostForm(hookURL, nil); err != nil {
 				log.Warn("Failed to POST hook URL",
 					zap.String("hookURL", hookURL),
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
 			}
 		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
+		r.backupWg.Add(1)
 	}
 }
 

@@ -83,7 +83,8 @@
         <span class="">{{ issue.project.key }}</span>
       </BBTableCell>
       <BBTableCell class="truncate">
-        {{ issue.name }}
+        <span class="mr-2 text-control">#{{ issue.id }}</span>
+        <span>{{ issue.name }}</span>
       </BBTableCell>
       <BBTableCell class="table-cell">
         {{ activeEnvironmentName(issue) }}

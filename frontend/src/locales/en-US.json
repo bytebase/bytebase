@@ -1293,7 +1293,7 @@
         "title": "Backup policy",
         "desc": "Backup policy will auto-backup your database based on the schedule."
       },
-      "bb-feature-schema-review-policy": {
+      "bb-feature-sql-review": {
         "title": "Schema review policy",
         "desc": "Customize the schema review policy for different environments. @:{'subscription.trial'}."
       },
@@ -1348,7 +1348,7 @@
           "sql-check-basic": "Basic",
           "sql-check-basic-tooltip": "Syntax check, connection check",
           "sql-check-advanced": "Advanced",
-          "sql-check-advanced-tooltip": "Basic + Customized schema review rules",
+          "sql-check-advanced-tooltip": "Basic + Customized SQL review rules",
           "anomaly-detection": "Anomaly detection",
           "anomaly-detection-basic": "Basic",
           "anomaly-detection-basic-tooltip": "Connection failure, missing backup",
@@ -1423,10 +1423,10 @@
     "mysql": "MySQL",
     "common": "Common"
   },
-  "schema-review-policy": {
-    "title": "Schema Review",
+  "sql-review": {
+    "title": "SQL Review",
     "disabled": "Disabled",
-    "no-policy-set": "No schema review policy",
+    "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
     "configure-policy": "Configure policy",
     "search-rule-name": "Search rule name",
@@ -1438,15 +1438,15 @@
     "no-permission": "Only DBA or Owner has permission to create or update review policy.",
     "disable": "Disable",
     "enable": "Enable",
-    "delete": "Delete schema review policy",
+    "delete": "Delete SQL review policy",
     "input-then-press-enter": "Input the value then press enter to add",
     "create": {
-      "breadcrumb": "Create schema review policy",
+      "breadcrumb": "Create SQL review policy",
       "basic-info": {
         "name": "Basic info",
         "display-name": "Display name",
         "display-name-placeholder": "The review policy name",
-        "display-name-default": "Schema review policy",
+        "display-name-default": "SQL review policy",
         "display-name-label": "A display name to help identifying among different review policies.",
         "environments": "Environments",
         "environments-label": "Apply the review policy to the selected environments. One environment can only link one policy.",

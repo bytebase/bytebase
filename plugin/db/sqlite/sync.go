@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -27,6 +28,11 @@ type indexSchema struct {
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
@@ -47,77 +53,69 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 
 	return &db.InstanceMeta{
+		Version:      version,
 		UserList:     nil,
 		DatabaseList: databaseList,
 	}, nil
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
+// SyncDBSchema syncs a single database schema.
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	databases, err := driver.getDatabases()
 	if err != nil {
 		return nil, err
 	}
 
-	var schemaList []*db.Schema
-	for _, dbName := range databases {
-		if _, ok := excludedDatabaseList[dbName]; ok {
-			continue
-		}
-		if len(databaseList) != 0 {
-			exists := false
-			for _, k := range databaseList {
-				if dbName == k {
-					exists = true
-					break
-				}
-			}
-			if !exists {
-				continue
-			}
-		}
-
-		var schema db.Schema
-		schema.Name = dbName
-
-		sqldb, err := driver.GetDbConnection(ctx, dbName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
-		}
-		txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-		if err != nil {
-			return nil, err
-		}
-		defer txn.Rollback()
-		// Index statements.
-		indicesMap := make(map[string][]indexSchema)
-		indices, err := getIndices(txn)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
-		}
-		for _, idx := range indices {
-			indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
-		}
-
-		tbls, err := getTables(txn, indicesMap)
-		if err != nil {
-			return nil, err
-		}
-		schema.TableList = tbls
-
-		views, err := getViews(txn)
-		if err != nil {
-			return nil, err
-		}
-		schema.ViewList = views
-
-		if err := txn.Commit(); err != nil {
-			return nil, err
-		}
-
-		schemaList = append(schemaList, &schema)
+	schema := db.Schema{
+		Name: databaseName,
 	}
-	return schemaList, nil
+	found := false
+	for _, database := range databases {
+		if database == databaseName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
+	}
+
+	sqldb, err := driver.GetDBConnection(ctx, databaseName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection for %q: %s", databaseName, err)
+	}
+	txn, err := sqldb.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+	// Index statements.
+	indicesMap := make(map[string][]indexSchema)
+	indices, err := getIndices(txn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get indices from database %q: %s", databaseName, err)
+	}
+	for _, idx := range indices {
+		indicesMap[idx.tableName] = append(indicesMap[idx.tableName], idx)
+	}
+
+	tbls, err := getTables(txn, indicesMap)
+	if err != nil {
+		return nil, err
+	}
+	schema.TableList = tbls
+
+	views, err := getViews(txn)
+	if err != nil {
+		return nil, err
+	}
+	schema.ViewList = views
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
 }
 
 // getTables gets all tables of a database.

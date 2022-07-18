@@ -50,6 +50,12 @@ func Put(ctx context.Context, client *http.Client, url string, token *string, bo
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
+// Patch makes a HTTP PATCH request to the given URL using the token. It
+// refreshes token and retries the request in the case of the token has expired.
+func Patch(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPatch, url, token, body))
+}
+
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, respBody string, err error) {

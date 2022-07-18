@@ -321,7 +321,7 @@ func (driver *Driver) updateMigrationHistoryStorageVersion(ctx context.Context) 
 	var sqldb *sql.DB
 	var err error
 	if !driver.strictUseDb() {
-		sqldb, err = driver.GetDbConnection(ctx, db.BytebaseDatabase)
+		sqldb, err = driver.GetDBConnection(ctx, db.BytebaseDatabase)
 	}
 	if err != nil {
 		return err

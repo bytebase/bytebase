@@ -25,8 +25,8 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
+// NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
+func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	switch level {
 	case SchemaRuleLevelError:
 		return Error, nil
@@ -90,6 +90,9 @@ const (
 	// MySQLTableNoFK is an advisor type for MySQL table disallow foreign key.
 	MySQLTableNoFK Type = "bb.plugin.advisor.mysql.table.no-foreign-key"
 
+	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
+	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
+
 	// PostgreSQL Advisor
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
@@ -100,6 +103,9 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
+	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
@@ -143,7 +149,7 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SchemaReviewRule
+	Rule    *SQLReviewRule
 	Catalog catalog.Catalog
 }
 
@@ -205,8 +211,8 @@ func IsSyntaxCheckSupported(dbType DBType) bool {
 	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType DBType) bool {
 	switch dbType {
 	case MySQL, TiDB, Postgres:
 		return true
