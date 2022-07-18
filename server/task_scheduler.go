@@ -226,8 +226,8 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
 	s.executors[taskType] = executor
 }
 
-// canTaskSchedule check if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
-func (s *TaskScheduler) canTaskScheduled(ctx context.Context, task *api.Task) (bool, error) {
+// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
+func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
 	pass, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if task is blocked, error: %w", err)
@@ -299,11 +299,11 @@ func (s *TaskScheduler) canTaskScheduled(ctx context.Context, task *api.Task) (b
 // its required check does not contain error in the latest run
 // and has no blocking tasks
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
-	pass, err := s.canTaskScheduled(ctx, task)
+	schedule, err := s.canScheduleTask(ctx, task)
 	if err != nil {
 		return nil, err
 	}
-	if !pass {
+	if !schedule {
 		return task, nil
 	}
 
