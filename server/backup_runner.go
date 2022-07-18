@@ -31,6 +31,7 @@ type BackupRunner struct {
 	server                    *Server
 	backupRunnerInterval      time.Duration
 	downloadBinlogInstanceIDs map[int]bool
+	backupWg                  sync.WaitGroup
 	downloadBinlogWg          sync.WaitGroup
 	downloadBinlogMu          sync.Mutex
 }
@@ -62,6 +63,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 			}()
 		case <-ctx.Done(): // if cancel() execute
+			r.backupWg.Wait()
 			r.downloadBinlogWg.Wait()
 			return
 		}
@@ -151,17 +153,17 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 		}
 		backupName := fmt.Sprintf("%s-%s-%s-autobackup", api.ProjectShortSlug(db.Project), api.EnvSlug(db.Instance.Environment), t.Format("20060102T030405"))
 		go func(database *api.Database, backupSettingID int, backupName string, hookURL string) {
-			log.Debug("Schedule auto backup",
-				zap.String("database", database.Name),
-				zap.String("backup", backupName),
-			)
 			defer func() {
 				mu.Lock()
 				delete(runningTasks, backupSettingID)
 				mu.Unlock()
+				r.backupWg.Done()
 			}()
-			_, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID)
-			if err != nil {
+			log.Debug("Schedule auto backup",
+				zap.String("database", database.Name),
+				zap.String("backup", backupName),
+			)
+			if _, err := r.server.scheduleBackupTask(ctx, database, backupName, api.BackupTypeAutomatic, api.BackupStorageBackendLocal, api.SystemBotID); err != nil {
 				log.Error("Failed to create automatic backup for database",
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
@@ -171,14 +173,14 @@ func (r *BackupRunner) startAutoBackups(ctx context.Context, runningTasks map[in
 			if hookURL == "" {
 				return
 			}
-			_, err = http.PostForm(hookURL, nil)
-			if err != nil {
+			if _, err := http.PostForm(hookURL, nil); err != nil {
 				log.Warn("Failed to POST hook URL",
 					zap.String("hookURL", hookURL),
 					zap.Int("databaseID", database.ID),
 					zap.Error(err))
 			}
 		}(db, backupSetting.ID, backupName, backupSetting.HookURL)
+		r.backupWg.Add(1)
 	}
 }
 
