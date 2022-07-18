@@ -188,6 +188,7 @@ export const useExtraIssueLogic = () => {
       id: stage.id,
       status: newStatus,
       comment,
+      updatedTs: stage.updatedTs,
     };
     taskStore
       .updateStageAllTaskStatus({
@@ -214,6 +215,7 @@ export const useExtraIssueLogic = () => {
     const taskStatusPatch: TaskStatusPatch = {
       status: newStatus,
       comment: comment,
+      updatedTs: task.updatedTs,
     };
     taskStore
       .updateStatus({
