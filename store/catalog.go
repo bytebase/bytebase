@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 )
 
@@ -17,15 +16,13 @@ var (
 type Catalog struct {
 	databaseID *int
 	store      *Store
-	mode       common.ReleaseMode
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID *int, store *Store, mode common.ReleaseMode) *Catalog {
+func NewCatalog(databaseID *int, store *Store) *Catalog {
 	return &Catalog{
 		databaseID: databaseID,
 		store:      store,
-		mode:       mode,
 	}
 }
 
