@@ -21,7 +21,7 @@ func TestGenerateIndexActions(t *testing.T) {
 			oldIndexList: []*api.Index{
 				{ID: 123, Name: "index1", Expression: "def1", Comment: "comment1"},
 				{ID: 124, Name: "index2", Expression: "def2", Position: 1, Comment: "comment2"},
-				{ID: 124, Name: "index2", Expression: "def2", Position: 2, Comment: "comment2"},
+				{ID: 125, Name: "index2", Expression: "def2", Position: 2, Comment: "comment2"},
 			},
 			indexList: []db.Index{
 				{Name: "index1", Expression: "def1-change", Comment: "comment1"},
@@ -32,7 +32,7 @@ func TestGenerateIndexActions(t *testing.T) {
 			},
 			wantDeletes: []*api.IndexDelete{
 				{ID: 123},
-				{ID: 124},
+				{ID: 125},
 			},
 			wantCreates: []*api.IndexCreate{
 				{Name: "index1", Expression: "def1-change", Comment: "comment1", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
