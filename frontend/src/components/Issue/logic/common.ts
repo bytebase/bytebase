@@ -148,6 +148,7 @@ export const useCommonLogic = () => {
         task.id,
         {
           statement: maybeFormatStatementOnSave(newStatement, task.database),
+          updatedTs: task.updatedTs,
         },
         postUpdated
       );
