@@ -12,7 +12,10 @@
   {
     "selector": "[data-label='bb-dashboard-header']",
     "type": "shield",
-    "url": ".*"
+    "url": ".*",
+    "additionStyle": {
+      "zIndex": "10"
+    }
   },
   {
     "selector": "[data-label='bb-breadcrumb']",
@@ -64,7 +67,7 @@
   },
   {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
-    "url": ".+?/db/.+?(?<!#migration-history)$",
+    "url": ".+?/db/.+?#overview$",
     "type": "tooltip",
     "dialog": {
       "title": "",
@@ -100,9 +103,10 @@
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(1)",
+    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(2)",
     "url": ".+?/db/.+?#migration-history$",
     "type": "tooltip",
+    "position": "left",
     "dialog": {
       "title": "",
       "description": {
@@ -111,10 +115,6 @@
       },
       "alwaysShow": true,
       "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-16px",
-      "marginTop": "8px"
     }
   },
   {
@@ -129,9 +129,6 @@
         "zh-CN": "让我们专注在数据库变更管理场景"
       },
       "position": "left"
-    },
-    "additionStyle": {
-      "marginTop": "8px"
     }
   },
   {
@@ -149,19 +146,33 @@
     }
   },
   {
+    "selector": "div.w-full.mx-auto nav[data-label='bb-breadcrumb'] > div:nth-child(3)",
+    "url": ".+?/db/.+?/history/.+",
+    "type": "tooltip",
+    "dialog": {
+      "title": "",
+      "description": {
+        "en-US": "Click here to go back",
+        "zh-CN": "点击这里来返回"
+      },
+      "position": "right"
+    }
+  },
+  {
     "selector": "[data-label='bb-migration-history-diff-switch']",
     "url": ".+?/db/.+?/history/.+",
+    "type": "tooltip",
     "dialog": {
       "title": "",
       "description": {
         "en-US": "You can also view the full Schema snapshot after the change",
         "zh-CN": "也可以查看变更后的完整 Schema 快照"
       },
-      "position": "right",
-      "showOnce": "true"
+      "position": "right"
     },
     "additionStyle": {
-      "boxShadow": "rgb(78 70 211) 0px 0px 1px 2px"
+      "marginLeft": "-72px",
+      "marginTop": "-4px"
     }
   },
   {
@@ -181,8 +192,10 @@
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-code-diff-block']",
+    "selector": "[data-label='bb-migration-history-code-diff-block'] div.d2h-file-side-diff:nth-child(2)",
     "url": ".+?/db/.+?/history/.+",
+    "type": "tooltip",
+    "position": "left",
     "dialog": {
       "title": "",
       "description": {
@@ -190,12 +203,14 @@
         "zh-CN": "这是两个数据库 Schema 版本之间的差异"
       },
       "alwaysShow": true,
-      "position": "topright"
+      "position": "right"
     }
   },
   {
     "selector": "[data-label='bb-migration-history-code-block']",
     "url": ".+?/db/.+?/history/.+",
+    "type": "tooltip",
+    "position": "left",
     "dialog": {
       "title": "",
       "description": {
@@ -203,7 +218,7 @@
         "zh-CN": "这是现在数据库的完整 Schema"
       },
       "alwaysShow": true,
-      "position": "topright"
+      "position": "right"
     }
   },
   {
