@@ -82,6 +82,7 @@ type indexSchema struct {
 	tableName  string
 	statement  string
 	unique     bool
+	primary    bool
 	// methodType such as btree.
 	methodType        string
 	columnExpressions []string
@@ -212,6 +213,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 				dbIndex.Position = i + 1
 				dbIndex.Type = idx.methodType
 				dbIndex.Unique = idx.unique
+				dbIndex.Primary = idx.primary
 				dbIndex.Comment = idx.comment
 				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 			}
@@ -597,9 +599,45 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err = getIndex(txn, idx); err != nil {
 			return nil, fmt.Errorf("getIndex(%q, %q) got error %v", idx.schemaName, idx.name, err)
 		}
+
+		if err = getPrimary(txn, idx); err != nil {
+			return nil, fmt.Errorf("getPrimary(%q, %q) got error %v", idx.schemaName, idx.name, err)
+		}
 	}
 
 	return indices, nil
+}
+
+func getPrimary(txn *sql.Tx, idx *indexSchema) error {
+	isPrimaryQuery := fmt.Sprintf(
+		`SELECT count(*)
+		   FROM information_schema.table_constraints
+		   WHERE constraint_schema = '%s'
+		   	AND constraint_name = '%s'
+			AND table_schema = '%s'
+			AND table_name = '%s'
+			AND constraint_type = 'PRIMARY KEY'`,
+		unquoteIdentifier(idx.schemaName),
+		unquoteIdentifier(idx.name),
+		unquoteIdentifier(idx.schemaName),
+		unquoteIdentifier(idx.tableName))
+	rows, err := txn.Query(isPrimaryQuery)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var yes int
+		if err := rows.Scan(&yes); err != nil {
+			return err
+		}
+		idx.primary = (yes == 1)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
@@ -701,4 +739,9 @@ func quoteIdentifier(s string) string {
 		return fmt.Sprintf("\"%s\"", s)
 	}
 	return s
+}
+
+// unquoteIdentifier will return identifier without double quotes.
+func unquoteIdentifier(s string) string {
+	return strings.Trim(s, `"`)
 }
