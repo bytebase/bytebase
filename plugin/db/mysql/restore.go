@@ -320,10 +320,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 		validBackupList = append(validBackupList, b)
 	}
 
-	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode, driver.mysqlutil, driver.binlogDir)
+	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode, instance mysqlutil.Instance, binlogDir string) (*api.Backup, error) {
+func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
 		backup *api.Backup
@@ -362,25 +362,26 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 	}
 
 	if backup == nil {
-		args := []string{
-			"-v",
-			"--base64-output=DECODE-ROWS",
-			filepath.Join(binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
+		if mode == common.ReleaseModeDev {
+			args := []string{
+				"-v",
+				"--base64-output=DECODE-ROWS",
+				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
+			}
+			cmd := exec.Command(driver.mysqlutil.GetPath(mysqlutil.MySQL), args...)
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			if err := cmd.Run(); err != nil {
+				return nil, err
+			}
+			log.Debug(out.String())
+			oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
+			log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
+				zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
+				zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
+			return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 		}
-		cmd := exec.Command(instance.GetPath(mysqlutil.MySQL), args...)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return nil, err
-		}
-		log.Debug(out.String())
-		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
-		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
-			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
-			zap.Any("oldestBackupBinlogCoordinate", oldestBackupBinlogCoordinate))
-		return nil, fmt.Errorf("the target binlog coordinate %v is earlier than the oldest backup's binlog coordinate %v", targetBinlogCoordinate, oldestBackupBinlogCoordinate)
 	}
-
 	return backup, nil
 }
 
