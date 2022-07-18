@@ -163,9 +163,9 @@ export default defineComponent({
     onMounted(() => {
       selectEnvironmentOnHash();
 
-      if (!uiStateStore.getIntroStateByKey("guide.environment")) {
+      if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
         setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.environment");
+          event?.emit(EventType.EVENT_HELP, "help.environment", true);
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
