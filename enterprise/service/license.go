@@ -29,14 +29,14 @@ type Claims struct {
 
 // NewLicenseService will create a new enterprise license service.
 func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseService, error) {
-	cfg, err := config.NewConfig(mode)
+	config, err := config.NewConfig(mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &LicenseService{
 		store:  store,
-		config: cfg,
+		config: config,
 	}, nil
 }
 

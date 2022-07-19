@@ -147,11 +147,11 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 
 	var res []*metric.MemberCountMetric
 	for rows.Next() {
-		var m metric.MemberCountMetric
-		if err := rows.Scan(&m.Role, &m.Status, &m.RowStatus, &m.Count); err != nil {
+		var metric metric.MemberCountMetric
+		if err := rows.Scan(&metric.Role, &metric.Status, &metric.RowStatus, &metric.Count); err != nil {
 			return nil, FormatError(err)
 		}
-		res = append(res, &m)
+		res = append(res, &metric)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, FormatError(err)

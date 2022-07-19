@@ -99,11 +99,11 @@ func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([
 	}
 	var dataSourceList []*api.DataSource
 	for _, raw := range dataSourceRawList {
-		DataSource, err := s.composeDataSource(ctx, raw)
+		dataSource, err := s.composeDataSource(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", raw, err)
 		}
-		dataSourceList = append(dataSourceList, DataSource)
+		dataSourceList = append(dataSourceList, dataSource)
 	}
 	return dataSourceList, nil
 }

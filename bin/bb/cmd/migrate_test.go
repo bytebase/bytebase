@@ -25,24 +25,24 @@ var (
 )
 
 func TestMigrate(t *testing.T) {
-	instance, stop := mysql.SetupTestInstance(t, PortTestMigrate)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestMigrate)
 	defer stop()
 
-	err := instance.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
+	err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
 	require.NoError(t, err)
 
 	tt := []testTable{
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestMigrate01,
 		},
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 				"-c", `"
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
@@ -54,7 +54,7 @@ func TestMigrate(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestMigrate03,
 		},
