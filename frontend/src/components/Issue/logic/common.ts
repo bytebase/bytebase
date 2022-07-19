@@ -27,6 +27,7 @@ import {
   UpdateSchemaDetail,
 } from "@/types";
 import { useIssueLogic } from "./index";
+import { taskCheckRunSummary } from "./utils";
 import { isDev } from "@/utils";
 
 export const useCommonLogic = () => {
@@ -113,15 +114,7 @@ export const useCommonLogic = () => {
       return false;
     }
 
-    // check `selectedTask`, expected to be PENDING or PENDING_APPROVAL or FAILED
-    const checkTask = (task: Task) => {
-      return (
-        task.status == "PENDING" ||
-        task.status == "PENDING_APPROVAL" ||
-        task.status == "FAILED"
-      );
-    };
-    return checkTask(selectedTask.value as Task);
+    return isTaskEditable(selectedTask.value as Task);
   });
 
   const selectedStatement = computed((): string => {
@@ -300,4 +293,24 @@ const statementOfTask = (task: Task) => {
     case "bb.task.database.schema.update.ghost.drop-original-table":
       return ""; // should never reach here
   }
+};
+
+export const isTaskEditable = (task: Task): boolean => {
+  if (task.status === "PENDING_APPROVAL" || task.status === "FAILED") {
+    return true;
+  }
+  if (task.status === "PENDING") {
+    // If a task's status is "PENDING", its statement is editable if there
+    // are at least ONE ERROR task checks.
+    // Since once all its task checks are fulfilled, it might be queued by
+    // the scheduler.
+    // Editing a queued task's SQL statement is dangerous with kinds of race
+    // condition risks.
+    const summary = taskCheckRunSummary(task);
+    if (summary.errorCount > 0) {
+      return true;
+    }
+  }
+
+  return false;
 };
