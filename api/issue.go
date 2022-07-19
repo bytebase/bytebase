@@ -186,8 +186,8 @@ type UpdateSchemaGhostContext struct {
 
 // PITRContext is the issue create context for performing a PITR in a database.
 type PITRContext struct {
-	DatabaseID     int    `json:"databaseId"`
-	TargetDatabase string `json:"targetDatabase`
+	DatabaseID         int    `json:"databaseId"`
+	TargetDatabaseName string `json:"targetDatabaseName"`
 
 	// After the PITR operations, the database will be recovered to the state at this time.
 	// Represented in UNIX timestamp in seconds.
