@@ -200,6 +200,7 @@ type BackupSettingFind struct {
 	DatabaseID *int
 
 	// Domain specific fields
+	InstanceID *int
 }
 
 // BackupSettingUpsert is the message to upsert a backup settings.
