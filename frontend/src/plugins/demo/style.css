@@ -74,7 +74,7 @@
 .bb-hint-dialog.left::before {
   content: "";
   position: absolute;
-  top: 12px;
+  top: 10px;
   right: -6px;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
@@ -87,7 +87,7 @@
 .bb-hint-dialog.right::before {
   content: "";
   position: absolute;
-  top: 20px;
+  top: 18px;
   left: -6px;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
@@ -135,29 +135,11 @@
 }
 
 .bb-hint-tooltip-wrapper {
-  @apply fixed w-4 h-4 text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
-  animation: 2s linear 0s infinite breathing;
-  box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
-  color: rgb(78 70 211);
+  @apply fixed w-3 h-3 text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
+  background-color: #4f46e5;
 }
 
-@keyframes breathing {
-  0% {
-    box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
-  }
-  30% {
-    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
-      rgb(78 70 211 / 40%) 0px 0px 0px 4px;
-  }
-  60% {
-    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
-      rgb(78 70 211 / 40%) 0px 0px 0px 12px;
-  }
-  70% {
-    box-shadow: rgb(78 70 211) 0px 0px 1px 2px,
-      rgb(78 70 211 / 40%) 0px 0px 0px 8px;
-  }
-  100% {
-    box-shadow: rgb(78 70 211) 0px 0px 1px 2px;
-  }
+.bb-hint-tooltip-wrapper > .bb-hint-tooltip-ping {
+  @apply absolute top-0 left-0 w-full h-full animate-ping rounded-full;
+  background-color: #4f46e5;
 }

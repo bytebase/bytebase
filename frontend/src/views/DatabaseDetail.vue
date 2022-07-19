@@ -295,7 +295,6 @@ import {
   connectionSlug,
   hidePrefix,
   allowGhostMigration,
-  isDev,
 } from "@/utils";
 import {
   ProjectId,
@@ -475,10 +474,6 @@ const tryTransferProject = () => {
 // 'online' -> online migration
 // false -> user clicked cancel button
 const isUsingGhostMigration = async (databaseList: Database[]) => {
-  if (!isDev()) {
-    return "normal";
-  }
-
   // check if all selected databases supports gh-ost
   if (allowGhostMigration(databaseList)) {
     // open the dialog to ask the user

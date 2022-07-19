@@ -30,7 +30,11 @@
 </a>
 </p>
 
-[Bytebase](https://bytebase.com/?source=github) is a **web-based**, **zero-config**, **dependency-free** database schema change and version control management tool for DBAs and developers.
+[Bytebase](https://bytebase.com/?source=github) is a web-based, zero-config, dependency-free database schema change and version control management tool for the **DevOps** team.
+
+## For Developer and DevOps Engineer - Holistic view of database schema changes
+
+Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
 
 ## For DBA - 10x operational efficiency
 
@@ -40,19 +44,19 @@ A collaborative web-console to allow DBAs to manage database tasks and handle de
 
 Teams using Bytebase will naturally adopt industry best practice for managing database schema changes. Tech leads will see an improved development velocity and reduced outages caused by database changes.
 
-## For Developer - Holistic view of database schema changes
-
-Regardless of working as an IC in a team or managing your own side project, developers using Bytebase will have a holistic view of all the related database info, the ongoing database schema change tasks and the past database migration history.
 
 ## Features
 
-- [x] Web-based schema change and management workspace for teams
-- [x] Version control based schema migration (Database-as-Code)
-- [x] Classic UI based schema migration (SQL Review)
+- [x] Web-based database change and management workspace for teams
+- [x] SQL Review
+  - [UI based change workflow](https://www.bytebase.com/docs/change-database/change-workflow)
+  - [Version control based change workflow](https://www.bytebase.com/docs/vcs-integration/overview) (Database-as-Code)
+  - [SQL Review Rules](https://www.bytebase.com/docs/sql-review/review-rules/overview)
 - [x] Built-in SQL Editor
 - [x] Detailed migration history
 - [x] Multi-tenancy (rollout change to homogeneous databases belonged to different tenants)
 - [x] Backup and restore
+- [x] Point-in-time recovery (PITR)
 - [x] Anomaly center
 - [x] Environment policy
   - Approval policy

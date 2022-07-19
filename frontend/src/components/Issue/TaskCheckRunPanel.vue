@@ -157,6 +157,7 @@ export default defineComponent({
         case SQLReviewPolicyErrorCode.NO_PK_IN_TABLE:
         case SQLReviewPolicyErrorCode.FK_IN_TABLE:
         case SQLReviewPolicyErrorCode.TABLE_DROP_NAMING_CONVENTION:
+        case SQLReviewPolicyErrorCode.DATABASE_NOT_EMPTY:
         // CompatibilityErrorCode
         case CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE:
         case CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE:

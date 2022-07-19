@@ -182,3 +182,7 @@ export function emitStorageChangedEvent() {
   iframeEl.contentWindow?.localStorage.setItem("t", Date.now().toString());
   iframeEl.remove();
 }
+
+export function removeElementBySelector(selector: string) {
+  document.body.querySelectorAll(selector).forEach((e) => e.remove());
+}
