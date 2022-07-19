@@ -14,7 +14,7 @@
     "type": "shield",
     "url": ".*",
     "additionStyle": {
-      "zIndex": "10"
+      "zIndex": "1"
     }
   },
   {
