@@ -18,6 +18,18 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
+func (s *Server) attachTaskProgressForIssue(issue *api.Issue) {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if value, ok := s.TaskScheduler.runningTask.Load(task.ID); ok {
+				if progress, ok := value.(api.Progress); ok {
+					task.Progress = progress
+				}
+			}
+		}
+	}
+}
+
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -77,6 +89,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
+		for _, issue := range issueList {
+			s.attachTaskProgressForIssue(issue)
+		}
+
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issueList); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal issue list response").SetInternal(err)
@@ -98,6 +114,8 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 		if issue == nil {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
+
+		s.attachTaskProgressForIssue(issue)
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {

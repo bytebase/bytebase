@@ -31,6 +31,8 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executors map[api.TaskType]TaskExecutor
 
+	runningTask sync.Map
+
 	server *Server
 }
 
@@ -40,13 +42,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
-	tasks := struct {
-		running map[int]bool // task id set
-		mu      sync.RWMutex
-	}{
-		running: make(map[int]bool),
-		mu:      sync.RWMutex{},
-	}
 	for {
 		select {
 		case <-ticker.C:
@@ -119,21 +114,30 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					tasks.mu.Lock()
-					if _, ok := tasks.running[task.ID]; ok {
-						tasks.mu.Unlock()
+					// loaded means the task is already running so we continue
+					if _, loaded := s.runningTask.LoadOrStore(task.ID, api.Progress{}); loaded {
 						continue
 					}
-					tasks.running[task.ID] = true
-					tasks.mu.Unlock()
 
 					go func(task *api.Task) {
 						defer func() {
-							tasks.mu.Lock()
-							delete(tasks.running, task.ID)
-							tasks.mu.Unlock()
+							s.runningTask.Delete(task.ID)
+						}()
+						taskComplete := make(chan struct{})
+						go func() {
+							ticker := time.NewTicker(time.Second)
+							defer ticker.Stop()
+							for {
+								select {
+								case <-ticker.C:
+									s.runningTask.Store(task.ID, task.Progress)
+								case <-taskComplete:
+									return
+								}
+							}
 						}()
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
+						close(taskComplete)
 						if done {
 							if err == nil {
 								bytes, err := json.Marshal(*result)
