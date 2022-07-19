@@ -84,13 +84,13 @@
 }
 
 .bb-hint-dialog.right {
-  margin-top: -14px;
+  margin-top: -8px;
 }
 .bb-hint-dialog.right::before {
   content: "";
   position: absolute;
-  top: 13px;
-  left: -6px;
+  top: 14px;
+  left: -10px;
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
   border-right: 10px solid white;
@@ -126,8 +126,7 @@
 }
 
 .bb-hint-wrapper.covered {
-  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 1px,
-    rgb(0 0 0 / 30%) 0px 0px 0px 100vw !important;
+  box-shadow: 0 3px 30px rgb(33 33 33 / 30%), rgb(0 0 0 / 30%) 0px 0px 0px 100vw !important;
 }
 
 .bb-hint-wrapper.shield {
@@ -138,15 +137,21 @@
 }
 
 .bb-hint-tooltip-wrapper {
-  @apply fixed text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
+  @apply fixed text-xs w-6 h-6 m-0 shadow-none rounded-full cursor-default;
+  padding: 7px;
+  box-sizing: border-box;
+}
+
+.bb-hint-tooltip-wrapper > .bb-hint-tooltip-block {
+  @apply block rounded-full;
   width: 10px;
   height: 10px;
   background-color: #4f46e5;
 }
 
 .bb-hint-tooltip-wrapper > .bb-hint-tooltip-ping {
-  @apply absolute top-0 left-0 w-3 h-3 animate-ping rounded-full;
-  top: -1px;
-  left: -1px;
+  @apply absolute w-3 h-3 animate-ping rounded-full;
+  top: 6px;
+  left: 6px;
   background-color: #4f46e5;
 }
