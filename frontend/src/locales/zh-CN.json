@@ -769,7 +769,7 @@
     },
     "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "备份成功后向其发送 HTTP POST 请求。",
     "backup-info": {
-      "template": "每{dayOrWeek}{time} 备份"
+      "template": "每{dayOrWeek} {time} 备份，数据将保留 {retentionDays} 天。"
     },
     "week": {
       "Friday": "周五",

@@ -9,6 +9,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -307,8 +308,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 
 	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
 	if err != nil {
+		log.Error("Failed to get binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Error(err))
 		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
 	}
+	log.Debug("Got binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Any("binlogCoordinate", *targetBinlogCoordinate))
 
 	var validBackupList []*api.Backup
 	for _, b := range backupList {
@@ -319,10 +322,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 		validBackupList = append(validBackupList, b)
 	}
 
-	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
+	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
+func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
 		backup *api.Backup
@@ -361,6 +364,20 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 	}
 
 	if backup == nil {
+		if mode == common.ReleaseModeDev {
+			args := []string{
+				"-v",
+				"--base64-output=DECODE-ROWS",
+				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
+			}
+			cmd := exec.Command(driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			if err := cmd.Run(); err != nil {
+				return nil, err
+			}
+			log.Debug(out.String())
+		}
 		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
@@ -679,6 +696,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
+		log.Debug("Parsed first binlog event ts", zap.String("file", file.Name), zap.Int64("eventTs", eventTs))
 		if eventTs >= targetTs {
 			if i == 0 {
 				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
@@ -696,6 +714,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		isLastBinlogFile = true
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
+	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", binlogFileTarget.Name), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)

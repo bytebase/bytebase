@@ -9,7 +9,8 @@
     "statement": "Statement",
     "table": "Table",
     "column": "Column",
-    "schema": "Schema"
+    "schema": "Schema",
+    "database": "Database"
   },
   "template": {
     "mysql-prod": "Template for Prod Environment",
@@ -139,6 +140,10 @@
     "schema-backward-compatibility": {
       "title": "Backward compatibility",
       "description": "MySQL and TiDB support checking whether the schema change is backward compatible."
+    },
+    "database-drop-empty-database": {
+      "title": "Drop database restriction",
+      "description": "Can only drop the database if there's no table in it."
     }
   },
   "level": {

@@ -39,6 +39,9 @@
             <template #time>
               <span class="text-accent"> {{ autoBackupHourText }}</span>
             </template>
+            <template #retentionDays>
+              <span class="text-accent"> {{ autoBackupRetentionDays }}</span>
+            </template>
           </i18n-t>
         </div>
         <div class="mt-2">
@@ -173,6 +176,7 @@ interface LocalState {
   autoBackupEnabled: boolean;
   autoBackupHour: number;
   autoBackupDayOfWeek: number;
+  autoBackupRetentionPeriodTs: number;
   autoBackupHookUrl: string;
   autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
@@ -208,6 +212,7 @@ export default defineComponent({
       autoBackupEnabled: false,
       autoBackupHour: 0,
       autoBackupDayOfWeek: 0,
+      autoBackupRetentionPeriodTs: 0,
       autoBackupHookUrl: "",
       autoBackupUpdatedHookUrl: "",
     });
@@ -237,6 +242,7 @@ export default defineComponent({
       state.autoBackupEnabled = backupSetting.enabled;
       state.autoBackupHour = backupSetting.hour;
       state.autoBackupDayOfWeek = backupSetting.dayOfWeek;
+      state.autoBackupRetentionPeriodTs = backupSetting.retentionPeriodTs;
       state.autoBackupHookUrl = backupSetting.hookUrl;
       state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
     };
@@ -301,6 +307,10 @@ export default defineComponent({
       return `${String(hour).padStart(2, "0")}:00 (${
         Intl.DateTimeFormat().resolvedOptions().timeZone
       })`;
+    });
+
+    const autoBackupRetentionDays = computed(() => {
+      return state.autoBackupRetentionPeriodTs / 3600 / 24;
     });
 
     const backupPolicy = computed(() => {
@@ -390,6 +400,7 @@ export default defineComponent({
             ? -1
             : dayOfWeek
           : state.autoBackupDayOfWeek,
+        retentionPeriodTs: on ? 7 * 24 * 3600 : 0,
         hookUrl: "",
       };
       backupStore
@@ -416,6 +427,7 @@ export default defineComponent({
         enabled: state.autoBackupEnabled,
         hour: state.autoBackupHour,
         dayOfWeek: state.autoBackupDayOfWeek,
+        retentionPeriodTs: state.autoBackupRetentionPeriodTs,
         hookUrl: state.autoBackupUpdatedHookUrl,
       };
       backupStore
@@ -477,6 +489,7 @@ export default defineComponent({
       backupList,
       autoBackupWeekdayText,
       autoBackupHourText,
+      autoBackupRetentionDays,
       allowDisableAutoBackup,
       backupPolicy,
       createBackup,

@@ -188,7 +188,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 				db.Collation,
 				instance.EnvironmentID,
 				exec.Statement,
-				store.NewCatalog(&db.ID, s.store, s.profile.Mode),
+				store.NewCatalog(&db.ID, s.store),
 			)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check schema review policy").SetInternal(err)

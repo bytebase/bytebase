@@ -20,32 +20,23 @@
     </div>
     <InstanceTable :instance-list="filteredList(instanceList)" />
   </div>
-
-  <BBAlert
-    v-if="state.showGuide"
-    :style="'INFO'"
-    :ok-text="$t('common.do-not-show-again')"
-    :cancel-text="$t('common.dismiss')"
-    :title="$t('instance.how-to-setup-instance')"
-    :description="$t('instance.how-to-setup-instance-description')"
-    @ok="
-      () => {
-        doDismissGuide();
-      }
-    "
-    @cancel="state.showGuide = false"
-  >
-  </BBAlert>
 </template>
 
 <script lang="ts">
-import { computed, onMounted, reactive, ref, defineComponent } from "vue";
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  defineComponent,
+  inject,
+} from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { Environment, Instance } from "../types";
+import { Environment, Instance, EventType } from "../types";
 import { cloneDeep } from "lodash-es";
-import { sortInstanceList } from "../utils";
+import { sortInstanceList, Event } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   useUIStateStore,
@@ -59,7 +50,6 @@ import {
 interface LocalState {
   searchText: string;
   selectedEnvironment?: Environment;
-  showGuide: boolean;
 }
 
 export default defineComponent({
@@ -70,6 +60,7 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
+    const event = inject<Event>("event");
 
     const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
@@ -86,16 +77,15 @@ export default defineComponent({
             parseInt(router.currentRoute.value.query.environment as string, 10)
           )
         : undefined,
-      showGuide: false,
     });
 
     onMounted(() => {
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.instance")) {
+      if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
         setTimeout(() => {
-          state.showGuide = true;
+          event?.emit(EventType.EVENT_HELP, "help.instance", true);
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,
@@ -118,14 +108,6 @@ export default defineComponent({
 
     const changeSearchText = (searchText: string) => {
       state.searchText = searchText;
-    };
-
-    const doDismissGuide = () => {
-      uiStateStore.saveIntroStateByKey({
-        key: "guide.instance",
-        newState: true,
-      });
-      state.showGuide = false;
     };
 
     const rawInstanceList = useInstanceList();
@@ -193,7 +175,6 @@ export default defineComponent({
       filteredList,
       selectEnvironment,
       changeSearchText,
-      doDismissGuide,
       remainingInstanceCount,
       instanceCountAttention,
     };
