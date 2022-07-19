@@ -70,14 +70,14 @@ var (
 )
 
 func TestCreateDatabase(t *testing.T) {
-	instance, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
+	mysql, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
 	defer stop()
 
 	tt := []testTable{
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", instance.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", mysql.Port()),
 				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
 			expected: _TestCreateDatabase01,
@@ -85,7 +85,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
 			},
 			expected: _TestCreateDatabase02,
 		},
