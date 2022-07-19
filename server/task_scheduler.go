@@ -32,7 +32,7 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executors map[api.TaskType]TaskExecutor
 
-	// runningTask[TaskID]Progress
+	// runningTask[TaskID]*Progress
 	// runningTask is used to
 	// 1. tell if the task is running
 	// 2. take a snapshot of the frequently updated progress in task executors
