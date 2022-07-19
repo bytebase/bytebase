@@ -9,8 +9,6 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/plugin/db"
-	// initialize mysql driver
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func getMySQLConnectionConfig(port string, database string) db.ConnectionConfig {
