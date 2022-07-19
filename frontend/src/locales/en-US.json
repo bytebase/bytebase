@@ -834,7 +834,7 @@
     "file-path-example-normal-migration": "File path example for normal migration type",
     "file-path-example-baseline-migration": "File path example for baseline migration type",
     "schema-path-template": "Schema path template",
-    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this",
+    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
     "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
     "if-specified": "If specified",
     "schema-path-example": "Schema path example",
