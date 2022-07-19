@@ -145,7 +145,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								progress.Lock()
 								progress.TotalUnit = task.Progress.TotalUnit
 								progress.CompletedUnit = task.Progress.CompletedUnit
-								progress.UpdatedTs = task.Progress.UpdatedTs
+								progress.UpdatedTs = time.Now().Unix()
 								progress.Payload = task.Progress.Payload
 								progress.Unlock()
 								task.Progress.Unlock()
