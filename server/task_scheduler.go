@@ -120,7 +120,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					// loaded means the task is already running so we continue
-					if _, loaded := s.runningTask.LoadOrStore(task.ID, api.Progress{}); loaded {
+					if _, loaded := s.runningTask.LoadOrStore(task.ID, &api.Progress{CreatedTs: time.Now().Unix()}); loaded {
 						continue
 					}
 
@@ -130,32 +130,36 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}()
 						taskComplete := make(chan struct{})
 						go func() {
-							createdTs := time.Now().Unix()
+							snapshotProgress := func() {
+								value, ok := s.runningTask.Load(task.ID)
+								if !ok {
+									log.Error("failed to load task")
+									return
+								}
+								progress, ok := value.(*api.Progress)
+								if !ok {
+									log.Error("failed to assert type")
+									return
+								}
+								task.Progress.Lock()
+								progress.Lock()
+								progress.TotalUnit = task.Progress.TotalUnit
+								progress.CompletedUnit = task.Progress.CompletedUnit
+								progress.UpdatedTs = task.Progress.UpdatedTs
+								progress.Payload = task.Progress.Payload
+								progress.Unlock()
+								task.Progress.Unlock()
+							}
+
 							// take a snapshot of the task progress in the task executor periodically which would be sent to the frontend
 							ticker := time.NewTicker(taskProgressInterval)
 							defer ticker.Stop()
 							for {
 								select {
 								case <-ticker.C:
-									task.Progress.Lock()
-									s.runningTask.Store(task.ID, api.Progress{
-										TotalUnit:     task.Progress.TotalUnit,
-										CompletedUnit: task.Progress.CompletedUnit,
-										CreatedTs:     createdTs,
-										UpdatedTs:     time.Now().Unix(),
-										Payload:       task.Progress.Payload,
-									})
-									task.Progress.Unlock()
+									snapshotProgress()
 								case <-taskComplete:
-									task.Progress.Lock()
-									s.runningTask.Store(task.ID, api.Progress{
-										TotalUnit:     task.Progress.TotalUnit,
-										CompletedUnit: task.Progress.CompletedUnit,
-										CreatedTs:     createdTs,
-										UpdatedTs:     time.Now().Unix(),
-										Payload:       task.Progress.Payload,
-									})
-									task.Progress.Unlock()
+									snapshotProgress()
 									return
 								}
 							}
