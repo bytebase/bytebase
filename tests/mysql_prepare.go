@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	// initialize mysql driver
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 )
 
