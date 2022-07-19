@@ -3,7 +3,6 @@
   @apply fixed inset-0 overflow-hidden;
   z-index: 999998;
   pointer-events: auto !important;
-  backdrop-filter: blur(2px);
 }
 
 .bb-guide-target-element,
@@ -37,34 +36,37 @@
 .bb-hint-dialog.topright::before {
   content: "";
   position: absolute;
-  bottom: -6px;
+  bottom: -10px;
   right: 24px;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid white;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid white;
 }
 
 .bb-hint-dialog.top {
-  margin-top: 0px;
+  margin-top: -4px;
 }
 .bb-hint-dialog.top::before {
   content: "";
   position: absolute;
-  bottom: -6px;
+  bottom: -10px;
   left: 24px;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid white;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid white;
 }
 
+.bb-hint-dialog.bottom {
+  margin-top: 12px;
+}
 .bb-hint-dialog.bottom::before {
   content: "";
   position: absolute;
-  top: -6px;
+  top: -10px;
   left: 24px;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 6px solid white;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid white;
 }
 
 .bb-hint-dialog.left {
@@ -74,11 +76,11 @@
 .bb-hint-dialog.left::before {
   content: "";
   position: absolute;
-  top: 10px;
-  right: -6px;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 6px solid white;
+  top: 8px;
+  right: -10px;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 10px solid white;
 }
 
 .bb-hint-dialog.right {
@@ -87,11 +89,11 @@
 .bb-hint-dialog.right::before {
   content: "";
   position: absolute;
-  top: 18px;
+  top: 13px;
   left: -6px;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-right: 6px solid white;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 10px solid white;
 }
 
 .bb-guide-close-button,
@@ -125,22 +127,26 @@
 
 .bb-hint-wrapper.covered {
   box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 1px,
-    rgb(0 0 0 / 40%) 0px 0px 0px 100vw !important;
+    rgb(0 0 0 / 30%) 0px 0px 0px 100vw !important;
 }
 
 .bb-hint-wrapper.shield {
   @apply border-none rounded-none overflow-hidden bg-transparent shadow-none cursor-not-allowed;
   pointer-events: auto !important;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   background: rgba(255, 255, 255, 0.4);
 }
 
 .bb-hint-tooltip-wrapper {
-  @apply fixed w-3 h-3 text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
+  @apply fixed text-xs text-center leading-4 shadow-none rounded-full m-0 bg-white cursor-default;
+  width: 10px;
+  height: 10px;
   background-color: #4f46e5;
 }
 
 .bb-hint-tooltip-wrapper > .bb-hint-tooltip-ping {
-  @apply absolute top-0 left-0 w-full h-full animate-ping rounded-full;
+  @apply absolute top-0 left-0 w-3 h-3 animate-ping rounded-full;
+  top: -1px;
+  left: -1px;
   background-color: #4f46e5;
 }
