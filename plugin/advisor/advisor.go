@@ -93,6 +93,9 @@ const (
 	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
 	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
 
+	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
+	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
+
 	// PostgreSQL Advisor
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.

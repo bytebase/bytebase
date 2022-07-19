@@ -53,6 +53,16 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	return nil, fmt.Errorf("cannot find index for %v", find)
 }
 
+// FindTable implements the catalog interface.
+func (c *MockCatalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+	return []*catalog.Table{
+		{
+			Name:         "table",
+			DatabaseName: find.DatabaseName,
+		},
+	}, nil
+}
+
 // TestCase is the data struct for test.
 type TestCase struct {
 	Statement string

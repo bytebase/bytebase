@@ -69,3 +69,25 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 		ColumnExpressions: columnExpressions,
 	}, nil
 }
+
+// FindTable finds the table list by TableFind. Implement the catalog.Catalog interface.
+func (c *Catalog) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+	tableList, err := c.store.FindTable(ctx, &api.TableFind{
+		DatabaseID: c.databaseID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var res []*catalog.Table
+	for _, table := range tableList {
+		if find.DatabaseName == table.Database.Name {
+			res = append(res, &catalog.Table{
+				Name:         table.Name,
+				DatabaseName: table.Database.Name,
+			})
+		}
+	}
+
+	return res, nil
+}

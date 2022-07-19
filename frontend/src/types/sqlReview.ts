@@ -15,7 +15,8 @@ export type CategoryType =
   | "STATEMENT"
   | "TABLE"
   | "COLUMN"
-  | "SCHEMA";
+  | "SCHEMA"
+  | "DATABASE";
 
 // The rule level
 export enum RuleLevel {
@@ -86,7 +87,8 @@ export type RuleType =
   | "statement.select.no-select-all"
   | "statement.where.require"
   | "statement.where.no-leading-wildcard-like"
-  | "schema.backward-compatibility";
+  | "schema.backward-compatibility"
+  | "database.drop-empty-database";
 
 // The naming format rule payload.
 // Used by the backend.

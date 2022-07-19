@@ -37,6 +37,7 @@ export enum SQLReviewPolicyErrorCode {
   NO_PK_IN_TABLE = 601,
   FK_IN_TABLE = 602,
   TABLE_DROP_NAMING_CONVENTION = 603,
+  DATABASE_NOT_EMPTY = 701,
 }
 
 export enum CompatibilityErrorCode {

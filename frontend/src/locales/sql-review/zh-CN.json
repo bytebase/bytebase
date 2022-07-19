@@ -9,7 +9,8 @@
     "statement": "语句",
     "table": "表",
     "column": "列",
-    "schema": "Schema"
+    "schema": "Schema",
+    "database": "数据库"
   },
   "template": {
     "mysql-prod": "针对生产环境的审核策略模板",
@@ -139,6 +140,10 @@
     "schema-backward-compatibility": {
       "title": "向后兼容",
       "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
+    },
+    "database-drop-empty-database": {
+      "title": "数据库删除限制",
+      "description": "只有当数据库内没有表时，才可以被删除。"
     }
   },
   "level": {
