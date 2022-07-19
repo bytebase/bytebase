@@ -1,8 +1,11 @@
 package api
 
+import "sync"
+
 // Progress is a generalized struct which can track the progress of a task
 type Progress struct {
-	// Total unit is the total unit count of the task
+	sync.Mutex
+	// TotalUnit is the total unit count of the task
 	TotalUnit int64 `json:"totalUnit"`
 	// CompletedUnit is the finished task units
 	CompletedUnit int64 `json:"completedUnit"`

@@ -130,7 +130,15 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							for {
 								select {
 								case <-ticker.C:
-									s.runningTask.Store(task.ID, task.Progress)
+									task.Progress.Lock()
+									s.runningTask.Store(task.ID, api.Progress{
+										TotalUnit:     task.Progress.TotalUnit,
+										CompletedUnit: task.Progress.CompletedUnit,
+										CreatedTs:     task.Progress.CreatedTs,
+										UpdatedTs:     time.Now().Unix(),
+										Payload:       task.Progress.Payload,
+									})
+									task.Progress.Unlock()
 								case <-taskComplete:
 									return
 								}
