@@ -25,6 +25,14 @@ export const useActuatorStore = defineStore("actuator", {
     needAdminSetup: (state) => {
       return state.serverInfo?.needAdminSetup || false;
     },
+    isLiveDemo: (state) => {
+      return (
+        state.serverInfo?.demo &&
+        !state.serverInfo?.demoName &&
+        state.serverInfo?.demoName !== "dev" &&
+        state.serverInfo?.demoName !== "prod"
+      );
+    },
   },
   actions: {
     async fetchInfo() {
