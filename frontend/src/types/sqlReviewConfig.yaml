@@ -6,6 +6,7 @@ categoryList:
   - TABLE
   - SCHEMA
   - COLUMN
+  - DATABASE
 templateList:
   - id: mysql.prod
     ruleList:
@@ -148,6 +149,11 @@ templateList:
         engine: MYSQL
         level: WARNING
         componentList: []
+      - type: database.drop-empty-database
+        category: DATABASE
+        engine: COMMON
+        level: ERROR
+        componentList: []
   - id: mysql.dev
     ruleList:
       - type: engine.mysql.use-innodb
@@ -288,4 +294,9 @@ templateList:
         category: SCHEMA
         engine: MYSQL
         level: WARNING
+        componentList: []
+      - type: database.drop-empty-database
+        category: DATABASE
+        engine: COMMON
+        level: ERROR
         componentList: []

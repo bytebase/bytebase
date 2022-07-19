@@ -28,6 +28,12 @@ func (c *catalogService) FindIndex(ctx context.Context, find *catalog.IndexFind)
 	return nil, nil
 }
 
+// FindTable is the API message for find table in catalog.
+// We will not connect to the user's database in the early version of sql check api
+func (c *catalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+	return nil, nil
+}
+
 func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 	g.GET("/sql/advise", s.sqlCheckController)
 }

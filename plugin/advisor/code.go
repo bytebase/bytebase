@@ -51,6 +51,9 @@ const (
 	TableNoPK                         Code = 601
 	TableHasFK                        Code = 602
 	TableDropNamingConventionMismatch Code = 603
+
+	// 701 ~ 799 database advisor error code
+	DatabaseNotEmpty Code = 701
 )
 
 // Int returns the int type of code.
