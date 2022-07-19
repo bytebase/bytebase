@@ -4,12 +4,12 @@
   z-index: 999998;
   pointer-events: auto !important;
   backdrop-filter: blur(2px);
-  background: rgba(255, 255, 255, 0.4);
 }
 
 .bb-guide-target-element,
 .bb-hint-target-element {
   z-index: 999999;
+  background-color: white;
 }
 
 .bb-guide-highlight-wrapper {
@@ -124,7 +124,8 @@
 }
 
 .bb-hint-wrapper.covered {
-  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 2px, transparent 0px 0px 0px 100vw !important;
+  box-shadow: rgb(33 33 33 / 80%) 0px 0px 1px 1px,
+    rgb(0 0 0 / 40%) 0px 0px 0px 100vw !important;
 }
 
 .bb-hint-wrapper.shield {
