@@ -83,7 +83,7 @@ func generateIndexActions(oldIndexList []*api.Index, indexList []db.Index, datab
 		return deletes[i].ID < deletes[j].ID
 	})
 	sort.Slice(creates, func(i, j int) bool {
-		return creates[i].Name < creates[j].Name || (creates[i].Name == creates[j].Name && creates[i].Position <= creates[j].Position)
+		return creates[i].Name < creates[j].Name || (creates[i].Name == creates[j].Name && creates[i].Position < creates[j].Position)
 	})
 
 	return deletes, creates
