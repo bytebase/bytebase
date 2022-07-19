@@ -121,7 +121,7 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 		case vcsPlugin.GitHubCom:
 			roleProvider = api.ProjectRoleProviderGitHubCom
 		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unreconized VCS type %q", vcs.Type))
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unrecognized VCS type %q", vcs.Type))
 		}
 
 		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
