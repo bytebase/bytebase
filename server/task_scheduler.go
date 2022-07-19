@@ -133,12 +133,12 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							snapshotProgress := func() {
 								value, ok := s.runningTask.Load(task.ID)
 								if !ok {
-									log.Error("failed to load task")
+									log.Error("Failed to load task from task scheduler", zap.Int("id", task.ID))
 									return
 								}
 								progress, ok := value.(*api.Progress)
 								if !ok {
-									log.Error("failed to assert type")
+									log.Error("Failed to assert the type to be progress", zap.Int("id", task.ID), zap.Any("progress", progress))
 									return
 								}
 								task.Progress.Lock()
