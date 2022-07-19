@@ -172,17 +172,17 @@ func (s *Store) PatchBackup(ctx context.Context, patch *api.BackupPatch) (*api.B
 	return backup, nil
 }
 
-// FindBackupSettingByInstanceID finds a list of BackupSetting of databases in the instance.
-func (s *Store) FindBackupSettingByInstanceID(ctx context.Context, instanceID int) ([]*api.BackupSetting, error) {
-	backupSettingRawList, err := s.findBackupSettingRawByInstance(ctx, instanceID)
+// FindBackupSetting finds a list of BackupSetting of databases in the instance.
+func (s *Store) FindBackupSetting(ctx context.Context, find api.BackupSettingFind) ([]*api.BackupSetting, error) {
+	backupSettingRawList, err := s.findBackupSettingRaw(ctx, find)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find backup setting list with instance ID %d, error: %w", instanceID, err)
+		return nil, fmt.Errorf("failed to find backup setting list with BackupSettingFind %+v, error: %w", find, err)
 	}
 	var backupSettingList []*api.BackupSetting
 	for _, raw := range backupSettingRawList {
 		backupSetting, err := s.composeBackupSetting(ctx, raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compose BackupSetting with backupSettingRaw[%+v], error: %w", raw, err)
+			return nil, fmt.Errorf("failed to compose BackupSetting with backupSettingRaw %+v, error: %w", raw, err)
 		}
 		backupSettingList = append(backupSettingList, backupSetting)
 	}
@@ -604,12 +604,19 @@ func (s *Store) getBackupSettingRaw(ctx context.Context, find *api.BackupSetting
 	return list[0], nil
 }
 
-func (s *Store) findBackupSettingRawByInstance(ctx context.Context, instanceID int) ([]*backupSettingRaw, error) {
+func (s *Store) findBackupSettingRaw(ctx context.Context, find api.BackupSettingFind) ([]*backupSettingRaw, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, FormatError(err)
 	}
 	defer tx.PTx.Rollback()
+
+	// Build WHERE clause.
+	where, args := []string{"1 = 1"}, []interface{}{}
+	if v := find.InstanceID; v != nil {
+		// Relation backup_setting do not have the column "instance_id", so we should join relation db to add the condition.
+		where, args = append(where, fmt.Sprintf("db.instance_id = $%d", len(args)+1)), append(args, *v)
+	}
 
 	rows, err := tx.PTx.QueryContext(ctx, `
 		SELECT
@@ -626,7 +633,7 @@ func (s *Store) findBackupSettingRawByInstance(ctx context.Context, instanceID i
 			bs.hook_url
 		FROM backup_setting AS bs
 		JOIN db on db.id = bs.database_id
-		WHERE db.instance_id = $1`, instanceID)
+		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
 		return nil, FormatError(err)
 	}
