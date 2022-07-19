@@ -185,7 +185,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					log.Error("failed to find the principal with committer email", zap.String("email", commit.Author.Email), zap.Error(err))
 				}
 				if committerPrinciple == nil {
-					log.Debug("cannot find the principal with committer email, use systembot instead", zap.String("email", commit.Author.Email))
+					log.Debug("cannot find the principal with committer email, use system bot instead", zap.String("email", commit.Author.Email))
 				} else {
 					creatorID = committerPrinciple.ID
 				}
