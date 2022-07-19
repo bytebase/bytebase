@@ -17,6 +17,7 @@ import (
 
 const (
 	taskSchedulerInterval = time.Duration(1) * time.Second
+	taskProgressInterval  = time.Duration(5) * time.Second
 )
 
 // NewTaskScheduler creates a new task scheduler.
@@ -31,6 +32,10 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executors map[api.TaskType]TaskExecutor
 
+	// runningTask[TaskID]Progress
+	// runningTask is used to
+	// 1. tell if the task is running
+	// 2. take a snapshot of the frequently updated progress in task executors
 	runningTask sync.Map
 
 	server *Server
@@ -125,7 +130,9 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						}()
 						taskComplete := make(chan struct{})
 						go func() {
-							ticker := time.NewTicker(time.Second)
+							createdTs := time.Now().Unix()
+							// take a snapshot of the task progress in the task executor periodically which would be sent to the frontend
+							ticker := time.NewTicker(taskProgressInterval)
 							defer ticker.Stop()
 							for {
 								select {
@@ -134,12 +141,21 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									s.runningTask.Store(task.ID, api.Progress{
 										TotalUnit:     task.Progress.TotalUnit,
 										CompletedUnit: task.Progress.CompletedUnit,
-										CreatedTs:     task.Progress.CreatedTs,
+										CreatedTs:     createdTs,
 										UpdatedTs:     time.Now().Unix(),
 										Payload:       task.Progress.Payload,
 									})
 									task.Progress.Unlock()
 								case <-taskComplete:
+									task.Progress.Lock()
+									s.runningTask.Store(task.ID, api.Progress{
+										TotalUnit:     task.Progress.TotalUnit,
+										CompletedUnit: task.Progress.CompletedUnit,
+										CreatedTs:     createdTs,
+										UpdatedTs:     time.Now().Unix(),
+										Payload:       task.Progress.Payload,
+									})
+									task.Progress.Unlock()
 									return
 								}
 							}
