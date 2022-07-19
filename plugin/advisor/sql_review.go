@@ -66,6 +66,9 @@ const (
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
 
+	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
+	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"
+
 	// TableNameTemplateToken is the token for table name
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list
@@ -379,6 +382,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, erro
 	case SchemaRuleMySQLEngine:
 		if engine == MySQL {
 			return MySQLUseInnoDB, nil
+		}
+	case SchemaRuleDropEmptyDatabase:
+		switch engine {
+		case MySQL, TiDB:
+			return MySQLDatabaseAllowDropIfEmpty, nil
 		}
 	}
 	return Fake, fmt.Errorf("unknown schema review rule type %v for %v", ruleType, engine)
