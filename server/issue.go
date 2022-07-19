@@ -18,24 +18,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/vcs"
 )
 
-func (s *Server) attachTaskProgressForIssue(issue *api.Issue) {
-	for _, stage := range issue.Pipeline.StageList {
-		for _, task := range stage.TaskList {
-			if value, ok := s.TaskScheduler.runningTask.Load(task.ID); ok {
-				if progress, ok := value.(*api.Progress); ok {
-					progress.Lock()
-					task.Progress.TotalUnit = progress.TotalUnit
-					task.Progress.CompletedUnit = progress.CompletedUnit
-					task.Progress.CreatedTs = progress.CreatedTs
-					task.Progress.UpdatedTs = progress.UpdatedTs
-					task.Progress.Payload = progress.Payload
-					progress.Unlock()
-				}
-			}
-		}
-	}
-}
-
 func (s *Server) registerIssueRoutes(g *echo.Group) {
 	g.POST("/issue", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -1310,4 +1292,24 @@ func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) 
 	}
 
 	return similarDB
+}
+
+func (s *Server) attachTaskProgressForIssue(issue *api.Issue) {
+	for _, stage := range issue.Pipeline.StageList {
+		for _, task := range stage.TaskList {
+			if value, ok := s.TaskScheduler.runningTask.Load(task.ID); ok {
+				if progress, ok := value.(*api.Progress); ok {
+					task.Progress.Lock()
+					progress.Lock()
+					task.Progress.TotalUnit = progress.TotalUnit
+					task.Progress.CompletedUnit = progress.CompletedUnit
+					task.Progress.CreatedTs = progress.CreatedTs
+					task.Progress.UpdatedTs = progress.UpdatedTs
+					task.Progress.Payload = progress.Payload
+					progress.Unlock()
+					task.Progress.Unlock()
+				}
+			}
+		}
+	}
 }
