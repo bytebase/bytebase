@@ -116,7 +116,13 @@ export const useActivityStore = defineStore("activity", {
       ]);
 
       const mergedList = [...listForIssue, ...listForPipeline];
-      mergedList.sort((a, b) => a.createdTs - b.createdTs);
+      mergedList.sort((a, b) => {
+        if (a.createdTs !== b.createdTs) {
+          return a.createdTs - b.createdTs;
+        }
+
+        return a.id - b.id;
+      });
 
       this.setActivityListForIssue({ issueId, activityList: mergedList });
       return mergedList;
