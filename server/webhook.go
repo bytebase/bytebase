@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	gitLabWebhookPath = "hook/gitlab"
+	gitlabWebhookPath = "hook/gitlab"
+	githubWebhookPath = "hook/github"
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
@@ -157,7 +158,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 			}
 
-			content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
+			content, err := vcs.Get(repo2.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 				ctx,
 				common.OauthContext{
 					ClientID:     repo2.VCS.ApplicationID,

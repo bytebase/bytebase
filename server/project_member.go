@@ -114,10 +114,18 @@ func (s *Server) registerProjectMemberRoutes(g *echo.Group) {
 			createList = append(createList, createProjectMember)
 		}
 
+		var roleProvider api.ProjectRoleProvider
+		switch vcs.Type {
+		case vcsPlugin.GitLabSelfHost:
+			roleProvider = api.ProjectRoleProviderGitLabSelfHost
+		case vcsPlugin.GitHubCom:
+			roleProvider = api.ProjectRoleProviderGitHubCom
+		}
+
 		batchUpdateProjectMember := &api.ProjectMemberBatchUpdate{
 			ID:           projectID,
 			UpdaterID:    c.Get(getPrincipalIDContextKey()).(int),
-			RoleProvider: api.ProjectRoleProviderGitLabSelfHost, /* we only support gitlab for now */
+			RoleProvider: roleProvider,
 			List:         createList,
 		}
 		createdMemberList, deletedMemberList, err := s.store.BatchUpdateProjectMember(ctx, batchUpdateProjectMember)
