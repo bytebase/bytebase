@@ -76,7 +76,8 @@ type WebhookProject struct {
 
 // WebhookCommitAuthor is the API message for webhook commit author.
 type WebhookCommitAuthor struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // WebhookCommit is the API message for webhook commit.
