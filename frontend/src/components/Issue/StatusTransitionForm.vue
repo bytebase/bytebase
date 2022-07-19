@@ -236,6 +236,7 @@ export default defineComponent({
         case "TASK": {
           switch ((props.transition as TaskStatusTransition).to) {
             case "RUNNING":
+            case "PENDING": // fallthrough
               return (
                 runningCheckCount.value == 0 &&
                 checkSummary.value.errorCount == 0
