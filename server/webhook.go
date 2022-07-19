@@ -104,13 +104,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				RepositoryFullPath: pushEvent.Project.FullPath,
 				AuthorName:         pushEvent.AuthorName,
 				FileCommit: vcs.FileCommit{
-					ID:         commit.ID,
-					Title:      commit.Title,
-					Message:    commit.Message,
-					CreatedTs:  item.createdTime.Unix(),
-					URL:        commit.URL,
-					AuthorName: commit.Author.Name,
-					Added:      addedEscaped,
+					ID:          commit.ID,
+					Title:       commit.Title,
+					Message:     commit.Message,
+					CreatedTs:   item.createdTime.Unix(),
+					URL:         commit.URL,
+					AuthorName:  commit.Author.Name,
+					AuthorEmail: commit.Author.Email,
+					Added:       addedEscaped,
 				},
 			}
 
@@ -178,6 +179,19 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			// Create schema update issue.
+			creatorID := api.SystemBotID
+			if commit.Author.Email != "" {
+				committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, commit.Author.Email)
+				if err != nil {
+					log.Error("failed to find the principal with committer email", zap.String("email", commit.Author.Email), zap.Error(err))
+				}
+				if committerPrinciple == nil {
+					log.Debug("cannot find the principal with committer email, use system bot instead", zap.String("email", commit.Author.Email))
+				} else {
+					creatorID = committerPrinciple.ID
+				}
+			}
+
 			var createContext string
 			if repo.Project.TenantMode == api.TenantModeTenant {
 				if !s.feature(api.FeatureMultiTenancy) {
@@ -204,7 +218,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AssigneeID:    api.SystemBotID,
 				CreateContext: createContext,
 			}
-			issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+			issue, err := s.createIssue(ctx, issueCreate, creatorID)
 			if err != nil {
 				errMsg := "Failed to create schema update issue"
 				if issueType == api.IssueDatabaseDataUpdate {
@@ -226,7 +240,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   api.SystemBotID,
+				CreatorID:   creatorID,
 				ContainerID: repo.ProjectID,
 				Type:        api.ActivityProjectRepositoryPush,
 				Level:       api.ActivityInfo,
