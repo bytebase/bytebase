@@ -11,10 +11,10 @@ import (
 )
 
 // FindString returns the search index of sorted strings.
-func FindString(strings []string, search string) int {
-	sort.Strings(strings)
-	i := sort.SearchStrings(strings, search)
-	if i == len(strings) {
+func FindString(stringList []string, search string) int {
+	sort.Strings(stringList)
+	i := sort.SearchStrings(stringList, search)
+	if i == len(stringList) {
 		return -1
 	}
 	return i

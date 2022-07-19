@@ -127,7 +127,6 @@ func (s *Store) FindTask(ctx context.Context, find *api.TaskFind, returnOnErr bo
 				zap.Any("taskRaw", raw),
 				zap.Error(err))
 			continue
-
 		}
 		taskList = append(taskList, task)
 	}

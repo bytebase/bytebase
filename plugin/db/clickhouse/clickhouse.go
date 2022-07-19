@@ -38,12 +38,12 @@ type Driver struct {
 	db *sql.DB
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
+func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
 // Open opens a ClickHouse driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	port := config.Port
 	if port == "" {
 		port = "9000"
@@ -85,7 +85,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 

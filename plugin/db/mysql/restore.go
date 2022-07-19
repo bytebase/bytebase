@@ -525,24 +525,24 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 			continue
 		}
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
-		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
+		binlogFilePath := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !existLocal {
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
-				log.Error("Failed to download binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to download binlog file %q, error: %w", path, err)
+				log.Error("Failed to download binlog file", zap.String("path", binlogFilePath), zap.Error(err))
+				return fmt.Errorf("failed to download binlog file %q, error: %w", binlogFilePath, err)
 			}
 		} else if fileLocal.Size != fileOnServer.Size {
 			log.Debug("Deleting inconsistent local binlog file",
-				zap.String("path", path),
+				zap.String("path", binlogFilePath),
 				zap.Int64("sizeLocal", fileOnServer.Size),
 				zap.Int64("sizeOnServer", fileOnServer.Size))
-			if err := os.Remove(path); err != nil {
-				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to remove inconsistent local binlog file %q, error: %w", path, err)
+			if err := os.Remove(binlogFilePath); err != nil {
+				log.Error("Failed to remove inconsistent local binlog file", zap.String("path", binlogFilePath), zap.Error(err))
+				return fmt.Errorf("failed to remove inconsistent local binlog file %q, error: %w", binlogFilePath, err)
 			}
 			if err := driver.downloadBinlogFile(ctx, fileOnServer, fileOnServer.Name == latestBinlogFileOnServer.Name); err != nil {
-				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", path), zap.Error(err))
-				return fmt.Errorf("failed to re-download inconsistent local binlog file %q, error: %w", path, err)
+				log.Error("Failed to re-download inconsistent local binlog file", zap.String("path", binlogFilePath), zap.Error(err))
+				return fmt.Errorf("failed to re-download inconsistent local binlog file %q, error: %w", binlogFilePath, err)
 			}
 		}
 	}

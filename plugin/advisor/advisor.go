@@ -37,6 +37,7 @@ func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 }
 
 // Type is the type of advisor.
+// nolint
 type Type string
 
 const (

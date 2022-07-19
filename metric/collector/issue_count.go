@@ -16,9 +16,9 @@ type issueCountCollector struct {
 }
 
 // NewIssueCountCollector creates a new instance of issueCollector
-func NewIssueCountCollector(store *store.Store) metric.Collector {
+func NewIssueCountCollector(s *store.Store) metric.Collector {
 	return &issueCountCollector{
-		store: store,
+		store: s,
 	}
 }
 

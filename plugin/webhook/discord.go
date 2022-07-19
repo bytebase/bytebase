@@ -50,7 +50,7 @@ func init() {
 type DiscordReceiver struct {
 }
 
-func (receiver *DiscordReceiver) post(context Context) error {
+func (*DiscordReceiver) post(context Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}

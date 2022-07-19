@@ -14,6 +14,7 @@ import (
 )
 
 // Type is the type of a database.
+// nolint
 type Type string
 
 const (
@@ -448,9 +449,9 @@ func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectio
 	if err != nil {
 		return nil, err
 	}
+	defer driver.Close(ctx)
 
 	if err := driver.Ping(ctx); err != nil {
-		driver.Close(ctx)
 		return nil, err
 	}
 

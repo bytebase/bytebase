@@ -16,9 +16,9 @@ type memberCountCollector struct {
 }
 
 // NewMemberCountCollector creates a new instance of memberCountCollector
-func NewMemberCountCollector(store *store.Store) metric.Collector {
+func NewMemberCountCollector(s *store.Store) metric.Collector {
 	return &memberCountCollector{
-		store: store,
+		store: s,
 	}
 }
 

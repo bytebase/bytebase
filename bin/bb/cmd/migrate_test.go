@@ -25,24 +25,24 @@ var (
 )
 
 func TestMigrate(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, PortTestMigrate)
+	instance, stop := mysql.SetupTestInstance(t, PortTestMigrate)
 	defer stop()
 
-	err := mysql.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
+	err := instance.Import("testdata/mysql_test_schema/1_todo.sql", os.Stdout, os.Stderr)
 	require.NoError(t, err)
 
 	tt := []testTable{
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
 			},
 			expected: _TestMigrate01,
 		},
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
 				"-c", `"
 	CREATE TABLE bytebase_test_todo.book (
 		id INTEGER PRIMARY KEY,
@@ -54,7 +54,7 @@ func TestMigrate(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
 			},
 			expected: _TestMigrate03,
 		},
@@ -70,14 +70,14 @@ var (
 )
 
 func TestCreateDatabase(t *testing.T) {
-	mysql, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
+	instance, stop := mysql.SetupTestInstance(t, PortTestCreateDatabase)
 	defer stop()
 
 	tt := []testTable{
 		{
 			args: []string{
 				"migrate",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/", instance.Port()),
 				"-f", "testdata/mysql_test_schema/1_todo.sql",
 			},
 			expected: _TestCreateDatabase01,
@@ -85,7 +85,7 @@ func TestCreateDatabase(t *testing.T) {
 		{
 			args: []string{
 				"dump",
-				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", mysql.Port()),
+				"--dsn", fmt.Sprintf("mysql://root@localhost:%d/bytebase_test_todo", instance.Port()),
 			},
 			expected: _TestCreateDatabase02,
 		},

@@ -115,11 +115,11 @@ type WebhookInfo struct {
 // fetchUserInfo fetches user information from the given resourceURI, which
 // should be either "user" or "users/{username}".
 func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthContext, resourceURI string) (*vcs.UserInfo, error) {
-	url := fmt.Sprintf("%s/%s", apiURL, resourceURI)
+	resourceURL := fmt.Sprintf("%s/%s", apiURL, resourceURI)
 	code, body, err := oauth.Get(
 		ctx,
 		p.client,
-		url,
+		resourceURL,
 		&oauthCtx.AccessToken,
 		tokenRefresher(
 			oauthContext{
@@ -135,9 +135,9 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", resourceURL))
 	} else if code >= 300 {
-		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", url, code, body)
+		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s", resourceURL, code, body)
 	}
 
 	var user User
