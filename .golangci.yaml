@@ -30,8 +30,10 @@ run:
 
 linters-settings:
   revive:
+    # Default to run all linters so that new rules in the future could automatically be added to the static check.
     enable-all-rules: true
     rules:
+      # The following rules are too strict and make coding harder. We do not enable them for now.
       - name: file-header
         disabled: true
       - name: line-length-limit
