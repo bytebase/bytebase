@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	taskSchedulerInterval = time.Duration(1) * time.Second
-	taskProgressInterval  = time.Duration(5) * time.Second
+	taskSchedulerInterval      = time.Duration(1) * time.Second
+	taskProgressUpdateInterval = time.Duration(1) * time.Second
 )
 
 // NewTaskScheduler creates a new task scheduler.
@@ -145,7 +145,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 							}
 
 							// take a snapshot of the task progress in the task executor periodically which would be sent to the frontend
-							ticker := time.NewTicker(taskProgressInterval)
+							ticker := time.NewTicker(taskProgressUpdateInterval)
 							defer ticker.Stop()
 							for {
 								select {
