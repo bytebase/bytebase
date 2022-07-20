@@ -34,6 +34,12 @@ func (c *catalogService) FindTable(ctx context.Context, find *catalog.TableFind)
 	return nil, nil
 }
 
+// FindPK is the API message for find primary key in catalog.
+// We will not connect to the user's database in the early version of sql check api
+func (c *catalogService) FindPK(ctx context.Context, find *catalog.PKFind) (*catalog.Index, error) {
+	return nil, nil
+}
+
 func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 	g.GET("/sql/advise", s.sqlCheckController)
 }

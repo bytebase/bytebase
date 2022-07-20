@@ -46,6 +46,7 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	case MockOldPKName:
 		return &catalog.Index{
 			Unique:            true,
+			Primary:           true,
 			Name:              MockOldPKName,
 			ColumnExpressions: MockIndexColumnList,
 		}, nil
@@ -60,6 +61,16 @@ func (c *MockCatalogService) FindTable(ctx context.Context, find *catalog.TableF
 			Name:         "table",
 			DatabaseName: find.DatabaseName,
 		},
+	}, nil
+}
+
+// FindPK implements the catalog interface.
+func (c *MockCatalogService) FindPK(ctx context.Context, infd *catalog.PKFind) (*catalog.Index, error) {
+	return &catalog.Index{
+		Unique:            true,
+		Primary:           true,
+		Name:              MockOldPKName,
+		ColumnExpressions: MockIndexColumnList,
 	}, nil
 }
 

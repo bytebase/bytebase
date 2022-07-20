@@ -8,6 +8,7 @@ import (
 type Catalog interface {
 	FindIndex(ctx context.Context, find *IndexFind) (*Index, error)
 	FindTable(ctx context.Context, find *TableFind) ([]*Table, error)
+	FindPK(ctx context.Context, find *PKFind) (*Index, error)
 }
 
 // Index is the API message for an index.
@@ -24,6 +25,11 @@ type Index struct {
 type IndexFind struct {
 	TableName string
 	IndexName string
+}
+
+// PKFind is the API message for find primary key
+type PKFind struct {
+	TableName string
 }
 
 // Table is the API message for an table.

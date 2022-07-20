@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/bytebase/bytebase/api"
@@ -47,27 +48,8 @@ func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*cata
 	if err != nil {
 		return nil, err
 	}
-	if len(indexList) == 0 {
-		return nil, nil
-	}
 
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].Position < indexList[j].Position
-	})
-
-	var columnExpressions []string
-	for _, index := range indexList {
-		columnExpressions = append(columnExpressions, index.Expression)
-	}
-
-	return &catalog.Index{
-		Name:              indexList[0].Name,
-		TableName:         table.Name,
-		Type:              indexList[0].Type,
-		Unique:            indexList[0].Unique,
-		Primary:           indexList[0].Primary,
-		ColumnExpressions: columnExpressions,
-	}, nil
+	return foldIndex(table.Name, indexList), nil
 }
 
 // FindTable finds the table list by TableFind. Implement the catalog.Catalog interface.
@@ -90,4 +72,65 @@ func (c *Catalog) FindTable(ctx context.Context, find *catalog.TableFind) ([]*ca
 	}
 
 	return res, nil
+}
+
+// FindPK finds the primary key by PKFind. Implement the catalog.Catalog interface.
+func (c *Catalog) FindPK(ctx context.Context, find *catalog.PKFind) (*catalog.Index, error) {
+	table, err := c.store.GetTable(ctx, &api.TableFind{
+		DatabaseID: c.databaseID,
+		Name:       &find.TableName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if table == nil {
+		return nil, nil
+	}
+
+	indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
+		DatabaseID: c.databaseID,
+		TableID:    &table.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(indexList) == 0 {
+		return nil, nil
+	}
+
+	var primary []*api.Index
+	for _, index := range indexList {
+		if index.Primary {
+			if len(primary) > 0 && primary[0].Name != index.Name {
+				return nil, fmt.Errorf("FindPK error: found multi-PK for table: %s in database: %d", find.TableName, c.databaseID)
+			}
+			primary = append(primary, index)
+		}
+	}
+
+	return foldIndex(table.Name, primary), nil
+}
+
+func foldIndex(tableName string, indexList []*api.Index) *catalog.Index {
+	if len(indexList) == 0 {
+		return nil
+	}
+
+	sort.Slice(indexList, func(i, j int) bool {
+		return indexList[i].Position < indexList[j].Position
+	})
+
+	var columnExpressions []string
+	for _, index := range indexList {
+		columnExpressions = append(columnExpressions, index.Expression)
+	}
+
+	return &catalog.Index{
+		Name:              indexList[0].Name,
+		TableName:         tableName,
+		Type:              indexList[0].Type,
+		Unique:            indexList[0].Unique,
+		Primary:           indexList[0].Primary,
+		ColumnExpressions: columnExpressions,
+	}
 }
