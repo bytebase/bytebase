@@ -832,7 +832,7 @@
         "daily": "每天"
       },
       "form": {
-        "schedule": "备份计划",
+        "schedule": "计划",
         "day-of-week": "星期",
         "time-of-day": "时间",
         "retention-period": "保留时长（天）"
