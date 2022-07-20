@@ -209,7 +209,7 @@ func (s *Server) registerSheetRoutes(g *echo.Group) {
 					}
 
 					for _, database := range databaseList {
-						database := database
+						database := database // create a new var "database".
 						if database.Instance.Environment.Name == sheetInfo.EnvironmentName {
 							databaseID = &database.ID
 							break
