@@ -82,6 +82,7 @@ type indexSchema struct {
 	tableName  string
 	statement  string
 	unique     bool
+	primary    bool
 	// methodType such as btree.
 	methodType        string
 	columnExpressions []string
@@ -212,6 +213,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 				dbIndex.Position = i + 1
 				dbIndex.Type = idx.methodType
 				dbIndex.Unique = idx.unique
+				dbIndex.Primary = idx.primary
 				dbIndex.Comment = idx.comment
 				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
 			}
@@ -595,9 +597,33 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err = getIndex(txn, idx); err != nil {
 			return nil, fmt.Errorf("getIndex(%q, %q) got error %v", idx.schemaName, idx.name, err)
 		}
+
+		if err = getPrimary(txn, idx); err != nil {
+			return nil, fmt.Errorf("getPrimary(%q, %q) got error %v", idx.schemaName, idx.name, err)
+		}
 	}
 
 	return indices, nil
+}
+
+func getPrimary(txn *sql.Tx, idx *indexSchema) error {
+	isPrimaryQuery := `
+		SELECT count(*)
+		FROM information_schema.table_constraints
+		WHERE constraint_schema = $1
+		  AND constraint_name = $2
+		  AND table_schema = $1
+		  AND table_name = $3
+		  AND constraint_type = 'PRIMARY KEY'
+	`
+
+	var yes int
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
+		return err
+	}
+
+	idx.primary = (yes == 1)
+	return nil
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
