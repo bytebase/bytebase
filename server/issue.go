@@ -410,6 +410,21 @@ func (s *Server) getPipelineApprovalPolicyForEnv(ctx context.Context, envID int)
 	return taskStatus, nil
 }
 
+func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	switch issueCreate.Type {
+	case api.IssueDatabaseCreate:
+		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
+	case api.IssueDatabasePITR:
+		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
+	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
+		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
+	case api.IssueDatabaseSchemaUpdateGhost:
+		return s.getPipelineCreateForDatabaseSchemaUpdateGhost(ctx, issueCreate)
+	default:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
+	}
+}
+
 func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	c := api.CreateDatabaseContext{}
 	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
@@ -860,21 +875,6 @@ func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Conte
 		})
 	}
 	return create, nil
-}
-
-func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
-	switch issueCreate.Type {
-	case api.IssueDatabaseCreate:
-		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
-	case api.IssueDatabasePITR:
-		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
-	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
-		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
-	case api.IssueDatabaseSchemaUpdateGhost:
-		return s.getPipelineCreateForDatabaseSchemaUpdateGhost(ctx, issueCreate)
-	default:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
-	}
 }
 
 func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
