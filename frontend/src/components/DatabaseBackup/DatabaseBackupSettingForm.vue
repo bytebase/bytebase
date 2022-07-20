@@ -387,7 +387,11 @@ function isAllowedScheduleByPolicy(
     return allowDisableAutoBackup.value;
   }
 
-  return levelOfSchedule(schedule) >= levelOfSchedule(props.backupPolicy);
+  // In the future, a db's backup setting and its environment's backup policy
+  // can be set separately.
+  // Now, the database backup policy can be configured when its environment
+  // backup policy is "Not enforced"
+  return props.backupPolicy === schedule || props.backupPolicy === "UNSET";
 }
 
 function nameOfSchedule(schedule: BackupPlanPolicySchedule): string {
