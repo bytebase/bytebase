@@ -23,7 +23,8 @@ type ConnectionInfo struct {
 
 // SQLSyncSchema is the API message for sync schemas.
 type SQLSyncSchema struct {
-	InstanceID int `jsonapi:"attr,instanceId"`
+	InstanceID *int `jsonapi:"attr,instanceId"`
+	DatabaseID *int `jsonapi:"attr,databaseId"`
 }
 
 // SQLExecute is the API message for execute SQL.
