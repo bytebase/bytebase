@@ -290,7 +290,6 @@ const statementOfTask = (task: Task) => {
       return "";
     case "bb.task.database.schema.update.ghost.sync":
     case "bb.task.database.schema.update.ghost.cutover":
-    case "bb.task.database.schema.update.ghost.drop-original-table":
       return ""; // should never reach here
   }
 };
