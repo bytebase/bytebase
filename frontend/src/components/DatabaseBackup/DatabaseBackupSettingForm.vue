@@ -113,12 +113,6 @@
             @input="(e: any) => setRetentionPeriodDays(e.target.value)"
           />
         </div>
-        <div v-if="false" class="flex items-center gap-x-2 text-xs">
-          <span>3</span>
-          <span>7</span>
-          <span>30</span>
-          <span>365</span>
-        </div>
       </div>
     </div>
 
