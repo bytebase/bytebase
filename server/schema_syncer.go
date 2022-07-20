@@ -78,12 +78,11 @@ func (s *SchemaSyncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							delete(runningTasks, instance.ID)
 							mu.Unlock()
 						}()
-						resultSet := s.server.syncEngineVersionAndSchema(ctx, instance)
-						if resultSet.Error != "" {
+						if err := s.server.syncEngineVersionAndSchema(ctx, instance); err != nil {
 							log.Debug("Failed to sync instance",
 								zap.Int("id", instance.ID),
 								zap.String("name", instance.Name),
-								zap.String("error", resultSet.Error))
+								zap.String("error", err.Error()))
 						}
 					}(instance)
 				}
