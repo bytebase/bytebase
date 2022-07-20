@@ -92,7 +92,7 @@ Teams using Bytebase will naturally adopt industry best practice for managing da
 
 ## 📕 Docs
 
-### [Installation](https://www.bytebase.com/docs/get-started/deploy-to-production/deploy-with-docker?source=github)
+### [Installation](https://www.bytebase.com/docs/get-started/install/overview?source=github)
 
 ### [User doc](https://bytebase.com/docs?source=github)
 
