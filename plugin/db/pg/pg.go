@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 
 	// Import pg driver.
@@ -22,7 +21,6 @@ var (
 		"template0": true,
 		"template1": true,
 	}
-	ident                      = regexp.MustCompile(`(?i)^[a-z_][a-z0-9_$]*$`)
 	createBytebaseDatabaseStmt = "CREATE DATABASE bytebase;"
 
 	// driverName is the driver name that our driver dependence register, now is "pgx".
