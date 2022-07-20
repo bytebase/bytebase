@@ -71,6 +71,20 @@ func convert(node *pgquery.Node, text string) (res ast.Node, err error) {
 					}
 
 					alterTable.AlterItemList = append(alterTable.AlterItemList, dropConstraint)
+				case pgquery.AlterTableType_AT_SetNotNull:
+					setNotNull := &ast.SetNotNullStmt{
+						Table:      alterTable.Table,
+						ColumnName: alterCmd.Name,
+					}
+
+					alterTable.AlterItemList = append(alterTable.AlterItemList, setNotNull)
+				case pgquery.AlterTableType_AT_DropNotNull:
+					dropNotNull := &ast.DropNotNullStmt{
+						Table:      alterTable.Table,
+						ColumnName: alterCmd.Name,
+					}
+
+					alterTable.AlterItemList = append(alterTable.AlterItemList, dropNotNull)
 				}
 			}
 		}
@@ -311,6 +325,8 @@ func convertConstraintType(in pgquery.ConstrType, usingIndex bool) ast.Constrain
 			return ast.ConstraintTypeUndefined
 		}
 		return ast.ConstraintTypeForeign
+	case pgquery.ConstrType_CONSTR_NOTNULL:
+		return ast.ConstraintTypeNotNull
 	}
 	return ast.ConstraintTypeUndefined
 }
