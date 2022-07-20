@@ -37,7 +37,7 @@ jobs:
         os:
           - "linux"
           - "macos"
-    runs-on: ${{ matrix.release-tags }}-latest
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2.1.0
@@ -60,7 +60,7 @@ jobs:
       - name: Build
         uses: goreleaser/goreleaser-action@v2
         with:
-          args: release --skip-publish --config .goreleaser-for-${{ matrix.release-tags }}.yaml
+          args: release --skip-publish --config .goreleaser-for-${{ matrix.os }}.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
