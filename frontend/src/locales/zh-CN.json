@@ -830,6 +830,12 @@
         "disabled": "不启用",
         "weekly": "每周",
         "daily": "每天"
+      },
+      "form": {
+        "schedule": "备份计划",
+        "day-of-week": "星期",
+        "time-of-day": "时间",
+        "retention-period": "保留时长（天）"
       }
     },
     "backup-policy-violation": "违反了备份策略"

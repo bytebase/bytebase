@@ -2,7 +2,9 @@
   <div class="w-[30rem] max-w-full">
     <div class="py-0.5 space-y-6 sm:pl-[20%]">
       <div class="flex flex-col gap-y-2">
-        <label class="textlabel">Schedule</label>
+        <label class="textlabel">
+          {{ $t("database.backup-setting.form.schedule") }}
+        </label>
         <NPopover
           trigger="manual"
           :show="state.showBackupPolicyEnforcement"
@@ -46,7 +48,9 @@
       </div>
 
       <div v-if="checkedSchedule === 'WEEKLY'" class="flex flex-col gap-y-2">
-        <label class="textlabel">Day of week</label>
+        <label class="textlabel">
+          {{ $t("database.backup-setting.form.day-of-week") }}
+        </label>
         <div class="w-[16rem]">
           <BBSelect
             :selected-item="
@@ -68,7 +72,9 @@
         class="flex flex-col gap-y-2"
       >
         <label class="textlabel">
-          <span>Time of day</span>
+          <span>
+            {{ $t("database.backup-setting.form.time-of-day") }}
+          </span>
           <span class="ml-1 textinfolabel">
             ({{ Intl.DateTimeFormat().resolvedOptions().timeZone }})
           </span>
@@ -92,7 +98,9 @@
         v-if="checkedSchedule === 'WEEKLY' || checkedSchedule === 'DAILY'"
         class="flex flex-col gap-y-2"
       >
-        <label class="textlabel">Retention period (days)</label>
+        <label class="textlabel">
+          {{ $t("database.backup-setting.form.retention-period") }}
+        </label>
         <div class="w-[16rem]">
           <input
             type="text"
@@ -141,7 +149,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive, watch } from "vue";
+import { computed, onMounted, PropType, reactive, watch } from "vue";
 import { pick } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
@@ -151,6 +159,7 @@ import {
   BackupSettingUpsert,
   Database,
   unknown,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   PLAN_SCHEDULES,
@@ -395,4 +404,12 @@ function nameOfDay(day: number): string {
 function nameOfHour(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
+
+onMounted(() => {
+  if (props.backupSetting.id === UNKNOWN_ID) {
+    // Find a proper default schedule options according to the backup policy
+    // if props.backupSetting is empty/unknown
+    // setSchedule(props.backupPolicy);
+  }
+});
 </script>
