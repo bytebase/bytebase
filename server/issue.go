@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -1298,16 +1299,9 @@ func (s *Server) attachTaskProgressForIssue(issue *api.Issue) {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
 			if value, ok := s.TaskScheduler.runningTask.Load(task.ID); ok {
-				if progress, ok := value.(*api.Progress); ok {
-					task.Progress.Lock()
-					progress.Lock()
-					task.Progress.TotalUnit = progress.TotalUnit
-					task.Progress.CompletedUnit = progress.CompletedUnit
-					task.Progress.CreatedTs = progress.CreatedTs
-					task.Progress.UpdatedTs = progress.UpdatedTs
-					task.Progress.Payload = progress.Payload
-					progress.Unlock()
-					task.Progress.Unlock()
+				progressValue := value.(*atomic.Value)
+				if progress := progressValue.Load(); progress != nil {
+					task.Progress = progress.(api.Progress)
 				}
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -120,7 +121,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 					// loaded means the task is already running so we continue
-					if _, loaded := s.runningTask.LoadOrStore(task.ID, &api.Progress{CreatedTs: time.Now().Unix()}); loaded {
+					if _, loaded := s.runningTask.LoadOrStore(task.ID, &atomic.Value{}); loaded {
 						continue
 					}
 
@@ -128,6 +129,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						defer func() {
 							s.runningTask.Delete(task.ID)
 						}()
+						task.ProgressValue = new(atomic.Value)
 						taskComplete := make(chan struct{})
 						go func() {
 							snapshotProgress := func() {
@@ -136,19 +138,10 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 									log.Error("Failed to load task from task scheduler", zap.Int("id", task.ID))
 									return
 								}
-								progress, ok := value.(*api.Progress)
-								if !ok {
-									log.Error("Failed to assert the type to be progress", zap.Int("id", task.ID), zap.Any("progress", progress))
-									return
+								progressValue := value.(*atomic.Value)
+								if progress := task.ProgressValue.Load(); progress != nil {
+									progressValue.Store(progress)
 								}
-								task.Progress.Lock()
-								progress.Lock()
-								progress.TotalUnit = task.Progress.TotalUnit
-								progress.CompletedUnit = task.Progress.CompletedUnit
-								progress.UpdatedTs = time.Now().Unix()
-								progress.Payload = task.Progress.Payload
-								progress.Unlock()
-								task.Progress.Unlock()
 							}
 
 							// take a snapshot of the task progress in the task executor periodically which would be sent to the frontend
