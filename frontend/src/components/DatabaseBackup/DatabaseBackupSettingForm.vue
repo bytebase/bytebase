@@ -152,7 +152,14 @@ import {
   Database,
   unknown,
 } from "@/types";
-import { localFromUTC, localToUTC } from "./utils";
+import {
+  PLAN_SCHEDULES,
+  BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION,
+  DEFAULT_BACKUP_RETENTION_PERIOD_TS,
+  levelOfSchedule,
+  localFromUTC,
+  localToUTC,
+} from "./utils";
 import { pushNotification, useBackupStore } from "@/store";
 
 type BackupSettingEdit = Pick<
@@ -165,11 +172,6 @@ type LocalState = {
   showBackupPolicyEnforcement: boolean;
   loading: boolean;
 };
-
-const PLAN_SCHEDULES: BackupPlanPolicySchedule[] = ["UNSET", "WEEKLY", "DAILY"];
-
-const DEFAULT_BACKUP_RETENTION_PERIOD_TS = 7 * 3600 * 24; // 7 days
-const BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION = 5000;
 
 const props = defineProps({
   database: {
@@ -374,10 +376,6 @@ function isAllowedScheduleByPolicy(
   if (schedule === "UNSET") {
     return allowDisableAutoBackup.value;
   }
-
-  const levelOfSchedule = (schedule: BackupPlanPolicySchedule) => {
-    return PLAN_SCHEDULES.indexOf(schedule) || 0;
-  };
 
   return levelOfSchedule(schedule) >= levelOfSchedule(props.backupPolicy);
 }
