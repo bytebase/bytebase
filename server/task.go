@@ -38,9 +38,9 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 
 func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
 	// Allow frontend to change the SQL statement of
-	// a PendingApproval task which hasn't started yet
-	// a Failed task which can be retried
-	// a Pending task which can't be scheduled because of failed task checks
+	// 1. a PendingApproval task which hasn't started yet
+	// 2. a Failed task which can be retried
+	// 3. a Pending task which can't be scheduled because of failed task checks
 	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
 	}
