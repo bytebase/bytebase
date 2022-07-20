@@ -218,7 +218,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		cancelUpdateRow()
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
@@ -227,7 +227,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -314,7 +314,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		cancelUpdateRow()
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
@@ -323,7 +323,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -420,7 +420,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
@@ -428,7 +428,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -525,7 +525,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
 		time.Sleep(time.Second)
@@ -533,7 +533,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -614,7 +614,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		cancelUpdateRow()
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
@@ -623,7 +623,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
@@ -640,7 +640,7 @@ func TestPITR(t *testing.T) {
 		// Wait first PITR auto backup finish
 		backups, err := ctl.listBackups(database.ID)
 		a.NoError(err)
-		a.Equal(len(backups), 2)
+		a.Equal(2, len(backups))
 		sort.Slice(backups, func(i int, j int) bool {
 			return backups[i].CreatedTs > backups[j].CreatedTs
 		})
@@ -665,7 +665,7 @@ func TestPITR(t *testing.T) {
 		// Restore stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		cancelUpdateRow()
 		// We mimics the situation where the user waits for the target database idle before doing the cutover.
@@ -674,7 +674,7 @@ func TestPITR(t *testing.T) {
 		// Cutover stage.
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
-		a.Equal(status, api.TaskDone)
+		a.Equal(api.TaskDone, status)
 
 		// Second PITR
 		t.Log("Validate table tbl0")
@@ -752,7 +752,7 @@ func TestPITR(t *testing.T) {
 
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.Error(err)
-		a.Equal(status, api.TaskFailed)
+		a.Equal(api.TaskFailed, status)
 	})
 }
 
