@@ -131,6 +131,10 @@ type WebhookConfig struct {
 
 // WebhookCreateOrUpdate represents a GitHub API request for creating or
 // updating a webhook.
+//
+// NOTE: GitHub uses different API payloads for creating and updating webhooks
+// (the latter has more options), but we are not using any differentiated parts
+// so it makes sense to have a combined struct until we needed.
 type WebhookCreateOrUpdate struct {
 	// Config contains settings for the webhook.
 	Config WebhookConfig `json:"config"`
