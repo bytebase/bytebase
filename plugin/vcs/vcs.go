@@ -9,6 +9,7 @@ import (
 )
 
 // Type is the type of a VCS.
+// nolint
 type Type string
 
 const (

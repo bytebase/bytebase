@@ -93,19 +93,19 @@ func (s *Store) GetDataSource(ctx context.Context, find *api.DataSourceFind) (*a
 
 // FindDataSource finds a list of DataSource instances
 func (s *Store) FindDataSource(ctx context.Context, find *api.DataSourceFind) ([]*api.DataSource, error) {
-	DataSourceRawList, err := s.findDataSourceRaw(ctx, find)
+	dataSourceRawList, err := s.findDataSourceRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find DataSource list with DataSourceFind[%+v], error: %w", find, err)
 	}
-	var DataSourceList []*api.DataSource
-	for _, raw := range DataSourceRawList {
-		DataSource, err := s.composeDataSource(ctx, raw)
+	var dataSourceList []*api.DataSource
+	for _, raw := range dataSourceRawList {
+		dataSource, err := s.composeDataSource(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", raw, err)
 		}
-		DataSourceList = append(DataSourceList, DataSource)
+		dataSourceList = append(dataSourceList, dataSource)
 	}
-	return DataSourceList, nil
+	return dataSourceList, nil
 }
 
 // PatchDataSource patches an instance of DataSource
@@ -114,11 +114,11 @@ func (s *Store) PatchDataSource(ctx context.Context, patch *api.DataSourcePatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to patch DataSource with DataSourcePatch[%+v], error: %w", patch, err)
 	}
-	DataSource, err := s.composeDataSource(ctx, dataSourceRaw)
+	dataSource, err := s.composeDataSource(ctx, dataSourceRaw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose DataSource role with dataSourceRaw[%+v], error: %w", dataSourceRaw, err)
 	}
-	return DataSource, nil
+	return dataSource, nil
 }
 
 //

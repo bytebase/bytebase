@@ -9,12 +9,11 @@ import (
 	"fmt"
 	"math/rand"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 )
 
 func prepare(port int, tableSize int) error {
-	const createTableSql = `CREATE TABLE sbtest1 (
+	const createTableSQL = `CREATE TABLE sbtest1 (
 id INT NOT NULL,
 k INT NOT NULL DEFAULT 0,
 c CHAR(120) NOT NULL DEFAULT '',
@@ -32,7 +31,7 @@ KEY k_1 (k)
 	if err != nil {
 		return err
 	}
-	_, err = db.Exec(createTableSql)
+	_, err = db.Exec(createTableSQL)
 	if err != nil {
 		return err
 	}
@@ -46,12 +45,12 @@ KEY k_1 (k)
 }
 
 func insert(db *sql.DB, insertCount int, batchCount int) error {
-	const insertSql = `INSERT INTO sbtest1 (id, k, c, pad) VALUES `
+	const insertSQL = `INSERT INTO sbtest1 (id, k, c, pad) VALUES `
 	var buf bytes.Buffer
 	for i := 0; i < insertCount; i += batchCount {
 		buf.Reset()
 		// We use bytes.Buffer here to concat the strings because strings are too slow.
-		buf.WriteString(insertSql)
+		buf.WriteString(insertSQL)
 		for j := 0; j < batchCount; j++ {
 			id := i + j
 			if id >= insertCount {

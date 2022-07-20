@@ -268,5 +268,5 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, baseQuery)
 }
