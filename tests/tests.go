@@ -1183,7 +1183,6 @@ func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.Deploym
 }
 
 // disableAutomaticBackup disables the automatic backup of a database.
-// nolint
 func (ctl *controller) disableAutomaticBackup(databaseID int) error {
 	backupSetting := api.BackupSettingUpsert{
 		DatabaseID: databaseID,

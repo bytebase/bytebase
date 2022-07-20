@@ -137,6 +137,17 @@ func TestPITR(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
+	policy := api.BackupPlanPolicy{Schedule: api.BackupPlanPolicyScheduleUnset}
+	buf, err := json.Marshal(policy)
+	a.NoError(err)
+	str := string(buf)
+	err = ctl.upsertPolicy(api.PolicyUpsert{
+		EnvironmentID: prodEnvironment.ID,
+		Type:          api.PolicyTypeBackupPlan,
+		Payload:       &str,
+	})
+	a.NoError(err)
+
 	t.Run("Buggy Application", func(t *testing.T) {
 		t.Log(t.Name())
 		databaseName := "buggy_application"
@@ -165,6 +176,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(databases))
 		database := databases[0]
+
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
 
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
@@ -252,6 +266,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(databases))
 		database := databases[0]
+
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
 
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
@@ -345,6 +362,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(databases))
 		database := databases[0]
+
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
 
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
@@ -448,6 +468,9 @@ func TestPITR(t *testing.T) {
 		a.Equal(1, len(databases))
 		database := databases[0]
 
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
+
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
@@ -549,6 +572,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(databases))
 		database := databases[0]
+
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
 
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
@@ -688,6 +714,9 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(1, len(databases))
 		database := databases[0]
+
+		err = ctl.disableAutomaticBackup(database.ID)
+		a.NoError(err)
 
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
