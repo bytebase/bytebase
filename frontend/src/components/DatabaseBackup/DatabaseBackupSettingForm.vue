@@ -57,7 +57,7 @@
               localFromUTC(state.setting.hour, state.setting.dayOfWeek)
                 .dayOfWeek
             "
-            :item-list="[0, 1, 2, 3, 4, 5, 6]"
+            :item-list="AVAILABLE_DAYS_OF_WEEK"
             @select-item="setDayOfWeek"
           >
             <template #menuItem="{ item: day }">
@@ -84,7 +84,7 @@
             :selected-item="
               localFromUTC(state.setting.hour, state.setting.dayOfWeek).hour
             "
-            :item-list="[0, 1, 2, 3, 4, 5, 6]"
+            :item-list="AVAILABLE_HOURS_OF_DAY"
             @select-item="setHour"
           >
             <template #menuItem="{ item: hour }">
@@ -162,8 +162,9 @@ import {
   UNKNOWN_ID,
 } from "@/types";
 import {
+  AVAILABLE_DAYS_OF_WEEK,
+  AVAILABLE_HOURS_OF_DAY,
   PLAN_SCHEDULES,
-  BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION,
   DEFAULT_BACKUP_RETENTION_PERIOD_TS,
   levelOfSchedule,
   localFromUTC,
@@ -178,6 +179,8 @@ type LocalState = {
   showBackupPolicyEnforcement: boolean;
   loading: boolean;
 };
+
+const BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION = 5000;
 
 const props = defineProps({
   database: {
@@ -315,8 +318,10 @@ function setSchedule(schedule: BackupPlanPolicySchedule) {
 
   const normalizeHour = () => {
     const local = localFromUTC(setting.hour, setting.dayOfWeek);
-    if (local.hour < 0) local.hour = 0;
-    if (local.hour > 6) local.hour = 6;
+    const minHour = AVAILABLE_HOURS_OF_DAY[0];
+    const maxHour = AVAILABLE_HOURS_OF_DAY[AVAILABLE_HOURS_OF_DAY.length - 1];
+    if (local.hour < minHour) local.hour = minHour;
+    if (local.hour > maxHour) local.hour = maxHour;
     const utc = localToUTC(local.hour, local.dayOfWeek);
     setting.hour = utc.hour;
     setting.dayOfWeek = utc.dayOfWeek;
