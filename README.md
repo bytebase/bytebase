@@ -88,7 +88,7 @@ Regardless of working as an IC in a team or managing your own side project, deve
 
 ## 📕 Docs
 
-### [Installation](https://www.bytebase.com/docs/get-started/deploy-to-production/deploy-with-docker?source=github)
+### [Installation](https://www.bytebase.com/docs/get-started/install/overview?source=github)
 
 ### [User doc](https://bytebase.com/docs?source=github)
 
