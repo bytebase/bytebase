@@ -42,14 +42,14 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 	// a Failed task which can be retried
 	// a Pending task which can't be scheduled because of failed task checks
 	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %v state", task.Status))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
 	}
 	if task.Status == api.TaskPending {
-		schedule, err := s.TaskScheduler.canScheduleTask(ctx, task)
+		canSchedule, err := s.TaskScheduler.canScheduleTask(ctx, task)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
 		}
-		if !schedule {
+		if canSchedule {
 			return echo.NewHTTPError(http.StatusBadRequest, "can not update the PENDING task because it can be running at any time")
 		}
 	}
