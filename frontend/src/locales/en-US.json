@@ -201,7 +201,8 @@
     "view-doc": "View doc",
     "backup-and-restore": "Backup and restore",
     "write-only": "write only",
-    "pitr": "PITR"
+    "pitr": "PITR",
+    "fix": "Fix"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -829,7 +830,8 @@
         "weekly": "Every week",
         "daily": "Every day"
       }
-    }
+    },
+    "backup-policy-violation": "Backup policy violation"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

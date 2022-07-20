@@ -1,4 +1,9 @@
-import { BackupPlanPolicySchedule } from "@/types";
+import { BackupPlanPolicySchedule, BackupSetting } from "@/types";
+
+export type BackupSettingEdit = Pick<
+  BackupSetting,
+  "enabled" | "dayOfWeek" | "hour" | "retentionPeriodTs"
+>;
 
 export const PLAN_SCHEDULES: BackupPlanPolicySchedule[] = [
   "UNSET",
@@ -9,9 +14,17 @@ export const PLAN_SCHEDULES: BackupPlanPolicySchedule[] = [
 export const DEFAULT_BACKUP_RETENTION_PERIOD_TS = 7 * 3600 * 24; // 7 days
 export const BACKUP_POLICY_ENFORCEMENT_POPUP_DURATION = 5000;
 
-export const levelOfSchedule = (schedule: BackupPlanPolicySchedule) => {
+export function parseScheduleFromBackupSetting(
+  backupSetting: BackupSettingEdit
+) {
+  if (!backupSetting.enabled) return "UNSET";
+  if (backupSetting.dayOfWeek === -1) return "DAILY";
+  return "WEEKLY";
+}
+
+export function levelOfSchedule(schedule: BackupPlanPolicySchedule) {
   return PLAN_SCHEDULES.indexOf(schedule) || 0;
-};
+}
 
 export function localToUTC(hour: number, dayOfWeek: number) {
   return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);

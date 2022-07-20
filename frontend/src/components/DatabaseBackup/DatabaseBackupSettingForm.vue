@@ -159,13 +159,10 @@ import {
   levelOfSchedule,
   localFromUTC,
   localToUTC,
+  parseScheduleFromBackupSetting,
+  BackupSettingEdit,
 } from "./utils";
 import { pushNotification, useBackupStore } from "@/store";
-
-type BackupSettingEdit = Pick<
-  BackupSetting,
-  "enabled" | "dayOfWeek" | "hour" | "retentionPeriodTs"
->;
 
 type LocalState = {
   setting: BackupSettingEdit;
@@ -229,9 +226,7 @@ watch(
 );
 
 const checkedSchedule = computed((): BackupPlanPolicySchedule => {
-  if (!state.setting.enabled) return "UNSET";
-  if (state.setting.dayOfWeek === -1) return "DAILY";
-  return "WEEKLY";
+  return parseScheduleFromBackupSetting(state.setting);
 });
 
 const retentionPeriodDaysInputValue = computed((): string => {

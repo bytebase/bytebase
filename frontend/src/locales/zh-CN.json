@@ -201,7 +201,8 @@
     "view-doc": "查看文档",
     "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
-    "pitr": "PITR"
+    "pitr": "PITR",
+    "fix": "修复"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -830,7 +831,8 @@
         "weekly": "每周",
         "daily": "每天"
       }
-    }
+    },
+    "backup-policy-violation": "违反了备份策略"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

@@ -11,13 +11,25 @@
               {{ $t("database.backup.enabled") }}
             </span>
           </div>
-          <button
-            type="button"
-            class="ml-4 btn-normal"
-            @click.prevent="state.showBackupSettingModal = true"
-          >
-            {{ $t("common.edit") }}
-          </button>
+          <div class="flex items-center">
+            <router-link
+              v-if="hasBackupPolicyViolation"
+              class="flex items-center normal-link text-sm"
+              :to="`/environment/${database.instance.environment.id}`"
+            >
+              <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
+              <span>{{ $t("database.backup-policy-violation") }}</span>
+            </router-link>
+            <button
+              type="button"
+              class="ml-4 btn-normal"
+              @click.prevent="state.showBackupSettingModal = true"
+            >
+              {{
+                hasBackupPolicyViolation ? $t("common.fix") : $t("common.edit")
+              }}
+            </button>
+          </div>
         </div>
         <div class="mt-2 text-control">
           <i18n-t keypath="database.backup-info.template">
@@ -177,7 +189,9 @@ import { useI18n } from "vue-i18n";
 import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
 import {
   DatabaseBackupSettingForm,
+  levelOfSchedule,
   localFromUTC,
+  parseScheduleFromBackupSetting,
 } from "@/components/DatabaseBackup/";
 
 interface LocalState {
@@ -338,6 +352,13 @@ export default defineComponent({
       return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
     });
 
+    const hasBackupPolicyViolation = computed((): boolean => {
+      if (!state.backupSetting) return false;
+      if (!backupPolicy.value) return false;
+      const schedule = parseScheduleFromBackupSetting(state.backupSetting);
+      return levelOfSchedule(schedule) < levelOfSchedule(backupPolicy.value);
+    });
+
     const updateBackupSetting = (setting: BackupSetting) => {
       state.showBackupSettingModal = false;
       assignBackupSetting(setting);
@@ -441,6 +462,7 @@ export default defineComponent({
       autoBackupHourText,
       autoBackupRetentionDays,
       backupPolicy,
+      hasBackupPolicyViolation,
       createBackup,
       updateBackupSetting,
       urlChanged,
