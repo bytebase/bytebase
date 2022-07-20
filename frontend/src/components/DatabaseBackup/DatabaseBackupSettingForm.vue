@@ -143,7 +143,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, PropType, reactive, watch } from "vue";
+import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
 import {
@@ -152,7 +152,6 @@ import {
   BackupSettingUpsert,
   Database,
   unknown,
-  UNKNOWN_ID,
 } from "@/types";
 import {
   AVAILABLE_DAYS_OF_WEEK,
@@ -411,12 +410,4 @@ function nameOfDay(day: number): string {
 function nameOfHour(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
-
-onMounted(() => {
-  if (props.backupSetting.id === UNKNOWN_ID) {
-    // Find a proper default schedule options according to the backup policy
-    // if props.backupSetting is empty/unknown
-    // setSchedule(props.backupPolicy);
-  }
-});
 </script>
