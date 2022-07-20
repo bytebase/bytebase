@@ -139,6 +139,8 @@ func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, e
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {
 	Schedule BackupPlanPolicySchedule `json:"schedule"`
+	// RetentionPeriodTs is the minimum allowed period that backup data is kept for databases in an environment.
+	RetentionPeriodTs int `json:"retentionPeriodTs"`
 }
 
 func (bp BackupPlanPolicy) String() (string, error) {

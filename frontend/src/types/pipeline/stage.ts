@@ -39,4 +39,6 @@ export type StageAllTaskStatusPatch = {
 
   status: TaskStatus;
   comment?: string;
+
+  updatedTs: number;
 };
