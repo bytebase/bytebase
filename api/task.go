@@ -48,8 +48,6 @@ const (
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
 	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
 	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
-	// TaskDatabaseSchemaUpdateGhostDropOriginalTable is the task type for dropping the original table.
-	TaskDatabaseSchemaUpdateGhostDropOriginalTable TaskType = "bb.task.database.schema.update.ghost.drop-original-table"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseBackup is the task type for creating database backups.
@@ -112,13 +110,6 @@ type TaskDatabaseSchemaUpdateGhostSyncPayload struct {
 
 // TaskDatabaseSchemaUpdateGhostCutoverPayload is the task payload for gh-ost switching the original table and the ghost table.
 type TaskDatabaseSchemaUpdateGhostCutoverPayload struct {
-}
-
-// TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload is the task type for dropping the original table
-type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload struct {
-	DatabaseName string `json:"databaseName,omitempty"`
-	// TableName is like `_tablename_del`.
-	TableName string `json:"tableName,omitempty"`
 }
 
 // TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
