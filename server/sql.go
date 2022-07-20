@@ -110,9 +110,8 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql sync schema request").SetInternal(err)
 		}
-		if sync.InstanceID == nil && sync.DatabaseID == nil {
-			err := fmt.Errorf("both InstanceID and DatabaseID are missing")
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		if (sync.InstanceID == nil) == (sync.DatabaseID == nil) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Either InstanceID or DatabaseID should be set.")
 		}
 
 		var resultSet api.SQLResultSet
