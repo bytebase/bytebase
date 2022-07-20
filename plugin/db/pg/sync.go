@@ -607,34 +607,22 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getPrimary(txn *sql.Tx, idx *indexSchema) error {
-	isPrimaryQuery := fmt.Sprintf(
-		`SELECT count(*)
-		   FROM information_schema.table_constraints
-		   WHERE constraint_schema = '%s'
-		   	AND constraint_name = '%s'
-			AND table_schema = '%s'
-			AND table_name = '%s'
-			AND constraint_type = 'PRIMARY KEY'`,
-		idx.schemaName,
-		idx.name,
-		idx.schemaName,
-		idx.tableName)
-	rows, err := txn.Query(isPrimaryQuery)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	isPrimaryQuery := `
+		SELECT count(*)
+		FROM information_schema.table_constraints
+		WHERE constraint_schema = $1
+		  AND constraint_name = $2
+		  AND table_schema = $1
+		  AND table_name = $3
+		  AND constraint_type = 'PRIMARY KEY'
+	`
 
-	for rows.Next() {
-		var yes int
-		if err := rows.Scan(&yes); err != nil {
-			return err
-		}
-		idx.primary = (yes == 1)
-	}
-	if err := rows.Err(); err != nil {
+	var yes int
+	if err := txn.QueryRow(isPrimaryQuery).Scan(&yes); err != nil {
 		return err
 	}
+
+	idx.primary = (yes == 1)
 	return nil
 }
 
