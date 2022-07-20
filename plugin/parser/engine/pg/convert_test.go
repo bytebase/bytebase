@@ -30,7 +30,7 @@ func runTests(t *testing.T, tests []testData) {
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE TABLE \"techBook\" (a int, b int)",
+			stmt: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: false,
@@ -38,13 +38,30 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						Name: "techBook",
 					},
 					ColumnList: []*ast.ColumnDef{
-						{ColumnName: "a"},
-						{ColumnName: "b"},
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:    ast.ConstraintTypeNotNull,
+									KeyList: []string{"a"},
+								},
+							},
+						},
+						{
+							ColumnName: "b",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:    ast.ConstraintTypeNotNull,
+									Name:    "b_not_null",
+									KeyList: []string{"b"},
+								},
+							},
+						},
 					},
 				},
 			},
 			textList: []string{
-				"CREATE TABLE \"techBook\" (a int, b int)",
+				"CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
 			},
 		},
 		{
@@ -583,6 +600,47 @@ func TestPGDropTableStmt(t *testing.T) {
 			},
 			textList: []string{
 				"DROP TABLE tech_book, xschema.user",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGNotNullStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.SetNotNullStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "id",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.DropNotNullStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "id",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
 			},
 		},
 	}

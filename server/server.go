@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -351,11 +350,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
@@ -364,7 +358,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	s.initSubscription()
 
-	log.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	serverStarted = true
 	return s, nil
 }

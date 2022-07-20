@@ -158,6 +158,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*d
 			index.Expression = expression.String
 		}
 
+		if index.Name == "PRIMARY" {
+			index.Primary = true
+		}
+
 		key := fmt.Sprintf("%s/%s", dbName, tableName)
 		if indexList, ok := indexMap[key]; ok {
 			indexMap[key] = append(indexList, index)

@@ -569,6 +569,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid backup setting").SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
 
