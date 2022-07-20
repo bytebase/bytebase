@@ -318,8 +318,8 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte); err != nil {
 			return nil, err
 		}
-		tbl.schemaName = quoteIdentifier(schemaname)
-		tbl.name = quoteIdentifier(tablename)
+		tbl.schemaName = schemaname
+		tbl.name = tablename
 		tbl.tableowner = tableowner
 		tbl.tableSizeByte = tableSizeByte
 		tbl.indexSizeByte = indexSizeByte
@@ -363,7 +363,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		return err
 	}
 
-	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -463,7 +463,6 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 		if strings.Contains(constraint.tableName, ".") {
 			constraint.tableName = constraint.tableName[1+strings.Index(constraint.tableName, "."):]
 		}
-		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		ret[key] = append(ret[key], &constraint)
 	}
@@ -496,7 +495,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if !def.Valid {
 			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
-		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
+		view.definition = def.String
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
@@ -513,7 +512,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -580,7 +579,6 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement); err != nil {
 			return nil, err
 		}
-		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
 		idx.methodType = getIndexMethodType(idx.statement)
 		idx.columnExpressions, err = getIndexColumnExpressions(idx.statement)
@@ -603,7 +601,7 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 }
 
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
 	rows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -686,19 +684,4 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	}
 
 	return cols, nil
-}
-
-// quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
-func quoteIdentifier(s string) string {
-	quote := false
-	if reserved[strings.ToUpper(s)] {
-		quote = true
-	}
-	if !ident.MatchString(s) {
-		quote = true
-	}
-	if quote {
-		return fmt.Sprintf("\"%s\"", s)
-	}
-	return s
 }
