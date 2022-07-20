@@ -185,12 +185,74 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 		return nil
 	})
+
+	g.PATCH("/pipeline/:pipelineID/task/*", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		pipelineID, err := strconv.Atoi(c.Param("pipelineID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
+		}
+
+		taskPatch := &api.TaskPatch{
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
+		}
+
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+
+		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", pipelineID)).SetInternal(err)
+		}
+
+		if taskPatch.Statement != nil {
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+						return httpErr
+					}
+				}
+			}
+		}
+
+		var taskPatchedList []*api.Task
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				taskPatch := *taskPatch
+				taskPatch.ID = task.ID
+				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
+				if httpErr != nil {
+					return httpErr
+				}
+				taskPatchedList = append(taskPatchedList, taskPatched)
+			}
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
+		}
+		return nil
+	})
 }
 
 func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.TaskPatch, issue *api.Issue) (*api.Task, *echo.HTTPError) {
 	oldStatement := ""
 	newStatement := ""
 	if taskPatch.Statement != nil {
+		// Tenant mode project don't allow updating SQL statement.
+		project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
+		}
+		if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
+			err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")
+			return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
+
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
 		}
@@ -245,6 +307,7 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			payloadStr := string(bytes)
 			taskPatch.Payload = &payloadStr
+
 		case api.TaskDatabaseSchemaUpdateGhostSync:
 			payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -352,8 +415,8 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 		}
-	}
 
+	}
 	// create an activity and trigger task check for earliest allowed time update
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
