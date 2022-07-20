@@ -102,6 +102,7 @@
     </aside>
     <div
       class="flex flex-col min-w-0 flex-1 border-l border-r border-block-border"
+      data-label="bb-main-body-wrapper"
     >
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">
