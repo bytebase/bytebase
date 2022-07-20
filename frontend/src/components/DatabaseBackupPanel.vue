@@ -175,7 +175,10 @@ import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
-import { DatabaseBackupSettingForm } from "@/components/DatabaseBackup/";
+import {
+  DatabaseBackupSettingForm,
+  localFromUTC,
+} from "@/components/DatabaseBackup/";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -420,33 +423,6 @@ export default defineComponent({
           });
         });
     };
-
-    function localToUTC(hour: number, dayOfWeek: number) {
-      return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);
-    }
-
-    function localFromUTC(hour: number, dayOfWeek: number) {
-      return alignUTC(hour, dayOfWeek, -new Date().getTimezoneOffset() * 60);
-    }
-
-    function alignUTC(hour: number, dayOfWeek: number, offsetInSecond: number) {
-      if (hour != -1) {
-        hour = hour + offsetInSecond / 60 / 60;
-        var dayOffset = 0;
-        if (hour > 23) {
-          hour = hour - 24;
-          dayOffset = 1;
-        }
-        if (hour < 0) {
-          hour = hour + 24;
-          dayOffset = -1;
-        }
-        if (dayOfWeek != -1) {
-          dayOfWeek = (7 + dayOfWeek + dayOffset) % 7;
-        }
-      }
-      return { hour, dayOfWeek };
-    }
 
     const automaticBackupTitle = computed((): string => {
       if (backupPolicy.value === "DAILY" || backupPolicy.value === "WEEKLY") {
