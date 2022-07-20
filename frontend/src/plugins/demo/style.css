@@ -1,13 +1,12 @@
 .bb-guide-cover-wrapper,
 .bb-hint-cover-wrapper {
   @apply fixed inset-0 overflow-hidden;
-  z-index: 999998;
   pointer-events: auto !important;
 }
 
 .bb-guide-target-element,
 .bb-hint-target-element {
-  z-index: 999999;
+  z-index: 1;
   background-color: white;
 }
 
@@ -24,9 +23,11 @@
 
 .bb-guide-dialog,
 .bb-hint-dialog {
-  @apply fixed bg-white w-72 m-1 my-2 text-black p-2 px-4 rounded text-left -top-full -left-full;
-  box-shadow: 0 3px 30px rgb(33 33 33 / 30%);
+  @apply fixed bg-white w-auto m-1 my-2 p-3 px-5 text-slate-900 rounded-lg text-left -top-full -left-full;
   z-index: 1000000;
+  max-width: 300px;
+  box-shadow: 0 4px 36px rgb(33 33 33 / 40%);
+  font-size: 15px;
 }
 
 .bb-hint-dialog.tooltip-dialog {
@@ -84,12 +85,12 @@
 }
 
 .bb-hint-dialog.right {
-  margin-top: -8px;
+  margin-top: -10px;
 }
 .bb-hint-dialog.right::before {
   content: "";
   position: absolute;
-  top: 14px;
+  top: 16px;
   left: -10px;
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
@@ -137,7 +138,7 @@
 }
 
 .bb-hint-tooltip-wrapper {
-  @apply fixed text-xs w-6 h-6 m-0 shadow-none rounded-full cursor-default;
+  @apply fixed text-xs w-6 h-6 m-0 shadow-none rounded-full cursor-pointer;
   padding: 7px;
   box-sizing: border-box;
 }
@@ -154,4 +155,5 @@
   top: 6px;
   left: 6px;
   background-color: #4f46e5;
+  animation-duration: 1.6s;
 }
