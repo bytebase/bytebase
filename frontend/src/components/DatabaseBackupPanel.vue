@@ -59,7 +59,7 @@
           />
           <button
             class="btn-primary mt-2"
-            :disabled="!allowEdit || !UrlChanged"
+            :disabled="!allowEdit || !urlChanged"
             @click.prevent="updateBackupHookUrl()"
           >
             {{ $t("common.update") }}
@@ -340,7 +340,7 @@ export default defineComponent({
       assignBackupSetting(setting);
     };
 
-    const UrlChanged = computed(() => {
+    const urlChanged = computed(() => {
       return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
     });
 
@@ -467,7 +467,7 @@ export default defineComponent({
       backupPolicy,
       createBackup,
       updateBackupSetting,
-      UrlChanged,
+      urlChanged,
       updateBackupHookUrl,
       automaticBackupTitle,
     };
