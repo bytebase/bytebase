@@ -200,38 +200,27 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
+		newPitrRestoreExecutor := func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) }
+		taskScheduler.Register(api.TaskDatabasePITRRestore, newPitrRestoreExecutor)
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
-
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
+		newPitrCutoverExecutor := func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) }
+		taskScheduler.Register(api.TaskDatabasePITRCutover, newPitrCutoverExecutor)
 
 		s.TaskScheduler = taskScheduler
 

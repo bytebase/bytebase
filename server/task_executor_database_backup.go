@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
@@ -19,10 +20,16 @@ func NewDatabaseBackupTaskExecutor() TaskExecutor {
 
 // DatabaseBackupTaskExecutor is the task executor for database backup.
 type DatabaseBackupTaskExecutor struct {
+	completed int32
+}
+
+func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 // RunOnce will run database backup once.
 func (exec *DatabaseBackupTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseBackupPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database backup payload: %w", err)
