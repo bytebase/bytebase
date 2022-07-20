@@ -139,7 +139,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.Equal(1, len(databases))
 
 	database := databases[0]
-	a.Equal(database.Instance.ID, instance.ID)
+	a.Equal(instance.ID, database.Instance.ID)
 
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
 		MigrationType: db.Migrate,

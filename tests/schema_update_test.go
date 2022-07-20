@@ -80,9 +80,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		ProjectID: &project.ID,
 	})
 	a.NoError(err)
-	a.Equal(len(databases), 1)
+	a.Equal(1, len(databases))
 	database := databases[0]
-	a.Equal(database.Instance.ID, instance.ID)
+	a.Equal(instance.ID, database.Instance.ID)
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
@@ -107,7 +107,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	result, err := ctl.query(instance, databaseName, bookTableQuery)
@@ -137,7 +137,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.NoError(err)
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Get migration history.
 	histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID})
@@ -179,7 +179,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: history.SchemaPrev,
 		}
 		want := wantHistories[i]
-		a.Equal(got, want)
+		a.Equal(want, got)
 		a.NotEqual(history.Version, "")
 	}
 
@@ -240,7 +240,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			SchemaPrev: history.SchemaPrev,
 		}
 		want := wantCloneHistories[i]
-		a.Equal(got, want)
+		a.Equal(want, got)
 	}
 
 	// Create a sheet to mock SQL editor new tab action with UNKNOWN ProjectID.
@@ -383,11 +383,11 @@ func TestVCS(t *testing.T) {
 	openStatus := []api.IssueStatus{api.IssueOpen}
 	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
 	a.NoError(err)
-	a.Equal(len(issues), 1)
+	a.Equal(1, len(issues))
 	issue := issues[0]
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 	_, err = ctl.patchIssueStatus(api.IssueStatusPatch{
 		ID:     issue.ID,
 		Status: api.IssueDone,
@@ -426,11 +426,11 @@ func TestVCS(t *testing.T) {
 	openStatus = []api.IssueStatus{api.IssueOpen}
 	issues, err = ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
 	a.NoError(err)
-	a.Equal(len(issues), 1)
+	a.Equal(1, len(issues))
 	issue = issues[0]
 	status, err = ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 	_, err = ctl.patchIssueStatus(api.IssueStatusPatch{
 		ID:     issue.ID,
 		Status: api.IssueDone,
@@ -466,7 +466,7 @@ func TestVCS(t *testing.T) {
 			SchemaPrev: "",
 		},
 	}
-	a.Equal(len(histories), len(wantHistories))
+	a.Equal(len(wantHistories), len(histories))
 
 	for i, history := range histories {
 		got := api.MigrationHistory{
@@ -478,7 +478,7 @@ func TestVCS(t *testing.T) {
 			SchemaPrev: history.SchemaPrev,
 		}
 		want := wantHistories[i]
-		a.Equal(got, want)
+		a.Equal(want, got)
 		a.NotEqual(history.Version, "")
 	}
 	a.Equal(histories[0].Version, "ver2")
