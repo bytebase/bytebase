@@ -144,7 +144,6 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, PropType, reactive, watch } from "vue";
-import { pick } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { NPopover } from "naive-ui";
 import {
@@ -369,8 +368,13 @@ function setRetentionPeriodDays(input: string) {
   }
 }
 
-function extractEditValue(setting: BackupSetting): BackupSettingEdit {
-  return pick(setting, "enabled", "dayOfWeek", "hour", "retentionPeriodTs");
+function extractEditValue(backupSetting: BackupSetting): BackupSettingEdit {
+  return {
+    enabled: backupSetting.enabled,
+    dayOfWeek: backupSetting.dayOfWeek,
+    hour: backupSetting.hour,
+    retentionPeriodTs: backupSetting.retentionPeriodTs,
+  };
 }
 
 function isAllowedScheduleByPolicy(
