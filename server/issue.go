@@ -413,182 +413,159 @@ func (s *Server) getPipelineApprovalPolicyForEnv(ctx context.Context, envID int)
 func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
 	switch issueCreate.Type {
 	case api.IssueDatabaseCreate:
-		c := api.CreateDatabaseContext{}
-		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
-			return nil, err
-		}
-		if c.DatabaseName == "" {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
-		}
+		return s.getPipelineCreateForDatabaseCreate(ctx, issueCreate)
+	case api.IssueDatabasePITR:
+		return s.getPipelineCreateForDatabasePITR(ctx, issueCreate)
+	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
+		return s.getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx, issueCreate)
+	case api.IssueDatabaseSchemaUpdateGhost:
+		return s.getPipelineCreateForDatabaseSchemaUpdateGhost(ctx, issueCreate)
+	default:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
+	}
+}
 
-		// Find instance.
-		instance, err := s.store.GetInstanceByID(ctx, c.InstanceID)
+func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	c := api.CreateDatabaseContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return nil, err
+	}
+	if c.DatabaseName == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, database name missing")
+	}
+
+	// Find instance.
+	instance, err := s.store.GetInstanceByID(ctx, c.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, fmt.Errorf("instance ID not found %v", c.InstanceID)
+	}
+	// Find project
+	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
+	}
+	if project == nil {
+		err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+	}
+
+	switch instance.Engine {
+	case db.ClickHouse:
+		// ClickHouse does not support character set and collation at the database level.
+		if c.CharacterSet != "" {
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest,
+				fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", c.CharacterSet),
+			)
+		}
+		if c.Collation != "" {
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest,
+				fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", c.Collation),
+			)
+		}
+	case db.Snowflake:
+		if c.CharacterSet != "" {
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest,
+				fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", c.CharacterSet),
+			)
+		}
+		if c.Collation != "" {
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest,
+				fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", c.Collation),
+			)
+		}
+		// Snowflake needs to use upper case of DatabaseName.
+		c.DatabaseName = strings.ToUpper(c.DatabaseName)
+	case db.Postgres:
+		if c.Owner == "" {
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest,
+				"Failed to create issue, database owner is required for postgres",
+			)
+		}
+	case db.SQLite:
+		// no-op.
+	default:
+		if c.CharacterSet == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
+		}
+		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
+		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
+		// install it.
+		if instance.Engine != db.Postgres && c.Collation == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
+		}
+	}
+
+	// Validate the labels. Labels are set upon task completion.
+	if c.Labels != "" {
+		if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: instance} /* dummy database */, project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
+		}
+	}
+
+	var schemaVersion, schema string
+	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
+	if project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
+		}
+		sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
 		if err != nil {
 			return nil, err
 		}
-		if instance == nil {
-			return nil, fmt.Errorf("instance ID not found %v", c.InstanceID)
-		}
-		// Find project
-		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+		schemaVersion, schema = sv, s
+	}
+	if schemaVersion == "" {
+		schemaVersion = common.DefaultMigrationVersion()
+	}
+
+	payload := api.TaskDatabaseCreatePayload{
+		ProjectID:     issueCreate.ProjectID,
+		CharacterSet:  c.CharacterSet,
+		Collation:     c.Collation,
+		Labels:        c.Labels,
+		SchemaVersion: schemaVersion,
+	}
+	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
+	}
+
+	taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, instance.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.BackupID != 0 {
+		backup, err := s.store.GetBackupByID(ctx, c.BackupID)
 		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
+			return nil, fmt.Errorf("failed to find backup %v", c.BackupID)
 		}
-		if project == nil {
-			err := fmt.Errorf("project ID not found %v", issueCreate.ProjectID)
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+		if backup == nil {
+			return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
 		}
-
-		switch instance.Engine {
-		case db.ClickHouse:
-			// ClickHouse does not support character set and collation at the database level.
-			if c.CharacterSet != "" {
-				return nil, echo.NewHTTPError(
-					http.StatusBadRequest,
-					fmt.Sprintf("Failed to create issue, ClickHouse does not support character set, got %s\n", c.CharacterSet),
-				)
-			}
-			if c.Collation != "" {
-				return nil, echo.NewHTTPError(
-					http.StatusBadRequest,
-					fmt.Sprintf("Failed to create issue, ClickHouse does not support collation, got %s\n", c.Collation),
-				)
-			}
-		case db.Snowflake:
-			if c.CharacterSet != "" {
-				return nil, echo.NewHTTPError(
-					http.StatusBadRequest,
-					fmt.Sprintf("Failed to create issue, Snowflake does not support character set, got %s\n", c.CharacterSet),
-				)
-			}
-			if c.Collation != "" {
-				return nil, echo.NewHTTPError(
-					http.StatusBadRequest,
-					fmt.Sprintf("Failed to create issue, Snowflake does not support collation, got %s\n", c.Collation),
-				)
-			}
-			// Snowflake needs to use upper case of DatabaseName.
-			c.DatabaseName = strings.ToUpper(c.DatabaseName)
-		case db.Postgres:
-			if c.Owner == "" {
-				return nil, echo.NewHTTPError(
-					http.StatusBadRequest,
-					"Failed to create issue, database owner is required for postgres",
-				)
-			}
-		case db.SQLite:
-			// no-op.
-		default:
-			if c.CharacterSet == "" {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, character set missing")
-			}
-			// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
-			// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
-			// install it.
-			if instance.Engine != db.Postgres && c.Collation == "" {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, collation missing")
-			}
-		}
-
-		// Validate the labels. Labels are set upon task completion.
-		if c.Labels != "" {
-			if err := s.setDatabaseLabels(ctx, c.Labels, &api.Database{Name: c.DatabaseName, Instance: instance} /* dummy database */, project, 0 /* dummy updaterID */, true /* validateOnly */); err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid database label %q, error %v", c.Labels, err))
-			}
-		}
-
-		var schemaVersion, schema string
-		// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-		if project.TenantMode == api.TenantModeTenant {
-			if !s.feature(api.FeatureMultiTenancy) {
-				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-			}
-			baseDatabaseName, err := api.GetBaseDatabaseName(c.DatabaseName, project.DBNameTemplate, c.Labels)
-			if err != nil {
-				return nil, fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", c.DatabaseName, project.DBNameTemplate, c.Labels, err)
-			}
-			sv, s, err := s.getSchemaFromPeerTenantDatabase(ctx, instance, project, issueCreate.ProjectID, baseDatabaseName)
-			if err != nil {
-				return nil, err
-			}
-			schemaVersion, schema = sv, s
-		}
-		if schemaVersion == "" {
-			schemaVersion = common.DefaultMigrationVersion()
-		}
-
-		payload := api.TaskDatabaseCreatePayload{
-			ProjectID:     issueCreate.ProjectID,
-			CharacterSet:  c.CharacterSet,
-			Collation:     c.Collation,
-			Labels:        c.Labels,
-			SchemaVersion: schemaVersion,
-		}
-		payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
-		bytes, err := json.Marshal(payload)
+		restorePayload := api.TaskDatabaseRestorePayload{}
+		restorePayload.DatabaseName = c.DatabaseName
+		restorePayload.BackupID = c.BackupID
+		restoreBytes, err := json.Marshal(restorePayload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-		}
-
-		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, instance.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-
-		if c.BackupID != 0 {
-			backup, err := s.store.GetBackupByID(ctx, c.BackupID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find backup %v", c.BackupID)
-			}
-			if backup == nil {
-				return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
-			}
-			restorePayload := api.TaskDatabaseRestorePayload{}
-			restorePayload.DatabaseName = c.DatabaseName
-			restorePayload.BackupID = c.BackupID
-			restoreBytes, err := json.Marshal(restorePayload)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
-			}
-
-			return &api.PipelineCreate{
-				Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
-				StageList: []api.StageCreate{
-					{
-						Name:          "Create database",
-						EnvironmentID: instance.EnvironmentID,
-						TaskList: []api.TaskCreate{
-							{
-								InstanceID:   c.InstanceID,
-								Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-								Status:       taskStatus,
-								Type:         api.TaskDatabaseCreate,
-								DatabaseName: payload.DatabaseName,
-								Payload:      string(bytes),
-							},
-						},
-					},
-					{
-						Name:          "Restore backup",
-						EnvironmentID: instance.EnvironmentID,
-						TaskList: []api.TaskCreate{
-							{
-								InstanceID:   c.InstanceID,
-								Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-								Status:       api.TaskPending,
-								Type:         api.TaskDatabaseRestore,
-								DatabaseName: payload.DatabaseName,
-								BackupID:     &c.BackupID,
-								Payload:      string(restoreBytes),
-							},
-						},
-					},
-				},
-			}, nil
+			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 		}
 
 		return &api.PipelineCreate{
-			Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
+			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
 					Name:          "Create database",
@@ -596,7 +573,7 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 					TaskList: []api.TaskCreate{
 						{
 							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
+							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
 							Status:       taskStatus,
 							Type:         api.TaskDatabaseCreate,
 							DatabaseName: payload.DatabaseName,
@@ -604,241 +581,142 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 						},
 					},
 				},
-			},
-		}, nil
-
-	case api.IssueDatabasePITR:
-		if !s.feature(api.FeaturePITR) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
-		}
-		c := api.PITRContext{}
-		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
-			return nil, err
-		}
-
-		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", c.DatabaseID)).SetInternal(err)
-		}
-		if database == nil {
-			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
-		}
-
-		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-		if err != nil {
-			return nil, err
-		}
-
-		taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, taskStatus, c.PointInTimeTs)
-		if err != nil {
-			return nil, err
-		}
-
-		return &api.PipelineCreate{
-			Name: "Database Point-in-time Recovery pipeline",
-			StageList: []api.StageCreate{
 				{
-					Name:             "PITR",
-					EnvironmentID:    database.Instance.Environment.ID,
-					TaskList:         taskCreateList,
-					TaskIndexDAGList: taskIndexDAGList,
+					Name:          "Restore backup",
+					EnvironmentID: instance.EnvironmentID,
+					TaskList: []api.TaskCreate{
+						{
+							InstanceID:   c.InstanceID,
+							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
+							Status:       api.TaskPending,
+							Type:         api.TaskDatabaseRestore,
+							DatabaseName: payload.DatabaseName,
+							BackupID:     &c.BackupID,
+							Payload:      string(restoreBytes),
+						},
+					},
 				},
 			},
 		}, nil
+	}
 
-	case api.IssueDatabaseSchemaUpdate, api.IssueDatabaseDataUpdate:
-		c := api.UpdateSchemaContext{}
-		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
-			return nil, err
-		}
-		if !s.feature(api.FeatureTaskScheduleTime) {
-			for _, detail := range c.DetailList {
-				if detail.EarliestAllowedTs != 0 {
-					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
-				}
-			}
-		}
-		create := &api.PipelineCreate{}
-		switch c.MigrationType {
-		case db.Baseline:
-			create.Name = "Establish database baseline pipeline"
-		case db.Migrate:
-			create.Name = "Update database schema pipeline"
-		case db.Data:
-			create.Name = "Update database data pipeline"
-		default:
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", c.MigrationType))
-		}
-		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
-		}
+	return &api.PipelineCreate{
+		Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
+		StageList: []api.StageCreate{
+			{
+				Name:          "Create database",
+				EnvironmentID: instance.EnvironmentID,
+				TaskList: []api.TaskCreate{
+					{
+						InstanceID:   c.InstanceID,
+						Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
+						Status:       taskStatus,
+						Type:         api.TaskDatabaseCreate,
+						DatabaseName: payload.DatabaseName,
+						Payload:      string(bytes),
+					},
+				},
+			},
+		},
+	}, nil
+}
 
-		schemaVersion := common.DefaultMigrationVersion()
-		// Tenant mode project pipeline has its own generation.
-		if project.TenantMode == api.TenantModeTenant {
-			if !s.feature(api.FeatureMultiTenancy) {
-				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
-			}
-			if c.MigrationType != db.Migrate && c.MigrationType != db.Data {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
-			}
-			if len(c.DetailList) != 1 {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
-			}
-			d := c.DetailList[0]
-			if d.Statement == "" {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-			}
+func (s *Server) getPipelineCreateForDatabasePITR(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	if !s.feature(api.FeaturePITR) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeaturePITR.AccessErrorMessage())
+	}
+	c := api.PITRContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return nil, err
+	}
 
-			if d.DatabaseName == "" && d.DatabaseID > 0 {
-				// We only support data change for a single tenant for the moment.
-				if c.MigrationType != db.Data {
-					return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
-				}
-				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
-				}
-				if database == nil {
-					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
-				}
+	database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &c.DatabaseID})
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", c.DatabaseID)).SetInternal(err)
+	}
+	if database == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", c.DatabaseID))
+	}
 
-				taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-				if err != nil {
-					return nil, err
-				}
+	taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
 
-				taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
-				if err != nil {
-					return nil, err
-				}
+	taskCreateList, taskIndexDAGList, err := createPITRTaskList(database, issueCreate.ProjectID, taskStatus, c.PointInTimeTs)
+	if err != nil {
+		return nil, err
+	}
 
-				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-					EnvironmentID: database.Instance.Environment.ID,
-					TaskList:      []api.TaskCreate{*taskCreate},
-				})
-			} else {
-				dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
-					ProjectID: &issueCreate.ProjectID,
-				})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
-				}
+	return &api.PipelineCreate{
+		Name: "Database Point-in-time Recovery pipeline",
+		StageList: []api.StageCreate{
+			{
+				Name:             "PITR",
+				EnvironmentID:    database.Instance.Environment.ID,
+				TaskList:         taskCreateList,
+				TaskIndexDAGList: taskIndexDAGList,
+			},
+		},
+	}, nil
+}
 
-				baseDBName := d.DatabaseName
-				deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
-				if err != nil {
-					return nil, err
-				}
-				// Convert to pipelineCreate
-				for i, databaseList := range matrix {
-					// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
-					environmentSet := make(map[string]bool)
-					var environmentID int
-					var taskCreateList []api.TaskCreate
-					for _, database := range databaseList {
-						environmentSet[database.Instance.Environment.Name] = true
-						environmentID = database.Instance.EnvironmentID
-
-						taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
-						if err != nil {
-							return nil, err
-						}
-
-						taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
-						if err != nil {
-							return nil, err
-						}
-						taskCreateList = append(taskCreateList, *taskCreate)
-					}
-					if len(environmentSet) != 1 {
-						var environments []string
-						for k := range environmentSet {
-							environments = append(environments, k)
-						}
-						err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
-						return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
-					}
-
-					create.StageList = append(create.StageList, api.StageCreate{
-						Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
-						EnvironmentID: environmentID,
-						TaskList:      taskCreateList,
-					})
-				}
-			}
-		} else {
-			for _, d := range c.DetailList {
-				if c.MigrationType == db.Migrate && d.Statement == "" {
-					return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
-				}
-				database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
-				if err != nil {
-					return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
-				}
-				if database == nil {
-					return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
-				}
-
-				taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
-				if err != nil {
-					return nil, err
-				}
-
-				taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
-				if err != nil {
-					return nil, err
-				}
-
-				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-					EnvironmentID: database.Instance.Environment.ID,
-					TaskList:      []api.TaskCreate{*taskCreate},
-				})
-			}
-		}
-		return create, nil
-
-	case api.IssueDatabaseSchemaUpdateGhost:
-		if !s.feature(api.FeatureGhost) {
-			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureGhost.AccessErrorMessage())
-		}
-		c := api.UpdateSchemaGhostContext{}
-		if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
-			return nil, err
-		}
-		if !s.feature(api.FeatureTaskScheduleTime) {
-			for _, detail := range c.DetailList {
-				if detail.EarliestAllowedTs != 0 {
-					return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
-				}
-			}
-		}
-
-		project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
-		}
-		if project.TenantMode == api.TenantModeTenant {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
-		}
-
-		create := &api.PipelineCreate{}
-		create.Name = "Update database schema (gh-ost) pipeline"
-		schemaVersion := common.DefaultMigrationVersion()
+func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	c := api.UpdateSchemaContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return nil, err
+	}
+	if !s.feature(api.FeatureTaskScheduleTime) {
 		for _, detail := range c.DetailList {
-			if detail.Statement == "" {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
+			if detail.EarliestAllowedTs != 0 {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
 			}
+		}
+	}
+	create := &api.PipelineCreate{}
+	switch c.MigrationType {
+	case db.Baseline:
+		create.Name = "Establish database baseline pipeline"
+	case db.Migrate:
+		create.Name = "Update database schema pipeline"
+	case db.Data:
+		create.Name = "Update database data pipeline"
+	default:
+		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid migration type %q", c.MigrationType))
+	}
+	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
+	}
 
-			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &detail.DatabaseID})
+	schemaVersion := common.DefaultMigrationVersion()
+	// Tenant mode project pipeline has its own generation.
+	if project.TenantMode == api.TenantModeTenant {
+		if !s.feature(api.FeatureMultiTenancy) {
+			return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+		}
+		if c.MigrationType != db.Migrate && c.MigrationType != db.Data {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Only Migrate and Data type migration can be performed on tenant mode project")
+		}
+		if len(c.DetailList) != 1 {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Tenant mode project should have exactly one update schema detail")
+		}
+		d := c.DetailList[0]
+		if d.Statement == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+		}
+
+		if d.DatabaseName == "" && d.DatabaseID > 0 {
+			// We only support data change for a single tenant for the moment.
+			if c.MigrationType != db.Data {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Only data change is allowed for a single tenant database in tenant mode project.")
+			}
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
 			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", detail.DatabaseID)).SetInternal(err)
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
 			}
 			if database == nil {
-				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", detail.DatabaseID))
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
 			}
 
 			taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
@@ -846,23 +724,157 @@ func (s *Server) getPipelineCreate(ctx context.Context, issueCreate *api.IssueCr
 				return nil, err
 			}
 
-			taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion, taskStatus)
+			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
 			if err != nil {
 				return nil, err
 			}
 
 			create.StageList = append(create.StageList, api.StageCreate{
-				Name:             fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-				EnvironmentID:    database.Instance.Environment.ID,
-				TaskList:         taskCreateList,
-				TaskIndexDAGList: taskIndexDAGList,
+				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+				EnvironmentID: database.Instance.Environment.ID,
+				TaskList:      []api.TaskCreate{*taskCreate},
+			})
+		} else {
+			dbList, err := s.store.FindDatabase(ctx, &api.DatabaseFind{
+				ProjectID: &issueCreate.ProjectID,
+			})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch databases in project ID: %v", issueCreate.ProjectID)).SetInternal(err)
+			}
+
+			baseDBName := d.DatabaseName
+			deployments, matrix, err := s.getTenantDatabaseMatrix(ctx, issueCreate.ProjectID, project.DBNameTemplate, dbList, baseDBName)
+			if err != nil {
+				return nil, err
+			}
+			// Convert to pipelineCreate
+			for i, databaseList := range matrix {
+				// Since environment is required for stage, we use an internal bb system environment for tenant deployments.
+				environmentSet := make(map[string]bool)
+				var environmentID int
+				var taskCreateList []api.TaskCreate
+				for _, database := range databaseList {
+					environmentSet[database.Instance.Environment.Name] = true
+					environmentID = database.Instance.EnvironmentID
+
+					taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, environmentID)
+					if err != nil {
+						return nil, err
+					}
+
+					taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+					if err != nil {
+						return nil, err
+					}
+					taskCreateList = append(taskCreateList, *taskCreate)
+				}
+				if len(environmentSet) != 1 {
+					var environments []string
+					for k := range environmentSet {
+						environments = append(environments, k)
+					}
+					err := fmt.Errorf("all databases in a stage should have the same environment; got %s", strings.Join(environments, ","))
+					return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error()).SetInternal(err)
+				}
+
+				create.StageList = append(create.StageList, api.StageCreate{
+					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+					EnvironmentID: environmentID,
+					TaskList:      taskCreateList,
+				})
+			}
+		}
+	} else {
+		for _, d := range c.DetailList {
+			if c.MigrationType == db.Migrate && d.Statement == "" {
+				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
+			}
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &d.DatabaseID})
+			if err != nil {
+				return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch database ID: %v", d.DatabaseID)).SetInternal(err)
+			}
+			if database == nil {
+				return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", d.DatabaseID))
+			}
+
+			taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+			if err != nil {
+				return nil, err
+			}
+
+			taskCreate, err := getUpdateTask(database, c.MigrationType, c.VCSPushEvent, d, schemaVersion, taskStatus)
+			if err != nil {
+				return nil, err
+			}
+
+			create.StageList = append(create.StageList, api.StageCreate{
+				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+				EnvironmentID: database.Instance.Environment.ID,
+				TaskList:      []api.TaskCreate{*taskCreate},
 			})
 		}
-		return create, nil
-
-	default:
-		return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid issue type %q", issueCreate.Type))
 	}
+	return create, nil
+}
+
+func (s *Server) getPipelineCreateForDatabaseSchemaUpdateGhost(ctx context.Context, issueCreate *api.IssueCreate) (*api.PipelineCreate, error) {
+	if !s.feature(api.FeatureGhost) {
+		return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureGhost.AccessErrorMessage())
+	}
+	c := api.UpdateSchemaGhostContext{}
+	if err := json.Unmarshal([]byte(issueCreate.CreateContext), &c); err != nil {
+		return nil, err
+	}
+	if !s.feature(api.FeatureTaskScheduleTime) {
+		for _, detail := range c.DetailList {
+			if detail.EarliestAllowedTs != 0 {
+				return nil, echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+			}
+		}
+	}
+
+	project, err := s.store.GetProjectByID(ctx, issueCreate.ProjectID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch project with ID %d", issueCreate.ProjectID)).SetInternal(err)
+	}
+	if project.TenantMode == api.TenantModeTenant {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "not implemented yet")
+	}
+
+	create := &api.PipelineCreate{}
+	create.Name = "Update database schema (gh-ost) pipeline"
+	schemaVersion := common.DefaultMigrationVersion()
+	for _, detail := range c.DetailList {
+		if detail.Statement == "" {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "failed to create issue, sql statement missing")
+		}
+
+		database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: &detail.DatabaseID})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to fetch database ID: %v", detail.DatabaseID)).SetInternal(err)
+		}
+		if database == nil {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("database ID not found: %d", detail.DatabaseID))
+		}
+
+		taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, database.Instance.EnvironmentID)
+		if err != nil {
+			return nil, err
+		}
+
+		taskCreateList, taskIndexDAGList, err := createGhostTaskList(database, c.VCSPushEvent, detail, schemaVersion, taskStatus)
+		if err != nil {
+			return nil, err
+		}
+
+		create.StageList = append(create.StageList, api.StageCreate{
+			Name:             fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
+			EnvironmentID:    database.Instance.Environment.ID,
+			TaskList:         taskCreateList,
+			TaskIndexDAGList: taskIndexDAGList,
+		})
+	}
+	return create, nil
 }
 
 func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPushEvent *vcs.PushEvent, d *api.UpdateSchemaDetail, schemaVersion string, taskStatus api.TaskStatus) (*api.TaskCreate, error) {
