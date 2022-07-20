@@ -20,7 +20,9 @@ RUN pnpm "${RELEASE}-docker"
 FROM golang:1.18.4 as backend
 
 ARG GO_VERSION="unknown"
-ARG GIT_COMMIT="unknown"
+# RENDER_GIT_COMMIT is a render.com provided env var during build.
+# https://render.com/docs/environment-variables
+ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
@@ -42,7 +44,7 @@ COPY ./scripts/VERSION .
 # go-sqlite3 requires CGO_ENABLED
 RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
         --tags "${RELEASE},embed_frontend" \
-        -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
+        -ldflags="-w -s -X 'github.com/bytebase/bytebase/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/bin/server/cmd.gitcommit=${RENDER_GIT_COMMIT}' -X 'github.com/bytebase/bytebase/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/bin/server/cmd.builduser=${BUILD_USER}'" \
         -o bytebase \
         ./bin/server/main.go
 
@@ -50,13 +52,13 @@ RUN VERSION=`cat ./VERSION` && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
 FROM debian:bullseye-slim as monolithic
 
 ARG VERSION="development"
-ARG GIT_COMMIT="unknown"
+ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
 
 # See https://github.com/opencontainers/image-spec/blob/master/annotations.md
 LABEL org.opencontainers.image.version=${VERSION}
-LABEL org.opencontainers.image.revision=${GIT_COMMIT}
+LABEL org.opencontainers.image.revision=${RENDER_GIT_COMMIT}
 LABEL org.opencontainers.image.created=${BUILD_TIME}
 LABEL org.opencontainers.image.authors=${BUILD_USER}
 
