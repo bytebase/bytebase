@@ -1,18 +1,5 @@
 [
   {
-    "selector": "[data-label='bb-dashboard-static-sidebar']",
-    "type": "shield",
-    "url": "^.+/(db|issue)/"
-  },
-  {
-    "selector": "[data-label='bb-dashboard-header']",
-    "type": "shield",
-    "url": "^.+/(db|issue)/",
-    "additionStyle": {
-      "zIndex": "1"
-    }
-  },
-  {
     "selector": "[data-label='bb-database-detail-action-buttons-container']",
     "type": "shield",
     "url": ".*",
@@ -61,13 +48,19 @@
         "zh-CN": "选择一个目标数据库"
       },
       "alwaysShow": true,
-      "position": "top"
+      "position": "bottom"
     }
+  },
+  {
+    "selector": "[data-label='bb-main-body-wrapper']",
+    "url": ".+?/(db|issue)/.+",
+    "cover": true
   },
   {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
     "url": ".+?/db/.+?#overview$",
     "type": "tooltip",
+    "position": "center",
     "dialog": {
       "title": "",
       "description": {
@@ -75,9 +68,6 @@
         "zh-CN": "让我们专注在数据库变更管理场景"
       },
       "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-12px"
     }
   },
   {
@@ -102,6 +92,9 @@
       },
       "alwaysShow": true,
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "-8px"
     }
   },
   {
@@ -117,6 +110,9 @@
       },
       "alwaysShow": true,
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "-8px"
     }
   },
   {
@@ -131,42 +127,16 @@
         "zh-CN": "BASELINE 记录了数据库 Schema 的初始状态，点我看看"
       },
       "position": "right"
-    }
-  },
-  {
-    "selector": "div.w-full.mx-auto nav[data-label='bb-breadcrumb'] > div:nth-child(3)",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Click here to go back",
-        "zh-CN": "点击这里来返回"
-      },
-      "position": "right"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-diff-switch']",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "You can also view the full Schema snapshot after the change",
-        "zh-CN": "也可以查看变更后的完整 Schema 快照"
-      },
-      "position": "right"
     },
     "additionStyle": {
-      "marginLeft": "-72px",
-      "marginTop": "-4px"
+      "marginLeft": "-8px"
     }
   },
   {
     "selector": "[data-label='bb-migration-history-view-drift-button']",
     "url": ".+?/db/.+?/history/.+",
     "type": "tooltip",
+    "position": "center",
     "dialog": {
       "title": "",
       "description": {
@@ -174,9 +144,6 @@
         "zh-CN": "这次变更检查到了 Schema 偏差，说明这次变更之前发生了脱离 Bytebase 平台管控的变更"
       },
       "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "8px"
     }
   },
   {

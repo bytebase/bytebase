@@ -126,7 +126,7 @@ const renderHintDialog = (
     hintDialogDiv.classList.add("tooltip-dialog");
   }
 
-  const maxZIndex = getElementMaxZIndex(targetElement);
+  const maxZIndex = getComputedStyle(targetElement, "z-index");
   hintDialogDiv.style.zIndex = `${maxZIndex}`;
 
   if (!alwaysShow) {
@@ -266,6 +266,7 @@ const renderTooltip = (
   });
 
   tooltipWrapper.addEventListener("click", () => {
+    targetElement.click();
     closedHintIndexSet.add(hintIndex);
     removeHint(hintIndex);
   });
@@ -303,6 +304,11 @@ const updateTooltipPosition = (
   } else if (position === "left") {
     hintWrapper.style.top = `${bounding.top}px`;
     hintWrapper.style.left = `${bounding.left}px`;
+  } else if (position === "center") {
+    hintWrapper.style.top = `${bounding.top + bounding.height / 2}px`;
+    hintWrapper.style.left = `${bounding.left + bounding.width / 2}px`;
+    hintWrapper.style.marginTop = `-12px`;
+    hintWrapper.style.marginLeft = `-12px`;
   }
 
   requestAnimationFrame(() =>
