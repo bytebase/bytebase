@@ -62,11 +62,13 @@
 <script lang="ts">
 import {
   onMounted,
+  onUnmounted,
   computed,
   reactive,
   watch,
   defineComponent,
   inject,
+  ref,
 } from "vue";
 import { useRouter } from "vue-router";
 import { array_swap, Event } from "../utils";
@@ -134,6 +136,7 @@ export default defineComponent({
     const policyStore = usePolicyStore();
     const router = useRouter();
     const event = inject<Event>("event");
+    const mountedTimer = ref();
 
     const state = reactive<LocalState>({
       reorderedEnvironmentList: [],
@@ -164,7 +167,7 @@ export default defineComponent({
       selectEnvironmentOnHash();
 
       if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
-        setTimeout(() => {
+        mountedTimer.value = setTimeout(() => {
           event?.emit(EventType.EVENT_HELP, "help.environment", true);
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
@@ -172,6 +175,10 @@ export default defineComponent({
           });
         }, 1000);
       }
+    });
+
+    onUnmounted(() => {
+      clearTimeout(mountedTimer.value);
     });
 
     useRegisterCommand({
