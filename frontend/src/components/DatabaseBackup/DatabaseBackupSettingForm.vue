@@ -268,7 +268,7 @@ const handleSave = async () => {
   const newBackupSetting: BackupSettingUpsert = {
     databaseId: props.database.id,
     ...setting,
-    hookUrl: props.backupSetting.hookUrl,
+    hookUrl: props.backupSetting.hookUrl, // won't modify hookUrl
   };
   try {
     state.loading = true;
@@ -346,6 +346,8 @@ function setSchedule(schedule: BackupPlanPolicySchedule) {
 }
 
 function setDayOfWeek(dayOfWeek: number) {
+  // Combine the old local hour with the newly selected local dayOfWeek
+  // and convert them to UTC.
   const local = localFromUTC(state.setting.hour, state.setting.dayOfWeek);
   const utc = localToUTC(local.hour, dayOfWeek);
   state.setting.hour = utc.hour;
@@ -353,6 +355,8 @@ function setDayOfWeek(dayOfWeek: number) {
 }
 
 function setHour(hour: number) {
+  // Combine the old local dayOfWeek with the newly selected local hour
+  // and convert them to UTC.
   const local = localFromUTC(state.setting.hour, state.setting.dayOfWeek);
   const utc = localToUTC(hour, local.dayOfWeek);
   state.setting.hour = utc.hour;
@@ -361,7 +365,7 @@ function setHour(hour: number) {
 
 function setRetentionPeriodDays(input: string) {
   const days = parseInt(input, 10);
-  if (days < 0 || Number.isNaN(days)) {
+  if (days <= 0 || Number.isNaN(days)) {
     state.setting.retentionPeriodTs = -1;
   } else {
     state.setting.retentionPeriodTs = days * 3600 * 24;
