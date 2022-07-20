@@ -827,7 +827,7 @@
     "show-reserved-databases": "显示 Bytebase 保留的数据库",
     "backup-setting": {
       "schedule": {
-        "disabled": "不启用",
+        "disabled": "关闭",
         "weekly": "每周",
         "daily": "每天"
       },
