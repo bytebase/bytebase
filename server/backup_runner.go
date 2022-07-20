@@ -64,7 +64,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 				r.startAutoBackups(ctx, runningTasks, &mu)
 				r.downloadBinlogFiles(ctx)
-
+				r.enforceRetentionPolicy(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			r.backupWg.Wait()
@@ -91,7 +91,7 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 			continue // next instance
 		}
 
-		log.Debug("Deleting old snapshot backup files")
+		log.Debug("Deleting old snapshot backup files for instance", zap.String("instance", instance.Name))
 		maxRetentionPeriod := store.BackupRetentionPeriodUnset
 		for _, bs := range backupSettingList {
 			if bs.RetentionPeriodTs == store.BackupRetentionPeriodUnset {
@@ -113,6 +113,7 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 					if err := os.Remove(backupFilePath); err != nil {
 						log.Error("Failed to remove an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
 					}
+					log.Info("Deleted expired backup file", zap.String("path", backupFilePath))
 				}
 			}
 		}
@@ -121,7 +122,11 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 			continue // next instance
 		}
 
-		log.Debug("Deleting old binlog files")
+		// We only need to delete binlog files for MySQL instances.
+		if instance.Engine == db.MySQL {
+			continue
+		}
+		log.Debug("Deleting old binlog files for MySQL instance", zap.String("instance", instance.Name))
 		binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instance.ID)
 		binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 		if err != nil {
@@ -139,6 +144,7 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 				if err := os.Remove(binlogFilePath); err != nil {
 					log.Error("Failed to remove an expired binlog file", zap.String("path", binlogFilePath), zap.Error(err))
 				}
+				log.Info("Deleted expired binlog file", zap.String("path", binlogFilePath))
 			}
 		}
 	}

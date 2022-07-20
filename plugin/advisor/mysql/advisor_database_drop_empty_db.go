@@ -77,7 +77,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 				err,
 			)
 		}
-		if tableList != nil && len(tableList) > 0 {
+		if len(tableList) > 0 {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.DatabaseNotEmpty,

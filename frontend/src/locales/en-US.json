@@ -201,7 +201,8 @@
     "view-doc": "View doc",
     "backup-and-restore": "Backup and restore",
     "write-only": "write only",
-    "pitr": "PITR"
+    "pitr": "PITR",
+    "go-now": "Go now"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -484,7 +485,9 @@
     },
     "new-issue": "@:common.new @:common.issue",
     "format-on-save": "Format on save",
-    "action-to-current-stage": "{action} current stage"
+    "action-to-current-stage": "{action} current stage",
+    "edit-sql-statement-in-vcs": "This project has enabled VCS based version control. Please modify the SQL file in the corresponding Git repository, and commit it to create a new issue.",
+    "edit-sql-statement": "Edit SQL statement"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -834,7 +837,7 @@
     "file-path-example-normal-migration": "File path example for normal migration type",
     "file-path-example-baseline-migration": "File path example for baseline migration type",
     "schema-path-template": "Schema path template",
-    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this",
+    "schema-writeback-description": "When specified, after each migration, Bytebase will write the latest schema to the schema path relative to the base directory in the same branch as the original commit triggering the migration. Leave empty if you don't want Bytebase to do this.",
     "schema-writeback-protected-branch": "Make sure the changed branch is not protected or allow repository maintainer to push to that protected branch.",
     "if-specified": "If specified",
     "schema-path-example": "Schema path example",

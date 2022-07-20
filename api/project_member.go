@@ -10,10 +10,13 @@ import (
 type ProjectRoleProvider string
 
 const (
-	// ProjectRoleProviderBytebase is the role provider of a project.
+	// ProjectRoleProviderBytebase indicates the role provider is the Bytebase.
 	ProjectRoleProviderBytebase ProjectRoleProvider = "BYTEBASE"
-	// ProjectRoleProviderGitLabSelfHost is the role provider of a project.
+	// ProjectRoleProviderGitLabSelfHost indicates the role provider is the GitLab
+	// self-hosted.
 	ProjectRoleProviderGitLabSelfHost ProjectRoleProvider = "GITLAB_SELF_HOST"
+	// ProjectRoleProviderGitHubCom indicates the role provider is the GitHub.com.
+	ProjectRoleProviderGitHubCom ProjectRoleProvider = "GITHUB_COM"
 )
 
 // ProjectRoleProviderPayload is the payload for role provider
