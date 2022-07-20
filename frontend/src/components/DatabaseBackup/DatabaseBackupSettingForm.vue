@@ -1,6 +1,6 @@
 <template>
-  <div class="w-[30rem] max-w-full">
-    <div class="py-0.5 space-y-6 sm:pl-[20%]">
+  <div class="w-[30rem] max-w-full flex flex-col items-center">
+    <div class="py-0.5 space-y-6">
       <div class="flex flex-col gap-y-2">
         <label class="textlabel">
           {{ $t("database.backup-setting.form.schedule") }}
@@ -122,7 +122,7 @@
       </div>
     </div>
 
-    <div class="mt-5 pt-4 flex justify-end border-t border-block-border">
+    <div class="w-full mt-5 pt-4 flex justify-end border-t border-block-border">
       <button
         type="button"
         class="btn-normal py-2 px-4"
