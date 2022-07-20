@@ -295,10 +295,10 @@ func executeGhost(task *api.Task, startedNs int64, statement string, syncDone ch
 		for {
 			select {
 			case <-ticker.C:
-				task.Progress.Lock()
 				task.Progress.TotalUnit = atomic.LoadInt64(&migrationContext.RowsEstimate) + atomic.LoadInt64(&migrationContext.RowsDeltaEstimate)
 				task.Progress.CompletedUnit = migrationContext.GetTotalRowsCopied()
-				task.Progress.Unlock()
+				task.Progress.UpdatedTs = time.Now().Unix()
+				task.ProgressValue.Store(task.Progress)
 				// Since we are using postpone flag file to postpone cutover, it's gh-ost mechanism to set migrationContext.IsPostponingCutOver to 1 after synced and before postpone flag file is removed. We utilize this mechanism here to check if synced.
 				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
 					close(syncDone)
@@ -309,7 +309,7 @@ func executeGhost(task *api.Task, startedNs int64, statement string, syncDone ch
 			}
 		}
 	}(ctx)
-
+	task.Progress.CreatedTs = time.Now().Unix()
 	if err = migrator.Migrate(); err != nil {
 		return fmt.Errorf("failed to run gh-ost, error: %w", err)
 	}
