@@ -269,7 +269,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
 	// TODO(zp):  modified param database of `util.FindMigrationHistoryList` when we support *clickhouse* database level.
-	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
+	history, err := util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, baseQuery)
 	// TODO(d): remove this block once all existing customers all migrated to semantic versioning.
 	if err != nil {
 		if !strings.Contains(err.Error(), "invalid stored version") {
@@ -278,7 +278,7 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 		if err := driver.updateMigrationHistoryStorageVersion(ctx); err != nil {
 			return nil, err
 		}
-		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, find, baseQuery)
+		return util.FindMigrationHistoryList(ctx, query, params, driver, db.BytebaseDatabase, baseQuery)
 	}
 	return history, err
 }

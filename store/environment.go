@@ -50,28 +50,28 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Environment with EnvironmentCreate[%+v], error: %w", create, err)
 	}
-	Environment, err := s.composeEnvironment(ctx, environmentRaw)
+	environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose Environment with environmentRaw[%+v], error: %w", environmentRaw, err)
 	}
-	return Environment, nil
+	return environment, nil
 }
 
 // FindEnvironment finds a list of Environment instances
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
-	EnvironmentRawList, err := s.findEnvironmentRaw(ctx, find)
+	environmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find Environment list with EnvironmentFind[%+v], error: %w", find, err)
 	}
-	var EnvironmentList []*api.Environment
-	for _, raw := range EnvironmentRawList {
-		Environment, err := s.composeEnvironment(ctx, raw)
+	var environmentList []*api.Environment
+	for _, raw := range environmentRawList {
+		environment, err := s.composeEnvironment(ctx, raw)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", raw, err)
 		}
-		EnvironmentList = append(EnvironmentList, Environment)
+		environmentList = append(environmentList, environment)
 	}
-	return EnvironmentList, nil
+	return environmentList, nil
 }
 
 // PatchEnvironment patches an instance of Environment
@@ -80,11 +80,11 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 	if err != nil {
 		return nil, fmt.Errorf("failed to patch Environment with EnvironmentPatch[%+v], error: %w", patch, err)
 	}
-	Environment, err := s.composeEnvironment(ctx, environmentRaw)
+	environment, err := s.composeEnvironment(ctx, environmentRaw)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose Environment role with environmentRaw[%+v], error: %w", environmentRaw, err)
 	}
-	return Environment, nil
+	return environment, nil
 }
 
 // GetEnvironmentByID gets an instance of Environment by ID

@@ -87,11 +87,7 @@ func (i *Instance) Stop(stdout, stderr io.Writer) error {
 		}
 	}
 
-	if err := p.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return p.Run()
 }
 
 // Install returns the postgres binary depending on the OS.

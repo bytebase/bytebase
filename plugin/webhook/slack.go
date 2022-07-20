@@ -49,7 +49,7 @@ func init() {
 type SlackReceiver struct {
 }
 
-func (receiver *SlackReceiver) post(context Context) error {
+func (*SlackReceiver) post(context Context) error {
 	blockList := []SlackWebhookBlock{}
 
 	status := ""
