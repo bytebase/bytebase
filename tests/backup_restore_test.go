@@ -137,8 +137,8 @@ func TestPITR(t *testing.T) {
 	prodEnvironment, err := findEnvironment(environments, "Prod")
 	a.NoError(err)
 
-	schedule := api.BackupPlanPolicy{Schedule: api.BackupPlanPolicyScheduleUnset}
-	buf, err := json.Marshal(schedule)
+	policy := api.BackupPlanPolicy{Schedule: api.BackupPlanPolicyScheduleUnset}
+	buf, err := json.Marshal(policy)
 	a.NoError(err)
 	str := string(buf)
 	err = ctl.upsertPolicy(api.PolicyUpsert{
