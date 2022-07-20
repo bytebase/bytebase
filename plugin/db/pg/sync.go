@@ -618,7 +618,7 @@ func getPrimary(txn *sql.Tx, idx *indexSchema) error {
 	`
 
 	var yes int
-	if err := txn.QueryRow(isPrimaryQuery).Scan(&yes); err != nil {
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
 		return err
 	}
 
