@@ -1182,6 +1182,24 @@ func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.Deploym
 	return deploymentConfig, nil
 }
 
+// disableAutomaticBackup disables the automatic backup of a database.
+// nolint
+func (ctl *controller) disableAutomaticBackup(databaseID int) error {
+	backupSetting := api.BackupSettingUpsert{
+		DatabaseID: databaseID,
+		Enabled:    false,
+	}
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &backupSetting); err != nil {
+		return fmt.Errorf("failed to marshal backupSetting, error: %w", err)
+	}
+
+	if _, err := ctl.patch(fmt.Sprintf("/database/%d/backup-setting", databaseID), buf); err != nil {
+		return err
+	}
+	return nil
+}
+
 // createBackup creates a backup.
 func (ctl *controller) createBackup(backupCreate api.BackupCreate) (*api.Backup, error) {
 	buf := new(bytes.Buffer)
