@@ -164,7 +164,7 @@ func TestGetBinlogFileNameSeqNumber(t *testing.T) {
 	}
 	for _, test := range tests {
 		ext, err := getBinlogNameSeq(test.name)
-		a.EqualValues(ext, test.expect)
+		a.EqualValues(test.expect, ext)
 		if test.err {
 			a.Error(err)
 		} else {
@@ -265,9 +265,9 @@ func TestGetReplayBinlogPathList(t *testing.T) {
 		if test.err {
 			a.Error(err)
 		} else {
-			a.EqualValues(len(result), len(test.expect))
+			a.EqualValues(len(test.expect), len(result))
 			for idx := range test.expect {
-				a.EqualValues(result[idx], filepath.Join(tmpDir, test.expect[idx]))
+				a.EqualValues(filepath.Join(tmpDir, test.expect[idx]), result[idx])
 			}
 		}
 	}
@@ -300,7 +300,7 @@ func TestSortBinlogFiles(t *testing.T) {
 		sorted := sortBinlogFiles(test.binlogFileNames)
 		a.Equal(len(test.expect), len(sorted))
 		for i := range sorted {
-			a.Equal(sorted[i].Seq, test.expect[i].Seq)
+			a.Equal(test.expect[i].Seq, sorted[i].Seq)
 		}
 	}
 }
