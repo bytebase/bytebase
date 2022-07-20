@@ -141,7 +141,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
 		}
 		return nil
