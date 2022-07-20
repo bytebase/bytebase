@@ -18,6 +18,8 @@ const (
 	// ConstraintTypeUniqueUsingIndex is the unique constraint only for the PostgreSQL table_constraint_using_index.
 	// See https://www.postgresql.org/docs/current/sql-altertable.html.
 	ConstraintTypeUniqueUsingIndex
+	// ConstraintTypeNotNull is the not null constraint.
+	ConstraintTypeNotNull
 )
 
 // ConstraintDef is struct for constraint definition.
