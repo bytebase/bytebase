@@ -12,24 +12,12 @@
             </span>
           </div>
           <button
-            v-if="allowDisableAutoBackup"
             type="button"
             class="ml-4 btn-normal"
-            @click.prevent="toggleAutoBackup(false)"
+            @click.prevent="state.showBackupSettingModal = true"
           >
-            {{ $t("database.disable-automatic-backup") }}
+            {{ $t("common.edit") }}
           </button>
-          <router-link
-            v-else
-            class="normal-link text-sm"
-            :to="`/environment/${database.instance.environment.id}`"
-          >
-            {{
-              $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
-                $t(`database.backup-policy.${backupPolicy}`),
-              ])
-            }}
-          </router-link>
         </div>
         <div class="mt-2 text-control">
           <i18n-t keypath="database.backup-info.template">
@@ -90,7 +78,7 @@
           v-if="allowAdmin && !state.autoBackupEnabled"
           type="button"
           class="ml-4 btn-primary"
-          @click.prevent="toggleAutoBackup(true)"
+          @click.prevent="state.showBackupSettingModal = true"
         >
           {{ $t("database.enable-backup") }}
         </button>
@@ -125,6 +113,22 @@
         :allow-edit="allowEdit"
       />
     </div>
+
+    <BBModal
+      v-if="state.showBackupSettingModal"
+      :title="$t('database.automatic-backup')"
+      @close="state.showBackupSettingModal = false"
+    >
+      <DatabaseBackupSettingForm
+        :database="database"
+        :allow-admin="allowAdmin"
+        :backup-policy="backupPolicy"
+        :backup-setting="state.backupSetting"
+        @cancel="state.showBackupSettingModal = false"
+        @update="updateBackupSetting"
+      />
+    </BBModal>
+
     <BBModal
       v-if="state.showCreateBackupModal"
       :title="$t('database.create-a-manual-backup')"
@@ -152,6 +156,7 @@ import {
   onUnmounted,
   PropType,
   defineComponent,
+  onBeforeMount,
 } from "vue";
 import {
   Backup,
@@ -170,6 +175,7 @@ import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
+import { DatabaseBackupSettingForm } from "@/components/DatabaseBackup/";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -180,6 +186,8 @@ interface LocalState {
   autoBackupHookUrl: string;
   autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
+  showBackupSettingModal: boolean;
+  backupSetting: BackupSetting | undefined;
 }
 
 export default defineComponent({
@@ -187,6 +195,7 @@ export default defineComponent({
   components: {
     BackupTable,
     DatabaseBackupCreateForm,
+    DatabaseBackupSettingForm,
   },
   props: {
     database: {
@@ -215,6 +224,8 @@ export default defineComponent({
       autoBackupRetentionPeriodTs: 0,
       autoBackupHookUrl: "",
       autoBackupUpdatedHookUrl: "",
+      showBackupSettingModal: false,
+      backupSetting: undefined,
     });
 
     onUnmounted(() => {
@@ -245,6 +256,8 @@ export default defineComponent({
       state.autoBackupRetentionPeriodTs = backupSetting.retentionPeriodTs;
       state.autoBackupHookUrl = backupSetting.hookUrl;
       state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
+
+      state.backupSetting = backupSetting;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
@@ -326,6 +339,11 @@ export default defineComponent({
       return props.allowAdmin && backupPolicy.value == "UNSET";
     });
 
+    const updateBackupSetting = (setting: BackupSetting) => {
+      state.showBackupSettingModal = false;
+      assignBackupSetting(setting);
+    };
+
     const UrlChanged = computed(() => {
       return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
     });
@@ -379,47 +397,7 @@ export default defineComponent({
         });
     };
 
-    watchEffect(prepareBackupSetting);
-
-    const toggleAutoBackup = (on: boolean) => {
-      // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
-      // Choose a new random time everytime we re-enabling the auto backup. This is a workaround for
-      // user to choose a desired backup window.
-      const DEFAULT_BACKUP_HOUR = () => Math.floor(Math.random() * 7);
-      const DEFAULT_BACKUP_DAYOFWEEK = 0;
-      const { hour, dayOfWeek } = localToUTC(
-        DEFAULT_BACKUP_HOUR(),
-        DEFAULT_BACKUP_DAYOFWEEK
-      );
-      const newBackupSetting: BackupSettingUpsert = {
-        databaseId: props.database.id,
-        enabled: on,
-        hour: on ? hour : state.autoBackupHour,
-        dayOfWeek: on
-          ? backupPolicy.value == "DAILY"
-            ? -1
-            : dayOfWeek
-          : state.autoBackupDayOfWeek,
-        retentionPeriodTs: on ? 7 * 24 * 3600 : 0,
-        hookUrl: "",
-      };
-      backupStore
-        .upsertBackupSetting({
-          newBackupSetting: newBackupSetting,
-        })
-        .then((backupSetting: BackupSetting) => {
-          assignBackupSetting(backupSetting);
-          const action = on ? t("database.enabled") : t("database.disabled");
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "database.action-automatic-backup-for-database-props-database-name",
-              [action, props.database.name]
-            ),
-          });
-        });
-    };
+    onBeforeMount(prepareBackupSetting);
 
     const updateBackupHookUrl = () => {
       const newBackupSetting: BackupSettingUpsert = {
@@ -493,7 +471,7 @@ export default defineComponent({
       allowDisableAutoBackup,
       backupPolicy,
       createBackup,
-      toggleAutoBackup,
+      updateBackupSetting,
       UrlChanged,
       updateBackupHookUrl,
       automaticBackupTitle,

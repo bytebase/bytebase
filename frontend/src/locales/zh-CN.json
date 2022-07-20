@@ -823,7 +823,14 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
-    "show-reserved-databases": "显示 Bytebase 保留的数据库"
+    "show-reserved-databases": "显示 Bytebase 保留的数据库",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "不启用",
+        "weekly": "每周",
+        "daily": "每天"
+      }
+    }
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

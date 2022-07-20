@@ -822,7 +822,14 @@
       "no-later-than-now": "Restore point-in-time cannot be later than now."
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
-    "show-reserved-databases": "Show Bytebase reserved databases"
+    "show-reserved-databases": "Show Bytebase reserved databases",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "Disabled",
+        "weekly": "Every week",
+        "daily": "Every day"
+      }
+    }
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",
