@@ -153,8 +153,7 @@ func checkDataDir() error {
 	flags.dataDir = strings.TrimRight(flags.dataDir, "/")
 
 	if _, err := os.Stat(flags.dataDir); err != nil {
-		error := fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
-		return error
+		return fmt.Errorf("unable to access --data %s, %w", flags.dataDir, err)
 	}
 
 	return nil

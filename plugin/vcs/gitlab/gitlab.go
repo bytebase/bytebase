@@ -184,7 +184,7 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of a GitLab instance.
-func (p *Provider) APIURL(instanceURL string) string {
+func (*Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 

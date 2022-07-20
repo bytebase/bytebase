@@ -839,7 +839,6 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 }
 
 // waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
-// nolint
 func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
 	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
 }

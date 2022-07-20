@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	dbplugin "github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
 	"go.uber.org/zap/zapcore"
 
@@ -116,8 +115,8 @@ func TestPITR(t *testing.T) {
 	ctx := context.Background()
 	port := getTestPort(t.Name())
 	ctl := &controller{}
-	datadir := t.TempDir()
-	err := ctl.StartServer(ctx, datadir, port)
+	dataDir := t.TempDir()
+	err := ctl.StartServer(ctx, dataDir, port)
 	a.NoError(err)
 	defer ctl.Close(ctx)
 	err = ctl.Login()
@@ -852,7 +851,7 @@ func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
 	a.NoError(rows.Err())
 }
 
-func doBackup(ctx context.Context, driver dbplugin.Driver, database string) (*bytes.Buffer, *api.BackupPayload, error) {
+func doBackup(ctx context.Context, driver db.Driver, database string) (*bytes.Buffer, *api.BackupPayload, error) {
 	var buf bytes.Buffer
 	var backupPayload api.BackupPayload
 	backupPayloadString, err := driver.Dump(ctx, database, &buf, false)

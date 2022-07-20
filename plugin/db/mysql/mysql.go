@@ -37,7 +37,7 @@ type Driver struct {
 	db            *sql.DB
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
+func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 

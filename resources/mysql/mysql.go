@@ -78,7 +78,7 @@ func (i *Instance) Start(port int, stdout, stderr io.Writer) (err error) {
 }
 
 // Stop stops the mysql instance, outputs to stdout and stderr.
-func (i *Instance) Stop(stdout, stderr io.Writer) error {
+func (i *Instance) Stop() error {
 	return i.proc.Kill()
 }
 
@@ -123,7 +123,9 @@ user=%s
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(defaultCfgFile, configFmt, basedir, datadir, user)
+	if _, err := fmt.Fprintf(defaultCfgFile, configFmt, basedir, datadir, user); err != nil {
+		return nil, err
+	}
 	defaultCfgFile.Close()
 
 	args := []string{
@@ -160,7 +162,7 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 
 	stopFn := func() {
 		t.Log("Stopping Mysql...")
-		if err := i.Stop(os.Stdout, os.Stderr); err != nil {
+		if err := i.Stop(); err != nil {
 			t.Fatal(err)
 		}
 	}

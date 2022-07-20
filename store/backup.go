@@ -90,7 +90,7 @@ type backupSettingRaw struct {
 
 // toBackupSetting creates an instance of BackupSetting based on the backupSettingRaw.
 // This is intended to be called when we need to compose an BackupSetting relationship.
-func (raw *backupSettingRaw) toBackupSetting(mode common.ReleaseMode) *api.BackupSetting {
+func (raw *backupSettingRaw) toBackupSetting() *api.BackupSetting {
 	return &api.BackupSetting{
 		ID: raw.ID,
 
@@ -259,7 +259,7 @@ func (s *Store) composeBackup(ctx context.Context, raw *backupRaw) (*api.Backup,
 }
 
 func (s *Store) composeBackupSetting(ctx context.Context, raw *backupSettingRaw) (*api.BackupSetting, error) {
-	backupSetting := raw.toBackupSetting(s.db.mode)
+	backupSetting := raw.toBackupSetting()
 
 	creator, err := s.GetPrincipalByID(ctx, backupSetting.CreatorID)
 	if err != nil {

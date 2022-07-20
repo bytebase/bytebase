@@ -98,11 +98,7 @@ func (driver *Driver) dumpOneDatabase(ctx context.Context, database string, out 
 		}
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 // exportTableData gets the data of a table.
@@ -180,6 +176,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }
