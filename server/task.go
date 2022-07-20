@@ -103,6 +103,17 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
+		if taskPatch.Statement != nil {
+			// Tenant mode project don't allow updating SQL statement for a single task.
+			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
+			}
+			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
+				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
+			}
+		}
+
 		taskPatched, httpErr := s.patchTask(ctx, task, taskPatch, issue)
 		if httpErr != nil {
 			return httpErr
@@ -210,6 +221,7 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		}
 
 		if taskPatch.Statement != nil {
+			// check if all tasks can update statement
 			for _, stage := range issue.Pipeline.StageList {
 				for _, task := range stage.TaskList {
 					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
@@ -243,16 +255,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 	oldStatement := ""
 	newStatement := ""
 	if taskPatch.Statement != nil {
-		// Tenant mode project don't allow updating SQL statement.
-		project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
-		}
-		if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
-			err := fmt.Errorf("cannot update schema update SQL statement for projects in tenant mode")
-			return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
-		}
-
 		if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
 			return nil, httpErr
 		}
