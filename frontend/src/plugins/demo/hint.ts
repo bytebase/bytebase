@@ -6,6 +6,7 @@ import {
   checkUrlMatched,
   getElementBounding,
   getElementMaxZIndex,
+  getStylePropertyValue,
   waitForTargetElement,
 } from "./utils";
 
@@ -69,6 +70,8 @@ const renderHint = (
       hintWrapper.style[key] = hintData.additionStyle[key];
     }
   }
+  const borderRadius = getStylePropertyValue(targetElement, "border-radius");
+  hintWrapper.style.borderRadius = borderRadius;
 
   const bounding = getElementBounding(targetElement);
   hintWrapper.style.top = `${bounding.top}px`;
@@ -236,6 +239,9 @@ const renderTooltip = (
   const pingElement = document.createElement("span");
   pingElement.className = "bb-hint-tooltip-ping";
   tooltipWrapper.appendChild(pingElement);
+  const blockElement = document.createElement("span");
+  blockElement.className = "bb-hint-tooltip-block";
+  tooltipWrapper.appendChild(blockElement);
 
   tooltipWrapper.style.zIndex = `${getElementMaxZIndex(targetElement)}`;
   if (hintData.additionStyle) {

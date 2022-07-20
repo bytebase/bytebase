@@ -90,15 +90,15 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
 	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, mode)
 	if err != nil {
-		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
+		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
-			zap.String("dateTime", dateTime),
-			zap.Time("targetTs", time.Unix(targetTs, 0)),
+			zap.Int64("targetTs", targetTs),
+			zap.String("targetTsHuman", targetTsHuman),
 			zap.Error(err))
-		return fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", dateTime, err)
+		return fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", targetTsHuman, err)
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)
