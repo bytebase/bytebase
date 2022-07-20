@@ -335,10 +335,6 @@ export default defineComponent({
       return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
     });
 
-    const allowDisableAutoBackup = computed(() => {
-      return props.allowAdmin && backupPolicy.value == "UNSET";
-    });
-
     const updateBackupSetting = (setting: BackupSetting) => {
       state.showBackupSettingModal = false;
       assignBackupSetting(setting);
@@ -468,7 +464,6 @@ export default defineComponent({
       autoBackupWeekdayText,
       autoBackupHourText,
       autoBackupRetentionDays,
-      allowDisableAutoBackup,
       backupPolicy,
       createBackup,
       updateBackupSetting,
