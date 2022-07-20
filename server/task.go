@@ -36,6 +36,26 @@ func isTaskStatusTransitionAllowed(fromStatus, toStatus api.TaskStatus) bool {
 	return false
 }
 
+func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *echo.HTTPError {
+	// Allow frontend to change the SQL statement of
+	// 1. a PendingApproval task which hasn't started yet
+	// 2. a Failed task which can be retried
+	// 3. a Pending task which can't be scheduled because of failed task checks
+	if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed && task.Status != api.TaskPending {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("can not update task in %q state", task.Status))
+	}
+	if task.Status == api.TaskPending {
+		canSchedule, err := s.TaskScheduler.canScheduleTask(ctx, task)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to check whether the task can be scheduled").SetInternal(err)
+		}
+		if canSchedule {
+			return echo.NewHTTPError(http.StatusBadRequest, "can not update the PENDING task because it can be running at any time")
+		}
+	}
+	return nil
+}
+
 func (s *Server) registerTaskRoutes(g *echo.Group) {
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -82,11 +102,8 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 			}
 
-			// Allow frontend to change the SQL statement of
-			// a PendingApproval task, which hasn't started yet
-			// a Failed task, which can be retried
-			if task.Status != api.TaskPendingApproval && task.Status != api.TaskFailed {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Can not update task in %v state", task.Status))
+			if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+				return httpErr
 			}
 			newStatement = *taskPatch.Statement
 
