@@ -309,7 +309,6 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 			}
 			payloadStr := string(bytes)
 			taskPatch.Payload = &payloadStr
-
 		case api.TaskDatabaseSchemaUpdateGhostSync:
 			payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 			if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -417,8 +416,8 @@ func (s *Server) patchTask(ctx context.Context, task *api.Task, taskPatch *api.T
 				}
 			}
 		}
-
 	}
+
 	// create an activity and trigger task check for earliest allowed time update
 	if taskPatched.EarliestAllowedTs != task.EarliestAllowedTs {
 		// create an activity
