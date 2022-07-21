@@ -1,19 +1,72 @@
 <template>
-  <div>
+  <div class="pipeline-standard-flow divide-y">
     <PipelineStageList>
       <template #task-name-of-stage="{ stage }">
         {{ taskNameOfStage(stage) }}
       </template>
     </PipelineStageList>
+
+    <div
+      v-if="shouldShowTaskBar"
+      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+    >
+      <template v-for="(task, i) in taskList" :key="i">
+        <div
+          class="task px-2 py-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-center overflow-hidden"
+          :class="taskClass(task)"
+          @click="onClickTask(task, i)"
+        >
+          <div class="flex-1">
+            <div class="flex items-center pb-1">
+              <TaskStatusIcon
+                :create="create"
+                :active="isActiveTask(task)"
+                :status="task.status"
+                class="transform scale-75"
+              />
+              <heroicons-solid:arrow-narrow-right
+                v-if="isActiveTask(task)"
+                class="name w-5 h-5"
+              />
+              <div class="name">{{ databaseForTask(task).name }}</div>
+            </div>
+            <div class="flex items-center px-1 py-1 whitespace-pre-wrap">
+              <InstanceEngineIcon :instance="databaseForTask(task).instance" />
+              <span class="flex-1 ml-2 overflow-x-hidden whitespace-pre-wrap">{{
+                instanceName(databaseForTask(task).instance)
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import type { Stage, StageCreate } from "@/types";
-import { activeTaskInStage } from "@/utils";
+import { useDatabaseStore } from "@/store";
+import type {
+  Database,
+  Pipeline,
+  Stage,
+  StageCreate,
+  Task,
+  TaskCreate,
+} from "@/types";
+import { activeTaskInStage, taskSlug } from "@/utils";
+import { computed, watchEffect } from "vue";
 import { useIssueLogic } from "./logic";
 
-const { create } = useIssueLogic();
+const {
+  create,
+  issue,
+  project,
+  selectedStage,
+  selectedTask,
+  activeTaskOfPipeline,
+  selectStageOrTask,
+} = useIssueLogic();
+const databaseStore = useDatabaseStore();
 
 const taskNameOfStage = (stage: Stage | StageCreate) => {
   if (create.value) {
@@ -28,4 +81,93 @@ const taskNameOfStage = (stage: Stage | StageCreate) => {
   }
   return activeTask.name;
 };
+
+const pipeline = computed(() => issue.value.pipeline!);
+
+const taskList = computed(() => selectedStage.value.taskList);
+
+// Show the task bar when some of the stages have more than one tasks.
+const shouldShowTaskBar = computed(() => {
+  return pipeline.value.stageList.some((stage) => stage.taskList.length > 1);
+});
+
+const isSelectedTask = (task: Task | TaskCreate): boolean => {
+  return task === selectedTask.value;
+};
+
+const isActiveTask = (task: Task | TaskCreate): boolean => {
+  if (create.value) return false;
+  task = task as Task;
+  return activeTaskOfPipeline(pipeline.value as Pipeline).id === task.id;
+};
+
+const databaseForTask = (task: Task | TaskCreate): Database => {
+  if (create.value) {
+    return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
+  } else {
+    return (task as Task).database!;
+  }
+};
+
+const taskClass = (task: Task | TaskCreate) => {
+  const classes: string[] = [];
+  if (isSelectedTask(task)) classes.push("selected");
+  if (isActiveTask(task)) classes.push("active");
+  if (create.value) classes.push("create");
+  classes.push(`status_${task.status.toLowerCase()}`);
+  return classes;
+};
+
+const selectedStageIdOrIndex = computed(() => {
+  if (!create.value) {
+    return (selectedStage.value as Stage).id;
+  }
+  return (pipeline.value.stageList as StageCreate[]).indexOf(
+    selectedStage.value as StageCreate
+  );
+});
+
+const onClickTask = (task: Task | TaskCreate, index: number) => {
+  const stageId = selectedStageIdOrIndex.value;
+  const taskName = task.name;
+  const taskId = create.value ? index + 1 : (task as Task).id;
+  const ts = taskSlug(taskName, taskId);
+
+  selectStageOrTask(stageId, ts);
+};
+
+watchEffect(() => {
+  if (create.value) {
+    databaseStore.fetchDatabaseListByProjectId(project.value.id);
+  }
+});
 </script>
+
+<style scoped lang="postcss">
+.task.selected {
+  @apply border-info;
+}
+.task .name {
+  @apply ml-1 overflow-x-hidden whitespace-nowrap overflow-ellipsis;
+}
+.task.active .name {
+  @apply font-bold;
+}
+.task.status_done .name {
+  @apply text-control;
+}
+.task.status_pending .name,
+.task.status_pending_approval .name {
+  @apply text-control;
+}
+.task.active.status_pending .name,
+.task.active.status_pending_approval .name {
+  @apply text-info;
+}
+.task.status_running .name {
+  @apply text-info;
+}
+.task.status_failed .name {
+  @apply text-red-500;
+}
+</style>

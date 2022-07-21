@@ -125,6 +125,7 @@ import {
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
+import dayjs from "dayjs";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -180,7 +181,7 @@ export default defineComponent({
         : undefined,
       tab: "standard",
       alterType: "SINGLE_DB",
-      selectedDatabaseIdForEnvironment: new Map(),
+      selectedDatabaseIdListForEnvironment: new Map(),
       tenantProjectId: undefined,
       selectedDatabaseName: undefined,
       deployingTenantDatabaseList: [],
@@ -222,8 +223,16 @@ export default defineComponent({
       );
     });
 
+    const flattenSelectedDatabaseIdList = computed(() => {
+      const flattenDatabaseIdList: DatabaseId[] = [];
+      for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
+        flattenDatabaseIdList.push(...databaseIdList);
+      }
+      return flattenDatabaseIdList;
+    });
+
     const allowGenerateMultiDb = computed(() => {
-      return state.selectedDatabaseIdForEnvironment.size > 0;
+      return flattenSelectedDatabaseIdList.value.length > 0;
     });
 
     // 'normal' -> normal migration
@@ -249,29 +258,36 @@ export default defineComponent({
       return "normal";
     };
 
+    // Also works when single db selected.
     const generateMultiDb = async () => {
-      const databaseIdList: DatabaseId[] = [];
-      const selectedDatabaseList: Database[] = [];
-      for (var i = 0; i < environmentList.value.length; i++) {
-        const envId = environmentList.value[i].id;
-        const databaseId = state.selectedDatabaseIdForEnvironment.get(envId);
-        if (databaseId) {
-          databaseIdList.push(databaseId);
-          selectedDatabaseList.push(
-            databaseList.value.find((db) => db.id === databaseId)!
-          );
-        }
-      }
+      const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
+
+      const selectedDatabaseList = selectedDatabaseIdList.map(
+        (id) => databaseList.value.find((db) => db.id === id)!
+      );
 
       const mode = await isUsingGhostMigration(selectedDatabaseList);
       if (mode === false) {
         return;
       }
+
+      // Create a user friendly default issue name
+      const issueNameParts: string[] = [];
+      if (selectedDatabaseList.length === 1) {
+        issueNameParts.push(`[${selectedDatabaseList[0].name}]`);
+      } else {
+        issueNameParts.push(`[${selectedDatabaseList.length} databases]`);
+      }
+      issueNameParts.push(isAlterSchema.value ? `Alter schema` : `Change data`);
+      issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+
       const query: Record<string, any> = {
         template: props.type,
-        name: isAlterSchema.value ? `Alter schema` : `Change data`,
+        name: issueNameParts.join(" "),
         project: props.projectId,
-        databaseList: databaseIdList.join(","),
+        // The server-side will sort the databases by environment.
+        // So we need not to sort them here.
+        databaseList: selectedDatabaseIdList.join(","),
       };
       if (mode === "online") {
         query.ghost = "1";
