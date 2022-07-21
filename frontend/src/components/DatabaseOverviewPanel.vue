@@ -20,16 +20,6 @@
       {{ $t("database.no-anomalies-detected") }}
       <heroicons-outline:check-circle class="ml-1 w-6 h-6 text-success" />
     </div>
-    <div>
-      <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
-      <button
-        type="button"
-        class="btn-normal"
-        @click.prevent="syncDatabaseSchema"
-      >
-        {{ $t("common.sync-now") }}
-      </button>
-    </div>
 
     <!-- Description list -->
     <dl
@@ -224,30 +214,20 @@ import DataSourceConnectionPanel from "../components/DataSourceConnectionPanel.v
 import TableTable from "../components/TableTable.vue";
 import ViewTable from "../components/ViewTable.vue";
 import { timezoneString, instanceSlug, isDBAOrOwner } from "../utils";
-import {
-  Anomaly,
-  Database,
-  DataSource,
-  DataSourcePatch,
-  SQLResultSet,
-} from "../types";
+import { Anomaly, Database, DataSource, DataSourcePatch } from "../types";
 import { cloneDeep, isEqual } from "lodash-es";
 import { BBTableSectionDataSource } from "../bbkit/types";
-import { useI18n } from "vue-i18n";
 import {
   featureToRef,
-  pushNotification,
   useCurrentUser,
   useDataSourceStore,
   useTableStore,
   useViewStore,
   useDBExtensionStore,
-  useSQLStore,
 } from "@/store";
 
 interface LocalState {
   editingDataSource?: DataSource;
-  syncingSchema: boolean;
 }
 
 export default defineComponent({
@@ -269,16 +249,12 @@ export default defineComponent({
     const router = useRouter();
     const dataSourceStore = useDataSourceStore();
 
-    const state = reactive<LocalState>({
-      syncingSchema: false,
-    });
+    const state = reactive<LocalState>({});
 
     const currentUser = useCurrentUser();
     const tableStore = useTableStore();
     const viewStore = useViewStore();
     const dbExtensionStore = useDBExtensionStore();
-    const sqlStore = useSQLStore();
-    const { t } = useI18n();
 
     const prepareTableList = () => {
       tableStore.fetchTableListByDatabaseId(props.database.id);
@@ -406,39 +382,6 @@ export default defineComponent({
         });
     };
 
-    const syncDatabaseSchema = () => {
-      state.syncingSchema = true;
-      sqlStore
-        .syncDatabaseSchema(props.database.id)
-        .then((resultSet: SQLResultSet) => {
-          state.syncingSchema = false;
-          if (resultSet.error) {
-            pushNotification({
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t(
-                "db.failed-to-sync-schema-for-database-database-value-name",
-                [props.database.name]
-              ),
-              description: resultSet.error,
-            });
-          } else {
-            pushNotification({
-              module: "bytebase",
-              style: "SUCCESS",
-              title: t(
-                "db.successfully-synced-schema-for-database-database-value-name",
-                [props.database.name]
-              ),
-              description: resultSet.error,
-            });
-          }
-        })
-        .catch(() => {
-          state.syncingSchema = false;
-        });
-    };
-
     const configInstance = () => {
       router.push(`/instance/${instanceSlug(props.database.instance)}`);
     };
@@ -461,7 +404,6 @@ export default defineComponent({
       editDataSource,
       cancelEditDataSource,
       saveEditDataSource,
-      syncDatabaseSchema,
       configInstance,
     };
   },
