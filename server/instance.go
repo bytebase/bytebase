@@ -55,7 +55,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 					zap.Error(err))
 			}
 			if instanceCreate.SyncSchema {
-				s.syncEngineVersionAndSchema(ctx, instance)
+				if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
+					log.Warn("Failed to sync instance schema",
+						zap.Int("instance_id", instance.ID),
+						zap.Error(err))
+				}
 			}
 		}
 
@@ -189,7 +193,11 @@ func (s *Server) registerInstanceRoutes(g *echo.Group) {
 						zap.Error(err))
 				}
 				if instancePatch.SyncSchema {
-					s.syncEngineVersionAndSchema(ctx, instancePatched)
+					if err := s.syncEngineVersionAndSchema(ctx, instancePatched); err != nil {
+						log.Warn("Failed to sync instance schema",
+							zap.Int("instance_id", instancePatched.ID),
+							zap.Error(err))
+					}
 				}
 			}
 		}

@@ -29,6 +29,7 @@ import { useRouter } from "vue-router";
 import {
   watchEffect,
   onMounted,
+  onUnmounted,
   reactive,
   ref,
   defineComponent,
@@ -51,6 +52,7 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const searchField = ref();
+    const mountedTimer = ref();
     const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
@@ -67,7 +69,7 @@ export default defineComponent({
       searchField.value.$el.querySelector("#search").focus();
 
       if (!uiStateStore.getIntroStateByKey("guide.help.project")) {
-        setTimeout(() => {
+        mountedTimer.value = setTimeout(() => {
           event?.emit(EventType.EVENT_HELP, "help.project", true);
           uiStateStore.saveIntroStateByKey({
             key: "project.visit",
@@ -75,6 +77,10 @@ export default defineComponent({
           });
         }, 1000);
       }
+    });
+
+    onUnmounted(() => {
+      clearTimeout(mountedTimer.value);
     });
 
     const prepareProjectList = () => {
