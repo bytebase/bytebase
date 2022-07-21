@@ -6,30 +6,30 @@
           <div
             class="flex items-center text-lg leading-6 font-medium text-main"
           >
-            {{ automaticBackupTitle }}
+            {{ $t("database.automatic-backup") }}
             <span class="ml-1 text-success">
               {{ $t("database.backup.enabled") }}
             </span>
           </div>
-          <button
-            v-if="allowDisableAutoBackup"
-            type="button"
-            class="ml-4 btn-normal"
-            @click.prevent="toggleAutoBackup(false)"
-          >
-            {{ $t("database.disable-automatic-backup") }}
-          </button>
-          <router-link
-            v-else
-            class="normal-link text-sm"
-            :to="`/environment/${database.instance.environment.id}`"
-          >
-            {{
-              $t("database.backuppolicy-backup-enforced-and-cant-be-disabled", [
-                $t(`database.backup-policy.${backupPolicy}`),
-              ])
-            }}
-          </router-link>
+          <div class="flex items-center">
+            <router-link
+              v-if="hasBackupPolicyViolation"
+              class="flex items-center normal-link text-sm"
+              :to="`/environment/${database.instance.environment.id}`"
+            >
+              <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
+              <span>{{ $t("database.backup-policy-violation") }}</span>
+            </router-link>
+            <button
+              type="button"
+              class="ml-4 btn-normal"
+              @click.prevent="state.showBackupSettingModal = true"
+            >
+              {{
+                hasBackupPolicyViolation ? $t("common.fix") : $t("common.edit")
+              }}
+            </button>
+          </div>
         </div>
         <div class="mt-2 text-control">
           <i18n-t keypath="database.backup-info.template">
@@ -71,7 +71,7 @@
           />
           <button
             class="btn-primary mt-2"
-            :disabled="!allowEdit || !UrlChanged"
+            :disabled="!allowEdit || !urlChanged"
             @click.prevent="updateBackupHookUrl()"
           >
             {{ $t("common.update") }}
@@ -82,7 +82,7 @@
         v-else
         class="flex items-center text-lg leading-6 font-medium text-main"
       >
-        {{ automaticBackupTitle }}
+        {{ $t("database.automatic-backup") }}
         <span class="ml-1 text-control-light">{{
           $t("database.backup.disabled")
         }}</span>
@@ -90,7 +90,7 @@
           v-if="allowAdmin && !state.autoBackupEnabled"
           type="button"
           class="ml-4 btn-primary"
-          @click.prevent="toggleAutoBackup(true)"
+          @click.prevent="state.showBackupSettingModal = true"
         >
           {{ $t("database.enable-backup") }}
         </button>
@@ -125,6 +125,22 @@
         :allow-edit="allowEdit"
       />
     </div>
+
+    <BBModal
+      v-if="state.showBackupSettingModal"
+      :title="$t('database.automatic-backup')"
+      @close="state.showBackupSettingModal = false"
+    >
+      <DatabaseBackupSettingForm
+        :database="database"
+        :allow-admin="allowAdmin"
+        :backup-policy="backupPolicy"
+        :backup-setting="state.backupSetting"
+        @cancel="state.showBackupSettingModal = false"
+        @update="updateBackupSetting"
+      />
+    </BBModal>
+
     <BBModal
       v-if="state.showCreateBackupModal"
       :title="$t('database.create-a-manual-backup')"
@@ -152,6 +168,7 @@ import {
   onUnmounted,
   PropType,
   defineComponent,
+  onBeforeMount,
 } from "vue";
 import {
   Backup,
@@ -170,6 +187,12 @@ import DatabaseBackupCreateForm from "../components/DatabaseBackupCreateForm.vue
 import { cloneDeep, isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useBackupStore, usePolicyStore } from "@/store";
+import {
+  DatabaseBackupSettingForm,
+  levelOfSchedule,
+  localFromUTC,
+  parseScheduleFromBackupSetting,
+} from "@/components/DatabaseBackup/";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -180,6 +203,8 @@ interface LocalState {
   autoBackupHookUrl: string;
   autoBackupUpdatedHookUrl: string;
   pollBackupsTimer?: ReturnType<typeof setTimeout>;
+  showBackupSettingModal: boolean;
+  backupSetting: BackupSetting | undefined;
 }
 
 export default defineComponent({
@@ -187,6 +212,7 @@ export default defineComponent({
   components: {
     BackupTable,
     DatabaseBackupCreateForm,
+    DatabaseBackupSettingForm,
   },
   props: {
     database: {
@@ -215,6 +241,8 @@ export default defineComponent({
       autoBackupRetentionPeriodTs: 0,
       autoBackupHookUrl: "",
       autoBackupUpdatedHookUrl: "",
+      showBackupSettingModal: false,
+      backupSetting: undefined,
     });
 
     onUnmounted(() => {
@@ -245,6 +273,8 @@ export default defineComponent({
       state.autoBackupRetentionPeriodTs = backupSetting.retentionPeriodTs;
       state.autoBackupHookUrl = backupSetting.hookUrl;
       state.autoBackupUpdatedHookUrl = backupSetting.hookUrl;
+
+      state.backupSetting = backupSetting;
     };
 
     // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
@@ -322,11 +352,19 @@ export default defineComponent({
       return (payload as BackupPlanPolicyPayload | undefined)?.schedule;
     });
 
-    const allowDisableAutoBackup = computed(() => {
-      return props.allowAdmin && backupPolicy.value == "UNSET";
+    const hasBackupPolicyViolation = computed((): boolean => {
+      if (!state.backupSetting) return false;
+      if (!backupPolicy.value) return false;
+      const schedule = parseScheduleFromBackupSetting(state.backupSetting);
+      return levelOfSchedule(schedule) < levelOfSchedule(backupPolicy.value);
     });
 
-    const UrlChanged = computed(() => {
+    const updateBackupSetting = (setting: BackupSetting) => {
+      state.showBackupSettingModal = false;
+      assignBackupSetting(setting);
+    };
+
+    const urlChanged = computed(() => {
       return !isEqual(state.autoBackupHookUrl, state.autoBackupUpdatedHookUrl);
     });
 
@@ -379,47 +417,7 @@ export default defineComponent({
         });
     };
 
-    watchEffect(prepareBackupSetting);
-
-    const toggleAutoBackup = (on: boolean) => {
-      // For now, we hard code the backup time to a time between 0:00 AM ~ 6:00 AM on Sunday local time.
-      // Choose a new random time everytime we re-enabling the auto backup. This is a workaround for
-      // user to choose a desired backup window.
-      const DEFAULT_BACKUP_HOUR = () => Math.floor(Math.random() * 7);
-      const DEFAULT_BACKUP_DAYOFWEEK = 0;
-      const { hour, dayOfWeek } = localToUTC(
-        DEFAULT_BACKUP_HOUR(),
-        DEFAULT_BACKUP_DAYOFWEEK
-      );
-      const newBackupSetting: BackupSettingUpsert = {
-        databaseId: props.database.id,
-        enabled: on,
-        hour: on ? hour : state.autoBackupHour,
-        dayOfWeek: on
-          ? backupPolicy.value == "DAILY"
-            ? -1
-            : dayOfWeek
-          : state.autoBackupDayOfWeek,
-        retentionPeriodTs: on ? 7 * 24 * 3600 : 0,
-        hookUrl: "",
-      };
-      backupStore
-        .upsertBackupSetting({
-          newBackupSetting: newBackupSetting,
-        })
-        .then((backupSetting: BackupSetting) => {
-          assignBackupSetting(backupSetting);
-          const action = on ? t("database.enabled") : t("database.disabled");
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t(
-              "database.action-automatic-backup-for-database-props-database-name",
-              [action, props.database.name]
-            ),
-          });
-        });
-    };
+    onBeforeMount(prepareBackupSetting);
 
     const updateBackupHookUrl = () => {
       const newBackupSetting: BackupSettingUpsert = {
@@ -447,56 +445,18 @@ export default defineComponent({
         });
     };
 
-    function localToUTC(hour: number, dayOfWeek: number) {
-      return alignUTC(hour, dayOfWeek, new Date().getTimezoneOffset() * 60);
-    }
-
-    function localFromUTC(hour: number, dayOfWeek: number) {
-      return alignUTC(hour, dayOfWeek, -new Date().getTimezoneOffset() * 60);
-    }
-
-    function alignUTC(hour: number, dayOfWeek: number, offsetInSecond: number) {
-      if (hour != -1) {
-        hour = hour + offsetInSecond / 60 / 60;
-        var dayOffset = 0;
-        if (hour > 23) {
-          hour = hour - 24;
-          dayOffset = 1;
-        }
-        if (hour < 0) {
-          hour = hour + 24;
-          dayOffset = -1;
-        }
-        if (dayOfWeek != -1) {
-          dayOfWeek = (7 + dayOfWeek + dayOffset) % 7;
-        }
-      }
-      return { hour, dayOfWeek };
-    }
-
-    const automaticBackupTitle = computed((): string => {
-      if (backupPolicy.value === "DAILY" || backupPolicy.value === "WEEKLY") {
-        return t("database.automatic-x-backup", {
-          freq: t(`database.backup-policy.${backupPolicy.value}`).toLowerCase(),
-        });
-      }
-
-      return t("database.automatic-backup");
-    });
-
     return {
       state,
       backupList,
       autoBackupWeekdayText,
       autoBackupHourText,
       autoBackupRetentionDays,
-      allowDisableAutoBackup,
       backupPolicy,
+      hasBackupPolicyViolation,
       createBackup,
-      toggleAutoBackup,
-      UrlChanged,
+      updateBackupSetting,
+      urlChanged,
       updateBackupHookUrl,
-      automaticBackupTitle,
     };
   },
 });

@@ -13,7 +13,7 @@
         @click="toggle"
       >
         <div class="whitespace-nowrap hide-scrollbar overflow-x-auto">
-          <template v-if="state.selectedItem">
+          <template v-if="typeof state.selectedItem !== 'undefined'">
             <slot
               name="menuItem"
               :item="state.selectedItem"
