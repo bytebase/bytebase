@@ -216,11 +216,9 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		newPitrRestoreExecutor := func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) }
-		taskScheduler.Register(api.TaskDatabasePITRRestore, newPitrRestoreExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
 
-		newPitrCutoverExecutor := func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) }
-		taskScheduler.Register(api.TaskDatabasePITRCutover, newPitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
 
 		s.TaskScheduler = taskScheduler
 

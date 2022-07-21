@@ -22,7 +22,7 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		newExecutor:     make(map[api.TaskType]func() TaskExecutor),
+		executorGetters: make(map[api.TaskType]func() TaskExecutor),
 		runningExecutor: make(map[int]TaskExecutor),
 		server:          server,
 	}
@@ -30,7 +30,7 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	newExecutor     map[api.TaskType]func() TaskExecutor
+	executorGetters map[api.TaskType]func() TaskExecutor
 	runningExecutor map[int]TaskExecutor
 	server          *Server
 }
@@ -110,7 +110,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					newExecutor, ok := s.newExecutor[task.Type]
+					executorGetter, ok := s.executorGetters[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -123,7 +123,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 					if _, ok := s.runningExecutor[task.ID]; ok {
 						continue
 					}
-					s.runningExecutor[task.ID] = newExecutor()
+					s.runningExecutor[task.ID] = executorGetter()
 
 					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
@@ -209,14 +209,14 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // Register will register a task executor factory.
-func (s *TaskScheduler) Register(taskType api.TaskType, newExecutor func() TaskExecutor) {
-	if newExecutor == nil {
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() TaskExecutor) {
+	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
-	if _, dup := s.newExecutor[taskType]; dup {
+	if _, dup := s.executorGetters[taskType]; dup {
 		panic("scheduler: Register called twice for task type: " + taskType)
 	}
-	s.newExecutor[taskType] = newExecutor
+	s.executorGetters[taskType] = executorGetter
 }
 
 // canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
