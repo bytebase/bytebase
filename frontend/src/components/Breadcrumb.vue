@@ -74,7 +74,7 @@ import {
   useProjectStore,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
-import { routeHelpNameMap } from "../../public/help/config";
+import routeHelpNameMap from "../../public/help/routeMap.json";
 
 interface BreadcrumbItem {
   name: string;
