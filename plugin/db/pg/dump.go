@@ -20,7 +20,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
-	databases, err := driver.getDatabases()
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -48,8 +48,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 
 	for _, dbName := range dumpableDbNames {
-		includeUseDatabase := len(dumpableDbNames) > 1
-		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out, schemaOnly, includeUseDatabase); err != nil {
+		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out, schemaOnly); err != nil {
 			return "", err
 		}
 	}
@@ -57,7 +56,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	return "", nil
 }
 
-func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool, includeUseDatabase bool) error {
+func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer, schemaOnly bool) error {
 	var args []string
 	args = append(args, fmt.Sprintf("--username=%s", driver.config.Username))
 	if driver.config.Password == "" {
@@ -72,7 +71,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--use-set-session-authorization")
 	args = append(args, database)
 	pgDumpPath := filepath.Join(driver.pgInstanceDir, "bin", "pg_dump")
-	cmd := exec.Command(pgDumpPath, args...)
+	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 	if driver.config.Password != "" {
 		// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
@@ -157,6 +156,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (driver *Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }

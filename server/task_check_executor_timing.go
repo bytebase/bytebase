@@ -22,7 +22,7 @@ type TaskCheckTimingExecutor struct {
 const dataFormat = "2006-01-02 15:04:05"
 
 // Run will run the task check timing executor once.
-func (exec *TaskCheckTimingExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
+func (exec *TaskCheckTimingExecutor) Run(_ context.Context, _ *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckEarliestAllowedTimePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
 		return []api.TaskCheckResult{}, common.Errorf(common.Invalid, fmt.Errorf("invalid check timing payload: %w", err))

@@ -42,7 +42,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -96,7 +96,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, connCfg db.Conne
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 
@@ -106,7 +106,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return driver.db, nil
 }
 

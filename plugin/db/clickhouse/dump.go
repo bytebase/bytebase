@@ -32,14 +32,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return "", err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+	if err := dumpTxn(ctx, txn, database, out); err != nil {
 		return "", err
 	}
 
@@ -73,7 +73,7 @@ func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
-func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
@@ -215,6 +215,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (driver *Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }
