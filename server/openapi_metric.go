@@ -33,9 +33,9 @@ func openAPIMetricMiddleware(s *Server, next echo.HandlerFunc) echo.HandlerFunc 
 			}
 		}()
 
-		if err = next(c); err != nil {
+		if err := next(c); err != nil {
 			c.Error(err)
 		}
-		return
+		return nil
 	}
 }

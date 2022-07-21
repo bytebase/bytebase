@@ -20,7 +20,7 @@
    - Testing is the key to product quality. This includes unit tests, [backend integration tests](https://github.com/bytebase/bytebase/tree/main/tests), frontend manual tests. Tests should cover critical user journeys. While writing backend integration tests, you will have an even better idea of how users will use the product from end to end.
    - Golang code follows [Go Wiki](https://github.com/golang/go/wiki/CodeReviewComments) and [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md).
    - Collaborate if a feature requires multiple developers to work on.
-   - (Optional) After code is submitted, you can wait for a while and use a docker image with tag `bytebase/bytebase:dev-ci` for testing release build. See [Docker Deployment Guide](https://bytebase.com/docs/install/install-with-docker).
+   - (Optional) After code is submitted, you can wait for a while and use a docker image with tag `bytebase/bytebase:dev-ci` for testing release build. See [Docker Deployment Guide](https://www.bytebase.com/docs/get-started/install/deploy-with-docker).
 1. Success metrics
    - What data do we need to prove the feature or business is successful?
    - Collect and display the metrics in the [metrics dashboard](https://metric.bytebase.com/).

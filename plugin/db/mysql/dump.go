@@ -418,7 +418,6 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 	default:
 		return "", fmt.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
-
 }
 
 // exportTableData gets the data of a table.
@@ -543,7 +542,6 @@ func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (strin
 		return "", err
 	}
 	return fmt.Sprintf(routineStmtFmt, getReadableRoutineType(routineType), routineName, charset, charset, collation, sqlmode, stmt), nil
-
 }
 
 // getReadableRoutineType gets the printable routine type.

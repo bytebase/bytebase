@@ -196,7 +196,7 @@ func (s *Store) findPipelineRaw(ctx context.Context, find *api.PipelineFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findPipelineImpl(ctx, tx.PTx, find)
+	list, err := findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (s *Store) getPipelineRaw(ctx context.Context, find *api.PipelineFind) (*pi
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRawList, err := s.findPipelineImpl(ctx, tx.PTx, find)
+	pipelineRawList, err := findPipelineImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +307,7 @@ func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.
 	return &pipelineRaw, nil
 }
 
-func (s *Store) findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
+func findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) ([]*pipelineRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

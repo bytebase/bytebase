@@ -36,7 +36,7 @@ func init() {
 type DingTalkReceiver struct {
 }
 
-func (receiver *DingTalkReceiver) post(context Context) error {
+func (*DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.getMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))

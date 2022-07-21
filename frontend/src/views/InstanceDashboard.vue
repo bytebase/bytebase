@@ -26,6 +26,7 @@
 import {
   computed,
   onMounted,
+  onUnmounted,
   reactive,
   ref,
   defineComponent,
@@ -60,6 +61,7 @@ export default defineComponent({
   },
   setup() {
     const searchField = ref();
+    const mountedTimer = ref();
     const event = inject<Event>("event");
 
     const instanceStore = useInstanceStore();
@@ -84,7 +86,7 @@ export default defineComponent({
       searchField.value.$el.querySelector("#search").focus();
 
       if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
-        setTimeout(() => {
+        mountedTimer.value = setTimeout(() => {
           event?.emit(EventType.EVENT_HELP, "help.instance", true);
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
@@ -92,6 +94,10 @@ export default defineComponent({
           });
         }, 1000);
       }
+    });
+
+    onUnmounted(() => {
+      clearTimeout(mountedTimer.value);
     });
 
     const selectEnvironment = (environment: Environment) => {

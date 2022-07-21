@@ -224,9 +224,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
 		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
-
 		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
 		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
 

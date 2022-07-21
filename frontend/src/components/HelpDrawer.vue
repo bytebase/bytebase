@@ -63,11 +63,10 @@ export default defineComponent({
         if (isGuide) {
           isHelpGuide.value = true;
         }
-        const { default: markdown } = await import(
-          `../../../public/help/${
-            locale.value === "zh-CN" ? "zh" : "en"
-          }/${name}.md?raw`
+        const res = await fetch(
+          `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${name}.md`
         );
+        const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
         const content = Markdoc.transform(ast) as Tag;
         content.attributes.class = "prose"; // style help content

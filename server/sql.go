@@ -110,19 +110,38 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 		if err := jsonapi.UnmarshalPayload(c.Request().Body, sync); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Malformed sql sync schema request").SetInternal(err)
 		}
-
-		instance, err := s.store.GetInstanceByID(ctx, sync.InstanceID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %v", sync.InstanceID)).SetInternal(err)
-		}
-		if instance == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", sync.InstanceID))
+		if (sync.InstanceID == nil) == (sync.DatabaseID == nil) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Either InstanceID or DatabaseID should be set.")
 		}
 
-		resultSet := s.syncEngineVersionAndSchema(ctx, instance)
+		var resultSet api.SQLResultSet
+		if sync.InstanceID != nil {
+			instance, err := s.store.GetInstanceByID(ctx, *sync.InstanceID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch instance ID: %d", *sync.InstanceID)).SetInternal(err)
+			}
+			if instance == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Instance ID not found: %d", *sync.InstanceID))
+			}
+			if err := s.syncEngineVersionAndSchema(ctx, instance); err != nil {
+				resultSet.Error = err.Error()
+			}
+		}
+		if sync.DatabaseID != nil {
+			database, err := s.store.GetDatabase(ctx, &api.DatabaseFind{ID: sync.DatabaseID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to database instance ID: %d", *sync.DatabaseID)).SetInternal(err)
+			}
+			if database == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Database ID not found: %d", *sync.DatabaseID))
+			}
+			if err := s.syncDatabaseSchema(ctx, database.Instance, database.Name); err != nil {
+				resultSet.Error = err.Error()
+			}
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, resultSet); err != nil {
+		if err := jsonapi.MarshalPayload(c.Response().Writer, &resultSet); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal sql result set response").SetInternal(err)
 		}
 		return nil
@@ -288,39 +307,30 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) *api.SQLResultSet {
-	resultSet := &api.SQLResultSet{}
-	err := func() error {
-		driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
-		if err != nil {
-			return err
-		}
-		defer driver.Close(ctx)
-
-		databaseList, err := s.syncInstanceSchema(ctx, instance, driver)
-		if err != nil {
-			return err
-		}
-
-		var errorList []string
-		for _, databaseName := range databaseList {
-			// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
-			if err := s.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
-				errorList = append(errorList, err.Error())
-			}
-		}
-		if len(errorList) > 0 {
-			return fmt.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
-		}
-
-		return nil
-	}()
-
+func (s *Server) syncEngineVersionAndSchema(ctx context.Context, instance *api.Instance) error {
+	driver, err := tryGetReadOnlyDatabaseDriver(ctx, instance, "")
 	if err != nil {
-		resultSet.Error = err.Error()
+		return err
+	}
+	defer driver.Close(ctx)
+
+	databaseList, err := s.syncInstanceSchema(ctx, instance, driver)
+	if err != nil {
+		return err
 	}
 
-	return resultSet
+	var errorList []string
+	for _, databaseName := range databaseList {
+		// If we fail to sync a particular database due to permission issue, we will continue to sync the rest of the databases.
+		if err := s.syncDatabaseSchema(ctx, instance, databaseName); err != nil {
+			errorList = append(errorList, err.Error())
+		}
+	}
+	if len(errorList) > 0 {
+		return fmt.Errorf("sync database schema errors, %s", strings.Join(errorList, ", "))
+	}
+
+	return nil
 }
 
 // syncInstanceSchema syncs the instance and all database metadata first without diving into the deep structure of each database.
