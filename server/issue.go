@@ -915,7 +915,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// createTaskListForCreateDatabaseNormal returns the task list of creating a database.
+// createTaskListForCreateDatabase returns the task list of creating a database.
 func createTaskListForCreateDatabase(instanceID int, payload api.TaskDatabaseCreatePayload, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	var taskIndexDAGList []api.TaskIndexDAG
