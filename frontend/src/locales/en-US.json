@@ -837,7 +837,7 @@
         "schedule": "Schedule",
         "day-of-week": "Day of week",
         "time-of-day": "Time of day",
-        "retention-period": "Retention period (days)"
+        "retention-period": "Retention period(days)"
       }
     },
     "backup-policy-violation": "Backup policy violation"
