@@ -140,6 +140,12 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { idFromSlug, isDBAOrOwner } from "../utils";
+import ArchiveBanner from "../components/ArchiveBanner.vue";
+import DatabaseTable from "../components/DatabaseTable.vue";
+import DataSourceTable from "../components/DataSourceTable.vue";
+import InstanceUserTable from "../components/InstanceUserTable.vue";
+import InstanceForm from "../components/InstanceForm.vue";
+import CreateDatabasePrepForm from "../components/CreateDatabasePrepForm.vue";
 import {
   Database,
   Instance,
