@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/vcs"
+	"github.com/bytebase/bytebase/plugin/vcs/github"
 	"github.com/bytebase/bytebase/plugin/vcs/gitlab"
 )
 
@@ -146,8 +147,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				continue
 			}
 
-			// Retrieve sql by reading the file content
-
 			// Retrieve the latest AccessToken and RefreshToken as the previous ReadFileContent call may have
 			// updated the stored token pair. ReadFileContent will fetch and store the new token pair
 			// if the existing token pair has expired.
@@ -159,6 +158,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 			}
 
+			// Retrieve sql by reading the file content
 			content, err := vcs.Get(repo2.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 				ctx,
 				common.OauthContext{
@@ -255,6 +255,266 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		if len(createdMessageList) == 0 {
 			msg := "Ignored push event. No applicable file found in the commit list."
 			log.Warn(msg,
+				zap.String("project", repo.Project.Name),
+			)
+		}
+		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
+	})
+	g.POST("/github/:id", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		}
+
+		// This shouldn't happen as we only setup webhook to receive push event, just in case.
+		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
+		if eventType != github.WebhookPush {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
+		}
+
+		var pushEvent github.WebhookPushEvent
+		if err := json.Unmarshal(body, &pushEvent); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
+
+		webhookEndpointID := c.Param("id")
+		repo, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+		}
+		if repo == nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+		}
+
+		if repo.VCS == nil {
+			err := fmt.Errorf("VCS not found for ID: %v", repo.VCSID)
+			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
+		}
+
+		// TODO(unknwon): Validate webhook signature, https://linear.app/bbteam/issue/BYT-935
+
+		if pushEvent.Repository.FullName != repo.ExternalID {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Repository.FullName, repo.ExternalID))
+		}
+
+		log.Debug("Processing GitHub webhook push event...",
+			zap.String("project", repo.Project.Name),
+		)
+
+		var createdMessageList []string
+		for _, commit := range pushEvent.Commits {
+			// The Distinct is false if the commit is superseded by a later commit.
+			if !commit.Distinct {
+				continue
+			}
+
+			for _, added := range commit.Added {
+				addedEscaped := common.EscapeForLogging(added)
+				log.Debug("Processing added file...",
+					zap.String("file", addedEscaped),
+					zap.String("commit", common.EscapeForLogging(commit.ID)),
+				)
+
+				if !strings.HasPrefix(added, repo.BaseDirectory) {
+					log.Debug("Ignored committed file, not under base directory.",
+						zap.String("file", added),
+						zap.String("base_directory", repo.BaseDirectory),
+					)
+					continue
+				}
+
+				// Ignore the schema file we auto generated to the repository.
+				if isSkipGeneratedSchemaFile(repo, addedEscaped) {
+					log.Debug("Ignored generated latest schema file.",
+						zap.String("file", addedEscaped),
+					)
+					continue
+				}
+
+				// Per Git convention, the message title and body are separated by two new line characters.
+				messages := strings.SplitN(commit.Message, "\n\n", 2)
+				messageTitle := messages[0]
+				var messageBody string
+				if len(messages) > 1 {
+					messageBody = messages[1]
+				}
+
+				vcsPushEvent := vcs.PushEvent{
+					VCSType:            repo.VCS.Type,
+					BaseDirectory:      repo.BaseDirectory,
+					Ref:                pushEvent.Ref,
+					RepositoryID:       strconv.Itoa(pushEvent.Repository.ID),
+					RepositoryURL:      pushEvent.Repository.HTMLURL,
+					RepositoryFullPath: pushEvent.Repository.FullName,
+					AuthorName:         pushEvent.Sender.Login,
+					FileCommit: vcs.FileCommit{
+						ID:          commit.ID,
+						Title:       messageTitle,
+						Message:     messageBody,
+						CreatedTs:   commit.Timestamp.Unix(),
+						URL:         commit.URL,
+						AuthorName:  commit.Author.Name,
+						AuthorEmail: commit.Author.Email,
+						Added:       addedEscaped,
+					},
+				}
+
+				// Create a WARNING project activity if committed file is ignored
+				var createIgnoredFileActivity = func(err error) {
+					log.Warn("Ignored committed file",
+						zap.String("file", addedEscaped),
+						zap.Error(err),
+					)
+					bytes, marshalErr := json.Marshal(
+						api.ActivityProjectRepositoryPushPayload{
+							VCSPushEvent: vcsPushEvent,
+						},
+					)
+					if marshalErr != nil {
+						log.Warn("Failed to construct project activity payload to record ignored repository committed file",
+							zap.Error(marshalErr),
+						)
+						return
+					}
+
+					activityCreate := &api.ActivityCreate{
+						CreatorID:   api.SystemBotID,
+						ContainerID: repo.ProjectID,
+						Type:        api.ActivityProjectRepositoryPush,
+						Level:       api.ActivityWarn,
+						Comment:     fmt.Sprintf("Ignored committed file %q, %s.", addedEscaped, err.Error()),
+						Payload:     string(bytes),
+					}
+					_, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{})
+					if err != nil {
+						log.Warn("Failed to create project activity to record ignored repository committed file",
+							zap.Error(err),
+						)
+					}
+				}
+
+				fmt.Println(11111)
+				mi, err := db.ParseMigrationInfo(addedEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				// Retrieve the latest AccessToken and RefreshToken as the previous
+				// ReadFileContent call may have updated the stored token pair. ReadFileContent
+				// will fetch and store the new token pair if the existing token pair has
+				// expired.
+				repo2, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+				}
+				if repo2 == nil {
+					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+				}
+
+				// Retrieve sql by reading the file content
+				content, err := vcs.Get(repo2.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
+					ctx,
+					common.OauthContext{
+						ClientID:     repo2.VCS.ApplicationID,
+						ClientSecret: repo2.VCS.Secret,
+						AccessToken:  repo2.AccessToken,
+						RefreshToken: repo2.RefreshToken,
+						Refresher:    s.refreshToken(ctx, repo2.ID),
+					},
+					repo2.VCS.InstanceURL,
+					repo2.ExternalID,
+					addedEscaped,
+					commit.ID,
+				)
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				// Create schema update issue.
+				creatorID := api.SystemBotID
+				if commit.Author.Email != "" {
+					committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, commit.Author.Email)
+					if err != nil {
+						log.Error("failed to find the principal with committer email",
+							zap.String("email", commit.Author.Email),
+							zap.Error(err),
+						)
+					}
+					if committerPrinciple == nil {
+						log.Debug("cannot find the principal with committer email, use system bot instead",
+							zap.String("email", commit.Author.Email),
+						)
+					} else {
+						creatorID = committerPrinciple.ID
+					}
+				}
+
+				var createContext string
+				if repo.Project.TenantMode == api.TenantModeTenant {
+					if !s.feature(api.FeatureMultiTenancy) {
+						return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
+					}
+					createContext, err = s.createTenantSchemaUpdateIssue(mi, vcsPushEvent, content)
+				} else {
+					createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, addedEscaped, content)
+				}
+				if err != nil {
+					createIgnoredFileActivity(err)
+					continue
+				}
+
+				issueType := api.IssueDatabaseSchemaUpdate
+				if mi.Type == db.Data {
+					issueType = api.IssueDatabaseDataUpdate
+				}
+				issueCreate := &api.IssueCreate{
+					ProjectID:     repo.ProjectID,
+					Name:          messageTitle,
+					Type:          issueType,
+					Description:   messageBody,
+					AssigneeID:    api.SystemBotID,
+					CreateContext: createContext,
+				}
+				issue, err := s.createIssue(ctx, issueCreate, creatorID)
+				if err != nil {
+					errMsg := "Failed to create schema update issue"
+					if issueType == api.IssueDatabaseDataUpdate {
+						errMsg = "Failed to create data update issue"
+					}
+					return echo.NewHTTPError(http.StatusInternalServerError, errMsg).SetInternal(err)
+				}
+
+				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, addedEscaped))
+
+				// Create a project activity after successfully creating the issue as the result of the push event
+				bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
+					VCSPushEvent: vcsPushEvent,
+					IssueID:      issue.ID,
+					IssueName:    issue.Name,
+				})
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
+				}
+
+				activityCreate := &api.ActivityCreate{
+					CreatorID:   creatorID,
+					ContainerID: repo.ProjectID,
+					Type:        api.ActivityProjectRepositoryPush,
+					Level:       api.ActivityInfo,
+					Comment:     fmt.Sprintf("Created issue %q.", issue.Name),
+					Payload:     string(bytes),
+				}
+				if _, err = s.ActivityManager.CreateActivity(ctx, activityCreate, &ActivityMeta{}); err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create project activity after creating issue from repository push event: %d", issue.ID)).SetInternal(err)
+				}
+			}
+		}
+
+		if len(createdMessageList) == 0 {
+			log.Warn("Ignored push event. No applicable file found in the commit list.",
 				zap.String("project", repo.Project.Name),
 			)
 		}

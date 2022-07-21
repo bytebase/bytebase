@@ -32,7 +32,7 @@ const (
 
 var _ vcs.Provider = (*Provider)(nil)
 
-// WebhookType is the gitlab webhook type.
+// WebhookType is the GitLab webhook type.
 type WebhookType string
 
 const (
