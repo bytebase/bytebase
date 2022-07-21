@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"sync/atomic"
 
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
@@ -165,9 +164,8 @@ type Task struct {
 	EarliestAllowedTs int64      `jsonapi:"attr,earliestAllowedTs"`
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
-	BlockedBy     []string `jsonapi:"attr,blockedBy"`
-	Progress      Progress `jsonapi:"attr,progress"`
-	ProgressValue *atomic.Value
+	BlockedBy []string `jsonapi:"attr,blockedBy"`
+	Progress  Progress `jsonapi:"attr,progress"`
 }
 
 // TaskCreate is the API message for creating a task.

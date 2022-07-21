@@ -67,3 +67,8 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
+
+// GetProgress returns the task progress
+func (exec *SchemaUpdateGhostCutoverTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
+}

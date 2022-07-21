@@ -33,6 +33,11 @@ func (exec *DatabaseRestoreTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
+// GetProgress returns the task progress
+func (exec *DatabaseRestoreTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
+}
+
 // RunOnce will run database restore once.
 func (exec *DatabaseRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer atomic.StoreInt32(&exec.completed, 1)

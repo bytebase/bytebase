@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	taskSchedulerInterval      = time.Duration(1) * time.Second
-	taskProgressUpdateInterval = time.Duration(1) * time.Second
+	taskSchedulerInterval = time.Duration(1) * time.Second
 )
 
 // NewTaskScheduler creates a new task scheduler.
@@ -33,6 +32,7 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
+	taskProgress     sync.Map
 	server           *Server
 }
 
@@ -62,7 +62,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				for i, executor := range s.runningExecutors {
 					if executor.IsCompleted() {
 						delete(s.runningExecutors, i)
+						s.taskProgress.Delete(i)
 					}
+				}
+
+				// Update task progress
+				for i, executor := range s.runningExecutors {
+					s.taskProgress.Store(i, executor.GetProgress())
 				}
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable

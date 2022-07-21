@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync/atomic"
 
 	"github.com/google/jsonapi"
 	"github.com/labstack/echo/v4"
@@ -1329,11 +1328,8 @@ func getPeerTenantDatabase(databaseMatrix [][]*api.Database, environmentID int) 
 func (s *Server) attachTaskProgressForIssue(issue *api.Issue) {
 	for _, stage := range issue.Pipeline.StageList {
 		for _, task := range stage.TaskList {
-			if value, ok := s.TaskScheduler.runningTask.Load(task.ID); ok {
-				progressValue := value.(*atomic.Value)
-				if progress := progressValue.Load(); progress != nil {
-					task.Progress = progress.(api.Progress)
-				}
+			if progress, ok := s.TaskScheduler.taskProgress.Load(task.ID); ok {
+				task.Progress = progress.(api.Progress)
 			}
 		}
 	}
