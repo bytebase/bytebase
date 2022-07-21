@@ -94,7 +94,7 @@ import { computed, reactive, PropType, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, groupBy } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -180,7 +180,7 @@ export default defineComponent({
         : undefined,
       tab: "standard",
       alterType: "SINGLE_DB",
-      selectedDatabaseIdForEnvironment: new Map(),
+      selectedDatabaseIdListForEnvironment: new Map(),
       tenantProjectId: undefined,
       selectedDatabaseName: undefined,
       deployingTenantDatabaseList: [],
@@ -223,7 +223,11 @@ export default defineComponent({
     });
 
     const allowGenerateMultiDb = computed(() => {
-      return state.selectedDatabaseIdForEnvironment.size > 0;
+      const flattenDatabaseIdList: DatabaseId[] = [];
+      for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
+        flattenDatabaseIdList.push(...databaseIdList);
+      }
+      return flattenDatabaseIdList.length > 0;
     });
 
     // 'normal' -> normal migration
@@ -251,17 +255,13 @@ export default defineComponent({
 
     const generateMultiDb = async () => {
       const databaseIdList: DatabaseId[] = [];
-      const selectedDatabaseList: Database[] = [];
-      for (var i = 0; i < environmentList.value.length; i++) {
-        const envId = environmentList.value[i].id;
-        const databaseId = state.selectedDatabaseIdForEnvironment.get(envId);
-        if (databaseId) {
-          databaseIdList.push(databaseId);
-          selectedDatabaseList.push(
-            databaseList.value.find((db) => db.id === databaseId)!
-          );
-        }
+      for (const idList of state.selectedDatabaseIdListForEnvironment.values()) {
+        databaseIdList.push(...idList);
       }
+
+      const selectedDatabaseList = databaseIdList.map(
+        (id) => databaseList.value.find((db) => db.id === id)!
+      );
 
       const mode = await isUsingGhostMigration(selectedDatabaseList);
       if (mode === false) {

@@ -55,17 +55,15 @@
             >
               <div class="radio text-sm">
                 <input
-                  v-if="database.syncStatus == 'OK'"
-                  type="radio"
-                  class="btn"
+                  type="checkbox"
+                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                   :checked="
-                    state.selectedDatabaseIdForEnvironment.get(
+                    isDatabaseSelectedForEnvironment(
+                      database.id,
                       environment.id
-                    ) == database.id
+                    )
                   "
-                  @change="
-                    selectDatabaseIdForEnvironment(database.id, environment.id)
-                  "
+                  @input="(e: any) => toggleDatabaseIdForEnvironment(database.id, environment.id, e.target.checked)"
                 />
                 <span
                   class="font-medium"
@@ -99,11 +97,7 @@
               <input
                 type="radio"
                 class="btn"
-                :checked="
-                  state.selectedDatabaseIdForEnvironment.get(environment.id)
-                    ? false
-                    : true
-                "
+                :checked="isNoneDatabaseSelectedForEnvironment(environment.id)"
                 @input="clearDatabaseIdForEnvironment(environment.id)"
               />
               <span class="ml-3 font-medium text-main uppercase">{{
@@ -141,7 +135,7 @@ export type AlterType = "SINGLE_DB" | "MULTI_DB";
 
 export type State = {
   alterType: AlterType;
-  selectedDatabaseIdForEnvironment: Map<EnvironmentId, DatabaseId>;
+  selectedDatabaseIdListForEnvironment: Map<EnvironmentId, DatabaseId[]>;
 };
 
 export default defineComponent({
@@ -166,18 +160,52 @@ export default defineComponent({
   },
   emits: ["select-database"],
   setup(props, { emit }) {
-    const selectDatabaseIdForEnvironment = (
+    const toggleDatabaseIdForEnvironment = (
       databaseId: DatabaseId,
-      environmentId: EnvironmentId
+      environmentId: EnvironmentId,
+      selected: boolean
     ) => {
-      props.state.selectedDatabaseIdForEnvironment.set(
-        environmentId,
-        databaseId
-      );
+      const map = props.state.selectedDatabaseIdListForEnvironment;
+      const list = map.get(environmentId) || [];
+      const index = list.indexOf(databaseId);
+      if (selected) {
+        // push the databaseId in if needed
+        if (index < 0) {
+          list.push(databaseId);
+        }
+      } else {
+        // remove the databaseId if exists
+        if (index >= 0) {
+          list.splice(index, 1);
+        }
+      }
+      // Set or remove the list to the map
+      if (list.length > 0) {
+        map.set(environmentId, list);
+      } else {
+        map.delete(environmentId);
+      }
     };
 
     const clearDatabaseIdForEnvironment = (environmentId: EnvironmentId) => {
-      props.state.selectedDatabaseIdForEnvironment.delete(environmentId);
+      props.state.selectedDatabaseIdListForEnvironment.delete(environmentId);
+    };
+
+    const isDatabaseSelectedForEnvironment = (
+      databaseId: DatabaseId,
+      environmentId: EnvironmentId
+    ) => {
+      const map = props.state.selectedDatabaseIdListForEnvironment;
+      const list = map.get(environmentId) || [];
+      return list.includes(databaseId);
+    };
+
+    const isNoneDatabaseSelectedForEnvironment = (
+      environmentId: EnvironmentId
+    ) => {
+      const map = props.state.selectedDatabaseIdListForEnvironment;
+      const list = map.get(environmentId) || [];
+      return list.length === 0;
     };
 
     const selectDatabase = (db: Database) => {
@@ -185,8 +213,10 @@ export default defineComponent({
     };
 
     return {
-      selectDatabaseIdForEnvironment,
+      toggleDatabaseIdForEnvironment,
       clearDatabaseIdForEnvironment,
+      isDatabaseSelectedForEnvironment,
+      isNoneDatabaseSelectedForEnvironment,
       selectDatabase,
     };
   },
