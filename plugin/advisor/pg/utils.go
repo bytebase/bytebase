@@ -17,7 +17,7 @@ type columnName struct {
 	column string
 }
 
-func (c columnName) formatPGTableName() string {
+func (c columnName) normalizeTableName() string {
 	schema := c.schema
 	if schema == "" {
 		schema = "public"
@@ -27,7 +27,7 @@ func (c columnName) formatPGTableName() string {
 
 type columnMap map[columnName]bool
 
-func getPGTableName(table *ast.TableDef) string {
+func getTableNameWithSchema(table *ast.TableDef) string {
 	schema := table.Schema
 	if schema == "" {
 		schema = "public"

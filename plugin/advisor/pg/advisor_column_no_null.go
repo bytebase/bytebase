@@ -36,10 +36,10 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	}
 
 	checker := &columnNoNullChecker{
-		level:         level,
-		title:         string(ctx.Rule.Type),
-		catalog:       ctx.Catalog,
-		canNullColumn: make(columnMap),
+		level:           level,
+		title:           string(ctx.Rule.Type),
+		catalog:         ctx.Catalog,
+		nullableColumns: make(columnMap),
 	}
 
 	for _, stmt := range stmts {
@@ -50,16 +50,16 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 }
 
 type columnNoNullChecker struct {
-	adviceList    []advisor.Advice
-	level         advisor.Status
-	title         string
-	catalog       catalog.Catalog
-	canNullColumn columnMap
+	adviceList      []advisor.Advice
+	level           advisor.Status
+	title           string
+	catalog         catalog.Catalog
+	nullableColumns columnMap
 }
 
 func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 	var columnList []columnName
-	for column := range checker.canNullColumn {
+	for column := range checker.nullableColumns {
 		columnList = append(columnList, column)
 	}
 	if len(columnList) > 0 {
@@ -79,7 +79,7 @@ func (checker *columnNoNullChecker) generateAdviceList() []advisor.Advice {
 			Status:  checker.level,
 			Code:    advisor.ColumnCanNotNull,
 			Title:   checker.title,
-			Content: fmt.Sprintf(`Column "%s" in %s can not have NULL value`, column.column, column.formatPGTableName()),
+			Content: fmt.Sprintf(`Column "%s" in %s can not have NULL value`, column.column, column.normalizeTableName()),
 		})
 	}
 
@@ -131,11 +131,11 @@ func (checker *columnNoNullChecker) Visit(node ast.Node) ast.Visitor {
 }
 
 func (checker *columnNoNullChecker) addColumn(table *ast.TableDef, column string) {
-	checker.canNullColumn[convertToColumnName(table, column)] = true
+	checker.nullableColumns[convertToColumnName(table, column)] = true
 }
 
 func (checker *columnNoNullChecker) removeColumn(table *ast.TableDef, column string) {
-	delete(checker.canNullColumn, convertToColumnName(table, column))
+	delete(checker.nullableColumns, convertToColumnName(table, column))
 }
 
 func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.TableDef, constraintList []*ast.ConstraintDef) {
@@ -147,14 +147,14 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 			}
 		case ast.ConstraintTypePrimaryUsingIndex:
 			index, err := checker.catalog.FindIndex(context.Background(), &catalog.IndexFind{
-				TableName: getPGTableName(table),
+				TableName: getTableNameWithSchema(table),
 				IndexName: constraint.IndexName,
 			})
 			if err != nil {
 				log.Printf(
 					"Cannot find index %s in table %s with error %v\n",
 					constraint.IndexName,
-					getPGTableName(table),
+					getTableNameWithSchema(table),
 					err,
 				)
 				continue
