@@ -545,7 +545,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		return nil, err
 	}
 
-	createDatabaseTaskList, createDatabaseTaskIndexDAGList, err := createTaskListForCreateDatabase(c.InstanceID, payload, taskStatus)
+	databaseCreateTaskList, databaseCreateTaskIndexDAGList, err := createTaskListForDatabaseCreate(c.InstanceID, payload, taskStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -559,7 +559,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
 		}
 
-		restoreBackupTaskList, restoreBackupTaskIndexDAGList, err := createTaskListForRestoreBackup(c.InstanceID, c.BackupID, payload.DatabaseName, c.DatabaseName, backup.Name, api.TaskPending)
+		backupRestoreTaskList, backupRestoreTaskIndexDAGList, err := createTaskListForBackupRestore(c.InstanceID, c.BackupID, payload.DatabaseName, c.DatabaseName, backup.Name, api.TaskPending)
 		if err != nil {
 			return nil, err
 		}
@@ -574,14 +574,14 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 				{
 					Name:             "Create database",
 					EnvironmentID:    instance.EnvironmentID,
-					TaskList:         createDatabaseTaskList,
-					TaskIndexDAGList: createDatabaseTaskIndexDAGList,
+					TaskList:         databaseCreateTaskList,
+					TaskIndexDAGList: databaseCreateTaskIndexDAGList,
 				},
 				{
 					Name:             "Restore backup",
 					EnvironmentID:    instance.EnvironmentID,
-					TaskList:         restoreBackupTaskList,
-					TaskIndexDAGList: restoreBackupTaskIndexDAGList,
+					TaskList:         backupRestoreTaskList,
+					TaskIndexDAGList: backupRestoreTaskIndexDAGList,
 				},
 			},
 		}, nil
@@ -593,8 +593,8 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			{
 				Name:             "Create database",
 				EnvironmentID:    instance.EnvironmentID,
-				TaskList:         createDatabaseTaskList,
-				TaskIndexDAGList: createDatabaseTaskIndexDAGList,
+				TaskList:         databaseCreateTaskList,
+				TaskIndexDAGList: databaseCreateTaskIndexDAGList,
 			},
 		},
 	}, nil
@@ -915,8 +915,8 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// createTaskListForCreateDatabase returns the task list of creating a database.
-func createTaskListForCreateDatabase(instanceID int, payload api.TaskDatabaseCreatePayload, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+// createTaskListForDatabaseCreate returns the task list of creating a database.
+func createTaskListForDatabaseCreate(instanceID int, payload api.TaskDatabaseCreatePayload, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	var taskIndexDAGList []api.TaskIndexDAG
 
@@ -937,8 +937,8 @@ func createTaskListForCreateDatabase(instanceID int, payload api.TaskDatabaseCre
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// createTaskListForRestoreBackup returns the task list of restoring the backup to a database.
-func createTaskListForRestoreBackup(instanceID, backupID int, targetDatabaseName, originDatabaseName, backupName string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+// createTaskListForBackupRestore returns the task list of restoring the backup to a database.
+func createTaskListForBackupRestore(instanceID, backupID int, targetDatabaseName, originDatabaseName, backupName string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	restorePayload := api.TaskDatabaseRestorePayload{}
 	restorePayload.DatabaseName = originDatabaseName
 	restorePayload.BackupID = backupID
