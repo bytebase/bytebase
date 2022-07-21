@@ -1,0 +1,6 @@
+{
+  "workspace.project": "help.project",
+  "workspace.instance": "help.instance",
+  "workspace.database": "help.database",
+  "workspace.environment": "help.environment" 
+}
