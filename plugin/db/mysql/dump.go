@@ -122,7 +122,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", database))
+	log.Debug("begin to dump database", zap.String("database", database), zap.Bool("schemaOnly", schemaOnly))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}
@@ -173,7 +173,6 @@ func FlushTablesWithReadLock(ctx context.Context, conn *sql.Conn, database strin
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
-	log.Debug("begin to dump database", zap.String("database", database))
 	// Find all dumpable databases
 	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
