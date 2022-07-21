@@ -539,12 +539,13 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		SchemaVersion: schemaVersion,
 	}
 	payload.DatabaseName, payload.Statement = getDatabaseNameAndStatement(instance.Engine, c, schema)
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create database creation task, unable to marshal payload %w", err)
-	}
 
 	taskStatus, err := s.getPipelineApprovalPolicyForEnv(ctx, instance.EnvironmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	createDatabaseTaskList, createDatabaseTaskIndexDAGList, err := createTaskListForCreateDatabase(c.InstanceID, payload, taskStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -557,10 +558,12 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		if backup == nil {
 			return nil, fmt.Errorf("backup not found with ID %d", c.BackupID)
 		}
-		restorePayload := api.TaskDatabaseRestorePayload{}
-		restorePayload.DatabaseName = c.DatabaseName
-		restorePayload.BackupID = c.BackupID
-		restoreBytes, err := json.Marshal(restorePayload)
+
+		restoreBackupTaskList, restoreBackupTaskIndexDAGList, err := createTaskListForRestoreBackup(c.InstanceID, c.BackupID, payload.DatabaseName, c.DatabaseName, backup.Name, api.TaskPending)
+		if err != nil {
+			return nil, err
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to create restore database task, unable to marshal payload %w", err)
 		}
@@ -569,33 +572,16 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Create database",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-							Status:       taskStatus,
-							Type:         api.TaskDatabaseCreate,
-							DatabaseName: payload.DatabaseName,
-							Payload:      string(bytes),
-						},
-					},
+					Name:             "Create database",
+					EnvironmentID:    instance.EnvironmentID,
+					TaskList:         createDatabaseTaskList,
+					TaskIndexDAGList: createDatabaseTaskIndexDAGList,
 				},
 				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
-						{
-							InstanceID:   c.InstanceID,
-							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
-							Status:       api.TaskPending,
-							Type:         api.TaskDatabaseRestore,
-							DatabaseName: payload.DatabaseName,
-							BackupID:     &c.BackupID,
-							Payload:      string(restoreBytes),
-						},
-					},
+					Name:             "Restore backup",
+					EnvironmentID:    instance.EnvironmentID,
+					TaskList:         restoreBackupTaskList,
+					TaskIndexDAGList: restoreBackupTaskIndexDAGList,
 				},
 			},
 		}, nil
@@ -605,18 +591,10 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 		Name: fmt.Sprintf("Pipeline - Create database %s", payload.DatabaseName),
 		StageList: []api.StageCreate{
 			{
-				Name:          "Create database",
-				EnvironmentID: instance.EnvironmentID,
-				TaskList: []api.TaskCreate{
-					{
-						InstanceID:   c.InstanceID,
-						Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
-						Status:       taskStatus,
-						Type:         api.TaskDatabaseCreate,
-						DatabaseName: payload.DatabaseName,
-						Payload:      string(bytes),
-					},
-				},
+				Name:             "Create database",
+				EnvironmentID:    instance.EnvironmentID,
+				TaskList:         createDatabaseTaskList,
+				TaskIndexDAGList: createDatabaseTaskIndexDAGList,
 			},
 		},
 	}, nil
@@ -935,6 +913,54 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 		MigrationType:     migrationType,
 		Payload:           string(bytes),
 	}, nil
+}
+
+// createTaskListForCreateDatabaseNormal returns the task list of creating a database.
+func createTaskListForCreateDatabase(instanceID int, payload api.TaskDatabaseCreatePayload, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	var taskCreateList []api.TaskCreate
+	var taskIndexDAGList []api.TaskIndexDAG
+
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create database creation task list, unable to marshal payload %w", err)
+	}
+
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		InstanceID:   instanceID,
+		Name:         fmt.Sprintf("Create database %s", payload.DatabaseName),
+		Status:       taskStatus,
+		Type:         api.TaskDatabaseCreate,
+		DatabaseName: payload.DatabaseName,
+		Payload:      string(bytes),
+	})
+
+	return taskCreateList, taskIndexDAGList, nil
+}
+
+// createTaskListForRestoreBackup returns the task list of restoring the backup to a database.
+func createTaskListForRestoreBackup(instanceID, backupID int, targetDatabaseName, originDatabaseName, backupName string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
+	restorePayload := api.TaskDatabaseRestorePayload{}
+	restorePayload.DatabaseName = originDatabaseName
+	restorePayload.BackupID = backupID
+	restoreBytes, err := json.Marshal(restorePayload)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create restore database task list, unable to marshal payload %w", err)
+	}
+
+	var taskCreateList []api.TaskCreate
+	var taskIndexDAGList []api.TaskIndexDAG
+
+	taskCreateList = append(taskCreateList, api.TaskCreate{
+		InstanceID:   instanceID,
+		Name:         fmt.Sprintf("Restore backup %v", backupName),
+		Status:       api.TaskPending,
+		Type:         api.TaskDatabaseRestore,
+		DatabaseName: targetDatabaseName,
+		BackupID:     &backupID,
+		Payload:      string(restoreBytes),
+	})
+
+	return taskCreateList, taskIndexDAGList, nil
 }
 
 // creates PITR TaskCreate list and dependency
