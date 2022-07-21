@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	resourcemysql "github.com/bytebase/bytebase/resources/mysql"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/require"
@@ -77,7 +78,7 @@ func TestBackupRestoreBasic(t *testing.T) {
 
 	buf, _, err := doBackup(ctx, driver, database)
 	a.NoError(err)
-	t.Logf("backup content:\n%s", buf.String())
+	log.Debug("backup content", zap.String("content", buf.String()))
 
 	// drop all tables and views
 	_, err = db.Exec(fmt.Sprintf("DROP TABLE %s; DROP VIEW v_%s;", table, table))
@@ -148,7 +149,7 @@ func TestPITR(t *testing.T) {
 	a.NoError(err)
 
 	t.Run("Buggy Application", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "buggy_application"
 
 		port := getTestPort(t.Name())
@@ -182,10 +183,9 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -196,7 +196,6 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
@@ -229,16 +228,16 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
 	t.Run("Schema Migration Failure", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "schema_migration_failure"
 
 		port := getTestPort(t.Name())
@@ -272,10 +271,9 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -286,14 +284,13 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
 		targetTs := startUpdateRow(ctxUpdateRow, t, databaseName, port) + 1
 
 		dropColumnStmt := `ALTER TABLE tbl1 DROP COLUMN id;`
-		t.Logf("mimics schema migration: %s\n", dropColumnStmt)
+		log.Debug("mimics schema migration", zap.String("statement", dropColumnStmt))
 		_, err = mysqlDB.ExecContext(ctx, dropColumnStmt)
 		a.NoError(err)
 
@@ -325,16 +322,16 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
 	t.Run("Drop Database", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "drop_database"
 
 		port := getTestPort(t.Name())
@@ -368,10 +365,9 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -382,7 +378,6 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		time.Sleep(1 * time.Second)
@@ -430,16 +425,16 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
 	t.Run("Case Sensitive", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "CASE_sensitive"
 
 		port := getTestPort(t.Name())
@@ -473,10 +468,9 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -487,7 +481,6 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		time.Sleep(1 * time.Second)
@@ -535,16 +528,16 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
 	t.Run("PITR Twice", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "pitr_twice"
 
 		port := getTestPort(t.Name())
@@ -578,7 +571,6 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		log.Debug(fmt.Sprintf("Insert data range [%d, %d]", 0, numRowsTime0))
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
 		log.Debug("Create a full backup")
@@ -592,7 +584,6 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		log.Debug(fmt.Sprintf("Insert more data range [%d, %d]", numRowsTime0, numRowsTime1))
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
@@ -688,7 +679,7 @@ func TestPITR(t *testing.T) {
 	})
 
 	t.Run("Invalid Time Point", func(t *testing.T) {
-		t.Log(t.Name())
+		log.Debug(t.Name())
 		databaseName := "invalid_time_point"
 
 		port := getTestPort(t.Name())
@@ -722,10 +713,9 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -790,6 +780,7 @@ func initPITRDB(t *testing.T, database string, port int) (*sql.DB, func()) {
 }
 
 func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
+	log.Debug("Inserting range data", zap.Int("begin", begin), zap.Int("end", end))
 	a := require.New(t)
 	tx, err := db.Begin()
 	a.NoError(err)
@@ -873,7 +864,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 	db, err := connectTestMySQL(port, database)
 	a.NoError(err)
 
-	t.Log("Start updating data concurrently")
+	log.Debug("Start updating data concurrently")
 	initTimestamp := time.Now().Unix()
 
 	// Sleep for one second so that the concurrent update will start no earlier than initTimestamp+1.
@@ -894,7 +885,7 @@ func startUpdateRow(ctx context.Context, t *testing.T, database string, port int
 				a.NoError(err)
 				i++
 			case <-ctx.Done():
-				t.Log("Stop updating data concurrently")
+				log.Debug("Stop updating data concurrently")
 				return
 			}
 		}
