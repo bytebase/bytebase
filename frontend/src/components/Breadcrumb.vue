@@ -53,7 +53,7 @@
 
     <HelpTriggerIcon
       v-if="currentRoute.name in routeHelpNameMap"
-      :name="routeHelpNameMap[currentRoute.name]"
+      :id="routeHelpNameMap[currentRoute.name]"
       :is-guide="true"
     />
   </nav>
