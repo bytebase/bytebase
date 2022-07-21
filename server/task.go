@@ -57,6 +57,62 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 }
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
+	g.PATCH("/pipeline/:pipelineID/task/all", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		pipelineID, err := strconv.Atoi(c.Param("pipelineID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
+		}
+
+		taskPatch := &api.TaskPatch{
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
+		}
+
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+
+		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", pipelineID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found, pipelineID: %d", pipelineID))
+		}
+
+		if taskPatch.Statement != nil {
+			// check if all tasks can update statement
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+						return httpErr
+					}
+				}
+			}
+		}
+
+		var taskPatchedList []*api.Task
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				taskPatch := *taskPatch
+				taskPatch.ID = task.ID
+				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
+				if httpErr != nil {
+					return httpErr
+				}
+				taskPatchedList = append(taskPatchedList, taskPatched)
+			}
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
@@ -193,59 +249,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, taskUpdated); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update task \"%v\" status response", taskUpdated.Name)).SetInternal(err)
-		}
-		return nil
-	})
-
-	g.PATCH("/pipeline/:pipelineID/task/*", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		pipelineID, err := strconv.Atoi(c.Param("pipelineID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
-		}
-
-		taskPatch := &api.TaskPatch{
-			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
-		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
-		}
-
-		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
-			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
-		}
-
-		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", pipelineID)).SetInternal(err)
-		}
-
-		if taskPatch.Statement != nil {
-			// check if all tasks can update statement
-			for _, stage := range issue.Pipeline.StageList {
-				for _, task := range stage.TaskList {
-					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
-						return httpErr
-					}
-				}
-			}
-		}
-
-		var taskPatchedList []*api.Task
-		for _, stage := range issue.Pipeline.StageList {
-			for _, task := range stage.TaskList {
-				taskPatch := *taskPatch
-				taskPatch.ID = task.ID
-				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
-				if httpErr != nil {
-					return httpErr
-				}
-				taskPatchedList = append(taskPatchedList, taskPatched)
-			}
-		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
 		}
 		return nil
 	})
