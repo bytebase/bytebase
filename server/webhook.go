@@ -197,9 +197,9 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				if !s.feature(api.FeatureMultiTenancy) {
 					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 				}
-				createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+				createContext, err = s.createTenantSchemaUpdateIssue(mi, vcsPushEvent, content)
 			} else {
-				createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+				createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, addedEscaped, content)
 			}
 			if err != nil {
 				createIgnoredFileActivity(err)
@@ -328,7 +328,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 	return distinctFileList
 }
 
-func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
+func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, added string, statement string) (string, error) {
 	// Find matching database list
 	databaseFind := &api.DatabaseFind{
 		ProjectID: &repository.ProjectID,
@@ -403,7 +403,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	return string(createContext), nil
 }
 
-func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
+func (s *Server) createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	if mi.Environment != "" {
 		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")

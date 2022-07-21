@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	// Embedded expected output.
@@ -25,7 +24,7 @@ func TestDump(t *testing.T) {
 	defer stop()
 
 	t.Log("Importing MySQL data...")
-	err := mysql.Import("testdata/mysql_test_schema", os.Stdout, os.Stderr)
+	err := mysql.Import("testdata/mysql_test_schema")
 	require.NoError(t, err)
 
 	tt := []testTable{
