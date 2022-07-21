@@ -22,17 +22,17 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executorGetters: make(map[api.TaskType]func() TaskExecutor),
-		runningExecutor: make(map[int]TaskExecutor),
-		server:          server,
+		executorGetters:  make(map[api.TaskType]func() TaskExecutor),
+		runningExecutors: make(map[int]TaskExecutor),
+		server:           server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executorGetters map[api.TaskType]func() TaskExecutor
-	runningExecutor map[int]TaskExecutor
-	server          *Server
+	executorGetters  map[api.TaskType]func() TaskExecutor
+	runningExecutors map[int]TaskExecutor
+	server           *Server
 }
 
 // Run will run the task scheduler.
@@ -58,9 +58,9 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				ctx := context.Background()
 
 				// Collect completed tasks
-				for i, executor := range s.runningExecutor {
+				for i, executor := range s.runningExecutors {
 					if executor.IsCompleted() {
-						delete(s.runningExecutor, i)
+						delete(s.runningExecutors, i)
 					}
 				}
 
@@ -120,10 +120,10 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					if _, ok := s.runningExecutor[task.ID]; ok {
+					if _, ok := s.runningExecutors[task.ID]; ok {
 						continue
 					}
-					s.runningExecutor[task.ID] = executorGetter()
+					s.runningExecutors[task.ID] = executorGetter()
 
 					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
@@ -199,7 +199,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.Error(err),
 							)
 						}
-					}(task, s.runningExecutor[task.ID])
+					}(task, s.runningExecutors[task.ID])
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
