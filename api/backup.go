@@ -7,6 +7,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	// BackupRetentionPeriodUnset is the unset value of a backup retention period in second.
+	BackupRetentionPeriodUnset = 0
+)
+
 // BackupStatus is the status of a backup.
 type BackupStatus string
 

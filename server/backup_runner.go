@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/mysql"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
-	"github.com/bytebase/bytebase/store"
 	"go.uber.org/zap"
 )
 
@@ -64,7 +63,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 				r.startAutoBackups(ctx, runningTasks, &mu)
 				r.downloadBinlogFiles(ctx)
-				r.enforceRetentionPolicy(ctx)
+				r.purgeExpiredBackupData(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			r.backupWg.Wait()
@@ -76,7 +75,37 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // TODO(dragonly): Make best effort to assure that users could recover to at least RetentionPeriodTs ago.
 // This may require pending deleting expired backup files and binlog files.
-func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
+func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
+	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{})
+	if err != nil {
+		log.Error("Failed to find all the backup settings", zap.Error(err))
+		return
+	}
+
+	log.Debug("Deleting expired snapshot backup files")
+	for _, bs := range backupSettingList {
+		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
+			continue
+		}
+		backupDir := path.Join(r.server.profile.DataDir, getBackupRelativeDir(bs.DatabaseID))
+		backupFileInfoList, err := ioutil.ReadDir(backupDir)
+		if err != nil {
+			log.Error("Failed to read backup directory", zap.String("path", backupDir), zap.Error(err))
+			continue
+		}
+		for _, backupFileInfo := range backupFileInfoList {
+			expireTime := backupFileInfo.ModTime().Add(time.Duration(bs.RetentionPeriodTs))
+			if time.Now().After(expireTime) {
+				backupFilePath := path.Join(backupDir, backupFileInfo.Name())
+				if err := os.Remove(backupFilePath); err != nil {
+					log.Error("Failed to remove an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
+				}
+				log.Info("Deleted expired backup file", zap.String("path", backupFilePath))
+			}
+		}
+	}
+
+	log.Debug("Deleting expired MySQL binlog files")
 	normal := api.Normal
 	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{RowStatus: &normal})
 	if err != nil {
@@ -85,47 +114,25 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 	}
 
 	for _, instance := range instanceList {
+		if instance.Engine != db.MySQL {
+			continue
+		}
 		backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 		if err != nil {
 			log.Error("Failed to find backup settings for instance", zap.String("instance", instance.Name), zap.Error(err))
 			continue // next instance
 		}
-
-		log.Debug("Deleting old snapshot backup files for instance", zap.String("instance", instance.Name))
-		maxRetentionPeriod := store.BackupRetentionPeriodUnset
+		maxRetentionPeriodForInstance := api.BackupRetentionPeriodUnset
 		for _, bs := range backupSettingList {
-			if bs.RetentionPeriodTs == store.BackupRetentionPeriodUnset {
-				continue // next database
-			}
-			if bs.RetentionPeriodTs > maxRetentionPeriod {
-				maxRetentionPeriod = bs.RetentionPeriodTs
-			}
-			backupDir := path.Join(r.server.profile.DataDir, getBackupRelativeDir(bs.DatabaseID))
-			backupFileInfoList, err := ioutil.ReadDir(backupDir)
-			if err != nil {
-				log.Error("Failed to read backup directory", zap.String("path", backupDir), zap.Error(err))
-				continue // next database
-			}
-			for _, backupFileInfo := range backupFileInfoList {
-				expireTime := backupFileInfo.ModTime().Add(time.Duration(bs.RetentionPeriodTs))
-				if time.Now().After(expireTime) {
-					backupFilePath := path.Join(backupDir, backupFileInfo.Name())
-					if err := os.Remove(backupFilePath); err != nil {
-						log.Error("Failed to remove an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
-					}
-					log.Info("Deleted expired backup file", zap.String("path", backupFilePath))
-				}
+			if bs.RetentionPeriodTs > maxRetentionPeriodForInstance {
+				maxRetentionPeriodForInstance = bs.RetentionPeriodTs
 			}
 		}
-		if maxRetentionPeriod == store.BackupRetentionPeriodUnset {
+		if maxRetentionPeriodForInstance == api.BackupRetentionPeriodUnset {
 			log.Debug("All the databases in instance have unset retention period. Skip deleting binlog files", zap.String("instance", instance.Name))
 			continue // next instance
 		}
 
-		// We only need to delete binlog files for MySQL instances.
-		if instance.Engine == db.MySQL {
-			continue
-		}
 		log.Debug("Deleting old binlog files for MySQL instance", zap.String("instance", instance.Name))
 		binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instance.ID)
 		binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
@@ -138,7 +145,7 @@ func (r *BackupRunner) enforceRetentionPolicy(ctx context.Context) {
 				log.Warn("Found an irregular file in binlog directory", zap.String("path", binlogFileInfo.Name()))
 				continue // next binlog file
 			}
-			expireTime := binlogFileInfo.ModTime().Add(time.Duration(maxRetentionPeriod))
+			expireTime := binlogFileInfo.ModTime().Add(time.Duration(maxRetentionPeriodForInstance))
 			if time.Now().After(expireTime) {
 				binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 				if err := os.Remove(binlogFilePath); err != nil {
