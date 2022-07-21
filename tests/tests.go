@@ -875,7 +875,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 			return status, err
 		}
 		if string(status) != prevStatus {
-			log.Debug(fmt.Sprintf("Status changed: %s -> %s", prevStatus, status))
+			log.Debug(fmt.Sprintf("Status changed: %s -> %s.", prevStatus, status))
 			prevStatus = string(status)
 		}
 		switch status {
