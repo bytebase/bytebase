@@ -122,7 +122,6 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 	}
 	defer txn.Rollback()
 
-	log.Debug("begin to dump database", zap.String("database", database))
 	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
 		return "", err
 	}
