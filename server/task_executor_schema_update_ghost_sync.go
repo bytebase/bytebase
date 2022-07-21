@@ -29,15 +29,22 @@ func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
 
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
+	completed int32
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseSchemaUpdateGhostSyncPayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
 	return runGhostMigration(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+}
+
+// IsCompleted tells the scheduler if the task execution has completed
+func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -227,7 +234,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 			)
 		}
 	}()
-	if err = executeGhost(task, startedNs, statement, syncDone); err != nil {
+	if err = executeGhost(task, statement, syncDone); err != nil {
 		return -1, "", err
 	}
 
@@ -239,7 +246,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func executeGhost(task *api.Task, startedNs int64, statement string, syncDone chan<- struct{}) error {
+func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 

@@ -228,11 +228,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
@@ -322,11 +319,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
@@ -425,11 +419,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
@@ -528,11 +519,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
@@ -618,11 +606,8 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 
 		// Preparing database mutation for second PITR
@@ -670,11 +655,8 @@ func TestPITR(t *testing.T) {
 		a.Equal(api.TaskDone, status)
 
 		// Second PITR
-		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
@@ -797,6 +779,7 @@ func insertRangeData(t *testing.T, db *sql.DB, begin, end int) {
 }
 
 func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
+	log.Debug("Validate table tbl0")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl0;", databaseName))
 	a.NoError(err)
@@ -813,6 +796,7 @@ func validateTbl0(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 }
 
 func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
+	log.Debug("Validate table tbl1")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s.tbl1;", databaseName))
 	a.NoError(err)
@@ -830,6 +814,7 @@ func validateTbl1(t *testing.T, db *sql.DB, databaseName string, numRows int) {
 }
 
 func validateTableUpdateRow(t *testing.T, db *sql.DB, databaseName string) {
+	log.Debug("Validate table _update_row_")
 	a := require.New(t)
 	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s._update_row_;", databaseName))
 	a.NoError(err)
