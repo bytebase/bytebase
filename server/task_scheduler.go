@@ -22,16 +22,17 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executors: make(map[api.TaskType]TaskExecutor),
-		server:    server,
+		executorGetters:  make(map[api.TaskType]func() TaskExecutor),
+		runningExecutors: make(map[int]TaskExecutor),
+		server:           server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executors map[api.TaskType]TaskExecutor
-
-	server *Server
+	executorGetters  map[api.TaskType]func() TaskExecutor
+	runningExecutors map[int]TaskExecutor
+	server           *Server
 }
 
 // Run will run the task scheduler.
@@ -40,13 +41,6 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 	defer wg.Done()
 	log.Debug(fmt.Sprintf("Task scheduler started and will run every %v", taskSchedulerInterval))
-	tasks := struct {
-		running map[int]bool // task id set
-		mu      sync.RWMutex
-	}{
-		running: make(map[int]bool),
-		mu:      sync.RWMutex{},
-	}
 	for {
 		select {
 		case <-ticker.C:
@@ -62,6 +56,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
+
+				// Collect completed tasks
+				for i, executor := range s.runningExecutors {
+					if executor.IsCompleted() {
+						delete(s.runningExecutors, i)
+					}
+				}
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -109,7 +110,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					executor, ok := s.executors[task.Type]
+					executorGetter, ok := s.executorGetters[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -119,20 +120,12 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					tasks.mu.Lock()
-					if _, ok := tasks.running[task.ID]; ok {
-						tasks.mu.Unlock()
+					if _, ok := s.runningExecutors[task.ID]; ok {
 						continue
 					}
-					tasks.running[task.ID] = true
-					tasks.mu.Unlock()
+					s.runningExecutors[task.ID] = executorGetter()
 
-					go func(task *api.Task) {
-						defer func() {
-							tasks.mu.Lock()
-							delete(tasks.running, task.ID)
-							tasks.mu.Unlock()
-						}()
+					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
 						if done {
 							if err == nil {
@@ -206,7 +199,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.Error(err),
 							)
 						}
-					}(task)
+					}(task, s.runningExecutors[task.ID])
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
@@ -215,15 +208,15 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// Register will register a task executor.
-func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
-	if executor == nil {
+// Register will register a task executor factory.
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() TaskExecutor) {
+	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
-	if _, dup := s.executors[taskType]; dup {
+	if _, dup := s.executorGetters[taskType]; dup {
 		panic("scheduler: Register called twice for task type: " + taskType)
 	}
-	s.executors[taskType] = executor
+	s.executorGetters[taskType] = executorGetter
 }
 
 // canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
