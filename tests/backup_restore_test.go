@@ -578,10 +578,10 @@ func TestPITR(t *testing.T) {
 		mysqlDB, _ := initPITRDB(t, databaseName, port)
 		defer mysqlDB.Close()
 
-		t.Logf("Insert data range [%d, %d]\n", 0, numRowsTime0)
+		log.Debug(fmt.Sprintf("Insert data range [%d, %d]", 0, numRowsTime0))
 		insertRangeData(t, mysqlDB, 0, numRowsTime0)
 
-		t.Log("Create a full backup")
+		log.Debug("Create a full backup")
 		backup, err := ctl.createBackup(api.BackupCreate{
 			DatabaseID:     database.ID,
 			Name:           "first-backup",
@@ -592,7 +592,7 @@ func TestPITR(t *testing.T) {
 		err = ctl.waitBackup(database.ID, backup.ID)
 		a.NoError(err)
 
-		t.Logf("Insert more data range [%d, %d]\n", numRowsTime0, numRowsTime1)
+		log.Debug(fmt.Sprintf("Insert more data range [%d, %d]", numRowsTime0, numRowsTime1))
 		insertRangeData(t, mysqlDB, numRowsTime0, numRowsTime1)
 
 		ctxUpdateRow, cancelUpdateRow := context.WithCancel(ctx)
@@ -612,6 +612,7 @@ func TestPITR(t *testing.T) {
 		a.NoError(err)
 
 		// Restore stage.
+		log.Debug("Waiting for the PITR restore task")
 		status, err := ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
@@ -621,15 +622,16 @@ func TestPITR(t *testing.T) {
 		time.Sleep(time.Second)
 
 		// Cutover stage.
+		log.Debug("Waiting for the PITR cutover task")
 		status, err = ctl.waitIssueNextTaskWithTaskApproval(issue.ID)
 		a.NoError(err)
 		a.Equal(api.TaskDone, status)
 
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 
 		// Preparing database mutation for second PITR
@@ -677,11 +679,11 @@ func TestPITR(t *testing.T) {
 		a.Equal(api.TaskDone, status)
 
 		// Second PITR
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		log.Debug("Validate table tbl0")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("validate table _update_row_")
+		log.Debug("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
 	})
 
