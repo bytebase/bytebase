@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -24,22 +23,17 @@ const (
 // NewTaskScheduler creates a new task scheduler.
 func NewTaskScheduler(server *Server) *TaskScheduler {
 	return &TaskScheduler{
-		executors: make(map[api.TaskType]TaskExecutor),
-		server:    server,
+		executorGetters:  make(map[api.TaskType]func() TaskExecutor),
+		runningExecutors: make(map[int]TaskExecutor),
+		server:           server,
 	}
 }
 
 // TaskScheduler is the task scheduler.
 type TaskScheduler struct {
-	executors map[api.TaskType]TaskExecutor
-
-	// runningTask[TaskID]*Progress
-	// runningTask is used to
-	// 1. tell if the task is running
-	// 2. take a snapshot of the frequently updated progress in task executors
-	runningTask sync.Map
-
-	server *Server
+	executorGetters  map[api.TaskType]func() TaskExecutor
+	runningExecutors map[int]TaskExecutor
+	server           *Server
 }
 
 // Run will run the task scheduler.
@@ -63,6 +57,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 
 				ctx := context.Background()
+
+				// Collect completed tasks
+				for i, executor := range s.runningExecutors {
+					if executor.IsCompleted() {
+						delete(s.runningExecutors, i)
+					}
+				}
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
 				pipelineStatus := api.PipelineOpen
@@ -110,7 +111,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					executor, ok := s.executors[task.Type]
+					executorGetter, ok := s.executorGetters[task.Type]
 					if !ok {
 						log.Error("Skip running task with unknown type",
 							zap.Int("id", task.ID),
@@ -120,45 +121,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 
-					// loaded means the task is already running so we continue
-					if _, loaded := s.runningTask.LoadOrStore(task.ID, &atomic.Value{}); loaded {
+					if _, ok := s.runningExecutors[task.ID]; ok {
 						continue
 					}
+					s.runningExecutors[task.ID] = executorGetter()
 
-					go func(task *api.Task) {
-						defer func() {
-							s.runningTask.Delete(task.ID)
-						}()
-						task.ProgressValue = new(atomic.Value)
-						taskComplete := make(chan struct{})
-						go func() {
-							snapshotProgress := func() {
-								value, ok := s.runningTask.Load(task.ID)
-								if !ok {
-									log.Error("Failed to load task from task scheduler", zap.Int("id", task.ID))
-									return
-								}
-								progressValue := value.(*atomic.Value)
-								if progress := task.ProgressValue.Load(); progress != nil {
-									progressValue.Store(progress)
-								}
-							}
-
-							// take a snapshot of the task progress in the task executor periodically which would be sent to the frontend
-							ticker := time.NewTicker(taskProgressUpdateInterval)
-							defer ticker.Stop()
-							for {
-								select {
-								case <-ticker.C:
-									snapshotProgress()
-								case <-taskComplete:
-									snapshotProgress()
-									return
-								}
-							}
-						}()
+					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
-						close(taskComplete)
 						if done {
 							if err == nil {
 								bytes, err := json.Marshal(*result)
@@ -231,7 +200,7 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 								zap.Error(err),
 							)
 						}
-					}(task)
+					}(task, s.runningExecutors[task.ID])
 				}
 			}()
 		case <-ctx.Done(): // if cancel() execute
@@ -240,15 +209,15 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// Register will register a task executor.
-func (s *TaskScheduler) Register(taskType api.TaskType, executor TaskExecutor) {
-	if executor == nil {
+// Register will register a task executor factory.
+func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() TaskExecutor) {
+	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType)
 	}
-	if _, dup := s.executors[taskType]; dup {
+	if _, dup := s.executorGetters[taskType]; dup {
 		panic("scheduler: Register called twice for task type: " + taskType)
 	}
-	s.executors[taskType] = executor
+	s.executorGetters[taskType] = executorGetter
 }
 
 // canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING

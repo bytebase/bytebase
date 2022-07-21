@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/bytebase/bytebase/api"
@@ -27,12 +28,14 @@ func NewPITRRestoreTaskExecutor(instance mysqlutil.Instance) TaskExecutor {
 
 // PITRRestoreTaskExecutor is the PITR restore task executor.
 type PITRRestoreTaskExecutor struct {
+	completed int32
 	mysqlutil mysqlutil.Instance
 }
 
 // RunOnce will run the PITR restore task executor once.
 func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run PITR restore task", zap.String("task", task.Name))
+	defer atomic.StoreInt32(&exec.completed, 1)
 
 	payload := api.TaskDatabasePITRRestorePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
@@ -55,6 +58,11 @@ func (exec *PITRRestoreTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return true, &api.TaskRunResultPayload{
 		Detail: fmt.Sprintf("Created PITR database for target database %q", task.Database.Name),
 	}, nil
+}
+
+// IsCompleted tells the scheduler if the task execution has completed
+func (exec *PITRRestoreTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *api.Task, store *store.Store, driver db.Driver, dataDir string, targetTs int64, mode common.ReleaseMode) error {
@@ -90,15 +98,15 @@ func (exec *PITRRestoreTaskExecutor) doPITRRestore(ctx context.Context, task *ap
 		return err
 	}
 
-	log.Debug("Getting latest backup before or equal to targetTs...", zap.Time("targetTs", time.Unix(targetTs, 0)))
+	log.Debug("Getting latest backup before or equal to targetTs", zap.Int64("targetTs", targetTs))
 	backup, err := mysqlDriver.GetLatestBackupBeforeOrEqualTs(ctx, backupList, targetTs, mode)
 	if err != nil {
-		dateTime := time.Unix(targetTs, 0).Format(time.RFC822)
+		targetTsHuman := time.Unix(targetTs, 0).Format(time.RFC822)
 		log.Error("Failed to get backup before or equal to time",
-			zap.String("dateTime", dateTime),
-			zap.Time("targetTs", time.Unix(targetTs, 0)),
+			zap.Int64("targetTs", targetTs),
+			zap.String("targetTsHuman", targetTsHuman),
 			zap.Error(err))
-		return fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", dateTime, err)
+		return fmt.Errorf("failed to get latest backup before or equal to %s, error: %w", targetTsHuman, err)
 	}
 	log.Debug("Got latest backup before or equal to targetTs", zap.String("backup", backup.Name))
 	backupFileName := getBackupAbsFilePath(dataDir, backup.DatabaseID, backup.Name)

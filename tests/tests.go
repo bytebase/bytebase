@@ -839,7 +839,6 @@ func getNextTaskStatus(issue *api.Issue) (api.TaskStatus, error) {
 }
 
 // waitIssueNextTaskWithTaskApproval waits for next task in pipeline to finish and approves it when necessary.
-// nolint
 func (ctl *controller) waitIssueNextTaskWithTaskApproval(id int) (api.TaskStatus, error) {
 	return ctl.waitIssuePipelineTaskImpl(id, ctl.approveIssueNext, true)
 }
@@ -1180,6 +1179,23 @@ func (ctl *controller) upsertDeploymentConfig(deploymentConfigUpsert api.Deploym
 		return nil, fmt.Errorf("fail to unmarshal upsert deployment config response, error: %w", err)
 	}
 	return deploymentConfig, nil
+}
+
+// disableAutomaticBackup disables the automatic backup of a database.
+func (ctl *controller) disableAutomaticBackup(databaseID int) error {
+	backupSetting := api.BackupSettingUpsert{
+		DatabaseID: databaseID,
+		Enabled:    false,
+	}
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, &backupSetting); err != nil {
+		return fmt.Errorf("failed to marshal backupSetting, error: %w", err)
+	}
+
+	if _, err := ctl.patch(fmt.Sprintf("/database/%d/backup-setting", databaseID), buf); err != nil {
+		return err
+	}
+	return nil
 }
 
 // createBackup creates a backup.

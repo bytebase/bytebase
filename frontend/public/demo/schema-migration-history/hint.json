@@ -1,26 +1,12 @@
 [
   {
-    "selector": "[data-label='bb-dashboard-static-sidebar']",
-    "type": "shield",
-    "url": ".*"
-  },
-  {
     "selector": "[data-label='bb-database-detail-action-buttons-container']",
-    "type": "shield",
-    "url": ".*"
-  },
-  {
-    "selector": "[data-label='bb-dashboard-header']",
     "type": "shield",
     "url": ".*",
     "additionStyle": {
-      "zIndex": "10"
+      "backdropFilter": "unset",
+      "background": "transparent"
     }
-  },
-  {
-    "selector": "[data-label='bb-breadcrumb']",
-    "type": "shield",
-    "url": ".*"
   },
   {
     "selector": "[data-label='bb-migration-history-establish-baseline-alert'] [data-label='bb-alert-ok-button']",
@@ -62,13 +48,19 @@
         "zh-CN": "选择一个目标数据库"
       },
       "alwaysShow": true,
-      "position": "top"
+      "position": "bottom"
     }
+  },
+  {
+    "selector": "[data-label='bb-main-body-wrapper']",
+    "url": ".+?/(db|issue)/.+",
+    "cover": true
   },
   {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(2)",
     "url": ".+?/db/.+?#overview$",
     "type": "tooltip",
+    "position": "center",
     "dialog": {
       "title": "",
       "description": {
@@ -76,34 +68,19 @@
         "zh-CN": "让我们专注在数据库变更管理场景"
       },
       "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-16px"
     }
   },
   {
     "selector": "[data-label='bb-database-detail-tab'] button:nth-child(3)",
     "url": ".*",
-    "type": "shield"
-  },
-  {
-    "selector": "[data-label='bb-establish-baseline-button']",
-    "url": ".+?/db/.+?#migration-history$",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Creating a new BASELINE can start a new Schema life cycle",
-        "zh-CN": "新建一个 BASELINE 可以开始一个新的 Schema 生命周期"
-      },
-      "position": "right"
-    },
+    "type": "shield",
     "additionStyle": {
-      "marginLeft": "8px"
+      "backdropFilter": "unset",
+      "background": "transparent"
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(2)",
+    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(3)",
     "url": ".+?/db/.+?#migration-history$",
     "type": "tooltip",
     "position": "left",
@@ -115,20 +92,27 @@
       },
       "alwaysShow": true,
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "-8px"
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(3) > td:nth-child(5)",
+    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(3) > td:nth-child(3)",
     "url": ".+?/db/.+?#migration-history$",
     "type": "tooltip",
     "position": "left",
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Hover the SQL, you can get the full of them",
-        "zh-CN": "让我们专注在数据库变更管理场景"
+        "en-US": "Every change will generate a new Schema version",
+        "zh-CN": "每次变更都将产生一个新的 Schema 版本，点我看看"
       },
-      "position": "left"
+      "alwaysShow": true,
+      "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "-8px"
     }
   },
   {
@@ -143,81 +127,22 @@
         "zh-CN": "BASELINE 记录了数据库 Schema 的初始状态，点我看看"
       },
       "position": "right"
-    }
-  },
-  {
-    "selector": "div.w-full.mx-auto nav[data-label='bb-breadcrumb'] > div:nth-child(3)",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Click here to go back",
-        "zh-CN": "点击这里来返回"
-      },
-      "position": "right"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-diff-switch']",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "You can also view the full Schema snapshot after the change",
-        "zh-CN": "也可以查看变更后的完整 Schema 快照"
-      },
-      "position": "right"
     },
     "additionStyle": {
-      "marginLeft": "-72px",
-      "marginTop": "-4px"
+      "marginLeft": "-8px"
     }
   },
   {
     "selector": "[data-label='bb-migration-history-view-drift-button']",
     "url": ".+?/db/.+?/history/.+",
     "type": "tooltip",
+    "position": "center",
     "dialog": {
       "title": "",
       "description": {
         "en-US": "A schema drift was detected in this change, indicating that a change beyond the control of the Bytebase platform occurred prior to this change.",
         "zh-CN": "这次变更检查到了 Schema 偏差，说明这次变更之前发生了脱离 Bytebase 平台管控的变更"
       },
-      "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "8px"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-code-diff-block'] div.d2h-file-side-diff:nth-child(2)",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "position": "left",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "This is the different codes between the two versions",
-        "zh-CN": "这是两个数据库 Schema 版本之间的差异"
-      },
-      "alwaysShow": true,
-      "position": "right"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-code-block']",
-    "url": ".+?/db/.+?/history/.+",
-    "type": "tooltip",
-    "position": "left",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "This is the current full schema of the database",
-        "zh-CN": "这是现在数据库的完整 Schema"
-      },
-      "alwaysShow": true,
       "position": "right"
     }
   },

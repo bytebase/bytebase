@@ -45,8 +45,8 @@ type WebhookInfo struct {
 	ID int `json:"id"`
 }
 
-// WebhookPost is the API message for webhook POST.
-type WebhookPost struct {
+// WebhookCreate represents a GitLab API request for creating a new webhook.
+type WebhookCreate struct {
 	URL         string `json:"url"`
 	SecretToken string `json:"token"`
 	// This is set to true
@@ -58,12 +58,11 @@ type WebhookPost struct {
 	// Saying that, delivering a souding dry run solution would be great and hopefully we can achieve that one day.
 	// MergeRequestsEvents  bool   `json:"merge_requests_events"`
 	PushEventsBranchFilter string `json:"push_events_branch_filter"`
-	// TODO(tianzhou): This is set to false, be lax to not enable_ssl_verification
-	EnableSSLVerification bool `json:"enable_ssl_verification"`
+	EnableSSLVerification  bool   `json:"enable_ssl_verification"`
 }
 
-// WebhookPut is the API message for webhook PUT.
-type WebhookPut struct {
+// WebhookUpdate represents a GitLab API request for updating a new webhook.
+type WebhookUpdate struct {
 	URL                    string `json:"url"`
 	PushEventsBranchFilter string `json:"push_events_branch_filter"`
 }
@@ -77,7 +76,8 @@ type WebhookProject struct {
 
 // WebhookCommitAuthor is the API message for webhook commit author.
 type WebhookCommitAuthor struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // WebhookCommit is the API message for webhook commit.
@@ -184,7 +184,7 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of a GitLab instance.
-func (p *Provider) APIURL(instanceURL string) string {
+func (*Provider) APIURL(instanceURL string) string {
 	return fmt.Sprintf("%s/%s", instanceURL, apiPath)
 }
 

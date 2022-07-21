@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -201,38 +200,25 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
-
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
 
 		s.TaskScheduler = taskScheduler
 
@@ -351,11 +337,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
@@ -364,7 +345,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	s.initSubscription()
 
-	log.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	serverStarted = true
 	return s, nil
 }

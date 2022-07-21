@@ -6,6 +6,7 @@ import {
   checkUrlMatched,
   getElementBounding,
   getElementMaxZIndex,
+  getStylePropertyValue,
   waitForTargetElement,
 } from "./utils";
 
@@ -69,6 +70,8 @@ const renderHint = (
       hintWrapper.style[key] = hintData.additionStyle[key];
     }
   }
+  const borderRadius = getStylePropertyValue(targetElement, "border-radius");
+  hintWrapper.style.borderRadius = borderRadius;
 
   const bounding = getElementBounding(targetElement);
   hintWrapper.style.top = `${bounding.top}px`;
@@ -123,7 +126,7 @@ const renderHintDialog = (
     hintDialogDiv.classList.add("tooltip-dialog");
   }
 
-  const maxZIndex = getElementMaxZIndex(targetElement);
+  const maxZIndex = getComputedStyle(targetElement, "z-index");
   hintDialogDiv.style.zIndex = `${maxZIndex}`;
 
   if (!alwaysShow) {
@@ -236,6 +239,9 @@ const renderTooltip = (
   const pingElement = document.createElement("span");
   pingElement.className = "bb-hint-tooltip-ping";
   tooltipWrapper.appendChild(pingElement);
+  const blockElement = document.createElement("span");
+  blockElement.className = "bb-hint-tooltip-block";
+  tooltipWrapper.appendChild(blockElement);
 
   tooltipWrapper.style.zIndex = `${getElementMaxZIndex(targetElement)}`;
   if (hintData.additionStyle) {
@@ -260,6 +266,7 @@ const renderTooltip = (
   });
 
   tooltipWrapper.addEventListener("click", () => {
+    targetElement.click();
     closedHintIndexSet.add(hintIndex);
     removeHint(hintIndex);
   });
@@ -297,6 +304,11 @@ const updateTooltipPosition = (
   } else if (position === "left") {
     hintWrapper.style.top = `${bounding.top}px`;
     hintWrapper.style.left = `${bounding.left}px`;
+  } else if (position === "center") {
+    hintWrapper.style.top = `${bounding.top + bounding.height / 2}px`;
+    hintWrapper.style.left = `${bounding.left + bounding.width / 2}px`;
+    hintWrapper.style.marginTop = `-12px`;
+    hintWrapper.style.marginLeft = `-12px`;
   }
 
   requestAnimationFrame(() =>

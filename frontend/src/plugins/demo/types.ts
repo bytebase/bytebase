@@ -1,6 +1,12 @@
 type StepType = "click" | "change";
 
-export type Position = "bottom" | "top" | "left" | "right" | "topright";
+export type Position =
+  | "bottom"
+  | "top"
+  | "left"
+  | "right"
+  | "topright"
+  | "center";
 
 export type I18NText = {
   [key: string]: string;

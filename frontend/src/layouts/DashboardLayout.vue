@@ -1,6 +1,6 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
-    <template v-if="isDemo">
+    <template v-if="isDemo && !isLiveDemo">
       <BannerDemo />
     </template>
     <template v-if="showDebugBanner">
@@ -9,7 +9,7 @@
     <template v-else-if="isExpired || isTrialing">
       <BannerSubscription />
     </template>
-    <template v-else-if="isReadonly">
+    <template v-else-if="isReadonly && !isLiveDemo">
       <div
         class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
       >
@@ -89,7 +89,7 @@ export default defineComponent({
       });
     };
 
-    const { isDemo, isReadonly } = storeToRefs(actuatorStore);
+    const { isDemo, isReadonly, isLiveDemo } = storeToRefs(actuatorStore);
     const { isExpired, isTrialing } = storeToRefs(subscriptionStore);
 
     const { isDebug } = storeToRefs(debugStore);
@@ -109,6 +109,7 @@ export default defineComponent({
       isReadonly,
       isTrialing,
       isExpired,
+      isLiveDemo,
       showDebugBanner,
     };
   },

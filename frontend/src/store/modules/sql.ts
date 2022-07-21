@@ -46,7 +46,7 @@ export const useSQLStore = defineStore("sql", {
             data: {
               type: "sqlSyncSchema",
               attributes: {
-                instanceId,
+                instanceId: instanceId,
               },
             },
           },

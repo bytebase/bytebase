@@ -30,7 +30,7 @@ var (
 )
 
 // FindIndex implements the catalog interface.
-func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
+func (*MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
 	switch find.IndexName {
 	case MockOldIndexName:
 		return &catalog.Index{
@@ -54,7 +54,7 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 }
 
 // FindTable implements the catalog interface.
-func (c *MockCatalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+func (*MockCatalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
 	return []*catalog.Table{
 		{
 			Name:         "table",

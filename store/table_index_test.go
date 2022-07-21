@@ -20,20 +20,24 @@ func TestGenerateIndexActions(t *testing.T) {
 		{
 			oldIndexList: []*api.Index{
 				{ID: 123, Name: "index1", Expression: "def1", Comment: "comment1"},
-				{ID: 124, Name: "index2", Expression: "def2", Comment: "comment2"},
+				{ID: 124, Name: "index2", Expression: "def2", Position: 1, Comment: "comment2"},
+				{ID: 125, Name: "index2", Expression: "def2", Position: 2, Comment: "comment2"},
 			},
 			indexList: []db.Index{
 				{Name: "index1", Expression: "def1-change", Comment: "comment1"},
-				{Name: "index2", Expression: "def2", Comment: "comment2-change"},
+				{Name: "index2", Expression: "def2", Position: 1, Comment: "comment2"},
+				{Name: "index2", Expression: "def2", Position: 2, Comment: "comment2-change"},
+				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2-new"},
 				{Name: "index3", Expression: "def3", Comment: "comment3"},
 			},
 			wantDeletes: []*api.IndexDelete{
 				{ID: 123},
-				{ID: 124},
+				{ID: 125},
 			},
 			wantCreates: []*api.IndexCreate{
 				{Name: "index1", Expression: "def1-change", Comment: "comment1", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
-				{Name: "index2", Expression: "def2", Comment: "comment2-change", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
+				{Name: "index2", Expression: "def2", Position: 2, Comment: "comment2-change", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
+				{Name: "index2", Expression: "def2", Position: 3, Comment: "comment2-new", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
 				{Name: "index3", Expression: "def3", Comment: "comment3", CreatorID: api.SystemBotID, DatabaseID: databaseID, TableID: tableID},
 			},
 		},
