@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -785,6 +786,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 			}
 		}
 	} else {
+		envToDatabaseMap := make(map[api.Environment][]api.TaskCreate)
 		for _, d := range c.DetailList {
 			if c.MigrationType == db.Migrate && d.Statement == "" {
 				return nil, echo.NewHTTPError(http.StatusBadRequest, "Failed to create issue, sql statement missing")
@@ -807,10 +809,21 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				return nil, err
 			}
 
+			envToDatabaseMap[*database.Instance.Environment] = append(envToDatabaseMap[*database.Instance.Environment], *taskCreate)
+		}
+		// Sort and group by environments.
+		var environments []api.Environment
+		for env := range envToDatabaseMap {
+			environments = append(environments, env)
+		}
+		sort.Slice(environments, func(i, j int) bool {
+			return environments[i].Order < environments[j].Order
+		})
+		for _, env := range environments {
 			create.StageList = append(create.StageList, api.StageCreate{
-				Name:          fmt.Sprintf("%s %s", database.Instance.Environment.Name, database.Name),
-				EnvironmentID: database.Instance.Environment.ID,
-				TaskList:      []api.TaskCreate{*taskCreate},
+				Name:          env.Name,
+				EnvironmentID: env.ID,
+				TaskList:      envToDatabaseMap[env],
 			})
 		}
 	}
