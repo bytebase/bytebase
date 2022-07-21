@@ -202,6 +202,7 @@
     "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
     "pitr": "PITR",
+    "fix": "修复",
     "go-now": "立即前往"
   },
   "error-page": {
@@ -826,7 +827,21 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
-    "show-reserved-databases": "显示 Bytebase 保留的数据库"
+    "show-reserved-databases": "显示 Bytebase 保留的数据库",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "关闭",
+        "weekly": "每周",
+        "daily": "每天"
+      },
+      "form": {
+        "schedule": "计划",
+        "day-of-week": "星期",
+        "time-of-day": "时间",
+        "retention-period": "保留时长（天）"
+      }
+    },
+    "backup-policy-violation": "违反了备份策略"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
