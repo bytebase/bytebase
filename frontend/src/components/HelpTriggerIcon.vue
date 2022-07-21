@@ -13,12 +13,12 @@ import { EventType } from "@/types";
 export default defineComponent({
   name: "HelpTrigger",
   props: {
-    name: {
+    id: {
       type: String,
       required: true,
       default: "",
     },
-    isGuide: {
+    openByDefault: {
       type: Boolean,
       required: false,
       default: false,
@@ -27,7 +27,7 @@ export default defineComponent({
   setup: (props) => {
     const event = inject("event") as Event;
     const handleClick = () => {
-      event.emit(EventType.EVENT_HELP, props.name, props.isGuide);
+      event.emit(EventType.EVENT_HELP, props.id, props.openByDefault);
     };
     return {
       handleClick,
@@ -35,5 +35,3 @@ export default defineComponent({
   },
 });
 </script>
-
-<style></style>
