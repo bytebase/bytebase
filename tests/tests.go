@@ -862,7 +862,7 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 	defer ticker.Stop()
 	approved := false
 
-	log.Debug("Waiting for issue pipeline tasks")
+	log.Debug("Waiting for issue pipeline tasks.")
 	prevStatus := "UNKNOWN"
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
