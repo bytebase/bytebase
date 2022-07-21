@@ -234,7 +234,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 			)
 		}
 	}()
-	if err = executeGhost(task, startedNs, statement, syncDone); err != nil {
+	if err = executeGhost(task, statement, syncDone); err != nil {
 		return -1, "", err
 	}
 
@@ -246,7 +246,7 @@ func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, stat
 	return insertedID, afterSchemaBuf.String(), nil
 }
 
-func executeGhost(task *api.Task, startedNs int64, statement string, syncDone chan<- struct{}) error {
+func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 

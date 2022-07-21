@@ -687,7 +687,7 @@ func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scann
 
 func (driver *Driver) restoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
 	fnExecuteStmt := func(stmt string) error {
-		if _, err := tx.Exec(stmt); err != nil {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err
 		}
 		return nil

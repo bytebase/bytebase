@@ -153,7 +153,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}

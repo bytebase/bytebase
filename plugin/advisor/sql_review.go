@@ -1,7 +1,6 @@
 package advisor
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -254,8 +253,8 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 }
 
-// SchemaReviewCheck checks the statments with schema review policy.
-func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReviewPolicy, context SQLReviewCheckContext) ([]Advice, error) {
+// SchemaReviewCheck checks the statements with schema review policy.
+func SchemaReviewCheck(statements string, policy *SQLReviewPolicy, context SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
 	for _, rule := range policy.RuleList {
 		if rule.Level == SchemaRuleLevelDisabled {
