@@ -201,7 +201,8 @@
     "view-doc": "View doc",
     "backup-and-restore": "Backup and restore",
     "write-only": "write only",
-    "pitr": "PITR"
+    "pitr": "PITR",
+    "go-now": "Go now"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -484,7 +485,9 @@
     },
     "new-issue": "@:common.new @:common.issue",
     "format-on-save": "Format on save",
-    "action-to-current-stage": "{action} current stage"
+    "action-to-current-stage": "{action} current stage",
+    "edit-sql-statement-in-vcs": "This project has enabled VCS based version control. Please modify the SQL file in the corresponding Git repository, and commit it to create a new issue.",
+    "edit-sql-statement": "Edit SQL statement"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",

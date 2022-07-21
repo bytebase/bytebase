@@ -22,7 +22,6 @@ export type TaskType =
   | "bb.task.database.restore"
   | "bb.task.database.schema.update.ghost.sync"
   | "bb.task.database.schema.update.ghost.cutover"
-  | "bb.task.database.schema.update.ghost.drop-original-table"
   | "bb.task.database.pitr.restore"
   | "bb.task.database.pitr.cutover"
   | "bb.task.database.pitr.delete";
@@ -67,11 +66,6 @@ export type TaskDatabaseSchemaUpdateGhostCutoverPayload = {
   // more input and output parameters in the future
 };
 
-export type TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload = {
-  databaseName: string;
-  tableName: string;
-};
-
 export type TaskDatabasePITRRestorePayload = {
   projectId: ProjectId;
   pointInTimeTs: number; // UNIX timestamp
@@ -103,7 +97,6 @@ export type TaskPayload =
   | TaskDatabaseSchemaUpdatePayload
   | TaskDatabaseSchemaUpdateGhostSyncPayload
   | TaskDatabaseSchemaUpdateGhostCutoverPayload
-  | TaskDatabaseSchemaUpdateGhostDropOriginalTablePayload
   | TaskDatabaseDataUpdatePayload
   | TaskDatabaseRestorePayload
   | TaskEarliestAllowedTimePayload

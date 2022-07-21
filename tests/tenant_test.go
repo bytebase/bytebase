@@ -143,8 +143,8 @@ func TestTenant(t *testing.T) {
 			}
 		}
 	}
-	a.Equal(len(stagingDatabases), stagingTenantNumber)
-	a.Equal(len(prodDatabases), prodTenantNumber)
+	a.Equal(stagingTenantNumber, len(stagingDatabases))
+	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	// Create an issue that updates database schema.
 	createContext, err := json.Marshal(&api.UpdateSchemaContext{
@@ -169,7 +169,7 @@ func TestTenant(t *testing.T) {
 	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
@@ -192,14 +192,14 @@ func TestTenant(t *testing.T) {
 	for _, instance := range instances {
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
 		a.NoError(err)
-		a.Equal(len(histories), 2)
+		a.Equal(2, len(histories))
 		a.NotEqual(histories[0].Version, "")
 		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
 		hm2[histories[1].Version] = true
 	}
-	a.Equal(len(hm1), 1)
-	a.Equal(len(hm2), 1)
+	a.Equal(1, len(hm1))
+	a.Equal(1, len(hm2))
 }
 
 func TestTenantVCS(t *testing.T) {
@@ -390,12 +390,12 @@ func TestTenantVCS(t *testing.T) {
 	openStatus := []api.IssueStatus{api.IssueOpen}
 	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
 	a.NoError(err)
-	a.Equal(len(issues), 1)
+	a.Equal(1, len(issues))
 	issue := issues[0]
 	// Test pipeline stage patch status.
 	status, err := ctl.waitIssuePipelineWithStageApproval(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for _, stagingInstance := range stagingInstances {
@@ -424,8 +424,8 @@ func TestTenantVCS(t *testing.T) {
 		hm1[histories[0].Version] = true
 		hm2[histories[1].Version] = true
 	}
-	a.Equal(len(hm1), 1)
-	a.Equal(len(hm2), 1)
+	a.Equal(1, len(hm1))
+	a.Equal(1, len(hm2))
 }
 
 func TestTenantDatabaseNameTemplate(t *testing.T) {
@@ -564,7 +564,7 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 	a.NoError(err)
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for i := 0; i < stagingTenantNumber; i++ {
@@ -746,8 +746,8 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 			}
 		}
 	}
-	a.Equal(len(stagingDatabases), stagingTenantNumber)
-	a.Equal(len(prodDatabases), prodTenantNumber)
+	a.Equal(stagingTenantNumber, len(stagingDatabases))
+	a.Equal(prodTenantNumber, len(prodDatabases))
 
 	// Simulate Git commits.
 	gitFile := "bbtest/testTenantVCSSchemaUpdate__ver1__migrate__create_a_test_table.sql"
@@ -775,11 +775,11 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	openStatus := []api.IssueStatus{api.IssueOpen}
 	issues, err := ctl.getIssues(api.IssueFind{ProjectID: &project.ID, StatusList: &openStatus})
 	a.NoError(err)
-	a.Equal(len(issues), 1)
+	a.Equal(1, len(issues))
 	issue := issues[0]
 	status, err := ctl.waitIssuePipeline(issue.ID)
 	a.NoError(err)
-	a.Equal(status, api.TaskDone)
+	a.Equal(api.TaskDone, status)
 
 	// Query schema.
 	for i, stagingInstance := range stagingInstances {
@@ -805,7 +805,7 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		databaseName := baseDatabaseName + "_" + tenant
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
 		a.NoError(err)
-		a.Equal(len(histories), 2)
+		a.Equal(2, len(histories))
 		a.Equal(histories[0].Version, "ver1")
 		a.NotEqual(histories[1].Version, "")
 		hm1[histories[0].Version] = true
@@ -815,17 +815,17 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 		databaseName := baseDatabaseName + "_" + tenant
 		histories, err := ctl.getInstanceMigrationHistory(db.MigrationHistoryFind{ID: &instance.ID, Database: &databaseName})
 		a.NoError(err)
-		a.Equal(len(histories), 2)
-		a.Equal(histories[0].Version, "ver1")
-		a.NotEqual(histories[1].Version, "")
+		a.Equal(2, len(histories))
+		a.Equal("ver1", histories[0].Version)
+		a.NotEqual("", histories[1].Version)
 		hm2[histories[0].Version] = true
 	}
 
-	a.Equal(len(hm1), 1)
-	a.Equal(len(hm2), 1)
+	a.Equal(1, len(hm1))
+	a.Equal(1, len(hm2))
 
 	// Check latestSchemaFile
 	files, err := ctl.gitlab.GetFiles(gitlabProjectIDStr, fmt.Sprintf("%s/.%s__LATEST.sql", baseDirectory, baseDatabaseName))
 	a.NoError(err)
-	a.Equal(len(files), 1)
+	a.Equal(1, len(files))
 }

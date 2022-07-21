@@ -33,6 +33,6 @@ func TestStartMySQL(t *testing.T) {
 	err = db.Ping()
 	require.NoError(t, err)
 
-	err = mysql.Stop(os.Stdout, os.Stderr)
+	err = mysql.Stop()
 	require.NoError(t, err)
 }

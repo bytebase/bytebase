@@ -569,6 +569,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid backup setting").SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
 
@@ -687,7 +690,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 			}
-			s.syncEngineVersionAndSchema(ctx, updatedInstance)
+			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
+				log.Warn("Failed to sync instance schema",
+					zap.Int("instance_id", updatedInstance.ID),
+					zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -755,7 +762,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 			}
-			s.syncEngineVersionAndSchema(ctx, updatedInstance)
+			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
+				log.Warn("Failed to sync instance schema",
+					zap.Int("instance_id", updatedInstance.ID),
+					zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)

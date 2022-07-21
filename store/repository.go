@@ -221,7 +221,7 @@ func (s *Store) findRepositoryRaw(ctx context.Context, find *api.RepositoryFind)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findRepositoryImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (s *Store) getRepositoryRaw(ctx context.Context, find *api.RepositoryFind) 
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findRepositoryImpl(ctx, tx.PTx, find, s.db.mode)
+	list, err := findRepositoryImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (s *Store) patchRepositoryRaw(ctx context.Context, patch *api.RepositoryPat
 	}
 	defer tx.PTx.Rollback()
 
-	repository, err := patchRepositoryImpl(ctx, tx.PTx, patch, s.db.mode)
+	repository, err := patchRepositoryImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -444,7 +444,7 @@ func (s *Store) createRepositoryImpl(ctx context.Context, tx *sql.Tx, create *ap
 	return &repository, nil
 }
 
-func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind, mode common.ReleaseMode) ([]*repositoryRaw, error) {
+func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFind) ([]*repositoryRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -536,7 +536,7 @@ func findRepositoryImpl(ctx context.Context, tx *sql.Tx, find *api.RepositoryFin
 }
 
 // patchRepositoryImpl updates a repository by ID. Returns the new state of the repository after update.
-func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch, mode common.ReleaseMode) (*repositoryRaw, error) {
+func patchRepositoryImpl(ctx context.Context, tx *sql.Tx, patch *api.RepositoryPatch) (*repositoryRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.BranchFilter; v != nil {

@@ -51,9 +51,9 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 // getDatabases gets all databases of an instance.
-func getDatabases(txn *sql.Tx) ([]string, error) {
+func getDatabases(ctx context.Context, txn *sql.Tx) ([]string, error) {
 	var dbNames []string
-	rows, err := txn.Query("SELECT name FROM system.databases")
+	rows, err := txn.QueryContext(ctx, "SELECT name FROM system.databases")
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func getDatabases(txn *sql.Tx) ([]string, error) {
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
 func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
 	// Find all dumpable databases
-	dbNames, err := getDatabases(txn)
+	dbNames, err := getDatabases(ctx, txn)
 	if err != nil {
 		return fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -110,7 +110,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 			if _, err := io.WriteString(out, header); err != nil {
 				return err
 			}
-			dbStmt, err := getDatabaseStmt(txn, dbName)
+			dbStmt, err := getDatabaseStmt(ctx, txn, dbName)
 			if err != nil {
 				return fmt.Errorf("failed to get database %q: %s", dbName, err)
 			}
@@ -125,7 +125,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		}
 
 		// Table and view statement.
-		tables, err := getTables(txn, dbName)
+		tables, err := getTables(ctx, txn, dbName)
 		if err != nil {
 			return fmt.Errorf("failed to get tables of database %q: %s", dbName, err)
 		}
@@ -140,10 +140,10 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 }
 
 // getDatabaseStmt gets the create statement of a database.
-func getDatabaseStmt(txn *sql.Tx, dbName string) (string, error) {
+func getDatabaseStmt(ctx context.Context, txn *sql.Tx, dbName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE DATABASE IF NOT EXISTS %s;", dbName)
 	var stmt, unused string
-	if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+	if err := txn.QueryRowContext(ctx, query).Scan(&unused, &stmt); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -160,10 +160,10 @@ type tableSchema struct {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, dbName string) ([]*tableSchema, error) {
+func getTables(ctx context.Context, txn *sql.Tx, dbName string) ([]*tableSchema, error) {
 	var tables []*tableSchema
 	query := fmt.Sprintf("SELECT name, engine, create_table_query FROM system.tables WHERE database='%s';", dbName)
-	rows, err := txn.Query(query)
+	rows, err := txn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -211,11 +211,7 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 // RestoreTx restores the database in the given transaction.

@@ -345,7 +345,7 @@ func TestSQLReview(t *testing.T) {
 	a.Equal(1, len(databases))
 
 	database := databases[0]
-	a.Equal(database.Instance.ID, instance.ID)
+	a.Equal(instance.ID, database.Instance.ID)
 
 	for _, t := range tests {
 		result := createIssueAndReturnSchemaReviewResult(a, ctl, database.ID, project.ID, project.Creator.ID, t.statement)
