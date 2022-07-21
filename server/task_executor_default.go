@@ -21,7 +21,7 @@ type DefaultTaskExecutor struct {
 }
 
 // RunOnce will run the default task executor once.
-func (exec *DefaultTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *DefaultTaskExecutor) RunOnce(_ context.Context, _ *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	log.Info("Run default task type", zap.String("task", task.Name))
 	defer atomic.StoreInt32(&exec.completed, 1)
 

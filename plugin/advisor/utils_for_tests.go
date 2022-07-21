@@ -27,10 +27,12 @@ const (
 var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
+
+	_ catalog.Catalog = (*MockCatalogService)(nil)
 )
 
 // FindIndex implements the catalog interface.
-func (*MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
+func (*MockCatalogService) FindIndex(_ context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
 	switch find.IndexName {
 	case MockOldIndexName:
 		return &catalog.Index{
@@ -54,7 +56,7 @@ func (*MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFin
 }
 
 // FindTable implements the catalog interface.
-func (*MockCatalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+func (*MockCatalogService) FindTable(_ context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
 	return []*catalog.Table{
 		{
 			Name:         "table",

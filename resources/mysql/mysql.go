@@ -172,7 +172,7 @@ func SetupTestInstance(t *testing.T, port int) (*Instance, func()) {
 
 // Import executes sql script in the given path on the instance.
 // If the path is a directory, it imports all sql scripts in the directory recursively.
-func (i *Instance) Import(path string, stdout, stderr io.Writer) error {
+func (i *Instance) Import(path string) error {
 	var buf bytes.Buffer
 	if err := cat(path, &buf); err != nil {
 		return err
