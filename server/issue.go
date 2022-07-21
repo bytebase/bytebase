@@ -922,7 +922,7 @@ func createTaskListForCreateDatabase(instanceID int, payload api.TaskDatabaseCre
 
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create database creation task list, unable to marshal payload %w", err)
+		return nil, nil, fmt.Errorf("failed to create database creation task list, unable to marshal payload, error: %w", err)
 	}
 
 	taskCreateList = append(taskCreateList, api.TaskCreate{
@@ -944,7 +944,7 @@ func createTaskListForRestoreBackup(instanceID, backupID int, targetDatabaseName
 	restorePayload.BackupID = backupID
 	restoreBytes, err := json.Marshal(restorePayload)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create restore database task list, unable to marshal payload %w", err)
+		return nil, nil, fmt.Errorf("failed to create restore database task list, unable to marshal payload, error: %w", err)
 	}
 
 	var taskCreateList []api.TaskCreate
