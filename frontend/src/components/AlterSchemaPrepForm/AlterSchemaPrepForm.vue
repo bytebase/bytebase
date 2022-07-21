@@ -94,7 +94,7 @@ import { computed, reactive, PropType, defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NTabs, NTabPane } from "naive-ui";
 import { useEventListener } from "@vueuse/core";
-import { cloneDeep, groupBy } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import DatabaseTable from "../DatabaseTable.vue";
 import {
   baseDirectoryWebUrl,
@@ -125,6 +125,7 @@ import {
   useProjectStore,
   useRepositoryStore,
 } from "@/store";
+import dayjs from "dayjs";
 
 type LocalState = ProjectStandardState &
   ProjectTenantState &
@@ -222,12 +223,16 @@ export default defineComponent({
       );
     });
 
-    const allowGenerateMultiDb = computed(() => {
+    const flattenSelectedDatabaseIdList = computed(() => {
       const flattenDatabaseIdList: DatabaseId[] = [];
       for (const databaseIdList of state.selectedDatabaseIdListForEnvironment.values()) {
         flattenDatabaseIdList.push(...databaseIdList);
       }
-      return flattenDatabaseIdList.length > 0;
+      return flattenDatabaseIdList;
+    });
+
+    const allowGenerateMultiDb = computed(() => {
+      return flattenSelectedDatabaseIdList.value.length > 0;
     });
 
     // 'normal' -> normal migration
@@ -253,13 +258,11 @@ export default defineComponent({
       return "normal";
     };
 
+    // Also works when single db selected.
     const generateMultiDb = async () => {
-      const databaseIdList: DatabaseId[] = [];
-      for (const idList of state.selectedDatabaseIdListForEnvironment.values()) {
-        databaseIdList.push(...idList);
-      }
+      const selectedDatabaseIdList = [...flattenSelectedDatabaseIdList.value];
 
-      const selectedDatabaseList = databaseIdList.map(
+      const selectedDatabaseList = selectedDatabaseIdList.map(
         (id) => databaseList.value.find((db) => db.id === id)!
       );
 
@@ -267,11 +270,24 @@ export default defineComponent({
       if (mode === false) {
         return;
       }
+
+      // Create a user friendly default issue name
+      const issueNameParts: string[] = [];
+      if (selectedDatabaseList.length === 1) {
+        issueNameParts.push(`[${selectedDatabaseList[0].name}]`);
+      } else {
+        issueNameParts.push(`[${selectedDatabaseList.length} databases]`);
+      }
+      issueNameParts.push(isAlterSchema.value ? `Alter schema` : `Change data`);
+      issueNameParts.push(dayjs().format("@MM-DD HH:mm"));
+
       const query: Record<string, any> = {
         template: props.type,
-        name: isAlterSchema.value ? `Alter schema` : `Change data`,
+        name: issueNameParts.join(" "),
         project: props.projectId,
-        databaseList: databaseIdList.join(","),
+        // The server-side will sort the databases by environment.
+        // So we need not to sort them here.
+        databaseList: selectedDatabaseIdList.join(","),
       };
       if (mode === "online") {
         query.ghost = "1";

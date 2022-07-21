@@ -1,35 +1,6 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
 
-  <div v-if="project?.workflowType === 'UI'" class="my-2 textlabel -ml-1">
-    <div class="radio-set-row">
-      <div class="radio">
-        <label class="label">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="SINGLE_DB"
-          />
-          {{ $t("alter-schema.alter-single-db") }}
-        </label>
-      </div>
-      <div class="radio">
-        <label class="label">
-          <input
-            v-model="state.alterType"
-            tabindex="-1"
-            type="radio"
-            class="btn"
-            value="MULTI_DB"
-          />
-          {{ $t("alter-schema.alter-multiple-db") }}
-        </label>
-      </div>
-    </div>
-  </div>
-
   <template v-if="state.alterType === 'MULTI_DB'">
     <!-- multiple stage view -->
     <div class="textinfolabel">
@@ -122,7 +93,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+/* eslint-disable vue/no-mutating-props */
+import { defineComponent, watch, PropType } from "vue";
 import {
   Database,
   DatabaseId,
@@ -160,6 +132,25 @@ export default defineComponent({
   },
   emits: ["select-database"],
   setup(props, { emit }) {
+    // MULTI_DB now supports selecting one database, which can be a replacement
+    // of SINGLE_DB.
+    // So SINGLE_DB is only needed and available for VCS workflow.
+    // And we won't provide a radio button group for single/multi selection in
+    // the future.
+    watch(
+      () => props.project?.workflowType,
+      (type) => {
+        if (type === "VCS") {
+          props.state.alterType = "SINGLE_DB";
+        } else {
+          props.state.alterType = "MULTI_DB";
+        }
+      },
+      {
+        immediate: true,
+      }
+    );
+
     const toggleDatabaseIdForEnvironment = (
       databaseId: DatabaseId,
       environmentId: EnvironmentId,
