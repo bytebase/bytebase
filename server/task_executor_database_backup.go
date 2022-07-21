@@ -23,6 +23,7 @@ type DatabaseBackupTaskExecutor struct {
 	completed int32
 }
 
+// IsCompleted tells the scheduler if the task execution has completed
 func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

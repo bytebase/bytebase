@@ -63,6 +63,7 @@ func (exec *SchemaUpdateGhostCutoverTaskExecutor) RunOnce(ctx context.Context, s
 	return true, &api.TaskRunResultPayload{Detail: "cutover done"}, nil
 }
 
+// IsCompleted tells the scheduler if the task execution has completed
 func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

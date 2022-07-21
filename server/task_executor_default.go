@@ -28,6 +28,7 @@ func (exec *DefaultTaskExecutor) RunOnce(ctx context.Context, server *Server, ta
 	return true, &api.TaskRunResultPayload{Detail: fmt.Sprintf("No-op task %s", task.Name)}, nil
 }
 
+// IsCompleted tells the scheduler if the task execution has completed
 func (exec *DefaultTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
