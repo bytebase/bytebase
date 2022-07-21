@@ -2,7 +2,7 @@
 
 FROM node:14 as frontend
 
-ARG RELEASE="dev"
+ARG RELEASE="release"
 
 RUN npm i -g pnpm
 
