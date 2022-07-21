@@ -779,7 +779,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+					Name:          deployments[i].Name,
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})
