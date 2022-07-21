@@ -176,6 +176,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (*Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (*Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }
