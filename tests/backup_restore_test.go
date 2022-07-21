@@ -231,7 +231,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
@@ -327,7 +327,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
@@ -432,7 +432,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
@@ -537,7 +537,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
@@ -627,7 +627,7 @@ func TestPITR(t *testing.T) {
 
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
@@ -679,7 +679,7 @@ func TestPITR(t *testing.T) {
 		// Second PITR
 		t.Log("Validate table tbl0")
 		validateTbl0(t, mysqlDB, databaseName, numRowsTime1)
-		t.Log("Validate table tbl0")
+		t.Log("Validate table tbl1")
 		validateTbl1(t, mysqlDB, databaseName, numRowsTime1)
 		t.Log("validate table _update_row_")
 		validateTableUpdateRow(t, mysqlDB, databaseName)
