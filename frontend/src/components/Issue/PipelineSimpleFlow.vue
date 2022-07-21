@@ -6,10 +6,9 @@
       </template>
     </PipelineStageList>
 
-    <!-- Show a task list if there are more than one tasks in a single stage -->
     <div
-      v-if="taskList.length > 1"
-      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      v-if="shouldShowTaskBar"
+      class="task-list gap-2 p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
     >
       <template v-for="(task, i) in taskList" :key="i">
         <div
@@ -86,6 +85,11 @@ const taskNameOfStage = (stage: Stage | StageCreate) => {
 const pipeline = computed(() => issue.value.pipeline!);
 
 const taskList = computed(() => selectedStage.value.taskList);
+
+// Show the task bar when some of the stages have more than one tasks.
+const shouldShowTaskBar = computed(() => {
+  return pipeline.value.stageList.some((stage) => stage.taskList.length > 1);
+});
 
 const isSelectedTask = (task: Task | TaskCreate): boolean => {
   return task === selectedTask.value;
