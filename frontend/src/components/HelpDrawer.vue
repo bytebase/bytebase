@@ -45,8 +45,8 @@ export default defineComponent({
   components: { NDrawer, NDrawerContent },
   setup() {
     const event = inject("event") as Event;
-    const helpName = ref<string>("");
-    const isHelpGuide = ref<boolean>(false);
+    const helpId = ref<string>("");
+    const isGuide = ref<boolean>(false);
     const active = ref(false);
     const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
@@ -57,14 +57,14 @@ export default defineComponent({
       html: "",
     });
 
-    const showHelp = async (name: string, isGuide?: boolean) => {
-      if (name) {
-        helpName.value = name;
-        if (isGuide) {
-          isHelpGuide.value = true;
+    const showHelp = async (id: string, openByDefault?: boolean) => {
+      if (id) {
+        helpId.value = id;
+        if (openByDefault) {
+          isGuide.value = true;
         }
         const res = await fetch(
-          `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${name}.md`
+          `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${id}.md`
         );
         const markdown = await res.text();
         const ast: Node = Markdoc.parse(markdown);
@@ -81,10 +81,10 @@ export default defineComponent({
     };
 
     const onClose = () => {
-      if (isHelpGuide.value) {
-        if (!uiStateStore.getIntroStateByKey(`guide.${helpName.value}`)) {
+      if (isGuide.value) {
+        if (!uiStateStore.getIntroStateByKey(`guide.${helpId.value}`)) {
           uiStateStore.saveIntroStateByKey({
-            key: `guide.${helpName.value}`,
+            key: `guide.${helpId.value}`,
             newState: true,
           });
         }

@@ -862,6 +862,8 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 	defer ticker.Stop()
 	approved := false
 
+	log.Debug("Waiting for issue pipeline tasks.")
+	prevStatus := "UNKNOWN"
 	for range ticker.C {
 		issue, err := ctl.getIssue(id)
 		if err != nil {
@@ -872,6 +874,10 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 		if err != nil {
 			return status, err
 		}
+		if string(status) != prevStatus {
+			log.Debug(fmt.Sprintf("Status changed: %s -> %s.", prevStatus, status))
+			prevStatus = string(status)
+		}
 		switch status {
 		case api.TaskPendingApproval:
 			if approveOnce && approved {
@@ -881,15 +887,9 @@ func (ctl *controller) waitIssuePipelineTaskImpl(id int, approveFunc func(issue 
 				return api.TaskFailed, err
 			}
 			approved = true
-		case api.TaskFailed:
+		case api.TaskFailed, api.TaskDone, api.TaskCanceled:
 			return status, err
-		case api.TaskDone:
-			return status, err
-		case api.TaskCanceled:
-			return status, err
-		case api.TaskPending:
-			approved = true
-		case api.TaskRunning:
+		case api.TaskPending, api.TaskRunning:
 			approved = true
 			// keep waiting
 		}

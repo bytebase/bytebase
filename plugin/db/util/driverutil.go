@@ -401,7 +401,7 @@ func Query(ctx context.Context, sqldb *sql.DB, statement string, limit int) ([]i
 }
 
 // FindMigrationHistoryList will find the list of migration history.
-func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string, baseQuery string) ([]*db.MigrationHistory, error) {
+func FindMigrationHistoryList(ctx context.Context, findMigrationHistoryListQuery string, queryParams []interface{}, driver db.Driver, database string) ([]*db.MigrationHistory, error) {
 	// To support `pg` option, the util layer will not know which database where `migration_history` table is,
 	// so we need to connect to the database provided by params.
 	sqldb, err := driver.GetDBConnection(ctx, database)

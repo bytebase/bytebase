@@ -202,6 +202,7 @@
     "backup-and-restore": "Backup and restore",
     "write-only": "write only",
     "pitr": "PITR",
+    "fix": "Fix",
     "go-now": "Go now"
   },
   "error-page": {
@@ -494,7 +495,7 @@
     "vcs-info": "indicates the project has enabled VCS based version control. Selecting database belonging to such project will navigate you to the corresponding Git repository to initiate the change process.",
     "alter-single-db": "Alter single database",
     "alter-multiple-db": "Alter multiple databases",
-    "alter-multiple-db-info": "For each environment, you can select a database to alter its schema or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
+    "alter-multiple-db-info": "For each environment, you can select multiple databases to alter their schemas or just skip that environment. This allows you to compose a single pipeline to propagate changes across multiple environments."
   },
   "quick-action": {
     "create-db": "Create database",
@@ -825,7 +826,21 @@
       "no-later-than-now": "Restore point-in-time cannot be later than now."
     },
     "show-reserved-tables": "Show Bytebase reserved tables",
-    "show-reserved-databases": "Show Bytebase reserved databases"
+    "show-reserved-databases": "Show Bytebase reserved databases",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "Disabled",
+        "weekly": "Every week",
+        "daily": "Every day"
+      },
+      "form": {
+        "schedule": "Schedule",
+        "day-of-week": "Day of week",
+        "time-of-day": "Time of day",
+        "retention-period": "Retention period(days)"
+      }
+    },
+    "backup-policy-violation": "Backup policy violation"
   },
   "repository": {
     "branch-observe-file-change": "The branch where Bytebase observes the file change.",

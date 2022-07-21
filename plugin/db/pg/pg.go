@@ -54,7 +54,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	if (config.TLSConfig.SslCert == "" && config.TLSConfig.SslKey != "") ||
 		(config.TLSConfig.SslCert != "" && config.TLSConfig.SslKey == "") {
 		return nil, fmt.Errorf("ssl-cert and ssl-key must be both set or unset")
@@ -159,7 +159,7 @@ func guessDSN(username, password, hostname, port, database, sslCA, sslCert, sslK
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 
@@ -169,7 +169,7 @@ func (driver *Driver) Ping(ctx context.Context) error {
 }
 
 // GetDBConnection gets a database connection.
-func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sql.DB, error) {
+func (driver *Driver) GetDBConnection(_ context.Context, database string) (*sql.DB, error) {
 	if err := driver.switchDatabase(database); err != nil {
 		return nil, err
 	}
@@ -177,9 +177,9 @@ func (driver *Driver) GetDBConnection(ctx context.Context, database string) (*sq
 }
 
 // getDatabases gets all databases of an instance.
-func (driver *Driver) getDatabases() ([]*pgDatabaseSchema, error) {
+func (driver *Driver) getDatabases(ctx context.Context) ([]*pgDatabaseSchema, error) {
 	var dbs []*pgDatabaseSchema
-	rows, err := driver.db.Query("SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 		// We don't use transaction for creating / altering databases in Postgres.
 		// https://github.com/bytebase/bytebase/issues/202
 		if strings.HasPrefix(stmt, "CREATE DATABASE ") {
-			databases, err := driver.getDatabases()
+			databases, err := driver.getDatabases(ctx)
 			if err != nil {
 				return err
 			}
