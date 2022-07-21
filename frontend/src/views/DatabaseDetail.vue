@@ -363,10 +363,6 @@ const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
 });
 
-const isTenantProject = computed(() => {
-  return database.value.project.tenantMode === "TENANT";
-});
-
 const isCurrentUserDBAOrOwner = computed((): boolean => {
   return isDBAOrOwner(currentUser.value.role);
 });

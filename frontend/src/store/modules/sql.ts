@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import {
   ConnectionInfo,
+  DatabaseId,
   InstanceId,
   INSTANCE_OPERATION_TIMEOUT,
   QueryInfo,
@@ -61,6 +62,32 @@ export const useSQLStore = defineStore("sql", {
         // Refresh the corresponding list.
         useDatabaseStore().fetchDatabaseListByInstanceId(instanceId);
         useInstanceStore().fetchInstanceUserListById(instanceId);
+      }
+
+      return resultSet;
+    },
+    async syncDatabaseSchema(databaseId: DatabaseId) {
+      const res = (
+        await axios.post(
+          `/api/sql/sync-schema`,
+          {
+            data: {
+              type: "sqlSyncSchema",
+              attributes: {
+                databaseId: databaseId,
+              },
+            },
+          },
+          {
+            timeout: INSTANCE_OPERATION_TIMEOUT,
+          }
+        )
+      ).data;
+
+      const resultSet = convert(res.data);
+      if (!resultSet.error) {
+        // Refresh the corresponding list.
+        useDatabaseStore().fetchDatabaseById(databaseId);
       }
 
       return resultSet;
