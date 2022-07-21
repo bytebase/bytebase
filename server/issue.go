@@ -953,7 +953,7 @@ func createTaskListForBackupRestore(instanceID, backupID int, targetDatabaseName
 	taskCreateList = append(taskCreateList, api.TaskCreate{
 		InstanceID:   instanceID,
 		Name:         fmt.Sprintf("Restore backup %v", backupName),
-		Status:       api.TaskPending,
+		Status:       taskStatus,
 		Type:         api.TaskDatabaseRestore,
 		DatabaseName: targetDatabaseName,
 		BackupID:     &backupID,
