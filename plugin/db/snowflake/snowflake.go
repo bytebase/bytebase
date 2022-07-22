@@ -231,7 +231,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string) error {
 	}
 
 	if err := driver.useRole(ctx, sysAdminRole); err != nil {
-		return nil
+		return err
 	}
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
