@@ -48,7 +48,7 @@ func TestNamingFKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingFKConventionMismatch,
 					Title:   "naming.index.fk",
-					Content: fmt.Sprintf("Foreign key `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidFKName),
+					Content: fmt.Sprintf("Foreign key `%s` in table `tech_book` mismatches the naming convention, its length should be within 64 characters", invalidFKName),
 				},
 			},
 		},

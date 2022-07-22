@@ -49,7 +49,7 @@ func TestNamingIndexConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingIndexConventionMismatch,
 					Title:   "naming.index.idx",
-					Content: fmt.Sprintf("Index `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidIndexName),
+					Content: fmt.Sprintf("Index `%s` in table `tech_book` mismatches the naming convention, its length should be within 64 characters", invalidIndexName),
 				},
 			},
 		},

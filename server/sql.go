@@ -672,7 +672,7 @@ func (s *Server) sqlCheck(
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SQLReviewCheckContext{
+	res, err := advisor.SchemaReviewCheck(statement, policy, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

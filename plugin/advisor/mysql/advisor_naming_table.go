@@ -102,7 +102,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    advisor.NamingTableConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should within %d characters", tableName, v.maxLength),
+				Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, v.maxLength),
 			})
 		}
 	}

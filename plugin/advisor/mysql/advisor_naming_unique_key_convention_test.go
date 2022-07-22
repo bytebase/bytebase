@@ -49,7 +49,7 @@ func TestNamingUKConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
-					Content: fmt.Sprintf("Unique key `%s` in table `tech_book` mismatches the naming convention, its length should within 64 characters", invalidUKName),
+					Content: fmt.Sprintf("Unique key `%s` in table `tech_book` mismatches the naming convention, its length should be within 64 characters", invalidUKName),
 				},
 			},
 		},

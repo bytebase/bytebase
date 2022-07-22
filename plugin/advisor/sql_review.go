@@ -254,10 +254,10 @@ type SQLReviewCheckContext struct {
 	Catalog   catalog.Catalog
 }
 
-// SchemaReviewCheck checks the statments with schema review policy.
-func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReviewPolicy, context SQLReviewCheckContext) ([]Advice, error) {
+// SchemaReviewCheck checks the statements with schema review policy.
+func SchemaReviewCheck(statements string, policy *SQLReviewPolicy, checkContext SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
-	database, err := context.Catalog.GetDatabase(ctx)
+	database, err := checkContext.Catalog.GetDatabase(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
 	}
@@ -266,18 +266,18 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReview
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, context.DbType)
+		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
 			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
 			continue
 		}
 
 		adviceList, err := Check(
-			context.DbType,
+			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:   context.Charset,
-				Collation: context.Collation,
+				Charset:   checkContext.Charset,
+				Collation: checkContext.Collation,
 				Rule:      rule,
 				Database:  database,
 			},

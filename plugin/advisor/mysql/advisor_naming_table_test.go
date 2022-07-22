@@ -42,7 +42,7 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 					Status:  advisor.Error,
 					Code:    advisor.NamingTableConventionMismatch,
 					Title:   "naming.table",
-					Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should within 64 characters", invalidTableName),
+					Content: fmt.Sprintf("`%s` mismatches table naming convention, its length should be within 64 characters", invalidTableName),
 				},
 			},
 		},
