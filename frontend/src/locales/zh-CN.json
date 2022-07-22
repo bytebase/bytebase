@@ -203,7 +203,8 @@
     "write-only": "仅写入",
     "pitr": "PITR",
     "fix": "修复",
-    "go-now": "立即前往"
+    "go-now": "立即前往",
+    "sync-now": "现在同步"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -541,13 +542,14 @@
     "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
-    "sync-status": "同步状态"
+    "sync-status": "同步状态",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
   },
   "instance": {
     "select": "选择实例",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-now": "现在同步",
     "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
