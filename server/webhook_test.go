@@ -24,7 +24,7 @@ func TestDedupMigrationFiles(t *testing.T) {
 		{
 			name:       "Empty",
 			commitList: []gitlab.WebhookCommit{},
-			want:       nil,
+			want:       []distinctFileItem{},
 		},
 		{
 			name: "Single commit, single file",
