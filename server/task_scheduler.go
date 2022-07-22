@@ -127,77 +127,80 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 					go func(task *api.Task, executor TaskExecutor) {
 						done, result, err := RunTaskExecutorOnce(ctx, executor, s.server, task)
-						if done {
-							if err == nil {
-								bytes, err := json.Marshal(*result)
-								if err != nil {
-									log.Error("Failed to marshal task run result",
-										zap.Int("task_id", task.ID),
-										zap.String("type", string(task.Type)),
-										zap.Error(err),
-									)
-									return
-								}
-								code := common.Ok
-								result := string(bytes)
-								taskStatusPatch := &api.TaskStatusPatch{
-									ID:        task.ID,
-									UpdaterID: api.SystemBotID,
-									Status:    api.TaskDone,
-									Code:      &code,
-									Result:    &result,
-								}
-								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-								if err != nil {
-									log.Error("Failed to mark task as DONE",
-										zap.Int("id", task.ID),
-										zap.String("name", task.Name),
-										zap.Error(err),
-									)
-								}
-							} else {
-								log.Warn("Failed to run task",
-									zap.Int("id", task.ID),
-									zap.String("name", task.Name),
-									zap.String("type", string(task.Type)),
-									zap.Error(err),
-								)
-								bytes, marshalErr := json.Marshal(api.TaskRunResultPayload{
-									Detail: err.Error(),
-								})
-								if marshalErr != nil {
-									log.Error("Failed to marshal task run result",
-										zap.Int("task_id", task.ID),
-										zap.String("type", string(task.Type)),
-										zap.Error(marshalErr),
-									)
-									return
-								}
-								code := common.ErrorCode(err)
-								result := string(bytes)
-								taskStatusPatch := &api.TaskStatusPatch{
-									ID:        task.ID,
-									UpdaterID: api.SystemBotID,
-									Status:    api.TaskFailed,
-									Code:      &code,
-									Result:    &result,
-								}
-								_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
-								if err != nil {
-									log.Error("Failed to mark task as FAILED",
-										zap.Int("id", task.ID),
-										zap.String("name", task.Name),
-										zap.Error(err),
-									)
-								}
-							}
-						} else if err != nil {
+						if !done && err != nil {
 							log.Debug("Encountered transient error running task, will retry",
 								zap.Int("id", task.ID),
 								zap.String("name", task.Name),
 								zap.String("type", string(task.Type)),
 								zap.Error(err),
 							)
+							return
+						}
+						if done && err != nil {
+							log.Warn("Failed to run task",
+								zap.Int("id", task.ID),
+								zap.String("name", task.Name),
+								zap.String("type", string(task.Type)),
+								zap.Error(err),
+							)
+							bytes, marshalErr := json.Marshal(api.TaskRunResultPayload{
+								Detail: err.Error(),
+							})
+							if marshalErr != nil {
+								log.Error("Failed to marshal task run result",
+									zap.Int("task_id", task.ID),
+									zap.String("type", string(task.Type)),
+									zap.Error(marshalErr),
+								)
+								return
+							}
+							code := common.ErrorCode(err)
+							result := string(bytes)
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterID: api.SystemBotID,
+								Status:    api.TaskFailed,
+								Code:      &code,
+								Result:    &result,
+							}
+							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							if err != nil {
+								log.Error("Failed to mark task as FAILED",
+									zap.Int("id", task.ID),
+									zap.String("name", task.Name),
+									zap.Error(err),
+								)
+							}
+							return
+						}
+						if done && err == nil {
+							bytes, err := json.Marshal(*result)
+							if err != nil {
+								log.Error("Failed to marshal task run result",
+									zap.Int("task_id", task.ID),
+									zap.String("type", string(task.Type)),
+									zap.Error(err),
+								)
+								return
+							}
+							code := common.Ok
+							result := string(bytes)
+							taskStatusPatch := &api.TaskStatusPatch{
+								ID:        task.ID,
+								UpdaterID: api.SystemBotID,
+								Status:    api.TaskDone,
+								Code:      &code,
+								Result:    &result,
+							}
+							_, err = s.server.changeTaskStatusWithPatch(ctx, task, taskStatusPatch)
+							if err != nil {
+								log.Error("Failed to mark task as DONE",
+									zap.Int("id", task.ID),
+									zap.String("name", task.Name),
+									zap.Error(err),
+								)
+							}
+							return
 						}
 					}(task, s.runningExecutors[task.ID])
 				}
