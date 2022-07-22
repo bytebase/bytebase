@@ -297,16 +297,26 @@ export default defineComponent({
     const handleUploadFile = (e: Event) => {
       const target = e.target as HTMLInputElement;
       const file = (target.files || [])[0];
+      const cleanup = () => {
+        // Note that once selected a file, selecting the same file again will not
+        // trigger <input type="file">'s change event.
+        // So we need to do some cleanup stuff here.
+        target.files = null;
+        target.value = "";
+      };
+
       if (!file) {
-        return;
+        return cleanup();
       }
       if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
         pushNotification({
           module: "bytebase",
-          style: "WARN",
-          title: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
+          style: "CRITICAL",
+          title: t("issue.upload-sql-file-max-size-exceeded", {
+            size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
+          }),
         });
-        return;
+        return cleanup();
       }
       const fr = new FileReader();
       fr.onload = () => {
@@ -340,11 +350,7 @@ export default defineComponent({
       };
       fr.readAsText(file);
 
-      // Note that once selected a file, selecting the same file again will not
-      // trigger <input type="file">'s change event.
-      // So we need to do some clear up stuff here.
-      target.files = null;
-      target.value = "";
+      cleanup();
     };
 
     const onStatementChange = (value: string) => {
