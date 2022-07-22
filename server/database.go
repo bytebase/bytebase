@@ -685,7 +685,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourceCreate.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
@@ -757,7 +757,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourcePatch.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
@@ -827,7 +827,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
+	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -850,7 +850,7 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 }
 
 // getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
+func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return db.ConnectionConfig{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))

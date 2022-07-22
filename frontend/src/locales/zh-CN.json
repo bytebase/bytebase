@@ -202,7 +202,9 @@
     "backup-and-restore": "备份与恢复",
     "write-only": "仅写入",
     "pitr": "PITR",
-    "go-now": "立即前往"
+    "fix": "修复",
+    "go-now": "立即前往",
+    "sync-now": "现在同步"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -272,7 +274,8 @@
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
     "action": "5 秒部署您自己的服务",
-    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
+    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
+    "readonly": "服务器处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。"
   },
   "intro": {
     "doc": "文档",
@@ -495,7 +498,7 @@
     "vcs-info": "代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "变更多个数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
+    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -539,13 +542,14 @@
     "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
-    "sync-status": "同步状态"
+    "sync-status": "同步状态",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
   },
   "instance": {
     "select": "选择实例",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-now": "现在同步",
     "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
@@ -826,7 +830,21 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
-    "show-reserved-databases": "显示 Bytebase 保留的数据库"
+    "show-reserved-databases": "显示 Bytebase 保留的数据库",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "关闭",
+        "weekly": "每周",
+        "daily": "每天"
+      },
+      "form": {
+        "schedule": "计划",
+        "day-of-week": "星期",
+        "time-of-day": "时间",
+        "retention-period": "保留时长（天）"
+      }
+    },
+    "backup-policy-violation": "违反了备份策略"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
