@@ -304,11 +304,12 @@ const updateTooltipPosition = (
   } else if (position === "left") {
     hintWrapper.style.top = `${bounding.top}px`;
     hintWrapper.style.left = `${bounding.left}px`;
+  } else if (position === "leftcenter") {
+    hintWrapper.style.top = `${bounding.top + bounding.height / 2 - 12}px`;
+    hintWrapper.style.left = `${bounding.left}px`;
   } else if (position === "center") {
-    hintWrapper.style.top = `${bounding.top + bounding.height / 2}px`;
-    hintWrapper.style.left = `${bounding.left + bounding.width / 2}px`;
-    hintWrapper.style.marginTop = `-12px`;
-    hintWrapper.style.marginLeft = `-12px`;
+    hintWrapper.style.top = `${bounding.top + bounding.height / 2 - 12}px`;
+    hintWrapper.style.left = `${bounding.left + bounding.width / 2 - 12}px`;
   }
 
   requestAnimationFrame(() =>
