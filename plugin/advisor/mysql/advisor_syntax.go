@@ -23,7 +23,7 @@ func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]adviso
 
 	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)
 	if err != nil {
-		// nolint
+		//nolint:nilerr
 		return []advisor.Advice{
 			{
 				Status:  advisor.Error,
