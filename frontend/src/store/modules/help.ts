@@ -13,7 +13,8 @@ export const useHelpStore = defineStore("help", {
       this.openByDefault = openByDefault;
     },
     exitHelp() {
-      this.$reset();
+      this.currHelpId = "";
+      this.openByDefault = false;
     },
   },
 });

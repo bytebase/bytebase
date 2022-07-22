@@ -19,11 +19,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, watch } from "vue";
+import { defineComponent, ref, reactive, watch, computed } from "vue";
 import { NDrawer, NDrawerContent, DrawerPlacement } from "naive-ui";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
+import { storeToRefs } from "pinia";
 import { useLanguage } from "@/composables/useLanguage";
 import { useUIStateStore, useHelpStore } from "@/store";
 
@@ -35,29 +36,22 @@ interface State {
 export default defineComponent({
   components: { NDrawer, NDrawerContent },
   setup() {
-    const helpId = ref<string>("");
-    const isGuide = ref<boolean>(false);
     const active = ref(false);
     const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
     const helpStore = useHelpStore();
+    const helpStoreState = storeToRefs(helpStore);
+    const helpId = computed(() => helpStoreState.currHelpId.value);
+    const isGuide = computed(() => helpStoreState.openByDefault.value);
 
     const state = reactive<State>({
       frontmatter: {},
       html: "",
     });
 
-    watch(helpStore.$state, (state) => {
-      showHelp(state.currHelpId, state.openByDefault);
-    });
-
-    const showHelp = async (id: string, openByDefault?: boolean) => {
+    watch(helpId, async (id) => {
       if (id) {
-        helpId.value = id;
-        if (openByDefault) {
-          isGuide.value = true;
-        }
         const res = await fetch(
           `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${id}.md`
         );
@@ -73,11 +67,9 @@ export default defineComponent({
         state.html = DOMPurify.sanitize(html);
         activate("right");
       }
-    };
+    });
 
     const onClose = () => {
-      helpStore.exitHelp();
-
       if (isGuide.value) {
         if (!uiStateStore.getIntroStateByKey(`guide.${helpId.value}`)) {
           uiStateStore.saveIntroStateByKey({
@@ -86,6 +78,7 @@ export default defineComponent({
           });
         }
       }
+      helpStore.exitHelp();
     };
 
     const activate = (place: DrawerPlacement) => {
