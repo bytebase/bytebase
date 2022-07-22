@@ -48,7 +48,7 @@
             <span class="text-gray-400 text-xs ml-2">{{ timezone }}</span>
           </label>
           <NDatePicker v-model:value="state.pitrTimestampMS" type="datetime" />
-          <span v-if="false && pitrTimestampError" class="text-sm text-red-600">
+          <span v-if="pitrTimestampError" class="text-sm text-red-600">
             {{ pitrTimestampError }}
           </span>
         </div>
@@ -105,20 +105,14 @@
           {{ $t("common.cancel") }}
         </button>
 
-        <BBTooltipButton
-          type="primary"
-          tooltip-mode="DISABLED-ONLY"
+        <button
+          type="button"
+          class="btn-primary py-2 px-4 ml-3"
           :disabled="!isValidParams"
-          class="ml-3"
-          @click="onConfirm"
+          @click.prevent="onConfirm"
         >
           {{ $t("common.confirm") }}
-          <template v-if="pitrTimestampError" #tooltip>
-            <div class="whitespace-pre-wrap max-w-[20rem]">
-              {{ pitrTimestampError }}
-            </div>
-          </template>
-        </BBTooltipButton>
+        </button>
       </div>
 
       <div
