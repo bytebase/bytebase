@@ -92,7 +92,7 @@
       "title": "",
       "description": {
         "en-US": "In this migration, drift is detected. Click for more.",
-        "zh-CN": "一次常规的变更，其中检测到了漂移。点击查看详情"
+        "zh-CN": "一次常规的变更，其中检测到了偏差。点击查看详情"
       },
       "alwaysShow": true,
       "position": "right"
@@ -110,7 +110,7 @@
       "title": "",
       "description": {
         "en-US": "This migration task also detected schema drift. It means another client performed some schema changes which were out of version control.",
-        "zh-CN": "本次变更还检测到了 Schema 漂移，说明有数据库变更通过其他客户端发起，脱离了版本管控"
+        "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了版本管控"
       },
       "position": "right"
     },
