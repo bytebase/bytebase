@@ -159,17 +159,6 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 			}
 		}
 
-		if taskPatch.Statement != nil {
-			// Tenant mode project don't allow updating SQL statement for a single task.
-			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
-			}
-			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
-				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
-			}
-		}
-
 		taskPatched, httpErr := s.patchTask(ctx, task, taskPatch, issue)
 		if httpErr != nil {
 			return httpErr
