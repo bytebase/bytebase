@@ -303,24 +303,12 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 		}
 
 		for _, added := range commit.AddedList {
-<<<<<<< HEAD
 			isNew := true
 			item := distinctFileItem{
 				createdTime: createdTime,
 				commit:      commit,
 				fileName:    added,
 			}
-=======
-			new := true
-<<<<<<< HEAD
->>>>>>> 235ebf4e (fix: dedup migration file)
-=======
-			item := distinctFileItem{
-				createdTime: createdTime,
-				commit:      commit,
-				fileName:    added,
-			}
->>>>>>> 3e8ac550 (fix: address comment)
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
 				if added == file.fileName {
@@ -332,21 +320,8 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 				}
 			}
 
-<<<<<<< HEAD
 			if isNew {
 				distinctFileList = append(distinctFileList, item)
-=======
-			if new {
-<<<<<<< HEAD
-				distinctFileList = append(distinctFileList, distinctFileItem{
-					createdTime: createdTime,
-					commit:      commit,
-					fileName:    added,
-				})
->>>>>>> 235ebf4e (fix: dedup migration file)
-=======
-				distinctFileList = append(distinctFileList, item)
->>>>>>> 3e8ac550 (fix: address comment)
 			}
 		}
 	}
