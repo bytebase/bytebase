@@ -569,7 +569,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Create database",
+					Name:          "Restore backup",
 					EnvironmentID: instance.EnvironmentID,
 					TaskList: []api.TaskCreate{
 						{
