@@ -19,22 +19,13 @@
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  ref,
-  inject,
-  onMounted,
-  onUnmounted,
-  reactive,
-} from "vue";
+import { defineComponent, ref, onMounted, reactive } from "vue";
 import { NDrawer, NDrawerContent, DrawerPlacement } from "naive-ui";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
 import yaml from "js-yaml";
-import { Event } from "@/utils";
 import { useLanguage } from "@/composables/useLanguage";
-import { useUIStateStore } from "@/store";
-import { EventType } from "@/types";
+import { useUIStateStore, useHelpStore } from "@/store";
 
 interface State {
   frontmatter: Record<string, string>;
@@ -44,13 +35,13 @@ interface State {
 export default defineComponent({
   components: { NDrawer, NDrawerContent },
   setup() {
-    const event = inject("event") as Event;
     const helpId = ref<string>("");
     const isGuide = ref<boolean>(false);
     const active = ref(false);
     const placement = ref<DrawerPlacement>("right");
     const { locale } = useLanguage();
     const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
 
     const state = reactive<State>({
       frontmatter: {},
@@ -93,10 +84,9 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      event.on(EventType.EVENT_HELP, showHelp);
-    });
-    onUnmounted(() => {
-      event.off(EventType.EVENT_HELP);
+      helpStore.$subscribe((_, state) => {
+        showHelp(state.currHelpId, state.openByDefault);
+      });
     });
     const activate = (place: DrawerPlacement) => {
       active.value = true;
