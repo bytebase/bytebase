@@ -580,12 +580,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							DatabaseName: payload.DatabaseName,
 							Payload:      string(bytes),
 						},
-					},
-				},
-				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
 						{
 							InstanceID:   c.InstanceID,
 							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
@@ -595,6 +589,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							BackupID:     &c.BackupID,
 							Payload:      string(restoreBytes),
 						},
+					},
+					TaskIndexDAGList: []api.TaskIndexDAG{
+						{FromIndex: 0, ToIndex: 1},
 					},
 				},
 			},
