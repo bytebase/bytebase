@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO: remove the sqlReviewConfig.yaml in the frontend. Use the unified yml file in the advisor package.
 //go:embed sql-check.yml
 var sqlCheck string
 
