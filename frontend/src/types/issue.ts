@@ -38,8 +38,8 @@ export type CreateDatabaseContext = {
   characterSet: string;
   collation: string;
   cluster: string;
-  backupId: BackupId;
-  backupName: string;
+  backupId?: BackupId;
+  backupName?: string;
   labels?: string; // JSON encoded
 };
 
@@ -67,6 +67,7 @@ export type UpdateSchemaGhostContext = {
 export type PITRContext = {
   databaseId: DatabaseId;
   pointInTimeTs: number; // UNIX timestamp
+  createDatabaseContext?: CreateDatabaseContext;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
