@@ -7,4 +7,10 @@ export const useHelpStore = defineStore("help", {
       openByDefault: false,
     };
   },
+  actions: {
+    showHelp(id: string, openByDefault: boolean): void {
+      this.currHelpId = id;
+      this.openByDefault = openByDefault;
+    },
+  },
 });

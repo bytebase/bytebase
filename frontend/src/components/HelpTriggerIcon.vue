@@ -26,10 +26,7 @@ export default defineComponent({
   setup: (props) => {
     const helpStore = useHelpStore();
     const handleClick = () => {
-      helpStore.$patch({
-        currHelpId: props.id,
-        openByDefault: props.openByDefault,
-      });
+      helpStore.showHelp(props.id, props.openByDefault);
     };
     return {
       handleClick,

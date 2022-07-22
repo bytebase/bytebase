@@ -81,10 +81,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.database")) {
         mountedTimer.value = setTimeout(() => {
-          helpStore.$patch({
-            currHelpId: "help.database",
-            openByDefault: true,
-          });
+          helpStore.showHelp("help.database", true);
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,

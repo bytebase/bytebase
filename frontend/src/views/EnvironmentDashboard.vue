@@ -167,10 +167,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
         mountedTimer.value = setTimeout(() => {
-          helpStore.$patch({
-            currHelpId: "help.environment",
-            openByDefault: true,
-          });
+          helpStore.showHelp("help.environment", true);
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
