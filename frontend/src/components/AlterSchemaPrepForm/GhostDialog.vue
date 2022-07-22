@@ -45,7 +45,7 @@
             <i18n-t tag="p" keypath="issue.migration-mode.online.description">
               <template #link>
                 <LearnMoreLink
-                  url="https://bytebase.com/docs/concepts/schema-change-workflow"
+                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
                 />
               </template>
             </i18n-t>
