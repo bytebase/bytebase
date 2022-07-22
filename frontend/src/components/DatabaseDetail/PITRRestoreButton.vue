@@ -31,7 +31,7 @@
           <template #link>
             <a
               class="normal-link inline-flex items-center"
-              href="https://github.com/bytebase/bytebase/blob/main/docs/design/pitr-mysql.md"
+              href="https://www.bytebase.com/docs/disaster-recovery/point-in-time-recovery-for-mysql"
               target="__BLANK"
             >
               {{ $t("common.learn-more") }}
