@@ -40,19 +40,57 @@
         </i18n-t>
       </div>
 
-      <div class="w-64 space-y-2">
-        <label class="textlabel w-full flex flex-col gap-1">
-          <span>{{ $t("database.pitr.point-in-time") }}</span>
-          <span class="text-gray-400 text-xs">{{ timezone }}</span>
-        </label>
-        <NDatePicker
-          v-model:value="state.pitrTimestampMS"
-          panel
-          type="datetime"
-          :actions="[]"
-          :time-picker-props="{
-            actions: [],
-          }"
+      <div class="w-64 space-y-4">
+        <div class="space-y-2">
+          <label class="textlabel w-full flex items-baseline">
+            <span>{{ $t("database.pitr.point-in-time") }}</span>
+            <span class="text-red-600 ml-1">*</span>
+            <span class="text-gray-400 text-xs ml-2">{{ timezone }}</span>
+          </label>
+          <NDatePicker v-model:value="state.pitrTimestampMS" type="datetime" />
+          <span v-if="false && pitrTimestampError" class="text-sm text-red-600">
+            {{ pitrTimestampError }}
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <label class="textlabel w-full flex flex-col gap-1">
+            {{ $t("database.pitr.target") }}
+          </label>
+          <div class="flex items-center gap-2 textlabel">
+            <label class="flex items-center">
+              <input
+                type="radio"
+                :checked="state.target === 'IN-PLACE'"
+                @input="state.target = 'IN-PLACE'"
+              />
+              <span class="ml-2">{{ $t("database.pitr.target-inplace") }}</span>
+              <NTooltip>
+                <template #trigger>
+                  <heroicons-outline:exclamation-circle class="w-4 h-4 ml-1" />
+                </template>
+                <span class="whitespace-nowrap">
+                  {{ $t("database.pitr.will-override-current-data") }}
+                </span>
+              </NTooltip>
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                type="radio"
+                :checked="state.target === 'NEW'"
+                @input="state.target = 'NEW'"
+              />
+              <span>{{ $t("database.pitr.target-new-db") }}</span>
+            </label>
+          </div>
+        </div>
+
+        <CreatePITRDatabaseForm
+          v-if="state.target === 'NEW'"
+          ref="createDatabaseForm"
+          :database="database"
+          :context="state.createContext"
+          @update="state.createContext = $event"
         />
       </div>
 
@@ -70,12 +108,12 @@
         <BBTooltipButton
           type="primary"
           tooltip-mode="DISABLED-ONLY"
-          :disabled="!!pitrTimestampError"
+          :disabled="!isValidParams"
           class="ml-3"
           @click="onConfirm"
         >
           {{ $t("common.confirm") }}
-          <template #tooltip>
+          <template v-if="pitrTimestampError" #tooltip>
             <div class="whitespace-pre-wrap max-w-[20rem]">
               {{ pitrTimestampError }}
             </div>
@@ -100,19 +138,25 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, PropType, reactive } from "vue";
+import { computed, PropType, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { NDatePicker } from "naive-ui";
 import dayjs from "dayjs";
 import { useI18n } from "vue-i18n";
-import { Database } from "@/types";
+import { CreateDatabaseContext, Database } from "@/types";
 import { usePITRLogic } from "@/plugins";
 import { issueSlug } from "@/utils";
 import { featureToRef } from "@/store";
+import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
+import { CreatePITRDatabaseContext } from "./utils";
+
+type PITRTarget = "IN-PLACE" | "NEW";
 
 interface LocalState {
   showDatabasePITRModal: boolean;
   pitrTimestampMS: number;
+  target: PITRTarget;
+  createContext: CreatePITRDatabaseContext | undefined;
   loading: boolean;
   showFeatureModal: boolean;
 }
@@ -134,9 +178,13 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   showDatabasePITRModal: false,
   pitrTimestampMS: Date.now(),
+  target: "IN-PLACE",
+  createContext: undefined,
   loading: false,
   showFeatureModal: false,
 });
+
+const createDatabaseForm = ref<InstanceType<typeof CreatePITRDatabaseForm>>();
 
 const hasPITRFeature = featureToRef("bb.feature.disaster-recovery-pitr");
 
@@ -155,6 +203,8 @@ const earliest = computed((): number => {
   return earliestAllowedRestoreTS * 1000;
 });
 
+// Returns error message (string) if error occurs.
+// Returns undefined if validation passed.
 const pitrTimestampError = computed((): string | undefined => {
   const val = state.pitrTimestampMS;
   const now = Date.now();
@@ -170,18 +220,39 @@ const pitrTimestampError = computed((): string | undefined => {
   if (val > now) {
     return t("database.pitr.no-later-than-now");
   }
+
+  if (!createDatabaseForm.value?.validate()) {
+    return "";
+  }
+
   return undefined;
+});
+
+const createDatabaseContextError = computed((): boolean => {
+  const { target } = state;
+  if (target === "IN-PLACE") {
+    return false;
+  }
+  return !createDatabaseForm.value?.validate();
+});
+
+const isValidParams = computed((): boolean => {
+  return !pitrTimestampError.value && !createDatabaseContextError.value;
 });
 
 const resetUI = () => {
   state.loading = false;
   state.showDatabasePITRModal = false;
   state.pitrTimestampMS = Date.now();
+  state.target = "IN-PLACE";
+  state.createContext = undefined;
 };
 
 const openDialog = () => {
   state.showDatabasePITRModal = true;
   state.pitrTimestampMS = Date.now();
+  state.target = "IN-PLACE";
+  state.createContext = undefined;
 };
 
 const onConfirm = async () => {
@@ -190,11 +261,34 @@ const onConfirm = async () => {
     return;
   }
 
+  if (!isValidParams.value) {
+    return;
+  }
+
   state.loading = true;
 
   try {
+    let createDatabaseContext: CreateDatabaseContext | undefined = undefined;
+    const { target, createContext: context } = state;
+    if (target === "NEW" && context) {
+      createDatabaseContext = {
+        projectId: context.projectId,
+        environmentId: context.environmentId,
+        instanceId: context.instanceId,
+        databaseName: context.databaseName,
+        characterSet: context.characterSet,
+        collation: context.collation,
+        owner: "",
+        cluster: "",
+      } as CreateDatabaseContext;
+      // Do not submit non-selected optional labels
+      const labelList = context.labelList.filter((label) => !!label.value);
+      createDatabaseContext.labels = JSON.stringify(labelList);
+    }
+
     const issue = await createPITRIssue(
       Math.floor(state.pitrTimestampMS / 1000),
+      createDatabaseContext,
       {
         name: `Restore database [${props.database.name}] to [${dayjs(
           state.pitrTimestampMS

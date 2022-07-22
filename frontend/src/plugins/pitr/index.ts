@@ -1,13 +1,32 @@
 import { computed, Ref } from "vue";
 import semverCompare from "semver/functions/compare";
-import { Database, IssueCreate, PITRContext, SYSTEM_BOT_ID } from "@/types";
-import { useBackupListByDatabaseId, useIssueStore } from "@/store";
+import {
+  CreateDatabaseContext,
+  Database,
+  Instance,
+  IssueCreate,
+  PITRContext,
+} from "@/types";
+import {
+  useBackupListByDatabaseId,
+  useCurrentUser,
+  useIssueStore,
+} from "@/store";
 import { useI18n } from "vue-i18n";
 
 export const MIN_PITR_SUPPORT_MYSQL_VERSION = "8.0.0";
 
+export const isPITRAvailableOnInstance = (instance: Instance): boolean => {
+  const { engine, engineVersion } = instance;
+  return (
+    engine === "MYSQL" &&
+    semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION) >= 0
+  );
+};
+
 export const usePITRLogic = (database: Ref<Database>) => {
   const { t } = useI18n();
+  const currentUser = useCurrentUser();
 
   const backupList = useBackupListByDatabaseId(
     computed(() => database.value.id)
@@ -17,11 +36,9 @@ export const usePITRLogic = (database: Ref<Database>) => {
   );
 
   const pitrAvailable = computed((): { result: boolean; message: string } => {
-    const { engine, engineVersion } = database.value.instance;
-    if (
-      engine === "MYSQL" &&
-      semverCompare(engineVersion, MIN_PITR_SUPPORT_MYSQL_VERSION) >= 0
-    ) {
+    const { instance } = database.value;
+
+    if (isPITRAvailableOnInstance(instance)) {
       if (doneBackupList.value.length > 0) {
         return { result: true, message: "ok" };
       }
@@ -41,18 +58,20 @@ export const usePITRLogic = (database: Ref<Database>) => {
 
   const createPITRIssue = async (
     pointTimeTs: number,
+    createDatabaseContext: CreateDatabaseContext | undefined = undefined,
     params: Partial<IssueCreate> = {}
   ) => {
     const issueStore = useIssueStore();
     const createContext: PITRContext = {
       databaseId: database.value.id,
       pointInTimeTs: pointTimeTs,
+      createDatabaseContext,
     };
     const issueCreate: IssueCreate = {
       name: `Restore database [${database.value.name}]`,
       type: "bb.issue.database.pitr",
       description: "",
-      assigneeId: SYSTEM_BOT_ID,
+      assigneeId: currentUser.value.id,
       projectId: database.value.project.id,
       payload: {},
       createContext,
