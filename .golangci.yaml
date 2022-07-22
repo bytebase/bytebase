@@ -9,6 +9,7 @@ linters:
     - gocritic
     - sqlclosecheck
     - rowserrcheck
+    - nilerr
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
