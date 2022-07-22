@@ -542,7 +542,7 @@
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
     "sync-status": "同步状态",
-    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。.",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
   },
   "instance": {
