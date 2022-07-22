@@ -23,7 +23,7 @@ KEY k_1 (k)
 )`
 	db, err := connectTestMySQL(port, "")
 	if err != nil {
-		return nil
+		return err
 	}
 	defer db.Close()
 
