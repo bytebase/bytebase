@@ -2,10 +2,10 @@ package pg
 
 import (
 	"fmt"
-	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
+	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 )
 
@@ -162,12 +162,8 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 // getUniqueKeyMetadata returns index metadata of a foreign key constraint, nil if other constraints.
 func getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
 	if constraint.Type == ast.ConstraintTypeUnique {
-		var columnList []string
-		for _, key := range constraint.KeyList {
-			columnList = append(columnList, key)
-		}
 		metaData := map[string]string{
-			advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
+			advisor.ColumnListTemplateToken: strings.Join(constraint.KeyList, "_"),
 			advisor.TableNameTemplateToken:  tableName,
 		}
 		return &indexMetaData{
