@@ -16,7 +16,7 @@
       "title": "",
       "description": {
         "en-US": "Since this is a read-only DEMO, you can contact support@bytebase.com to request a full DEMO.",
-        "zh-CN": "但由于这是个只读 DEMO，您可以联系 support@bytebase.com 来申请完整的 DEMO 进行尝试。"
+        "zh-CN": "但由于这是个只读 DEMO，您可以联系 support@bytebase.com 来申请完整的 DEMO 进行尝试"
       },
       "alwaysShow": true
     },
@@ -31,8 +31,8 @@
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Let's focus on the Database",
-        "zh-CN": "我们来查看数据库模块"
+        "en-US": "Click here. Let's enter the DEMO",
+        "zh-CN": "点击这里，让我们进入 DEMO"
       },
       "alwaysShow": true
     }
@@ -44,8 +44,8 @@
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Choose the target database",
-        "zh-CN": "选择一个目标数据库"
+        "en-US": "Selecting the target database",
+        "zh-CN": "选择目标数据库"
       },
       "alwaysShow": true,
       "position": "bottom"
@@ -64,10 +64,14 @@
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Let's focus on the database schema change management",
-        "zh-CN": "让我们专注在数据库变更管理场景"
+        "en-US": "All migration records are here.",
+        "zh-CN": "所有的变更记录都在这里"
       },
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "7px",
+      "marginTop": "10px"
     }
   },
   {
@@ -80,56 +84,21 @@
     }
   },
   {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(3)",
+    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(2) > td:nth-child(2)",
     "url": ".+?/db/.+?#migration-history$",
     "type": "tooltip",
-    "position": "left",
+    "position": "leftcenter",
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Every change will generate a new Schema version",
-        "zh-CN": "每次变更都将产生一个新的 Schema 版本，点我看看"
+        "en-US": "In this migration, drift is detected. Click for more.",
+        "zh-CN": "一次常规的变更，其中检测到了偏差。点击查看详情"
       },
       "alwaysShow": true,
       "position": "right"
     },
     "additionStyle": {
-      "marginLeft": "-8px"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(3) > td:nth-child(3)",
-    "url": ".+?/db/.+?#migration-history$",
-    "type": "tooltip",
-    "position": "left",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "Every change will generate a new Schema version",
-        "zh-CN": "每次变更都将产生一个新的 Schema 版本，点我看看"
-      },
-      "alwaysShow": true,
-      "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-8px"
-    }
-  },
-  {
-    "selector": "[data-label='bb-migration-history-table'] tr:nth-child(4) > td:nth-child(3)",
-    "url": ".+?/db/.+?#migration-history$",
-    "type": "tooltip",
-    "position": "left",
-    "dialog": {
-      "title": "",
-      "description": {
-        "en-US": "BASELINE records the initial state of the database schema",
-        "zh-CN": "BASELINE 记录了数据库 Schema 的初始状态，点我看看"
-      },
-      "position": "right"
-    },
-    "additionStyle": {
-      "marginLeft": "-8px"
+      "marginLeft": "-16px"
     }
   },
   {
@@ -140,10 +109,14 @@
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "A schema drift was detected in this change, indicating that a change beyond the control of the Bytebase platform occurred prior to this change.",
-        "zh-CN": "这次变更检查到了 Schema 偏差，说明这次变更之前发生了脱离 Bytebase 平台管控的变更"
+        "en-US": "This migration task also detected schema drift. It means another client performed some schema changes which were out of version control.",
+        "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了版本管控"
       },
       "position": "right"
+    },
+    "additionStyle": {
+      "marginLeft": "2px",
+      "marginTop": "10px"
     }
   },
   {
@@ -153,7 +126,7 @@
     "dialog": {
       "title": "",
       "description": {
-        "en-US": "Let's go back to Migration History",
+        "en-US": "Let's go back to Migration History.",
         "zh-CN": "让我们回到 Migration History"
       },
       "alwaysShow": true,
