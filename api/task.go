@@ -165,7 +165,8 @@ type Task struct {
 	// BlockedBy is an array of Task ID.
 	// We use string here to workaround jsonapi limitations. https://github.com/google/jsonapi/issues/209
 	BlockedBy []string `jsonapi:"attr,blockedBy"`
-	Progress  Progress `jsonapi:"attr,progress"`
+	// Progress is loaded from the task scheduler in memory, NOT from the database
+	Progress Progress `jsonapi:"attr,progress"`
 }
 
 // TaskCreate is the API message for creating a task.
