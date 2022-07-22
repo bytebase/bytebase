@@ -19,7 +19,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, reactive } from "vue";
+import { defineComponent, ref, reactive, watch } from "vue";
 import { NDrawer, NDrawerContent, DrawerPlacement } from "naive-ui";
 import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import DOMPurify from "dompurify";
@@ -48,6 +48,10 @@ export default defineComponent({
       html: "",
     });
 
+    watch(helpStore.$state, (state) => {
+      showHelp(state.currHelpId, state.openByDefault);
+    });
+
     const showHelp = async (id: string, openByDefault?: boolean) => {
       if (id) {
         helpId.value = id;
@@ -72,6 +76,8 @@ export default defineComponent({
     };
 
     const onClose = () => {
+      helpStore.exitHelp();
+
       if (isGuide.value) {
         if (!uiStateStore.getIntroStateByKey(`guide.${helpId.value}`)) {
           uiStateStore.saveIntroStateByKey({
@@ -80,14 +86,8 @@ export default defineComponent({
           });
         }
       }
-      // else do nth
     };
 
-    onMounted(() => {
-      helpStore.$subscribe((_, state) => {
-        showHelp(state.currHelpId, state.openByDefault);
-      });
-    });
     const activate = (place: DrawerPlacement) => {
       active.value = true;
       placement.value = place;

@@ -12,5 +12,8 @@ export const useHelpStore = defineStore("help", {
       this.currHelpId = id;
       this.openByDefault = openByDefault;
     },
+    exitHelp() {
+      this.$reset();
+    },
   },
 });
