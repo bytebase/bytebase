@@ -95,6 +95,9 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 
 		return insertedID, afterSchemaBuf.String(), nil
 	}()
+	if err != nil {
+		return true, nil, err
+	}
 
 	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
 }
