@@ -50,6 +50,12 @@ func Put(ctx context.Context, client *http.Client, url string, token *string, bo
 	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPut, url, token, body))
 }
 
+// Patch makes a HTTP PATCH request to the given URL using the token. It
+// refreshes token and retries the request in the case of the token has expired.
+func Patch(ctx context.Context, client *http.Client, url string, token *string, body io.Reader, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
+	return retry(ctx, client, token, tokenRefresher, requester(ctx, client, http.MethodPatch, url, token, body))
+}
+
 // Delete makes a HTTP DELETE request to the given URL using the token. It refreshes
 // token and retries the request in the case of the token has expired.
 func Delete(ctx context.Context, client *http.Client, url string, token *string, tokenRefresher TokenRefresher) (code int, respBody string, err error) {
@@ -120,7 +126,8 @@ func getOAuthErrorDetails(code int, body []byte) error {
 	}
 	// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 	// {"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}
-	if oe.Err == "invalid_token" && strings.Contains(oe.ErrorDescription, "expired") {
+	// {"error":"invalid_grant","error_description":"The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."}
+	if (oe.Err == "invalid_token" || oe.Err == "invalid_grant") && strings.Contains(oe.ErrorDescription, "expired") {
 		return &oe
 	}
 	return nil

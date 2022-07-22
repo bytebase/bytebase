@@ -137,30 +137,30 @@
       </div>
       <div v-if="!create" class="col-span-1">
         <label class="textlabel">
-          {{ $t("schema-review-policy.title") }}
+          {{ $t("sql-review.title") }}
         </label>
         <div class="mt-3">
           <button
-            v-if="schemaReviewPolicy"
+            v-if="sqlReviewPolicy"
             type="button"
             class="text-sm font-medium text-accent hover:underline"
-            @click.prevent="onSchemaReviewPolicyClick"
+            @click.prevent="onSQLReviewPolicyClick"
           >
-            {{ schemaReviewPolicy.name }}
-            <span v-if="schemaReviewPolicy.rowStatus == 'ARCHIVED'">
-              ({{ $t("schema-review-policy.disabled") }})
+            {{ sqlReviewPolicy.name }}
+            <span v-if="sqlReviewPolicy.rowStatus == 'ARCHIVED'">
+              ({{ $t("sql-review.disabled") }})
             </span>
           </button>
           <button
             v-else-if="hasPermission"
             type="button"
             class="btn-normal py-2 px-4 gap-x-1 items-center"
-            @click.prevent="onSchemaReviewPolicyClick"
+            @click.prevent="onSQLReviewPolicyClick"
           >
-            {{ $t("schema-review-policy.configure-policy") }}
+            {{ $t("sql-review.configure-policy") }}
           </button>
           <span v-else class="textinfolabel">
-            {{ $t("schema-review-policy.no-policy-set") }}
+            {{ $t("sql-review.no-policy-set") }}
           </span>
         </div>
       </div>
@@ -252,14 +252,10 @@ import {
   EnvironmentCreate,
   EnvironmentPatch,
   Policy,
-  DatabaseSchemaReviewPolicy,
+  SQLReviewPolicy,
 } from "../types";
-import { isDev, isDBAOrOwner, schemaReviewPolicySlug } from "../utils";
-import {
-  useCurrentUser,
-  useEnvironmentList,
-  useSchemaSystemStore,
-} from "@/store";
+import { isDev, isDBAOrOwner, sqlReviewPolicySlug } from "../utils";
+import { useCurrentUser, useEnvironmentList, useSQLReviewStore } from "@/store";
 
 interface LocalState {
   environment: Environment | EnvironmentCreate;
@@ -267,7 +263,7 @@ interface LocalState {
   backupPolicy: Policy;
 }
 
-const ROUTE_NAME = "setting.workspace.schema-review-policy";
+const ROUTE_NAME = "setting.workspace.sql-review";
 
 export default defineComponent({
   name: "EnvironmentForm",
@@ -298,7 +294,7 @@ export default defineComponent({
     });
 
     const router = useRouter();
-    const schemaSystemStore = useSchemaSystemStore();
+    const sqlReviewStore = useSQLReviewStore();
 
     const environmentId = computed(() => {
       if (props.create) {
@@ -307,35 +303,29 @@ export default defineComponent({
       return (props.environment as Environment).id;
     });
 
-    const prepareSchemaReviewPolicy = () => {
+    const prepareSQLReviewPolicy = () => {
       if (!environmentId.value) {
         return;
       }
-      return schemaSystemStore.fetchReviewPolicyByEnvironmentId(
+      return sqlReviewStore.fetchReviewPolicyByEnvironmentId(
         environmentId.value
       );
     };
-    watchEffect(prepareSchemaReviewPolicy);
+    watchEffect(prepareSQLReviewPolicy);
 
-    const schemaReviewPolicy = computed(
-      (): DatabaseSchemaReviewPolicy | undefined => {
-        if (!environmentId.value) {
-          return;
-        }
-        return schemaSystemStore.getReviewPolicyByEnvironmentId(
-          environmentId.value
-        );
+    const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
+      if (!environmentId.value) {
+        return;
       }
-    );
+      return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
+    });
 
-    const onSchemaReviewPolicyClick = () => {
-      if (schemaReviewPolicy.value) {
+    const onSQLReviewPolicyClick = () => {
+      if (sqlReviewPolicy.value) {
         router.push({
           name: `${ROUTE_NAME}.detail`,
           params: {
-            schemaReviewPolicySlug: schemaReviewPolicySlug(
-              schemaReviewPolicy.value
-            ),
+            sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
           },
         });
       } else {
@@ -479,8 +469,8 @@ export default defineComponent({
       updateEnvironment,
       archiveEnvironment,
       restoreEnvironment,
-      schemaReviewPolicy,
-      onSchemaReviewPolicyClick,
+      sqlReviewPolicy,
+      onSQLReviewPolicyClick,
     };
   },
 });

@@ -200,7 +200,11 @@
     "disable": "禁用",
     "view-doc": "查看文档",
     "backup-and-restore": "备份与恢复",
-    "write-only": "仅写入"
+    "write-only": "仅写入",
+    "pitr": "PITR",
+    "fix": "修复",
+    "go-now": "立即前往",
+    "sync-now": "现在同步"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -270,7 +274,8 @@
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
     "action": "5 秒部署您自己的服务",
-    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
+    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
+    "readonly": "服务器处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。"
   },
   "intro": {
     "doc": "文档",
@@ -484,14 +489,16 @@
     },
     "new-issue": "@:common.new@:common.issue",
     "format-on-save": "保存时格式化",
-    "action-to-current-stage": "{action}当前阶段"
+    "action-to-current-stage": "{action}当前阶段",
+    "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
+    "edit-sql-statement": "编辑 SQL 语句"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
     "vcs-info": "代表项目开启了基于 VCS 的版本管理。选择该类项目下的数据库会将您导航到对应的 Git 仓库以发起变更流程。",
     "alter-single-db": "变更单个数据库",
     "alter-multiple-db": "变更多个数据库",
-    "alter-multiple-db-info": "针对每个环境，您可以选择一个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
+    "alter-multiple-db-info": "针对每个环境，您可以选择多个数据库进行变更或者直接跳过该环境，这样您就可以在一条流水线上把变更逐步作用到多个环境。"
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -535,13 +542,14 @@
     "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
-    "sync-status": "同步状态"
+    "sync-status": "同步状态",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
   },
   "instance": {
     "select": "选择实例",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-now": "现在同步",
     "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
@@ -758,7 +766,8 @@
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
     "create-backup": "创建备份",
-    "automatic-weekly-backup": "每周自动备份",
+    "automatic-x-backup": "{freq}自动备份",
+    "automatic-backup": "自动备份",
     "disable-automatic-backup": "禁用自动备份",
     "backuppolicy-backup-enforced-and-cant-be-disabled": "强制{0}备份，不能禁用",
     "backup-policy": {
@@ -767,7 +776,7 @@
     },
     "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "备份成功后向其发送 HTTP POST 请求。",
     "backup-info": {
-      "template": "每{dayOrWeek}{time} 备份"
+      "template": "每{dayOrWeek} {time} 备份，数据将保留 {retentionDays} 天。"
     },
     "week": {
       "Friday": "周五",
@@ -821,7 +830,21 @@
       "no-later-than-now": "恢复的时间点不能晚于当前时间。"
     },
     "show-reserved-tables": "显示 Bytebase 保留的表",
-    "show-reserved-databases": "显示 Bytebase 保留的数据库"
+    "show-reserved-databases": "显示 Bytebase 保留的数据库",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "关闭",
+        "weekly": "每周",
+        "daily": "每天"
+      },
+      "form": {
+        "schedule": "计划",
+        "day-of-week": "星期",
+        "time-of-day": "时间",
+        "retention-period": "保留时长（天）"
+      }
+    },
+    "backup-policy-violation": "违反了备份策略"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1292,7 +1315,7 @@
         "title": "备份策略",
         "desc": "「备份策略」可以根据指定的周期自动备份数据库"
       },
-      "bb-feature-schema-review-policy": {
+      "bb-feature-sql-review": {
         "title": "Schema 审核策略",
         "desc": "给不同的环境定制 schema 审核策略，可以通过@:{'subscription.upgrade'}来开启该功能。"
       },
@@ -1347,7 +1370,7 @@
           "sql-check-basic": "基础",
           "sql-check-basic-tooltip": "语法检查、数据库连接检查",
           "sql-check-advanced": "高级",
-          "sql-check-advanced-tooltip": "基础版功能 + 自定义 schema 审核规则",
+          "sql-check-advanced-tooltip": "基础版功能 + 自定义 SQL 审核规则",
           "anomaly-detection": "异常检测",
           "anomaly-detection-basic": "基础",
           "anomaly-detection-basic-tooltip": "数据库连接异常、备份缺失",
@@ -1422,10 +1445,10 @@
     "mysql": "MySQL",
     "common": "通用"
   },
-  "schema-review-policy": {
-    "title": "Schema 审核策略",
+  "sql-review": {
+    "title": "SQL 审核策略",
     "disabled": "已禁用",
-    "no-policy-set": "没有 schema 审核策略",
+    "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
     "configure-policy": "配置审核策略",
     "search-rule-name": "搜索规则名称",
@@ -1438,123 +1461,7 @@
     "disable": "停用审查策略",
     "enable": "开启审查策略",
     "delete": "删除审核策略",
-    "category": {
-      "engine": "引擎",
-      "naming": "命名",
-      "statement": "语句",
-      "table": "表",
-      "column": "列",
-      "schema": "Schema"
-    },
-    "template": {
-      "mysql-prod": "针对生产环境的审核策略模板",
-      "mysql-dev": "针对开发环境的审核策略模板"
-    },
     "input-then-press-enter": "输入后按下回车来添加",
-    "rule": {
-      "engine-mysql-use-innodb": {
-        "title": "使用 InnoDB 作为储存引擎",
-        "description": "强制要求使用 InnoDB 作为 MySQL 的储存引擎。"
-      },
-      "table-require-pk": {
-        "title": "强制主键",
-        "description": "要求每张表必须有一个主键。"
-      },
-      "naming-table": {
-        "title": "表名命名检查",
-        "description": "限制表名命名风格，默认为小写字母_下划线。",
-        "component": {
-          "name_format": {
-            "title": "表命名规则（正则）"
-          }
-        }
-      },
-      "naming-column": {
-        "title": "列名命名检查",
-        "description": "限制列名命名风格，默认为小写字母_下划线。",
-        "component": {
-          "name_format": {
-            "title": "列命名规则（正则）"
-          }
-        }
-      },
-      "naming-index-uk": {
-        "title": "唯一键命名检查",
-        "description": "限制唯一键命名风格，默认为 uk_<表名>_<主键包含的字段名组合>。",
-        "component": {
-          "name_format": {
-            "title": "唯一键命名规则",
-            "template": {
-              "table": "表名",
-              "column_list": "索引包含的字段名，通过 _ 连接"
-            }
-          }
-        }
-      },
-      "naming-index-fk": {
-        "title": "外键命名检查",
-        "description": "限制外键命名风格，默认为 fk_<目标表名>_<目标字段名>_<被引用表名>_<被引用字段名>。",
-        "component": {
-          "name_format": {
-            "title": "外键命名规则",
-            "template": {
-              "referencing_table": "目标表名",
-              "referencing_column": "目标字段名",
-              "referenced_table": "被引用的表名",
-              "referenced_column": "被引用的字段名"
-            }
-          }
-        }
-      },
-      "naming-index-idx": {
-        "title": "索引命名检查",
-        "description": "限制索引命名风格，默认为 idx_<表名>_<索引包含的字段名组合>。",
-        "component": {
-          "name_format": {
-            "title": "索引命名规则",
-            "template": {
-              "table": "表名",
-              "column_list": "索引包含的字段名，通过 _ 连接"
-            }
-          }
-        }
-      },
-      "column-required": {
-        "title": "必须包含的字段",
-        "description": "强制要求表中必须包含某些字段。",
-        "component": {
-          "column_list": {
-            "title": "必须包含的字段名"
-          }
-        }
-      },
-      "column-no-null": {
-        "title": "禁止字段为 NULL",
-        "description": "表中的字段不允许存在 NULL 值。"
-      },
-      "statement-select-no-select-all": {
-        "title": "禁止 \"SELECT *\"",
-        "description": "不允许使用 \"SELECT *\" 语句"
-      },
-      "statement-where-require": {
-        "title": "强制 \"WHERE\"",
-        "description": "必须使用 \"WHERE\" 语句"
-      },
-      "statement-where-no-leading-wildcard-like": {
-        "title": "禁止左模糊",
-        "description": "WHERE 语句中禁止使用左模糊匹配，例如禁止 LIKE foo = '%x'。"
-      },
-      "schema-backward-compatibility": {
-        "title": "向后兼容",
-        "description": "MySQL 和 TiDB 支持检测 schema 变更是否向后兼容"
-      }
-    },
-    "error-level": {
-      "name": "错误等级",
-      "error": "错误",
-      "warning": "警告",
-      "disabled": "禁用"
-    },
     "create": {
       "breadcrumb": "创建审核策略",
       "basic-info": {
@@ -1562,7 +1469,7 @@
         "display-name": "名称",
         "display-name-placeholder": "审核策略名称",
         "display-name-label": "用以区分不同审核策略的名称。",
-        "display-name-default": "Schema 审核策略",
+        "display-name-default": "SQL 审核策略",
         "environments": "环境",
         "environments-label": "将该审核策略应用于哪些环境。一个环境只能关联一个审核策略。",
         "environments-select": "选择环境",

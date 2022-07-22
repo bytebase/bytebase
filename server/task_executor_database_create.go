@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common/log"
@@ -20,10 +21,17 @@ func NewDatabaseCreateTaskExecutor() TaskExecutor {
 
 // DatabaseCreateTaskExecutor is the database create task executor.
 type DatabaseCreateTaskExecutor struct {
+	completed int32
+}
+
+// IsCompleted tells the scheduler if the task execution has completed
+func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
+	return atomic.LoadInt32(&exec.completed) == 1
 }
 
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+	defer atomic.StoreInt32(&exec.completed, 1)
 	payload := &api.TaskDatabaseCreatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid create database payload: %w", err)

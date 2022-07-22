@@ -43,7 +43,7 @@
         {{ comment(taskRun) }}
         <template v-if="commentLink(task, taskRun).link">
           <router-link
-            class="ml-1 normal-link"
+            class="bb-comment-link ml-1 normal-link"
             :to="commentLink(task, taskRun).link"
             >{{ commentLink(task, taskRun).title }}</router-link
           >

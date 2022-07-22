@@ -325,6 +325,16 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 			Hour:       rand.Intn(24),
 			HookURL:    "",
 		}
+		if s.db.mode == common.ReleaseModeDev {
+			backupSettingUpsert = &api.BackupSettingUpsert{
+				UpdaterID:         api.SystemBotID,
+				DatabaseID:        databaseRaw.ID,
+				Enabled:           true,
+				Hour:              rand.Intn(24),
+				RetentionPeriodTs: 7 * 24 * 3600,
+				HookURL:           "",
+			}
+		}
 		switch backupPlanPolicy.Schedule {
 		case api.BackupPlanPolicyScheduleDaily:
 			backupSettingUpsert.DayOfWeek = -1
@@ -462,7 +472,8 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 			last_successful_sync_ts,
 			schema_version
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var databaseRaw databaseRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.InstanceID,
@@ -471,37 +482,27 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 		create.CharacterSet,
 		create.Collation,
 		create.SchemaVersion,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var databaseRaw databaseRaw
-		if err := row.Scan(
-			&databaseRaw.ID,
-			&databaseRaw.CreatorID,
-			&databaseRaw.CreatedTs,
-			&databaseRaw.UpdaterID,
-			&databaseRaw.UpdatedTs,
-			&databaseRaw.InstanceID,
-			&databaseRaw.ProjectID,
-			&databaseRaw.Name,
-			&databaseRaw.CharacterSet,
-			&databaseRaw.Collation,
-			&databaseRaw.SyncStatus,
-			&databaseRaw.LastSuccessfulSyncTs,
-			&databaseRaw.SchemaVersion,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&databaseRaw.ID,
+		&databaseRaw.CreatorID,
+		&databaseRaw.CreatedTs,
+		&databaseRaw.UpdaterID,
+		&databaseRaw.UpdatedTs,
+		&databaseRaw.InstanceID,
+		&databaseRaw.ProjectID,
+		&databaseRaw.Name,
+		&databaseRaw.CharacterSet,
+		&databaseRaw.Collation,
+		&databaseRaw.SyncStatus,
+		&databaseRaw.LastSuccessfulSyncTs,
+		&databaseRaw.SchemaVersion,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &databaseRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &databaseRaw, nil
 }
 
 func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
@@ -609,8 +610,10 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 
 	args = append(args, patch.ID)
 
+	var databaseRaw databaseRaw
+	var nullSourceBackupID sql.NullInt64
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
@@ -631,40 +634,29 @@ func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.Da
 			schema_version
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
+	).Scan(
+		&databaseRaw.ID,
+		&databaseRaw.CreatorID,
+		&databaseRaw.CreatedTs,
+		&databaseRaw.UpdaterID,
+		&databaseRaw.UpdatedTs,
+		&databaseRaw.InstanceID,
+		&databaseRaw.ProjectID,
+		&nullSourceBackupID,
+		&databaseRaw.Name,
+		&databaseRaw.CharacterSet,
+		&databaseRaw.Collation,
+		&databaseRaw.SyncStatus,
+		&databaseRaw.LastSuccessfulSyncTs,
+		&databaseRaw.SchemaVersion,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
+		}
 		return nil, FormatError(err)
 	}
-	defer row.Close()
-
-	if row.Next() {
-		var databaseRaw databaseRaw
-		var nullSourceBackupID sql.NullInt64
-		if err := row.Scan(
-			&databaseRaw.ID,
-			&databaseRaw.CreatorID,
-			&databaseRaw.CreatedTs,
-			&databaseRaw.UpdaterID,
-			&databaseRaw.UpdatedTs,
-			&databaseRaw.InstanceID,
-			&databaseRaw.ProjectID,
-			&nullSourceBackupID,
-			&databaseRaw.Name,
-			&databaseRaw.CharacterSet,
-			&databaseRaw.Collation,
-			&databaseRaw.SyncStatus,
-			&databaseRaw.LastSuccessfulSyncTs,
-			&databaseRaw.SchemaVersion,
-		); err != nil {
-			return nil, FormatError(err)
-		}
-		if nullSourceBackupID.Valid {
-			databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
-		}
-		return &databaseRaw, nil
+	if nullSourceBackupID.Valid {
+		databaseRaw.SourceBackupID = int(nullSourceBackupID.Int64)
 	}
-	if err := row.Err(); err != nil {
-		return nil, FormatError(err)
-	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("database ID not found: %d", patch.ID)}
+	return &databaseRaw, nil
 }

@@ -6,6 +6,7 @@ categoryList:
   - TABLE
   - SCHEMA
   - COLUMN
+  - DATABASE
 templateList:
   - id: mysql.prod
     ruleList:
@@ -19,6 +20,20 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
+      - type: table.no-foreign-key
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList: []
+      - type: table.drop-naming-convention
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList:
+          - key: name_format
+            payload:
+              type: STRING
+              default: "_delete$"
       - type: statement.select.no-select-all
         category: STATEMENT
         engine: COMMON
@@ -42,6 +57,10 @@ templateList:
             payload:
               type: STRING
               default: "^[a-z]+(_[a-z]+)*$"
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.column
         category: NAMING
@@ -51,6 +70,10 @@ templateList:
             payload:
               type: STRING
               default: "^[a-z]+(_[a-z]+)*$"
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.uk
         category: NAMING
@@ -63,6 +86,10 @@ templateList:
               templateList:
                 - table
                 - column_list
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.idx
         category: NAMING
@@ -75,6 +102,10 @@ templateList:
               templateList:
                 - table
                 - column_list
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.fk
         category: NAMING
@@ -89,6 +120,10 @@ templateList:
                 - referencing_column
                 - referenced_table
                 - referenced_column
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: column.required
         category: COLUMN
@@ -113,6 +148,11 @@ templateList:
         category: SCHEMA
         engine: MYSQL
         level: WARNING
+        componentList: []
+      - type: database.drop-empty-database
+        category: DATABASE
+        engine: COMMON
+        level: ERROR
         componentList: []
   - id: mysql.dev
     ruleList:
@@ -126,6 +166,20 @@ templateList:
         engine: COMMON
         level: ERROR
         componentList: []
+      - type: table.no-foreign-key
+        category: TABLE
+        engine: COMMON
+        level: WARNING
+        componentList: []
+      - type: table.drop-naming-convention
+        category: TABLE
+        engine: COMMON
+        level: ERROR
+        componentList:
+          - key: name_format
+            payload:
+              type: STRING
+              default: "_delete$"
       - type: naming.table
         category: NAMING
         engine: COMMON
@@ -134,6 +188,10 @@ templateList:
             payload:
               type: STRING
               default: "^[a-z]+(_[a-z]+)*$"
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.column
         category: NAMING
@@ -143,6 +201,10 @@ templateList:
             payload:
               type: STRING
               default: "^[a-z]+(_[a-z]+)*$"
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.uk
         category: NAMING
@@ -155,6 +217,10 @@ templateList:
               templateList:
                 - table
                 - column_list
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.idx
         category: NAMING
@@ -167,6 +233,10 @@ templateList:
               templateList:
                 - table
                 - column_list
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: naming.index.fk
         category: NAMING
@@ -181,6 +251,10 @@ templateList:
                 - referencing_column
                 - referenced_table
                 - referenced_column
+          - key: length_limit
+            payload:
+              type: NUMBER
+              default: 64
         level: WARNING
       - type: column.required
         category: COLUMN
@@ -220,4 +294,9 @@ templateList:
         category: SCHEMA
         engine: MYSQL
         level: WARNING
+        componentList: []
+      - type: database.drop-empty-database
+        category: DATABASE
+        engine: COMMON
+        level: ERROR
         componentList: []

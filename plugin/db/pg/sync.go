@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -81,6 +82,7 @@ type indexSchema struct {
 	tableName  string
 	statement  string
 	unique     bool
+	primary    bool
 	// methodType such as btree.
 	methodType        string
 	columnExpressions []string
@@ -89,6 +91,11 @@ type indexSchema struct {
 
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
+	version, err := driver.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Query user info
 	userList, err := driver.getUserList(ctx)
 	if err != nil {
@@ -100,7 +107,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 		excludedDatabaseList[k] = true
 	}
 	// Query db info
-	databases, err := driver.getDatabases()
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
@@ -122,139 +129,125 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 
 	return &db.InstanceMeta{
+		Version:      version,
 		UserList:     userList,
 		DatabaseList: databaseList,
 	}, nil
 }
 
-// SyncSchema syncs the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
-	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabaseList[k] = true
-	}
-
+// SyncDBSchema syncs a single database schema.
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query db info
-	databases, err := driver.getDatabases()
+	databases, err := driver.getDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get databases: %s", err)
 	}
 
-	var schemaList []*db.Schema
+	schema := db.Schema{
+		Name: databaseName,
+	}
+	found := false
 	for _, database := range databases {
-		dbName := database.name
-		if _, ok := excludedDatabaseList[dbName]; ok {
-			continue
+		if database.name == databaseName {
+			found = true
+			schema.CharacterSet = database.encoding
+			schema.Collation = database.collate
+			break
 		}
-		if len(databaseList) != 0 {
-			exists := false
-			for _, k := range databaseList {
-				if dbName == k {
-					exists = true
-					break
-				}
-			}
-			if !exists {
-				continue
-			}
-		}
-
-		var schema db.Schema
-		schema.Name = dbName
-		schema.CharacterSet = database.encoding
-		schema.Collation = database.collate
-
-		sqldb, err := driver.GetDbConnection(ctx, dbName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get database connection for %q: %s", dbName, err)
-		}
-		txn, err := sqldb.BeginTx(ctx, nil)
-		if err != nil {
-			return nil, err
-		}
-		defer txn.Rollback()
-
-		// Index statements.
-		indicesMap := make(map[string][]*indexSchema)
-		indices, err := getIndices(txn)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get indices from database %q: %s", dbName, err)
-		}
-		for _, idx := range indices {
-			key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
-			indicesMap[key] = append(indicesMap[key], idx)
-		}
-
-		// Table statements.
-		tables, err := getPgTables(txn)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get tables from database %q: %s", dbName, err)
-		}
-		for _, tbl := range tables {
-			var dbTable db.Table
-			dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
-			dbTable.Type = "BASE TABLE"
-			dbTable.Comment = tbl.comment
-			dbTable.RowCount = tbl.rowCount
-			dbTable.DataSize = tbl.tableSizeByte
-			dbTable.IndexSize = tbl.indexSizeByte
-			for _, col := range tbl.columns {
-				var dbColumn db.Column
-				dbColumn.Name = col.columnName
-				dbColumn.Position = col.ordinalPosition
-				dbColumn.Default = &col.columnDefault
-				dbColumn.Type = col.dataType
-				dbColumn.Nullable = col.isNullable
-				dbColumn.Collation = col.collationName
-				dbColumn.Comment = col.comment
-				dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
-			}
-			indices := indicesMap[dbTable.Name]
-			for _, idx := range indices {
-				for i, colExp := range idx.columnExpressions {
-					var dbIndex db.Index
-					dbIndex.Name = idx.name
-					dbIndex.Expression = colExp
-					dbIndex.Position = i + 1
-					dbIndex.Type = idx.methodType
-					dbIndex.Unique = idx.unique
-					dbIndex.Comment = idx.comment
-					dbTable.IndexList = append(dbTable.IndexList, dbIndex)
-				}
-			}
-
-			schema.TableList = append(schema.TableList, dbTable)
-		}
-		// View statements.
-		views, err := getViews(txn)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get views from database %q: %s", dbName, err)
-		}
-		for _, view := range views {
-			var dbView db.View
-			dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
-			// Postgres does not store
-			dbView.CreatedTs = time.Now().Unix()
-			dbView.Definition = view.definition
-			dbView.Comment = view.comment
-
-			schema.ViewList = append(schema.ViewList, dbView)
-		}
-		// Extensions.
-		extensions, err := getExtensions(txn)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get extensions from database %q: %s", dbName, err)
-		}
-		schema.ExtensionList = extensions
-
-		if err := txn.Commit(); err != nil {
-			return nil, err
-		}
-
-		schemaList = append(schemaList, &schema)
+	}
+	if !found {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
 	}
 
-	return schemaList, err
+	sqldb, err := driver.GetDBConnection(ctx, databaseName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection for %q: %s", databaseName, err)
+	}
+	txn, err := sqldb.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+
+	// Index statements.
+	indicesMap := make(map[string][]*indexSchema)
+	indices, err := getIndices(txn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get indices from database %q: %s", databaseName, err)
+	}
+	for _, idx := range indices {
+		key := fmt.Sprintf("%s.%s", idx.schemaName, idx.tableName)
+		indicesMap[key] = append(indicesMap[key], idx)
+	}
+
+	// Table statements.
+	tables, err := getPgTables(txn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tables from database %q: %s", databaseName, err)
+	}
+	for _, tbl := range tables {
+		var dbTable db.Table
+		dbTable.Name = fmt.Sprintf("%s.%s", tbl.schemaName, tbl.name)
+		dbTable.Type = "BASE TABLE"
+		dbTable.Comment = tbl.comment
+		dbTable.RowCount = tbl.rowCount
+		dbTable.DataSize = tbl.tableSizeByte
+		dbTable.IndexSize = tbl.indexSizeByte
+		for _, col := range tbl.columns {
+			var dbColumn db.Column
+			dbColumn.Name = col.columnName
+			dbColumn.Position = col.ordinalPosition
+			dbColumn.Default = &col.columnDefault
+			dbColumn.Type = col.dataType
+			dbColumn.Nullable = col.isNullable
+			dbColumn.Collation = col.collationName
+			dbColumn.Comment = col.comment
+			dbTable.ColumnList = append(dbTable.ColumnList, dbColumn)
+		}
+		indices := indicesMap[dbTable.Name]
+		for _, idx := range indices {
+			for i, colExp := range idx.columnExpressions {
+				var dbIndex db.Index
+				dbIndex.Name = idx.name
+				dbIndex.Expression = colExp
+				dbIndex.Position = i + 1
+				dbIndex.Type = idx.methodType
+				dbIndex.Unique = idx.unique
+				dbIndex.Primary = idx.primary
+				dbIndex.Comment = idx.comment
+				dbTable.IndexList = append(dbTable.IndexList, dbIndex)
+			}
+		}
+
+		schema.TableList = append(schema.TableList, dbTable)
+	}
+	// View statements.
+	views, err := getViews(txn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get views from database %q: %s", databaseName, err)
+	}
+	for _, view := range views {
+		var dbView db.View
+		dbView.Name = fmt.Sprintf("%s.%s", view.schemaName, view.name)
+		// Postgres does not store
+		dbView.CreatedTs = time.Now().Unix()
+		dbView.Definition = view.definition
+		dbView.Comment = view.comment
+
+		schema.ViewList = append(schema.ViewList, dbView)
+	}
+	// Extensions.
+	extensions, err := getExtensions(txn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get extensions from database %q: %s", databaseName, err)
+	}
+	schema.ExtensionList = extensions
+
+	if err := txn.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &schema, err
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {
@@ -327,8 +320,8 @@ func getPgTables(txn *sql.Tx) ([]*tableSchema, error) {
 		if err := rows.Scan(&schemaname, &tablename, &tableowner, &tableSizeByte, &indexSizeByte); err != nil {
 			return nil, err
 		}
-		tbl.schemaName = quoteIdentifier(schemaname)
-		tbl.name = quoteIdentifier(tablename)
+		tbl.schemaName = schemaname
+		tbl.name = tablename
 		tbl.tableowner = tableowner
 		tbl.tableSizeByte = tableSizeByte
 		tbl.indexSizeByte = indexSizeByte
@@ -372,7 +365,7 @@ func getTable(txn *sql.Tx, tbl *tableSchema) error {
 		return err
 	}
 
-	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, tbl.schemaName, tbl.name)
 	crows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -472,7 +465,6 @@ func getTableConstraints(txn *sql.Tx) (map[string][]*tableConstraint, error) {
 		if strings.Contains(constraint.tableName, ".") {
 			constraint.tableName = constraint.tableName[1+strings.Index(constraint.tableName, "."):]
 		}
-		constraint.schemaName, constraint.tableName, constraint.name = quoteIdentifier(constraint.schemaName), quoteIdentifier(constraint.tableName), quoteIdentifier(constraint.name)
 		key := fmt.Sprintf("%s.%s", constraint.schemaName, constraint.tableName)
 		ret[key] = append(ret[key], &constraint)
 	}
@@ -505,7 +497,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 		if !def.Valid {
 			return nil, fmt.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", view.schemaName, view.name)
 		}
-		view.schemaName, view.name, view.definition = quoteIdentifier(view.schemaName), quoteIdentifier(view.name), def.String
+		view.definition = def.String
 		views = append(views, &view)
 	}
 	if err := rows.Err(); err != nil {
@@ -522,7 +514,7 @@ func getViews(txn *sql.Tx) ([]*viewSchema, error) {
 
 // getView gets the schema of a view.
 func getView(txn *sql.Tx, view *viewSchema) error {
-	query := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, view.schemaName, view.name)
+	query := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, view.schemaName, view.name)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return err
@@ -589,7 +581,6 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err := rows.Scan(&idx.schemaName, &idx.tableName, &idx.name, &idx.statement); err != nil {
 			return nil, err
 		}
-		idx.schemaName, idx.tableName, idx.name = quoteIdentifier(idx.schemaName), quoteIdentifier(idx.tableName), quoteIdentifier(idx.name)
 		idx.unique = strings.Contains(idx.statement, " UNIQUE INDEX ")
 		idx.methodType = getIndexMethodType(idx.statement)
 		idx.columnExpressions, err = getIndexColumnExpressions(idx.statement)
@@ -606,13 +597,37 @@ func getIndices(txn *sql.Tx) ([]*indexSchema, error) {
 		if err = getIndex(txn, idx); err != nil {
 			return nil, fmt.Errorf("getIndex(%q, %q) got error %v", idx.schemaName, idx.name, err)
 		}
+
+		if err = getPrimary(txn, idx); err != nil {
+			return nil, fmt.Errorf("getPrimary(%q, %q) got error %v", idx.schemaName, idx.name, err)
+		}
 	}
 
 	return indices, nil
 }
 
+func getPrimary(txn *sql.Tx, idx *indexSchema) error {
+	isPrimaryQuery := `
+		SELECT count(*)
+		FROM information_schema.table_constraints
+		WHERE constraint_schema = $1
+		  AND constraint_name = $2
+		  AND table_schema = $1
+		  AND table_name = $3
+		  AND constraint_type = 'PRIMARY KEY'
+	`
+
+	var yes int
+	if err := txn.QueryRow(isPrimaryQuery, idx.schemaName, idx.name, idx.tableName).Scan(&yes); err != nil {
+		return err
+	}
+
+	idx.primary = (yes == 1)
+	return nil
+}
+
 func getIndex(txn *sql.Tx, idx *indexSchema) error {
-	commentQuery := fmt.Sprintf(`SELECT obj_description(E'"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
+	commentQuery := fmt.Sprintf(`SELECT obj_description('"%s"."%s"'::regclass);`, idx.schemaName, idx.name)
 	rows, err := txn.Query(commentQuery)
 	if err != nil {
 		return err
@@ -695,19 +710,4 @@ func getIndexColumnExpressions(stmt string) ([]string, error) {
 	}
 
 	return cols, nil
-}
-
-// quoteIdentifier will quote identifiers including keywords, capital characters, or special characters.
-func quoteIdentifier(s string) string {
-	quote := false
-	if reserved[strings.ToUpper(s)] {
-		quote = true
-	}
-	if !ident.MatchString(s) {
-		quote = true
-	}
-	if quote {
-		return fmt.Sprintf("\"%s\"", s)
-	}
-	return s
 }

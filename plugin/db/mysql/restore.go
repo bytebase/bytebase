@@ -9,6 +9,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -37,6 +38,17 @@ import (
 const (
 	// MaxDatabaseNameLength is the allowed max database name length in MySQL
 	MaxDatabaseNameLength = 64
+
+	// Variable lower_case_table_names related.
+
+	// LetterCaseOnDiskLetterCaseCmp stores table and database names using the letter case specified in the CREATE TABLE or CREATE DATABASE statement.
+	// Name comparisons are case-sensitive.
+	LetterCaseOnDiskLetterCaseCmp = 0
+	// LowerCaseOnDiskLowerCaseCmp stores table names in lowercase on disk and name comparisons are not case-sensitive.
+	LowerCaseOnDiskLowerCaseCmp = 1
+	// LetterCaseOnDiskLowerCaseCmp stores table and database names are stored on disk using the letter case specified in the CREATE TABLE or CREATE DATABASE statement, but MySQL converts them to lowercase on lookup.
+	// Name comparisons are not case-sensitive.
+	LetterCaseOnDiskLowerCaseCmp = 2
 )
 
 // BinlogFile is the metadata of the MySQL binlog file
@@ -93,12 +105,35 @@ func (driver *Driver) replayBinlog(ctx context.Context, originalDatabase, pitrDa
 		return err
 	}
 
+	caseVariable := "lower_case_table_names"
+	identifierCaseSensitive, err := driver.getServerVariable(ctx, caseVariable)
+	if err != nil {
+		return err
+	}
+
+	identifierCaseSensitiveValue, err := strconv.Atoi(identifierCaseSensitive)
+	if err != nil {
+		return err
+	}
+
+	var originalDBName string
+	switch identifierCaseSensitiveValue {
+	case LetterCaseOnDiskLetterCaseCmp:
+		originalDBName = originalDatabase
+	case LowerCaseOnDiskLowerCaseCmp:
+		originalDBName = strings.ToLower(originalDatabase)
+	case LetterCaseOnDiskLowerCaseCmp:
+		originalDBName = strings.ToLower(originalDatabase)
+	default:
+		return fmt.Errorf("expecting value of %s in range [%d, %d, %d], but get %s", caseVariable, 0, 1, 2, identifierCaseSensitive)
+	}
+
 	// Extract the SQL statements from the binlog and replay them to the pitrDatabase via the mysql client by pipe.
 	mysqlbinlogArgs := []string{
 		// Disable binary logging.
 		"--disable-log-bin",
 		// Create rewrite rules for databases when playing back from logs written in row-based format, so that we can apply the binlog to PITR database instead of the original database.
-		"--rewrite-db", fmt.Sprintf("%s->%s", originalDatabase, pitrDatabase),
+		"--rewrite-db", fmt.Sprintf("%s->%s", originalDBName, pitrDatabase),
 		// List entries for just this database. It's applied after the --rewrite-db option, so we should provide the rewritten database, i.e., pitrDatabase.
 		"--database", pitrDatabase,
 		// Start decoding the binary log at the log position, this option applies to the first log file named on the command line.
@@ -168,7 +203,7 @@ func (driver *Driver) RestorePITR(ctx context.Context, fullBackup *bufio.Scanner
 		"SET foreign_key_checks=OFF",
 		pitrDatabaseName, pitrDatabaseName)
 
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -273,8 +308,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 
 	targetBinlogCoordinate, err := driver.getBinlogCoordinateByTs(ctx, targetTs)
 	if err != nil {
+		log.Error("Failed to get binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Error(err))
 		return nil, fmt.Errorf("failed to get binlog coordinate by targetTs %d, error: %w", targetTs, err)
 	}
+	log.Debug("Got binlog coordinate by targetTs", zap.Int64("targetTs", targetTs), zap.Any("binlogCoordinate", *targetBinlogCoordinate))
 
 	var validBackupList []*api.Backup
 	for _, b := range backupList {
@@ -285,10 +322,10 @@ func (driver *Driver) GetLatestBackupBeforeOrEqualTs(ctx context.Context, backup
 		validBackupList = append(validBackupList, b)
 	}
 
-	return getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
+	return driver.getLatestBackupBeforeOrEqualBinlogCoord(validBackupList, *targetBinlogCoordinate, mode)
 }
 
-func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
+func (driver *Driver) getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBinlogCoordinate binlogCoordinate, mode common.ReleaseMode) (*api.Backup, error) {
 	type backupBinlogCoordinate struct {
 		binlogCoordinate
 		backup *api.Backup
@@ -327,6 +364,20 @@ func getLatestBackupBeforeOrEqualBinlogCoord(backupList []*api.Backup, targetBin
 	}
 
 	if backup == nil {
+		if mode == common.ReleaseModeDev {
+			args := []string{
+				"-v",
+				"--base64-output=DECODE-ROWS",
+				filepath.Join(driver.binlogDir, fmt.Sprintf("binlog.%06d", targetBinlogCoordinate.Seq)),
+			}
+			cmd := exec.Command(driver.mysqlutil.GetPath(mysqlutil.MySQLBinlog), args...)
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			if err := cmd.Run(); err != nil {
+				return nil, err
+			}
+			log.Debug(out.String())
+		}
 		oldestBackupBinlogCoordinate := backupCoordinateListSorted[len(backupCoordinateListSorted)-1]
 		log.Error("The target binlog coordinate is earlier than the oldest backup's binlog coordinate",
 			zap.Any("targetBinlogCoordinate", targetBinlogCoordinate),
@@ -460,7 +511,7 @@ func binlogFilesAreContinuous(files []BinlogFile) bool {
 }
 
 // Download binlog files on server.
-func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile) error {
+func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFilesLocal, binlogFilesOnServerSorted []BinlogFile, downloadLatestBinlogFile bool) error {
 	if len(binlogFilesOnServerSorted) == 0 {
 		log.Debug("No binlog file found on server to download")
 		return nil
@@ -472,6 +523,9 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 	}
 	log.Debug("Downloading binlog files", zap.Array("fileList", ZapBinlogFiles(binlogFilesOnServerSorted)))
 	for _, fileOnServer := range binlogFilesOnServerSorted {
+		if fileOnServer.Name == latestBinlogFileOnServer.Name && !downloadLatestBinlogFile {
+			continue
+		}
 		fileLocal, existLocal := binlogFilesLocalMap[fileOnServer.Name]
 		path := filepath.Join(driver.binlogDir, fileOnServer.Name)
 		if !existLocal {
@@ -498,7 +552,7 @@ func (driver *Driver) downloadBinlogFilesOnServer(ctx context.Context, binlogFil
 }
 
 // FetchAllBinlogFiles downloads all binlog files on server to `binlogDir`.
-func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
+func (driver *Driver) FetchAllBinlogFiles(ctx context.Context, downloadLatestBinlogFile bool) error {
 	// Read binlog files list on server.
 	binlogFilesOnServerSorted, err := driver.GetSortedBinlogFilesMetaOnServer(ctx)
 	if err != nil {
@@ -516,7 +570,7 @@ func (driver *Driver) FetchAllBinlogFiles(ctx context.Context) error {
 		return fmt.Errorf("failed to read local binlog files, error: %w", err)
 	}
 
-	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted)
+	return driver.downloadBinlogFilesOnServer(ctx, binlogFilesLocalSorted, binlogFilesOnServerSorted, downloadLatestBinlogFile)
 }
 
 // Syncs the binlog specified by `meta` between the instance and local.
@@ -590,7 +644,7 @@ func (driver *Driver) downloadBinlogFile(ctx context.Context, binlogFileToDownlo
 
 // GetSortedBinlogFilesMetaOnServer returns the metadata of binlog files in ascending order by their numeric extension.
 func (driver *Driver) GetSortedBinlogFilesMetaOnServer(ctx context.Context) ([]BinlogFile, error) {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -642,6 +696,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the local binlog file %q's first binlog event ts, error: %w", file.Name, err)
 		}
+		log.Debug("Parsed first binlog event ts", zap.String("file", file.Name), zap.Int64("eventTs", eventTs))
 		if eventTs >= targetTs {
 			if i == 0 {
 				return nil, fmt.Errorf("the targetTs %d is before the first event ts %d of the oldest binlog file %q", targetTs, eventTs, file.Name)
@@ -659,6 +714,7 @@ func (driver *Driver) getBinlogCoordinateByTs(ctx context.Context, targetTs int6
 		isLastBinlogFile = true
 		binlogFileTarget = &binlogFilesLocalSorted[len(binlogFilesLocalSorted)-1]
 	}
+	log.Debug("Found potential binlog file containing targetTs", zap.String("binlogFile", binlogFileTarget.Name), zap.Int64("targetTs", targetTs), zap.Bool("isLastBinlogFile", isLastBinlogFile))
 	targetSeq, err := getBinlogNameSeq(binlogFileTarget.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse seq from binlog file name %q", binlogFileTarget.Name)
@@ -857,7 +913,7 @@ func (driver *Driver) CheckServerVersionForPITR(ctx context.Context) error {
 
 // CheckEngineInnoDB checks that the tables in the database is all using InnoDB as the storage engine.
 func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) error {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -889,31 +945,18 @@ func (driver *Driver) CheckEngineInnoDB(ctx context.Context, database string) er
 }
 
 func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
-	db, err := driver.GetDbConnection(ctx, "")
+	db, err := driver.GetDBConnection(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
 	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-	var found bool
-	if rows.Next() {
-		found = true
-	}
-	if err := rows.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	if !found {
-		return "", common.FormatDBErrorEmptyRowWithQuery(query)
-	}
-
 	var varNameFound, value string
-	if err := rows.Scan(&varNameFound, &value); err != nil {
-		return "", err
+	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
 	}
 	if varName != varNameFound {
 		return "", fmt.Errorf("expecting variable %s, but got %s", varName, varNameFound)

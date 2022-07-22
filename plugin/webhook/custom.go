@@ -36,7 +36,7 @@ func init() {
 type CustomReceiver struct {
 }
 
-func (receiver *CustomReceiver) post(context Context) error {
+func (*CustomReceiver) post(context Context) error {
 	payload := CustomWebhookRequest{
 		Level:        context.Level,
 		ActivityType: context.ActivityType,

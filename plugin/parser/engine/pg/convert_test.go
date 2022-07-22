@@ -9,8 +9,9 @@ import (
 )
 
 type testData struct {
-	stmt string
-	want []ast.Node
+	stmt     string
+	want     []ast.Node
+	textList []string
 }
 
 func runTests(t *testing.T, tests []testData) {
@@ -19,6 +20,9 @@ func runTests(t *testing.T, tests []testData) {
 	for _, test := range tests {
 		res, err := p.Parse(parser.Context{}, test.stmt)
 		require.NoError(t, err)
+		for i := range test.want {
+			test.want[i].SetText(test.textList[i])
+		}
 		require.Equal(t, test.want, res, test.stmt)
 	}
 }
@@ -26,7 +30,7 @@ func runTests(t *testing.T, tests []testData) {
 func TestPGConvertCreateTableStmt(t *testing.T) {
 	tests := []testData{
 		{
-			stmt: "CREATE TABLE \"techBook\" (a int, b int)",
+			stmt: "CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
 			want: []ast.Node{
 				&ast.CreateTableStmt{
 					IfNotExists: false,
@@ -34,10 +38,30 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						Name: "techBook",
 					},
 					ColumnList: []*ast.ColumnDef{
-						{ColumnName: "a"},
-						{ColumnName: "b"},
+						{
+							ColumnName: "a",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:    ast.ConstraintTypeNotNull,
+									KeyList: []string{"a"},
+								},
+							},
+						},
+						{
+							ColumnName: "b",
+							ConstraintList: []*ast.ConstraintDef{
+								{
+									Type:    ast.ConstraintTypeNotNull,
+									Name:    "b_not_null",
+									KeyList: []string{"b"},
+								},
+							},
+						},
 					},
 				},
+			},
+			textList: []string{
+				"CREATE TABLE \"techBook\" (a int NOT NULL, b int CONSTRAINT b_not_null NOT NULL)",
 			},
 		},
 		{
@@ -53,6 +77,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						{ColumnName: "b"},
 					},
 				},
+			},
+			textList: []string{
+				"CREATE TABLE IF NOT EXISTS techBook (\"A\" int, b int)",
 			},
 		},
 		{
@@ -75,6 +102,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"CREATE TABLE tech_book(a INT CONSTRAINT t_pk_a PRIMARY KEY)",
 			},
 		},
 		{
@@ -107,6 +137,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"CREATE TABLE tech_book(a INT, b int CONSTRAINT uk_b UNIQUE, CONSTRAINT t_pk_a PRIMARY KEY(a))",
 			},
 		},
 		{
@@ -145,6 +178,9 @@ func TestPGConvertCreateTableStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"CREATE TABLE tech_book(a INT CONSTRAINT fk_a REFERENCES people(id), CONSTRAINT fk_a_people_b FOREIGN KEY (a) REFERENCES people(b))",
+			},
 		},
 	}
 
@@ -171,6 +207,9 @@ func TestPGAddColumnStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"ALTER TABLE techbook ADD COLUMN a int",
 			},
 		},
 		{
@@ -201,6 +240,9 @@ func TestPGAddColumnStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"ALTER TABLE techbook ADD COLUMN a int CONSTRAINT uk_techbook_a UNIQUE",
+			},
 		},
 	}
 
@@ -218,6 +260,9 @@ func TestPGRenameTableStmt(t *testing.T) {
 					},
 					NewName: "techBook",
 				},
+			},
+			textList: []string{
+				"ALTER TABLE techbook RENAME TO \"techBook\"",
 			},
 		},
 	}
@@ -238,6 +283,9 @@ func TestPGRenameColumnStmt(t *testing.T) {
 					NewName:    "ABC",
 				},
 			},
+			textList: []string{
+				"ALTER TABLE techbook RENAME abc TO \"ABC\"",
+			},
 		},
 	}
 
@@ -254,6 +302,9 @@ func TestPGRenameConstraintStmt(t *testing.T) {
 					ConstraintName: "uk_tech_a",
 					NewName:        "UK_TECH_A",
 				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book RENAME CONSTRAINT uk_tech_a to \"UK_TECH_A\"",
 			},
 		},
 	}
@@ -280,6 +331,9 @@ func TestPGCreateIndexStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"CREATE INDEX idx_id ON tech_book (id)",
+			},
 		},
 		{
 			stmt: "CREATE UNIQUE INDEX idx_id ON tech_book (id)",
@@ -297,6 +351,9 @@ func TestPGCreateIndexStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"CREATE UNIQUE INDEX idx_id ON tech_book (id)",
 			},
 		},
 	}
@@ -319,6 +376,9 @@ func TestPGDropIndexStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"DROP INDEX xschema.idx_id, idx_x",
+			},
 		},
 	}
 
@@ -336,6 +396,9 @@ func TestPGAlterIndexStmt(t *testing.T) {
 					NewName:   "IDX_ID",
 				},
 			},
+			textList: []string{
+				"ALTER INDEX xschema.idx_id RENAME TO \"IDX_ID\"",
+			},
 		},
 		{
 			stmt: "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
@@ -344,6 +407,9 @@ func TestPGAlterIndexStmt(t *testing.T) {
 					IndexName: "idx_id",
 					NewName:   "IDX_ID",
 				},
+			},
+			textList: []string{
+				"ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
 			},
 		},
 	}
@@ -365,6 +431,9 @@ func TestPGDropConstraintStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book DROP CONSTRAINT uk_tech_a",
 			},
 		},
 	}
@@ -391,6 +460,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE (id)",
+			},
 		},
 		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
@@ -408,6 +480,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY (id)",
 			},
 		},
 		{
@@ -431,6 +506,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT fk_tech_book_id FOREIGN KEY (id) REFERENCES people(id)",
+			},
 		},
 		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
@@ -449,6 +527,9 @@ func TestPGAddConstraintStmt(t *testing.T) {
 					},
 				},
 			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id UNIQUE USING INDEX uk_id",
+			},
 		},
 		{
 			stmt: "ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
@@ -466,6 +547,100 @@ func TestPGAddConstraintStmt(t *testing.T) {
 						},
 					},
 				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id PRIMARY KEY USING INDEX pk_id",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropColumnStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book DROP COLUMN a",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.DropColumnStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "a",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book DROP COLUMN a",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGDropTableStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "DROP TABLE tech_book, xschema.user",
+			want: []ast.Node{
+				&ast.DropTableStmt{
+					TableList: []*ast.TableDef{
+						{
+							Name: "tech_book",
+						},
+						{
+							Schema: "xschema",
+							Name:   "user",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"DROP TABLE tech_book, xschema.user",
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
+func TestPGNotNullStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.SetNotNullStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "id",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL",
+			},
+		},
+		{
+			stmt: "ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{Name: "tech_book"},
+					AlterItemList: []ast.Node{
+						&ast.DropNotNullStmt{
+							Table:      &ast.TableDef{Name: "tech_book"},
+							ColumnName: "id",
+						},
+					},
+				},
+			},
+			textList: []string{
+				"ALTER TABLE tech_book ALTER COLUMN id DROP NOT NULL",
 			},
 		},
 	}

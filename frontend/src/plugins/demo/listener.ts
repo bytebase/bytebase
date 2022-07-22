@@ -52,7 +52,6 @@ const tryToShowGuideDialog = async () => {
 };
 
 const tryToShowHints = async () => {
-  removeHint();
   const { hint } = storage.get(["hint"]);
 
   if (hint) {
@@ -86,19 +85,23 @@ const initLocationListenerForGuide = () => {
 // initMutationListenerForHint using mutation observer to detect DOM changes.
 const initMutationListenerForHint = () => {
   const observer = new MutationObserver(async (mutations: MutationRecord[]) => {
-    for (const mutation of mutations) {
-      const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
-      for (const changedNode of changedNodes) {
-        if (
-          changedNode instanceof HTMLElement &&
-          !changedNode.matches(".bb-hint-highlight-wrapper") &&
-          !changedNode.matches(".bb-hint-dialog")
-        ) {
-          tryToShowHints();
-          return;
+    setTimeout(() => {
+      for (const mutation of mutations) {
+        const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+        for (const changedNode of changedNodes) {
+          if (
+            changedNode instanceof HTMLElement &&
+            !changedNode.matches(".bb-hint-wrapper") &&
+            !changedNode.matches(".bb-hint-cover-wrapper") &&
+            !changedNode.matches(".bb-hint-dialog") &&
+            !changedNode.matches(".bb-hint-tooltip-wrapper")
+          ) {
+            tryToShowHints();
+            return;
+          }
         }
       }
-    }
+    });
   });
 
   observer.observe(document.body, {

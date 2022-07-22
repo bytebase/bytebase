@@ -59,7 +59,10 @@
     </div>
 
     <!-- Static sidebar for desktop -->
-    <aside class="hidden md:flex md:flex-shrink-0">
+    <aside
+      class="hidden md:flex md:flex-shrink-0"
+      data-label="bb-dashboard-static-sidebar"
+    >
       <div class="flex flex-col w-52">
         <!-- Sidebar component, swap this element with another sidebar if you like -->
         <div class="flex-1 flex flex-col py-2 overflow-y-auto">
@@ -99,6 +102,7 @@
     </aside>
     <div
       class="flex flex-col min-w-0 flex-1 border-l border-r border-block-border"
+      data-label="bb-main-body-wrapper"
     >
       <!-- Static sidebar for mobile -->
       <aside class="md:hidden">

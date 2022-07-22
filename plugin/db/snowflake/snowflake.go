@@ -36,12 +36,12 @@ type Driver struct {
 	db *sql.DB
 }
 
-func newDriver(config db.DriverConfig) db.Driver {
+func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
 // Open opens a Snowflake driver.
-func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType db.Type, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
 	prefixParts, loggedPrefixParts := []string{config.Username}, []string{config.Username}
 	if config.Password != "" {
 		prefixParts = append(prefixParts, config.Password)
@@ -92,7 +92,7 @@ func (driver *Driver) Open(ctx context.Context, dbType db.Type, config db.Connec
 }
 
 // Close closes the driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(context.Context) error {
 	return driver.db.Close()
 }
 
@@ -101,31 +101,22 @@ func (driver *Driver) Ping(ctx context.Context) error {
 	return driver.db.PingContext(ctx)
 }
 
-// GetDbConnection gets a database connection.
-func (driver *Driver) GetDbConnection(ctx context.Context, database string) (*sql.DB, error) {
+// GetDBConnection gets a database connection.
+func (driver *Driver) GetDBConnection(context.Context, string) (*sql.DB, error) {
 	return driver.db, nil
 }
 
-// GetVersion gets the version.
-func (driver *Driver) GetVersion(ctx context.Context) (string, error) {
+// getVersion gets the version.
+func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT CURRENT_VERSION()"
-	row, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	defer row.Close()
-
 	var version string
-	if row.Next() {
-		if err := row.Scan(&version); err != nil {
-			return "", err
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return version, nil
-	}
-	if err := row.Err(); err != nil {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	return "", common.FormatDBErrorEmptyRowWithQuery(query)
+	return version, nil
 }
 
 func (driver *Driver) useRole(ctx context.Context, role string) error {

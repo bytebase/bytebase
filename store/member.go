@@ -309,40 +309,30 @@ func createMemberImpl(ctx context.Context, tx *sql.Tx, create *api.MemberCreate)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var memberRaw memberRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.Status,
 		create.Role,
 		create.PrincipalID,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var memberRaw memberRaw
-		if err := row.Scan(
-			&memberRaw.ID,
-			&memberRaw.RowStatus,
-			&memberRaw.CreatorID,
-			&memberRaw.CreatedTs,
-			&memberRaw.UpdaterID,
-			&memberRaw.UpdatedTs,
-			&memberRaw.Status,
-			&memberRaw.Role,
-			&memberRaw.PrincipalID,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&memberRaw.ID,
+		&memberRaw.RowStatus,
+		&memberRaw.CreatorID,
+		&memberRaw.CreatedTs,
+		&memberRaw.UpdaterID,
+		&memberRaw.UpdatedTs,
+		&memberRaw.Status,
+		&memberRaw.Role,
+		&memberRaw.PrincipalID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &memberRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &memberRaw, nil
 }
 
 func findMemberImpl(ctx context.Context, tx *sql.Tx, find *api.MemberFind) ([]*memberRaw, error) {
@@ -418,39 +408,30 @@ func patchMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.MemberPatch) (*
 
 	args = append(args, patch.ID)
 
+	var memberRaw memberRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, status, role, principal_id
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var memberRaw memberRaw
-		if err := row.Scan(
-			&memberRaw.ID,
-			&memberRaw.RowStatus,
-			&memberRaw.CreatorID,
-			&memberRaw.CreatedTs,
-			&memberRaw.UpdaterID,
-			&memberRaw.UpdatedTs,
-			&memberRaw.Status,
-			&memberRaw.Role,
-			&memberRaw.PrincipalID,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&memberRaw.ID,
+		&memberRaw.RowStatus,
+		&memberRaw.CreatorID,
+		&memberRaw.CreatedTs,
+		&memberRaw.UpdaterID,
+		&memberRaw.UpdatedTs,
+		&memberRaw.Status,
+		&memberRaw.Role,
+		&memberRaw.PrincipalID,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
 		}
-		return &memberRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("member ID not found: %d", patch.ID)}
+	return &memberRaw, nil
 }

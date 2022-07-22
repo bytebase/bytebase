@@ -50,7 +50,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// Pre-validate database labels.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, &api.Database{Name: databaseCreate.Name, Instance: instance} /* dummy database */, project, databaseCreate.CreatorID, true /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to validate database labels").SetInternal(err)
 			}
 		}
 
@@ -66,7 +66,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// This needs to be after we compose database relationship.
 		if databaseCreate.Labels != nil && *databaseCreate.Labels != "" {
 			if err := s.setDatabaseLabels(ctx, *databaseCreate.Labels, db, project, databaseCreate.CreatorID, false /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
 
@@ -221,11 +221,11 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 				// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
 				baseDatabaseName, err := api.GetBaseDatabaseName(database.Name, toProject.DBNameTemplate, labels)
 				if err != nil {
-					return fmt.Errorf("api.GetBaseDatabaseName(%q, %q, %q) failed, error: %v", database.Name, toProject.DBNameTemplate, labels, err)
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to get base database name for database %q with template %q and label %q", database.Name, toProject.DBNameTemplate, labels)).SetInternal(err)
 				}
 				peerSchemaVersion, peerSchema, err := s.getSchemaFromPeerTenantDatabase(ctx, database.Instance, toProject, *dbPatch.ProjectID, baseDatabaseName)
 				if err != nil {
-					return err
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get schema from peer tenant database").SetInternal(err)
 				}
 
 				// Tenant database exists when peerSchemaVersion or peerSchema are not empty.
@@ -238,10 +238,10 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 					var schemaBuf bytes.Buffer
 					if _, err := driver.Dump(ctx, database.Name, &schemaBuf, true /* schemaOnly */); err != nil {
-						return fmt.Errorf("failed to get database schema for database %q: %w", database.Name, err)
+						return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to get database schema for database %q", database.Name)).SetInternal(err)
 					}
 					if peerSchema != schemaBuf.String() {
-						return fmt.Errorf("the schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name)
+						return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("The schema for database %q does not match the peer database schema in the target tenant mode project %q", database.Name, toProject.Name))
 					}
 				}
 			}
@@ -252,7 +252,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		// must match instance environment.
 		if dbPatch.Labels != nil {
 			if err := s.setDatabaseLabels(ctx, *dbPatch.Labels, database, targetProject, dbPatch.UpdaterID, false /* validateOnly */); err != nil {
-				return err
+				return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set database labels").SetInternal(err)
 			}
 		}
 
@@ -569,6 +569,9 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 
 		backupSetting, err := s.store.UpsertBackupSetting(ctx, backupSettingUpsert)
 		if err != nil {
+			if common.ErrorCode(err) == common.Invalid {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid backup setting").SetInternal(err)
+			}
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to set backup setting").SetInternal(err)
 		}
 
@@ -682,12 +685,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourceCreate.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 			}
-			s.syncEngineVersionAndSchema(ctx, updatedInstance)
+			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
+				log.Warn("Failed to sync instance schema",
+					zap.Int("instance_id", updatedInstance.ID),
+					zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -750,12 +757,16 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourcePatch.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
 			}
-			s.syncEngineVersionAndSchema(ctx, updatedInstance)
+			if err := s.syncEngineVersionAndSchema(ctx, updatedInstance); err != nil {
+				log.Warn("Failed to sync instance schema",
+					zap.Int("instance_id", updatedInstance.ID),
+					zap.Error(err))
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -816,7 +827,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
+	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -839,7 +850,7 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 }
 
 // getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
+func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
 		return db.ConnectionConfig{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
@@ -911,7 +922,7 @@ func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.Driv
 		connCtx,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
+		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q, error: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
 	}
 	return driver, nil
 }

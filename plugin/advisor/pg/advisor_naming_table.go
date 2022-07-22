@@ -27,11 +27,13 @@ func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement st
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	// Naming length limit is not enabled for PG, the PG parser will auto slice the name to make sure its length <= 63
+	// Reference: https://stackoverflow.com/questions/27865770/how-long-can-postgresql-table-names-be
+	format, _, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}

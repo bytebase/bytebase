@@ -9,6 +9,7 @@ import (
 )
 
 // Type is the type of a VCS.
+// nolint
 type Type string
 
 const (
@@ -42,13 +43,14 @@ type Commit struct {
 
 // FileCommit is the API message for a VCS file commit.
 type FileCommit struct {
-	ID         string `json:"id"`
-	Title      string `json:"title"`
-	Message    string `json:"message"`
-	CreatedTs  int64  `json:"createdTs"`
-	URL        string `json:"url"`
-	AuthorName string `json:"authorName"`
-	Added      string `json:"added"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Message     string `json:"message"`
+	CreatedTs   int64  `json:"createdTs"`
+	URL         string `json:"url"`
+	AuthorName  string `json:"authorName"`
+	AuthorEmail string `json:"authorEmail"`
+	Added       string `json:"added"`
 }
 
 // FileCommitCreate is the payload for committing a new file.

@@ -25,8 +25,8 @@ const (
 	SyntaxErrorTitle string = "Syntax error"
 )
 
-// NewStatusBySchemaReviewRuleLevel returns status by SchemaReviewRuleLevel.
-func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, error) {
+// NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
+func NewStatusBySQLReviewRuleLevel(level SQLReviewRuleLevel) (Status, error) {
 	switch level {
 	case SchemaRuleLevelError:
 		return Error, nil
@@ -37,6 +37,7 @@ func NewStatusBySchemaReviewRuleLevel(level SchemaReviewRuleLevel) (Status, erro
 }
 
 // Type is the type of advisor.
+// nolint
 type Type string
 
 const (
@@ -87,6 +88,15 @@ const (
 	// MySQLTableRequirePK is an advisor type for MySQL table require primary key.
 	MySQLTableRequirePK Type = "bb.plugin.advisor.mysql.table.require-pk"
 
+	// MySQLTableNoFK is an advisor type for MySQL table disallow foreign key.
+	MySQLTableNoFK Type = "bb.plugin.advisor.mysql.table.no-foreign-key"
+
+	// MySQLTableDropNamingConvention is an advisor type for MySQL table drop with naming convention.
+	MySQLTableDropNamingConvention Type = "bb.plugin.advisor.mysql.table.drop-naming-convention"
+
+	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
+	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
+
 	// PostgreSQL Advisor
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
@@ -97,6 +107,12 @@ const (
 
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
+
+	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
+	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
+
+	// PostgreSQLColumnNoNull is an advisor type for PostgreSQL column no NULL value.
+	PostgreSQLColumnNoNull Type = "bb.plugin.advisor.postgresql.column.no-null"
 
 	// PostgreSQLTableRequirePK is an advisor type for PostgreSQL table require primary key.
 	PostgreSQLTableRequirePK Type = "bb.plugin.advisor.postgresql.table.require-pk"
@@ -140,7 +156,7 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SchemaReviewRule
+	Rule    *SQLReviewRule
 	Catalog catalog.Catalog
 }
 
@@ -195,15 +211,17 @@ func Check(dbType DBType, advType Type, ctx Context, statement string) ([]Advice
 
 // IsSyntaxCheckSupported checks the engine type if syntax check supports it.
 func IsSyntaxCheckSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+	switch dbType {
+	case MySQL, TiDB, Postgres:
 		return true
 	}
 	return false
 }
 
-// IsSchemaReviewSupported checks the engine type if schema review supports it.
-func IsSchemaReviewSupported(dbType DBType) bool {
-	if dbType == MySQL || dbType == TiDB || dbType == Postgres {
+// IsSQLReviewSupported checks the engine type if schema review supports it.
+func IsSQLReviewSupported(dbType DBType) bool {
+	switch dbType {
+	case MySQL, TiDB, Postgres:
 		return true
 	}
 	return false

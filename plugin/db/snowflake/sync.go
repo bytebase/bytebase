@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
@@ -20,6 +21,11 @@ var (
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
+		return nil, err
+	}
+
+	version, err := driver.getVersion(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -49,13 +55,14 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMeta, error
 	}
 
 	return &db.InstanceMeta{
+		Version:      version,
 		UserList:     userList,
 		DatabaseList: databaseList,
 	}, nil
 }
 
-// SyncSchema synces the schema.
-func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([]*db.Schema, error) {
+// SyncDBSchema syncs a single database schema.
+func (driver *Driver) SyncDBSchema(ctx context.Context, databaseName string) (*db.Schema, error) {
 	// Query user info
 	if err := driver.useRole(ctx, accountAdminRole); err != nil {
 		return nil, err
@@ -67,36 +74,27 @@ func (driver *Driver) SyncSchema(ctx context.Context, databaseList ...string) ([
 		return nil, err
 	}
 
-	var schemaList []*db.Schema
+	schema := db.Schema{
+		Name: databaseName,
+	}
+	found := false
 	for _, database := range databases {
-		if database == bytebaseDatabase {
-			continue
+		if database == databaseName {
+			found = true
+			break
 		}
-		if len(databaseList) != 0 {
-			exists := false
-			for _, k := range databaseList {
-				if database == k {
-					exists = true
-					break
-				}
-			}
-			if !exists {
-				continue
-			}
-		}
-
-		var schema db.Schema
-		schema.Name = database
-		tableList, viewList, err := driver.syncTableSchema(ctx, database)
-		if err != nil {
-			return nil, err
-		}
-		schema.TableList, schema.ViewList = tableList, viewList
-
-		schemaList = append(schemaList, &schema)
+	}
+	if !found {
+		return nil, common.Errorf(common.NotFound, fmt.Errorf("database %q not found", databaseName))
 	}
 
-	return schemaList, nil
+	tableList, viewList, err := driver.syncTableSchema(ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schema.TableList, schema.ViewList = tableList, viewList
+
+	return &schema, nil
 }
 
 func (driver *Driver) getUserList(ctx context.Context) ([]db.User, error) {

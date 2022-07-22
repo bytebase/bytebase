@@ -19,7 +19,9 @@
         <MemberSelect
           v-if="scopeByPrincipal"
           class="w-72"
-          :selectedId="state.selectedPrincipalId"
+          :show-all="true"
+          :show-system-bot="true"
+          :selected-id="state.selectedPrincipalId"
           @select-principal-id="selectPrincipal"
         />
         <BBTableSearch
@@ -40,11 +42,11 @@
 </template>
 
 <script lang="ts">
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import { IssueTable } from "../components/Issue";
 import MemberSelect from "../components/MemberSelect.vue";
-import { Environment, Issue, PrincipalId, ProjectId } from "../types";
+import { EMPTY_ID, Environment, Issue, PrincipalId, ProjectId } from "../types";
 import {
   reactive,
   ref,
@@ -52,8 +54,9 @@ import {
   onMounted,
   watchEffect,
   defineComponent,
+  watch,
 } from "vue";
-import { activeEnvironment, projectSlug } from "../utils";
+import { activeEnvironment, isDBAOrOwner, projectSlug } from "../utils";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import { useI18n } from "vue-i18n";
 import {
@@ -83,12 +86,13 @@ export default defineComponent({
 
     const issueStore = useIssueStore();
     const router = useRouter();
+    const route = useRoute();
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const statusList: string[] = router.currentRoute.value.query.status
-      ? (router.currentRoute.value.query.status as string).split(",")
+    const statusList: string[] = route.query.status
+      ? (route.query.status as string).split(",")
       : [];
 
     // Applies principal scope if we explicitly specify user in the query parameter
@@ -97,9 +101,7 @@ export default defineComponent({
     // we do NOT apply principal scope, which is the case if we want to list all issues
     // for a particular project.
     // Note: We do not use computed, otherwise it will cause prepareIssueList to refetch everytime we click environment tab
-    const scopeByPrincipal =
-      !router.currentRoute.value.query.user ||
-      !router.currentRoute.value.query.project;
+    const scopeByPrincipal = !route.query.user || !route.query.project;
 
     const state = reactive<LocalState>({
       showOpen: statusList.length == 0 || statusList.includes("open"),
@@ -107,18 +109,34 @@ export default defineComponent({
       openList: [],
       closedList: [],
       searchText: "",
-      selectedPrincipalId:
-        parseInt(router.currentRoute.value.query.user as string, 10) ||
-        currentUser.value.id,
-      selectedEnvironment: router.currentRoute.value.query.environment
+      selectedPrincipalId: currentUser.value.id, // initialized below
+      selectedEnvironment: route.query.environment
         ? useEnvironmentStore().getEnvironmentById(
-            parseInt(router.currentRoute.value.query.environment as string, 10)
+            parseInt(route.query.environment as string, 10)
           )
         : undefined,
-      selectedProjectId: router.currentRoute.value.query.project
-        ? parseInt(router.currentRoute.value.query.project as string)
+      selectedProjectId: route.query.project
+        ? parseInt(route.query.project as string)
         : undefined,
     });
+    // initialize the selectedPrincipalId
+    const initializeSelectedPrincipalIdFromQuery = (): PrincipalId => {
+      const id = parseInt(route.query.user as string, 10);
+      if (id >= 0) {
+        return id;
+      }
+      return isDBAOrOwner(currentUser.value.role)
+        ? EMPTY_ID // default to 'All' if current user is owner or DBA
+        : currentUser.value.id; // default to current user otherwise
+    };
+
+    watch(
+      () => route.query.user,
+      () => {
+        state.selectedPrincipalId = initializeSelectedPrincipalIdFromQuery();
+      },
+      { immediate: true }
+    );
 
     onMounted(() => {
       // Focus on the internal search field when mounted
@@ -135,6 +153,8 @@ export default defineComponent({
     const prepareIssueList = () => {
       // We call open and close separately because normally the number of open issues is limited
       // while the closed issues could be a lot.
+      // When "All" is selected, the userId is eventually ignored by `fetchIssueList` because
+      // it's 0 (EMPTY_ID), so we need not to check the special value here.
       if (state.showOpen) {
         issueStore
           .fetchIssueList({
@@ -205,7 +225,7 @@ export default defineComponent({
         router.replace({
           name: "workspace.issue",
           query: {
-            ...router.currentRoute.value.query,
+            ...route.query,
             environment: environment.id,
           },
         });
@@ -213,7 +233,7 @@ export default defineComponent({
         router.replace({
           name: "workspace.issue",
           query: {
-            ...router.currentRoute.value.query,
+            ...route.query,
             environment: undefined,
           },
         });
@@ -225,7 +245,7 @@ export default defineComponent({
       router.replace({
         name: "workspace.issue",
         query: {
-          ...router.currentRoute.value.query,
+          ...route.query,
           user: principalId,
         },
       });

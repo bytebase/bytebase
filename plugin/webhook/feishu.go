@@ -57,7 +57,7 @@ func init() {
 type FeishuReceiver struct {
 }
 
-func (receiver *FeishuReceiver) post(context Context) error {
+func (*FeishuReceiver) post(context Context) error {
 	contentList := [][]FeishuWebhookPostSection{}
 	if context.Description != "" {
 		sectionList := []FeishuWebhookPostSection{}

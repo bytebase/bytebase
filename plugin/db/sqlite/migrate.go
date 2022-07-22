@@ -31,7 +31,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 	if !exist {
 		return true, nil
 	}
-	if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+	if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 		return false, err
 	}
 
@@ -57,7 +57,7 @@ func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 			zap.String("database", driver.connectionCtx.InstanceName),
 		)
 
-		if _, err := driver.GetDbConnection(ctx, bytebaseDatabase); err != nil {
+		if _, err := driver.GetDBConnection(ctx, bytebaseDatabase); err != nil {
 			log.Error("Failed to switch to database \"bytebase\".",
 				zap.Error(err),
 				zap.String("environment", driver.connectionCtx.EnvironmentName),
@@ -93,28 +93,21 @@ func (driver Driver) FindLargestVersionSinceBaseline(ctx context.Context, tx *sq
 		SELECT MAX(version) FROM bytebase_migration_history
 		WHERE namespace = ? AND sequence >= ?
 	`
-	row, err := tx.QueryContext(ctx, getLargestVersionSinceLastBaselineQuery,
+	var version sql.NullString
+	if err := tx.QueryRowContext(ctx, getLargestVersionSinceLastBaselineQuery,
 		namespace, largestBaselineSequence,
-	)
-	if err != nil {
+	).Scan(
+		&version,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+		}
 		return nil, util.FormatErrorWithQuery(err, getLargestVersionSinceLastBaselineQuery)
 	}
-	defer row.Close()
-
-	var version sql.NullString
-	if row.Next() {
-		if err := row.Scan(&version); err != nil {
-			return nil, err
-		}
-		if version.Valid {
-			return &version.String, nil
-		}
-		return nil, nil
+	if version.Valid {
+		return &version.String, nil
 	}
-	if err := row.Err(); err != nil {
-		return nil, err
-	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(getLargestVersionSinceLastBaselineQuery)
+	return nil, nil
 }
 
 // FindLargestSequence will return the largest sequence number.
@@ -125,30 +118,19 @@ func (Driver) FindLargestSequence(ctx context.Context, tx *sql.Tx, namespace str
 	if baseline {
 		findLargestSequenceQuery = fmt.Sprintf("%s AND (type = '%s' OR type = '%s')", findLargestSequenceQuery, db.Baseline, db.Branch)
 	}
-	row, err := tx.QueryContext(ctx, findLargestSequenceQuery,
+	var sequence sql.NullInt32
+	if err := tx.QueryRowContext(ctx, findLargestSequenceQuery,
 		namespace,
-	)
-	if err != nil {
+	).Scan(
+		&sequence,
+	); err != nil {
 		return -1, util.FormatErrorWithQuery(err, findLargestSequenceQuery)
 	}
-	defer row.Close()
-
-	var sequence sql.NullInt32
-	if row.Next() {
-		if err := row.Scan(&sequence); err != nil {
-			return -1, err
-		}
+	if sequence.Valid {
+		return int(sequence.Int32), nil
 	}
-	if err := row.Err(); err != nil {
-		return -1, err
-	}
-
-	if !sequence.Valid {
-		// Returns 0 if we haven't applied any migration for this namespace.
-		return 0, nil
-	}
-
-	return int(sequence.Int32), nil
+	// Returns 0 if we haven't applied any migration for this namespace.
+	return 0, nil
 }
 
 // InsertPendingHistory will insert the migration record with pending status and return the inserted ID.
@@ -286,5 +268,5 @@ func (driver *Driver) FindMigrationHistoryList(ctx context.Context, find *db.Mig
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
-	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase, find, baseQuery)
+	return util.FindMigrationHistoryList(ctx, query, params, driver, bytebaseDatabase)
 }

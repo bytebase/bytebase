@@ -21,8 +21,7 @@ mysql-*.tar*
 .air
 
 # Frontend asset
-server/dist/*
-!server/dist/index.html
+dist
 
 # Dev database
 data
@@ -35,4 +34,5 @@ bytebase-build
 
 .DS_Store
 
+dist/
 docs/openapi/swagger.json

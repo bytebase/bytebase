@@ -424,8 +424,10 @@ CREATE TABLE idx (
     position INTEGER NOT NULL,
     type TEXT NOT NULL,
     "unique" BOOLEAN NOT NULL,
+    "primary" BOOLEAN NOT NULL,
     visible BOOLEAN NOT NULL,
-    comment TEXT NOT NULL
+    comment TEXT NOT NULL,
+    CONSTRAINT check_primary_must_unique CHECK(NOT "primary" OR ("primary" AND "unique"))
 );
 
 CREATE INDEX idx_idx_database_id_table_id ON idx(database_id, table_id);
@@ -567,10 +569,13 @@ CREATE TABLE backup_setting (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id),
+    -- enable automatic backup schedule.
     enabled BOOLEAN NOT NULL,
     hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
     -- day_of_week can be -1 which is wildcard (daily automatic backup).
     day_of_week INTEGER NOT NULL CHECK (day_of_week >= -1 AND day_of_week <= 6),
+    -- retention_period_ts == 0 means unset retention period and we do not delete any data.
+    retention_period_ts INTEGER NOT NULL DEFAULT 0 CHECK (retention_period_ts >= 0),
     -- hook_url is the callback url to be requested after a successful backup.
     hook_url TEXT NOT NULL
 );

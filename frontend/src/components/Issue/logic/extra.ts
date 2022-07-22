@@ -123,10 +123,12 @@ export const useExtraIssueLogic = () => {
         selectedTask.value.earliestAllowedTs = newEarliestAllowedTsMs;
       }
     } else {
+      const task = selectedTask.value as Task;
       const taskPatch: TaskPatch = {
         earliestAllowedTs: newEarliestAllowedTsMs,
+        updatedTs: task.updatedTs,
       };
-      patchTask((selectedTask.value as Task).id, taskPatch);
+      patchTask(task.id, taskPatch);
     }
   };
 
@@ -186,6 +188,7 @@ export const useExtraIssueLogic = () => {
       id: stage.id,
       status: newStatus,
       comment,
+      updatedTs: stage.updatedTs,
     };
     taskStore
       .updateStageAllTaskStatus({
@@ -212,6 +215,7 @@ export const useExtraIssueLogic = () => {
     const taskStatusPatch: TaskStatusPatch = {
       status: newStatus,
       comment: comment,
+      updatedTs: task.updatedTs,
     };
     taskStore
       .updateStatus({

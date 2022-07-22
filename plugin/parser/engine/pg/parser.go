@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"fmt"
+
 	"github.com/bytebase/bytebase/plugin/parser"
 	"github.com/bytebase/bytebase/plugin/parser/ast"
 	pgquery "github.com/pganalyze/pg_query_go/v2"
@@ -19,16 +21,24 @@ type PostgreSQLParser struct {
 }
 
 // Parse implements the parser.Parser interface.
-func (p *PostgreSQLParser) Parse(ctx parser.Context, statement string) ([]ast.Node, error) {
+func (p *PostgreSQLParser) Parse(_ parser.Context, statement string) ([]ast.Node, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
 	}
 
+	textList, err := parser.SplitMultiSQL(parser.Postgres, statement)
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Stmts) != len(textList) {
+		return nil, fmt.Errorf("split multi-SQL failed: the length should be %d, but get %d. stmt: \"%s\"", len(res.Stmts), len(textList), statement)
+	}
+
 	var nodeList []ast.Node
 
-	for _, stmt := range res.Stmts {
-		node, err := convert(stmt.Stmt)
+	for i, stmt := range res.Stmts {
+		node, err := convert(stmt.Stmt, textList[i])
 		if err != nil {
 			return nil, err
 		}

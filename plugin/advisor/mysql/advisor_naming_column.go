@@ -28,19 +28,20 @@ func (adv *NamingColumnConventionAdvisor) Check(ctx advisor.Context, statement s
 		return errAdvice, nil
 	}
 
-	level, err := advisor.NewStatusBySchemaReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnamrshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingColumnConventionChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		format: format,
-		tables: make(tableState),
+		level:     level,
+		title:     string(ctx.Rule.Type),
+		format:    format,
+		maxLength: maxLength,
+		tables:    make(tableState),
 	}
 
 	for _, stmtNode := range root {
@@ -64,6 +65,7 @@ type namingColumnConventionChecker struct {
 	level      advisor.Status
 	title      string
 	format     *regexp.Regexp
+	maxLength  int
 	tables     tableState
 }
 
@@ -105,6 +107,14 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
 				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column, v.format),
+			})
+		}
+		if v.maxLength > 0 && len(column) > v.maxLength {
+			v.adviceList = append(v.adviceList, advisor.Advice{
+				Status:  v.level,
+				Code:    advisor.NamingColumnConventionMismatch,
+				Title:   v.title,
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column, v.maxLength),
 			})
 		}
 	}

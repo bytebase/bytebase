@@ -3,7 +3,9 @@ package advisor
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
 	"github.com/stretchr/testify/assert"
@@ -25,10 +27,12 @@ const (
 var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
+
+	_ catalog.Catalog = (*MockCatalogService)(nil)
 )
 
 // FindIndex implements the catalog interface.
-func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
+func (*MockCatalogService) FindIndex(_ context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
 	switch find.IndexName {
 	case MockOldIndexName:
 		return &catalog.Index{
@@ -51,6 +55,16 @@ func (c *MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexF
 	return nil, fmt.Errorf("cannot find index for %v", find)
 }
 
+// FindTable implements the catalog interface.
+func (*MockCatalogService) FindTable(_ context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+	return []*catalog.Table{
+		{
+			Name:         "table",
+			DatabaseName: find.DatabaseName,
+		},
+	}, nil
+}
+
 // TestCase is the data struct for test.
 type TestCase struct {
 	Statement string
@@ -62,7 +76,7 @@ func RunSchemaReviewRuleTests(
 	t *testing.T,
 	tests []TestCase,
 	adv Advisor,
-	rule *SchemaReviewRule,
+	rule *SQLReviewRule,
 	catalog catalog.Catalog,
 ) {
 	ctx := Context{
@@ -76,4 +90,16 @@ func RunSchemaReviewRuleTests(
 		require.NoError(t, err)
 		assert.Equal(t, tc.Want, adviceList, tc.Statement)
 	}
+}
+
+// RandomString returns random string with specific length.
+func RandomString(length int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+	rand.Seed(time.Now().UnixNano())
+
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

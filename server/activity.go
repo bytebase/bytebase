@@ -89,7 +89,10 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 			activityFind.Limit = &limit
 		}
 		if orderStr := c.QueryParams().Get("order"); orderStr != "" {
-			order := api.SortOrder(orderStr)
+			order, err := api.StringToSortOrder(orderStr)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Query parameter order is invalid").SetInternal(err)
+			}
 			activityFind.Order = &order
 		}
 		activityList, err := s.store.FindActivity(ctx, activityFind)
@@ -131,26 +134,6 @@ func (s *Server) registerActivityRoutes(g *echo.Group) {
 		if err := jsonapi.MarshalPayload(c.Response().Writer, activity); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal activity ID response: %v", id)).SetInternal(err)
 		}
-		return nil
-	})
-
-	g.DELETE("/activity/:activityID", func(c echo.Context) error {
-		ctx := c.Request().Context()
-		id, err := strconv.Atoi(c.Param("activityID"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("ID is not a number: %s", c.Param("activityID"))).SetInternal(err)
-		}
-
-		activityDelete := &api.ActivityDelete{
-			ID:        id,
-			DeleterID: c.Get(getPrincipalIDContextKey()).(int),
-		}
-		if err := s.store.DeleteActivity(ctx, activityDelete); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to delete activity ID: %v", id)).SetInternal(err)
-		}
-
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
 }

@@ -2,10 +2,7 @@ package server
 
 import (
 	"context"
-	"embed"
-	"encoding/json"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"runtime"
 	"strings"
@@ -82,39 +79,6 @@ var casbinDBAPolicy string
 //go:embed acl_casbin_policy_developer.csv
 var casbinDeveloperPolicy string
 
-//go:embed dist
-var embeddedFiles embed.FS
-
-//go:embed dist/index.html
-var indexContent string
-
-func getFileSystem() http.FileSystem {
-	fs, err := fs.Sub(embeddedFiles, "dist")
-	if err != nil {
-		panic(err)
-	}
-
-	return http.FS(fs)
-}
-
-// By default, we embed a placeholder index.html. If we want to build a monolithic binary including
-// both frontend and backend (e.g. to produce our release build), we will instruct the build process
-// to copy over the frontend artifacts and overwrite that placeholder.
-func embedFrontend(e *echo.Echo) {
-	// Catch-all route to return index.html, this is to prevent 404 when accessing non-root url.
-	// See https://stackoverflow.com/questions/27928372/react-router-urls-dont-work-when-refreshing-or-writing-manually
-	e.GET("/*", func(c echo.Context) error {
-		println("path", c.Request().URL.Path)
-		return c.HTML(http.StatusOK, indexContent)
-	})
-
-	frontendDistHandler := http.FileServer(getFileSystem())
-	// register static file handlers for each file/subdirectory in the built dist
-	e.GET("/favicon.ico", echo.WrapHandler(frontendDistHandler))
-	e.GET("/assets/*", echo.WrapHandler(frontendDistHandler))
-	e.GET("/demo/*", echo.WrapHandler(frontendDistHandler))
-}
-
 // Use following cmd to generate swagger doc
 // swag init -g ./server.go -d ./server --output docs/openapi --parseDependency
 
@@ -189,7 +153,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	// New MetadataDB instance.
 	if prof.useEmbedDB() {
-		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DataDir, prof.DemoDataDir, prof.Mode)
+		s.metaDB = store.NewMetadataDBWithEmbedPg(pgInstance, prof.PgUser, prof.DemoDataDir, prof.Mode)
 	} else {
 		s.metaDB = store.NewMetadataDBWithExternalPg(pgInstance, prof.PgURL, prof.DemoDataDir, prof.Mode)
 	}
@@ -236,38 +200,25 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 		// Task scheduler
 		taskScheduler := NewTaskScheduler(s)
 
-		defaultExecutor := NewDefaultTaskExecutor()
-		taskScheduler.Register(api.TaskGeneral, defaultExecutor)
+		taskScheduler.Register(api.TaskGeneral, NewDefaultTaskExecutor)
 
-		createDBExecutor := NewDatabaseCreateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseCreate, createDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseCreate, NewDatabaseCreateTaskExecutor)
 
-		schemaUpdateExecutor := NewSchemaUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, schemaUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdate, NewSchemaUpdateTaskExecutor)
 
-		dataUpdateExecutor := NewDataUpdateTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseDataUpdate, dataUpdateExecutor)
+		taskScheduler.Register(api.TaskDatabaseDataUpdate, NewDataUpdateTaskExecutor)
 
-		backupDBExecutor := NewDatabaseBackupTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseBackup, backupDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseBackup, NewDatabaseBackupTaskExecutor)
 
-		restoreDBExecutor := NewDatabaseRestoreTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseRestore, restoreDBExecutor)
+		taskScheduler.Register(api.TaskDatabaseRestore, NewDatabaseRestoreTaskExecutor)
 
-		schemaUpdateGhostSyncExecutor := NewSchemaUpdateGhostSyncTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, schemaUpdateGhostSyncExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostSync, NewSchemaUpdateGhostSyncTaskExecutor)
 
-		schemaUpdateGhostCutoverExecutor := NewSchemaUpdateGhostCutoverTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, schemaUpdateGhostCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostCutover, NewSchemaUpdateGhostCutoverTaskExecutor)
 
-		schemaUpdateGhostDropOriginalTableExecutor := NewSchemaUpdateGhostDropOriginalTableTaskExecutor()
-		taskScheduler.Register(api.TaskDatabaseSchemaUpdateGhostDropOriginalTable, schemaUpdateGhostDropOriginalTableExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRRestore, func() TaskExecutor { return NewPITRRestoreTaskExecutor(s.mysqlutil) })
 
-		pitrRestoreExecutor := NewPITRRestoreTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRRestore, pitrRestoreExecutor)
-
-		pitrCutoverExecutor := NewPITRCutoverTaskExecutor(s.mysqlutil)
-		taskScheduler.Register(api.TaskDatabasePITRCutover, pitrCutoverExecutor)
+		taskScheduler.Register(api.TaskDatabasePITRCutover, func() TaskExecutor { return NewPITRCutoverTaskExecutor(s.mysqlutil) })
 
 		s.TaskScheduler = taskScheduler
 
@@ -386,11 +337,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
-	allRoutes, err := json.MarshalIndent(e.Routes(), "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
 	s.ActivityManager = NewActivityManager(s, storeInstance)
 	s.LicenseService, err = enterpriseService.NewLicenseService(prof.Mode, s.store)
 	if err != nil {
@@ -399,7 +345,6 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 
 	s.initSubscription()
 
-	log.Debug(fmt.Sprintf("All registered routes: %v", string(allRoutes)))
 	serverStarted = true
 	return s, nil
 }

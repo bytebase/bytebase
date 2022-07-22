@@ -404,7 +404,8 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`
-	row, err := tx.QueryContext(ctx, query,
+	var projectMemberRaw projectMemberRaw
+	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectID,
@@ -412,35 +413,24 @@ func createProjectMemberImpl(ctx context.Context, tx *sql.Tx, create *api.Projec
 		create.PrincipalID,
 		create.RoleProvider,
 		create.Payload,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectMemberRaw projectMemberRaw
-		if err := row.Scan(
-			&projectMemberRaw.ID,
-			&projectMemberRaw.CreatorID,
-			&projectMemberRaw.CreatedTs,
-			&projectMemberRaw.UpdaterID,
-			&projectMemberRaw.UpdatedTs,
-			&projectMemberRaw.ProjectID,
-			&projectMemberRaw.Role,
-			&projectMemberRaw.PrincipalID,
-			&projectMemberRaw.RoleProvider,
-			&projectMemberRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&projectMemberRaw.ID,
+		&projectMemberRaw.CreatorID,
+		&projectMemberRaw.CreatedTs,
+		&projectMemberRaw.UpdaterID,
+		&projectMemberRaw.UpdatedTs,
+		&projectMemberRaw.ProjectID,
+		&projectMemberRaw.Role,
+		&projectMemberRaw.PrincipalID,
+		&projectMemberRaw.RoleProvider,
+		&projectMemberRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &projectMemberRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &projectMemberRaw, nil
 }
 
 func findProjectMemberImpl(ctx context.Context, tx *sql.Tx, find *api.ProjectMemberFind) ([]*projectMemberRaw, error) {
@@ -525,42 +515,33 @@ func patchProjectMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectM
 
 	args = append(args, patch.ID)
 
+	var projectMemberRaw projectMemberRaw
 	// Execute update query with RETURNING.
-	row, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE project_member
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, role, principal_id, role_provider, payload
 	`, len(args)),
 		args...,
-	)
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var projectMemberRaw projectMemberRaw
-		if err := row.Scan(
-			&projectMemberRaw.ID,
-			&projectMemberRaw.CreatorID,
-			&projectMemberRaw.CreatedTs,
-			&projectMemberRaw.UpdaterID,
-			&projectMemberRaw.UpdatedTs,
-			&projectMemberRaw.ProjectID,
-			&projectMemberRaw.Role,
-			&projectMemberRaw.PrincipalID,
-			&projectMemberRaw.RoleProvider,
-			&projectMemberRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&projectMemberRaw.ID,
+		&projectMemberRaw.CreatorID,
+		&projectMemberRaw.CreatedTs,
+		&projectMemberRaw.UpdaterID,
+		&projectMemberRaw.UpdatedTs,
+		&projectMemberRaw.ProjectID,
+		&projectMemberRaw.Role,
+		&projectMemberRaw.PrincipalID,
+		&projectMemberRaw.RoleProvider,
+		&projectMemberRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
 		}
-		return &projectMemberRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("project member ID not found: %d", patch.ID)}
+	return &projectMemberRaw, nil
 }
 
 // deleteProjectMemberImpl permanently deletes a projectMember by ID.

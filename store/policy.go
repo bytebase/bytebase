@@ -178,7 +178,7 @@ func (s *Store) GetPipelineApprovalPolicy(ctx context.Context, environmentID int
 }
 
 // GetNormalSchemaReviewPolicy will get the normal schema review policy for an environment.
-func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SchemaReviewPolicy, error) {
+func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.PolicyFind) (*advisor.SQLReviewPolicy, error) {
 	if find.ID != nil && *find.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy not found with ID %d", *find.ID)}
 	}
@@ -195,7 +195,7 @@ func (s *Store) GetNormalSchemaReviewPolicy(ctx context.Context, find *api.Polic
 	if policy.ID == api.DefaultPolicyID {
 		return nil, &common.Error{Code: common.NotFound, Err: fmt.Errorf("schema review policy ID: %d for environment %d not found", policy.ID, policy.EnvironmentID)}
 	}
-	return api.UnmarshalSchemaReviewPolicy(policy.Payload)
+	return api.UnmarshalSQLReviewPolicy(policy.Payload)
 }
 
 // GetSchemaReviewPolicyIDByEnvID will get the schema review policy ID for an environment.
@@ -411,41 +411,31 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 			%s
 		RETURNING id, creator_id, created_ts, updater_id, updated_ts, row_status, environment_id, type, payload
 	`, strings.Join(set, ","))
-	row, err := tx.QueryContext(ctx, query,
+	var policyRaw policyRaw
+	if err := tx.QueryRowContext(ctx, query,
 		upsert.UpdaterID,
 		upsert.UpdaterID,
 		upsert.EnvironmentID,
 		upsert.Type,
 		upsert.Payload,
 		upsert.RowStatus,
-	)
-
-	if err != nil {
-		return nil, FormatError(err)
-	}
-	defer row.Close()
-
-	if row.Next() {
-		var policyRaw policyRaw
-		if err := row.Scan(
-			&policyRaw.ID,
-			&policyRaw.CreatorID,
-			&policyRaw.CreatedTs,
-			&policyRaw.UpdaterID,
-			&policyRaw.UpdatedTs,
-			&policyRaw.RowStatus,
-			&policyRaw.EnvironmentID,
-			&policyRaw.Type,
-			&policyRaw.Payload,
-		); err != nil {
-			return nil, FormatError(err)
+	).Scan(
+		&policyRaw.ID,
+		&policyRaw.CreatorID,
+		&policyRaw.CreatedTs,
+		&policyRaw.UpdaterID,
+		&policyRaw.UpdatedTs,
+		&policyRaw.RowStatus,
+		&policyRaw.EnvironmentID,
+		&policyRaw.Type,
+		&policyRaw.Payload,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return &policyRaw, nil
-	}
-	if err := row.Err(); err != nil {
 		return nil, FormatError(err)
 	}
-	return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	return &policyRaw, nil
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.

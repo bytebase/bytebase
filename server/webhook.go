@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	gitLabWebhookPath = "hook/gitlab"
+	gitlabWebhookPath = "hook/gitlab"
+	githubWebhookPath = "hook/github"
 )
 
 func (s *Server) registerWebhookRoutes(g *echo.Group) {
@@ -52,7 +53,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
 		}
 		if repo == nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Endpoint not found: %v", webhookEndpointID))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
 		}
 
 		if repo.VCS == nil {
@@ -103,13 +104,14 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				RepositoryFullPath: pushEvent.Project.FullPath,
 				AuthorName:         pushEvent.AuthorName,
 				FileCommit: vcs.FileCommit{
-					ID:         commit.ID,
-					Title:      commit.Title,
-					Message:    commit.Message,
-					CreatedTs:  item.createdTime.Unix(),
-					URL:        commit.URL,
-					AuthorName: commit.Author.Name,
-					Added:      addedEscaped,
+					ID:          commit.ID,
+					Title:       commit.Title,
+					Message:     commit.Message,
+					CreatedTs:   item.createdTime.Unix(),
+					URL:         commit.URL,
+					AuthorName:  commit.Author.Name,
+					AuthorEmail: commit.Author.Email,
+					Added:       addedEscaped,
 				},
 			}
 
@@ -145,17 +147,29 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			// Retrieve sql by reading the file content
-			content, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).ReadFileContent(
+
+			// Retrieve the latest AccessToken and RefreshToken as the previous ReadFileContent call may have
+			// updated the stored token pair. ReadFileContent will fetch and store the new token pair
+			// if the existing token pair has expired.
+			repo2, err := s.store.GetRepository(ctx, &api.RepositoryFind{WebhookEndpointID: &webhookEndpointID})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to respond webhook event for endpoint: %v", webhookEndpointID)).SetInternal(err)
+			}
+			if repo2 == nil {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Webhook endpoint not found: %v", webhookEndpointID))
+			}
+
+			content, err := vcs.Get(repo2.VCS.Type, vcs.ProviderConfig{}).ReadFileContent(
 				ctx,
 				common.OauthContext{
-					ClientID:     repo.VCS.ApplicationID,
-					ClientSecret: repo.VCS.Secret,
-					AccessToken:  repo.AccessToken,
-					RefreshToken: repo.RefreshToken,
-					Refresher:    s.refreshToken(ctx, repo.ID),
+					ClientID:     repo2.VCS.ApplicationID,
+					ClientSecret: repo2.VCS.Secret,
+					AccessToken:  repo2.AccessToken,
+					RefreshToken: repo2.RefreshToken,
+					Refresher:    s.refreshToken(ctx, repo2.ID),
 				},
-				repo.VCS.InstanceURL,
-				repo.ExternalID,
+				repo2.VCS.InstanceURL,
+				repo2.ExternalID,
 				addedEscaped,
 				commit.ID,
 			)
@@ -165,14 +179,27 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			// Create schema update issue.
+			creatorID := api.SystemBotID
+			if commit.Author.Email != "" {
+				committerPrinciple, err := s.store.GetPrincipalByEmail(ctx, commit.Author.Email)
+				if err != nil {
+					log.Error("failed to find the principal with committer email", zap.String("email", commit.Author.Email), zap.Error(err))
+				}
+				if committerPrinciple == nil {
+					log.Debug("cannot find the principal with committer email, use system bot instead", zap.String("email", commit.Author.Email))
+				} else {
+					creatorID = committerPrinciple.ID
+				}
+			}
+
 			var createContext string
 			if repo.Project.TenantMode == api.TenantModeTenant {
 				if !s.feature(api.FeatureMultiTenancy) {
 					return echo.NewHTTPError(http.StatusForbidden, api.FeatureMultiTenancy.AccessErrorMessage())
 				}
-				createContext, err = s.createTenantSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+				createContext, err = s.createTenantSchemaUpdateIssue(mi, vcsPushEvent, content)
 			} else {
-				createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, commit, addedEscaped, content)
+				createContext, err = s.createSchemaUpdateIssue(ctx, repo, mi, vcsPushEvent, addedEscaped, content)
 			}
 			if err != nil {
 				createIgnoredFileActivity(err)
@@ -191,7 +218,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				AssigneeID:    api.SystemBotID,
 				CreateContext: createContext,
 			}
-			issue, err := s.createIssue(ctx, issueCreate, api.SystemBotID)
+			issue, err := s.createIssue(ctx, issueCreate, creatorID)
 			if err != nil {
 				errMsg := "Failed to create schema update issue"
 				if issueType == api.IssueDatabaseDataUpdate {
@@ -213,7 +240,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 
 			activityCreate := &api.ActivityCreate{
-				CreatorID:   api.SystemBotID,
+				CreatorID:   creatorID,
 				ContainerID: repo.ProjectID,
 				Type:        api.ActivityProjectRepositoryPush,
 				Level:       api.ActivityInfo,
@@ -276,7 +303,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 		}
 
 		for _, added := range commit.AddedList {
-			new := true
+			isNew := true
 			item := distinctFileItem{
 				createdTime: createdTime,
 				commit:      commit,
@@ -285,7 +312,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 			for i, file := range distinctFileList {
 				// For the migration file with the same name, keep the one from the latest commit
 				if added == file.fileName {
-					new = false
+					isNew = false
 					if file.createdTime.Before(createdTime) {
 						distinctFileList[i] = item
 					}
@@ -293,7 +320,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 				}
 			}
 
-			if new {
+			if isNew {
 				distinctFileList = append(distinctFileList, item)
 			}
 		}
@@ -301,7 +328,7 @@ func dedupMigrationFilesFromCommitList(commitList []gitlab.WebhookCommit) []dist
 	return distinctFileList
 }
 
-func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
+func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, added string, statement string) (string, error) {
 	// Find matching database list
 	databaseFind := &api.DatabaseFind{
 		ProjectID: &repository.ProjectID,
@@ -376,7 +403,7 @@ func (s *Server) createSchemaUpdateIssue(ctx context.Context, repository *api.Re
 	return string(createContext), nil
 }
 
-func (s *Server) createTenantSchemaUpdateIssue(ctx context.Context, repository *api.Repository, mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, commit gitlab.WebhookCommit, added string, statement string) (string, error) {
+func (s *Server) createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEvent vcs.PushEvent, statement string) (string, error) {
 	// We don't take environment for tenant mode project because the databases needing schema update are determined by database name and deployment configuration.
 	if mi.Environment != "" {
 		return "", fmt.Errorf("environment isn't accepted in schema update for tenant mode project")

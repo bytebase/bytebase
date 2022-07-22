@@ -194,8 +194,32 @@ const getEditorContent = () => {
 };
 
 const setEditorContent = (content: string) => {
+  if (readOnly.value) {
+    // workaround: setContent doesn't work in readonly mode
+    // we temporarily set it to false
+    editorInstanceRef.value?.updateOptions({
+      readOnly: false,
+    });
+  }
+
   monacoInstanceRef.value?.setContent(editorInstanceRef.value!, content);
+
+  if (readOnly.value) {
+    // then set it back
+    editorInstanceRef.value?.updateOptions({
+      readOnly: true,
+    });
+  }
 };
+
+watch(
+  () => props.value,
+  (value) => {
+    if (value !== getEditorContent()) {
+      setEditorContent(value);
+    }
+  }
+);
 
 const getEditorContentHeight = () => {
   return editorInstanceRef.value?.getContentHeight();

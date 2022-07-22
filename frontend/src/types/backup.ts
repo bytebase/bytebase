@@ -3,7 +3,7 @@ import { Principal } from "./principal";
 
 export type BackupStatus = "PENDING_CREATE" | "DONE" | "FAILED";
 
-export type BackupType = "MANUAL" | "AUTOMATIC";
+export type BackupType = "MANUAL" | "AUTOMATIC" | "PITR";
 
 export type BackupStorageBackend = "LOCAL";
 
@@ -55,6 +55,7 @@ export type BackupSetting = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
+  retentionPeriodTs: number;
   hookUrl: string;
 };
 
@@ -66,5 +67,6 @@ export type BackupSettingUpsert = {
   enabled: boolean;
   hour: number;
   dayOfWeek: number;
+  retentionPeriodTs: number;
   hookUrl: string;
 };

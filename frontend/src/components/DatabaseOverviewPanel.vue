@@ -22,7 +22,10 @@
     </div>
 
     <!-- Description list -->
-    <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4">
+    <dl
+      class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4"
+      data-label="bb-database-overview-description-list"
+    >
       <template
         v-if="
           database.instance.engine != 'CLICKHOUSE' &&
