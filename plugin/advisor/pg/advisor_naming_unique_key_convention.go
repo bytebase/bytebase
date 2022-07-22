@@ -1,7 +1,9 @@
 package pg
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -21,7 +23,7 @@ func init() {
 type NamingUKConventionAdvisor struct {
 }
 
-// Check checks for foreign key naming convention.
+// Check checks for unique key naming convention.
 func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
@@ -109,7 +111,7 @@ func (checker *namingUKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	return checker
 }
 
-// getMetaDataList returns the list of foreign key with metadata.
+// getMetaDataList returns the list of unique key with metadata.
 func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 	switch node := in.(type) {
@@ -155,13 +157,64 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				metaData:  metaData,
 			})
 		}
+	case *ast.RenameConstraintStmt:
+		ctx := context.Background()
+		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+			TableName: node.Table.Name,
+			IndexName: node.ConstraintName,
+		})
+		if err != nil {
+			log.Printf(
+				"Cannot find index %s in table %s with error %v\n",
+				node.ConstraintName,
+				node.Table.Name,
+				err,
+			)
+		}
+		if index != nil && index.Unique {
+			metaData := map[string]string{
+				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+				advisor.TableNameTemplateToken:  node.Table.Name,
+			}
+			res = append(res, &indexMetaData{
+				indexName: node.NewName,
+				tableName: node.Table.Name,
+				metaData:  metaData,
+			})
+		}
+	case *ast.RenameIndexStmt:
+		ctx := context.Background()
+		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+			TableName: node.Table.Name,
+			IndexName: node.IndexName,
+		})
+		if err != nil {
+			log.Printf(
+				"Cannot find index %s in table %s with error %v\n",
+				node.IndexName,
+				node.Table.Name,
+				err,
+			)
+		}
+		if index != nil && index.Unique {
+			metaData := map[string]string{
+				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+				advisor.TableNameTemplateToken:  node.Table.Name,
+			}
+			res = append(res, &indexMetaData{
+				indexName: node.NewName,
+				tableName: node.Table.Name,
+				metaData:  metaData,
+			})
+		}
 	}
 	return res
 }
 
-// getUniqueKeyMetadata returns index metadata of a foreign key constraint, nil if other constraints.
+// getUniqueKeyMetadata returns index metadata of a unique key constraint, nil if other constraints.
 func getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
-	if constraint.Type == ast.ConstraintTypeUnique {
+	switch constraint.Type {
+	case ast.ConstraintTypeUnique, ast.ConstraintTypeUniqueUsingIndex:
 		metaData := map[string]string{
 			advisor.ColumnListTemplateToken: strings.Join(constraint.KeyList, "_"),
 			advisor.TableNameTemplateToken:  tableName,
@@ -171,6 +224,7 @@ func getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *inde
 			tableName: tableName,
 			metaData:  metaData,
 		}
+	default:
+		return nil
 	}
-	return nil
 }
