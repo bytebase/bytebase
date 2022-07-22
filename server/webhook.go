@@ -212,7 +212,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			}
 			issueCreate := &api.IssueCreate{
 				ProjectID:     repo.ProjectID,
-				Name:          commit.Title,
+				Name:          fmt.Sprintf("%s by %s", mi.Description, strings.TrimPrefix(addedEscaped, repo.BaseDirectory+"/")),
 				Type:          issueType,
 				Description:   commit.Message,
 				AssigneeID:    api.SystemBotID,
