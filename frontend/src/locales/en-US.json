@@ -203,7 +203,8 @@
     "write-only": "write only",
     "pitr": "PITR",
     "fix": "Fix",
-    "go-now": "Go now"
+    "go-now": "Go now",
+    "sync-now": "Sync Now"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -540,13 +541,14 @@
     "extensions": "Extensions",
     "parent": "Parent",
     "last-successful-sync": "Last successful sync",
-    "sync-status": "Sync status"
+    "sync-status": "Sync status",
+    "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
+    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'."
   },
   "instance": {
     "select": "Select instance",
     "new-database": "New Database",
     "syncing": "Syncing ...",
-    "sync-now": "Sync Now",
     "sync-schema-now": "Sync schema now",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",
