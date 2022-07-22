@@ -25,13 +25,12 @@ import {
   reactive,
   ref,
   defineComponent,
-  inject,
 } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import DatabaseTable from "../components/DatabaseTable.vue";
-import { Environment, Database, UNKNOWN_ID, EventType } from "../types";
-import { sortDatabaseList, Event } from "../utils";
+import { Environment, Database, UNKNOWN_ID } from "../types";
+import { sortDatabaseList } from "../utils";
 import { cloneDeep } from "lodash-es";
 import {
   useCurrentUser,
@@ -39,6 +38,7 @@ import {
   useEnvironmentList,
   useEnvironmentStore,
   useUIStateStore,
+  useHelpStore,
 } from "@/store";
 
 interface LocalState {
@@ -56,9 +56,9 @@ export default defineComponent({
   setup() {
     const searchField = ref();
     const mountedTimer = ref();
-    const event = inject<Event>("event");
 
     const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
     const router = useRouter();
 
     const state = reactive<LocalState>({
@@ -81,7 +81,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.database")) {
         mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.database", true);
+          helpStore.showHelp("help.database", true);
           uiStateStore.saveIntroStateByKey({
             key: "database.visit",
             newState: true,
