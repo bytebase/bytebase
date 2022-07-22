@@ -87,18 +87,18 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
 			continue
 		}
-		backupDir := path.Join(r.server.profile.DataDir, getBackupRelativeDir(bs.DatabaseID))
-		backupFileInfoList, err := ioutil.ReadDir(backupDir)
+		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: &bs.DatabaseID})
 		if err != nil {
-			log.Error("Failed to read backup directory", zap.String("path", backupDir), zap.Error(err))
-			continue
+			log.Error("Failed to get backups for database", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
+			return
 		}
-		for _, backupFileInfo := range backupFileInfoList {
-			expireTime := backupFileInfo.ModTime().Add(time.Duration(bs.RetentionPeriodTs))
+		for _, backup := range backupList {
+			backupTime := time.Unix(backup.UpdatedTs, 0)
+			expireTime := backupTime.Add(time.Duration(bs.RetentionPeriodTs))
 			if time.Now().After(expireTime) {
-				backupFilePath := path.Join(backupDir, backupFileInfo.Name())
+				backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, bs.DatabaseID, backup.Name)
 				if err := os.Remove(backupFilePath); err != nil {
-					log.Error("Failed to remove an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
+					log.Error("Failed to delete an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
 				}
 				log.Info("Deleted expired backup file", zap.String("path", backupFilePath))
 			}
