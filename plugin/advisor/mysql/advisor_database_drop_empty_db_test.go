@@ -25,5 +25,5 @@ func TestMySQLDatabaseAllowDropIfEmpty(t *testing.T) {
 		Type:    advisor.SchemaRuleDropEmptyDatabase,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

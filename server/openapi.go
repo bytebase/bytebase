@@ -22,15 +22,9 @@ var (
 // catalogService is the catalog service for sql check api.
 type catalogService struct{}
 
-// FindIndex is the API message for find index in catalog.
+// GetDatabase is the API message in catalog.
 // We will not connect to the user's database in the early version of sql check api
-func (c *catalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
-	return nil, nil
-}
-
-// FindTable is the API message for find table in catalog.
-// We will not connect to the user's database in the early version of sql check api
-func (c *catalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+func (c *catalogService) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 	return nil, nil
 }
 

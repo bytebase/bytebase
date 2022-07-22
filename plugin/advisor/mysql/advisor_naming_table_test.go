@@ -117,5 +117,5 @@ func TestMySQLNamingTableConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleTableNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

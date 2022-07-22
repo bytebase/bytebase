@@ -159,5 +159,5 @@ func TestNamingUKConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleUKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

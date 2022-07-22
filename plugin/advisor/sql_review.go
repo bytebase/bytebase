@@ -257,6 +257,10 @@ type SQLReviewCheckContext struct {
 // SchemaReviewCheck checks the statments with schema review policy.
 func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReviewPolicy, context SQLReviewCheckContext) ([]Advice, error) {
 	var result []Advice
+	database, err := context.Catalog.GetDatabase(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
+	}
 	for _, rule := range policy.RuleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
@@ -275,7 +279,7 @@ func SchemaReviewCheck(ctx context.Context, statements string, policy *SQLReview
 				Charset:   context.Charset,
 				Collation: context.Collation,
 				Rule:      rule,
-				Catalog:   context.Catalog,
+				Database:  database,
 			},
 			statements,
 		)

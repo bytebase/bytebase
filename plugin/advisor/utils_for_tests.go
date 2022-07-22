@@ -1,8 +1,6 @@
 package advisor
 
 import (
-	"context"
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -11,9 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// MockCatalogService is the mock catalog service for test.
-type MockCatalogService struct{}
 
 const (
 	// MockOldIndexName is the mock old index for test.
@@ -27,41 +22,70 @@ const (
 var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
-)
-
-// FindIndex implements the catalog interface.
-func (*MockCatalogService) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
-	switch find.IndexName {
-	case MockOldIndexName:
-		return &catalog.Index{
-			Name:              MockOldIndexName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	case MockOldUKName:
-		return &catalog.Index{
-			Unique:            true,
-			Name:              MockOldIndexName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	case MockOldPKName:
-		return &catalog.Index{
-			Unique:            true,
-			Name:              MockOldPKName,
-			ColumnExpressions: MockIndexColumnList,
-		}, nil
-	}
-	return nil, fmt.Errorf("cannot find index for %v", find)
-}
-
-// FindTable implements the catalog interface.
-func (*MockCatalogService) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
-	return []*catalog.Table{
-		{
-			Name:         "table",
-			DatabaseName: find.DatabaseName,
+	// MockMySQLDatabase is the mock MySQL database for test.
+	MockMySQLDatabase = &catalog.Database{
+		Name: "test",
+		SchemaList: []*catalog.Schema{
+			{
+				TableList: []*catalog.Table{
+					{
+						Name: "table",
+						ColumnList: []*catalog.Column{
+							{Name: "id"},
+							{Name: "name"},
+						},
+						IndexList: []*catalog.Index{
+							{
+								Name:    "PRIMARY",
+								Unique:  true,
+								Primary: true,
+							},
+							{
+								Name:   "old_uk",
+								Unique: true,
+							},
+							{
+								Name: "old_index",
+							},
+						},
+					},
+				},
+			},
 		},
-	}, nil
-}
+	}
+	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
+	MockPostgreSQLDatabase = &catalog.Database{
+		Name: "test",
+		SchemaList: []*catalog.Schema{
+			{
+				Name: "public",
+				TableList: []*catalog.Table{
+					{
+						Name: "table",
+						ColumnList: []*catalog.Column{
+							{Name: "id"},
+							{Name: "name"},
+						},
+						IndexList: []*catalog.Index{
+							{
+								Name:    "old_pk",
+								Unique:  true,
+								Primary: true,
+							},
+							{
+								Name:   "old_uk",
+								Unique: true,
+							},
+							{
+								Name: "old_index",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+)
 
 // TestCase is the data struct for test.
 type TestCase struct {
@@ -75,13 +99,13 @@ func RunSchemaReviewRuleTests(
 	tests []TestCase,
 	adv Advisor,
 	rule *SQLReviewRule,
-	catalog catalog.Catalog,
+	database *catalog.Database,
 ) {
 	ctx := Context{
 		Charset:   "",
 		Collation: "",
 		Rule:      rule,
-		Catalog:   catalog,
+		Database:  database,
 	}
 	for _, tc := range tests {
 		adviceList, err := adv.Check(ctx, tc.Statement)

@@ -137,5 +137,5 @@ func TestNamingIndexConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleIDXNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

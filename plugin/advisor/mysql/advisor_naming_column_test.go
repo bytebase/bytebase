@@ -172,5 +172,5 @@ func TestNamingColumnConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleColumnNaming,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
