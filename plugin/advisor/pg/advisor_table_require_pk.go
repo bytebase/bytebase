@@ -7,6 +7,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*TableRequirePKAdvisor)(nil)
+	_ ast.Visitor     = (*tableRequirePKChecker)(nil)
 )
 
 func init() {
@@ -48,6 +49,6 @@ type tableRequirePKChecker struct {
 }
 
 // Visit implements the ast.Visitor interface.
-func (checker *tableRequirePKChecker) Visit(node ast.Node) ast.Visitor {
+func (checker *tableRequirePKChecker) Visit(ast.Node) ast.Visitor {
 	return checker
 }

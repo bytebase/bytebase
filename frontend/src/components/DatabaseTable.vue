@@ -11,7 +11,7 @@
     @click-row="clickDatabase"
   >
     <template #body="{ rowData: database }: { rowData: Database }">
-      <BBTableCell :left-padding="4">
+      <BBTableCell :left-padding="4" class="w-[25%]">
         <div class="flex items-center space-x-2 tooltip-wrapper">
           <span>{{ database.name }}</span>
           <BBBadge
@@ -59,10 +59,12 @@
       <BBTableCell v-if="showEnvironmentColumn" class="w-[10%]">
         {{ environmentName(database.instance.environment) }}
       </BBTableCell>
-      <BBTableCell v-if="showInstanceColumn" class="w-[20%]">
+      <BBTableCell v-if="showInstanceColumn" class="w-[25%]">
         <div class="flex flex-row items-center space-x-1">
           <InstanceEngineIcon :instance="database.instance" />
-          <span>{{ instanceName(database.instance) }}</span>
+          <span class="flex-1 whitespace-pre-wrap">
+            {{ instanceName(database.instance) }}
+          </span>
         </div>
       </BBTableCell>
       <BBTableCell v-if="showMiscColumn" class="w-[8%]">

@@ -29,7 +29,7 @@ type MetadataDB struct {
 }
 
 // NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
-func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, dataDir, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
+func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
 		demoDataDir: demoDataDir,
