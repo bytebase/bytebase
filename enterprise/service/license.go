@@ -44,7 +44,7 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 func (s *LicenseService) StoreLicense(patch *enterpriseAPI.SubscriptionPatch) error {
 	if patch.License != "" {
 		if _, err := s.parseLicense(patch.License); err != nil {
-			return nil
+			return err
 		}
 	}
 	return s.writeLicense(patch)
