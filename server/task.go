@@ -77,10 +77,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", pipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", pipelineID)).SetInternal(err)
 		}
 		if issue == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found, pipelineID: %d", pipelineID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
 		}
 
 		if taskPatch.Statement != nil {
@@ -142,10 +142,10 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %d", task.PipelineID)).SetInternal(err)
 		}
 		if issue == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found, pipelineID: %d", task.PipelineID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
 
 		if taskPatch.Statement != nil {
