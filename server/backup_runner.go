@@ -78,7 +78,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{})
 	if err != nil {
-		log.Error("Failed to find all the backup settings", zap.Error(err))
+		log.Error("Failed to find all the backup settings.", zap.Error(err))
 		return
 	}
 
@@ -89,7 +89,7 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 		}
 		backupList, err := r.server.store.FindBackup(ctx, &api.BackupFind{DatabaseID: &bs.DatabaseID})
 		if err != nil {
-			log.Error("Failed to get backups for database", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
+			log.Error("Failed to get backups for database.", zap.Int("databaseID", bs.DatabaseID), zap.String("database", bs.Database.Name))
 			return
 		}
 		for _, backup := range backupList {
@@ -98,18 +98,17 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			if time.Now().After(expireTime) {
 				backupFilePath := getBackupAbsFilePath(r.server.profile.DataDir, bs.DatabaseID, backup.Name)
 				if err := os.Remove(backupFilePath); err != nil {
-					log.Error("Failed to delete an expired backup file", zap.String("path", backupFilePath), zap.Error(err))
+					log.Error("Failed to delete an expired backup file.", zap.String("path", backupFilePath), zap.Error(err))
 				}
-				log.Info("Deleted expired backup file", zap.String("path", backupFilePath))
+				log.Info("Deleted expired backup file.", zap.String("path", backupFilePath))
 			}
 		}
 	}
 
 	log.Debug("Deleting expired MySQL binlog files.")
-	normal := api.Normal
-	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{RowStatus: &normal})
+	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{})
 	if err != nil {
-		log.Error("Failed to find non-archived instances", zap.Error(err))
+		log.Error("Failed to find non-archived instances.", zap.Error(err))
 		return
 	}
 
@@ -129,29 +128,29 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			}
 		}
 		if maxRetentionPeriodForInstance == api.BackupRetentionPeriodUnset {
-			log.Debug("All the databases in instance have unset retention period. Skip deleting binlog files", zap.String("instance", instance.Name))
+			log.Debug("All the databases in instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue // next instance
 		}
 
-		log.Debug("Deleting old binlog files for MySQL instance", zap.String("instance", instance.Name))
+		log.Debug("Deleting old binlog files for MySQL instance.", zap.String("instance", instance.Name))
 		binlogDir := getBinlogAbsDir(r.server.profile.DataDir, instance.ID)
 		binlogFileInfoList, err := ioutil.ReadDir(binlogDir)
 		if err != nil {
-			log.Error("Failed to read backup directory", zap.String("path", binlogDir), zap.Error(err))
+			log.Error("Failed to read backup directory.", zap.String("path", binlogDir), zap.Error(err))
 			continue // next instance
 		}
 		for _, binlogFileInfo := range binlogFileInfoList {
 			if _, err := mysql.GetBinlogNameSeq(binlogFileInfo.Name()); err != nil {
-				log.Warn("Found an irregular file in binlog directory", zap.String("path", binlogFileInfo.Name()))
+				log.Warn("Found an irregular file in binlog directory.", zap.String("path", binlogFileInfo.Name()))
 				continue // next binlog file
 			}
 			expireTime := binlogFileInfo.ModTime().Add(time.Duration(maxRetentionPeriodForInstance))
 			if time.Now().After(expireTime) {
 				binlogFilePath := path.Join(binlogDir, binlogFileInfo.Name())
 				if err := os.Remove(binlogFilePath); err != nil {
-					log.Error("Failed to remove an expired binlog file", zap.String("path", binlogFilePath), zap.Error(err))
+					log.Error("Failed to remove an expired binlog file.", zap.String("path", binlogFilePath), zap.Error(err))
 				}
-				log.Info("Deleted expired binlog file", zap.String("path", binlogFilePath))
+				log.Info("Deleted expired binlog file.", zap.String("path", binlogFilePath))
 			}
 		}
 	}
