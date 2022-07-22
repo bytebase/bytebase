@@ -41,17 +41,22 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "The environment name. Case sensitive.",
-                        "name": "environment",
+                        "description": "The SQL statement.",
+                        "name": "statement",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "The SQL statement.",
-                        "name": "statement",
-                        "in": "query",
-                        "required": true
+                        "description": "The sql check config string in YAML format.",
+                        "name": "config",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The environment name. Required if config is not specified. Case sensitive.",
+                        "name": "environment",
+                        "in": "query"
                     },
                     {
                         "enum": [

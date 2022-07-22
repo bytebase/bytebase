@@ -200,7 +200,7 @@ func (s *Server) registerSQLRoutes(g *echo.Group) {
 			}
 			db := dbList[0]
 
-			adviceLevel, adviceList, err = s.sqlCheck(
+			adviceLevel, adviceList, err = s.findPolicyThenCheckSQL(
 				ctx,
 				dbType,
 				db.CharacterSet,
@@ -646,7 +646,7 @@ func (s *Server) createSQLEditorQueryActivity(ctx context.Context, c echo.Contex
 	return nil
 }
 
-func (s *Server) sqlCheck(
+func (s *Server) findPolicyThenCheckSQL(
 	ctx context.Context,
 	dbType advisor.DBType,
 	dbCharacterSet string,
@@ -655,24 +655,44 @@ func (s *Server) sqlCheck(
 	statement string,
 	catalog catalog.Catalog,
 ) (advisor.Status, []advisor.Advice, error) {
-	var adviceList []advisor.Advice
 	policy, err := s.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{EnvironmentID: &environmentID})
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			adviceList = []advisor.Advice{
+			return advisor.Warn, []advisor.Advice{
 				{
 					Status:  advisor.Warn,
 					Code:    advisor.NotFound,
 					Title:   "Schema review policy is not configured or disabled",
 					Content: "",
 				},
-			}
-			return advisor.Warn, adviceList, nil
+			}, nil
 		}
 		return advisor.Error, nil, err
 	}
 
-	res, err := advisor.SchemaReviewCheck(ctx, statement, policy, advisor.SQLReviewCheckContext{
+	return s.sqlCheck(
+		ctx,
+		dbType,
+		dbCharacterSet,
+		dbCollation,
+		policy.RuleList,
+		statement,
+		catalog,
+	)
+}
+
+func (s *Server) sqlCheck(
+	ctx context.Context,
+	dbType advisor.DBType,
+	dbCharacterSet string,
+	dbCollation string,
+	ruleList []*advisor.SQLReviewRule,
+	statement string,
+	catalog catalog.Catalog,
+) (advisor.Status, []advisor.Advice, error) {
+	var adviceList []advisor.Advice
+
+	res, err := advisor.SchemaReviewCheck(statement, ruleList, advisor.SQLReviewCheckContext{
 		Charset:   dbCharacterSet,
 		Collation: dbCollation,
 		DbType:    dbType,

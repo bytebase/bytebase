@@ -8,7 +8,9 @@ import (
 
 	"github.com/bytebase/bytebase/api"
 	metricAPI "github.com/bytebase/bytebase/metric"
+	"github.com/bytebase/bytebase/plugin/advisor"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	advisorConfig "github.com/bytebase/bytebase/plugin/advisor/config"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/metric"
 	"github.com/bytebase/bytebase/store"
@@ -44,8 +46,9 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Accept  */*
 // @Tags  Schema Review
 // @Produce  json
-// @Param  environment   query  string  true   "The environment name. Case sensitive."
 // @Param  statement     query  string  true   "The SQL statement."
+// @Param  config        query  string  false  "The sql check config string in YAML format."
+// @Param  environment   query  string  false  "The environment name. Required if config is not specified. Case sensitive."
 // @Param  databaseType  query  string  false  "The database type. Required if the port, host and database name is not specified."  Enums(MySQL, PostgreSQL, TiDB)
 // @Param  host          query  string  false  "The instance host."
 // @Param  port          query  string  false  "The instance port."
@@ -55,11 +58,6 @@ func (s *Server) registerOpenAPIRoutes(g *echo.Group) {
 // @Failure  500  {object}  echo.HTTPError
 // @Router  /sql/advise  [get]
 func (s *Server) sqlCheckController(c echo.Context) error {
-	envName := c.QueryParams().Get("environment")
-	if envName == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
-	}
-
 	statement := c.QueryParams().Get("statement")
 	if statement == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Missing required SQL statement")
@@ -93,25 +91,51 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Database %s is not support", dbType))
 	}
 
-	envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
-		Name: &envName,
-	})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
-	}
-	if len(envList) != 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
+	config := c.QueryParams().Get("config")
+	envName := c.QueryParams().Get("environment")
+	var adviceList []advisor.Advice
+
+	if config != "" {
+		ruleList, err := advisorConfig.MergeSQLReviewRules(config)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Merge SQL check configuration failed").SetInternal(err)
+		}
+
+		_, adviceList, err = s.sqlCheck(
+			ctx,
+			advisorDBType,
+			"utf8mb4",
+			"utf8mb4_general_ci",
+			ruleList,
+			statement,
+			catalog,
+		)
+	} else {
+		if envName == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
+		}
+
+		envList, err := s.store.FindEnvironment(ctx, &api.EnvironmentFind{
+			Name: &envName,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Failed to find environment %s", envName)).SetInternal(err)
+		}
+		if len(envList) != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
+		}
+
+		_, adviceList, err = s.findPolicyThenCheckSQL(
+			ctx,
+			advisorDBType,
+			"utf8mb4",
+			"utf8mb4_general_ci",
+			envList[0].ID,
+			statement,
+			catalog,
+		)
 	}
 
-	_, adviceList, err := s.sqlCheck(
-		ctx,
-		advisorDBType,
-		"utf8mb4",
-		"utf8mb4_general_ci",
-		envList[0].ID,
-		statement,
-		catalog,
-	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
 	}
