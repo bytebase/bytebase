@@ -67,6 +67,7 @@
         "en-US": "All migration records are here.",
         "zh-CN": "所有的变更记录都在这里"
       },
+      "alwaysShow": true,
       "position": "right"
     },
     "additionStyle": {
@@ -112,6 +113,7 @@
         "en-US": "This migration task also detected schema drift. It means another client performed some schema changes which were out of version control.",
         "zh-CN": "本次变更还检测到了 Schema 偏差，说明有数据库变更通过其他客户端发起，脱离了版本管控"
       },
+      "alwaysShow": true,
       "position": "right"
     },
     "additionStyle": {
