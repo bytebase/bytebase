@@ -13,7 +13,7 @@ func JoinColumnListForIndex(indexList []*Index, sep string) string {
 func GetColumnListForIndex(indexList []*Index) []string {
 	var columnList []string
 	for _, column := range indexList {
-		columnList = append(columnList, column.Name)
+		columnList = append(columnList, column.Expression)
 	}
 	return columnList
 }

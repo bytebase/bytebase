@@ -15,8 +15,10 @@ const (
 	MockOldIndexName = "old_index"
 	// MockOldUKName is the mock old unique key for test.
 	MockOldUKName = "old_uk"
-	// MockOldPKName is the mock old foreign key for test.
-	MockOldPKName = "PRIMARY"
+	// MockOldMySQLPKName is the mock old foreign key for test.
+	MockOldMySQLPKName = "PRIMARY"
+	// MockOldPostgreSQLPKName is the mock old foreign key for test.
+	MockOldPostgreSQLPKName = "old_pk"
 )
 
 var (
@@ -29,23 +31,41 @@ var (
 			{
 				TableList: []*catalog.Table{
 					{
-						Name: "table",
+						Name: "tech_book",
 						ColumnList: []*catalog.Column{
 							{Name: "id"},
 							{Name: "name"},
 						},
 						IndexList: []*catalog.Index{
 							{
-								Name:    "PRIMARY",
-								Unique:  true,
-								Primary: true,
+								Name:       MockOldMySQLPKName,
+								Expression: "id",
+								Unique:     true,
+								Primary:    true,
 							},
 							{
-								Name:   "old_uk",
-								Unique: true,
+								Name:       MockOldMySQLPKName,
+								Expression: "name",
+								Unique:     true,
+								Primary:    true,
 							},
 							{
-								Name: "old_index",
+								Name:       MockOldUKName,
+								Expression: "id",
+								Unique:     true,
+							},
+							{
+								Name:       MockOldUKName,
+								Expression: "name",
+								Unique:     true,
+							},
+							{
+								Name:       MockOldIndexName,
+								Expression: "id",
+							},
+							{
+								Name:       MockOldIndexName,
+								Expression: "name",
 							},
 						},
 					},
@@ -61,23 +81,41 @@ var (
 				Name: "public",
 				TableList: []*catalog.Table{
 					{
-						Name: "table",
+						Name: "tech_book",
 						ColumnList: []*catalog.Column{
 							{Name: "id"},
 							{Name: "name"},
 						},
 						IndexList: []*catalog.Index{
 							{
-								Name:    "old_pk",
-								Unique:  true,
-								Primary: true,
+								Name:       MockOldPostgreSQLPKName,
+								Expression: "id",
+								Unique:     true,
+								Primary:    true,
 							},
 							{
-								Name:   "old_uk",
-								Unique: true,
+								Name:       MockOldPostgreSQLPKName,
+								Expression: "name",
+								Unique:     true,
+								Primary:    true,
 							},
 							{
-								Name: "old_index",
+								Name:       MockOldUKName,
+								Expression: "id",
+								Unique:     true,
+							},
+							{
+								Name:       MockOldUKName,
+								Expression: "name",
+								Unique:     true,
+							},
+							{
+								Name:       MockOldIndexName,
+								Expression: "id",
+							},
+							{
+								Name:       MockOldIndexName,
+								Expression: "name",
 							},
 						},
 					},
