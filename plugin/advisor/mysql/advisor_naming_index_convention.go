@@ -103,7 +103,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 				Status:  checker.level,
 				Code:    advisor.NamingIndexConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Content: fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
 			})
 		}
 	}
