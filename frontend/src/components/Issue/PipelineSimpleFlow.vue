@@ -45,13 +45,15 @@
 
 <script lang="ts" setup>
 import { useDatabaseStore } from "@/store";
-import type {
+import {
   Database,
   Pipeline,
   Stage,
   StageCreate,
   Task,
   TaskCreate,
+  TaskDatabaseCreatePayload,
+  unknown,
 } from "@/types";
 import { activeTaskInStage, taskSlug } from "@/utils";
 import { computed, watchEffect } from "vue";
@@ -101,12 +103,39 @@ const isActiveTask = (task: Task | TaskCreate): boolean => {
   return activeTaskOfPipeline(pipeline.value as Pipeline).id === task.id;
 };
 
+const extractDatabaseInfoFromDatabaseCreateTask = (
+  database: Database,
+  task: Task
+) => {
+  const payload = task.payload as TaskDatabaseCreatePayload;
+  database.name = payload.databaseName;
+  database.characterSet = payload.characterSet;
+  database.collation = payload.collation;
+  database.instance = task.instance;
+  database.instanceId = task.instance.id;
+  database.project = project.value;
+  database.projectId = project.value.id;
+};
+
 const databaseForTask = (task: Task | TaskCreate): Database => {
+  const taskEntity = task as Task;
+  const taskCreate = task as TaskCreate;
   if (create.value) {
-    return databaseStore.getDatabaseById((task as TaskCreate).databaseId!);
-  } else {
-    return (task as Task).database!;
+    return databaseStore.getDatabaseById(taskCreate.databaseId!);
   }
+
+  let database: Database = unknown("DATABASE");
+  if (
+    task.type === "bb.task.database.create" ||
+    task.type === "bb.task.database.restore"
+  ) {
+    // The database is not created yet.
+    // extract database info from the task's and payload's properties.
+    extractDatabaseInfoFromDatabaseCreateTask(database, taskEntity);
+  } else if (taskEntity.database) {
+    database = taskEntity.database;
+  }
+  return database;
 };
 
 const taskClass = (task: Task | TaskCreate) => {
