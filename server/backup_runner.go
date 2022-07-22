@@ -63,7 +63,7 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}()
 				r.startAutoBackups(ctx, runningTasks, &mu)
 				r.downloadBinlogFiles(ctx)
-				r.purgeExpiredBackupData(ctx)
+				r.purgeExpiredBackups(ctx)
 			}()
 		case <-ctx.Done(): // if cancel() execute
 			r.backupWg.Wait()
@@ -75,14 +75,14 @@ func (r *BackupRunner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // TODO(dragonly): Make best effort to assure that users could recover to at least RetentionPeriodTs ago.
 // This may require pending deleting expired backup files and binlog files.
-func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
+func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 	backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{})
 	if err != nil {
 		log.Error("Failed to find all the backup settings", zap.Error(err))
 		return
 	}
 
-	log.Debug("Deleting expired snapshot backup files")
+	log.Debug("Deleting expired backups.")
 	for _, bs := range backupSettingList {
 		if bs.RetentionPeriodTs == api.BackupRetentionPeriodUnset {
 			continue
@@ -105,7 +105,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 		}
 	}
 
-	log.Debug("Deleting expired MySQL binlog files")
+	log.Debug("Deleting expired MySQL binlog files.")
 	normal := api.Normal
 	instanceList, err := r.server.store.FindInstance(ctx, &api.InstanceFind{RowStatus: &normal})
 	if err != nil {
@@ -119,7 +119,7 @@ func (r *BackupRunner) purgeExpiredBackupData(ctx context.Context) {
 		}
 		backupSettingList, err := r.server.store.FindBackupSetting(ctx, api.BackupSettingFind{InstanceID: &instance.ID})
 		if err != nil {
-			log.Error("Failed to find backup settings for instance", zap.String("instance", instance.Name), zap.Error(err))
+			log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
 			continue // next instance
 		}
 		maxRetentionPeriodForInstance := api.BackupRetentionPeriodUnset
