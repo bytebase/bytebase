@@ -22,6 +22,8 @@ const (
 	MockOldUKName = "old_uk"
 	// MockOldPKName is the mock old foreign key for test.
 	MockOldPKName = "PRIMARY"
+	// MockTableName is the mock table for test.
+	MockTableName = "tech_book"
 )
 
 var (
@@ -37,18 +39,21 @@ func (*MockCatalogService) FindIndex(_ context.Context, find *catalog.IndexFind)
 	case MockOldIndexName:
 		return &catalog.Index{
 			Name:              MockOldIndexName,
+			TableName:         MockTableName,
 			ColumnExpressions: MockIndexColumnList,
 		}, nil
 	case MockOldUKName:
 		return &catalog.Index{
 			Unique:            true,
 			Name:              MockOldIndexName,
+			TableName:         MockTableName,
 			ColumnExpressions: MockIndexColumnList,
 		}, nil
 	case MockOldPKName:
 		return &catalog.Index{
 			Unique:            true,
 			Name:              MockOldPKName,
+			TableName:         MockTableName,
 			ColumnExpressions: MockIndexColumnList,
 		}, nil
 	}
