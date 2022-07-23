@@ -158,7 +158,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameConstraintStmt:
-		if index := checker.findIndex(context.Background(), node.Table.Name, node.ConstraintName); index != nil && index.Unique {
+		if index := checker.findIndex(context.Background(), node.Table.Name, node.ConstraintName); index != nil && index.Unique && !index.Primary {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 				advisor.TableNameTemplateToken:  node.Table.Name,
@@ -171,7 +171,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		}
 	case *ast.RenameIndexStmt:
 		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
-		if index := checker.findIndex(context.Background(), "", node.IndexName); index != nil && index.Unique {
+		if index := checker.findIndex(context.Background(), "", node.IndexName); index != nil && index.Unique && !index.Primary {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 				advisor.TableNameTemplateToken:  index.TableName,
