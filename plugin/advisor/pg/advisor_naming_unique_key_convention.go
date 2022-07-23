@@ -158,20 +158,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameConstraintStmt:
-		ctx := context.Background()
-		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
-			TableName: node.Table.Name,
-			IndexName: node.ConstraintName,
-		})
-		if err != nil {
-			log.Printf(
-				"Cannot find index %s in table %s with error %v\n",
-				node.ConstraintName,
-				node.Table.Name,
-				err,
-			)
-		}
-		if index != nil && index.Unique {
+		if index := checker.findIndex(context.Background(), node.Table.Name, node.ConstraintName); index != nil && index.Unique {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 				advisor.TableNameTemplateToken:  node.Table.Name,
@@ -183,20 +170,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameIndexStmt:
-		ctx := context.Background()
-		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
-			TableName: node.Table.Name,
-			IndexName: node.IndexName,
-		})
-		if err != nil {
-			log.Printf(
-				"Cannot find index %s in table %s with error %v\n",
-				node.IndexName,
-				node.Table.Name,
-				err,
-			)
-		}
-		if index != nil && index.Unique {
+		if index := checker.findIndex(context.Background(), node.Table.Name, node.IndexName); index != nil && index.Unique {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 				advisor.TableNameTemplateToken:  node.Table.Name,
@@ -225,21 +199,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.C
 			metaData:  metaData,
 		}
 	case ast.ConstraintTypeUniqueUsingIndex:
-		ctx := context.Background()
-		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
-			TableName: tableName,
-			IndexName: constraint.IndexName,
-		})
-		if err != nil {
-			log.Printf(
-				"Cannot find index %s in table %s with error %v\n",
-				constraint.IndexName,
-				tableName,
-				err,
-			)
-			return nil
-		}
-		if index != nil {
+		if index := checker.findIndex(context.Background(), tableName, constraint.IndexName); index != nil {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
 				advisor.TableNameTemplateToken:  tableName,
@@ -252,4 +212,22 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.C
 		}
 	}
 	return nil
+}
+
+// findIndex returns index found in catalogs, nil if not found
+func (checker *namingUKConventionChecker) findIndex(ctx context.Context, tableName string, indexName string) *catalog.Index {
+	index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+		TableName: tableName,
+		IndexName: indexName,
+	})
+	if err != nil {
+		log.Printf(
+			"Cannot find index %s in table %s with error %v\n",
+			indexName,
+			tableName,
+			err,
+		)
+		return nil
+	}
+	return index
 }
