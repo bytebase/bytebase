@@ -18,50 +18,6 @@ type Database struct {
 	SchemaList   []*Schema
 }
 
-// Empty returns true if the current database has no table.
-func (d *Database) Empty() bool {
-	for _, schema := range d.SchemaList {
-		for _, table := range schema.TableList {
-			if table != nil {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
-// IndexFind is for find index.
-type IndexFind struct {
-	SchemaName string
-	TableName  string
-	IndexName  string
-}
-
-// FindIndex finds the index.
-func (d *Database) FindIndex(find *IndexFind) []*Index {
-	var indexList []*Index
-	for _, schema := range d.SchemaList {
-		if schema.Name != find.SchemaName {
-			continue
-		}
-		for _, table := range schema.TableList {
-			if table.Name != find.TableName {
-				continue
-			}
-			for _, index := range table.IndexList {
-				if index.Name == find.IndexName {
-					indexList = append(indexList, index)
-				}
-			}
-		}
-	}
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].Position < indexList[j].Position
-	})
-	return indexList
-}
-
 // Schema is the database schema.
 type Schema struct {
 	Name          string
@@ -145,4 +101,52 @@ type Extension struct {
 	Name        string
 	Version     string
 	Description string
+}
+
+// HasNoTable returns true if the current database has no table.
+func (d *Database) HasNoTable() bool {
+	for _, schema := range d.SchemaList {
+		for _, table := range schema.TableList {
+			if table != nil {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// IndexFind is for find index.
+type IndexFind struct {
+	SchemaName string
+	TableName  string
+	IndexName  string
+}
+
+// FindIndex finds the index.
+func (d *Database) FindIndex(find *IndexFind) (string, []*Index) {
+	tableName := ""
+	var indexList []*Index
+	// notMatchTable is used for PostgreSQL. In PostgreSQL, the index name is unique in a schema, not a table.
+	notMatchTable := (find.SchemaName != "" && find.TableName == "")
+	for _, schema := range d.SchemaList {
+		if schema.Name != find.SchemaName {
+			continue
+		}
+		for _, table := range schema.TableList {
+			if !notMatchTable && table.Name != find.TableName {
+				continue
+			}
+			for _, index := range table.IndexList {
+				if index.Name == find.IndexName {
+					tableName = table.Name
+					indexList = append(indexList, index)
+				}
+			}
+		}
+	}
+	sort.Slice(indexList, func(i, j int) bool {
+		return indexList[i].Position < indexList[j].Position
+	})
+	return tableName, indexList
 }

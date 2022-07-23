@@ -19,6 +19,8 @@ const (
 	MockOldMySQLPKName = "PRIMARY"
 	// MockOldPostgreSQLPKName is the mock old primary key for PostgreSQL test.
 	MockOldPostgreSQLPKName = "old_pk"
+	// MockTableName is the mock table for test.
+	MockTableName = "tech_book"
 )
 
 var (
@@ -31,7 +33,7 @@ var (
 			{
 				TableList: []*catalog.Table{
 					{
-						Name: "tech_book",
+						Name: MockTableName,
 						ColumnList: []*catalog.Column{
 							{Name: "id"},
 							{Name: "name"},
@@ -81,7 +83,7 @@ var (
 				Name: "public",
 				TableList: []*catalog.Table{
 					{
-						Name: "tech_book",
+						Name: MockTableName,
 						ColumnList: []*catalog.Column{
 							{Name: "id"},
 							{Name: "name"},

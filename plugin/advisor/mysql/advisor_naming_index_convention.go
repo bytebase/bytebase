@@ -147,7 +147,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				indexList := checker.database.FindIndex(&catalog.IndexFind{
+				_, indexList := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})

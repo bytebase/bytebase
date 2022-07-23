@@ -70,7 +70,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Title:   v.title,
 				Content: fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, v.database.Name),
 			})
-		} else if !v.database.Empty() {
+		} else if !v.database.HasNoTable() {
 			v.adviceList = append(v.adviceList, advisor.Advice{
 				Status:  v.level,
 				Code:    advisor.DatabaseNotEmpty,
