@@ -170,14 +170,15 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameIndexStmt:
-		if index := checker.findIndex(context.Background(), node.Table.Name, node.IndexName); index != nil && index.Unique {
+		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
+		if index := checker.findIndex(context.Background(), "", node.IndexName); index != nil && index.Unique {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-				advisor.TableNameTemplateToken:  node.Table.Name,
+				advisor.TableNameTemplateToken:  index.TableName,
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
-				tableName: node.Table.Name,
+				tableName: index.TableName,
 				metaData:  metaData,
 			})
 		}

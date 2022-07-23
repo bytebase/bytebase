@@ -189,6 +189,35 @@ func TestNamingUKConvention(t *testing.T) {
 				},
 			},
 		},
+		{
+			Statement: fmt.Sprintf(
+				"ALTER INDEX %s RENAME TO uk_tech_book_%s",
+				advisor.MockOldUKName,
+				strings.Join(advisor.MockIndexColumnList, "_"),
+			),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf(
+				"ALTER INDEX %s RENAME TO uk_tech_book",
+				advisor.MockOldUKName,
+			),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
+					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found \"uk_tech_book\"",
+				},
+			},
+		},
 	}
 
 	payload, err := json.Marshal(advisor.NamingRulePayload{
