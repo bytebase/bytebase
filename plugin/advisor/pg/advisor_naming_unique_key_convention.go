@@ -170,7 +170,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameIndexStmt:
-		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
+		// TODO(rebelice): "ALTER INDEX name RENAME TO new_name" doesn't take a table name
 		if index := checker.findIndex(context.Background(), "", node.IndexName); index != nil && index.Unique && !index.Primary {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
