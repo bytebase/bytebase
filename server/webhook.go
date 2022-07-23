@@ -292,10 +292,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
+		//nolint:misspell
 		// TODO(unknwon): Validate webhook signature, https://linear.app/bbteam/issue/BYT-935
 
 		if pushEvent.Repository.FullName != repo.ExternalID {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %d, want %s", pushEvent.Repository.FullName, repo.ExternalID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %s, want %s", pushEvent.Repository.FullName, repo.ExternalID))
 		}
 
 		log.Debug("Processing GitHub webhook push event...",
