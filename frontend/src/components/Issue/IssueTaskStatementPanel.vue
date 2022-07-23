@@ -32,6 +32,19 @@
           />
           <span class="textlabel">{{ $t("issue.format-on-save") }}</span>
         </label>
+        <button
+          v-if="state.editing"
+          type="button"
+          class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
+        >
+          {{ $t("issue.upload-file") }}
+          <input
+            type="file"
+            accept=".sql,.txt,application/sql,text/plain"
+            class="absolute inset-0 z-1 opacity-0"
+            @change="handleUploadFile"
+          />
+        </button>
       </template>
       <template v-else>
         <button
@@ -57,10 +70,15 @@
           <button
             v-if="state.editing"
             type="button"
-            class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
-            @click.prevent="cancelEdit"
+            class="mt-0.5 px-3 border border-control-border rounded-sm text-control bg-control-bg hover:bg-control-bg-hover text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2 relative"
           >
-            {{ $t("common.cancel") }}
+            {{ $t("issue.upload-file") }}
+            <input
+              type="file"
+              accept=".sql,.txt,application/sql,text/plain"
+              class="absolute inset-0 z-1 opacity-0"
+              @change="handleUploadFile"
+            />
           </button>
           <button
             v-if="state.editing"
@@ -70,6 +88,14 @@
             @click.prevent="saveEdit"
           >
             {{ $t("common.save") }}
+          </button>
+          <button
+            v-if="state.editing"
+            type="button"
+            class="mt-0.5 px-3 rounded-sm text-control hover:bg-control-bg-hover disabled:bg-control-bg disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-5 font-normal focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
+            @click.prevent="cancelEdit"
+          >
+            {{ $t("common.cancel") }}
           </button>
         </template>
         <template v-if="issue.project.workflowType === 'VCS'">
@@ -141,10 +167,17 @@ import {
   ref,
   Ref,
 } from "vue";
-import { useRepositoryStore, useTableStore, useUIStateStore } from "@/store";
+import { useDialog } from "naive-ui";
+import {
+  pushNotification,
+  useRepositoryStore,
+  useTableStore,
+  useUIStateStore,
+} from "@/store";
 import { useIssueLogic } from "./logic";
 import MonacoEditor from "../MonacoEditor/MonacoEditor.vue";
 import { baseDirectoryWebUrl, Issue, Repository } from "@/types";
+import { useI18n } from "vue-i18n";
 
 interface LocalState {
   editing: boolean;
@@ -156,6 +189,8 @@ const EDITOR_MIN_HEIGHT = {
   READONLY: 0, // not limited to keep the UI compact
   EDITABLE: 120, // ~= 6 lines, a reasonable size to start writing SQL
 };
+
+const MAX_UPLOAD_FILE_SIZE_MB = 1;
 
 export default defineComponent({
   name: "IssueTaskStatementPanel",
@@ -181,6 +216,7 @@ export default defineComponent({
     } = useIssueLogic();
 
     const uiStateStore = useUIStateStore();
+    const { t } = useI18n();
 
     const state = reactive<LocalState>({
       editing: false,
@@ -189,6 +225,7 @@ export default defineComponent({
     });
 
     const editorRef = ref<InstanceType<typeof MonacoEditor>>();
+    const overrideSQLDialog = useDialog();
 
     const formatOnSave = computed({
       get: () => uiStateStore.issueFormatStatementOnSave,
@@ -257,6 +294,65 @@ export default defineComponent({
       state.editing = false;
     };
 
+    const handleUploadFile = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = (target.files || [])[0];
+      const cleanup = () => {
+        // Note that once selected a file, selecting the same file again will not
+        // trigger <input type="file">'s change event.
+        // So we need to do some cleanup stuff here.
+        target.files = null;
+        target.value = "";
+      };
+
+      if (!file) {
+        return cleanup();
+      }
+      if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("issue.upload-sql-file-max-size-exceeded", {
+            size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
+          }),
+        });
+        return cleanup();
+      }
+      const fr = new FileReader();
+      fr.onload = () => {
+        const sql = fr.result as string;
+        if (state.editStatement) {
+          // Show a confirm dialog before replacing if the editing statement
+          // is not empty
+          overrideSQLDialog.create({
+            positiveText: t("common.confirm"),
+            negativeText: t("common.cancel"),
+            title: t("issue.override-current-statement"),
+            onNegativeClick: () => {
+              // nothing to do
+            },
+            onPositiveClick: () => {
+              onStatementChange(sql);
+            },
+          });
+        } else {
+          onStatementChange(sql);
+        }
+      };
+      fr.onerror = (e) => {
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: `Read file error`,
+          description: String(fr.error),
+        });
+        return;
+      };
+      fr.readAsText(file);
+
+      cleanup();
+    };
+
     const onStatementChange = (value: string) => {
       state.editStatement = value;
       if (create.value) {
@@ -293,6 +389,7 @@ export default defineComponent({
       beginEdit,
       saveEdit,
       cancelEdit,
+      handleUploadFile,
       onStatementChange,
       goToVCS,
       handleMonacoEditorReady,
