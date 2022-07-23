@@ -395,7 +395,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 					}
 				}
 
-				fmt.Println(11111)
 				mi, err := db.ParseMigrationInfo(addedEscaped, filepath.Join(repo.BaseDirectory, repo.FilePathTemplate))
 				if err != nil {
 					createIgnoredFileActivity(err)
@@ -491,11 +490,13 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				createdMessageList = append(createdMessageList, fmt.Sprintf("Created issue %q on adding %s", issue.Name, addedEscaped))
 
 				// Create a project activity after successfully creating the issue as the result of the push event
-				bytes, err := json.Marshal(api.ActivityProjectRepositoryPushPayload{
-					VCSPushEvent: vcsPushEvent,
-					IssueID:      issue.ID,
-					IssueName:    issue.Name,
-				})
+				bytes, err := json.Marshal(
+					api.ActivityProjectRepositoryPushPayload{
+						VCSPushEvent: vcsPushEvent,
+						IssueID:      issue.ID,
+						IssueName:    issue.Name,
+					},
+				)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to construct activity payload").SetInternal(err)
 				}
