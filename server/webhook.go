@@ -319,7 +319,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 
 				if !strings.HasPrefix(added, repo.BaseDirectory) {
 					log.Debug("Ignored committed file, not under base directory.",
-						zap.String("file", added),
+						zap.String("file", addedEscaped),
 						zap.String("base_directory", repo.BaseDirectory),
 					)
 					continue
