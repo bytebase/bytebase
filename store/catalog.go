@@ -56,7 +56,7 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 
 type schemaMap map[string]*catalog.Schema
 
-func (m schemaMap) getSchema(name string) *catalog.Schema {
+func (m schemaMap) getOrCreateSchema(name string) *catalog.Schema {
 	if schema, found := m[name]; found {
 		return schema
 	}
@@ -86,7 +86,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 				return nil, err
 			}
 		}
-		schema := schemaSet.getSchema(schemaName)
+		schema := schemaSet.getOrCreateSchema(schemaName)
 		schema.TableList = append(schema.TableList, tableData)
 	}
 
@@ -105,7 +105,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 				return nil, err
 			}
 		}
-		schema := schemaSet.getSchema(schemaName)
+		schema := schemaSet.getOrCreateSchema(schemaName)
 		schema.ViewList = append(schema.ViewList, viewData)
 	}
 
@@ -117,7 +117,7 @@ func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) 
 		return nil, err
 	}
 	for _, extension := range extensionList {
-		schema := schemaSet.getSchema(extension.Schema)
+		schema := schemaSet.getOrCreateSchema(extension.Schema)
 		schema.ExtensionList = append(schema.ExtensionList, &catalog.Extension{
 			Name:        extension.Name,
 			Version:     extension.Version,

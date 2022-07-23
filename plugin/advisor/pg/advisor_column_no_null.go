@@ -145,7 +145,7 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 			}
 		case ast.ConstraintTypePrimaryUsingIndex:
 			indexList := checker.database.FindIndex(&catalog.IndexFind{
-				SchemaName: completeSchemaNameByPublic(table.Schema),
+				SchemaName: normalizeSchemaName(table.Schema),
 				TableName:  table.Name,
 				IndexName:  constraint.IndexName,
 			})

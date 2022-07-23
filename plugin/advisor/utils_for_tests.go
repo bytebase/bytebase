@@ -15,9 +15,9 @@ const (
 	MockOldIndexName = "old_index"
 	// MockOldUKName is the mock old unique key for test.
 	MockOldUKName = "old_uk"
-	// MockOldMySQLPKName is the mock old foreign key for test.
+	// MockOldMySQLPKName is the mock old primary key for MySQL test.
 	MockOldMySQLPKName = "PRIMARY"
-	// MockOldPostgreSQLPKName is the mock old foreign key for test.
+	// MockOldPostgreSQLPKName is the mock old primary key for PostgreSQL test.
 	MockOldPostgreSQLPKName = "old_pk"
 )
 

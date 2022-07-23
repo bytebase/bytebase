@@ -25,7 +25,7 @@ func (c columnName) normalizeTableName() string {
 
 type columnMap map[columnName]bool
 
-func completeSchemaNameByPublic(name string) string {
+func normalizeSchemaName(name string) string {
 	if name != "" {
 		return name
 	}
