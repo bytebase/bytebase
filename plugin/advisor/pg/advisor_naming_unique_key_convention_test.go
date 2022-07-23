@@ -3,6 +3,7 @@ package pg
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -127,6 +128,35 @@ func TestNamingUKConvention(t *testing.T) {
 					Code:    advisor.NamingUKConventionMismatch,
 					Title:   "naming.index.uk",
 					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_name$\" but found \"\"",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf(
+				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_%s UNIQUE USING INDEX %s",
+				strings.Join(advisor.MockIndexColumnList, "_"),
+				advisor.MockOldIndexName,
+			),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Success,
+					Code:    advisor.Ok,
+					Title:   "OK",
+					Content: "",
+				},
+			},
+		},
+		{
+			Statement: fmt.Sprintf(
+				"ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book UNIQUE USING INDEX %s",
+				advisor.MockOldIndexName,
+			),
+			Want: []advisor.Advice{
+				{
+					Status:  advisor.Error,
+					Code:    advisor.NamingUKConventionMismatch,
+					Title:   "naming.index.uk",
+					Content: "Unique key in table \"tech_book\" mismatches the naming convention, expect \"^uk_tech_book_id_name$\" but found \"uk_tech_book\"",
 				},
 			},
 		},

@@ -117,26 +117,26 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
+			if metadata := checker.getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
+		if metadata := checker.getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -212,9 +212,9 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 }
 
 // getUniqueKeyMetadata returns index metadata of a unique key constraint, nil if other constraints.
-func getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
+func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
 	switch constraint.Type {
-	case ast.ConstraintTypeUnique, ast.ConstraintTypeUniqueUsingIndex:
+	case ast.ConstraintTypeUnique:
 		metaData := map[string]string{
 			advisor.ColumnListTemplateToken: strings.Join(constraint.KeyList, "_"),
 			advisor.TableNameTemplateToken:  tableName,
@@ -224,7 +224,32 @@ func getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *inde
 			tableName: tableName,
 			metaData:  metaData,
 		}
-	default:
-		return nil
+	case ast.ConstraintTypeUniqueUsingIndex:
+		ctx := context.Background()
+		index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+			TableName: tableName,
+			IndexName: constraint.IndexName,
+		})
+		if err != nil {
+			log.Printf(
+				"Cannot find index %s in table %s with error %v\n",
+				constraint.IndexName,
+				tableName,
+				err,
+			)
+			return nil
+		}
+		if index != nil {
+			metaData := map[string]string{
+				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+				advisor.TableNameTemplateToken:  tableName,
+			}
+			return &indexMetaData{
+				indexName: constraint.Name,
+				tableName: tableName,
+				metaData:  metaData,
+			}
+		}
 	}
+	return nil
 }
