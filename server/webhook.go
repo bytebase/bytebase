@@ -150,6 +150,8 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
 		}
 
+		// Validate the request body first because there is no point in unmarshalling
+		// the request body if the signature doesn't match.
 		if !validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Mismatched payload signature")
 		}
@@ -230,6 +232,10 @@ func validateGitHubWebhookSignature256(signature, key string, body []byte) bool 
 	m := hmac.New(sha256.New, []byte(key))
 	m.Write(body)
 	got := hex.EncodeToString(m.Sum(nil))
+
+	// NOTE: Use constant time string comparison helps mitigate certain timing
+	// attacks against regular equality operators, see
+	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
 	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1
 }
 
