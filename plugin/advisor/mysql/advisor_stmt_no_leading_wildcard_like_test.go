@@ -69,5 +69,5 @@ func TestNoLeadingWildcardLike(t *testing.T) {
 		Type:    advisor.SchemaRuleStatementNoLeadingWildcardLike,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

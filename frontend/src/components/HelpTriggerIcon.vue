@@ -6,9 +6,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, inject } from "vue";
-import { Event } from "@/utils";
-import { EventType } from "@/types";
+import { defineComponent } from "vue";
+import { useHelpStore } from "@/store";
 
 export default defineComponent({
   name: "HelpTrigger",
@@ -25,9 +24,9 @@ export default defineComponent({
     },
   },
   setup: (props) => {
-    const event = inject("event") as Event;
+    const helpStore = useHelpStore();
     const handleClick = () => {
-      event.emit(EventType.EVENT_HELP, props.id, props.openByDefault);
+      helpStore.showHelp(props.id, props.openByDefault);
     };
     return {
       handleClick,

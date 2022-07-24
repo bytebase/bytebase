@@ -53,5 +53,5 @@ func TestMySQLTableDropNamingConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleTableDropNamingConvention,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

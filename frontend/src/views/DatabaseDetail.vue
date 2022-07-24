@@ -107,6 +107,14 @@
           class="flex items-center gap-x-2"
           data-label="bb-database-detail-action-buttons-container"
         >
+          <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+          <button
+            type="button"
+            class="btn-normal"
+            @click.prevent="syncDatabaseSchema"
+          >
+            {{ $t("common.sync-now") }}
+          </button>
           <button
             v-if="allowChangeProject"
             type="button"
@@ -304,6 +312,7 @@ import {
   baseDirectoryWebUrl,
   Database,
   DatabaseLabel,
+  SQLResultSet,
 } from "@/types";
 import { BBTabFilterItem } from "@/bbkit/types";
 import { useI18n } from "vue-i18n";
@@ -313,6 +322,7 @@ import {
   useCurrentUser,
   useDatabaseStore,
   useRepositoryStore,
+  useSQLStore,
 } from "@/store";
 
 const OVERVIEW_TAB = 0;
@@ -329,6 +339,7 @@ interface LocalState {
   showIncorrectProjectModal: boolean;
   editingProjectId: ProjectId;
   selectedIndex: number;
+  syncingSchema: boolean;
 }
 
 const props = defineProps({
@@ -340,6 +351,7 @@ const props = defineProps({
 
 const databaseStore = useDatabaseStore();
 const repositoryStore = useRepositoryStore();
+const sqlStore = useSQLStore();
 const router = useRouter();
 const { t } = useI18n();
 const ghostDialog = ref<InstanceType<typeof GhostDialog>>();
@@ -355,16 +367,13 @@ const state = reactive<LocalState>({
   showIncorrectProjectModal: false,
   editingProjectId: UNKNOWN_ID,
   selectedIndex: OVERVIEW_TAB,
+  syncingSchema: false,
 });
 
 const currentUser = useCurrentUser();
 
 const database = computed((): Database => {
   return databaseStore.getDatabaseById(idFromSlug(props.databaseSlug));
-});
-
-const isTenantProject = computed(() => {
-  return database.value.project.tenantMode === "TENANT";
 });
 
 const isCurrentUserDBAOrOwner = computed((): boolean => {
@@ -623,5 +632,38 @@ watch(
 const doTransfer = (labels: DatabaseLabel[]) => {
   updateProject(state.editingProjectId, labels);
   state.showTransferDatabaseModal = false;
+};
+
+const syncDatabaseSchema = () => {
+  state.syncingSchema = true;
+  sqlStore
+    .syncDatabaseSchema(database.value.id)
+    .then((resultSet: SQLResultSet) => {
+      state.syncingSchema = false;
+      if (resultSet.error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t(
+            "db.failed-to-sync-schema-for-database-database-value-name",
+            [database.value.name]
+          ),
+          description: resultSet.error,
+        });
+      } else {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t(
+            "db.successfully-synced-schema-for-database-database-value-name",
+            [database.value.name]
+          ),
+          description: resultSet.error,
+        });
+      }
+    })
+    .catch(() => {
+      state.syncingSchema = false;
+    });
 };
 </script>

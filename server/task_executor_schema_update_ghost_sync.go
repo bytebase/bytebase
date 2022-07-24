@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,9 +12,6 @@ import (
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
-	"github.com/bytebase/bytebase/plugin/db"
-	"github.com/bytebase/bytebase/plugin/db/util"
-	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
@@ -39,7 +35,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
-	return runGhostMigration(ctx, server, task, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
+	return runGhostMigration(ctx, server, task, payload.Statement)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed
@@ -158,17 +154,13 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func runGhostMigration(ctx context.Context, server *Server, task *api.Task, statement, schemaVersion string, vcsPushEvent *vcsPlugin.PushEvent) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	mi, err := preMigration(ctx, server, task, db.Migrate, statement, schemaVersion, vcsPushEvent)
-	if err != nil {
-		return true, nil, err
-	}
-
+func runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	syncError := make(chan error)
 
 	go func() {
-		migrationID, schema, err := executeSync(ctx, task, mi, statement, syncDone)
+		statement = strings.TrimSpace(statement)
+		err := executeGhost(task, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
 			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
@@ -179,10 +171,6 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 			}
 			return
 		}
-		_, _, err = postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
-		if err != nil {
-			log.Error("failed to execute schema update gh-ost sync postMigration", zap.Error(err))
-		}
 	}()
 
 	select {
@@ -191,59 +179,6 @@ func runGhostMigration(ctx context.Context, server *Server, task *api.Task, stat
 	case err := <-syncError:
 		return true, nil, err
 	}
-
-}
-
-func executeSync(ctx context.Context, task *api.Task, mi *db.MigrationInfo, statement string, syncDone chan<- struct{}) (migrationHistoryID int64, updatedSchema string, resErr error) {
-	statement = strings.TrimSpace(statement)
-
-	driver, err := getAdminDatabaseDriver(ctx, task.Instance, task.Database.Name, "" /* pgInstanceDir */)
-	if err != nil {
-		return -1, "", err
-	}
-	defer driver.Close(ctx)
-	needsSetup, err := driver.NeedsSetupMigration(ctx)
-	if err != nil {
-		return -1, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
-	}
-	if needsSetup {
-		return -1, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
-	}
-
-	executor := driver.(util.MigrationExecutor)
-
-	var prevSchemaBuf bytes.Buffer
-	if _, err := driver.Dump(ctx, mi.Database, &prevSchemaBuf, true); err != nil {
-		return -1, "", err
-	}
-
-	insertedID, err := util.BeginMigration(ctx, executor, mi, prevSchemaBuf.String(), statement, db.BytebaseDatabase)
-	if err != nil {
-		if common.ErrorCode(err) == common.MigrationAlreadyApplied {
-			return insertedID, prevSchemaBuf.String(), nil
-		}
-		return -1, "", err
-	}
-	startedNs := time.Now().UnixNano()
-
-	defer func() {
-		if err := util.EndMigration(ctx, executor, startedNs, insertedID, updatedSchema, db.BytebaseDatabase, resErr == nil /*isDone*/); err != nil {
-			log.Error("failed to update migration history record",
-				zap.Error(err),
-				zap.Int64("migration_id", migrationHistoryID),
-			)
-		}
-	}()
-	if err = executeGhost(task, statement, syncDone); err != nil {
-		return -1, "", err
-	}
-
-	var afterSchemaBuf bytes.Buffer
-	if _, err := executor.Dump(ctx, mi.Database, &afterSchemaBuf, true /*schemaOnly*/); err != nil {
-		return -1, "", util.FormatError(err)
-	}
-
-	return insertedID, afterSchemaBuf.String(), nil
 }
 
 func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {

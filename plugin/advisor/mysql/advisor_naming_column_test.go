@@ -31,7 +31,7 @@ func TestNamingColumnConvention(t *testing.T) {
 					Status:  advisor.Warn,
 					Code:    advisor.NamingColumnConventionMismatch,
 					Title:   "naming.column",
-					Content: fmt.Sprintf("`book`.`%s` mismatches column naming convention, its length should within 64 characters", invalidColumnName),
+					Content: fmt.Sprintf("`book`.`%s` mismatches column naming convention, its length should be within 64 characters", invalidColumnName),
 				},
 			},
 		},
@@ -172,5 +172,5 @@ func TestNamingColumnConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleColumnNaming,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
