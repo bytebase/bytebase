@@ -384,7 +384,7 @@ func (s *Server) createTenantSchemaUpdateIssue(mi *db.MigrationInfo, vcsPushEven
 // the push event. It returns "created=true" when a new issue has been created,
 // along with the creation message to be presented in the UI. An *echo.HTTPError
 // is returned in case of the error during the process.
-func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ *echo.HTTPError) {
+func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Repository, pushEvent vcs.PushEvent, file, webhookEndpointID string) (message string, created bool, _ error) {
 	fileEscaped := common.EscapeForLogging(file)
 	log.Debug("Processing added file...",
 		zap.String("file", fileEscaped),
