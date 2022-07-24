@@ -99,6 +99,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				} else {
 					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
 				}
+
 				// Exchange OAuth Token
 				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
 					ctx,
@@ -128,7 +129,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from GitHub").SetInternal(err)
 				}
 
-				// We only allow active user to login via GitHub
+				// We only allow active user to login
 				if githubUserInfo.State != vcs.StateActive {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via GitHub, user is Archived")
 				}
