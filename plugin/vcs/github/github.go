@@ -107,6 +107,14 @@ type File struct {
 	SHA      string `json:"sha"`
 }
 
+// WebhookType is the GitHub webhook type.
+type WebhookType string
+
+const (
+	// WebhookPush is the webhook type for push.
+	WebhookPush WebhookType = "push"
+)
+
 // WebhookInfo represents a GitHub API response for the webhook information.
 type WebhookInfo struct {
 	ID int `json:"id"`
@@ -142,6 +150,43 @@ type WebhookCreateOrUpdate struct {
 	// ["push"]. The full list of events can be viewed at
 	// https://docs.github.com/webhooks/event-payloads.
 	Events []string `json:"events"`
+}
+
+// WebhookRepository is the API message for webhook repository.
+type WebhookRepository struct {
+	ID       int    `json:"id"`
+	FullName string `json:"full_name"`
+	HTMLURL  string `json:"html_url"`
+}
+
+// WebhookCommitAuthor is the API message for webhook commit author.
+type WebhookCommitAuthor struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+// WebhookSender is the API message for webhook sender.
+type WebhookSender struct {
+	Login string `json:"login"`
+}
+
+// WebhookCommit is the API message for webhook commit.
+type WebhookCommit struct {
+	ID        string              `json:"id"`
+	Distinct  bool                `json:"distinct"`
+	Message   string              `json:"message"`
+	Timestamp time.Time           `json:"timestamp"`
+	URL       string              `json:"url"`
+	Author    WebhookCommitAuthor `json:"author"`
+	Added     []string            `json:"added"`
+}
+
+// WebhookPushEvent is the API message for webhook push event.
+type WebhookPushEvent struct {
+	Ref        string            `json:"ref"`
+	Repository WebhookRepository `json:"repository"`
+	Sender     WebhookSender     `json:"sender"`
+	Commits    []WebhookCommit   `json:"commits"`
 }
 
 // fetchUserInfo fetches user information from the given resourceURI, which
