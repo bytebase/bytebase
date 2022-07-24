@@ -358,6 +358,9 @@ export default defineComponent({
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
           const parts = pushEvent.value.ref.split("/");
           return parts[parts.length - 1];
+        } else if (pushEvent.value.vcsType == "GITHUB_COM") {
+          const parts = pushEvent.value.ref.split("/");
+          return parts[parts.length - 1];
         }
       }
       return "";
@@ -367,6 +370,8 @@ export default defineComponent({
       if (pushEvent.value) {
         if (pushEvent.value.vcsType == "GITLAB_SELF_HOST") {
           return `${pushEvent.value.repositoryUrl}/-/tree/${vcsBranch.value}`;
+        } else if (pushEvent.value.vcsType == "GITHUB_COM") {
+          return `${pushEvent.value.repositoryUrl}/tree/${vcsBranch.value}`;
         }
       }
       return "";
