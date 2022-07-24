@@ -172,10 +172,6 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 				// Per Git convention, the message title and body are separated by two new line characters.
 				messages := strings.SplitN(commit.Message, "\n\n", 2)
 				messageTitle := messages[0]
-				var messageBody string
-				if len(messages) > 1 {
-					messageBody = messages[1]
-				}
 
 				createdMessage, created, httpErr := s.createIssueFromPushEvent(
 					ctx,
@@ -191,7 +187,7 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 						FileCommit: vcs.FileCommit{
 							ID:          commit.ID,
 							Title:       messageTitle,
-							Message:     messageBody,
+							Message:     commit.Message,
 							CreatedTs:   commit.Timestamp.Unix(),
 							URL:         commit.URL,
 							AuthorName:  commit.Author.Name,
@@ -522,7 +518,7 @@ func (s *Server) createIssueFromPushEvent(ctx context.Context, repo *api.Reposit
 	}
 	issueCreate := &api.IssueCreate{
 		ProjectID:     repo.ProjectID,
-		Name:          pushEvent.FileCommit.Title,
+		Name:          fmt.Sprintf("%s by %s", mi.Description, strings.TrimPrefix(file, repo.BaseDirectory+"/")),
 		Type:          issueType,
 		Description:   pushEvent.FileCommit.Message,
 		AssigneeID:    api.SystemBotID,
