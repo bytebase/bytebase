@@ -9,13 +9,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bytebase/bytebase/api"
-	"github.com/bytebase/bytebase/common"
-	"github.com/bytebase/bytebase/common/log"
 	"github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	ghostsql "github.com/github/gh-ost/go/sql"
 	"go.uber.org/zap"
+
+	"github.com/bytebase/bytebase/api"
+	"github.com/bytebase/bytebase/common"
+	"github.com/bytebase/bytebase/common/log"
 )
 
 // NewSchemaUpdateGhostSyncTaskExecutor creates a schema update (gh-ost) sync task executor.
@@ -192,7 +193,7 @@ func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) er
 
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+		return common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
 	}
 
 	migrationContext, err := newMigrationContext(ghostConfig{

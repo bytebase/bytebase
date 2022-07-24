@@ -24,13 +24,14 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	"github.com/bytebase/bytebase/resources/mysqlutil"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/blang/semver/v4"
 )
@@ -861,7 +862,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 	}
 
 	if pos == 0 {
-		return 0, common.Errorf(common.NotFound, fmt.Errorf("failed to find event position at or after targetTs %d", targetTs))
+		return 0, common.Errorf(common.NotFound, "failed to find event position at or after targetTs %d", targetTs)
 	}
 
 	return pos, nil

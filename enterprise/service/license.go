@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	enterpriseAPI "github.com/bytebase/bytebase/enterprise/api"
 	"github.com/bytebase/bytebase/enterprise/config"
 	"github.com/bytebase/bytebase/store"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 // LicenseService is the service for enterprise license.
@@ -57,7 +58,7 @@ func (s *LicenseService) LoadLicense() (*enterpriseAPI.License, error) {
 		return nil, err
 	}
 	if tokenString == "" {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("cannot find license"))
+		return nil, common.Errorf(common.NotFound, "cannot find license")
 	}
 
 	return s.parseLicense(tokenString)
@@ -67,27 +68,27 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(license, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, common.Errorf(common.Invalid, fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
+			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
 		}
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid != s.config.Version {
-			return nil, common.Errorf(common.Invalid, fmt.Errorf("version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version))
+			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version)
 		}
 
 		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.config.PublicKey))
 		if err != nil {
-			return nil, common.Errorf(common.Invalid, err)
+			return nil, common.WithError(common.Invalid, err)
 		}
 
 		return key, nil
 	})
 	if err != nil {
-		return nil, common.Errorf(common.Invalid, err)
+		return nil, common.WithError(common.Invalid, err)
 	}
 
 	if !token.Valid {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid token"))
+		return nil, common.Errorf(common.Invalid, "invalid token")
 	}
 
 	return s.parseClaims(claims)
@@ -97,27 +98,27 @@ func (s *LicenseService) parseLicense(license string) (*enterpriseAPI.License, e
 func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, error) {
 	err := claims.Valid()
 	if err != nil {
-		return nil, common.Errorf(common.Invalid, err)
+		return nil, common.WithError(common.Invalid, err)
 	}
 
 	verifyIssuer := claims.VerifyIssuer(s.config.Issuer, true)
 	if !verifyIssuer {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer))
+		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", s.config.Issuer, claims.Issuer)
 	}
 
 	verifyAudience := claims.VerifyAudience(s.config.Audience, true)
 	if !verifyAudience {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("aud is not valid, expect %s but found '%v'", s.config.Audience, claims.Audience))
+		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", s.config.Audience, claims.Audience)
 	}
 
 	instanceCount := claims.InstanceCount
 	if instanceCount < s.config.MinimumInstance {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("license instance count '%v' is not valid, minimum instance requirement is %d", instanceCount, s.config.MinimumInstance))
+		return nil, common.Errorf(common.Invalid, "license instance count '%v' is not valid, minimum instance requirement is %d", instanceCount, s.config.MinimumInstance)
 	}
 
 	planType, err := convertPlanType(claims.Plan)
 	if err != nil {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("plan type %q is not valid", planType))
+		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
 	license := &enterpriseAPI.License{
@@ -130,7 +131,7 @@ func (s *LicenseService) parseClaims(claims *Claims) (*enterpriseAPI.License, er
 	}
 
 	if err := license.Valid(); err != nil {
-		return nil, common.Errorf(common.Invalid, err)
+		return nil, common.WithError(common.Invalid, err)
 	}
 
 	return license, nil
@@ -144,10 +145,7 @@ func (s *LicenseService) readLicense() (string, error) {
 	})
 
 	if len(settings) == 0 {
-		return "", common.Errorf(
-			common.NotFound,
-			fmt.Errorf("cannot find license with error %w", err),
-		)
+		return "", common.Errorf(common.NotFound, "cannot find license with error %w", err)
 	}
 
 	return settings[0].Value, nil
