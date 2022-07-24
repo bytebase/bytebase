@@ -126,12 +126,12 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					vcsFound.InstanceURL,
 				)
 				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from GitHub").SetInternal(err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from VCS").SetInternal(err)
 				}
 
 				// We only allow active user to login
 				if userInfo.State != vcs.StateActive {
-					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via GitHub, user is Archived")
+					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via VCS, user is Archived")
 				}
 
 				user, err = s.store.GetPrincipalByEmail(ctx, userInfo.PublicEmail)
