@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -29,15 +28,15 @@ type TaskCheckStatementAdvisorCompositeExecutor struct {
 // Run will run the task check statement advisor composite executor once, and run its sub-advisor one-by-one.
 func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	if taskCheckRun.Type != api.TaskCheckDatabaseStatementAdvise {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advisor composite type: %v", taskCheckRun.Type))
+		return nil, common.Errorf(common.Invalid, "invalid check statement advisor composite type: %v", taskCheckRun.Type)
 	}
 	if !server.feature(api.FeatureSQLReviewPolicy) {
-		return nil, common.Errorf(common.NotAuthorized, fmt.Errorf(api.FeatureSQLReviewPolicy.AccessErrorMessage()))
+		return nil, common.Errorf(common.NotAuthorized, api.FeatureSQLReviewPolicy.AccessErrorMessage())
 	}
 
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+		return nil, common.Errorf(common.Invalid, "invalid check statement advise payload: %w", err)
 	}
 
 	policy, err := server.store.GetNormalSchemaReviewPolicy(ctx, &api.PolicyFind{ID: &payload.PolicyID})
@@ -53,12 +52,12 @@ func (exec *TaskCheckStatementAdvisorCompositeExecutor) Run(ctx context.Context,
 				},
 			}, nil
 		}
-		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get schema review policy: %w", err))
+		return nil, common.Errorf(common.Internal, "failed to get schema review policy: %w", err)
 	}
 
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to get task by id: %w", err))
+		return nil, common.Errorf(common.Internal, "failed to get task by id: %w", err)
 	}
 
 	catalog := store.NewCatalog(task.DatabaseID, server.store, payload.DbType)
