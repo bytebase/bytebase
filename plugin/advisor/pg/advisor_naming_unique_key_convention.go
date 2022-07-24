@@ -200,7 +200,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 			metaData:  metaData,
 		}
 	case ast.ConstraintTypeUniqueUsingIndex:
-		tableName, indexList := checker.findIndex(normalizeSchemaName(schemaName), tableName, constraint.IndexName)
+		tableName, indexList := checker.findIndex(schemaName, tableName, constraint.IndexName)
 		if len(indexList) != 0 {
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),

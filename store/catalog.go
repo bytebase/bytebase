@@ -22,10 +22,11 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID *int, store *Store) *Catalog {
+func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 	return &Catalog{
 		databaseID: databaseID,
 		store:      store,
+		engineType: dbType,
 	}
 }
 
@@ -41,10 +42,16 @@ func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
 		return nil, nil
 	}
 
+	dbType, err := convertToCatalogDBType(c.engineType)
+	if err != nil {
+		return nil, err
+	}
+
 	databaseData := catalog.Database{
 		Name:         database.Name,
 		CharacterSet: database.CharacterSet,
 		Collation:    database.Collation,
+		DbType:       dbType,
 	}
 
 	if databaseData.SchemaList, err = c.getSchemaList(ctx); err != nil {
@@ -201,4 +208,17 @@ func convertColumnList(list []*api.Column) []*catalog.Column {
 		})
 	}
 	return res
+}
+
+func convertToCatalogDBType(dbType db.Type) (catalog.DBType, error) {
+	switch dbType {
+	case db.MySQL:
+		return catalog.MySQL, nil
+	case db.Postgres:
+		return catalog.Postgres, nil
+	case db.TiDB:
+		return catalog.TiDB, nil
+	}
+
+	return "", fmt.Errorf("unsupported db type %s for catalog", dbType)
 }

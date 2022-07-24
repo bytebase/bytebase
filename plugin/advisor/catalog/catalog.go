@@ -15,6 +15,7 @@ type Database struct {
 	Name         string
 	CharacterSet string
 	Collation    string
+	DbType       DBType
 	SchemaList   []*Schema
 }
 
@@ -128,7 +129,7 @@ func (d *Database) FindIndex(find *IndexFind) (string, []*Index) {
 	tableName := ""
 	var indexList []*Index
 	// notMatchTable is used for PostgreSQL. In PostgreSQL, the index name is unique in a schema, not a table.
-	notMatchTable := (find.SchemaName != "" && find.TableName == "")
+	notMatchTable := (d.DbType == Postgres && find.SchemaName != "" && find.TableName == "")
 	for _, schema := range d.SchemaList {
 		if schema.Name != find.SchemaName {
 			continue
