@@ -12,6 +12,9 @@
         <template v-if="vcs.type.startsWith('GITLAB')">
           <img class="h-6 w-auto" src="../assets/gitlab-logo.svg" />
         </template>
+        <template v-if="vcs.type.startsWith('GITHUB')">
+          <img class="h-6 w-auto" src="../assets/github-logo.svg" />
+        </template>
         <span>{{ vcs.name }}</span>
       </button>
     </template>
@@ -97,8 +100,13 @@ const isCurrentUserOwner = computed(() => {
 const selectVCS = (vcs: VCS) => {
   state.selectedVCS = vcs;
   emit("set-vcs", vcs);
+
+  let authorizeUrl = `${vcs.instanceUrl}/oauth/authorize`;
+  if (vcs.type == "GITHUB_COM") {
+    authorizeUrl = `https://github.com/login/oauth/authorize`;
+  }
   openWindowForOAuth(
-    `${vcs.instanceUrl}/oauth/authorize`,
+    authorizeUrl,
     vcs.applicationId,
     "bb.oauth.link-vcs-repository",
     vcs.type
