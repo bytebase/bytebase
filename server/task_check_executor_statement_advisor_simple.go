@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
@@ -24,7 +23,7 @@ type TaskCheckStatementAdvisorSimpleExecutor struct {
 func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	payload := &api.TaskCheckDatabaseStatementAdvisePayload{}
 	if err := json.Unmarshal([]byte(taskCheckRun.Payload), payload); err != nil {
-		return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid check statement advise payload: %w", err))
+		return nil, common.Errorf(common.Invalid, "invalid check statement advise payload: %w", err)
 	}
 
 	var advisorType advisor.Type
@@ -38,7 +37,7 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *S
 		case db.Postgres:
 			advisorType = advisor.PostgreSQLSyntax
 		default:
-			return nil, common.Errorf(common.Invalid, fmt.Errorf("invalid database type: %s for syntax statement advisor", payload.DbType))
+			return nil, common.Errorf(common.Invalid, "invalid database type: %s for syntax statement advisor", payload.DbType)
 		}
 	}
 
@@ -57,7 +56,7 @@ func (exec *TaskCheckStatementAdvisorSimpleExecutor) Run(_ context.Context, _ *S
 		payload.Statement,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("failed to check statement: %w", err))
+		return nil, common.Errorf(common.Internal, "failed to check statement: %w", err)
 	}
 
 	result = []api.TaskCheckResult{}

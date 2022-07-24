@@ -99,8 +99,8 @@
 
 .bb-guide-close-button,
 .bb-hint-close-button {
-  @apply fixed top-0 right-0.5 px-1 font-thin rounded cursor-pointer opacity-60 hover:opacity-50;
-  font-size: 24px;
+  @apply absolute top-1 right-1 flex justify-center items-center w-6 h-6 pb-1 rounded cursor-pointer opacity-80 text-gray-600 hover:bg-gray-200 hover:shadow;
+  font-size: 20px;
 }
 
 .bb-guide-title-text,
@@ -155,5 +155,5 @@
   top: 6px;
   left: 6px;
   background-color: #4f46e5;
-  animation-duration: 1.6s;
+  animation-duration: 2s;
 }

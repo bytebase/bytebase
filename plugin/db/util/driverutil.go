@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
-	"go.uber.org/zap"
 )
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	return common.Errorf(common.DbExecutionError, fmt.Errorf("failed to execute query %q, error: %w", query, err))
+	return common.Errorf(common.DbExecutionError, "failed to execute query %q, error: %w", query, err)
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.
@@ -210,8 +211,8 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 	} else if len(list) > 0 {
 		switch list[0].Status {
 		case db.Done:
-			return int64(list[0].ID), common.Errorf(common.MigrationAlreadyApplied,
-				fmt.Errorf("database %q has already applied version %s", m.Database, m.Version))
+			return int64(list[0].ID),
+				common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s", m.Database, m.Version)
 		case db.Pending:
 			err := fmt.Errorf("database %q version %s migration is already in progress", m.Database, m.Version)
 			log.Debug(err.Error())
@@ -219,7 +220,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.Errorf(common.MigrationPending, err)
+			return -1, common.WithError(common.MigrationPending, err)
 		case db.Failed:
 			err := fmt.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version)
 			log.Debug(err.Error())
@@ -227,7 +228,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 			if m.Force {
 				return int64(list[0].ID), nil
 			}
-			return -1, common.Errorf(common.MigrationFailed, err)
+			return -1, common.WithError(common.MigrationFailed, err)
 		}
 	}
 
@@ -252,7 +253,7 @@ func BeginMigration(ctx context.Context, executor MigrationExecutor, m *db.Migra
 		return -1, err
 	} else if version != nil && len(*version) > 0 && *version >= m.Version {
 		// len(*version) > 0 is used because Clickhouse will always return non-nil version with empty string.
-		return -1, common.Errorf(common.MigrationOutOfOrder, fmt.Errorf("database %q has already applied version %s which >= %s", m.Database, *version, m.Version))
+		return -1, common.Errorf(common.MigrationOutOfOrder, "database %q has already applied version %s which >= %s", m.Database, *version, m.Version)
 	}
 
 	// Phase 2 - Record migration history as PENDING.
