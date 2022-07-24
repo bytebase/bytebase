@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -47,7 +45,7 @@ func (check *NamingIndexConventionAdvisor) Check(ctx advisor.Context, statement 
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		database:     ctx.Database,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -72,7 +70,7 @@ type namingIndexConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	catalog      catalog.Catalog
+	database     *catalog.Database
 }
 
 // Enter implements the ast.Visitor interface
@@ -149,29 +147,19 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				ctx := context.Background()
-				index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+				_, indexList := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if err != nil {
-					log.Printf(
-						"Cannot find index %s in table %s with error %v\n",
-						node.Table.Name.String(),
-						spec.FromKey.String(),
-						err,
-					)
+				if len(indexList) == 0 {
 					continue
 				}
-				if index == nil {
-					continue
-				}
-				if index.Unique {
+				if indexList[0].Unique {
 					// Unique index naming convention should in advisor_naming_unique_key_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

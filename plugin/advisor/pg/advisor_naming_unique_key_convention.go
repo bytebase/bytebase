@@ -1,9 +1,7 @@
 package pg
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -46,7 +44,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		database:     ctx.Database,
 	}
 
 	for _, stmtNode := range root {
@@ -72,7 +70,7 @@ type namingUKConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	catalog      catalog.Catalog
+	database     *catalog.Database
 }
 
 // Visit implements ast.Visitor interface
@@ -117,26 +115,26 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range node.ConstraintList {
-			if metadata := checker.getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
+			if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint); metadata != nil {
 				res = append(res, metadata)
 			}
 		}
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(constraint, node.Name.Name); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Name.Schema, node.Name.Name, constraint); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
 		}
 	case *ast.AddConstraintStmt:
 		constraint := node.Constraint
-		if metadata := checker.getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
+		if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint); metadata != nil {
 			res = append(res, metadata)
 		}
 	case *ast.AddColumnListStmt:
 		for _, column := range node.ColumnList {
 			for _, constraint := range column.ConstraintList {
-				if metadata := checker.getUniqueKeyMetadata(constraint, node.Table.Name); metadata != nil {
+				if metadata := checker.getUniqueKeyMetadata(node.Table.Schema, node.Table.Name, constraint); metadata != nil {
 					res = append(res, metadata)
 				}
 			}
@@ -158,10 +156,11 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameConstraintStmt:
-		if index := checker.findIndex(context.Background(), node.Table.Name, node.ConstraintName); index != nil && index.Unique && !index.Primary {
+		tableName, indexList := checker.findIndex(node.Table.Schema, node.Table.Name, node.ConstraintName)
+		if len(indexList) != 0 && indexList[0].Unique && !indexList[0].Primary {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-				advisor.TableNameTemplateToken:  node.Table.Name,
+				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
@@ -170,15 +169,16 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 			})
 		}
 	case *ast.RenameIndexStmt:
-		// TODO(rebelice): "ALTER INDEX name RENAME TO new_name" doesn't take a table name
-		if index := checker.findIndex(context.Background(), "", node.IndexName); index != nil && index.Unique && !index.Primary {
+		// "ALTER INDEX name RENAME TO new_name" doesn't take a table name
+		tableName, indexList := checker.findIndex(node.Table.Schema, "", node.IndexName)
+		if len(indexList) != 0 && indexList[0].Unique && !indexList[0].Primary {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
-				advisor.TableNameTemplateToken:  index.TableName,
+				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
+				advisor.TableNameTemplateToken:  tableName,
 			}
 			res = append(res, &indexMetaData{
 				indexName: node.NewName,
-				tableName: index.TableName,
+				tableName: tableName,
 				metaData:  metaData,
 			})
 		}
@@ -187,7 +187,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 }
 
 // getUniqueKeyMetadata returns index metadata of a unique key constraint, nil if other constraints.
-func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.ConstraintDef, tableName string) *indexMetaData {
+func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string, tableName string, constraint *ast.ConstraintDef) *indexMetaData {
 	switch constraint.Type {
 	case ast.ConstraintTypeUnique:
 		metaData := map[string]string{
@@ -200,9 +200,10 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.C
 			metaData:  metaData,
 		}
 	case ast.ConstraintTypeUniqueUsingIndex:
-		if index := checker.findIndex(context.Background(), tableName, constraint.IndexName); index != nil {
+		tableName, indexList := checker.findIndex(schemaName, tableName, constraint.IndexName)
+		if len(indexList) != 0 {
 			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+				advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
 				advisor.TableNameTemplateToken:  tableName,
 			}
 			return &indexMetaData{
@@ -216,19 +217,10 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(constraint *ast.C
 }
 
 // findIndex returns index found in catalogs, nil if not found
-func (checker *namingUKConventionChecker) findIndex(ctx context.Context, tableName string, indexName string) *catalog.Index {
-	index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
-		TableName: tableName,
-		IndexName: indexName,
+func (checker *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, []*catalog.Index) {
+	return checker.database.FindIndex(&catalog.IndexFind{
+		SchemaName: normalizeSchemaName(schemaName),
+		TableName:  tableName,
+		IndexName:  indexName,
 	})
-	if err != nil {
-		log.Printf(
-			"Cannot find index %s in table %s with error %v\n",
-			indexName,
-			tableName,
-			err,
-		)
-		return nil
-	}
-	return index
 }

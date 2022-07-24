@@ -1,9 +1,7 @@
 package pg
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"sort"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -38,7 +36,7 @@ func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]
 	checker := &columnNoNullChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
-		catalog:         ctx.Catalog,
+		database:        ctx.Database,
 		nullableColumns: make(columnMap),
 	}
 
@@ -53,7 +51,7 @@ type columnNoNullChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
-	catalog         catalog.Catalog
+	database        *catalog.Database
 	nullableColumns columnMap
 }
 
@@ -146,24 +144,16 @@ func (checker *columnNoNullChecker) removeColumnByConstraintList(table *ast.Tabl
 				checker.removeColumn(table, column)
 			}
 		case ast.ConstraintTypePrimaryUsingIndex:
-			index, err := checker.catalog.FindIndex(context.Background(), &catalog.IndexFind{
-				TableName: getTableNameWithSchema(table),
-				IndexName: constraint.IndexName,
+			_, indexList := checker.database.FindIndex(&catalog.IndexFind{
+				SchemaName: normalizeSchemaName(table.Schema),
+				TableName:  table.Name,
+				IndexName:  constraint.IndexName,
 			})
-			if err != nil {
-				log.Printf(
-					"Cannot find index %s in table %s with error %v\n",
-					constraint.IndexName,
-					getTableNameWithSchema(table),
-					err,
-				)
+			if len(indexList) == 0 {
 				continue
 			}
-			if index == nil {
-				continue
-			}
-			for _, column := range index.ColumnExpressions {
-				checker.removeColumn(table, column)
+			for _, index := range indexList {
+				checker.removeColumn(table, index.Expression)
 			}
 		}
 	}
