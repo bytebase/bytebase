@@ -39,7 +39,7 @@ func (driver *Driver) NeedsSetupMigration(ctx context.Context) (bool, error) {
 func (driver *Driver) SetupMigrationIfNeeded(ctx context.Context) error {
 	setup, err := driver.NeedsSetupMigration(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if setup {

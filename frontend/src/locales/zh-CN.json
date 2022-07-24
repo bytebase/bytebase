@@ -203,7 +203,8 @@
     "write-only": "仅写入",
     "pitr": "PITR",
     "fix": "修复",
-    "go-now": "立即前往"
+    "go-now": "立即前往",
+    "sync-now": "现在同步"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -273,7 +274,8 @@
     "trial-expires": "您的{plan}试用将在 {days} 天后过期",
     "extend-trial": "申请延长试用",
     "action": "5 秒部署您自己的服务",
-    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。"
+    "debug": "Debug 模式已开启，您可以通过右上角头像下拉框关闭 Debug。",
+    "readonly": "服务器处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。"
   },
   "intro": {
     "doc": "文档",
@@ -489,7 +491,10 @@
     "format-on-save": "保存时格式化",
     "action-to-current-stage": "{action}当前阶段",
     "edit-sql-statement-in-vcs": "该项目开启了基于 VCS 的版本管理。请在对应的 Git 仓库修改 SQL 文件并提交，开启新的工单。",
-    "edit-sql-statement": "编辑 SQL 语句"
+    "edit-sql-statement": "编辑 SQL 语句",
+    "upload-file": "上传文件",
+    "override-current-statement": "覆盖当前的 SQL 语句",
+    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -540,13 +545,14 @@
     "extensions": "插件",
     "parent": "母",
     "last-successful-sync": "上次成功同步于",
-    "sync-status": "同步状态"
+    "sync-status": "同步状态",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。"
   },
   "instance": {
     "select": "选择实例",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
-    "sync-now": "现在同步",
     "sync-schema-now": "随即同步 schema",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "缺少@:common.migration @:common.schema",
