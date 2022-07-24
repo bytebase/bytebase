@@ -176,6 +176,10 @@ export default defineComponent({
 
     const tryFinishSetup = (allowFinishCallback: () => void) => {
       const createFunc = () => {
+        let externalId = state.config.repositoryInfo.externalId;
+        if (state.config.vcs.type == "GITHUB_COM") {
+          externalId = state.config.repositoryInfo.fullPath;
+        }
         const repositoryCreate: RepositoryCreate = {
           vcsId: state.config.vcs.id,
           name: state.config.repositoryInfo.name,
@@ -186,7 +190,7 @@ export default defineComponent({
           filePathTemplate: state.config.repositoryConfig.filePathTemplate,
           schemaPathTemplate: state.config.repositoryConfig.schemaPathTemplate,
           sheetPathTemplate: state.config.repositoryConfig.sheetPathTemplate,
-          externalId: state.config.repositoryInfo.externalId,
+          externalId: externalId,
           accessToken: state.config.token.accessToken,
           expiresTs: state.config.token.expiresTs,
           refreshToken: state.config.token.refreshToken,

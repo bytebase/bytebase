@@ -72,24 +72,22 @@ onMounted(() => {
 });
 
 const prepareRepositoryList = () => {
-  if (props.config.vcs.type == "GITLAB_SELF_HOST") {
-    useOAuthStore()
-      .exchangeVCSTokenWithID({
-        vcsId: props.config.vcs.id,
-        code: props.config.code,
-      })
-      .then((token: OAuthToken) => {
-        emit("set-token", token);
-        gitlabStore
-          .fetchProjectList({
-            vcs: props.config.vcs,
-            token: token,
-          })
-          .then((list) => {
-            state.repositoryList = list;
-          });
-      });
-  }
+  useOAuthStore()
+    .exchangeVCSTokenWithID({
+      vcsId: props.config.vcs.id,
+      code: props.config.code,
+    })
+    .then((token: OAuthToken) => {
+      emit("set-token", token);
+      gitlabStore
+        .fetchProjectList({
+          vcs: props.config.vcs,
+          token: token,
+        })
+        .then((list) => {
+          state.repositoryList = list;
+        });
+    });
 };
 
 const refreshRepositoryList = () => {
