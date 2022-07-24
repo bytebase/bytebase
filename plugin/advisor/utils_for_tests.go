@@ -28,7 +28,8 @@ var (
 	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
 	MockMySQLDatabase = &catalog.Database{
-		Name: "test",
+		Name:   "test",
+		DbType: catalog.MySQL,
 		SchemaList: []*catalog.Schema{
 			{
 				TableList: []*catalog.Table{
@@ -77,7 +78,8 @@ var (
 	}
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
 	MockPostgreSQLDatabase = &catalog.Database{
-		Name: "test",
+		Name:   "test",
+		DbType: catalog.Postgres,
 		SchemaList: []*catalog.Schema{
 			{
 				Name: "public",
