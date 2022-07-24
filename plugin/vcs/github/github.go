@@ -224,6 +224,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	return &vcs.UserInfo{
 		PublicEmail: user.Email,
 		Name:        user.Name,
+		State:       vcs.StateActive,
 	}, err
 }
 

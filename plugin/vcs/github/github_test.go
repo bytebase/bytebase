@@ -88,6 +88,7 @@ func TestProvider_FetchUserInfo(t *testing.T) {
 	want := &vcs.UserInfo{
 		PublicEmail: "octocat@github.com",
 		Name:        "monalisa octocat",
+		State:       vcs.StateActive,
 	}
 	assert.Equal(t, want, got)
 }
