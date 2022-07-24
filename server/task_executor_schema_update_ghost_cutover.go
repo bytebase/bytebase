@@ -10,13 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/common"
 	"github.com/bytebase/bytebase/common/log"
 	"github.com/bytebase/bytebase/plugin/db"
 	"github.com/bytebase/bytebase/plugin/db/util"
 	vcsPlugin "github.com/bytebase/bytebase/plugin/vcs"
-	"go.uber.org/zap"
 )
 
 // NewSchemaUpdateGhostCutoverTaskExecutor creates a schema update (gh-ost) cutover task executor.
@@ -76,7 +77,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 			return -1, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 		}
 		if needsSetup {
-			return -1, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+			return -1, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 		}
 
 		executor := driver.(util.MigrationExecutor)

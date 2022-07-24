@@ -315,7 +315,7 @@ func (p *Provider) fetchPaginatedRepositoryList(ctx context.Context, oauthCtx co
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository list from URL %s", url))
+		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository list from URL %s", url)
 	} else if code >= 300 {
 		return nil, false,
 			fmt.Errorf("failed to fetch repository list from URL %s, status code: %d, body: %s",
@@ -360,7 +360,7 @@ func (p *Provider) fetchUserInfo(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read user info from URL %s", url))
+		return nil, common.Errorf(common.NotFound, "failed to read user info from URL %s", url)
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to read user info from URL %s, status code: %d, body: %s",
 			url,
@@ -403,7 +403,7 @@ func (p *Provider) FetchCommitByID(ctx context.Context, oauthCtx common.OauthCon
 		return nil, errors.Wrap(err, "GET")
 	}
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch commit data from URL %s", url))
+		return nil, common.Errorf(common.NotFound, "failed to fetch commit data from URL %s", url)
 	} else if code >= 300 {
 		return nil, fmt.Errorf("failed to fetch commit data from URL %s, status code: %d, body: %s",
 			url,
@@ -544,7 +544,7 @@ func (p *Provider) fetchPaginatedRepositoryActiveMemberList(ctx context.Context,
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository members from URL %s", url))
+		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository members from URL %s", url)
 	} else if code >= 300 {
 		return nil, false,
 			fmt.Errorf("failed to fetch repository members from URL %s, status code: %d, body: %s",
@@ -624,7 +624,7 @@ func (p *Provider) fetchPaginatedRepositoryFileList(ctx context.Context, oauthCt
 	}
 
 	if code == http.StatusNotFound {
-		return nil, false, common.Errorf(common.NotFound, fmt.Errorf("failed to fetch repository file list from URL %s", url))
+		return nil, false, common.Errorf(common.NotFound, "failed to fetch repository file list from URL %s", url)
 	} else if code >= 300 {
 		return nil, false,
 			fmt.Errorf("failed to fetch repository file list from URL %s, status code: %d, body: %s",
@@ -682,7 +682,7 @@ func (p *Provider) CreateFile(ctx context.Context, oauthCtx common.OauthContext,
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, fmt.Errorf("failed to create file through URL %s", url))
+		return common.Errorf(common.NotFound, "failed to create file through URL %s", url)
 	} else if code >= 300 {
 		return fmt.Errorf("failed to create file through URL %s, status code: %d, body: %s",
 			url,
@@ -731,7 +731,7 @@ func (p *Provider) OverwriteFile(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, fmt.Errorf("failed to overwrite file through URL %s", url))
+		return common.Errorf(common.NotFound, "failed to overwrite file through URL %s", url)
 	} else if code >= 300 {
 		return fmt.Errorf("failed to overwrite file through URL %s, status code: %d, body: %s",
 			url,
@@ -796,7 +796,7 @@ func (p *Provider) CreateWebhook(ctx context.Context, oauthCtx common.OauthConte
 	}
 
 	if code == http.StatusNotFound {
-		return "", common.Errorf(common.NotFound, fmt.Errorf("failed to create webhook through URL %s", url))
+		return "", common.Errorf(common.NotFound, "failed to create webhook through URL %s", url)
 	} else if code >= 300 {
 		reason := fmt.Sprintf("failed to create webhook through URL %s, status code: %d, body: %s",
 			url,
@@ -845,7 +845,7 @@ func (p *Provider) PatchWebhook(ctx context.Context, oauthCtx common.OauthContex
 	}
 
 	if code == http.StatusNotFound {
-		return common.Errorf(common.NotFound, fmt.Errorf("failed to patch webhook through URL %s", url))
+		return common.Errorf(common.NotFound, "failed to patch webhook through URL %s", url)
 	} else if code >= 300 {
 		return fmt.Errorf("failed to patch webhook through URL %s, status code: %d, body: %s",
 			url,
@@ -918,7 +918,7 @@ func (p *Provider) readFile(ctx context.Context, oauthCtx common.OauthContext, i
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("failed to read file from URL %s", url))
+		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
 	} else if code >= 300 {
 		return nil,
 			fmt.Errorf("failed to read file from URL %s, status code: %d, body: %s",
