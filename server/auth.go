@@ -74,90 +74,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Incorrect password").SetInternal(err)
 				}
 			}
-		case api.PrincipalAuthProviderGitlabSelfHost:
-			{
-				gitlabLogin := &api.GitlabLogin{}
-				if err := jsonapi.UnmarshalPayload(c.Request().Body, gitlabLogin); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, "Malformed gitlab login request").SetInternal(err)
-				}
-				vcsFound, err := s.store.GetVCSByID(ctx, gitlabLogin.VCSID)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
-				}
-				if vcsFound == nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", gitlabLogin.Name, gitlabLogin.Name)).SetInternal(err)
-				}
-
-				// We need to attach the RedirectURL in the get token process of oauth,
-				// and the RedirectURL needs to be consistent with the RedirectURL in the get code process.
-				// The frontend get it through window.location.origin in the get code process,
-				// so port 80 needs to be cropped when the backend splices the RedirectURL.
-				var redirectURL string
-				if s.profile.FrontendPort == 80 {
-					redirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
-				} else {
-					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
-				}
-				// exchange OAuth Token
-				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
-					ctx,
-					vcsFound.InstanceURL,
-					&common.OAuthExchange{
-						ClientID:     vcsFound.ApplicationID,
-						ClientSecret: vcsFound.Secret,
-						Code:         gitlabLogin.Code,
-						RedirectURL:  redirectURL,
-					},
-				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
-				}
-
-				gitlabUserInfo, err := vcs.Get(vcs.GitLabSelfHost, vcs.ProviderConfig{}).TryLogin(ctx,
-					common.OauthContext{
-						ClientID:     vcsFound.ApplicationID,
-						ClientSecret: vcsFound.Secret,
-						AccessToken:  oauthToken.AccessToken,
-						RefreshToken: "",
-						Refresher:    nil,
-					},
-					vcsFound.InstanceURL,
-				)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from gitlab").SetInternal(err)
-				}
-
-				// we only allow active user to login via gitlab
-				if gitlabUserInfo.State != vcs.StateActive {
-					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via Gitlab, user is Archived")
-				}
-
-				user, err = s.store.GetPrincipalByEmail(ctx, gitlabUserInfo.PublicEmail)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
-				}
-
-				// create a new user if not exist
-				if user == nil {
-					if gitlabUserInfo.PublicEmail == "" {
-						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.gitlab.com/ee/user/profile/")
-					}
-					// if user login via gitlab at the first time, we will generate a random password.
-					// The random password is supposed to be not guessable. If user wants to login
-					// via password, she needs to set the new password from the profile page.
-					signUp := &api.SignUp{
-						Email:    gitlabUserInfo.PublicEmail,
-						Password: common.RandomString(20),
-						Name:     gitlabUserInfo.Name,
-					}
-					var httpError *echo.HTTPError
-					user, httpError = trySignUp(ctx, s, signUp, api.SystemBotID)
-					if httpError != nil {
-						return httpError
-					}
-				}
-			}
-		case api.PrincipalAuthProviderGitHubCom:
+		case api.PrincipalAuthProviderGitlabSelfHost, api.PrincipalAuthProviderGitHubCom:
 			{
 				login := &api.GitlabLogin{}
 				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
@@ -197,7 +114,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
 				}
 
-				githubUserInfo, err := vcs.Get(vcs.GitHubCom, vcs.ProviderConfig{}).TryLogin(ctx,
+				githubUserInfo, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
