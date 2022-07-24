@@ -14,6 +14,7 @@ type AuthProvider struct {
 }
 
 // GitlabLogin is the API message for logins via Gitlab.
+// TODO(jc): Rename to VCSLogin, https://linear.app/bbteam/issue/BYT-993
 type GitlabLogin struct {
 	// VCSID is the ID of the chosen VCS role provider.
 	VCSID int `jsonapi:"attr,vcsId"`

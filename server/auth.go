@@ -157,6 +157,93 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					}
 				}
 			}
+		case api.PrincipalAuthProviderGitHubCom:
+			{
+				login := &api.GitlabLogin{}
+				if err := jsonapi.UnmarshalPayload(c.Request().Body, login); err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, "Malformed login request").SetInternal(err)
+				}
+				vcsFound, err := s.store.GetVCSByID(ctx, login.VCSID)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch vcs, name: %v, ID: %v", login.Name, login.Name)).SetInternal(err)
+				}
+				if vcsFound == nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("vcs do not exist, name: %v, ID: %v", login.Name, login.Name)).SetInternal(err)
+				}
+
+				// We need to attach the RedirectURL in the get token process of OAuth, and the
+				// RedirectURL needs to be consistent with the RedirectURL in the get code
+				// process. The frontend get it through window.location.origin in the get code
+				// process, so port 80 needs to be cropped when the backend splices the
+				// RedirectURL.
+				var redirectURL string
+				if s.profile.FrontendPort == 80 {
+					redirectURL = fmt.Sprintf("%s/oauth/callback", s.profile.FrontendHost)
+				} else {
+					redirectURL = fmt.Sprintf("%s:%d/oauth/callback", s.profile.FrontendHost, s.profile.FrontendPort)
+				}
+				// Exchange OAuth Token
+				oauthToken, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).ExchangeOAuthToken(
+					ctx,
+					vcsFound.InstanceURL,
+					&common.OAuthExchange{
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
+						Code:         login.Code,
+						RedirectURL:  redirectURL,
+					},
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
+				}
+
+				githubUserInfo, err := vcs.Get(vcs.GitHubCom, vcs.ProviderConfig{}).TryLogin(ctx,
+					common.OauthContext{
+						ClientID:     vcsFound.ApplicationID,
+						ClientSecret: vcsFound.Secret,
+						AccessToken:  oauthToken.AccessToken,
+						RefreshToken: "",
+						Refresher:    nil,
+					},
+					vcsFound.InstanceURL,
+				)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Fail to fetch user info from GitHub").SetInternal(err)
+				}
+
+				// We only allow active user to login via GitHub
+				if githubUserInfo.State != vcs.StateActive {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via GitHub, user is Archived")
+				}
+
+				user, err = s.store.GetPrincipalByEmail(ctx, githubUserInfo.PublicEmail)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
+				}
+
+				// Create a new user if not exist
+				if user == nil {
+					if githubUserInfo.PublicEmail == "" {
+						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.github.com/en/account-and-profile")
+					}
+					// If the user logins via GitHub for the first time, we will generate a random
+					// password. The random password is supposed to be not guessable. If user wants
+					// to login via password, they need to set the new password from the profile
+					// page.
+					signUp := &api.SignUp{
+						Email:    githubUserInfo.PublicEmail,
+						Password: common.RandomString(20),
+						Name:     githubUserInfo.Name,
+					}
+					var httpError *echo.HTTPError
+					user, httpError = trySignUp(ctx, s, signUp, api.SystemBotID)
+					if httpError != nil {
+						return httpError
+					}
+				}
+			}
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unsupported auth provider: %s", authProvider))
 		}
 
 		// test the status of this user
