@@ -258,9 +258,6 @@ func convertRangeVarToTableName(in *pgquery.RangeVar) *ast.TableDef {
 }
 
 func convertRangeVarToIndexTableName(in *pgquery.RangeVar) *ast.TableDef {
-	if in.Schemaname == "" {
-		return nil
-	}
 	return &ast.TableDef{
 		Schema: in.Schemaname,
 	}

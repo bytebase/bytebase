@@ -187,7 +187,7 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE t DROP COLUMN uid, DROP COLUMN name`,
+			Statement: `ALTER TABLE tech_book DROP COLUMN uid, DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Success,
@@ -199,14 +199,14 @@ func TestRequirePK(t *testing.T) {
 		},
 		{
 			// Use MockCatalogService
-			Statement: `ALTER TABLE t CHANGE COLUMN id uid int;
-						ALTER TABLE t DROP COLUMN uid, DROP COLUMN name`,
+			Statement: `ALTER TABLE tech_book CHANGE COLUMN id uid int;
+						ALTER TABLE tech_book DROP COLUMN uid, DROP COLUMN name`,
 			Want: []advisor.Advice{
 				{
 					Status:  advisor.Error,
 					Code:    advisor.TableNoPK,
 					Title:   "table.require-pk",
-					Content: "Table `t` requires PRIMARY KEY",
+					Content: "Table `tech_book` requires PRIMARY KEY",
 				},
 			},
 		},
@@ -216,5 +216,5 @@ func TestRequirePK(t *testing.T) {
 		Type:    advisor.SchemaRuleTableRequirePK,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

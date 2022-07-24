@@ -404,6 +404,7 @@ func TestPGAlterIndexStmt(t *testing.T) {
 			stmt: "ALTER INDEX idx_id RENAME TO \"IDX_ID\"",
 			want: []ast.Node{
 				&ast.RenameIndexStmt{
+					Table:     &ast.TableDef{Schema: ""},
 					IndexName: "idx_id",
 					NewName:   "IDX_ID",
 				},
