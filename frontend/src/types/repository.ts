@@ -94,6 +94,12 @@ export function baseDirectoryWebUrl(repository: Repository): string {
       url += `/${repository.baseDirectory}`;
     }
     return url;
+  } else if (repository.vcs.type == "GITHUB_COM") {
+    let url = `${repository.webUrl}/tree/${repository.branchFilter}`;
+    if (!isEmpty(repository.baseDirectory)) {
+      url += `/${repository.baseDirectory}`;
+    }
+    return url;
   }
 
   return repository.webUrl;
