@@ -115,7 +115,7 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to exchange OAuth token").SetInternal(err)
 				}
 
-				githubUserInfo, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).TryLogin(ctx,
+				userInfo, err := vcs.Get(vcsFound.Type, vcs.ProviderConfig{}).TryLogin(ctx,
 					common.OauthContext{
 						ClientID:     vcsFound.ApplicationID,
 						ClientSecret: vcsFound.Secret,
@@ -130,28 +130,28 @@ func (s *Server) registerAuthRoutes(g *echo.Group) {
 				}
 
 				// We only allow active user to login
-				if githubUserInfo.State != vcs.StateActive {
+				if userInfo.State != vcs.StateActive {
 					return echo.NewHTTPError(http.StatusUnauthorized, "Fail to login via GitHub, user is Archived")
 				}
 
-				user, err = s.store.GetPrincipalByEmail(ctx, githubUserInfo.PublicEmail)
+				user, err = s.store.GetPrincipalByEmail(ctx, userInfo.PublicEmail)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to authenticate user").SetInternal(err)
 				}
 
 				// Create a new user if not exist
 				if user == nil {
-					if githubUserInfo.PublicEmail == "" {
+					if userInfo.PublicEmail == "" {
 						return echo.NewHTTPError(http.StatusNotFound, "Please configure your public email first, https://docs.github.com/en/account-and-profile")
 					}
-					// If the user logins via GitHub for the first time, we will generate a random
+					// If the user logins via VCS for the first time, we will generate a random
 					// password. The random password is supposed to be not guessable. If user wants
 					// to login via password, they need to set the new password from the profile
 					// page.
 					signUp := &api.SignUp{
-						Email:    githubUserInfo.PublicEmail,
+						Email:    userInfo.PublicEmail,
 						Password: common.RandomString(20),
-						Name:     githubUserInfo.Name,
+						Name:     userInfo.Name,
 					}
 					var httpError *echo.HTTPError
 					user, httpError = trySignUp(ctx, s, signUp, api.SystemBotID)
