@@ -36,5 +36,5 @@ func TestTableNoFK(t *testing.T) {
 		Type:    advisor.SchemaRuleTableNoFK,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

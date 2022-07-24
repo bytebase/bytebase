@@ -88,7 +88,7 @@ func TestBasic(t *testing.T) {
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
 
 func TestAlterTable(t *testing.T) {
@@ -262,7 +262,7 @@ func TestAlterTable(t *testing.T) {
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }
 
 func TestAlterTableChangeColumnType(t *testing.T) {
@@ -328,5 +328,5 @@ func TestAlterTableChangeColumnType(t *testing.T) {
 		Type:    advisor.SchemaRuleSchemaBackwardCompatibility,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

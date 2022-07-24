@@ -108,6 +108,9 @@ const (
 	// PostgreSQLNamingColumnConvention is an advisor type for PostgreSQL column naming convention.
 	PostgreSQLNamingColumnConvention Type = "bb.plugin.advisor.postgresql.naming.column"
 
+	// PostgreSQLNamingUKConvention is an advisor type for PostgreSQL unique key naming convention.
+	PostgreSQLNamingUKConvention Type = "bb.plugin.advisor.postgresql.naming.uk"
+
 	// PostgreSQLNamingFKConvention is an advisor type for PostgreSQL foreign key naming convention.
 	PostgreSQLNamingFKConvention Type = "bb.plugin.advisor.postgresql.naming.fk"
 
@@ -156,8 +159,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SQLReviewRule
-	Catalog catalog.Catalog
+	Rule     *SQLReviewRule
+	Database *catalog.Database
 }
 
 // Advisor is the interface for advisor.
