@@ -335,7 +335,7 @@ func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.Labe
 		}
 		labelKey, ok := keymap[key]
 		if !ok {
-			return nil, common.Errorf(common.Internal, fmt.Errorf("label value doesn't have a label key, key %q, value %q", key, value))
+			return nil, common.Errorf(common.Internal, "label value doesn't have a label key, key %q, value %q", key, value)
 		}
 		labelKey.ValueList = append(labelKey.ValueList, value)
 	}
@@ -372,7 +372,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 		}
 	}
 	if labelKeyRaw == nil {
-		return nil, common.Errorf(common.NotFound, fmt.Errorf("label key not found with ID %v", patch.ID))
+		return nil, common.Errorf(common.NotFound, "label key not found with ID %v", patch.ID)
 	}
 
 	// Generate label value upserts.

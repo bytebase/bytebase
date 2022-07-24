@@ -30,14 +30,13 @@ import {
   reactive,
   ref,
   defineComponent,
-  inject,
 } from "vue";
 import { useRouter } from "vue-router";
 import EnvironmentTabFilter from "../components/EnvironmentTabFilter.vue";
 import InstanceTable from "../components/InstanceTable.vue";
-import { Environment, Instance, EventType } from "../types";
+import { Environment, Instance } from "../types";
 import { cloneDeep } from "lodash-es";
-import { sortInstanceList, Event } from "../utils";
+import { sortInstanceList } from "../utils";
 import { useI18n } from "vue-i18n";
 import {
   useUIStateStore,
@@ -46,6 +45,7 @@ import {
   useEnvironmentList,
   useInstanceList,
   useInstanceStore,
+  useHelpStore,
 } from "@/store";
 
 interface LocalState {
@@ -62,11 +62,11 @@ export default defineComponent({
   setup() {
     const searchField = ref();
     const mountedTimer = ref();
-    const event = inject<Event>("event");
 
     const instanceStore = useInstanceStore();
     const subscriptionStore = useSubscriptionStore();
     const uiStateStore = useUIStateStore();
+    const helpStore = useHelpStore();
     const router = useRouter();
     const { t } = useI18n();
 
@@ -87,7 +87,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
         mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.instance", true);
+          helpStore.showHelp("help.instance", true);
           uiStateStore.saveIntroStateByKey({
             key: "instance.visit",
             newState: true,

@@ -91,5 +91,5 @@ func TestWhereRequirement(t *testing.T) {
 		Type:    advisor.SchemaRuleStatementRequireWhere,
 		Level:   advisor.SchemaRuleLevelWarning,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

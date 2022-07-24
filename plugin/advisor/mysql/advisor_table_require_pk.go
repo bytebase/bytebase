@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -40,10 +38,10 @@ func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) (
 		return nil, err
 	}
 	checker := &tableRequirePKChecker{
-		level:   level,
-		title:   string(ctx.Rule.Type),
-		tables:  make(tablePK),
-		catalog: ctx.Catalog,
+		level:    level,
+		title:    string(ctx.Rule.Type),
+		tables:   make(tablePK),
+		database: ctx.Database,
 	}
 
 	for _, stmtNode := range root {
@@ -58,7 +56,7 @@ type tableRequirePKChecker struct {
 	level      advisor.Status
 	title      string
 	tables     tablePK
-	catalog    catalog.Catalog
+	database   *catalog.Database
 }
 
 // Enter implements the ast.Visitor interface
@@ -158,23 +156,15 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 
 func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 	if _, ok := v.tables[table]; !ok {
-		ctx := context.Background()
-		pk, err := v.catalog.FindIndex(ctx, &catalog.IndexFind{
+		v.tables[table] = make(columnSet)
+		_, pkList := v.database.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})
-		if err != nil {
-			log.Printf(
-				"Cannot find primary key in table %s with error %v\n",
-				table,
-				err,
-			)
+		if len(pkList) == 0 {
 			return
 		}
-		if pk == nil {
-			return
-		}
-		v.tables[table] = newColumnSet(pk.ColumnExpressions)
+		v.tables[table] = newColumnSet(catalog.GetColumnListForIndex(pkList))
 	}
 
 	delete(v.tables[table], column)
