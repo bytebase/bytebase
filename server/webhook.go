@@ -2,6 +2,10 @@ package server
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -120,20 +124,11 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 	})
 	g.POST("/github/:id", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
-		}
 
 		// This shouldn't happen as we only setup webhook to receive push event, just in case.
 		eventType := github.WebhookType(c.Request().Header.Get("X-GitHub-Event"))
 		if eventType != github.WebhookPush {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid webhook event type, got %s, want %s", eventType, github.WebhookPush))
-		}
-
-		var pushEvent github.WebhookPushEvent
-		if err := json.Unmarshal(body, &pushEvent); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
 		}
 
 		webhookEndpointID := c.Param("id")
@@ -150,8 +145,21 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, err).SetInternal(err)
 		}
 
-		//nolint:misspell
-		// TODO(unknwon): Validate webhook signature, https://linear.app/bbteam/issue/BYT-935
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to read webhook request").SetInternal(err)
+		}
+
+		// Validate the request body first because there is no point in unmarshalling
+		// the request body if the signature doesn't match.
+		if !validateGitHubWebhookSignature256(c.Request().Header.Get("X-Hub-Signature-256"), repo.WebhookSecretToken, body) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Mismatched payload signature")
+		}
+
+		var pushEvent github.WebhookPushEvent
+		if err := json.Unmarshal(body, &pushEvent); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed push event").SetInternal(err)
+		}
 
 		if pushEvent.Repository.FullName != repo.ExternalID {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Project mismatch, got %s, want %s", pushEvent.Repository.FullName, repo.ExternalID))
@@ -215,6 +223,20 @@ func (s *Server) registerWebhookRoutes(g *echo.Group) {
 		}
 		return c.String(http.StatusOK, strings.Join(createdMessageList, "\n"))
 	})
+}
+
+// validateGitHubWebhookSignature256 returns true if the signature matches the
+// HMAC hex digested SHA256 hash of the body using the given key.
+func validateGitHubWebhookSignature256(signature, key string, body []byte) bool {
+	signature = strings.TrimPrefix(signature, "sha256=")
+	m := hmac.New(sha256.New, []byte(key))
+	m.Write(body)
+	got := hex.EncodeToString(m.Sum(nil))
+
+	// NOTE: Use constant time string comparison helps mitigate certain timing
+	// attacks against regular equality operators, see
+	// https://docs.github.com/en/developers/webhooks-and-events/webhooks/securing-your-webhooks#validating-payloads-from-github
+	return subtle.ConstantTimeCompare([]byte(signature), []byte(got)) == 1
 }
 
 // We are observing the push webhook event so that we will receive the event either when:
