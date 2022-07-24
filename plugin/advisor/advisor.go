@@ -159,8 +159,8 @@ type Context struct {
 	Collation string
 
 	// Schema review rule special fields.
-	Rule    *SQLReviewRule
-	Catalog catalog.Catalog
+	Rule     *SQLReviewRule
+	Database *catalog.Database
 }
 
 // Advisor is the interface for advisor.

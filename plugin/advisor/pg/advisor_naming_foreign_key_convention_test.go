@@ -130,5 +130,5 @@ func TestNamingFKConvention(t *testing.T) {
 		Type:    advisor.SchemaRuleFKNaming,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: string(payload),
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockPostgreSQLDatabase)
 }
