@@ -21,7 +21,7 @@ type TaskCheckDatabaseConnectExecutor struct {
 func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *Server, taskCheckRun *api.TaskCheckRun) (result []api.TaskCheckResult, err error) {
 	task, err := server.store.GetTaskByID(ctx, taskCheckRun.TaskID)
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
+		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
 	}
 	if task == nil {
 		return []api.TaskCheckResult{
@@ -37,10 +37,10 @@ func (exec *TaskCheckDatabaseConnectExecutor) Run(ctx context.Context, server *S
 
 	database, err := server.store.GetDatabase(ctx, &api.DatabaseFind{ID: task.DatabaseID})
 	if err != nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, err)
+		return []api.TaskCheckResult{}, common.WithError(common.Internal, err)
 	}
 	if database == nil {
-		return []api.TaskCheckResult{}, common.Errorf(common.Internal, fmt.Errorf("database ID not found %v", task.DatabaseID))
+		return []api.TaskCheckResult{}, common.Errorf(common.Internal, "database ID not found %v", task.DatabaseID)
 	}
 
 	driver, err := getAdminDatabaseDriver(ctx, database.Instance, database.Name, server.pgInstanceDir)

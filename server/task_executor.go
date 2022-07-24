@@ -152,7 +152,7 @@ func executeMigration(ctx context.Context, pgInstanceDir string, task *api.Task,
 		return 0, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return 0, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)
