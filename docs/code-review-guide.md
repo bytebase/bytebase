@@ -19,6 +19,7 @@ Neat subscribes you to the GitHub notifications:
 - Because it's an open-source project with developers coming from different timezones, we recommend asynchronous communication between reviewers and authors except for emergency such as change rollback or high-priority bug fixes. Each side should expect responses for **up to one business day**.
 - However, if the reviewer doesn't respond in a business day, it's OK to ping the other side by commenting again on the PR, IM messaging, or offline chats. If there is a back and forth discussion on the same topic or you would think so, it will be more efficient to discuss offline.
 - Each side should make very explicit comments to indicate whether the other side can take the turn, e.g. when all previous review comments are addressed, author should leave a PTAL comment and ask reviewer to review again.
+- The goal is to complete the work nicely and quickly so that the authors should have more incentives to drive the discussions, resolve the comments, and merge the PR. However, the comment can be resolved by anyone whoever feels the end of a discussion or the comment is addressed. PRs can be merged by either authors or approvers whenever the PR is ready to be merged. If the comments are not perfectly addressed for a merged PR, leave a comment and the change be addressed by a follow-up PR.
 
 ### For reviewers
 
