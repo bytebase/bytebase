@@ -751,7 +751,6 @@
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "search-database-name": "Search database name",
-    "show-guide-description": "Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.",
     "restored-from": "Restored from ",
     "database-name-is-restored-from-another-database-backup": "{0} is restored from another database backup",
     "database-backup": "database backup",

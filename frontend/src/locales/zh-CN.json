@@ -752,7 +752,6 @@
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
     "search-database-name": "搜索数据库名称",
-    "show-guide-description": "每个 Bytebase 数据库都映射到由「CREATE DATABASE xxx」创建的一个数据库。\n\n在 Bytebase 中，一个数据库始终属于单个项目。Bytebase 将定期同步每个实例的数据库信息。\n\n您还可以从仪表板创建新数据库。",
     "restored-from": "恢复于",
     "database-name-is-restored-from-another-database-backup": "{0}恢复于另一个数据库备份",
     "transfer-project": "转移项目",
