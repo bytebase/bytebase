@@ -28,10 +28,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import PrincipalAvatar from "./PrincipalAvatar.vue";
-import { BBTableColumn } from "../bbkit/types";
 import { projectSlug } from "../utils";
 import { Repository } from "../types";
 import { useI18n } from "vue-i18n";
@@ -50,7 +49,7 @@ export default defineComponent({
 
     const router = useRouter();
 
-    const columnList: BBTableColumn[] = [
+    const columnList = computed(() => [
       {
         title: t("common.project"),
       },
@@ -63,7 +62,7 @@ export default defineComponent({
       {
         title: t("common.created-at"),
       },
-    ];
+    ]);
 
     const clickRepository = function (section: number, row: number) {
       const repository = props.repositoryList[row];
