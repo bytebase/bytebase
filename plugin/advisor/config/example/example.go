@@ -8,11 +8,11 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/config"
 )
 
-//go:embed sql-check-update.yml
-var sqlCheckUpdate string
+//go:embed sql-review-update.yml
+var sqlReviewUpdateStr string
 
 func main() {
-	ruleList, err := config.MergeSQLReviewRules(sqlCheckUpdate)
+	ruleList, err := config.MergeSQLReviewRules(sqlReviewUpdateStr)
 	if err != nil {
 		log.Fatalf("cannot merge rules with error: %v", err)
 	}

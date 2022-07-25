@@ -9,14 +9,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed sql-check.yml
-var sqlCheck string
+//go:embed sql-review.yml
+var sqlReviewConfigStr string
 
 // MergeSQLReviewRules will merge the input YML config into default template.
 func MergeSQLReviewRules(ymlStr string) ([]*advisor.SQLReviewRule, error) {
 	config := SQLReviewConfiguration{}
 
-	if err := yaml.Unmarshal([]byte(sqlCheck), &config); err != nil {
+	if err := yaml.Unmarshal([]byte(sqlReviewConfigStr), &config); err != nil {
 		return nil, err
 	}
 
