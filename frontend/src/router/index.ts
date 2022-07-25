@@ -35,7 +35,7 @@ import {
   isDBAOrOwner,
   isOwner,
   isProjectOwner,
-  helpOnRouteChange,
+  handleRouteChangedForHelp,
 } from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
@@ -1354,6 +1354,6 @@ router.afterEach((to, from) => {
     }
   });
   if (to.name !== from.name) {
-    helpOnRouteChange(to);
+    handleRouteChangedForHelp(to);
   }
 });

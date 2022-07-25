@@ -1,31 +1,37 @@
 import { RouteLocationNormalized } from "vue-router";
 import { useUIStateStore, useHelpStore } from "@/store";
+import { routeMap } from "@/types";
 
-export const helpOnRouteChange = async (to: RouteLocationNormalized) => {
+let timer: number | null = null;
+let routeMap: routeMap | null = null;
+
+export const handleRouteChangedForHelp = async (
+  to: RouteLocationNormalized
+) => {
   const { name } = to;
   const uiStateStore = useUIStateStore();
   const helpStore = useHelpStore();
-  const res = await fetch("/help/routeMap.json");
-  const routeMap = await res.json();
 
-  if (routeMap[name as keyof typeof routeMap]) {
-    if (
-      !uiStateStore.getIntroStateByKey(
-        `guide.${routeMap[name as keyof typeof routeMap]}`
-      )
-    ) {
-      if (helpStore.timer) {
-        clearTimeout(helpStore.timer);
+  if (!routeMap) {
+    const res = await fetch("/help/routeMap.json");
+    routeMap = await res.json();
+  }
+
+  const helpName = routeMap?.find((pair) => pair.routeName === name)?.helpName;
+
+  if (helpName) {
+    if (!uiStateStore.getIntroStateByKey(`guide.${helpName}`)) {
+      if (timer) {
+        clearTimeout(timer);
       }
-      helpStore.setTimer(
-        window.setTimeout(() => {
-          helpStore.showHelp(routeMap[name as keyof typeof routeMap], true);
-          uiStateStore.saveIntroStateByKey({
-            key: "environment.visit",
-            newState: true,
-          });
-        }, 1000)
-      );
+
+      timer = window.setTimeout(() => {
+        helpStore.showHelp(helpName, true);
+        uiStateStore.saveIntroStateByKey({
+          key: "environment.visit",
+          newState: true,
+        });
+      }, 1000);
     }
   }
 };

@@ -51,11 +51,7 @@
       </div>
     </div>
 
-    <HelpTriggerIcon
-      v-if="routeHelpNameMap[currentRoute.name as string]"
-      :id="routeHelpNameMap[currentRoute.name as string]"
-      :is-guide="true"
-    />
+    <HelpTriggerIcon v-if="helpName" :id="helpName" :is-guide="true" />
   </nav>
 </template>
 
@@ -63,7 +59,7 @@
 import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
+import { Bookmark, UNKNOWN_ID, BookmarkCreate, routeMap } from "../types";
 import { idFromSlug } from "../utils";
 import {
   useCurrentUser,
@@ -94,7 +90,13 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const routeHelpNameMap = ref<Record<string, string>>({});
+    const routeHelpNameMap = ref<routeMap>([]);
+    const helpName = computed(
+      () =>
+        routeHelpNameMap.value.find(
+          (pair) => pair.routeName === currentRoute.value.name
+        )?.helpName
+    );
 
     onMounted(async () => {
       const res = await fetch("/help/routeMap.json");
@@ -221,7 +223,7 @@ export default defineComponent({
       breadcrumbList,
       toggleBookmark,
       currentRoute,
-      routeHelpNameMap,
+      helpName,
     };
   },
 });
