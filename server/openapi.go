@@ -87,7 +87,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	config := c.QueryParams().Get("config")
 	envName := c.QueryParams().Get("environment")
-	var adviceList []advisor.Advice
+	var res []advisor.Advice
 
 	if config != "" {
 		ruleList, err := advisorConfig.MergeSQLReviewRules(config)
@@ -95,7 +95,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Merge SQL check configuration failed").SetInternal(err)
 		}
 
-		_, adviceList, err = s.sqlCheck(
+		_, adviceList, err := s.sqlCheck(
 			ctx,
 			advisorDBType,
 			"utf8mb4",
@@ -104,6 +104,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			statement,
 			catalog,
 		)
+		res = adviceList
 	} else {
 		if envName == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
@@ -119,7 +120,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
 		}
 
-		_, adviceList, err = s.findPolicyThenCheckSQL(
+		_, adviceList, err := s.findPolicyThenCheckSQL(
 			ctx,
 			advisorDBType,
 			"utf8mb4",
@@ -128,6 +129,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			statement,
 			catalog,
 		)
+		res = adviceList
 	}
 
 	if err != nil {
