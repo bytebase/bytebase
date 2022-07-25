@@ -237,7 +237,7 @@ export default defineComponent({
       };
       authStore
         .login({
-          authProvider: "GITLAB_SELF_HOST",
+          authProvider: state.activeAuthProvider.type,
           payload: gitlabLoginInfo,
         })
         .then(() => {
@@ -263,6 +263,11 @@ export default defineComponent({
         apiPath: "oauth/authorize",
         // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
         iconPath: new URL("../../assets/gitlab-logo.svg", import.meta.url).href,
+      },
+      GITHUB_COM: {
+        apiPath: "login/oauth/authorize",
+        // see https://vitejs.cn/guide/assets.html#the-public-directory for static resource import during run time
+        iconPath: new URL("../../assets/github-logo.svg", import.meta.url).href,
       },
     };
 

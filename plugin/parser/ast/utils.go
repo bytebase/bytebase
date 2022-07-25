@@ -67,6 +67,10 @@ func Walk(v Visitor, node Node) {
 		for _, indexDef := range n.IndexList {
 			Walk(v, indexDef)
 		}
+	case *DropNotNullStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
 	case *DropTableStmt:
 		for _, tableDef := range n.TableList {
 			Walk(v, tableDef)
@@ -96,6 +100,10 @@ func Walk(v Visitor, node Node) {
 			Walk(v, n.Table)
 		}
 	case *RenameTableStmt:
+		if n.Table != nil {
+			Walk(v, n.Table)
+		}
+	case *SetNotNullStmt:
 		if n.Table != nil {
 			Walk(v, n.Table)
 		}

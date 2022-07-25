@@ -1,9 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bytebase/bytebase/plugin/advisor"
@@ -46,7 +44,7 @@ func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement str
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		database:     ctx.Database,
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(checker)
@@ -70,7 +68,7 @@ type namingUKConventionChecker struct {
 	format       string
 	maxLength    int
 	templateList []string
-	catalog      catalog.Catalog
+	database     *catalog.Database
 }
 
 // Enter implements the ast.Visitor interface
@@ -101,7 +99,7 @@ func (checker *namingUKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    advisor.NamingUKConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Unique key `%s` in table `%s` mismatches the naming convention, its length should within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Content: fmt.Sprintf("Unique key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
 			})
 		}
 	}
@@ -142,29 +140,19 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 		for _, spec := range node.Specs {
 			switch spec.Tp {
 			case ast.AlterTableRenameIndex:
-				ctx := context.Background()
-				index, err := checker.catalog.FindIndex(ctx, &catalog.IndexFind{
+				_, indexList := checker.database.FindIndex(&catalog.IndexFind{
 					TableName: node.Table.Name.String(),
 					IndexName: spec.FromKey.String(),
 				})
-				if err != nil {
-					log.Printf(
-						"Cannot find index %s in table %s with error %v\n",
-						node.Table.Name.String(),
-						spec.FromKey.String(),
-						err,
-					)
+				if len(indexList) == 0 {
 					continue
 				}
-				if index == nil {
-					continue
-				}
-				if !index.Unique {
+				if !indexList[0].Unique {
 					// Index naming convention should in advisor_naming_index_convention.go
 					continue
 				}
 				metaData := map[string]string{
-					advisor.ColumnListTemplateToken: strings.Join(index.ColumnExpressions, "_"),
+					advisor.ColumnListTemplateToken: catalog.JoinColumnListForIndex(indexList, "_"),
 					advisor.TableNameTemplateToken:  node.Table.Name.String(),
 				}
 				res = append(res, &indexMetaData{

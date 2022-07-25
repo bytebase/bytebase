@@ -27,6 +27,8 @@ type TaskExecutor interface {
 	// usually indicates a transient error and will make scheduler retry later.
 	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
 	RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error)
+	// IsCompleted tells the scheduler if the task execution has completed
+	IsCompleted() bool
 }
 
 // RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery
@@ -150,7 +152,7 @@ func executeMigration(ctx context.Context, pgInstanceDir string, task *api.Task,
 		return 0, "", fmt.Errorf("failed to check migration setup for instance %q: %w", task.Instance.Name, err)
 	}
 	if setup {
-		return 0, "", common.Errorf(common.MigrationSchemaMissing, fmt.Errorf("missing migration schema for instance %q", task.Instance.Name))
+		return 0, "", common.Errorf(common.MigrationSchemaMissing, "missing migration schema for instance %q", task.Instance.Name)
 	}
 
 	migrationID, schema, err = driver.ExecuteMigration(ctx, mi, statement)

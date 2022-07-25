@@ -13,8 +13,7 @@
       <div
         class="px-3 py-1 w-full text-lg font-medium bg-yellow-500 text-white flex justify-center items-center"
       >
-        Server is in readonly mode. You can still view the console, but any
-        change attempt will fail.
+        {{ $t("banner.readonly") }}
       </div>
     </template>
     <nav

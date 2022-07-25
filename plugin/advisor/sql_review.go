@@ -1,6 +1,7 @@
 package advisor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -254,27 +255,32 @@ type SQLReviewCheckContext struct {
 }
 
 // SchemaReviewCheck checks the statments with schema review policy.
-func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, context SQLReviewCheckContext) ([]Advice, error) {
+func SchemaReviewCheck(statements string, ruleList []*SQLReviewRule, checkContext SQLReviewCheckContext) ([]Advice, error) {
+	database, err := checkContext.Catalog.GetDatabase(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database information from catalog: %w", err)
+	}
+
 	var result []Advice
 	for _, rule := range ruleList {
 		if rule.Level == SchemaRuleLevelDisabled {
 			continue
 		}
 
-		advisorType, err := getAdvisorTypeByRule(rule.Type, context.DbType)
+		advisorType, err := getAdvisorTypeByRule(rule.Type, checkContext.DbType)
 		if err != nil {
 			log.Printf("not supported rule: %v. error:  %v\n", rule.Type, err)
 			continue
 		}
 
 		adviceList, err := Check(
-			context.DbType,
+			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:   context.Charset,
-				Collation: context.Collation,
+				Charset:   checkContext.Charset,
+				Collation: checkContext.Collation,
 				Rule:      rule,
-				Catalog:   context.Catalog,
+				Database:  database,
 			},
 			statements,
 		)
@@ -362,6 +368,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine DBType) (Type, erro
 		switch engine {
 		case MySQL, TiDB:
 			return MySQLColumnNoNull, nil
+		case Postgres:
+			return PostgreSQLColumnNoNull, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {

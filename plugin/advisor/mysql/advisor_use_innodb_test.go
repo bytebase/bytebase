@@ -90,5 +90,5 @@ func TestUseInnoDB(t *testing.T) {
 		Type:    advisor.SchemaRuleMySQLEngine,
 		Level:   advisor.SchemaRuleLevelError,
 		Payload: "",
-	}, &advisor.MockCatalogService{})
+	}, advisor.MockMySQLDatabase)
 }

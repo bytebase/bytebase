@@ -67,11 +67,10 @@ import {
   reactive,
   watch,
   defineComponent,
-  inject,
   ref,
 } from "vue";
 import { useRouter } from "vue-router";
-import { array_swap, Event } from "../utils";
+import { array_swap } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
 import {
@@ -83,7 +82,6 @@ import {
   DefaultSchedulePolicy,
   PipelineApporvalPolicyPayload,
   BackupPlanPolicyPayload,
-  EventType,
 } from "../types";
 import { BBTabItem } from "../bbkit/types";
 import {
@@ -93,6 +91,7 @@ import {
   usePolicyStore,
   useEnvironmentStore,
   useEnvironmentList,
+  useHelpStore,
 } from "@/store";
 
 const DEFAULT_NEW_ENVIRONMENT: EnvironmentCreate = {
@@ -134,8 +133,8 @@ export default defineComponent({
     const environmentStore = useEnvironmentStore();
     const uiStateStore = useUIStateStore();
     const policyStore = usePolicyStore();
+    const helpStore = useHelpStore();
     const router = useRouter();
-    const event = inject<Event>("event");
     const mountedTimer = ref();
 
     const state = reactive<LocalState>({
@@ -168,7 +167,7 @@ export default defineComponent({
 
       if (!uiStateStore.getIntroStateByKey("guide.help.environment")) {
         mountedTimer.value = setTimeout(() => {
-          event?.emit(EventType.EVENT_HELP, "help.environment", true);
+          helpStore.showHelp("help.environment", true);
           uiStateStore.saveIntroStateByKey({
             key: "environment.visit",
             newState: true,
