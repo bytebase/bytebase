@@ -44,6 +44,11 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
+// GetProgress returns the task progress
+func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
+}
+
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
 	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", taskID, databaseID, databaseName, tableName)
 }

@@ -32,3 +32,8 @@ func (exec *DefaultTaskExecutor) RunOnce(_ context.Context, _ *Server, task *api
 func (exec *DefaultTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
+
+// GetProgress returns the task progress
+func (exec *DefaultTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
+}
