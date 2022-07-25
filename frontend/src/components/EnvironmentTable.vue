@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="environmentList"
     :show-header="true"
     :left-bordered="false"
@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { computed, defineComponent, PropType } from "vue";
 import { useRouter } from "vue-router";
 import { Environment } from "../types";
 import { environmentSlug } from "../utils";
@@ -44,7 +44,7 @@ export default defineComponent({
 
     const { t } = useI18n();
 
-    const COLUMN_LIST = [
+    const columnList = computed(() => [
       {
         title: t("common.id"),
       },
@@ -57,7 +57,7 @@ export default defineComponent({
       {
         title: t("common.updated-at"),
       },
-    ];
+    ]);
 
     const clickEnvironment = function (section: number, row: number) {
       const environment = props.environmentList[row];
@@ -65,7 +65,7 @@ export default defineComponent({
     };
 
     return {
-      COLUMN_LIST,
+      columnList,
       clickEnvironment,
     };
   },
