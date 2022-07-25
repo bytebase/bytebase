@@ -3,7 +3,7 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import sqlReviewConfig from "../../../plugin/advisor/config/sql-review.yml";
+import sqlReviewConfig from "../../../plugin/advisor/config/sql-review.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";

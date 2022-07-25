@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed sql-review.yml
+//go:embed sql-review.yaml
 var sqlReviewConfigStr string
 
 // MergeSQLReviewRules will merge the input YML config into default template.

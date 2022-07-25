@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/advisor/config"
 )
 
-//go:embed sql-review-update.yml
+//go:embed sql-review-update.yaml
 var sqlReviewUpdateStr string
 
 func main() {
