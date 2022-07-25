@@ -632,8 +632,6 @@
     "copy-grant-statement": "CREATE USER and GRANT statements copied to clipboard. Paste to your mysql client to apply.",
     "successfully-connected-instance": "Successfully connected instance.",
     "failed-to-connect-instance": "Failed to connect instance.",
-    "how-to-setup-instance": "How to setup 'Instance' ?",
-    "how-to-setup-instance-description": "Each Bytebase instance belongs to an environment. An instance usually maps to one of your database instance represented by an host:port address. This could be your on-premises MySQL instance, a RDS instance.\n\nBytebase requires read/write (NOT the super privilege) access to the instance in order to perform database operations on behalf of the user.",
     "search-instance-name": "Search instance name",
     "no-read-only-data-source-support": "The {database} does not currently support creating read-only connections",
     "grants": "Grants"
@@ -643,8 +641,6 @@
     "archive": "Archive this environment",
     "archive-info": "Archived environment will not be shown on the normal interface. You can still restore later from the Archive page.",
     "create": "Create Environment",
-    "how-to-setup-environment": "How to setup 'Environment' ?",
-    "how-to-setup-environment-description": "Each environment maps to one of your testing, staging, prod environment respectively.\n\nEnvironment is a global setting, one Bytebase deployment only contains a single set of environments.\n\nDatabase instances are created under a particular environment.",
     "restore": "Restore this environment"
   },
   "quick-start": {
@@ -755,8 +751,6 @@
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",
     "search-database-name": "Search database name",
-    "how-to-setup-database": "How to setup 'Database' ?",
-    "show-guide-description": "Each Bytebase database maps to the one created by 'CREATE DATABASE xxx'. In Bytebase, a database always belongs to a single project.\n\nBytebase will periodically sync the database info for every recorded instance. You can also create a new database from the dashboard.",
     "restored-from": "Restored from ",
     "database-name-is-restored-from-another-database-backup": "{0} is restored from another database backup",
     "database-backup": "database backup",
