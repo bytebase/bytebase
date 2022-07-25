@@ -52,8 +52,8 @@
     </div>
 
     <HelpTriggerIcon
-      v-if="currentRoute.name in routeHelpNameMap"
-      :id="routeHelpNameMap[currentRoute.name]"
+      v-if="routeHelpNameMap[currentRoute.name as string]"
+      :id="routeHelpNameMap[currentRoute.name as string]"
       :is-guide="true"
     />
   </nav>
@@ -74,7 +74,6 @@ import {
   useProjectStore,
 } from "@/store";
 import HelpTriggerIcon from "@/components/HelpTriggerIcon.vue";
-import routeHelpNameMap from "../../public/help/routeMap.json";
 
 interface BreadcrumbItem {
   name: string;
@@ -86,7 +85,7 @@ export default defineComponent({
   components: {
     HelpTriggerIcon,
   },
-  setup() {
+  async setup() {
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
@@ -94,6 +93,9 @@ export default defineComponent({
 
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
+
+    const res = await fetch("/help/routeMap.json");
+    const routeHelpNameMap = await res.json();
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(

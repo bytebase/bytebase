@@ -30,7 +30,13 @@ import {
   Sheet,
   UNKNOWN_ID,
 } from "../types";
-import { idFromSlug, isDBAOrOwner, isOwner, isProjectOwner } from "../utils";
+import {
+  idFromSlug,
+  isDBAOrOwner,
+  isOwner,
+  isProjectOwner,
+  helpOnRouteChange,
+} from "../utils";
 // import PasswordReset from "../views/auth/PasswordReset.vue";
 import Signin from "../views/auth/Signin.vue";
 import Signup from "../views/auth/Signup.vue";
@@ -1338,7 +1344,7 @@ router.beforeEach((to, from, next) => {
   });
 });
 
-router.afterEach((to /*, from */) => {
+router.afterEach((to, from) => {
   // Needs to use nextTick otherwise title will still be the one from the previous route.
   nextTick(() => {
     if (to.meta.title) {
@@ -1347,4 +1353,7 @@ router.afterEach((to /*, from */) => {
       document.title = "Bytebase";
     }
   });
+  if (to.name !== from.name) {
+    helpOnRouteChange(to);
+  }
 });

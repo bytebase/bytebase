@@ -1,6 +1,7 @@
 export * from "./activity";
 export * from "./database";
 export * from "./environment";
+export * from "./help";
 export * from "./instance";
 export * from "./issue";
 export * from "./link";
