@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts">
-import { computed, ComputedRef, defineComponent } from "vue";
+import { computed, ComputedRef, defineComponent, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Bookmark, UNKNOWN_ID, BookmarkCreate } from "../types";
@@ -85,7 +85,7 @@ export default defineComponent({
   components: {
     HelpTriggerIcon,
   },
-  async setup() {
+  setup() {
     const routerStore = useRouterStore();
     const currentRoute = useRouter().currentRoute;
     const { t } = useI18n();
@@ -94,8 +94,12 @@ export default defineComponent({
     const currentUser = useCurrentUser();
     const projectStore = useProjectStore();
 
-    const res = await fetch("/help/routeMap.json");
-    const routeHelpNameMap = await res.json();
+    const routeHelpNameMap = ref<Record<string, string>>({});
+
+    onMounted(async () => {
+      const res = await fetch("/help/routeMap.json");
+      routeHelpNameMap.value = await res.json();
+    });
 
     const bookmark: ComputedRef<Bookmark> = computed(() =>
       bookmarkStore.bookmarkByUserAndLink(
