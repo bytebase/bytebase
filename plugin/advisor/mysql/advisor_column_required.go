@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*ColumnRequirementAdvisor)(nil)
+	_ ast.Visitor     = (*columnRequirementChecker)(nil)
 )
 
 func init() {

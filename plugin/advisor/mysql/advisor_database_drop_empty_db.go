@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*DatabaseAllowDropIfEmptyAdvisor)(nil)
+	_ ast.Visitor     = (*allowDropEmptyDBChecker)(nil)
 )
 
 func init() {

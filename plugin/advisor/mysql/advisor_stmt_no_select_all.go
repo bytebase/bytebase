@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NoSelectAllAdvisor)(nil)
+	_ ast.Visitor     = (*noSelectAllChecker)(nil)
 )
 
 func init() {

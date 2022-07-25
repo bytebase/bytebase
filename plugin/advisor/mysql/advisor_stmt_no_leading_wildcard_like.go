@@ -14,6 +14,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*NoLeadingWildcardLikeAdvisor)(nil)
+	_ ast.Visitor     = (*noLeadingWildcardLikeChecker)(nil)
 )
 
 func init() {
