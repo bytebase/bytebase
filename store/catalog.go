@@ -2,10 +2,12 @@ package store
 
 import (
 	"context"
-	"sort"
+	"fmt"
+	"strings"
 
 	"github.com/bytebase/bytebase/api"
 	"github.com/bytebase/bytebase/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/plugin/db"
 )
 
 var (
@@ -16,78 +18,207 @@ var (
 type Catalog struct {
 	databaseID *int
 	store      *Store
+	engineType db.Type
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(databaseID *int, store *Store) *Catalog {
+func NewCatalog(databaseID *int, store *Store, dbType db.Type) *Catalog {
 	return &Catalog{
 		databaseID: databaseID,
 		store:      store,
+		engineType: dbType,
 	}
 }
 
-// FindIndex finds the index by IndexFind. Implement the catalog.Catalog interface.
-func (c *Catalog) FindIndex(ctx context.Context, find *catalog.IndexFind) (*catalog.Index, error) {
-	table, err := c.store.GetTable(ctx, &api.TableFind{
-		DatabaseID: c.databaseID,
-		Name:       &find.TableName,
+// GetDatabase implements the catalog.Catalog interface.
+func (c *Catalog) GetDatabase(ctx context.Context) (*catalog.Database, error) {
+	database, err := c.store.GetDatabase(ctx, &api.DatabaseFind{
+		ID: c.databaseID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if table == nil {
+	if database == nil {
 		return nil, nil
 	}
 
-	indexList, err := c.store.FindIndex(ctx, &api.IndexFind{
-		DatabaseID: c.databaseID,
-		TableID:    &table.ID,
-		Name:       &find.IndexName,
-	})
+	dbType, err := convertToCatalogDBType(c.engineType)
 	if err != nil {
 		return nil, err
 	}
-	if len(indexList) == 0 {
-		return nil, nil
+
+	databaseData := catalog.Database{
+		Name:         database.Name,
+		CharacterSet: database.CharacterSet,
+		Collation:    database.Collation,
+		DbType:       dbType,
 	}
 
-	sort.Slice(indexList, func(i, j int) bool {
-		return indexList[i].Position < indexList[j].Position
-	})
-
-	var columnExpressions []string
-	for _, index := range indexList {
-		columnExpressions = append(columnExpressions, index.Expression)
+	if databaseData.SchemaList, err = c.getSchemaList(ctx); err != nil {
+		return nil, err
 	}
 
-	return &catalog.Index{
-		Name:              indexList[0].Name,
-		TableName:         table.Name,
-		Type:              indexList[0].Type,
-		Unique:            indexList[0].Unique,
-		Primary:           indexList[0].Primary,
-		ColumnExpressions: columnExpressions,
-	}, nil
+	return &databaseData, nil
 }
 
-// FindTable finds the table list by TableFind. Implement the catalog.Catalog interface.
-func (c *Catalog) FindTable(ctx context.Context, find *catalog.TableFind) ([]*catalog.Table, error) {
+type schemaMap map[string]*catalog.Schema
+
+func (m schemaMap) getOrCreateSchema(name string) *catalog.Schema {
+	if schema, found := m[name]; found {
+		return schema
+	}
+
+	schema := &catalog.Schema{
+		Name: name,
+	}
+	m[name] = schema
+	return schema
+}
+
+func (c *Catalog) getSchemaList(ctx context.Context) ([]*catalog.Schema, error) {
+	schemaSet := make(schemaMap)
+
+	// find table list
 	tableList, err := c.store.FindTable(ctx, &api.TableFind{
 		DatabaseID: c.databaseID,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	var res []*catalog.Table
 	for _, table := range tableList {
-		if find.DatabaseName == table.Database.Name {
-			res = append(res, &catalog.Table{
-				Name:         table.Name,
-				DatabaseName: table.Database.Name,
-			})
+		tableData := convertTable(table)
+		schemaName := ""
+		if c.engineType == db.Postgres {
+			if schemaName, tableData.Name, err = splitPGSchema(tableData.Name); err != nil {
+				return nil, err
+			}
 		}
+		schema := schemaSet.getOrCreateSchema(schemaName)
+		schema.TableList = append(schema.TableList, tableData)
 	}
 
-	return res, nil
+	// find view list
+	viewList, err := c.store.FindView(ctx, &api.ViewFind{
+		DatabaseID: c.databaseID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, view := range viewList {
+		viewData := convertView(view)
+		schemaName := ""
+		if c.engineType == db.Postgres {
+			if schemaName, viewData.Name, err = splitPGSchema(viewData.Name); err != nil {
+				return nil, err
+			}
+		}
+		schema := schemaSet.getOrCreateSchema(schemaName)
+		schema.ViewList = append(schema.ViewList, viewData)
+	}
+
+	// find extension list
+	extensionList, err := c.store.FindDBExtension(ctx, &api.DBExtensionFind{
+		DatabaseID: c.databaseID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, extension := range extensionList {
+		schema := schemaSet.getOrCreateSchema(extension.Schema)
+		schema.ExtensionList = append(schema.ExtensionList, &catalog.Extension{
+			Name:        extension.Name,
+			Version:     extension.Version,
+			Description: extension.Description,
+		})
+	}
+
+	var schemaList []*catalog.Schema
+	for _, schema := range schemaSet {
+		schemaList = append(schemaList, schema)
+	}
+	return schemaList, nil
+}
+
+func splitPGSchema(name string) (string, string, error) {
+	list := strings.Split(name, ".")
+	if len(list) != 2 {
+		return "", "", fmt.Errorf("split failed: the expected name is schemaName.name, but get %s", name)
+	}
+	return list[0], list[1], nil
+}
+
+func convertView(view *api.View) *catalog.View {
+	return &catalog.View{
+		Name:       view.Name,
+		CreatedTs:  view.CreatedTs,
+		UpdatedTs:  view.UpdatedTs,
+		Definition: view.Definition,
+		Comment:    view.Comment,
+	}
+}
+
+func convertTable(table *api.Table) *catalog.Table {
+	return &catalog.Table{
+		Name:          table.Name,
+		CreatedTs:     table.CreatedTs,
+		UpdatedTs:     table.UpdatedTs,
+		Type:          table.Type,
+		Engine:        table.Engine,
+		Collation:     table.Collation,
+		RowCount:      table.RowCount,
+		DataSize:      table.DataSize,
+		IndexSize:     table.IndexSize,
+		DataFree:      table.DataFree,
+		CreateOptions: table.CreateOptions,
+		Comment:       table.Comment,
+		ColumnList:    convertColumnList(table.ColumnList),
+		IndexList:     converIndexList(table.IndexList),
+	}
+}
+
+func converIndexList(list []*api.Index) []*catalog.Index {
+	var res []*catalog.Index
+	for _, index := range list {
+		res = append(res, &catalog.Index{
+			Name:       index.Name,
+			Expression: index.Expression,
+			Position:   index.Position,
+			Type:       index.Type,
+			Unique:     index.Unique,
+			Primary:    index.Primary,
+			Visible:    index.Visible,
+			Comment:    index.Comment,
+		})
+	}
+	return res
+}
+
+func convertColumnList(list []*api.Column) []*catalog.Column {
+	var res []*catalog.Column
+	for _, column := range list {
+		res = append(res, &catalog.Column{
+			Name:         column.Name,
+			Position:     column.Position,
+			Default:      column.Default,
+			Nullable:     column.Nullable,
+			Type:         column.Type,
+			CharacterSet: column.CharacterSet,
+			Collation:    column.Collation,
+			Comment:      column.Comment,
+		})
+	}
+	return res
+}
+
+func convertToCatalogDBType(dbType db.Type) (catalog.DBType, error) {
+	switch dbType {
+	case db.MySQL:
+		return catalog.MySQL, nil
+	case db.Postgres:
+		return catalog.Postgres, nil
+	case db.TiDB:
+		return catalog.TiDB, nil
+	}
+
+	return "", fmt.Errorf("unsupported db type %s for catalog", dbType)
 }

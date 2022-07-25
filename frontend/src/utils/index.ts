@@ -11,4 +11,3 @@ export * from "./slug";
 export * from "./util";
 export * from "./label";
 export * from "./deployment";
-export * from "./event";

@@ -180,9 +180,7 @@ export const useCommonLogic = () => {
     const issueCreate = cloneDeep(issue.value as IssueCreate);
     // for standard issue pipeline (1 * 1 or M * 1)
     // copy user edited tasks back to issue.createContext
-    const taskList = issueCreate.pipeline!.stageList.map(
-      (stage) => stage.taskList[0]
-    );
+    const taskList = flattenTaskList<TaskCreate>(issueCreate);
     const detailList: UpdateSchemaDetail[] = taskList.map((task) => {
       const db = databaseStore.getDatabaseById(task.databaseId!);
       return {

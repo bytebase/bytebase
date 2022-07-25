@@ -575,7 +575,7 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 			Name: fmt.Sprintf("Pipeline - Create database %v from backup %v", payload.DatabaseName, backup.Name),
 			StageList: []api.StageCreate{
 				{
-					Name:          "Create database",
+					Name:          "Restore backup",
 					EnvironmentID: instance.EnvironmentID,
 					TaskList: []api.TaskCreate{
 						{
@@ -586,12 +586,6 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							DatabaseName: payload.DatabaseName,
 							Payload:      string(bytes),
 						},
-					},
-				},
-				{
-					Name:          "Restore backup",
-					EnvironmentID: instance.EnvironmentID,
-					TaskList: []api.TaskCreate{
 						{
 							InstanceID:   c.InstanceID,
 							Name:         fmt.Sprintf("Restore backup %v", backup.Name),
@@ -601,6 +595,9 @@ func (s *Server) getPipelineCreateForDatabaseCreate(ctx context.Context, issueCr
 							BackupID:     &c.BackupID,
 							Payload:      string(restoreBytes),
 						},
+					},
+					TaskIndexDAGList: []api.TaskIndexDAG{
+						{FromIndex: 0, ToIndex: 1},
 					},
 				},
 			},
@@ -785,7 +782,7 @@ func (s *Server) getPipelineCreateForDatabaseSchemaAndDataUpdate(ctx context.Con
 				}
 
 				create.StageList = append(create.StageList, api.StageCreate{
-					Name:          fmt.Sprintf("Deployment: %s", deployments[i].Name),
+					Name:          deployments[i].Name,
 					EnvironmentID: environmentID,
 					TaskList:      taskCreateList,
 				})

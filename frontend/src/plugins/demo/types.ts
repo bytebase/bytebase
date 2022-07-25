@@ -6,7 +6,8 @@ export type Position =
   | "left"
   | "right"
   | "topright"
-  | "center";
+  | "center"
+  | "leftcenter";
 
 export type I18NText = {
   [key: string]: string;

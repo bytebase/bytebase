@@ -20,14 +20,14 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, schemaOnly bool) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, _ bool) (string, error) {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return "", err
 	}
 	defer txn.Rollback()
 
-	if err := dumpTxn(ctx, txn, database, out, schemaOnly); err != nil {
+	if err := dumpTxn(ctx, txn, database, out); err != nil {
 		return "", err
 	}
 
@@ -39,7 +39,7 @@ func (driver *Driver) Dump(ctx context.Context, database string, out io.Writer, 
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.
-func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error {
+func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer) error {
 	// Find all dumpable databases
 	var dumpableDbNames []string
 	if database != "" {
@@ -61,7 +61,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 		// includeCreateDatabaseStmt should be false if dumping a single database.
 		dumpSingleDatabase := len(dumpableDbNames) == 1
 		dbName = strings.ToUpper(dbName)
-		if err := dumpOneDatabase(ctx, txn, dbName, out, schemaOnly, dumpSingleDatabase); err != nil {
+		if err := dumpOneDatabase(ctx, txn, dbName, out, dumpSingleDatabase); err != nil {
 			return err
 		}
 	}
@@ -71,7 +71,7 @@ func dumpTxn(ctx context.Context, txn *sql.Tx, database string, out io.Writer, s
 
 // dumpOneDatabase will dump the database DDL schema for a database.
 // Note: this operation is not supported on shared databases, e.g. SNOWFLAKE_SAMPLE_DATA.
-func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.Writer, schemaOnly bool, dumpSingleDatabase bool) error {
+func dumpOneDatabase(ctx context.Context, txn *sql.Tx, database string, out io.Writer, dumpSingleDatabase bool) error {
 	if !dumpSingleDatabase {
 		// Database header.
 		header := fmt.Sprintf(databaseHeaderFmt, database)
@@ -164,6 +164,6 @@ func (driver *Driver) Restore(ctx context.Context, sc *bufio.Scanner) (err error
 }
 
 // RestoreTx restores the database in the given transaction.
-func (driver *Driver) RestoreTx(ctx context.Context, tx *sql.Tx, sc *bufio.Scanner) error {
+func (driver *Driver) RestoreTx(context.Context, *sql.Tx, *bufio.Scanner) error {
 	return fmt.Errorf("Unimplemented")
 }

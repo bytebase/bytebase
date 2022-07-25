@@ -97,7 +97,7 @@ func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  checker.level,
 				Code:    advisor.NamingFKConventionMismatch,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
+				Content: fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, checker.maxLength),
 			})
 		}
 	}

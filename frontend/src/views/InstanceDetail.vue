@@ -41,7 +41,7 @@
               class="btn-normal"
               @click.prevent="syncSchema"
             >
-              {{ $t("instance.sync-now") }}
+              {{ $t("common.sync-now") }}
             </button>
             <button
               v-if="instance.rowStatus == 'NORMAL'"

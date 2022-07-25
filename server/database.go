@@ -685,7 +685,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourceCreate.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
@@ -757,7 +757,7 @@ func (s *Server) registerDatabaseRoutes(g *echo.Group) {
 		}
 
 		if dataSourcePatch.SyncSchema {
-			// Refetches the instance to get the updated data source.
+			// Refetch the instance to get the updated data source.
 			updatedInstance, err := s.store.GetInstanceByID(ctx, database.InstanceID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch updated instance with ID %d", database.InstanceID)).SetInternal(err)
@@ -827,7 +827,7 @@ func (s *Server) setDatabaseLabels(ctx context.Context, labelsJSON string, datab
 // Try to get database driver using the instance's admin data source.
 // Upon successful return, caller MUST call driver.Close, otherwise, it will leak the database connection.
 func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databaseName, pgInstanceDir string) (db.Driver, error) {
-	connCfg, err := getConnectionConfig(ctx, instance, databaseName)
+	connCfg, err := getConnectionConfig(instance, databaseName)
 	if err != nil {
 		return nil, err
 	}
@@ -850,10 +850,10 @@ func getAdminDatabaseDriver(ctx context.Context, instance *api.Instance, databas
 }
 
 // getConnectionConfig returns the connection config of the `databaseName` on `instance`.
-func getConnectionConfig(ctx context.Context, instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
+func getConnectionConfig(instance *api.Instance, databaseName string) (db.ConnectionConfig, error) {
 	adminDataSource := api.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return db.ConnectionConfig{}, common.Errorf(common.Internal, fmt.Errorf("admin data source not found for instance %d", instance.ID))
+		return db.ConnectionConfig{}, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.ID)
 	}
 
 	return db.ConnectionConfig{
@@ -879,7 +879,7 @@ func tryGetReadOnlyDatabaseDriver(ctx context.Context, instance *api.Instance, d
 		dataSource = api.DataSourceFromInstanceWithType(instance, api.Admin)
 	}
 	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, fmt.Errorf("data source not found for instance %d", instance.ID))
+		return nil, common.Errorf(common.Internal, "data source not found for instance %d", instance.ID)
 	}
 
 	driver, err := getDatabaseDriver(
@@ -922,7 +922,7 @@ func getDatabaseDriver(ctx context.Context, engine db.Type, driverConfig db.Driv
 		connCtx,
 	)
 	if err != nil {
-		return nil, common.Errorf(common.DbConnectionFailure, fmt.Errorf("failed to connect database at %s:%s with user %q, error: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err))
+		return nil, common.Errorf(common.DbConnectionFailure, "failed to connect database at %s:%s with user %q, error: %w", connectionConfig.Host, connectionConfig.Port, connectionConfig.Username, err)
 	}
 	return driver, nil
 }
@@ -946,20 +946,20 @@ func validateDatabaseLabelList(labelList []*api.DatabaseLabel, labelKeyList []*a
 		}
 		labelKey, ok := keyValueList[label.Key]
 		if !ok {
-			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label key: %v", label.Key))
+			return common.Errorf(common.Invalid, "invalid database label key: %v", label.Key)
 		}
 		_, ok = labelKey[label.Value]
 		if !ok {
-			return common.Errorf(common.Invalid, fmt.Errorf("invalid database label value %v for key %v", label.Value, label.Key))
+			return common.Errorf(common.Invalid, "invalid database label value %v for key %v", label.Value, label.Key)
 		}
 	}
 
 	// Environment label must exist and is immutable.
 	if environmentValue == nil {
-		return common.Errorf(common.NotFound, fmt.Errorf("database label key %v not found", api.EnvironmentKeyName))
+		return common.Errorf(common.NotFound, "database label key %v not found", api.EnvironmentKeyName)
 	}
 	if environmentName != *environmentValue {
-		return common.Errorf(common.Invalid, fmt.Errorf("cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue))
+		return common.Errorf(common.Invalid, "cannot mutate database label key %v from %v to %v", api.EnvironmentKeyName, environmentName, *environmentValue)
 	}
 
 	return nil

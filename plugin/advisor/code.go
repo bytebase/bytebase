@@ -53,7 +53,8 @@ const (
 	TableDropNamingConventionMismatch Code = 603
 
 	// 701 ~ 799 database advisor error code
-	DatabaseNotEmpty Code = 701
+	DatabaseNotEmpty   Code = 701
+	NotCurrentDatabase Code = 702
 )
 
 // Int returns the int type of code.

@@ -114,7 +114,7 @@ func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Status:  v.level,
 				Code:    advisor.NamingColumnConventionMismatch,
 				Title:   v.title,
-				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should within %d characters", tableName, column, v.maxLength),
+				Content: fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column, v.maxLength),
 			})
 		}
 	}
