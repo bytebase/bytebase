@@ -16,14 +16,14 @@ type databaseCountCollector struct {
 	store *store.Store
 }
 
-// NewDatabaseCountCollector creates a new instance of databaseCountCollector
+// NewDatabaseCountCollector creates a new instance of databaseCountCollector.
 func NewDatabaseCountCollector(store *store.Store) metric.Collector {
 	return &databaseCountCollector{
 		store: store,
 	}
 }
 
-// Collect will collect the metric for database
+// Collect will collect the metric for database.
 func (c *databaseCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

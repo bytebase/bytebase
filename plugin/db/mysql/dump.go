@@ -19,7 +19,7 @@ import (
 	"github.com/bytebase/bytebase/plugin/db/util"
 )
 
-// Dump and restore
+// Dump and restore.
 const (
 	databaseHeaderFmt = "" +
 		"--\n" +

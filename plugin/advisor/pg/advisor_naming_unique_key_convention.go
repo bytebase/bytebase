@@ -74,7 +74,7 @@ type namingUKConventionChecker struct {
 	database     *catalog.Database
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingUKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -217,7 +217,7 @@ func (checker *namingUKConventionChecker) getUniqueKeyMetadata(schemaName string
 	return nil
 }
 
-// findIndex returns index found in catalogs, nil if not found
+// findIndex returns index found in catalogs, nil if not found.
 func (checker *namingUKConventionChecker) findIndex(schemaName string, tableName string, indexName string) (string, []*catalog.Index) {
 	return checker.database.FindIndex(&catalog.IndexFind{
 		SchemaName: normalizeSchemaName(schemaName),

@@ -137,7 +137,7 @@ type InstanceMigration struct {
 }
 
 // MigrationHistory is stored in the instance instead of our own data file, so the field
-// format is a bit different from the standard format
+// format is a bit different from the standard format.
 type MigrationHistory struct {
 	ID int `jsonapi:"primary,migrationHistory"`
 

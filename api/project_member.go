@@ -19,7 +19,7 @@ const (
 	ProjectRoleProviderGitHubCom ProjectRoleProvider = "GITHUB_COM"
 )
 
-// ProjectRoleProviderPayload is the payload for role provider
+// ProjectRoleProviderPayload is the payload for role provider.
 type ProjectRoleProviderPayload struct {
 	VCSRole    string `json:"vcsRole"`
 	LastSyncTs int64  `json:"lastSyncTs"`

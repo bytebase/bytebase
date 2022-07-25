@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// MetadataDB abstracts the underlying Postgres instance
+// MetadataDB abstracts the underlying Postgres instance.
 type MetadataDB struct {
 	mode        common.ReleaseMode
 	demoDataDir string
@@ -28,7 +28,7 @@ type MetadataDB struct {
 	pgStarted  bool
 }
 
-// NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB
+// NewMetadataDBWithEmbedPg install postgres in `datadir` returns an instance of MetadataDB.
 func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
@@ -39,7 +39,7 @@ func NewMetadataDBWithEmbedPg(pgInstance *postgres.Instance, pgUser, demoDataDir
 	}
 }
 
-// NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance
+// NewMetadataDBWithExternalPg constructs a new MetadataDB instance pointing to an external Postgres instance.
 func NewMetadataDBWithExternalPg(pgInstance *postgres.Instance, pgURL, demoDataDir string, mode common.ReleaseMode) *MetadataDB {
 	return &MetadataDB{
 		mode:        mode,
@@ -50,7 +50,7 @@ func NewMetadataDBWithExternalPg(pgInstance *postgres.Instance, pgURL, demoDataD
 	}
 }
 
-// Connect connects to the underlying Postgres instance
+// Connect connects to the underlying Postgres instance.
 func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (*DB, error) {
 	if m.embed {
 		return m.connectEmbed(datastorePort, m.pgUser, readonly, m.demoDataDir, version, m.mode)
@@ -59,7 +59,7 @@ func (m *MetadataDB) Connect(datastorePort int, readonly bool, version string) (
 
 }
 
-// connectEmbed starts the embed postgres server and returns an instance of store.DB
+// connectEmbed starts the embed postgres server and returns an instance of store.DB.
 func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly bool, demoDataDir, version string, mode common.ReleaseMode) (*DB, error) {
 	if err := m.pgInstance.Start(datastorePort, os.Stderr, os.Stderr); err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (m *MetadataDB) connectEmbed(datastorePort int, pgUser string, readonly boo
 	return db, nil
 }
 
-// connectExternal returns an instance of store.DB
+// connectExternal returns an instance of store.DB.
 func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error) {
 	u, err := url.Parse(m.pgURL)
 	if err != nil {
@@ -145,7 +145,7 @@ func (m *MetadataDB) connectExternal(readonly bool, version string) (*DB, error)
 	return db, nil
 }
 
-// Close will stop postgres server if using embed postgres
+// Close will stop postgres server if using embed postgres.
 func (m *MetadataDB) Close() error {
 	if !m.pgStarted {
 		return nil

@@ -15,14 +15,14 @@ type issueCountCollector struct {
 	store *store.Store
 }
 
-// NewIssueCountCollector creates a new instance of issueCollector
+// NewIssueCountCollector creates a new instance of issueCollector.
 func NewIssueCountCollector(store *store.Store) metric.Collector {
 	return &issueCountCollector{
 		store: store,
 	}
 }
 
-// Collect will collect the metric for issue
+// Collect will collect the metric for issue.
 func (c *issueCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

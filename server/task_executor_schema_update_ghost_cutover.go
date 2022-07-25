@@ -132,7 +132,7 @@ func cutover(ctx context.Context, server *Server, task *api.Task, statement, sch
 	return postMigration(ctx, server, task, vcsPushEvent, mi, migrationID, schema)
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *SchemaUpdateGhostCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

@@ -180,7 +180,7 @@ func (ctl *controller) StartServer(ctx context.Context, dataDir string, port int
 	return ctl.start(ctx, port)
 }
 
-// start only called by StartServer() and StartServerWithExternalPg
+// start only called by StartServer() and StartServerWithExternalPg.
 func (ctl *controller) start(ctx context.Context, port int) error {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
 	ctl.apiURL = fmt.Sprintf("http://localhost:%d/api", port)
@@ -315,7 +315,7 @@ func (ctl *controller) waitForHealthz() error {
 
 }
 
-// Close closes long running resources
+// Close closes long running resources.
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {

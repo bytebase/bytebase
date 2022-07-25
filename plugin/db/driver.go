@@ -31,7 +31,7 @@ const (
 	// TiDB is the database type for TiDB.
 	TiDB Type = "TIDB"
 
-	// BytebaseDatabase is the database installed in the controlled database server
+	// BytebaseDatabase is the database installed in the controlled database server.
 	BytebaseDatabase = "bytebase"
 )
 
@@ -436,7 +436,7 @@ func Register(dbType Type, f driverFunc) {
 	drivers[dbType] = f
 }
 
-// Open opens a database specified by its database driver type and connection config
+// Open opens a database specified by its database driver type and connection config.
 func Open(ctx context.Context, dbType Type, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]

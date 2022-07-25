@@ -65,7 +65,7 @@ func (raw *databaseRaw) toDatabase() *api.Database {
 	}
 }
 
-// CreateDatabase creates an instance of Database
+// CreateDatabase creates an instance of Database.
 func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) (*api.Database, error) {
 	databaseRaw, err := s.createDatabaseRaw(ctx, create)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *Store) CreateDatabase(ctx context.Context, create *api.DatabaseCreate) 
 	return database, nil
 }
 
-// FindDatabase finds a list of Database instances
+// FindDatabase finds a list of Database instances.
 func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*api.Database, error) {
 	databaseRawList, err := s.findDatabaseRaw(ctx, find)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *Store) FindDatabase(ctx context.Context, find *api.DatabaseFind) ([]*ap
 	return databaseList, nil
 }
 
-// GetDatabase gets an instance of Database
+// GetDatabase gets an instance of Database.
 func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.Database, error) {
 	databaseRaw, err := s.getDatabaseRaw(ctx, find)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *api.DatabaseFind) (*api.D
 	return database, nil
 }
 
-// PatchDatabase patches an instance of Database
+// PatchDatabase patches an instance of Database.
 func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*api.Database, error) {
 	databaseRaw, err := s.patchDatabaseRaw(ctx, patch)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *Store) PatchDatabase(ctx context.Context, patch *api.DatabasePatch) (*a
 	return database, nil
 }
 
-// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled
+// CountDatabaseGroupByBackupScheduleAndEnabled counts database, group by backup schedule and enabled.
 func (s *Store) CountDatabaseGroupByBackupScheduleAndEnabled(ctx context.Context) ([]*metric.DatabaseCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
