@@ -87,7 +87,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 
 	config := c.QueryParams().Get("config")
 	envName := c.QueryParams().Get("environment")
-	var res []advisor.Advice
+	var adviceList []advisor.Advice
 
 	if config != "" {
 		ruleList, err := advisorConfig.MergeSQLReviewRules(config)
@@ -95,8 +95,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Merge SQL check configuration failed").SetInternal(err)
 		}
 
-		_, adviceList, err := s.sqlCheck(
-			ctx,
+		_, adviceList, err = s.sqlCheck(
 			advisorDBType,
 			"utf8mb4",
 			"utf8mb4_general_ci",
@@ -104,7 +103,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			statement,
 			catalog,
 		)
-		res = adviceList
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+		}
 	} else {
 		if envName == "" {
 			return echo.NewHTTPError(http.StatusBadRequest, "Missing required environment name")
@@ -120,7 +121,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid environment %s", envName))
 		}
 
-		_, adviceList, err := s.findPolicyThenCheckSQL(
+		_, adviceList, err = s.findPolicyThenCheckSQL(
 			ctx,
 			advisorDBType,
 			"utf8mb4",
@@ -129,11 +130,9 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 			statement,
 			catalog,
 		)
-		res = adviceList
-	}
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to run sql check").SetInternal(err)
+		}
 	}
 
 	if s.MetricReporter != nil {
@@ -147,7 +146,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, adviceList)
 }
 
 func (s *Server) findDatabase(ctx context.Context, host string, port string, databaseName string) (*api.Database, error) {

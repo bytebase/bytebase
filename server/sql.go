@@ -671,7 +671,6 @@ func (s *Server) findPolicyThenCheckSQL(
 	}
 
 	return s.sqlCheck(
-		ctx,
 		dbType,
 		dbCharacterSet,
 		dbCollation,
@@ -682,7 +681,6 @@ func (s *Server) findPolicyThenCheckSQL(
 }
 
 func (s *Server) sqlCheck(
-	ctx context.Context,
 	dbType advisor.DBType,
 	dbCharacterSet string,
 	dbCollation string,
