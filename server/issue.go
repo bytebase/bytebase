@@ -934,7 +934,7 @@ func getUpdateTask(database *api.Database, migrationType db.MigrationType, vcsPu
 	}, nil
 }
 
-// creates PITR TaskCreate list and dependency
+// creates PITR TaskCreate list and dependency.
 func createPITRTaskList(database *api.Database, projectID int, taskStatus api.TaskStatus, targetTs int64) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 
@@ -980,7 +980,7 @@ func createPITRTaskList(database *api.Database, projectID int, taskStatus api.Ta
 	return taskCreateList, taskIndexDAGList, nil
 }
 
-// creates gh-ost TaskCreate list and dependency
+// creates gh-ost TaskCreate list and dependency.
 func createGhostTaskList(database *api.Database, vcsPushEvent *vcs.PushEvent, detail *api.UpdateSchemaGhostDetail, schemaVersion string, taskStatus api.TaskStatus) ([]api.TaskCreate, []api.TaskIndexDAG, error) {
 	var taskCreateList []api.TaskCreate
 	// task "sync"

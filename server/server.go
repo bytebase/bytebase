@@ -35,7 +35,7 @@ import (
 	"github.com/bytebase/bytebase/store"
 )
 
-// openAPIPrefix is the API prefix for Bytebase OpenAPI
+// openAPIPrefix is the API prefix for Bytebase OpenAPI.
 const openAPIPrefix = "/v1"
 
 // Server is the Bytebase server.

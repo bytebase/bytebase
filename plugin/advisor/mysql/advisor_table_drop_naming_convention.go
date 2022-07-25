@@ -64,7 +64,7 @@ type namingDropTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropTableStmt); ok {
 		for _, table := range node.Tables {
@@ -82,7 +82,7 @@ func (v *namingDropTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *namingDropTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

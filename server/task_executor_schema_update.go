@@ -30,7 +30,7 @@ func (exec *SchemaUpdateTaskExecutor) RunOnce(ctx context.Context, server *Serve
 	return runMigration(ctx, server, task, payload.MigrationType, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *SchemaUpdateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

@@ -7,7 +7,7 @@ import (
 )
 
 // ScheduleNextTaskIfNeeded tries to schedule the next task if needed.
-// Returns nil if no task applicable can be scheduled
+// Returns nil if no task applicable can be scheduled.
 func (s *Server) ScheduleNextTaskIfNeeded(ctx context.Context, pipeline *api.Pipeline) (*api.Task, error) {
 	for _, stage := range pipeline.StageList {
 		for _, task := range stage.TaskList {

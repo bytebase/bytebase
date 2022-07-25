@@ -57,7 +57,7 @@ func (raw *projectWebhookRaw) toProjectWebhook() *api.ProjectWebhook {
 	return &projectWebhook
 }
 
-// CreateProjectWebhook creates an instance of ProjectWebhook
+// CreateProjectWebhook creates an instance of ProjectWebhook.
 func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWebhookCreate) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.createProjectWebhookRaw(ctx, create)
 	if err != nil {
@@ -70,7 +70,7 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, create *api.ProjectWeb
 	return projectWebhook, nil
 }
 
-// GetProjectWebhookByID gets an instance of ProjectWebhook
+// GetProjectWebhookByID gets an instance of ProjectWebhook.
 func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.ProjectWebhook, error) {
 	find := &api.ProjectWebhookFind{ID: &id}
 	projectWebhookRaw, err := s.getProjectWebhookRaw(ctx, find)
@@ -87,7 +87,7 @@ func (s *Store) GetProjectWebhookByID(ctx context.Context, id int) (*api.Project
 	return projectWebhook, nil
 }
 
-// FindProjectWebhook finds a list of ProjectWebhook instances
+// FindProjectWebhook finds a list of ProjectWebhook instances.
 func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhookFind) ([]*api.ProjectWebhook, error) {
 	projectWebhookRawList, err := s.findProjectWebhookRaw(ctx, find)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *Store) FindProjectWebhook(ctx context.Context, find *api.ProjectWebhook
 	return projectWebhookList, nil
 }
 
-// PatchProjectWebhook patches an instance of ProjectWebhook
+// PatchProjectWebhook patches an instance of ProjectWebhook.
 func (s *Store) PatchProjectWebhook(ctx context.Context, patch *api.ProjectWebhookPatch) (*api.ProjectWebhook, error) {
 	projectWebhookRaw, err := s.patchProjectWebhookRaw(ctx, patch)
 	if err != nil {

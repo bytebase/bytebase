@@ -17,7 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/resources/utils"
 
-	// install mysql driver
+	// install mysql driver.
 	_ "github.com/go-sql-driver/mysql"
 )
 

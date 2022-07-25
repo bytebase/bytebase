@@ -157,7 +157,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 
 }
 
-// FindLabelKey finds a list of LabelKey instances
+// FindLabelKey finds a list of LabelKey instances.
 func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*api.LabelKey, error) {
 	labelKeyRawList, err := s.findLabelKeyRaw(ctx, find)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *Store) FindLabelKey(ctx context.Context, find *api.LabelKeyFind) ([]*ap
 	return labelKeyList, nil
 }
 
-// PatchLabelKey patches an instance of LabelKey
+// PatchLabelKey patches an instance of LabelKey.
 func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*api.LabelKey, error) {
 	labelKeyRaw, err := s.patchLabelKeyRaw(ctx, patch)
 	if err != nil {
@@ -187,7 +187,7 @@ func (s *Store) PatchLabelKey(ctx context.Context, patch *api.LabelKeyPatch) (*a
 	return labelKey, nil
 }
 
-// FindDatabaseLabel finds a list of DatabaseLabel instances
+// FindDatabaseLabel finds a list of DatabaseLabel instances.
 func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFind) ([]*api.DatabaseLabel, error) {
 	labelKeyRawList, err := s.findDatabaseLabelRaw(ctx, find)
 	if err != nil {
@@ -208,7 +208,7 @@ func (s *Store) FindDatabaseLabel(ctx context.Context, find *api.DatabaseLabelFi
 // private functions
 //
 
-// composeLabelKey composes an instance of LabelKey by labelKeyRaw
+// composeLabelKey composes an instance of LabelKey by labelKeyRaw.
 func (s *Store) composeLabelKey(ctx context.Context, raw *labelKeyRaw) (*api.LabelKey, error) {
 	labelKey := raw.toLabelKey()
 
@@ -227,7 +227,7 @@ func (s *Store) composeLabelKey(ctx context.Context, raw *labelKeyRaw) (*api.Lab
 	return labelKey, nil
 }
 
-// composeDatabaseLabel composes an instance of DatabaseLabel by databaseLabelRaw
+// composeDatabaseLabel composes an instance of DatabaseLabel by databaseLabelRaw.
 func (s *Store) composeDatabaseLabel(ctx context.Context, raw *databaseLabelRaw) (*api.DatabaseLabel, error) {
 	databaseLabel := raw.toDatabaseLabel()
 

@@ -73,7 +73,7 @@ type namingIndexConventionChecker struct {
 	database     *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	indexDataList := checker.getMetaDataList(in)
 
@@ -109,7 +109,7 @@ func (checker *namingIndexConventionChecker) Enter(in ast.Node) (ast.Node, bool)
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (checker *namingIndexConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

@@ -58,7 +58,7 @@ type noSelectAllChecker struct {
 	text       string
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.SelectStmt); ok {
 		for _, field := range node.Fields.Fields {
@@ -77,7 +77,7 @@ func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *noSelectAllChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

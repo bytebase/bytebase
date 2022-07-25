@@ -60,7 +60,7 @@ type allowDropEmptyDBChecker struct {
 	database   *catalog.Database
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.DropDatabaseStmt); ok {
 		if v.database.Name != node.Name {
@@ -82,7 +82,7 @@ func (v *allowDropEmptyDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *allowDropEmptyDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

@@ -53,7 +53,7 @@ func (raw *policyRaw) toPolicy() *api.Policy {
 	}
 }
 
-// UpsertPolicy upserts an instance of Policy
+// UpsertPolicy upserts an instance of Policy.
 func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*api.Policy, error) {
 	policyRaw, err := s.upsertPolicyRaw(ctx, upsert)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Store) UpsertPolicy(ctx context.Context, upsert *api.PolicyUpsert) (*ap
 	return policy, nil
 }
 
-// GetPolicy gets a policy
+// GetPolicy gets a policy.
 func (s *Store) GetPolicy(ctx context.Context, find *api.PolicyFind) (*api.Policy, error) {
 	policyRaw, err := s.getPolicyRaw(ctx, find)
 	if err != nil {

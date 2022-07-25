@@ -39,7 +39,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	return runGhostMigration(ctx, server, task, payload.Statement)
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

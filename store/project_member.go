@@ -54,7 +54,7 @@ func (raw *projectMemberRaw) toProjectMember() *api.ProjectMember {
 	}
 }
 
-// CreateProjectMember creates an instance of ProjectMember
+// CreateProjectMember creates an instance of ProjectMember.
 func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemberCreate) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.createProjectMemberRaw(ctx, create)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *Store) CreateProjectMember(ctx context.Context, create *api.ProjectMemb
 	return projectMember, nil
 }
 
-// FindProjectMember finds a list of ProjectMember instances
+// FindProjectMember finds a list of ProjectMember instances.
 func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFind) ([]*api.ProjectMember, error) {
 	projectMemberRawList, err := s.findProjectMemberRaw(ctx, find)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *Store) FindProjectMember(ctx context.Context, find *api.ProjectMemberFi
 	return projectMemberList, nil
 }
 
-// GetProjectMemberByID gets an instance of ProjectMember
+// GetProjectMemberByID gets an instance of ProjectMember.
 func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectMember, error) {
 	find := &api.ProjectMemberFind{ID: &id}
 	projectMemberRaw, err := s.getProjectMemberRaw(ctx, find)
@@ -101,7 +101,7 @@ func (s *Store) GetProjectMemberByID(ctx context.Context, id int) (*api.ProjectM
 	return projectMember, nil
 }
 
-// PatchProjectMember patches an instance of ProjectMember
+// PatchProjectMember patches an instance of ProjectMember.
 func (s *Store) PatchProjectMember(ctx context.Context, patch *api.ProjectMemberPatch) (*api.ProjectMember, error) {
 	projectMemberRaw, err := s.patchProjectMemberRaw(ctx, patch)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	return nil
 }
 
-// BatchUpdateProjectMember update the project member with provided project member list
+// BatchUpdateProjectMember update the project member with provided project member list.
 func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*api.ProjectMember, []*api.ProjectMember, error) {
 	createdMemberRawList, deletedMemberRawList, err := s.batchUpdateProjectMemberRaw(ctx, batchUpdate)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *Store) BatchUpdateProjectMember(ctx context.Context, batchUpdate *api.P
 // private functions
 //
 
-// composeProjectMember composes an instance of ProjectMember by projectMemberRaw
+// composeProjectMember composes an instance of ProjectMember by projectMemberRaw.
 func (s *Store) composeProjectMember(ctx context.Context, raw *projectMemberRaw) (*api.ProjectMember, error) {
 	projectMember := raw.toProjectMember()
 
@@ -264,7 +264,7 @@ func (s *Store) patchProjectMemberRaw(ctx context.Context, patch *api.ProjectMem
 	return projectMember, nil
 }
 
-// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested)
+// getBatchUpdatePrincipalIDList return the principal ID for each operation (this function may be a litter overhead, but it is easy to be tested).
 func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList []int) (createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList []int) {
 	oldPrincipalIDSet := make(map[int]bool)
 	for _, id := range oldPrincipalIDList {
@@ -296,7 +296,7 @@ func getBatchUpdatePrincipalIDList(oldPrincipalIDList []int, newPrincipalIDList 
 	return createPrincipalIDList, patchPrincipalIDList, deletePrincipalIDList
 }
 
-// batchUpdateProjectMemberRaw update the project member with provided project member list
+// batchUpdateProjectMemberRaw update the project member with provided project member list.
 func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *api.ProjectMemberBatchUpdate) ([]*projectMemberRaw, []*projectMemberRaw, error) {
 	var createdMemberRawList []*projectMemberRaw
 	var deletedMemberRawList []*projectMemberRaw

@@ -63,7 +63,7 @@ type columnRequirementChecker struct {
 	tables          tableState
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	// CREATE TABLE
@@ -99,7 +99,7 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *columnRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

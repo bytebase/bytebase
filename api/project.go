@@ -130,7 +130,7 @@ var (
 	// TenantToken is the token for tenant.
 	TenantToken = "{{TENANT}}"
 
-	// boolean indicates whether it's an required or optional token
+	// boolean indicates whether it's an required or optional token.
 	repositoryFilePathTemplateTokens = map[string]bool{
 		"{{VERSION}}":     true,
 		DBNameToken:       true,
