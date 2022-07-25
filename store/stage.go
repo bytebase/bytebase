@@ -151,7 +151,7 @@ func (s *Store) createStageRaw(ctx context.Context, create *api.StageCreate) (*s
 	}
 	defer tx.PTx.Rollback()
 
-	stage, err := s.createStageImpl(ctx, tx.PTx, create)
+	stage, err := createStageImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 	}
 	defer tx.PTx.Rollback()
 
-	stageRawList, err := s.findStageImpl(ctx, tx.PTx, find)
+	stageRawList, err := findStageImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (s *Store) findStageRaw(ctx context.Context, find *api.StageFind) ([]*stage
 }
 
 // createStageImpl creates a new stage.
-func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
+func createStageImpl(ctx context.Context, tx *sql.Tx, create *api.StageCreate) (*stageRaw, error) {
 	query := `
 		INSERT INTO stage (
 			creator_id,
@@ -217,7 +217,7 @@ func (s *Store) createStageImpl(ctx context.Context, tx *sql.Tx, create *api.Sta
 	return &stageRaw, nil
 }
 
-func (s *Store) findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
+func findStageImpl(ctx context.Context, tx *sql.Tx, find *api.StageFind) ([]*stageRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

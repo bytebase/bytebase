@@ -27,7 +27,7 @@ type UseInnoDBAdvisor struct {
 }
 
 // Check checks for using InnoDB engine.
-func (adv *UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*UseInnoDBAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -124,6 +124,6 @@ func (v *useInnoDBChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface
-func (v *useInnoDBChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*useInnoDBChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

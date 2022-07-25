@@ -50,12 +50,12 @@ func TestTenant(t *testing.T) {
 	var stagingInstanceDirs []string
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
 		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
@@ -268,12 +268,12 @@ func TestTenantVCS(t *testing.T) {
 	var stagingInstanceDirs []string
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
 		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}
@@ -453,9 +453,9 @@ func TestTenantDatabaseNameTemplate(t *testing.T) {
 
 	// Provision instances.
 	instanceRootDir := t.TempDir()
-	stagingInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, stagingInstanceName)
+	stagingInstanceDir, err := provisionSQLiteInstance(instanceRootDir, stagingInstanceName)
 	a.NoError(err)
-	prodInstanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, prodInstanceName)
+	prodInstanceDir, err := provisionSQLiteInstance(instanceRootDir, prodInstanceName)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -648,12 +648,12 @@ func TestTenantVCSDatabaseNameTemplate(t *testing.T) {
 	var stagingInstanceDirs []string
 	var prodInstanceDirs []string
 	for i := 0; i < stagingTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", stagingInstanceName, i))
 		a.NoError(err)
 		stagingInstanceDirs = append(stagingInstanceDirs, instanceDir)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
-		instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
+		instanceDir, err := provisionSQLiteInstance(instanceRootDir, fmt.Sprintf("%s-%d", prodInstanceName, i))
 		a.NoError(err)
 		prodInstanceDirs = append(prodInstanceDirs, instanceDir)
 	}

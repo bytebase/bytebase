@@ -19,7 +19,7 @@ func (s *Store) FindColumn(ctx context.Context, find *api.ColumnFind) ([]*api.Co
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findColumnImpl(ctx, tx.PTx, find)
+	list, err := findColumnImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func generateColumnActions(oldColumnList []*api.Column, columnList []db.Column, 
 }
 
 // createColumnImpl creates a new column.
-func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
+func createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
 	defaultStr := sql.NullString{}
 	if create.Default != nil {
 		defaultStr = sql.NullString{
@@ -145,7 +145,7 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 	return &column, nil
 }
 
-func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
+func findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

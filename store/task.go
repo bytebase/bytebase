@@ -278,7 +278,7 @@ func (s *Store) createTaskRaw(ctx context.Context, create *api.TaskCreate) (*tas
 	}
 	defer tx.PTx.Rollback()
 
-	task, err := s.createTaskImpl(ctx, tx.PTx, create)
+	task, err := createTaskImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (s *Store) findTaskRaw(ctx context.Context, find *api.TaskFind) ([]*taskRaw
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTaskImpl(ctx, tx.PTx, find)
+	list, err := findTaskImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -315,11 +315,11 @@ func (s *Store) getTaskRaw(ctx context.Context, find *api.TaskFind) (*taskRaw, e
 	}
 	defer tx.PTx.Rollback()
 
-	return s.getTaskRawTx(ctx, tx.PTx, find)
+	return getTaskRawTx(ctx, tx.PTx, find)
 }
 
-func (s *Store) getTaskRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskFind) (*taskRaw, error) {
-	list, err := s.findTaskImpl(ctx, tx, find)
+func getTaskRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskFind) (*taskRaw, error) {
+	list, err := findTaskImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (s *Store) patchTaskRaw(ctx context.Context, patch *api.TaskPatch) (*taskRa
 	}
 	defer tx.PTx.Rollback()
 
-	task, err := s.patchTaskImpl(ctx, tx.PTx, patch)
+	task, err := patchTaskImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -365,7 +365,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 	}
 	defer tx.PTx.Rollback()
 
-	task, err := s.patchTaskStatusImpl(ctx, tx.PTx, patch)
+	task, err := patchTaskStatusImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -378,7 +378,7 @@ func (s *Store) patchTaskRawStatus(ctx context.Context, patch *api.TaskStatusPat
 }
 
 // createTaskImpl creates a new task.
-func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
+func createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCreate) (*taskRaw, error) {
 	var row *sql.Row
 
 	if create.Payload == "" {
@@ -476,7 +476,7 @@ func (s *Store) createTaskImpl(ctx context.Context, tx *sql.Tx, create *api.Task
 	return &taskRaw, nil
 }
 
-func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind) ([]*taskRaw, error) {
+func findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind) ([]*taskRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -554,7 +554,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 		taskRunFind := &api.TaskRunFind{
 			TaskID: &taskRaw.ID,
 		}
-		taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
+		taskRunRawList, err := findTaskRunImpl(ctx, tx, taskRunFind)
 		if err != nil {
 			return nil, err
 		}
@@ -563,7 +563,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 		taskCheckRunFind := &api.TaskCheckRunFind{
 			TaskID: &taskRaw.ID,
 		}
-		taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
+		taskCheckRunRawList, err := findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
 		if err != nil {
 			return nil, err
 		}
@@ -573,7 +573,7 @@ func (s *Store) findTaskImpl(ctx context.Context, tx *sql.Tx, find *api.TaskFind
 }
 
 // patchTaskImpl updates a task by ID. Returns the new state of the task after update.
-func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
+func patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPatch) (*taskRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.DatabaseID; v != nil {
@@ -625,14 +625,14 @@ func (s *Store) patchTaskImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskPa
 }
 
 // patchTaskStatusImpl updates a task status by ID. Returns the new state of the task after update.
-func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskStatusPatch) (*taskRaw, error) {
+func patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskStatusPatch) (*taskRaw, error) {
 	// Updates the corresponding task run if applicable.
 	// We update the task run first because updating task below returns row and it's a bit complicated to
 	// arrange code to prevent that opening row interfering with the task run update.
 	taskFind := &api.TaskFind{
 		ID: &patch.ID,
 	}
-	taskRawObj, err := s.getTaskRawTx(ctx, tx, taskFind)
+	taskRawObj, err := getTaskRawTx(ctx, tx, taskFind)
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +647,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 				api.TaskRunRunning,
 			},
 		}
-		taskRunRaw, err := s.getTaskRunRawTx(ctx, tx, taskRunFind)
+		taskRunRaw, err := getTaskRunRawTx(ctx, tx, taskRunFind)
 		if err != nil {
 			return nil, err
 		}
@@ -662,7 +662,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 				Type:      taskRawObj.Type,
 				Payload:   taskRawObj.Payload,
 			}
-			if _, err := s.createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
+			if _, err := createTaskRunImpl(ctx, tx, taskRunCreate); err != nil {
 				return nil, err
 			}
 		} else {
@@ -687,7 +687,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 			case api.TaskCanceled:
 				taskRunStatusPatch.Status = api.TaskRunCanceled
 			}
-			if _, err := s.patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
+			if _, err := patchTaskRunStatusImpl(ctx, tx, taskRunStatusPatch); err != nil {
 				return nil, err
 			}
 		}
@@ -732,7 +732,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	taskRunFind := &api.TaskRunFind{
 		TaskID: &taskRawObj.ID,
 	}
-	taskRunRawList, err := s.findTaskRunImpl(ctx, tx, taskRunFind)
+	taskRunRawList, err := findTaskRunImpl(ctx, tx, taskRunFind)
 	if err != nil {
 		return nil, err
 	}
@@ -741,7 +741,7 @@ func (s *Store) patchTaskStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.
 	taskCheckRunFind := &api.TaskCheckRunFind{
 		TaskID: &taskRawObj.ID,
 	}
-	taskCheckRunRawList, err := s.findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
+	taskCheckRunRawList, err := findTaskCheckRunImpl(ctx, tx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}

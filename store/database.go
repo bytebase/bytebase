@@ -311,7 +311,7 @@ func (s *Store) createDatabaseRawTx(ctx context.Context, tx *sql.Tx, create *api
 		return nil, err
 	}
 
-	databaseRaw, err := s.createDatabaseImpl(ctx, tx, create)
+	databaseRaw, err := createDatabaseImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +424,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 	}
 	defer tx.PTx.Rollback()
 
-	database, err := s.patchDatabaseImpl(ctx, tx.PTx, patch)
+	database, err := patchDatabaseImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -441,7 +441,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 }
 
 // createDatabaseImpl creates a new database.
-func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+func createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO db (
@@ -505,7 +505,7 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 	return &databaseRaw, nil
 }
 
-func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
+func findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -589,7 +589,7 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 }
 
 // patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
-func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
+func patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {

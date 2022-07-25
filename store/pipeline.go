@@ -172,7 +172,7 @@ func (s *Store) createPipelineRaw(ctx context.Context, create *api.PipelineCreat
 	}
 	defer tx.PTx.Rollback()
 
-	pipeline, err := s.createPipelineImpl(ctx, tx.PTx, create)
+	pipeline, err := createPipelineImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 	}
 	defer tx.PTx.Rollback()
 
-	pipelineRaw, err := s.patchPipelineImpl(ctx, tx.PTx, patch)
+	pipelineRaw, err := patchPipelineImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -274,7 +274,7 @@ func (s *Store) patchPipelineRaw(ctx context.Context, patch *api.PipelinePatch) 
 }
 
 // createPipelineImpl creates a new pipeline.
-func (s *Store) createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
+func createPipelineImpl(ctx context.Context, tx *sql.Tx, create *api.PipelineCreate) (*pipelineRaw, error) {
 	query := `
 		INSERT INTO pipeline (
 			creator_id,
@@ -361,7 +361,7 @@ func findPipelineImpl(ctx context.Context, tx *sql.Tx, find *api.PipelineFind) (
 }
 
 // patchPipelineImpl updates a pipeline by ID. Returns the new state of the pipeline after update.
-func (s *Store) patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
+func patchPipelineImpl(ctx context.Context, tx *sql.Tx, patch *api.PipelinePatch) (*pipelineRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.Status; v != nil {

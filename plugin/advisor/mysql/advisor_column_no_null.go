@@ -21,7 +21,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (adv *ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -115,7 +115,7 @@ func (v *columnNoNullChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface
-func (v *columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*columnNoNullChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 

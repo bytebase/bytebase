@@ -22,7 +22,7 @@ type NamingFKConventionAdvisor struct {
 }
 
 // Check checks for foreign key naming convention.
-func (check *NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingFKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -79,7 +79,7 @@ type indexMetaData struct {
 
 // Visit implements ast.Visitor interface
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
-	indexDataList := checker.getMetaDataList(in)
+	indexDataList := getMetaDataList(in)
 
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
@@ -114,7 +114,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 }
 
 // getMetaDataList returns the list of foreign key with metadata.
-func (checker *namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
+func getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:

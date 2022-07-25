@@ -119,7 +119,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 			Key:        oldLabelRaw.Key,
 			Value:      oldLabelRaw.Value,
 		}
-		if _, err := s.upsertDatabaseLabelImpl(ctx, tx.PTx, upsert); err != nil {
+		if _, err := upsertDatabaseLabelImpl(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -137,7 +137,7 @@ func (s *Store) SetDatabaseLabelList(ctx context.Context, labelList []*api.Datab
 			Key:        label.Key,
 			Value:      label.Value,
 		}
-		labelRaw, err := s.upsertDatabaseLabelImpl(ctx, tx.PTx, upsert)
+		labelRaw, err := upsertDatabaseLabelImpl(ctx, tx.PTx, upsert)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +254,7 @@ func (s *Store) findLabelKeyRaw(ctx context.Context, find *api.LabelKeyFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	ret, err := s.findLabelKeyImpl(ctx, tx.PTx, find)
+	ret, err := findLabelKeyImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (s *Store) findLabelKeyRaw(ctx context.Context, find *api.LabelKeyFind) ([]
 	return ret, nil
 }
 
-func (s *Store) findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*labelKeyRaw, error) {
+func findLabelKeyImpl(ctx context.Context, tx *sql.Tx, find *api.LabelKeyFind) ([]*labelKeyRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.RowStatus; v != nil {
@@ -361,7 +361,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 	}
 	defer tx.PTx.Rollback()
 
-	labelKeyRawList, err := s.findLabelKeyImpl(ctx, tx.PTx, &api.LabelKeyFind{})
+	labelKeyRawList, err := findLabelKeyImpl(ctx, tx.PTx, &api.LabelKeyFind{})
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +403,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 	}
 
 	for _, upsert := range upserts {
-		if err := s.upsertLabelValueImpl(ctx, tx.PTx, upsert); err != nil {
+		if err := upsertLabelValueImpl(ctx, tx.PTx, upsert); err != nil {
 			return nil, err
 		}
 	}
@@ -416,7 +416,7 @@ func (s *Store) patchLabelKeyRaw(ctx context.Context, patch *api.LabelKeyPatch) 
 	return labelKeyRaw, nil
 }
 
-func (s *Store) upsertLabelValueImpl(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
+func upsertLabelValueImpl(ctx context.Context, tx *sql.Tx, upsert labelValueUpsert) error {
 	// Upsert row into label_value
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO label_value (
@@ -451,7 +451,7 @@ func (s *Store) findDatabaseLabelRaw(ctx context.Context, find *api.DatabaseLabe
 	}
 	defer tx.PTx.Rollback()
 
-	databaseLabelList, err := s.findDatabaseLabelsImpl(ctx, tx.PTx, find)
+	databaseLabelList, err := findDatabaseLabelsImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +463,7 @@ func (s *Store) findDatabaseLabelRaw(ctx context.Context, find *api.DatabaseLabe
 	return databaseLabelList, nil
 }
 
-func (s *Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
+func findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseLabelFind) ([]*databaseLabelRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -522,7 +522,7 @@ func (s *Store) findDatabaseLabelsImpl(ctx context.Context, tx *sql.Tx, find *ap
 	return ret, nil
 }
 
-func (s *Store) upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*databaseLabelRaw, error) {
+func upsertDatabaseLabelImpl(ctx context.Context, tx *sql.Tx, upsert *api.DatabaseLabelUpsert) (*databaseLabelRaw, error) {
 	// Upsert row into db_label
 	query := `
 		INSERT INTO db_label (

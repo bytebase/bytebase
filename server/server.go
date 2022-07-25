@@ -177,7 +177,7 @@ func NewServer(ctx context.Context, prof Profile) (*Server, error) {
 	storeInstance := store.New(storeDB, cacheService)
 	s.store = storeInstance
 
-	config, err := s.initSetting(ctx, storeInstance)
+	config, err := getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
@@ -371,7 +371,7 @@ func (s *Server) initMetricReporter(workspaceID string) {
 	}
 }
 
-func (s *Server) initSetting(ctx context.Context, store *store.Store) (*config, error) {
+func getInitSetting(ctx context.Context, store *store.Store) (*config, error) {
 	// initial branding
 	_, err := store.CreateSettingIfNotExist(ctx, &api.SettingCreate{
 		CreatorID:   api.SystemBotID,

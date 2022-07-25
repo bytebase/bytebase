@@ -19,7 +19,7 @@ type DataUpdateTaskExecutor struct {
 }
 
 // RunOnce will run the data update (DML) task executor once.
-func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database data update payload: %w", err)

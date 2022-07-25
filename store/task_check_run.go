@@ -146,7 +146,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		StatusList: &statusList,
 	}
 
-	taskCheckRunList, err := s.findTaskCheckRunRawTx(ctx, tx.PTx, taskCheckRunFind)
+	taskCheckRunList, err := findTaskCheckRunRawTx(ctx, tx.PTx, taskCheckRunFind)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 		return taskCheckRunList[0], nil
 	}
 
-	taskCheckRun, err := s.createTaskCheckRunImpl(ctx, tx.PTx, create)
+	taskCheckRun, err := createTaskCheckRunImpl(ctx, tx.PTx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (s *Store) createTaskCheckRunRawIfNeeded(ctx context.Context, create *api.T
 }
 
 // createTaskCheckRunImpl creates a new taskCheckRun.
-func (s *Store) createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
+func createTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, create *api.TaskCheckRunCreate) (*taskCheckRunRaw, error) {
 	if create.Payload == "" {
 		create.Payload = "{}"
 	}
@@ -244,7 +244,7 @@ func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunF
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findTaskCheckRunImpl(ctx, tx.PTx, find)
+	list, err := findTaskCheckRunImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -253,8 +253,8 @@ func (s *Store) findTaskCheckRunRaw(ctx context.Context, find *api.TaskCheckRunF
 }
 
 // findTaskCheckRunRawTx retrieves a list of taskCheckRuns based on find.
-func (s *Store) findTaskCheckRunRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
-	list, err := s.findTaskCheckRunImpl(ctx, tx, find)
+func findTaskCheckRunRawTx(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+	list, err := findTaskCheckRunImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskC
 	}
 	defer tx.PTx.Rollback()
 
-	taskCheckRun, err := s.patchTaskCheckRunStatusImpl(ctx, tx.PTx, patch)
+	taskCheckRun, err := patchTaskCheckRunStatusImpl(ctx, tx.PTx, patch)
 	if err != nil {
 		return nil, FormatError(err)
 	}
@@ -283,7 +283,7 @@ func (s *Store) patchTaskCheckRunRawStatus(ctx context.Context, patch *api.TaskC
 }
 
 // patchTaskCheckRunStatusImpl updates a taskCheckRun status. Returns the new state of the taskCheckRun after update.
-func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
+func patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, patch *api.TaskCheckRunStatusPatch) (*taskCheckRunRaw, error) {
 	// Build UPDATE clause.
 	if patch.Result == "" {
 		patch.Result = "{}"
@@ -329,7 +329,7 @@ func (s *Store) patchTaskCheckRunStatusImpl(ctx context.Context, tx *sql.Tx, pat
 	return &taskCheckRunRaw, nil
 }
 
-func (s *Store) findTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
+func findTaskCheckRunImpl(ctx context.Context, tx *sql.Tx, find *api.TaskCheckRunFind) ([]*taskCheckRunRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

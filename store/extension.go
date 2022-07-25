@@ -85,7 +85,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 	}
 	defer tx.PTx.Rollback()
 
-	oldDBExtensionRawList, err := s.findDBExtensionImpl(ctx, tx.PTx, &api.DBExtensionFind{
+	oldDBExtensionRawList, err := findDBExtensionImpl(ctx, tx.PTx, &api.DBExtensionFind{
 		DatabaseID: &databaseID,
 	})
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 		}
 	}
 	for _, c := range creates {
-		if _, err := s.createDBExtensionImpl(ctx, tx.PTx, c); err != nil {
+		if _, err := createDBExtensionImpl(ctx, tx.PTx, c); err != nil {
 			return err
 		}
 	}
@@ -188,7 +188,7 @@ func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFin
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := s.findDBExtensionImpl(ctx, tx.PTx, find)
+	list, err := findDBExtensionImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s *Store) findDBExtensionRaw(ctx context.Context, find *api.DBExtensionFin
 }
 
 // createDBExtensionImpl creates a new DBExtension.
-func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
+func createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *api.DBExtensionCreate) (*dbExtensionRaw, error) {
 	// Insert row into db_extension.
 	query := `
 		INSERT INTO db_extension (
@@ -245,7 +245,7 @@ func (s *Store) createDBExtensionImpl(ctx context.Context, tx *sql.Tx, create *a
 	return &dbExtensionRaw, nil
 }
 
-func (s *Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
+func findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBExtensionFind) ([]*dbExtensionRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

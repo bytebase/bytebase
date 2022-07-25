@@ -22,7 +22,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -110,6 +110,6 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface
-func (v *namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*namingTableConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

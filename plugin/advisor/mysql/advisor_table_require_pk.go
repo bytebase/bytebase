@@ -27,7 +27,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -109,7 +109,7 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface
-func (v *tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 

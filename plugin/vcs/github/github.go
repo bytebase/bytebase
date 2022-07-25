@@ -48,7 +48,7 @@ func newProvider(config vcs.ProviderConfig) vcs.Provider {
 }
 
 // APIURL returns the API URL path of GitHub.
-func (p *Provider) APIURL(string) string {
+func (*Provider) APIURL(string) string {
 	return apiURL
 }
 
