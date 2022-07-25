@@ -57,6 +57,62 @@ func (s *Server) canUpdateTaskStatement(ctx context.Context, task *api.Task) *ec
 }
 
 func (s *Server) registerTaskRoutes(g *echo.Group) {
+	g.PATCH("/pipeline/:pipelineID/task/all", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		pipelineID, err := strconv.Atoi(c.Param("pipelineID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Pipeline ID is not a number: %s", c.Param("pipelineID"))).SetInternal(err)
+		}
+
+		taskPatch := &api.TaskPatch{
+			UpdaterID: c.Get(getPrincipalIDContextKey()).(int),
+		}
+		if err := jsonapi.UnmarshalPayload(c.Request().Body, taskPatch); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Malformed update task request").SetInternal(err)
+		}
+
+		if taskPatch.EarliestAllowedTs != nil && !s.feature(api.FeatureTaskScheduleTime) {
+			return echo.NewHTTPError(http.StatusForbidden, api.FeatureTaskScheduleTime.AccessErrorMessage())
+		}
+
+		issue, err := s.store.GetIssueByPipelineID(ctx, pipelineID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", pipelineID)).SetInternal(err)
+		}
+		if issue == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", pipelineID))
+		}
+
+		if taskPatch.Statement != nil {
+			// check if all tasks can update statement
+			for _, stage := range issue.Pipeline.StageList {
+				for _, task := range stage.TaskList {
+					if httpErr := s.canUpdateTaskStatement(ctx, task); httpErr != nil {
+						return httpErr
+					}
+				}
+			}
+		}
+
+		var taskPatchedList []*api.Task
+		for _, stage := range issue.Pipeline.StageList {
+			for _, task := range stage.TaskList {
+				taskPatch := *taskPatch
+				taskPatch.ID = task.ID
+				taskPatched, httpErr := s.patchTask(ctx, task, &taskPatch, issue)
+				if httpErr != nil {
+					return httpErr
+				}
+				taskPatchedList = append(taskPatchedList, taskPatched)
+			}
+		}
+		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+		if err := jsonapi.MarshalPayload(c.Response().Writer, taskPatchedList); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to marshal update pipeline %q tasks response", issue.Pipeline.Name)).SetInternal(err)
+		}
+		return nil
+	})
+
 	g.PATCH("/pipeline/:pipelineID/task/:taskID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		taskID, err := strconv.Atoi(c.Param("taskID"))
@@ -86,17 +142,17 @@ func (s *Server) registerTaskRoutes(g *echo.Group) {
 
 		issue, err := s.store.GetIssueByPipelineID(ctx, task.PipelineID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID %v", task.PipelineID)).SetInternal(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch issue with pipeline ID: %d", task.PipelineID)).SetInternal(err)
 		}
 		if issue == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found, pipelineID: %d", task.PipelineID))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Issue not found with pipelineID: %d", task.PipelineID))
 		}
 
 		if taskPatch.Statement != nil {
 			// Tenant mode project don't allow updating SQL statement for a single task.
 			project, err := s.store.GetProjectByID(ctx, issue.ProjectID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID %d", issue.ProjectID)).SetInternal(err)
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch project with ID: %d", issue.ProjectID)).SetInternal(err)
 			}
 			if project.TenantMode == api.TenantModeTenant && task.Type == api.TaskDatabaseSchemaUpdate {
 				return echo.NewHTTPError(http.StatusBadRequest, "cannot update SQL statement of a single task for projects in tenant mode")
