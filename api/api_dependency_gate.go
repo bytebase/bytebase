@@ -8,7 +8,7 @@ package api
 // 1. the plugin package should NOT depend on the api package as the plugin package should be self-contained.
 
 import (
-	// dependency gate
+	// dependency gate.
 	_ "github.com/bytebase/bytebase/plugin/advisor"
 	_ "github.com/bytebase/bytebase/plugin/db"
 	_ "github.com/bytebase/bytebase/plugin/metric"

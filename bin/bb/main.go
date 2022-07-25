@@ -6,9 +6,9 @@ import (
 
 	"github.com/bytebase/bytebase/bin/bb/cmd"
 
-	// Register mysql driver
+	// Register mysql driver.
 	_ "github.com/bytebase/bytebase/plugin/db/mysql"
-	// Register postgres driver
+	// Register postgres driver.
 	_ "github.com/bytebase/bytebase/plugin/db/pg"
 )
 

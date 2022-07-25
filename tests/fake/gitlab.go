@@ -107,7 +107,7 @@ func (gl *GitLab) createProjectHook(c echo.Context) error {
 	return nil
 }
 
-// readProjectTree reads a project file nodes
+// readProjectTree reads a project file nodes.
 func (gl *GitLab) readProjectTree(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
 	path := c.QueryParam("path")
@@ -135,7 +135,7 @@ func (gl *GitLab) readProjectTree(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-// readProjectFile reads a project file
+// readProjectFile reads a project file.
 func (gl *GitLab) readProjectFile(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
 	filePathEscaped := c.Param("filePath")
@@ -157,7 +157,7 @@ func (gl *GitLab) readProjectFile(c echo.Context) error {
 	return c.String(http.StatusOK, content)
 }
 
-// readProjectFileMetadata reads a project file metadata
+// readProjectFileMetadata reads a project file metadata.
 func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
 	filePathEscaped := c.Param("filePath")
@@ -191,7 +191,7 @@ func (gl *GitLab) readProjectFileMetadata(c echo.Context) error {
 	return c.String(http.StatusOK, string(buf))
 }
 
-// getFakeCommit get a fake commit data
+// getFakeCommit get a fake commit data.
 func (gl *GitLab) getFakeCommit(c echo.Context) error {
 	gitlabProjectID := c.Param("id")
 	_, ok := gl.projects[gitlabProjectID]

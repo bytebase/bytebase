@@ -52,7 +52,7 @@ func (raw *principalRaw) toPrincipal() *api.Principal {
 	}
 }
 
-// CreatePrincipal creates an instance of Principal
+// CreatePrincipal creates an instance of Principal.
 func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate) (*api.Principal, error) {
 	principalRaw, err := s.createPrincipalRaw(ctx, create)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Store) CreatePrincipal(ctx context.Context, create *api.PrincipalCreate
 	return principal, nil
 }
 
-// GetPrincipalList gets a list of Principal instances
+// GetPrincipalList gets a list of Principal instances.
 func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) {
 	principalRawList, err := s.findPrincipalRawList(ctx)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Store) GetPrincipalList(ctx context.Context) ([]*api.Principal, error) 
 	return principalList, nil
 }
 
-// GetPrincipalByEmail gets an instance of Principal
+// GetPrincipalByEmail gets an instance of Principal.
 func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Principal, error) {
 	find := &api.PrincipalFind{Email: &email}
 	principalRaw, err := s.getPrincipalRaw(ctx, find)
@@ -98,7 +98,7 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*api.Pri
 	return principal, nil
 }
 
-// PatchPrincipal patches an instance of Principal
+// PatchPrincipal patches an instance of Principal.
 func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (*api.Principal, error) {
 	principalRaw, err := s.patchPrincipalRaw(ctx, patch)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Store) PatchPrincipal(ctx context.Context, patch *api.PrincipalPatch) (
 	return principal, nil
 }
 
-// GetPrincipalByID gets an instance of Principal by ID
+// GetPrincipalByID gets an instance of Principal by ID.
 func (s *Store) GetPrincipalByID(ctx context.Context, id int) (*api.Principal, error) {
 	principalFind := &api.PrincipalFind{ID: &id}
 	principalRaw, err := s.getPrincipalRaw(ctx, principalFind)
@@ -242,7 +242,7 @@ func (s *Store) patchPrincipalRaw(ctx context.Context, patch *api.PrincipalPatch
 	return principal, nil
 }
 
-// composePrincipal composes an instance of Principal by principalRaw
+// composePrincipal composes an instance of Principal by principalRaw.
 func (s *Store) composePrincipal(ctx context.Context, raw *principalRaw) (*api.Principal, error) {
 	principal := raw.toPrincipal()
 

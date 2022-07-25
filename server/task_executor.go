@@ -31,7 +31,7 @@ type TaskExecutor interface {
 	IsCompleted() bool
 }
 
-// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery
+// RunTaskExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunTaskExecutorOnce(ctx context.Context, exec TaskExecutor, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	defer func() {
 		if r := recover(); r != nil {

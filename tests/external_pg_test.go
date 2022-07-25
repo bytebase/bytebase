@@ -18,7 +18,7 @@ type fakeExternalPg struct {
 	pgUser string
 }
 
-// newFakeExternalPg will install postgres in tmpDir and listen on Unix domain socket with port
+// newFakeExternalPg will install postgres in tmpDir and listen on Unix domain socket with port.
 func newFakeExternalPg(tmpDir string, port int) (*fakeExternalPg, error) {
 	resourceDir := path.Join(tmpDir, "resources")
 	dataDir := path.Join(tmpDir, "pgdata")

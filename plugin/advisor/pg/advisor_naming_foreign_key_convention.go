@@ -78,7 +78,7 @@ type indexMetaData struct {
 	metaData  map[string]string
 }
 
-// Visit implements ast.Visitor interface
+// Visit implements ast.Visitor interface.
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 	indexDataList := checker.getMetaDataList(in)
 

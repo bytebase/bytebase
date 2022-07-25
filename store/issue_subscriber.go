@@ -26,7 +26,7 @@ func (raw *issueSubscriberRaw) toIssueSubscriber() *api.IssueSubscriber {
 	}
 }
 
-// CreateIssueSubscriber creates an instance of IssueSubscriber
+// CreateIssueSubscriber creates an instance of IssueSubscriber.
 func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubscriberCreate) (*api.IssueSubscriber, error) {
 	issueSubRaw, err := s.createIssueSubscriberRaw(ctx, create)
 	if err != nil {
@@ -39,7 +39,7 @@ func (s *Store) CreateIssueSubscriber(ctx context.Context, create *api.IssueSubs
 	return issueSub, nil
 }
 
-// FindIssueSubscriber finds a list of IssueSubscriber instances
+// FindIssueSubscriber finds a list of IssueSubscriber instances.
 func (s *Store) FindIssueSubscriber(ctx context.Context, find *api.IssueSubscriberFind) ([]*api.IssueSubscriber, error) {
 	issueSubRawList, err := s.findIssueSubscriberRaw(ctx, find)
 	if err != nil {

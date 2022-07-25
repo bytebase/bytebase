@@ -77,7 +77,7 @@ func (raw *repositoryRaw) toRepository() *api.Repository {
 	}
 }
 
-// CreateRepository creates an instance of Repository
+// CreateRepository creates an instance of Repository.
 func (s *Store) CreateRepository(ctx context.Context, create *api.RepositoryCreate) (*api.Repository, error) {
 	repositoryRaw, err := s.createRepositoryRaw(ctx, create)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *Store) CreateRepository(ctx context.Context, create *api.RepositoryCrea
 	return repository, nil
 }
 
-// GetRepository gets an instance of Repository
+// GetRepository gets an instance of Repository.
 func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*api.Repository, error) {
 	repositoryRaw, err := s.getRepositoryRaw(ctx, find)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *Store) GetRepository(ctx context.Context, find *api.RepositoryFind) (*a
 	return repository, nil
 }
 
-// FindRepository finds a list of Repository instances
+// FindRepository finds a list of Repository instances.
 func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([]*api.Repository, error) {
 	repositoryRawList, err := s.findRepositoryRaw(ctx, find)
 	if err != nil {
@@ -123,7 +123,7 @@ func (s *Store) FindRepository(ctx context.Context, find *api.RepositoryFind) ([
 	return repositoryList, nil
 }
 
-// PatchRepository patches an instance of Repository
+// PatchRepository patches an instance of Repository.
 func (s *Store) PatchRepository(ctx context.Context, patch *api.RepositoryPatch) (*api.Repository, error) {
 	repositoryRaw, err := s.patchRepositoryRaw(ctx, patch)
 	if err != nil {

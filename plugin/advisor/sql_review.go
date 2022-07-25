@@ -35,7 +35,7 @@ const (
 
 	// SchemaRuleTableNaming enforce the table name format.
 	SchemaRuleTableNaming SQLReviewRuleType = "naming.table"
-	// SchemaRuleColumnNaming enforce the column name format
+	// SchemaRuleColumnNaming enforce the column name format.
 	SchemaRuleColumnNaming SQLReviewRuleType = "naming.column"
 	// SchemaRuleUKNaming enforce the unique key name format.
 	SchemaRuleUKNaming SQLReviewRuleType = "naming.index.uk"
@@ -69,17 +69,17 @@ const (
 	// SchemaRuleDropEmptyDatabase enforce the MySQL and TiDB support check if the database is empty before users drop it.
 	SchemaRuleDropEmptyDatabase SQLReviewRuleType = "database.drop-empty-database"
 
-	// TableNameTemplateToken is the token for table name
+	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
-	// ColumnListTemplateToken is the token for column name list
+	// ColumnListTemplateToken is the token for column name list.
 	ColumnListTemplateToken = "{{column_list}}"
-	// ReferencingTableNameTemplateToken is the token for referencing table name
+	// ReferencingTableNameTemplateToken is the token for referencing table name.
 	ReferencingTableNameTemplateToken = "{{referencing_table}}"
-	// ReferencingColumnNameTemplateToken is the token for referencing column name
+	// ReferencingColumnNameTemplateToken is the token for referencing column name.
 	ReferencingColumnNameTemplateToken = "{{referencing_column}}"
-	// ReferencedTableNameTemplateToken is the token for referenced table name
+	// ReferencedTableNameTemplateToken is the token for referenced table name.
 	ReferencedTableNameTemplateToken = "{{referenced_table}}"
-	// ReferencedColumnNameTemplateToken is the token for referenced column name
+	// ReferencedColumnNameTemplateToken is the token for referenced column name.
 	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
 
 	// defaultNameLengthLimit is the default length limit for naming rules.
@@ -87,7 +87,7 @@ const (
 )
 
 var (
-	// TemplateNamingTokens is the mapping for rule type to template token
+	// TemplateNamingTokens is the mapping for rule type to template token.
 	TemplateNamingTokens = map[SQLReviewRuleType]map[string]bool{
 		SchemaRuleIDXNaming: {
 			TableNameTemplateToken:  true,
@@ -188,7 +188,7 @@ func UnamrshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 
 // UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
-// "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"]
+// "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"].
 func UnmarshalNamingRulePayloadAsTemplate(ruleType SQLReviewRuleType, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
 	if err := json.Unmarshal([]byte(payload), &nr); err != nil {

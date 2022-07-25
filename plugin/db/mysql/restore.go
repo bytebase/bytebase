@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	// MaxDatabaseNameLength is the allowed max database name length in MySQL
+	// MaxDatabaseNameLength is the allowed max database name length in MySQL.
 	MaxDatabaseNameLength = 64
 
 	// Variable lower_case_table_names related.
@@ -52,7 +52,7 @@ const (
 	LetterCaseOnDiskLowerCaseCmp = 2
 )
 
-// BinlogFile is the metadata of the MySQL binlog file
+// BinlogFile is the metadata of the MySQL binlog file.
 type BinlogFile struct {
 	Name string
 	Size int64
@@ -69,10 +69,10 @@ func newBinlogFile(name string, size int64) (BinlogFile, error) {
 	return BinlogFile{Name: name, Size: size, Seq: seq}, nil
 }
 
-// ZapBinlogFiles is a helper to format zap.Array
+// ZapBinlogFiles is a helper to format zap.Array.
 type ZapBinlogFiles []BinlogFile
 
-// MarshalLogArray implements the zapcore.ArrayMarshaler interface
+// MarshalLogArray implements the zapcore.ArrayMarshaler interface.
 func (files ZapBinlogFiles) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, file := range files {
 		arr.AppendString(fmt.Sprintf("%s[%d]", file.Name, file.Size))
@@ -472,14 +472,14 @@ func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool,
 }
 
 // Composes a pitr database name that we use as the target database for full backup recovery and binlog recovery.
-// For example, getPITRDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005"
+// For example, getPITRDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005".
 func getPITRDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d", suffixTs)
 	return getSafeName(database, suffix)
 }
 
 // Composes a database name that we use as the target database for swapping out the original database.
-// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_old"
+// For example, getPITROldDatabaseName("dbfoo", 1653018005) -> "dbfoo_pitr_1653018005_old".
 func getPITROldDatabaseName(database string, suffixTs int64) string {
 	suffix := fmt.Sprintf("pitr_%d_old", suffixTs)
 	return getSafeName(database, suffix)
@@ -869,7 +869,7 @@ func (driver *Driver) getBinlogEventPositionAtOrAfterTs(ctx context.Context, bin
 }
 
 // getBinlogNameSeq returns the numeric extension to the binary log base name by using split the dot.
-// For example: ("binlog.000001") => 1, ("binlog000001") => err
+// For example: ("binlog.000001") => 1, ("binlog000001") => err.
 func getBinlogNameSeq(name string) (int64, error) {
 	s := strings.Split(name, ".")
 	if len(s) != 2 {
@@ -887,7 +887,7 @@ func getSafeName(baseName, suffix string) string {
 	return fmt.Sprintf("%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
-// checks the MySQL version is >=8.0
+// checks the MySQL version is >=8.0.
 func checkVersionForPITR(version string) error {
 	v, err := semver.Parse(version)
 	if err != nil {

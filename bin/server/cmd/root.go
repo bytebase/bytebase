@@ -36,11 +36,11 @@ import (
 	// Register postgresql advisor.
 	_ "github.com/bytebase/bytebase/plugin/advisor/pg"
 
-	// Register postgres parser driver
+	// Register postgres parser driver.
 	_ "github.com/bytebase/bytebase/plugin/parser/engine/pg"
 )
 
-// -----------------------------------Global constant BEGIN----------------------------------------
+// -----------------------------------Global constant BEGIN----------------------------------------.
 const (
 
 	// greetingBanner is the greeting banner.
@@ -72,7 +72,7 @@ ________________________________________________________________________________
 
 // -----------------------------------Global constant END------------------------------------------
 
-// -----------------------------------Command Line Config BEGIN------------------------------------
+// -----------------------------------Command Line Config BEGIN------------------------------------.
 var (
 	flags struct {
 		// Used for Bytebase command line config
