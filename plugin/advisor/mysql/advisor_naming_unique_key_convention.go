@@ -11,6 +11,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingUKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingUKConventionChecker)(nil)
 )
 
 func init() {

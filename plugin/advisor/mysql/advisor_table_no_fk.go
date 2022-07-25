@@ -9,6 +9,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*TableNoFKAdvisor)(nil)
+	_ ast.Visitor     = (*tableNoFKChecker)(nil)
 )
 
 func init() {

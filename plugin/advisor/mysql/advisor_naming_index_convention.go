@@ -12,6 +12,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingIndexConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingIndexConventionChecker)(nil)
 )
 
 func init() {
