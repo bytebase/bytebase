@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*CompatibilityAdvisor)(nil)
+	_ ast.Visitor     = (*compatibilityChecker)(nil)
 )
 
 func init() {

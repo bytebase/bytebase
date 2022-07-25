@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingFKConventionAdvisor)(nil)
+	_ ast.Visitor     = (*namingFKConventionChecker)(nil)
 )
 
 func init() {

@@ -15,6 +15,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*TableRequirePKAdvisor)(nil)
+	_ ast.Visitor     = (*tableRequirePKChecker)(nil)
 )
 
 func init() {
