@@ -62,7 +62,7 @@ func (raw *instanceRaw) toInstance() *api.Instance {
 	}
 }
 
-// CreateInstance creates an instance of Instance
+// CreateInstance creates an instance of Instance.
 func (s *Store) CreateInstance(ctx context.Context, create *api.InstanceCreate) (*api.Instance, error) {
 	instanceRaw, err := s.createInstanceRaw(ctx, create)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Store) CreateInstance(ctx context.Context, create *api.InstanceCreate) 
 	return instance, nil
 }
 
-// GetInstanceByID gets an instance of Instance
+// GetInstanceByID gets an instance of Instance.
 func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, error) {
 	find := &api.InstanceFind{ID: &id}
 	instanceRaw, err := s.getInstanceRaw(ctx, find)
@@ -92,7 +92,7 @@ func (s *Store) GetInstanceByID(ctx context.Context, id int) (*api.Instance, err
 	return instance, nil
 }
 
-// FindInstance finds a list of Instance instances
+// FindInstance finds a list of Instance instances.
 func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*api.Instance, error) {
 	instanceRawList, err := s.findInstanceRaw(ctx, find)
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Store) FindInstance(ctx context.Context, find *api.InstanceFind) ([]*ap
 	return instanceList, nil
 }
 
-// PatchInstance patches an instance of Instance
+// PatchInstance patches an instance of Instance.
 func (s *Store) PatchInstance(ctx context.Context, patch *api.InstancePatch) (*api.Instance, error) {
 	instanceRaw, err := s.patchInstanceRaw(ctx, patch)
 	if err != nil {
@@ -245,7 +245,7 @@ func (s *Store) FindInstanceWithDatabaseBackupEnabled(ctx context.Context, engin
 	return instanceList, nil
 }
 
-// GetInstanceAdminPasswordByID gets admin password of instance
+// GetInstanceAdminPasswordByID gets admin password of instance.
 func (s *Store) GetInstanceAdminPasswordByID(ctx context.Context, instanceID int) (string, error) {
 	dataSourceFind := &api.DataSourceFind{
 		InstanceID: &instanceID,

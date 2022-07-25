@@ -1,7 +1,7 @@
 package api
 
 // ServerInfo is the API message for server info.
-// Actuator concept is similar to the Spring Boot Actuator
+// Actuator concept is similar to the Spring Boot Actuator.
 type ServerInfo struct {
 	Version        string `json:"version"`
 	GitCommit      string `json:"gitCommit"`

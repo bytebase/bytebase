@@ -44,7 +44,7 @@ func (raw *bookmarkRaw) toBookmark() *api.Bookmark {
 	}
 }
 
-// CreateBookmark creates an instance of Bookmark
+// CreateBookmark creates an instance of Bookmark.
 func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) (*api.Bookmark, error) {
 	bookmarkRaw, err := s.createBookmarkRaw(ctx, create)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *Store) CreateBookmark(ctx context.Context, create *api.BookmarkCreate) 
 	return bookmark, nil
 }
 
-// GetBookmarkByID gets an instance of Bookmark
+// GetBookmarkByID gets an instance of Bookmark.
 func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, error) {
 	find := &api.BookmarkFind{ID: &id}
 	bookmarkRaw, err := s.getBookmarkRaw(ctx, find)
@@ -74,7 +74,7 @@ func (s *Store) GetBookmarkByID(ctx context.Context, id int) (*api.Bookmark, err
 	return bookmark, nil
 }
 
-// FindBookmark finds a list of Bookmark instances
+// FindBookmark finds a list of Bookmark instances.
 func (s *Store) FindBookmark(ctx context.Context, find *api.BookmarkFind) ([]*api.Bookmark, error) {
 	bookmarkRawList, err := s.findBookmarkRaw(ctx, find)
 	if err != nil {

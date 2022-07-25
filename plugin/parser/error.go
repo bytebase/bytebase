@@ -11,7 +11,7 @@ type ConvertError struct {
 	err error
 }
 
-// Error implements the error interface
+// Error implements the error interface.
 func (e *ConvertError) Error() string {
 	return e.err.Error()
 }

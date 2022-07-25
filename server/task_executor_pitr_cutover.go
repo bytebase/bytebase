@@ -76,7 +76,7 @@ func (exec *PITRCutoverTaskExecutor) RunOnce(ctx context.Context, server *Server
 	return terminated, result, nil
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }

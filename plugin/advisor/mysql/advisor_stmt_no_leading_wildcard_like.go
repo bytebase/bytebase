@@ -73,7 +73,7 @@ type noLeadingWildcardLikeChecker struct {
 	leadingWildcardLike bool
 }
 
-// Enter implements the ast.Visitor interface
+// Enter implements the ast.Visitor interface.
 func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.PatternLikeExpr); !v.leadingWildcardLike && ok {
 		pattern, err := restoreNode(node.Pattern, format.RestoreStringWithoutCharset)
@@ -92,7 +92,7 @@ func (v *noLeadingWildcardLikeChecker) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-// Leave implements the ast.Visitor interface
+// Leave implements the ast.Visitor interface.
 func (v *noLeadingWildcardLikeChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

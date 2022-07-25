@@ -44,7 +44,7 @@ func (raw *environmentRaw) toEnvironment() *api.Environment {
 	}
 }
 
-// CreateEnvironment creates an instance of Environment
+// CreateEnvironment creates an instance of Environment.
 func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCreate) (*api.Environment, error) {
 	environmentRaw, err := s.createEnvironmentRaw(ctx, create)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *Store) CreateEnvironment(ctx context.Context, create *api.EnvironmentCr
 	return environment, nil
 }
 
-// FindEnvironment finds a list of Environment instances
+// FindEnvironment finds a list of Environment instances.
 func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) ([]*api.Environment, error) {
 	environmentRawList, err := s.findEnvironmentRaw(ctx, find)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *Store) FindEnvironment(ctx context.Context, find *api.EnvironmentFind) 
 	return environmentList, nil
 }
 
-// PatchEnvironment patches an instance of Environment
+// PatchEnvironment patches an instance of Environment.
 func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatch) (*api.Environment, error) {
 	environmentRaw, err := s.patchEnvironmentRaw(ctx, patch)
 	if err != nil {
@@ -87,7 +87,7 @@ func (s *Store) PatchEnvironment(ctx context.Context, patch *api.EnvironmentPatc
 	return environment, nil
 }
 
-// GetEnvironmentByID gets an instance of Environment by ID
+// GetEnvironmentByID gets an instance of Environment by ID.
 func (s *Store) GetEnvironmentByID(ctx context.Context, id int) (*api.Environment, error) {
 	envRaw, err := s.getEnvironmentByIDRaw(ctx, id)
 	if err != nil {
