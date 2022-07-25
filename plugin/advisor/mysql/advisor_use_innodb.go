@@ -16,6 +16,7 @@ const (
 
 var (
 	_ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
+	_ ast.Visitor     = (*useInnoDBChecker)(nil)
 )
 
 func init() {

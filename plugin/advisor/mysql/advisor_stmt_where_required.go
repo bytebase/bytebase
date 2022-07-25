@@ -10,6 +10,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
+	_ ast.Visitor     = (*whereRequirementChecker)(nil)
 )
 
 func init() {
