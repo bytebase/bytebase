@@ -147,7 +147,7 @@ func (s *Server) sqlCheckController(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, adviceList)
+	return c.JSON(http.StatusOK, res)
 }
 
 func (s *Server) findDatabase(ctx context.Context, host string, port string, databaseName string) (*api.Database, error) {
