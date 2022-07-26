@@ -71,9 +71,9 @@ export default defineComponent({
 
     const onClose = () => {
       if (isGuide.value) {
-        if (!uiStateStore.getIntroStateByKey(`guide.${helpId.value}`)) {
+        if (!uiStateStore.getIntroStateByKey(`${helpId.value}`)) {
           uiStateStore.saveIntroStateByKey({
-            key: `guide.${helpId.value}`,
+            key: `${helpId.value}`,
             newState: true,
           });
         }
