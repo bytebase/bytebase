@@ -75,7 +75,7 @@ export default defineComponent({
       // Focus on the internal search field when mounted
       searchField.value.$el.querySelector("#search").focus();
 
-      if (!uiStateStore.getIntroStateByKey("guide.help.instance")) {
+      if (!uiStateStore.getIntroStateByKey("instance.visit")) {
         uiStateStore.saveIntroStateByKey({
           key: "instance.visit",
           newState: true,
