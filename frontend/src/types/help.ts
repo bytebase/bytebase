@@ -1,1 +1,4 @@
-export type routeMap = Record<"routeName" | "helpName", string>[];
+export type RouteMap = {
+  routeName: string;
+  helpName: string;
+}[];

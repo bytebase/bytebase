@@ -1,9 +1,9 @@
 import { RouteLocationNormalized } from "vue-router";
 import { useUIStateStore, useHelpStore } from "@/store";
-import { routeMap } from "@/types";
+import { RouteMap } from "@/types";
 
 let timer: number | null = null;
-let routeMap: routeMap | null = null;
+let routeMap: RouteMap | null = null;
 
 export const handleRouteChangedForHelp = async (
   to: RouteLocationNormalized
