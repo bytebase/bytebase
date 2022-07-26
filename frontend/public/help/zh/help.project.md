@@ -11,5 +11,5 @@ title: 如何创建您的「项目」 ?
 #### 了解更多
 
 - [建立一个项目](https://www.bytebase.com/docs/get-started/work-with-a-project/create-a-project)
-- [通过界面运行一个 SQL 工作流](https://www.bytebase.com/docs/get-started/work-with-a-project/run-a-ui-workflow)
-- [将项目关联代码仓库来进行版本管理 (GitOps)](https://www.bytebase.com/docs/vcs-integration/enable-version-control-workflow)
+- [运行 UI 工作流](https://www.bytebase.com/docs/get-started/work-with-a-project/run-a-ui-workflow)
+- [运行 GitOps 工作流](https://www.bytebase.com/docs/vcs-integration/enable-version-control-workflow)

@@ -9,4 +9,4 @@ title: How to setup 'Instance' ?
 #### Learn more
 
 - [Add an Instance](https://www.bytebase.com/docs/get-started/configure-workspace/add-an-instance)
-- [Add a MySQL Instance for Testing](https://www.bytebase.com/docs/get-started/configure-workspace/add-a-mysql-instance-for-testing)
+- [Add a MySQL Testing Instance](https://www.bytebase.com/docs/get-started/configure-workspace/add-a-mysql-instance-for-testing)
