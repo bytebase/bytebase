@@ -31,7 +31,12 @@ func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server,
 	return runMigration(ctx, server, task, db.Data, payload.Statement, payload.SchemaVersion, payload.VCSPushEvent)
 }
 
-// IsCompleted tells the scheduler if the task execution has completed
+// IsCompleted tells the scheduler if the task execution has completed.
 func (exec *DataUpdateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
+}
+
+// GetProgress returns the task progress.
+func (exec *DataUpdateTaskExecutor) GetProgress() api.Progress {
+	return api.Progress{}
 }

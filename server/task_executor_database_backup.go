@@ -28,7 +28,7 @@ func (exec *DatabaseBackupTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress
+// GetProgress returns the task progress.
 func (exec *DatabaseBackupTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
