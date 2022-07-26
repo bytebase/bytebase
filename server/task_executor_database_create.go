@@ -29,7 +29,7 @@ func (exec *DatabaseCreateTaskExecutor) IsCompleted() bool {
 	return atomic.LoadInt32(&exec.completed) == 1
 }
 
-// GetProgress returns the task progress
+// GetProgress returns the task progress.
 func (exec *DatabaseCreateTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
