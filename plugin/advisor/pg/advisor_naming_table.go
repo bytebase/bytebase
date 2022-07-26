@@ -22,7 +22,7 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (adv *NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingTableConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	stmts, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil

@@ -404,7 +404,7 @@ func (s *Store) upsertBackupSettingRaw(ctx context.Context, upsert *api.BackupSe
 }
 
 // createBackupImpl creates a new backup.
-func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
+func (*Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.BackupCreate) (*backupRaw, error) {
 	// Insert row into backup.
 	query := `
 		INSERT INTO backup (
@@ -455,7 +455,7 @@ func (s *Store) createBackupImpl(ctx context.Context, tx *sql.Tx, create *api.Ba
 	return &backupRaw, nil
 }
 
-func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
+func (*Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.BackupFind) ([]*backupRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -532,7 +532,7 @@ func (s *Store) findBackupImpl(ctx context.Context, tx *sql.Tx, find *api.Backup
 }
 
 // patchBackupImpl updates a backup by ID. Returns the new state of the backup after update.
-func (s *Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
+func (*Store) patchBackupImpl(ctx context.Context, tx *sql.Tx, patch *api.BackupPatch) (*backupRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{}, []interface{}{}
 	set, args = append(set, fmt.Sprintf("updater_id = $%d", len(args)+1)), append(args, patch.UpdaterID)

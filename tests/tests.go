@@ -357,7 +357,7 @@ func (ctl *controller) Login() error {
 }
 
 // provisionSQLiteInstance provisions a SQLite instance (a directory).
-func (ctl *controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
+func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)
@@ -1373,7 +1373,7 @@ func (ctl *controller) deletePolicy(policyDelete api.PolicyDelete) error {
 
 // schemaReviewTaskCheckRunFinished will return schema review task check result for next task.
 // If the schema review task check is not done, return nil, false, nil.
-func (ctl *controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
+func (*controller) schemaReviewTaskCheckRunFinished(issue *api.Issue) ([]api.TaskCheckResult, bool, error) {
 	var result []api.TaskCheckResult
 	var latestTs int64
 	for _, stage := range issue.Pipeline.StageList {

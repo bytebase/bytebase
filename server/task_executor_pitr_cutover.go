@@ -82,7 +82,7 @@ func (exec *PITRCutoverTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *PITRCutoverTaskExecutor) GetProgress() api.Progress {
+func (*PITRCutoverTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
 
@@ -90,7 +90,7 @@ func (exec *PITRCutoverTaskExecutor) GetProgress() api.Progress {
 // 1. Swap the current and PITR database.
 // 2. Create a backup with type PITR. The backup is scheduled asynchronously.
 // We must check the possible failed/ongoing PITR type backup in the recovery process.
-func (exec *PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (*PITRCutoverTaskExecutor) pitrCutover(ctx context.Context, task *api.Task, server *Server, issue *api.Issue) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	driver, err := getAdminDatabaseDriver(ctx, task.Instance, "", "" /* pgInstanceDir */)
 	if err != nil {
 		return true, nil, err

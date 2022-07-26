@@ -441,7 +441,7 @@ func (s *Store) patchDatabaseRaw(ctx context.Context, patch *api.DatabasePatch) 
 }
 
 // createDatabaseImpl creates a new database.
-func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
+func (*Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.DatabaseCreate) (*databaseRaw, error) {
 	// Insert row into database.
 	query := `
 		INSERT INTO db (
@@ -505,7 +505,7 @@ func (s *Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.
 	return &databaseRaw, nil
 }
 
-func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
+func (*Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -589,7 +589,7 @@ func (s *Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.Data
 }
 
 // patchDatabaseImpl updates a database by ID. Returns the new state of the database after update.
-func (s *Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
+func (*Store) patchDatabaseImpl(ctx context.Context, tx *sql.Tx, patch *api.DatabasePatch) (*databaseRaw, error) {
 	// Build UPDATE clause.
 	set, args := []string{"updater_id = $1"}, []interface{}{patch.UpdaterID}
 	if v := patch.ProjectID; v != nil {

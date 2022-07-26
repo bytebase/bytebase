@@ -34,6 +34,6 @@ func (exec *DefaultTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *DefaultTaskExecutor) GetProgress() api.Progress {
+func (*DefaultTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }
