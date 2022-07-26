@@ -6,3 +6,8 @@ title: 如何设置「实例」?
 RDS 实例，也可能是您私有化部署的 MySQL 实例。
 
 - Bytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。
+
+#### 了解更多
+
+- [添加实例](https://www.bytebase.com/docs/get-started/configure-workspace/add-an-instance)
+- [添加一个可测试的 MySQL 实例](https://www.bytebase.com/docs/get-started/configure-workspace/add-a-mysql-instance-for-testing)

@@ -7,3 +7,9 @@ title: 如何创建您的「项目」 ?
 - 一个项目会有属于他的协作成员，并且每一个数据库和工单总是归属于某一个项目。
 
 - 同时，一个项目可以关联一个代码仓库，并以此来进行版本控制。
+
+#### 了解更多
+
+- [建立一个项目](https://www.bytebase.com/docs/get-started/work-with-a-project/create-a-project)
+- [通过界面运行一个 SQL 工作流](https://www.bytebase.com/docs/get-started/work-with-a-project/run-a-ui-workflow)
+- [将项目关联代码仓库来进行版本管理 (GitOps)](https://www.bytebase.com/docs/vcs-integration/enable-version-control-workflow)
