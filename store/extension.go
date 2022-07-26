@@ -94,7 +94,7 @@ func (s *Store) SetDBExtensionList(ctx context.Context, schema *db.Schema, datab
 
 	deletes, creates := generateDBExtensionActions(oldDBExtensionRawList, schema.ExtensionList, databaseID)
 	for _, d := range deletes {
-		if err := deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteDBExtensionImpl(ctx, tx.PTx, d); err != nil {
 			return err
 		}
 	}
@@ -306,7 +306,7 @@ func (*Store) findDBExtensionImpl(ctx context.Context, tx *sql.Tx, find *api.DBE
 }
 
 // deleteDBExtensionImpl permanently deletes DBExtensions from a database.
-func deleteDBExtensionImpl(ctx context.Context, tx *sql.Tx, delete *api.DBExtensionDelete) error {
+func (*Store) deleteDBExtensionImpl(ctx context.Context, tx *sql.Tx, delete *api.DBExtensionDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM db_extension WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

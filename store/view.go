@@ -87,7 +87,7 @@ func (s *Store) SetViewList(ctx context.Context, schema *db.Schema, databaseID i
 
 	deletes, creates := generateViewActions(oldViewRawList, schema.ViewList, databaseID)
 	for _, d := range deletes {
-		if err := deleteViewImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteViewImpl(ctx, tx.PTx, d); err != nil {
 			return err
 		}
 	}
@@ -298,7 +298,7 @@ func (*Store) findViewImpl(ctx context.Context, tx *sql.Tx, find *api.ViewFind) 
 }
 
 // deleteViewImpl permanently deletes views from a database.
-func deleteViewImpl(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
+func (*Store) deleteViewImpl(ctx context.Context, tx *sql.Tx, delete *api.ViewDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM vw WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

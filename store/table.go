@@ -117,7 +117,7 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 	}
 	creates, patches, deletes := generateTableActions(oldTableRawList, schema.TableList, databaseID)
 	for _, d := range deletes {
-		if err := deleteTableImpl(ctx, tx.PTx, d); err != nil {
+		if err := s.deleteTableImpl(ctx, tx.PTx, d); err != nil {
 			return err
 		}
 	}
@@ -157,7 +157,7 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 		}
 		deletes, creates := generateColumnActions(columnList, table.ColumnList, databaseID, tableID)
 		for _, d := range deletes {
-			if err := deleteColumnImpl(ctx, tx.PTx, d); err != nil {
+			if err := s.deleteColumnImpl(ctx, tx.PTx, d); err != nil {
 				return err
 			}
 		}
@@ -175,7 +175,7 @@ func (s *Store) SetTableList(ctx context.Context, schema *db.Schema, databaseID 
 		}
 		idxDeletes, idxCreates := generateIndexActions(indexList, table.IndexList, databaseID, tableID)
 		for _, d := range idxDeletes {
-			if err := deleteIndexImpl(ctx, tx.PTx, d); err != nil {
+			if err := s.deleteIndexImpl(ctx, tx.PTx, d); err != nil {
 				return err
 			}
 		}
@@ -515,7 +515,7 @@ func (*Store) findTableImpl(ctx context.Context, tx *sql.Tx, find *api.TableFind
 }
 
 // deleteTableImpl permanently deletes tables from a database.
-func deleteTableImpl(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
+func (*Store) deleteTableImpl(ctx context.Context, tx *sql.Tx, delete *api.TableDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM tbl WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

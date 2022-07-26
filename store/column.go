@@ -227,7 +227,7 @@ func (*Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFi
 }
 
 // deleteColumnImpl deletes columns.
-func deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
+func (*Store) deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM col WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}

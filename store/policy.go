@@ -109,7 +109,7 @@ func (s *Store) DeletePolicy(ctx context.Context, delete *api.PolicyDelete) erro
 		return &common.Error{Code: common.Invalid, Err: fmt.Errorf("failed to delete policy with PolicyDelete[%+v], expect 'ARCHIVED' row_status", delete)}
 	}
 
-	if err := deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deletePolicyImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -439,7 +439,7 @@ func upsertPolicyImpl(ctx context.Context, tx *sql.Tx, upsert *api.PolicyUpsert)
 }
 
 // deletePolicyImpl deletes an existing ARCHIVED policy by id and type.
-func deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
+func (*Store) deletePolicyImpl(ctx context.Context, tx *sql.Tx, delete *api.PolicyDelete) error {
 	// Remove row from policy.
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM policy
