@@ -30,10 +30,10 @@
 
 <script lang="ts" setup>
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
 import { ServerInfo } from "@/types";
 import { pushNotification, useActuatorStore } from "@/store";
-import BannersWrapper from "@/views/BannersWrapper.vue";
+import EditorHeader from "@/views/sql-editor/EditorHeader.vue";
+import BannersWrapper from "@/components/BannersWrapper.vue";
 
 const actuatorStore = useActuatorStore();
 
