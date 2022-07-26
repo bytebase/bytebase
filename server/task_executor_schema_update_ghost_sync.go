@@ -46,7 +46,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
+func (*SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
 	progress := exec.progress.Load()
 	if progress == nil {
 		return api.Progress{}

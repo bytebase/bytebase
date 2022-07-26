@@ -344,7 +344,7 @@ func (s *Store) findIndexImpl(ctx context.Context, tx *sql.Tx, find *api.IndexFi
 }
 
 // deleteIndexImpl deletes an index.
-func deleteIndexImpl(ctx context.Context, tx *sql.Tx, delete *api.IndexDelete) error {
+func (*Store) deleteIndexImpl(ctx context.Context, tx *sql.Tx, delete *api.IndexDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM idx WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}

@@ -28,7 +28,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (adv *TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement, ctx.Charset, ctx.Collation)
 	if errAdvice != nil {
 		return errAdvice, nil
@@ -110,7 +110,7 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (v *tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*tableRequirePKChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
@@ -158,14 +158,14 @@ func (v *tableRequirePKChecker) createTable(node *ast.CreateTableStmt) {
 func (v *tableRequirePKChecker) dropColumn(table string, column string) {
 	if _, ok := v.tables[table]; !ok {
 		v.tables[table] = make(columnSet)
-		_, pkList := v.database.FindIndex(&catalog.IndexFind{
+		_, pk := v.database.FindIndex(&catalog.IndexFind{
 			TableName: table,
 			IndexName: primaryKeyName,
 		})
-		if len(pkList) == 0 {
+		if pk == nil {
 			return
 		}
-		v.tables[table] = newColumnSet(catalog.GetColumnListForIndex(pkList))
+		v.tables[table] = newColumnSet(pk.ExpressionList)
 	}
 
 	delete(v.tables[table], column)
