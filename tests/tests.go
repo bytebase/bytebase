@@ -357,7 +357,7 @@ func (ctl *controller) Login() error {
 }
 
 // provisionSQLiteInstance provisions a SQLite instance (a directory).
-func provisionSQLiteInstance(rootDir, name string) (string, error) {
+func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error) {
 	p := path.Join(rootDir, name)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to make directory %q, error: %w", p, err)

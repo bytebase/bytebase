@@ -40,7 +40,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := provisionSQLiteInstance(instanceRootDir, instanceName)
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
@@ -334,7 +334,7 @@ func TestVCS(t *testing.T) {
 	// Provision an instance.
 	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := provisionSQLiteInstance(instanceRootDir, instanceName)
+	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
 	a.NoError(err)
 
 	environments, err := ctl.getEnvironments()
