@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	// secretLength is the length for the secret used to sign the JWT auto token
+	// secretLength is the length for the secret used to sign the JWT auto token.
 	secretLength = 32
 )
 
-// retrieved via the SettingService upon startup
+// retrieved via the SettingService upon startup.
 type config struct {
 	// secret used to sign the JWT auth token
 	secret string

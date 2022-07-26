@@ -70,7 +70,7 @@ func (raw *sheetRaw) toSheet() *api.Sheet {
 	}
 }
 
-// CreateSheet creates an instance of Sheet
+// CreateSheet creates an instance of Sheet.
 func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.Sheet, error) {
 	sheetRaw, err := s.createSheetRaw(ctx, create)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *api.SheetCreate) (*api.
 	return sheet, nil
 }
 
-// GetSheet gets an instance of Sheet
+// GetSheet gets an instance of Sheet.
 func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) (*api.Sheet, error) {
 	sheetRaw, err := s.getSheetRaw(ctx, find)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) GetSheet(ctx context.Context, find *api.SheetFind, currentPrinci
 	return sheet, nil
 }
 
-// FindSheet finds a list of Sheet instances
+// FindSheet finds a list of Sheet instances.
 func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrincipalID int) ([]*api.Sheet, error) {
 	sheetRawList, err := s.findSheetRaw(ctx, find)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Store) FindSheet(ctx context.Context, find *api.SheetFind, currentPrinc
 	return sheetList, nil
 }
 
-// PatchSheet patches an instance of Sheet
+// PatchSheet patches an instance of Sheet.
 func (s *Store) PatchSheet(ctx context.Context, patch *api.SheetPatch) (*api.Sheet, error) {
 	sheetRaw, err := s.patchSheetRaw(ctx, patch)
 	if err != nil {

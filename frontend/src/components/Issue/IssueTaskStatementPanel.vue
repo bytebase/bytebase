@@ -125,6 +125,7 @@
       data-label="bb-issue-sql-editor"
       :value="state.editStatement"
       :readonly="!state.editing"
+      :auto-focus="false"
       @change="onStatementChange"
       @ready="handleMonacoEditorReady"
     />

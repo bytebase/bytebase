@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	// PostgreSQLPublicSchema is the string for PostgreSQL public schema
+	// PostgreSQLPublicSchema is the string for PostgreSQL public schema.
 	PostgreSQLPublicSchema = "public"
 )
 

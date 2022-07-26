@@ -34,7 +34,7 @@ const (
 	WebhookError Level = "ERROR"
 )
 
-// Issue object of issue
+// Issue object of issue.
 type Issue struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -43,7 +43,7 @@ type Issue struct {
 	Description string `json:"description"`
 }
 
-// Project object of project
+// Project object of project.
 type Project struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`

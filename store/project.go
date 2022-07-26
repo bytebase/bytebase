@@ -55,7 +55,7 @@ func (raw *projectRaw) toProject() *api.Project {
 	}
 }
 
-// GetProjectByID gets an instance of Project
+// GetProjectByID gets an instance of Project.
 func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error) {
 	find := &api.ProjectFind{ID: &id}
 	projectRaw, err := s.getProjectRaw(ctx, find)
@@ -72,7 +72,7 @@ func (s *Store) GetProjectByID(ctx context.Context, id int) (*api.Project, error
 	return project, nil
 }
 
-// FindProject finds a list of Project instances
+// FindProject finds a list of Project instances.
 func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.Project, error) {
 	projectRawList, err := s.findProjectRaw(ctx, find)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *Store) FindProject(ctx context.Context, find *api.ProjectFind) ([]*api.
 	return projectList, nil
 }
 
-// CreateProject creates an instance of Project
+// CreateProject creates an instance of Project.
 func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*api.Project, error) {
 	projectRaw, err := s.createProjectRaw(ctx, create)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *Store) CreateProject(ctx context.Context, create *api.ProjectCreate) (*
 	return project, nil
 }
 
-// PatchProject patches an instance of Project
+// PatchProject patches an instance of Project.
 func (s *Store) PatchProject(ctx context.Context, patch *api.ProjectPatch) (*api.Project, error) {
 	projectRaw, err := s.patchProjectRaw(ctx, patch)
 	if err != nil {

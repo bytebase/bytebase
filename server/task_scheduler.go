@@ -32,6 +32,7 @@ func NewTaskScheduler(server *Server) *TaskScheduler {
 type TaskScheduler struct {
 	executorGetters  map[api.TaskType]func() TaskExecutor
 	runningExecutors map[int]TaskExecutor
+	taskProgress     sync.Map
 	server           *Server
 }
 
@@ -61,7 +62,13 @@ func (s *TaskScheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 				for i, executor := range s.runningExecutors {
 					if executor.IsCompleted() {
 						delete(s.runningExecutors, i)
+						s.taskProgress.Delete(i)
 					}
+				}
+
+				// Update task progress
+				for i, executor := range s.runningExecutors {
+					s.taskProgress.Store(i, executor.GetProgress())
 				}
 
 				// Inspect all open pipelines and schedule the next PENDING task if applicable
@@ -222,7 +229,7 @@ func (s *TaskScheduler) Register(taskType api.TaskType, executorGetter func() Ta
 	s.executorGetters[taskType] = executorGetter
 }
 
-// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING
+// canScheduleTask checks if the task can be scheduled, i.e. change the task status from PENDING to RUNNING.
 func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bool, error) {
 	blocked, err := s.isTaskBlocked(ctx, task)
 	if err != nil {
@@ -293,7 +300,7 @@ func (s *TaskScheduler) canScheduleTask(ctx context.Context, task *api.Task) (bo
 
 // ScheduleIfNeeded schedules the task if
 // 1. its required check does not contain error in the latest run
-// 2. it has no blocking tasks
+// 2. it has no blocking tasks.
 func (s *TaskScheduler) ScheduleIfNeeded(ctx context.Context, task *api.Task) (*api.Task, error) {
 	schedule, err := s.canScheduleTask(ctx, task)
 	if err != nil {
