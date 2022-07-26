@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -121,13 +122,13 @@ func (r *BackupRunner) purgeExpiredBackups(ctx context.Context) {
 			log.Error("Failed to find backup settings for instance.", zap.String("instance", instance.Name), zap.Error(err))
 			continue // next instance
 		}
-		maxRetentionPeriodForInstance := api.BackupRetentionPeriodUnset
+		maxRetentionPeriodForInstance := math.MaxInt
 		for _, bs := range backupSettingList {
-			if bs.RetentionPeriodTs > maxRetentionPeriodForInstance {
+			if bs.RetentionPeriodTs != api.BackupRetentionPeriodUnset && bs.RetentionPeriodTs < maxRetentionPeriodForInstance {
 				maxRetentionPeriodForInstance = bs.RetentionPeriodTs
 			}
 		}
-		if maxRetentionPeriodForInstance == api.BackupRetentionPeriodUnset {
+		if maxRetentionPeriodForInstance == math.MaxInt {
 			log.Debug("All the databases in instance have unset retention period. Skip deleting binlog files.", zap.String("instance", instance.Name))
 			continue // next instance
 		}
