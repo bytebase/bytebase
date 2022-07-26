@@ -633,8 +633,6 @@
     "copy-grant-statement": "CREATE USER and GRANT 语句已复制到剪贴板。 粘贴到您的 mysql 客户端。",
     "successfully-connected-instance": "成功连接到实例。",
     "failed-to-connect-instance": "连接到实例失败。",
-    "how-to-setup-instance": "如何设置「实例」?",
-    "how-to-setup-instance-description": "每个 Bytebase 实例属于一个环境。一个实例通常映射到您的一个由 host:port 地址所代表的数据库实例。这可能是您在诸如 AWS 上的\nRDS 实例，也可能是您私有化部署的 MySQL 实例。\nBytebase 要求实例的读写权限（而不是 super 权限）以代表用户执行数据库操作。",
     "search-instance-name": "搜索实例名称",
     "no-read-only-data-source-support": "暂时不支持 {database} 创建只读连接",
     "grants": "权限"
@@ -644,8 +642,6 @@
     "archive": "归档此环境",
     "archive-info": "已归档环境不会显示。您可以从归档界面恢复。",
     "create": "创建环境",
-    "how-to-setup-environment": "如何创建「环境」?",
-    "how-to-setup-environment-description": "每个环境与您的诸如测试，预发，生产环境一一对应。\n\n环境是一个全局配置，一套 Bytebase 的部署也只包含一套环境配置的集合。\n\n数据库实例是创建在某个特定环境下面的。",
     "restore": "恢复这个环境"
   },
   "quick-start": {
@@ -756,8 +752,6 @@
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
     "search-database-name": "搜索数据库名称",
-    "how-to-setup-database": "如何设置「数据库」？",
-    "show-guide-description": "每个 Bytebase 数据库都映射到由「CREATE DATABASE xxx」创建的一个数据库。\n\n在 Bytebase 中，一个数据库始终属于单个项目。Bytebase 将定期同步每个实例的数据库信息。\n\n您还可以从仪表板创建新数据库。",
     "restored-from": "恢复于",
     "database-name-is-restored-from-another-database-backup": "{0}恢复于另一个数据库备份",
     "transfer-project": "转移项目",

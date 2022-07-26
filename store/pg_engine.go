@@ -219,7 +219,7 @@ func getLatestVersion(ctx context.Context, d dbdriver.Driver, database string) (
 	return nil, fmt.Errorf("failed to find a successful migration history")
 }
 
-// setupDemoData loads the setupDemoData data for testing
+// setupDemoData loads the setupDemoData data for testing.
 func (db *DB) setupDemoData() error {
 	if db.demoDataDir == "" {
 		log.Debug("Skip setting up demo data. Demo data directory not specified.")

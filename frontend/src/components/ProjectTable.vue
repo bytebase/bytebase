@@ -1,6 +1,6 @@
 <template>
   <BBTable
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :data-source="projectList"
     :show-header="true"
     :left-bordered="false"
@@ -8,9 +8,9 @@
     @click-row="clickProject"
   >
     <template #header>
-      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[0].title" />
-      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[1].title" />
-      <BBTableHeaderCell class="table-cell" :title="COLUMN_LIST[2].title" />
+      <BBTableHeaderCell class="table-cell" :title="columnList[0].title" />
+      <BBTableHeaderCell class="table-cell" :title="columnList[1].title" />
+      <BBTableHeaderCell class="table-cell" :title="columnList[2].title" />
     </template>
     <template #body="{ rowData: project }">
       <BBTableCell :left-padding="4" class="table-cell text-gray-500 w-[30%]">
@@ -69,7 +69,7 @@ export default defineComponent({
   setup(props) {
     const router = useRouter();
     const { t } = useI18n();
-    const COLUMN_LIST = computed(() => [
+    const columnList = computed(() => [
       {
         title: t("project.table.key"),
       },
@@ -96,7 +96,7 @@ export default defineComponent({
     };
 
     return {
-      COLUMN_LIST,
+      columnList,
       clickProject,
     };
   },

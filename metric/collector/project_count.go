@@ -15,14 +15,14 @@ type projectCountCollector struct {
 	store *store.Store
 }
 
-// NewProjectCountCollector creates a new instance of projectCollector
+// NewProjectCountCollector creates a new instance of projectCollector.
 func NewProjectCountCollector(store *store.Store) metric.Collector {
 	return &projectCountCollector{
 		store: store,
 	}
 }
 
-// Collect will collect the metric for project
+// Collect will collect the metric for project.
 func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 

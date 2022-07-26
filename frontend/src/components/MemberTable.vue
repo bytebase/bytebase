@@ -1,7 +1,7 @@
 <template>
   <BBTable
     class="mt-2"
-    :column-list="COLUMN_LIST"
+    :column-list="columnList"
     :section-data-source="dataSource"
     :compact-section="true"
     :show-header="true"
@@ -11,19 +11,19 @@
       <BBTableHeaderCell
         :left-padding="4"
         class="w-auto table-cell"
-        :title="$t(COLUMN_LIST[0].title)"
+        :title="$t(columnList[0].title)"
       />
       <BBTableHeaderCell
         class="w-8 table-cell"
-        :title="$t(COLUMN_LIST[1].title)"
+        :title="$t(columnList[1].title)"
       />
       <BBTableHeaderCell
         class="w-72 table-cell"
-        :title="$t(COLUMN_LIST[2].title)"
+        :title="$t(columnList[2].title)"
       />
       <BBTableHeaderCell
         class="w-auto table-cell"
-        :title="$t(COLUMN_LIST[3].title)"
+        :title="$t(columnList[3].title)"
       />
     </template>
     <template #body="{ rowData: member }">
@@ -135,11 +135,11 @@ import {
   RowStatus,
   SYSTEM_BOT_ID,
 } from "../types";
-import { BBTableColumn, BBTableSectionDataSource } from "../bbkit/types";
+import { BBTableSectionDataSource } from "../bbkit/types";
 import { isOwner } from "../utils";
 import { featureToRef, useCurrentUser, useMemberStore } from "@/store";
 
-const COLUMN_LIST: BBTableColumn[] = [
+const columnList = computed(() => [
   {
     title: "settings.members.table.account",
   },
@@ -152,7 +152,7 @@ const COLUMN_LIST: BBTableColumn[] = [
   {
     title: "",
   },
-];
+]);
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface LocalState {}
@@ -285,7 +285,7 @@ export default defineComponent({
 
     return {
       SYSTEM_BOT_ID,
-      COLUMN_LIST,
+      columnList,
       state,
       currentUser,
       hasRBACFeature,

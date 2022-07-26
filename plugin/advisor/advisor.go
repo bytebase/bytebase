@@ -44,7 +44,7 @@ const (
 	// Fake is a fake advisor type for testing.
 	Fake Type = "bb.plugin.advisor.fake"
 
-	// MySQL Advisor
+	// MySQL Advisor.
 
 	// MySQLSyntax is an advisor type for MySQL syntax.
 	MySQLSyntax Type = "bb.plugin.advisor.mysql.syntax"
@@ -97,7 +97,7 @@ const (
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
-	// PostgreSQL Advisor
+	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
 	PostgreSQLSyntax Type = "bb.plugin.advisor.postgresql.syntax"
