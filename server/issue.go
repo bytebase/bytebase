@@ -78,8 +78,11 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch issue list").SetInternal(err)
 		}
 
-		for _, issue := range issueList {
-			s.setTaskProgressForIssue(issue)
+		if s.TaskScheduler != nil {
+			// readonly server doesn't have a TaskScheduler.
+			for _, issue := range issueList {
+				s.setTaskProgressForIssue(issue)
+			}
 		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
@@ -104,7 +107,10 @@ func (s *Server) registerIssueRoutes(g *echo.Group) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Issue ID not found: %d", id))
 		}
 
-		s.setTaskProgressForIssue(issue)
+		if s.TaskScheduler != nil {
+			// readonly server doesn't have a TaskScheduler.
+			s.setTaskProgressForIssue(issue)
+		}
 
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		if err := jsonapi.MarshalPayload(c.Response().Writer, issue); err != nil {
