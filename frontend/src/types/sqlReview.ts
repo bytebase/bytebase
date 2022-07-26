@@ -3,7 +3,9 @@ import { PolicyId } from "./id";
 import { Principal } from "./principal";
 import { RowStatus } from "./common";
 import { Environment } from "./environment";
-import sqlReviewConfig from "./sqlReviewConfig.yaml";
+import sqlReviewSchema from "./sql-review-schema.yaml";
+import sqlReviewProdTemplate from "../../../plugin/advisor/config/sql-review.mysql.prod.yaml";
+import sqlReviewDevTemplate from "../../../plugin/advisor/config/sql-review.mysql.dev.yaml";
 
 // The engine type for rule template
 export type SchemaRuleEngineType = "MYSQL" | "COMMON";
@@ -143,8 +145,59 @@ export interface SQLReviewPolicyTemplate {
   ruleList: RuleTemplate[];
 }
 
-export const TEMPLATE_LIST =
-  sqlReviewConfig.templateList as SQLReviewPolicyTemplate[];
+// Build the frontend template list based on schema and template.
+export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
+  const ruleSchemaMap = (sqlReviewSchema.ruleList as RuleTemplate[]).reduce(
+    (map, ruleSchema) => {
+      map.set(ruleSchema.type, ruleSchema);
+      return map;
+    },
+    new Map<RuleType, RuleTemplate>()
+  );
+  const templateList = [sqlReviewProdTemplate, sqlReviewDevTemplate] as {
+    id: string;
+    ruleList: {
+      type: RuleType;
+      level: RuleLevel;
+      payload?: { [key: string]: any };
+    }[];
+  }[];
+
+  return templateList.map((template) => {
+    const ruleList: RuleTemplate[] = [];
+
+    for (const rule of template.ruleList) {
+      const ruleTemplate = ruleSchemaMap.get(rule.type);
+      if (!ruleTemplate) {
+        continue;
+      }
+
+      // Using template rule payload to override the component list.
+      const componentList = ruleTemplate.componentList.map((component) => {
+        if (rule.payload && rule.payload[component.key]) {
+          return {
+            ...component,
+            payload: {
+              ...component.payload,
+              default: rule.payload[component.key],
+            },
+          };
+        }
+        return component;
+      });
+      ruleList.push({
+        ...ruleTemplate,
+        level: rule.level,
+        componentList,
+      });
+    }
+
+    return {
+      id: template.id,
+      ruleList,
+    };
+  });
+})();
 
 export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
   TEMPLATE_LIST.reduce((map, template) => {
@@ -163,7 +216,7 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const categoryList = sqlReviewConfig.categoryList as CategoryType[];
+  const categoryList = sqlReviewSchema.categoryList as CategoryType[];
   const categoryOrder = categoryList.reduce((map, category, index) => {
     map.set(category, index);
     return map;
