@@ -276,6 +276,24 @@ export const useTaskStore = defineStore("task", {
 
       return task;
     },
+    async patchAllTasksInIssue({
+      issueId,
+      pipelineId,
+      taskPatch,
+    }: {
+      issueId: IssueId;
+      pipelineId: PipelineId;
+      taskPatch: TaskPatch;
+    }) {
+      await axios.patch(`/api/pipeline/${pipelineId}/task/all`, {
+        data: {
+          type: "taskPatch",
+          attributes: taskPatch,
+        },
+      });
+
+      useIssueStore().fetchIssueById(issueId);
+    },
     async runChecks({
       issueId,
       pipelineId,

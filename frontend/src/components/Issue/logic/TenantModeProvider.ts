@@ -1,9 +1,10 @@
 import { computed, defineComponent } from "vue";
 import { cloneDeep } from "lodash-es";
-import { useDatabaseStore } from "@/store";
+import { useDatabaseStore, useTaskStore } from "@/store";
 import {
   Issue,
   IssueCreate,
+  Task,
   TaskCreate,
   TaskDatabaseSchemaUpdatePayload,
   UpdateSchemaContext,
@@ -11,6 +12,7 @@ import {
 import {
   errorAssertion,
   flattenTaskList,
+  isTaskEditable,
   maybeFormatStatementOnSave,
   useCommonLogic,
 } from "./common";
@@ -19,15 +21,16 @@ import { provideIssueLogic, useIssueLogic } from "./index";
 export default defineComponent({
   name: "TenantModeProvider",
   setup() {
-    const { create, issue, createIssue } = useIssueLogic();
+    const { create, issue, createIssue, onStatusChanged } = useIssueLogic();
     const databaseStore = useDatabaseStore();
+    const taskStore = useTaskStore();
 
     const allowEditStatement = computed(() => {
       if (create.value) {
         return true;
       }
-      // Once a tenant-mode issue created, its statement can never be changed.
-      return false;
+      const tasks = flattenTaskList<Task>(issue.value);
+      return tasks.every((task) => isTaskEditable(task));
     });
 
     // In tenant mode, the entire issue shares only one SQL statement
@@ -44,7 +47,10 @@ export default defineComponent({
       }
     });
 
-    const updateStatement = (newStatement: string) => {
+    const updateStatement = (
+      newStatement: string,
+      postUpdated?: (updatedTask: Task) => void
+    ) => {
       if (create.value) {
         // For tenant deploy mode, we apply the statement to all stages and all tasks
         const allTaskList = flattenTaskList<TaskCreate>(issue.value);
@@ -59,8 +65,21 @@ export default defineComponent({
           (detail) => (detail.statement = newStatement)
         );
       } else {
-        // But not editable in non-create mode
-        errorAssertion();
+        const issueEntity = issue.value as Issue;
+        taskStore
+          .patchAllTasksInIssue({
+            issueId: issueEntity.id,
+            pipelineId: issueEntity.pipeline.id,
+            taskPatch: {
+              statement: newStatement,
+            },
+          })
+          .then(() => {
+            onStatusChanged(true);
+            if (postUpdated) {
+              postUpdated(issueEntity.pipeline.stageList[0].taskList[0]);
+            }
+          });
       }
     };
 
