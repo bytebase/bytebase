@@ -80,6 +80,7 @@
     <EnvironmentSelect
       class="mt-1"
       :selected-id="state.context.environmentId"
+      :disabled="true"
       @select-environment-id="(id) => (state.context.environmentId = id)"
     />
   </div>
