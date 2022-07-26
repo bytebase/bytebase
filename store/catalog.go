@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bytebase/bytebase/api"
@@ -178,17 +179,43 @@ func convertTable(table *api.Table) *catalog.Table {
 
 func converIndexList(list []*api.Index) []*catalog.Index {
 	var res []*catalog.Index
+	// sort index list by (name, position)
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].Name != list[j].Name {
+			return list[i].Name < list[j].Name
+		}
+		return list[i].Position < list[j].Position
+	})
+
+	startPos := 0
+	currentPos := 0
+	for {
+		if startPos >= len(list) {
+			break
+		}
+		if currentPos >= len(list) || list[currentPos].Name != list[startPos].Name {
+			res = append(res, foldIndex(list[startPos:currentPos]))
+			startPos = currentPos
+		}
+		currentPos++
+	}
+	return res
+}
+
+func foldIndex(list []*api.Index) *catalog.Index {
+	if len(list) == 0 {
+		return nil
+	}
+	res := &catalog.Index{
+		Name:    list[0].Name,
+		Type:    list[0].Type,
+		Unique:  list[0].Unique,
+		Primary: list[0].Primary,
+		Visible: list[0].Visible,
+		Comment: list[0].Comment,
+	}
 	for _, index := range list {
-		res = append(res, &catalog.Index{
-			Name:       index.Name,
-			Expression: index.Expression,
-			Position:   index.Position,
-			Type:       index.Type,
-			Unique:     index.Unique,
-			Primary:    index.Primary,
-			Visible:    index.Visible,
-			Comment:    index.Comment,
-		})
+		res.ExpressionList = append(res.ExpressionList, index.Expression)
 	}
 	return res
 }
