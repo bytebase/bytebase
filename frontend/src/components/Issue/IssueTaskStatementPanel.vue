@@ -24,7 +24,7 @@
 
     <div class="space-x-2 flex items-center">
       <template v-if="create">
-        <label class="mt-0.5 inline-flex items-center gap-1">
+        <label class="mt-0.5 mr-2 inline-flex items-center gap-1">
           <input
             v-model="formatOnSave"
             type="checkbox"
@@ -59,7 +59,7 @@
         </button>
         <template v-if="state.editing">
           <!-- mt-0.5 is to prevent jiggling between switching edit/none-edit -->
-          <label class="mt-0.5 inline-flex items-center gap-1">
+          <label class="mt-0.5 mr-2 inline-flex items-center gap-1">
             <input
               v-model="formatOnSave"
               type="checkbox"
