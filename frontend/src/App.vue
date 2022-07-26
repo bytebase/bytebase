@@ -143,13 +143,9 @@ watch(
       (pair) => pair.routeName === routeName
     )?.helpName;
 
-    if (helpName && !uiStateStore.getIntroStateByKey(`guide.${helpName}`)) {
+    if (helpName && !uiStateStore.getIntroStateByKey(`${helpName}`)) {
       state.helpTimer = window.setTimeout(() => {
         helpStore.showHelp(helpName, true);
-        uiStateStore.saveIntroStateByKey({
-          key: "environment.visit",
-          newState: true,
-        });
       }, 1000);
     }
   }
