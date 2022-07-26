@@ -153,15 +153,14 @@ export type TaskPatch = {
   statement?: string;
   earliestAllowedTs?: number;
 
-  updatedTs: number;
+  updatedTs?: number;
 };
-
 export type TaskStatusPatch = {
   // Domain specific fields
   status: TaskStatus;
   comment?: string;
 
-  updatedTs: number;
+  updatedTs?: number;
 };
 
 // TaskRun is one run of a particular task
