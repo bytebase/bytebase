@@ -27,6 +27,7 @@ func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
 	completed int32
+	progress  atomic.Value // api.Progress
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
@@ -36,7 +37,7 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) RunOnce(ctx context.Context, serv
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database schema update gh-ost sync payload: %w", err)
 	}
-	return runGhostMigration(ctx, server, task, payload.Statement)
+	return exec.runGhostMigration(ctx, server, task, payload.Statement)
 }
 
 // IsCompleted tells the scheduler if the task execution has completed.
@@ -45,8 +46,12 @@ func (exec *SchemaUpdateGhostSyncTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (*SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
-	return api.Progress{}
+func (exec *SchemaUpdateGhostSyncTaskExecutor) GetProgress() api.Progress {
+	progress := exec.progress.Load()
+	if progress == nil {
+		return api.Progress{}
+	}
+	return progress.(api.Progress)
 }
 
 func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
@@ -160,13 +165,13 @@ func newMigrationContext(config ghostConfig) (*base.MigrationContext, error) {
 	return migrationContext, nil
 }
 
-func runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	syncError := make(chan error)
 
 	go func() {
 		statement = strings.TrimSpace(statement)
-		err := executeGhost(task, statement, syncDone)
+		err := exec.executeGhost(task, statement, syncDone)
 		if err != nil {
 			log.Error("failed to execute schema update gh-ost sync executeSync", zap.Error(err))
 			// There could be an error in gh-ost migration after the syncDone channel returns which causes the outer function returns, too.
@@ -187,7 +192,7 @@ func runGhostMigration(_ context.Context, _ *Server, task *api.Task, statement s
 	}
 }
 
-func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {
+func (exec *SchemaUpdateGhostSyncTaskExecutor) executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) error {
 	instance := task.Instance
 	databaseName := task.Database.Name
 
@@ -225,12 +230,24 @@ func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) er
 	defer cancel()
 	migrator := logic.NewMigrator(migrationContext)
 
-	go func(ctx context.Context, migrationContext *base.MigrationContext) {
+	go func(ctx context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
+		createdTs := time.Now().Unix()
 		for {
 			select {
 			case <-ticker.C:
+				var (
+					totalUnit     = atomic.LoadInt64(&migrationContext.RowsEstimate) + atomic.LoadInt64(&migrationContext.RowsDeltaEstimate)
+					completedUnit = migrationContext.GetTotalRowsCopied()
+					updatedTs     = time.Now().Unix()
+				)
+				exec.progress.Store(api.Progress{
+					TotalUnit:     totalUnit,
+					CompletedUnit: completedUnit,
+					CreatedTs:     createdTs,
+					UpdatedTs:     updatedTs,
+				})
 				// Since we are using postpone flag file to postpone cutover, it's gh-ost mechanism to set migrationContext.IsPostponingCutOver to 1 after synced and before postpone flag file is removed. We utilize this mechanism here to check if synced.
 				if atomic.LoadInt64(&migrationContext.IsPostponingCutOver) > 0 {
 					close(syncDone)
@@ -240,7 +257,7 @@ func executeGhost(task *api.Task, statement string, syncDone chan<- struct{}) er
 				return
 			}
 		}
-	}(ctx, migrationContext)
+	}(ctx)
 
 	if err = migrator.Migrate(); err != nil {
 		return fmt.Errorf("failed to run gh-ost, error: %w", err)
