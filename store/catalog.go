@@ -173,11 +173,14 @@ func convertTable(table *api.Table) *catalog.Table {
 		CreateOptions: table.CreateOptions,
 		Comment:       table.Comment,
 		ColumnList:    convertColumnList(table.ColumnList),
-		IndexList:     converIndexList(table.IndexList),
+		IndexList:     convertIndexList(table.IndexList),
 	}
 }
 
-func converIndexList(list []*api.Index) []*catalog.Index {
+func convertIndexList(list []*api.Index) []*catalog.Index {
+	if len(list) == 0 {
+		return nil
+	}
 	var res []*catalog.Index
 	// sort index list by (name, position)
 	sort.Slice(list, func(i, j int) bool {
@@ -187,37 +190,26 @@ func converIndexList(list []*api.Index) []*catalog.Index {
 		return list[i].Position < list[j].Position
 	})
 
-	startPos := 0
-	currentPos := 0
-	for {
-		if startPos >= len(list) {
-			break
+	index := convertIndexExceptExpression(list[0])
+	for _, expression := range list {
+		if expression.Name != index.Name {
+			index = convertIndexExceptExpression(expression)
+		} else {
+			index.ExpressionList = append(index.ExpressionList, expression.Expression)
 		}
-		if currentPos >= len(list) || list[currentPos].Name != list[startPos].Name {
-			res = append(res, foldIndex(list[startPos:currentPos]))
-			startPos = currentPos
-		}
-		currentPos++
 	}
 	return res
 }
 
-func foldIndex(list []*api.Index) *catalog.Index {
-	if len(list) == 0 {
-		return nil
+func convertIndexExceptExpression(index *api.Index) *catalog.Index {
+	return &catalog.Index{
+		Name:    index.Name,
+		Type:    index.Type,
+		Unique:  index.Unique,
+		Primary: index.Primary,
+		Visible: index.Visible,
+		Comment: index.Comment,
 	}
-	res := &catalog.Index{
-		Name:    list[0].Name,
-		Type:    list[0].Type,
-		Unique:  list[0].Unique,
-		Primary: list[0].Primary,
-		Visible: list[0].Visible,
-		Comment: list[0].Comment,
-	}
-	for _, index := range list {
-		res.ExpressionList = append(res.ExpressionList, index.Expression)
-	}
-	return res
 }
 
 func convertColumnList(list []*api.Column) []*catalog.Column {
