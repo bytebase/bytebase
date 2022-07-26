@@ -1338,7 +1338,7 @@ router.beforeEach((to, from, next) => {
   });
 });
 
-router.afterEach((to /*, from*/) => {
+router.afterEach((to /*, from */) => {
   // Needs to use nextTick otherwise title will still be the one from the previous route.
   nextTick(() => {
     if (to.meta.title) {
