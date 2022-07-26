@@ -181,7 +181,7 @@ func (s *Store) findDataSourceRaw(ctx context.Context, find *api.DataSourceFind)
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findDataSourceImpl(ctx, tx.PTx, find)
+	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (s *Store) getDataSourceRaw(ctx context.Context, find *api.DataSourceFind) 
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findDataSourceImpl(ctx, tx.PTx, find)
+	list, err := s.findDataSourceImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (*Store) createDataSourceImpl(ctx context.Context, tx *sql.Tx, create *api.
 	return &dataSourceRaw, nil
 }
 
-func findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
+func (*Store) findDataSourceImpl(ctx context.Context, tx *sql.Tx, find *api.DataSourceFind) ([]*dataSourceRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

@@ -361,7 +361,7 @@ func (s *Store) findDatabaseRaw(ctx context.Context, find *api.DatabaseFind) ([]
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func (s *Store) getDatabaseRaw(ctx context.Context, find *api.DatabaseFind) (*da
 	}
 	defer tx.PTx.Rollback()
 
-	list, err := findDatabaseImpl(ctx, tx.PTx, find)
+	list, err := s.findDatabaseImpl(ctx, tx.PTx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +505,7 @@ func (*Store) createDatabaseImpl(ctx context.Context, tx *sql.Tx, create *api.Da
 	return &databaseRaw, nil
 }
 
-func findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
+func (*Store) findDatabaseImpl(ctx context.Context, tx *sql.Tx, find *api.DatabaseFind) ([]*databaseRaw, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {

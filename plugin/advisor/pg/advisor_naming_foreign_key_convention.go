@@ -80,7 +80,7 @@ type indexMetaData struct {
 
 // Visit implements ast.Visitor interface.
 func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
-	indexDataList := getMetaDataList(in)
+	indexDataList := checker.getMetaDataList(in)
 
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
@@ -115,7 +115,7 @@ func (checker *namingFKConventionChecker) Visit(in ast.Node) ast.Visitor {
 }
 
 // getMetaDataList returns the list of foreign key with metadata.
-func getMetaDataList(in ast.Node) []*indexMetaData {
+func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:

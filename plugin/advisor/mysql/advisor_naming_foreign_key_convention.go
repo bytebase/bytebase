@@ -72,7 +72,7 @@ type namingFKConventionChecker struct {
 
 // Enter implements the ast.Visitor interface.
 func (checker *namingFKConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	indexDataList := getMetaDataList(in)
+	indexDataList := checker.getMetaDataList(in)
 
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(checker.format, checker.templateList, indexData.metaData)
@@ -112,7 +112,7 @@ func (*namingFKConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
 }
 
 // getMetaDataList returns the list of foreign key with meta data.
-func getMetaDataList(in ast.Node) []*indexMetaData {
+func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData {
 	var res []*indexMetaData
 
 	switch node := in.(type) {
