@@ -27,7 +27,7 @@ func NewSchemaUpdateGhostSyncTaskExecutor() TaskExecutor {
 // SchemaUpdateGhostSyncTaskExecutor is the schema update (gh-ost) sync task executor.
 type SchemaUpdateGhostSyncTaskExecutor struct {
 	completed int32
-	progress  atomic.Value
+	progress  atomic.Value // api.Progress
 }
 
 // RunOnce will run SchemaUpdateGhostSync task once.
