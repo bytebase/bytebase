@@ -122,7 +122,7 @@ func (s *Store) DeleteProjectMember(ctx context.Context, delete *api.ProjectMemb
 	}
 	defer tx.PTx.Rollback()
 
-	if err := deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
+	if err := s.deleteProjectMemberImpl(ctx, tx.PTx, delete); err != nil {
 		return FormatError(err)
 	}
 
@@ -369,7 +369,7 @@ func (s *Store) batchUpdateProjectMemberRaw(ctx context.Context, batchUpdate *ap
 			ID:        deletedMember.ID,
 			DeleterID: batchUpdate.UpdaterID,
 		}
-		if err := deleteProjectMemberImpl(ctx, tx.PTx, memberDelete); err != nil {
+		if err := s.deleteProjectMemberImpl(ctx, tx.PTx, memberDelete); err != nil {
 			return nil, nil, FormatError(err)
 		}
 		deletedMemberRawList = append(deletedMemberRawList, deletedMember)
@@ -545,7 +545,7 @@ func patchProjectMemberImpl(ctx context.Context, tx *sql.Tx, patch *api.ProjectM
 }
 
 // deleteProjectMemberImpl permanently deletes a projectMember by ID.
-func deleteProjectMemberImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
+func (*Store) deleteProjectMemberImpl(ctx context.Context, tx *sql.Tx, delete *api.ProjectMemberDelete) error {
 	// Remove row from database.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM project_member WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)

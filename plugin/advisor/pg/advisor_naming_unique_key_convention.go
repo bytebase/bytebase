@@ -23,7 +23,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for unique key naming convention.
-func (check *NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	root, errAdvice := parseStatement(statement)
 	if errAdvice != nil {
 		return errAdvice, nil

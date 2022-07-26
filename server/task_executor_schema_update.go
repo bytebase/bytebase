@@ -36,6 +36,6 @@ func (exec *SchemaUpdateTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *SchemaUpdateTaskExecutor) GetProgress() api.Progress {
+func (*SchemaUpdateTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }

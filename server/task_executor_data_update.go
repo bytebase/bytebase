@@ -21,8 +21,7 @@ type DataUpdateTaskExecutor struct {
 }
 
 // RunOnce will run the data update (DML) task executor once.
-func (exec *DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
-	defer atomic.StoreInt32(&exec.completed, 1)
+func (*DataUpdateTaskExecutor) RunOnce(ctx context.Context, server *Server, task *api.Task) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	payload := &api.TaskDatabaseDataUpdatePayload{}
 	if err := json.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, fmt.Errorf("invalid database data update payload: %w", err)
@@ -37,6 +36,6 @@ func (exec *DataUpdateTaskExecutor) IsCompleted() bool {
 }
 
 // GetProgress returns the task progress.
-func (exec *DataUpdateTaskExecutor) GetProgress() api.Progress {
+func (*DataUpdateTaskExecutor) GetProgress() api.Progress {
 	return api.Progress{}
 }

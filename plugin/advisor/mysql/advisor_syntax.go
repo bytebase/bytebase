@@ -18,7 +18,7 @@ type SyntaxAdvisor struct {
 }
 
 // Check parses the given statement and checks for warnings and errors.
-func (adv *SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
+func (*SyntaxAdvisor) Check(ctx advisor.Context, statement string) ([]advisor.Advice, error) {
 	p := newParser()
 
 	_, warns, err := p.Parse(statement, ctx.Charset, ctx.Collation)

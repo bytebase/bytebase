@@ -261,8 +261,8 @@ func (s *Server) registerProjectRoutes(g *echo.Group) {
 			ctx,
 			common.OauthContext{
 				AccessToken: repositoryCreate.AccessToken,
-				// We use s.refreshTokenNoop() because the repository isn't created yet.
-				Refresher: s.refreshTokenNoop(),
+				// We use refreshTokenNoop() because the repository isn't created yet.
+				Refresher: refreshTokenNoop(),
 			},
 			vcs.InstanceURL,
 			repositoryCreate.ExternalID,
@@ -600,7 +600,7 @@ func (s *Server) refreshToken(ctx context.Context, repositoryID int) common.Toke
 }
 
 // refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
-func (s *Server) refreshTokenNoop() common.TokenRefresher {
+func refreshTokenNoop() common.TokenRefresher {
 	return func(newToken, newRefreshToken string, expiresTs int64) error {
 		return nil
 	}

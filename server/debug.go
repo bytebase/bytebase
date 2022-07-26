@@ -11,9 +11,7 @@ import (
 )
 
 func (s *Server) registerDebugRoutes(g *echo.Group) {
-	g.GET("/debug", func(c echo.Context) error {
-		return s.currentDebugState(c)
-	})
+	g.GET("/debug", currentDebugState)
 
 	g.PATCH("/debug", func(c echo.Context) error {
 		var debugPatch api.DebugPatch
@@ -29,11 +27,11 @@ func (s *Server) registerDebugRoutes(g *echo.Group) {
 
 		s.e.Debug = debugPatch.IsDebug
 
-		return s.currentDebugState(c)
+		return currentDebugState(c)
 	})
 }
 
-func (s *Server) currentDebugState(c echo.Context) error {
+func currentDebugState(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	if err := jsonapi.MarshalPayload(c.Response().Writer, &api.Debug{IsDebug: log.EnabledLevel(zap.DebugLevel)}); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to marshal debug info response").SetInternal(err)

@@ -75,7 +75,7 @@ func generateColumnActions(oldColumnList []*api.Column, columnList []db.Column, 
 }
 
 // createColumnImpl creates a new column.
-func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
+func (*Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.ColumnCreate) (*api.Column, error) {
 	defaultStr := sql.NullString{}
 	if create.Default != nil {
 		defaultStr = sql.NullString{
@@ -145,7 +145,7 @@ func (s *Store) createColumnImpl(ctx context.Context, tx *sql.Tx, create *api.Co
 	return &column, nil
 }
 
-func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
+func (*Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.ColumnFind) ([]*api.Column, error) {
 	// Build WHERE clause.
 	where, args := []string{"1 = 1"}, []interface{}{}
 	if v := find.ID; v != nil {
@@ -227,7 +227,7 @@ func (s *Store) findColumnImpl(ctx context.Context, tx *sql.Tx, find *api.Column
 }
 
 // deleteColumnImpl deletes columns.
-func deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
+func (*Store) deleteColumnImpl(ctx context.Context, tx *sql.Tx, delete *api.ColumnDelete) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM col WHERE id = $1`, delete.ID); err != nil {
 		return FormatError(err)
 	}
