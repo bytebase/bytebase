@@ -54,6 +54,8 @@ const (
 	TaskDatabaseBackup TaskType = "bb.task.database.backup"
 	// TaskDatabaseRestore is the task type for restoring databases.
 	TaskDatabaseRestore TaskType = "bb.task.database.restore"
+	// TaskDatabasePITRDownloadBinlog is the task type for downloading the binlogs from the original instance.
+	TaskDatabasePITRDownloadBinlog TaskType = "bb.task.database.pitr.download.binlog"
 	// TaskDatabasePITRRestore is the task type for restoring databases using PITR.
 	TaskDatabasePITRRestore TaskType = "bb.task.database.pitr.restore"
 	// TaskDatabasePITRCutover is the task type for swapping the pitr and original database.
