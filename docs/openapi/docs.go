@@ -48,7 +48,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "The sql check config string in YAML format.",
+                        "description": "The SQL check config string in YAML format.",
                         "name": "config",
                         "in": "query"
                     },
